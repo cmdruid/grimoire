@@ -86,17 +86,27 @@ if [ -f "$bs" ]; then
   done < <(sed -n 's/^      \([A-Z]*\.md\).*/\1/p' "$bs")
 fi
 
-# ---- 4. consumption wiring ---------------------------------------------------
+# ---- 4. consumption wiring (advisory: installation state, not repo content) --
+# WARN-only: a public clone isn't necessarily wired into any harness. Physical-
+# path compare so links that resolve through intermediate symlinks still pass.
+if [ -d "$claude_skills" ]; then
+  for sk in "$skills_dir"/*/; do
+    name="$(basename "$sk")"
+    link="$claude_skills/$name"
+    if [ ! -L "$link" ]; then
+      warn "$name: not wired into ~/.claude/skills on this machine (./install.sh $name)"
+    else
+      want="$(cd -P "${sk%/}" 2>/dev/null && pwd)"
+      got="$(cd -P "$link" 2>/dev/null && pwd || true)"
+      [ "$got" = "$want" ] || warn "$name: ~/.claude/skills/$name resolves to ${got:-nothing}, not this clone"
+    fi
+  done
+else
+  echo "note: ~/.claude/skills absent -- skipping wiring check"
+fi
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
-  link="$claude_skills/$name"
-  if [ ! -L "$link" ]; then
-    fail "$name: no symlink at ~/.claude/skills/$name (Claude Code cannot load it)"
-  else
-    tgt="$(readlink "$link")"
-    [ "$tgt" = "${sk%/}" ] || fail "$name: symlink points at $tgt, not ${sk%/}"
-  fi
-  grep -q "\`$name\`" "$root/README.md" || warn "$name: not mentioned in README's skill inventory"
+  grep -q "\`$name\`" "$root/README.md" 2>/dev/null || warn "$name: not mentioned in README's skill inventory"
 done
 
 # ---- 5. script syntax --------------------------------------------------------
