@@ -24,7 +24,7 @@ lives in `verbs/<verb>.md`; the portable doctrine lives in `docs/DOCTRINE.md`.
 | `plan` | `verbs/plan.md` | sequence a design-evolution campaign |
 | `distill` | `verbs/distill.md` | collapse accreted change-records into clean present-tense specs |
 | `check` | `verbs/check.md` | validate seed health (runs `scripts/design-check.sh`) |
-| `prep` | `verbs/prep.md` | *(Plan B)* plan the clearing of retired code so `/feature` can rebuild |
+| `prep` | *(verb file pending — method in `docs/DOCTRINE.md`)* | *(Plan B)* plan the clearing of retired code so `/feature` can rebuild |
 
 ## Discipline every verb shares
 1. Author plans; never write executable code (you may read `src/` for `prep`).
