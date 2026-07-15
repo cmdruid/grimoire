@@ -7,8 +7,8 @@ two-tier system-spec this verb populates). Two modes, one procedure with a fork 
   scattered design material to fold in; the brief is the only real input besides whatever code
   already exists.
 - **Migrate** — an existing project has design material spread across a root `PROJECT.md`/
-  `DESIGN.md` and a per-subsystem docs directory (voxelgen's `docs/design/*` is the reference
-  case). `init` folds that material into the seed's shape rather than writing it fresh.
+  `DESIGN.md` and a per-subsystem docs directory (e.g. `docs/design/*`). `init` folds that
+  material into the seed's shape rather than writing it fresh.
 
 Both modes end the same way: `init` is not done until `/design check` reports a complete spine
 (and every migrated system has a contract).
@@ -38,15 +38,15 @@ Populate the four required root files (`templates/VISION.md`, `PHILOSOPHY.md`, `
 `MAP.md`) from whatever source material mode detection found. This step is the same shape in both
 modes — greenfield just has thinner sources.
 
-- **`VISION.md`** ← the vision brief, or `PROJECT.md`'s vision + pillars sections (on voxelgen:
-  PROJECT.md §1 Vision + §2 Design Pillars). Fill "North star" from the vision prose and "Design
+- **`VISION.md`** ← the vision brief, or `PROJECT.md`'s vision + pillars sections. Fill
+  "North star" from the vision prose and "Design
   pillars" from the pillars list; carry a "Non-goals" section across verbatim if the source has one.
 - **`PHILOSOPHY.md`** ← the project's existing principles doc (`DESIGN.md`, or equivalent). Each
   of its cross-cutting patterns becomes one tenet line. Don't invent tenets that aren't already
   load-bearing in the source — `PHILOSOPHY.md`'s own doctrine (recurrence across ≥2 systems is a
   *candidate* signal, not an automatic promotion) applies here too.
 - **`GLOSSARY.md`** ← seeded empty, then filled two ways: (a) if the brief/`PROJECT.md` already
-  carries its own glossary section (voxelgen has one at §13), fold it in directly; (b) mine
+  carries its own glossary section, fold it in directly; (b) mine
   domain terms out of each subsystem doc as you migrate it in Step 3. Don't leave this seeded-only
   in migrate mode — every migrated system should have contributed at least the terms its contract
   depends on.
@@ -84,8 +84,8 @@ modes — greenfield just has thinner sources.
    template and `design-check.sh` both parse; don't use an older single-key `distilled-through:`
    shape.)
 4. **Not every doc under the subsystem-docs directory is a committed system spec.** Some are
-   explicitly speculative or forward-looking (voxelgen's `docs/design/networking.md` is marked
-   "not committed"). Use judgment: migrate committed subsystems as normal; for a speculative doc,
+   explicitly speculative or forward-looking (e.g. a subsystem doc marked "not committed").
+   Use judgment: migrate committed subsystems as normal; for a speculative doc,
    either skip it and note the decision in the init report for the human to make, or migrate it
    with a contract that's honest about its non-committal status — don't silently launder a
    "maybe someday" doc into a binding contract.
@@ -138,8 +138,8 @@ For each, ask: *is the thing I'd edit a document, or executable code?*
 - **Document** (markdown, a `.ron`/`.yaml` config the linter reads declaratively, a repo-map file
   like `AGENTS.md`) → `init` edits it directly, in the same pass. This is authoring the seed's
   surroundings, not writing code.
-- **Executable code** (a doc-linter's source, a build script, a compiled indexer — voxelgen's
-  `tools/doc-lint` is Rust) → `init` does **not** edit it. Emit a short handoff note instead: what
+- **Executable code** (a doc-linter's source, a build script, a compiled indexer) → `init`
+  does **not** edit it. Emit a short handoff note instead: what
   moved, what the code currently assumes, and what change would make it correct again. Hand that
   note to `/dev` or `/feature` to execute — do not guess at the project's tracker; if the project
   has one (a backlog file, an issue tracker), file it there per that project's convention, and

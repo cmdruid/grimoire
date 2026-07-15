@@ -1,7 +1,7 @@
 # The `/design` doctrine — the `design/` seed methodology
 
-This is the portable methodology every verb links to. It encodes the design spec
-(`voxelgen/dev/plans/2026-07-13-design-system-and-prep-workflow-design.md`) as durable doctrine;
+This is the portable methodology every verb links to. It encodes the founding
+design spec as durable doctrine;
 project-specific content (a project's actual `design/` folder) never lives here.
 
 ## Two temporal kinds of doc

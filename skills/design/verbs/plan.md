@@ -78,8 +78,8 @@ code yet), say so in the sequence rather than inserting a no-op prep step.
    - **`design/` (e.g. `design/plans/<slug>.md`)** — only if the project has no existing
      roadmap/plan convention of its own. Simple, portable default for a fixture or a
      brand-new project.
-   - **The project's own roadmap location** (voxelgen: `dev/plans/<date>-<slug>.md`, indexed from
-     `ROADMAP.md`; another project may use a different convention) — **the recommended default**
+   - **The project's own roadmap location** (`<project: dev/plans/<date>-<slug>.md, indexed
+     from ROADMAP.md>`; conventions vary) — **the recommended default**
      whenever the project already has one. A design-evolution campaign is a plan of forthcoming
      change, exactly the shape `dev/`'s operational history already exists to hold, and landing it
      there keeps it discoverable next to the ordinary feature roadmap instead of forking a second
