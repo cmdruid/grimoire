@@ -119,8 +119,11 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
   retry). **(2) For the few commits that must touch the root** (`/dev debrief`'s captures — `create`
   seeds its plan **on the branch**, and `close` writes nothing), stage **and** commit in **one** tool call scoped with an
   explicit pathspec: `git -C <root> add <p> && git -C <root> commit -m "…" -- <p>` — the `-- <p>`
-  excludes anything that raced into the index. Never `git add -A` / `commit -a`; never leave staged
-  work in the root index across tool calls.
+  excludes anything that raced into the index. A **rename/move** (`git mv`) stages a delete + an
+  add: the commit pathspec must name **both** paths (`git commit -- <old> <new>`) — naming only the
+  new path records the add-half and silently strands the staged deletion (`git status --short`
+  showing `R` is not proof the commit captured it). Never `git add -A` / `commit -a`; never leave
+  staged work in the root index across tool calls.
 - **Commits:** imperative subject; no `Co-Authored-By` trailer.
 - **Gate before landing code, not for nothing.** Run the host's full gate before a trunk commit
   whose **own diff** is **build-relevant**, defined by one simple rule: **any changed path that does

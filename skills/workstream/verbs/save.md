@@ -14,7 +14,10 @@ pre-reset checkpoint. No other verb calls it.
    — since the hand-off does not sit at the tree's root); prune or fix any
    stale pointer it flags, add pointers for files the stream has since touched, and update
    `built-against:` to the current `git -C <worktree> rev-parse --short HEAD` — so the map tracks the
-   code across the stream's life instead of rotting from the create-time snapshot.
+   code across the stream's life instead of rotting from the create-time snapshot. Name cheat-sheet
+   files by **repo-relative path**, never bare basename (`cheatsheet-check` resolves pointers against
+   paths at HEAD, so a bare `foo.ron` flags stale even when the file exists — and repo-relative
+   pointers stay clickable).
    **In `manual` mode**, also set Queue-state `Phase:` to the phase being parked *into* (the one `load`
    will resume), so the pre-reset checkpoint hands the next session the right phase + model.
 2. It is a FILE WRITE, not a commit — the hand-off is ignored (in `info/exclude`) and must never be staged.

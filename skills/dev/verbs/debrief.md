@@ -72,7 +72,10 @@ All paths project-relative. Resolve the project root + real date with `date +%Y-
 **Landing debrief captures (the root may be off-trunk):** these are **shared `dev/` files** —
 cross-cutting captures that must be durable + visible *now*, independent of any stream. `debrief`
 writes *new* content, so it can't ride a ref: it commits to the **root checkout's current branch**,
-which must be your **integration trunk** (`main` today, `dev` later) — never hardcode `main`. The
+which must be your **integration trunk** (`main` today, `dev` later) — never hardcode `main`.
+**This trunk-commit rule is for root-resident debriefs only:** invoked *inside an active
+`/workstream` worktree*, write + commit on the stream's branch instead — the workstream's `ship`
+lands it. The
 trunk-branch guard + the pathspec-atomic commit rule are in the router's *shared discipline*; apply
 them here. `debrief` is a **sweep**, so it makes **one** atomic commit over **every** file it
 touched (the capture verbs it fans out to only *write* — they don't self-commit inside the sweep):
