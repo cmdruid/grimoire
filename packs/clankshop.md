@@ -1,10 +1,10 @@
 ---
-name: dev-suite
+name: clankshop
 description: "The full development loop as a skill pack: route a change, design at seed altitude, plan and build features gate-green, ship them from long-lived workstreams, delegate work without polluting context, keep sessions resumable, and audit both code quality and doc ergonomics."
 skills: audit chiropractor delegate design dev feature handoff mailbox workstream
 ---
 
-# dev-suite — the disciplined development loop
+# clankshop — the disciplined development loop
 
 Nine skills in four layers. The seam contracts between them are the architecture: **`/feature`
 ends at gate-green; `/workstream` lands; `/dev` captures** — no skill crosses another's seam.
@@ -61,5 +61,5 @@ Project *code* → `audit`. The repo's *doc spine* (links, entry door, navigabil
 From the clone root:
 
 ```
-./install.sh --pack dev-suite
+./install.sh --pack clankshop
 ```

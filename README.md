@@ -16,7 +16,7 @@ every installed skill in place:
 git clone https://github.com/cmdruid/grimoire && cd grimoire
 ./install.sh --list              # see what's here
 ./install.sh chiropractor        # install one skill (into ~/.claude/skills)
-./install.sh --pack dev-suite    # install a whole pack
+./install.sh --pack clankshop    # install a whole pack
 ./install.sh --remove handoff    # uninstall
 ```
 
@@ -40,7 +40,7 @@ git clone https://github.com/cmdruid/grimoire && cd grimoire
 
 ## The packs
 
-- **`dev-suite`** (`packs/dev-suite.md`) — all nine skills as one disciplined development loop:
+- **`clankshop`** (`packs/clankshop.md`) — all nine skills as one disciplined development loop:
   the layer map, the seam contracts, and which skill owns what live in the manifest.
 
 ## Authoring conventions
