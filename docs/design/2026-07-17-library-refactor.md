@@ -48,11 +48,41 @@ This refactor resolves all three.
   `architect` (design seed) · `foreman` (workflow glue + change-router) · `chiropractor` (doc spine)
 - **Operators** (consume the seeds, act):
   `feature` (build) · `backlog` (capture inbox) · `workstream` (ship-loop)
-- **Auditor** (owns no layer; emits findings): `audit` (code quality)
+- **Auditor** (owns no layer; emits findings): `auditor` (code quality)
 - **Plumbing** (orchestration/transport): `delegate` · `mailbox` · `handoff`
 - **Composition:** `packs/clankshop.md` (runbook) → drives `/foreman init`
 
 Skill count goes from 9 to 10 (`dev` → `foreman` + `backlog`; `design` → `architect`).
+
+### 3.1 Artifact storage — the `.agents/` root
+
+All committed, agent-tooling-managed project artifacts live under a **single visible-but-namespaced
+root: `.agents/`** — mirroring the global `~/.agents/` tooling home. On-disk:
+
+- `.agents/design/` — the design seed (`architect`)
+- `.agents/dev/` — the development system: the `docs/` glue (`foreman`) + the trackers (`backlog`)
+- (fast-follow, see §8) `.agents/sessions/` (`handoff`) · `.agents/workstreams/` (`workstream`)
+
+**Rationale:**
+- **Ownership by parent, domain by child.** `.agents/` says "agent-tooling-managed" (the `.github/` /
+  `.vscode/` sense, and echoing your own `~/.agents/`); the child (`design`, `dev`) names the domain.
+  The homes stay tool-independent — `.agents/dev/` doesn't care the skill is now `foreman`, and it's a
+  neutral home that `foreman` + `backlog` are both tenants of.
+- **Committed, not hidden-as-disposable.** These are durable source-of-truth (the seed is what code is
+  generated *from*), tracked in git. The dot-prefix means "meta — filter from a direct code read" (the
+  `.github/` sense), **not** "derived/scratch." Genuinely ephemeral scratch stays gitignored *within*
+  the root (e.g. a session hand-off file).
+- **De-clutters root + lowers collision.** One root entry instead of several; `.agents/` collides with
+  far less than a bare `design/` (design assets) or `dev/` (dev scripts).
+- **Not `.artifacts/`:** "artifact" means a *derived/cached snapshot* in this repo's own doctrine, and
+  `artifacts/` widely means CI/build output — both mislabel a source-of-truth seed, and neither
+  signals *agent* ownership. `.agents/` names the owner directly.
+- **Filtering:** the dot-prefix is the passive convention (most tools skip dotfiles); `foreman`'s glue
+  additionally *records and teaches* it — "the codebase is X; `.agents/` is development meta, filter it
+  when reading code directly."
+
+Throughout this spec, "the `design/` seed" and "the `dev/` system" name the **domains**; their on-disk
+homes are `.agents/design/` and `.agents/dev/`.
 
 ---
 
@@ -61,7 +91,7 @@ Skill count goes from 9 to 10 (`dev` → `foreman` + `backlog`; `design` → `ar
 ### 4.1 `foreman` — the integration/doctrine layer (from `dev`'s glue half)
 
 **Identity.** The role the agent inhabits to **stand up, run, and tune the project's development
-"factory."** It owns the project-specific operating manual (`dev/docs/` glue + `AGENTS.md` wiring)
+"factory."** It owns the project-specific operating manual (`.agents/dev/docs/` glue + `AGENTS.md` wiring)
 that teaches an agent how the rest of the library composes *in this repo*, and it grows that manual's
 competence over time. It is the runtime **change-router** and the **self-growing curation loop** —
 not a capture bureau (that is `backlog`).
@@ -69,12 +99,12 @@ not a capture bureau (that is `backlog`).
 **Verbs:**
 | verb | does |
 |---|---|
-| `init` | Consume a runbook (the pack's `clankshop.md` composition, or a **baseline** — introspect installed skills + name fallbacks — when installed à la carte) → instantiate this project's `dev/docs/` + `AGENTS.md` wiring. Stamp the runbook/skill versions built against. Scaffold the unified `dev/` home (including empty tracker files `backlog` will own). |
-| `route` | The change-router — the runtime face of the doctrine. Classify a change (bug/patch/feature/spike/seed-altitude design) per `dev/docs/DEVELOPMENT.md` and dispatch to the lane that owns it. Default (no-arg) verb. |
+| `init` | Consume a runbook (the pack's `clankshop.md` composition, or a **baseline** — introspect installed skills + name fallbacks — when installed à la carte) → instantiate this project's `.agents/dev/docs/` + `AGENTS.md` wiring. Stamp the runbook/skill versions built against. Scaffold the unified `.agents/dev/` home (including empty tracker files `backlog` will own). |
+| `route` | The change-router — the runtime face of the doctrine. Classify a change (bug/patch/feature/spike/seed-altitude design) per `.agents/dev/docs/DEVELOPMENT.md` and dispatch to the lane that owns it. Default (no-arg) verb. |
 | `tune` | (elevated from `upkeep`) The curation loop: drain the **system-relevant slice** of `backlog`'s captured signal into doctrine/workflow/`AGENTS.md` improvements. Low-frequency, high-judgment. This is what makes the system more competent run over run. |
 | `check` | Cheap validator: flag drift between the generated glue and the current runbook / installed skills. Keeps `init`'s snapshot honest as the constellation evolves. |
 
-**Owns:** the *mechanism* (how to instantiate any composition — pack-agnostic), the `dev/docs/`
+**Owns:** the *mechanism* (how to instantiate any composition — pack-agnostic), the `.agents/dev/docs/`
 templates, the `AGENTS.md`-wiring know-how, the change-routing policy, and the staleness-stamping.
 
 **Consumes, does not collect:** reads `backlog`'s signal; never opens its own capture path.
@@ -89,9 +119,9 @@ and downstream skills (`foreman`) sift with judgment later.
 fans out across all capture buckets) · `groom` (dedupe/rank/triage).
 
 **Owns:** the tracker files' *content and format* (`BACKLOG.md`, `ISSUES.md`, `FEEDBACK.md`,
-`bugs/`, `notes/`, `MEMORY.md`), the capture conventions, and the sweep. **Tenant** of the `dev/`
+`bugs/`, `notes/`, `MEMORY.md`), the capture conventions, and the sweep. **Tenant** of the `.agents/dev/`
 home that `foreman init` scaffolds — ownership is by skill-contract, not by subdirectory, so the
-`dev/` tree stays unified and cross-references / the debrief sweep stay intact.
+`.agents/dev/` tree stays unified and cross-references / the debrief sweep stay intact.
 
 **No capture-time classification.** You cannot reliably tell at capture time whether a friction is a
 codebase problem or a factory problem — so `backlog` does not force the cut. `foreman tune` makes it
@@ -99,7 +129,7 @@ later, with judgment.
 
 ### 4.3 `architect` — the design-seed steward (rename of `design`)
 
-**Identity.** The role that owns the `design/` seed's **full lifecycle** — the clean, present-tense,
+**Identity.** The role that owns the `.agents/design/` seed's **full lifecycle** — the clean, present-tense,
 regenerable design that code is a build output of. A **role**-named peer to `foreman` (architect
 decides *what* to build and why; foreman decides *how* it's built and runs the shop), and a
 **steward** in the same family as `chiropractor` (see §5).
@@ -126,13 +156,15 @@ cross-cutting layer against the code, usable even on a legacy repo lacking the l
 
 | skill | layer stewarded | drift axis | bootstraps on a bare repo? |
 |---|---|---|---|
-| `architect` | design seed (`design/`) | design ↔ code | yes — extracts it (Phase 2) |
-| `foreman` | workflow glue (`dev/docs/` + `AGENTS.md`) | glue ↔ installed skills | yes — `init` stands it up |
+| `architect` | design seed (`.agents/design/`) | design ↔ code | yes — extracts it (Phase 2) |
+| `foreman` | workflow glue (`.agents/dev/docs/` + `AGENTS.md`) | glue ↔ installed skills | yes — `init` stands it up |
 | `chiropractor` | doc spine (README/AGENTS/GLOSSARY/INDEX) | docs ↔ code | yes — its whole point |
 
-`audit` is deliberately **not** a steward — it is a pure code-*quality* auditor that owns no layer
-and emits findings. The stewards' shared method is a **future shared-doctrine opportunity** (a common
-`docs/` on "steward a layer, keep it in sync with code"); not acted on in this refactor.
+`auditor` is deliberately **not** a steward — it is a pure code-*quality* auditor that owns no layer
+and emits findings. All four role-named skills (`architect`, `foreman`, `chiropractor`, `auditor`)
+are concrete roles an agent inhabits; three are stewards, one is the pure auditor. The stewards'
+shared method is a **future shared-doctrine opportunity** (a common `docs/` on "steward a layer, keep
+it in sync with code"); not acted on in this refactor.
 
 ---
 
@@ -180,9 +212,10 @@ handles bare installs; the runbook is enrichment.
 
 **Phase 1 — pure structural refactor (this spec's deliverable):**
 1. Split `skills/dev/` → `skills/foreman/` + `skills/backlog/`.
-2. Rename `skills/design/` → `skills/architect/`.
+2. Rename `skills/design/` → `skills/architect/`, and `skills/audit/` → `skills/auditor/`.
 3. Runbook mechanism: promote `clankshop.md`'s body to a consumable runbook; `foreman init` consumes it.
-4. Update `install.sh`, `README.md`, `AGENTS.md`, and all cross-references.
+4. Relocate on-disk homes to the `.agents/` root (`.agents/design/`, `.agents/dev/`) — see §3.1.
+5. Update `install.sh`, `README.md`, `AGENTS.md`, and all cross-references.
 - **Architect's verbs stay unchanged** — no new capability work mixed into the rename.
 
 **Phase 2 — capability expansion (deferred, seams reserved in Phase 1):**
@@ -215,14 +248,16 @@ implementation question — see §10):
 - `templates/{bug-report,feedback,note,task-record}.md`
 - capture/sweep half of `scripts/dev-health.sh` (`debrief-scan`); uses `scoped-commit.sh` (shared)
 
-**Rename:** `skills/design/` → `skills/architect/` (git mv; update frontmatter `name:`, all internal
-references, and `scripts/design-check.sh` naming if desired).
+**Rename:** `skills/design/` → `skills/architect/` and `skills/audit/` → `skills/auditor/` (git mv;
+update frontmatter `name:`, all internal references, and `scripts/design-check.sh` naming if desired).
 
 **Pack/docs:** `packs/clankshop.md` member list (`dev`→`foreman`+`backlog`, `design`→`architect`) +
 body promoted to runbook. `install.sh` / `README.md` / `AGENTS.md` references updated.
 
-**On-disk project artifact directory:** stays **`dev/`** (unified home) — recommended, to avoid
-churning every cross-reference and the debrief sweep. (Open: whether to rename the home; default = no.)
+**On-disk artifact homes:** relocate under the **`.agents/`** root — `.agents/design/` (was `design/`)
+and `.agents/dev/` (was `dev/`), per §3.1. Update every cross-reference and the debrief sweep to the
+new paths; `foreman`'s glue records the root so agents read the recorded location, not a hardcoded one.
+`.agents/sessions/` (`handoff`) and `.agents/workstreams/` (`workstream`) follow as a fast-follow (§8).
 
 ---
 
@@ -240,8 +275,9 @@ churning every cross-reference and the debrief sweep. (Open: whether to rename t
 3. **`route` as `foreman`'s no-arg default.** Confirm `/foreman` (no arg) = `route`, matching today's
    `/dev`.
 4. **Migration for existing installs.** These are symlink-installed, user-namespaced skills; renames
-   (`dev`→two, `design`→`architect`) break existing symlinks. `install.sh` `remove`/`list` must handle
-   the transition; document the upgrade path.
+   (`dev`→two, `design`→`architect`, `audit`→`auditor`) break existing symlinks, and the on-disk
+   `design/`/`dev/` homes relocate under `.agents/`. `install.sh` `remove`/`list` must handle the
+   skill transition; document both the skill upgrade path and the artifact-home move.
 5. **Runbook file name / location** within the mechanism (e.g. keep `clankshop.md` as the runbook vs. a
    dedicated `RUNBOOK.md` the pack points to). Current lean: the pack manifest *is* the runbook.
 6. **Capture-taxonomy ownership.** The capture taxonomy (the buckets + the one-home rule) is
@@ -263,8 +299,15 @@ churning every cross-reference and the debrief sweep. (Open: whether to rename t
   *what/why*, foreman = *how*. Better than the artifact+role mismatch of `blueprint`+`foreman`.
 - **`blueprint` — dropped entirely.** Considered as a split-off design↔code conformance auditor;
   removed by YAGNI once we saw `architect`-as-one-lifecycle-skill is the true `chiropractor` parallel.
+- **`auditor`** (rename of `audit`). Turns the odd-one-out verb-name into a role-noun, completing the
+  **four concrete agent roles** an agent inhabits: **Architect · Foreman · Chiropractor · Auditor**.
+  The rename is naming-only — `auditor` stays the pure code-quality auditor (owns no layer; not a
+  steward). Verbs live under it as before (`deploy`/`metrics`/`check`).
 - **`backlog`** — an artifact-name (like `mailbox`), fine alongside the role-names; the library
   already mixes both registers.
+- **`.agents/` storage root** — see §3.1: ownership-by-parent / domain-by-child, mirrors `~/.agents/`,
+  chosen over `.artifacts/` (which mislabels source-of-truth as derived output) and over bare
+  `.design`/`.dev` (unclear ownership + root clutter).
 
 ---
 
@@ -273,5 +316,9 @@ churning every cross-reference and the debrief sweep. (Open: whether to rename t
 - No expansion of `architect`'s capabilities in Phase 1 (extraction, drift-check, ralph-loop are all
   Phase 2).
 - No new `blueprint` skill (dropped).
-- No rename of the on-disk `dev/` project directory (default; revisit only if a reason surfaces).
+- No per-project *configurability* of the `.agents/` root beyond `foreman` recording where it placed
+  things — a fixed default + a recorded pointer, not a config system (per the "simplest portable rule"
+  principle).
+- No migration of `.sessions/`/`.workstreams/` under `.agents/` in Phase 1 (fast-follow; verify against
+  the `handoff`/`workstream` skills first).
 - No consolidation of the stewards' shared method into common doctrine yet (future opportunity).
