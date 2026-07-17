@@ -7,6 +7,15 @@ into any project and an agent can **reconstruct the whole system**, or **borrow 
 It is deliberately project-agnostic: anything specific to a host project (its tech stack, its
 quality gate, its sacred invariants) appears here as a **slot you fill**, marked `<like this>`.
 
+**How `/foreman init` uses this file (mechanism vs. composition).** This blueprint is the
+**mechanism** — *how* to instantiate the glue, pack-agnostic; it never names a specific companion
+skill or pack. *Which* skills to wire, and the **cross-skill seams** that bind them, are the
+**composition**, and they come from **outside** this file: from a **pack runbook** (e.g.
+`packs/clankshop.md`) when one drives `init`, or, on a bare install, from **baseline** introspection
+of the installed skills. `/foreman init` reads the composition, then instantiates the system below.
+The seams live *between* skills, in no single skill's frontmatter — so only a runbook can supply
+them; baseline wires the members but not the seams. (See `verbs/init.md` Step 0.)
+
 _A distillation of the bundled `docs/` + `templates/` -- those files are the source of truth for
 their own content; this blueprint carries the structure, contracts, and playbook around them.
 When they change structurally, update this file (see §13 *Keeping this file current*)._
