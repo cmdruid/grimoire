@@ -1,7 +1,7 @@
 # Library refactor — sharper seams: `dev` split, `design`→`architect`, the runbook mechanism
 
 **Date:** 2026-07-17
-**Status:** Design agreed; Phase 1 not yet implemented.
+**Status:** Phase 1 implemented (2026-07-17). Phase 2 deferred.
 **Scope:** The grimoire skill library (`skills/`, `packs/`). A structural refactor to make each
 skill independent, single-identity, and joined to its neighbors by named seams.
 

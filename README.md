@@ -26,18 +26,40 @@ git clone https://github.com/cmdruid/grimoire && cd grimoire
 
 ## The skills
 
+Four skills are **concrete agent roles** — `architect`, `foreman`, `chiropractor`, `auditor`. Three
+of those four are **stewards**: each stands up, evaluates, maintains, and drift-corrects one
+cross-cutting layer against the code (`architect` the design seed, `foreman` the workflow glue,
+`chiropractor` the doc spine) — even bootstrapping that layer on a repo that doesn't have it yet.
+`auditor` is the pure code-quality role: it owns no layer, only emits findings. The remaining six
+group as **operators** (`feature`, `backlog`, `workstream` — consume the stewards' seeds and act)
+and **plumbing** (`delegate`, `mailbox`, `handoff` — orchestration/transport used throughout).
+
 | skill | what it does |
 |---|---|
-| `architect` | the design-system engine: a project's regenerable `design/` seed and its verbs |
+| `architect` | the design-system engine: a project's regenerable `.agents/design/` seed and its verbs |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
 | `backlog` | the capture desk: file follow-ups to trackers, sweep finished work, groom them |
 | `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `feature` | the planning spine: brainstorm → design → plan → build, plus independent review |
-| `foreman` | the dev-workflow hub: route changes, deploy/operate a `dev/` docs system |
+| `foreman` | the dev-workflow hub: route changes, deploy/operate a `.agents/dev/` docs system |
 | `handoff` | save/resume a session as a self-contained hand-off any agent can pick up |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
+
+`foreman` and `backlog` split what used to be one skill (`dev`): `foreman` kept the router +
+system-maintainer half, `backlog` took the capture-inbox half — one collection front-door instead
+of a shared one. `architect` is a rename of `design` (verbs unchanged); `auditor` is a rename of
+`audit` (see *Storage convention* below and `docs/design/2026-07-17-library-refactor.md` for the
+full rationale).
+
+### Storage convention: `.agents/`
+
+Committed, agent-tooling-managed project artifacts live under one visible-but-namespaced root,
+`.agents/` — durable homes, not scratch, filtered from a direct code read the way `.github/` is:
+
+- `.agents/design/` — the design seed (`architect`)
+- `.agents/dev/` — the development system: the `docs/` glue (`foreman`) + the trackers (`backlog`)
 
 ## The packs
 

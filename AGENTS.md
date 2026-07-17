@@ -8,6 +8,13 @@ This file captures the **design philosophy** for the tools, scripts, and skills 
 it whenever you add or revise one. It is distilled from practice; the `workstream` skill (its
 `scripts/workstream-git.sh` + *Helper scripts* section) is the worked reference.
 
+Four skills are concrete agent **roles** rather than plumbing: `architect`, `foreman`, and
+`chiropractor` are **stewards** — each stands up, evaluates, maintains, and drift-corrects one
+cross-cutting layer against the code; `auditor` owns no layer and only emits findings. The rest
+group as operators (`feature`, `backlog`, `workstream`) and plumbing (`delegate`, `mailbox`,
+`handoff`). See `README.md` for the full inventory and `docs/design/2026-07-17-library-refactor.md`
+for the refactor that produced this shape.
+
 ## Design philosophy
 
 - **Scripts compute facts; agents decide.** Push mechanical, deterministic state-analysis into small
