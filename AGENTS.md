@@ -47,7 +47,7 @@ it whenever you add or revise one. It is distilled from practice; the `workstrea
 
 - **Skills are living artifacts — capture the friction of using them.** Strong, concrete feedback about
   a skill you just used (a friction, a gap, a win worth keeping) is a signal that *improves* the skill,
-  not noise to absorb. Surface it at `/dev debrief` (and via a delegate's byproduct return), and
+  not noise to absorb. Surface it at `/backlog debrief` (and via a delegate's byproduct return), and
   route it to the **skills' home feedback channel** — tagged by skill, never a consuming project's
   tracker, where it strands and the authors never see it. For this library that channel is **GitHub
   issues** (an installation may override it with its own collection file — see `README.md`). The

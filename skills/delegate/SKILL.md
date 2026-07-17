@@ -112,14 +112,14 @@ Every delegation returns **two** compact things -- never the raw exploration:
 
 1. **Deliverable** -- a handle + one-line summary (mailbox slot), or a bounded summary (inline). Bulk
    artifacts travel as a **path** you apply, never re-paid through context.
-2. **Byproducts block** -- a small, structured list in `/dev debrief`'s taxonomy, surfaced by the
+2. **Byproducts block** -- a small, structured list in `/backlog debrief`'s taxonomy, surfaced by the
    delegate (it does a mini-debrief of its own slice):
    - follow-up work → BACKLOG · defect noticed → bugs · dev-experience friction → ISSUES · qualitative
      note → FEEDBACK · **feedback about a skill itself → the skills' own `FEEDBACK.md`, tagged by skill**
      (not a project tracker). **Empty is fine and explicit.**
 
 **Stash returned byproducts into your running capture notes immediately** (as you would your own
-discovered follow-ups) so they survive context compaction to the end-of-work `/dev debrief`. They land
+discovered follow-ups) so they survive context compaction to the end-of-work `/backlog debrief`. They land
 back in your context by contract, so debrief needs no special handling.
 
 **Weak model = weak detector.** A cheap delegate spots fewer byproducts than you would. "Report anything

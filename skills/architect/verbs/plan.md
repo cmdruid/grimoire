@@ -90,7 +90,7 @@ code yet), say so in the sequence rather than inserting a no-op prep step.
 
 6. **Stop at the campaign doc — this verb never executes the sequence.** `plan` doesn't invoke
    `/architect prep`, doesn't invoke `/feature`, and doesn't touch code. Handing the campaign doc to
-   the human (or to `/dev`/`/workstream` as the project's own orchestration layer) to actually walk
+   the human (or to `/foreman`/`/workstream` as the project's own orchestration layer) to actually walk
    the sequence is the next step, and it's outside this verb.
 
 ## Report

@@ -216,13 +216,13 @@ hand-off's *Phase model map*). The three phases, each ending `save -> park -> re
 > `dev/plans/`. Then **save** (record `Phase: build`) -> **park**: "Plan ready. Switch to <build-model>
 > (`/model <m>`), `/clear`, `/workstream load <stream>`."
 >
-> **BUILD** (build-model) — `/feature build <plan>` to gate-green, then `/dev debrief` #1 (the
+> **BUILD** (build-model) — `/feature build <plan>` to gate-green, then `/backlog debrief` #1 (the
 > feature's follow-ups). Then act on *Ship cadence*: **at a landing point**, **save** (`Phase: ship`)
 > -> park for the ship-model swap. **Between landing points**, **save** (`Phase: plan` for the *next*
 > feature) -> park for the plan-model swap. (Completed features still accumulate on the branch; only
 > SHIP lands.)
 >
-> **SHIP** (ship-model) — `/workstream ship` (land + advance the queue), *(if eventful)* `/dev debrief`
+> **SHIP** (ship-model) — `/workstream ship` (land + advance the queue), *(if eventful)* `/backlog debrief`
 > #2. Under a deferred *Ship cadence* this one SHIP phase lands the **whole accumulated batch** (every
 > feature built since the last ship), not just one. Then **save** (`Phase: plan`) -> park for the
 > plan-model swap -> reset into the next feature's PLAN.

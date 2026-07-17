@@ -1,16 +1,17 @@
 ---
 name: clankshop
 description: "The full development loop as a skill pack: route a change, design at seed altitude, plan and build features gate-green, ship them from long-lived workstreams, delegate work without polluting context, keep sessions resumable, and audit both code quality and doc ergonomics."
-skills: architect auditor chiropractor delegate dev feature handoff mailbox workstream
+skills: architect auditor backlog chiropractor delegate feature foreman handoff mailbox workstream
 ---
 
 # clankshop — the disciplined development loop
 
-Nine skills in four layers. The seam contracts between them are the architecture: **`/feature`
-ends at gate-green; `/workstream` lands; `/dev` captures** — no skill crosses another's seam.
+Ten skills in four layers. The seam contracts between them are the architecture: **`/feature`
+ends at gate-green; `/workstream` lands; `/backlog` captures** — no skill crosses another's seam.
 
 ```
-  workflow      dev ─────── the hub/router: classify a change, deploy/operate the dev/ system
+  workflow      foreman ──── the hub/router: classify a change, deploy/operate the dev/ system
+                backlog ──── the capture desk: file follow-ups to trackers, sweep finished work
   engines       architect ── the design-system engine: maintains a project's regenerable `design/` seed
                 feature ─── the planning spine: brainstorm → design → plan → build (+ review)
                 workstream ─ the loop orchestrator: one worktree, one stream, ship after ship
@@ -26,15 +27,16 @@ ends at gate-green; `/workstream` lands; `/dev` captures** — no skill crosses 
 
 ## The skills
 
-- **`dev`** — the dev-workflow umbrella. A thin router + verbs (`route` default, `init`, `bug`,
-  `backlog`, `issue`, `feedback`, `debrief`, `upkeep`). Deploys and operates a project's `dev/`
-  development-docs system.
+- **`foreman`** — the dev-workflow hub. A thin router + verbs (`route` default, `init`, `tune`,
+  `check`). Deploys and operates a project's `dev/` development-docs system.
+- **`backlog`** — the capture desk. Files each follow-up into its tracker (`bug`, `backlog`,
+  `issue`, `feedback`), sweeps finished work (`debrief`), and grooms the trackers (`groom`).
 - **`architect`** — the design-system engine: maintains a project's regenerable `design/` seed;
   verbs `init`/`brainstorm`/`plan`/`prep`/`distill`/`check`. Seed-altitude peer to `feature`.
 - **`feature`** — the planning spine as verbs: `brainstorm | design | plan | build`, plus the
   cross-cutting `review`. Never lands or debriefs.
 - **`workstream`** — drive a long-lived stream in a git worktree (create → save/load → sync →
-  ship → recycle → close). Orchestrates `feature` (build) + `dev debrief` (capture) + `handoff`
+  ship → recycle → close). Orchestrates `feature` (build) + `/backlog debrief` (capture) + `handoff`
   disciplines; owns landing and the reset ritual.
 - **`delegate`** — the delegation front-door: recognize delegable work and route it (inline
   sub-agent / mailbox / external executor / parallel fan-out / isolated worktree) for speed, token
@@ -54,7 +56,7 @@ ends at gate-green; `/workstream` lands; `/dev` captures** — no skill crosses 
 
 Project *code* → `auditor`. The repo's *doc spine* (links, entry door, navigability) →
 `chiropractor`. A deployed *dev/ docs system's* health (trackers, drains, staleness) →
-`dev upkeep`. Three domains, three tools — they don't overlap.
+`/foreman tune`. Three domains, three tools — they don't overlap.
 
 ## Install
 

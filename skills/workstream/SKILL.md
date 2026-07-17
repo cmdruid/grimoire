@@ -35,7 +35,7 @@ is the harm this rule exists to prevent. Two consequences follow, keyed on *what
 
 - **You never spawn a stream for your own work.** When in-stream work surfaces something that *would
   be* its own stream — a tangent, a debug bug, the next roadmap track — you **capture or surface it;
-  you never stand it up to drive**: a **defect** → `/dev bug`; **feature work** → `dev/BACKLOG.md`;
+  you never stand it up to drive**: a **defect** → `/backlog bug`; **feature work** → `dev/BACKLOG.md`;
   the **next track / a new stream** → name it at a seam and hand it to the human/coordinator. Plain
   `create` *enters the loop*, so standing up a stream to drive is a **coordinator-only**,
   trunk-resident action — never yours. Needing isolation for a sub-task of your *own* feature is a
@@ -116,7 +116,7 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
   W1). Two rules: **(1) Don't hand-commit a stream's own records to the root at all** — the feature's
   `dev/done` entry, plan-archive, and roadmap-ledger row commit **on the branch** and reach the trunk
   via the **ff-merge**, the single root mutation (and `--ff-only` fails safe: rejected → re-`sync` +
-  retry). **(2) For the few commits that must touch the root** (`/dev debrief`'s captures — `create`
+  retry). **(2) For the few commits that must touch the root** (`/backlog debrief`'s captures — `create`
   seeds its plan **on the branch**, and `close` writes nothing), stage **and** commit in **one** tool call scoped with an
   explicit pathspec: `git -C <root> add <p> && git -C <root> commit -m "…" -- <p>` — the `-- <p>`
   excludes anything that raced into the index. A **rename/move** (`git mv`) stages a delete + an

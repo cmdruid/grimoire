@@ -120,7 +120,7 @@ define it by the altitude it operates at.
 > from). *Changing the foundation → `/architect`. Building on it → `/feature`.*
 
 `/architect`'s own non-seed wiring (for example, updating a host's doc-linter when a folder moves) is
-a **handoff to `/dev` or `/feature`**, not done by `/architect` itself — that is code/operational
+a **handoff to `/foreman` or `/feature`**, not done by `/architect` itself — that is code/operational
 work, not seed authoring.
 
 ## Sufficiency, and its circularity

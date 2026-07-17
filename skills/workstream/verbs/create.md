@@ -13,7 +13,7 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
 > - **Plain `create` (create-and-drive) → STOP.** `create` ends by *entering the loop*, and driving a
 >   second stream from this context splits your loop; standing up a stream to drive is the
 >   **coordinator's** job (root-resident), not yours. This holds **even if the human asks you directly**
->   to "also" run the stream here. Instead **capture** the work (`/dev bug` or `dev/BACKLOG.md`) or
+>   to "also" run the stream here. Instead **capture** the work (`/backlog bug` or `dev/BACKLOG.md`) or
 >   **surface** it at a seam. Read the "all work is a workstream" doctrine correctly: it means *the
 >   coordinator gives each body of work its own stream*, **not** *you spawn-and-drive one mid-loop*. And
 >   needing **isolation** for a *sub-task of your own feature* is not a new workstream either — that is a

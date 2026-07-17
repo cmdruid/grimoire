@@ -141,7 +141,7 @@ For each, ask: *is the thing I'd edit a document, or executable code?*
 - **Executable code** (a doc-linter's source, a build script, a compiled indexer) → `init`
   does **not** edit it. Emit a short handoff note instead: what
   moved, what the code currently assumes, and what change would make it correct again. Hand that
-  note to `/dev` or `/feature` to execute — do not guess at the project's tracker; if the project
+  note to `/foreman` or `/feature` to execute — do not guess at the project's tracker; if the project
   has one (a backlog file, an issue tracker), file it there per that project's convention, and
   otherwise surface the note directly in `init`'s final report so the human can route it.
 

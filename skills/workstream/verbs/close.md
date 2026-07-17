@@ -5,7 +5,7 @@ no record.** The stream's durable trail already exists: every shipped feature wr
 `dev/done/` record at `ship`, and follow-ups were already routed by the reset ritual's `debrief`. Do
 **not** re-capture at close — no close `dev/done/` record, no FEEDBACK/ISSUES/notes sweep, no
 `<target>` advance. (If a close is *genuinely* eventful and you have unrouted learnings, run
-`/dev debrief` explicitly **before** closing — the user's call, never the default path.) The common case
+`/backlog debrief` explicitly **before** closing — the user's call, never the default path.) The common case
 (queue exhausted, nothing unshipped) is **three git commands** and no token-heavy bookkeeping.
 
 `<target>` = the workstream's `integration-target` (Coordinates).

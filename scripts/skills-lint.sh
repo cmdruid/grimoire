@@ -15,7 +15,7 @@
 #   2. Intra-skill refs: backticked scripts/|templates/|verbs/|references/|rules/
 #      paths named in a skill's .md files resolve inside that skill dir (FAIL).
 #      (docs/ is excluded -- verbs use it host-relative; check 3 covers bundled docs.)
-#   3. dev BOOTSTRAP <-> bundle: every `name.md` the dev BOOTSTRAP's docs/ or
+#   3. foreman BOOTSTRAP <-> bundle: every `name.md` the foreman BOOTSTRAP's docs/ or
 #      templates/ manifest lines name exists in the bundle (FAIL).
 #   4. Consumption wiring: every skills/<name> has a ~/.claude/skills/<name>
 #      symlink pointing at it (FAIL) and a README mention (WARN).
@@ -75,14 +75,14 @@ while IFS= read -r line; do
 done < <(awk '$1=="MISS"{print}' /tmp/skills-lint-refs.$$)
 rm -f /tmp/skills-lint-refs.$$
 
-# ---- 3. dev BOOTSTRAP manifest vs bundle -------------------------------------
-bs="$skills_dir/dev/BOOTSTRAP.md"
+# ---- 3. foreman BOOTSTRAP manifest vs bundle ---------------------------------
+bs="$skills_dir/foreman/BOOTSTRAP.md"
 if [ -f "$bs" ]; then
   # docs/ manifest rows look like: "      NAME.md    -- ..."; generic <content doc>
   # rows and host-authored slots are skipped (they ship no bundled file).
   while IFS= read -r doc; do
     case "$doc" in ARCHITECTURE.md|GOTCHAS.md|DIAGNOSTICS.md|PERFORMANCE.md|SYNC.md) continue ;; esac
-    [ -f "$skills_dir/dev/docs/$doc" ] || fail "dev: BOOTSTRAP manifest names docs/$doc but the bundle lacks it"
+    [ -f "$skills_dir/foreman/docs/$doc" ] || fail "foreman: BOOTSTRAP manifest names docs/$doc but the bundle lacks it"
   done < <(sed -n 's/^      \([A-Z]*\.md\).*/\1/p' "$bs")
 fi
 
@@ -125,7 +125,7 @@ fi
 
 # ---- 6. cross-skill slash refs ----------------------------------------------
 # `/name` tokens in skill prose should name a real skill dir or a known generic.
-known_generic="code-review|model|clear|loop|dev debrief|dev bug|dev backlog|dev issue|dev feedback|dev init|dev upkeep"
+known_generic="code-review|model|clear|loop"
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   find "$sk" -name '*.md' -print0 | while IFS= read -r -d '' md; do

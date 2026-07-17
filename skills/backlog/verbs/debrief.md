@@ -107,7 +107,7 @@ touched (the capture verbs it fans out to only *write* — they don't self-commi
      suggested fix), continuing the file's numbering scheme.
    - **FEEDBACK** → the `/backlog feedback` convention: a dated entry (`templates/feedback.md`), noting
      whether it's praise, a concern, or a directional idea, and where it might lead.
-   - **Skill feedback** → if the strong feedback is about a *workflow skill you used* (`/dev`,
+   - **Skill feedback** → if the strong feedback is about a *workflow skill you used* (`/foreman`,
      `/feature`, `/workstream`, `/delegate`, …) rather than this project, route it to the **skills' own
      `FEEDBACK.md`** (at their install root, tagged by skill), **not** `dev/FEEDBACK.md` — that's where
      it can fine-tune the skill. Strong + concrete only. (Portable: name "the skills' feedback channel"

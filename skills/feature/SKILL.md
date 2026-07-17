@@ -1,12 +1,12 @@
 ---
 name: feature
-description: "Execute the planning spine as verbs -- `/feature brainstorm | design | plan | build`, plus the cross-cutting `review` (an independent ground-truthed verdict on an existing design/plan/roadmap/ADR). Use when the user runs `/feature ...`, or asks to brainstorm / design / plan / build / review a feature or its design, plan, or roadmap. Turns an idea into a validated approach, an argued spec, a task-by-task plan, and tested code at gate-green, tuned to the host's gate and templates. The four stages are primitives an orchestrator (you, `/dev`, or `/workstream`) sequences. Capture stays `/dev debrief`, landing stays `/workstream` -- `/feature` never debriefs, ships, or lands. For a one-line patch, skip it (fix on the trunk)."
+description: "Execute the planning spine as verbs -- `/feature brainstorm | design | plan | build`, plus the cross-cutting `review` (an independent ground-truthed verdict on an existing design/plan/roadmap/ADR). Use when the user runs `/feature ...`, or asks to brainstorm / design / plan / build / review a feature or its design, plan, or roadmap. Turns an idea into a validated approach, an argued spec, a task-by-task plan, and tested code at gate-green, tuned to the host's gate and templates. The four stages are primitives an orchestrator (you, `/foreman`, or `/workstream`) sequences. Capture stays `/backlog debrief`, landing stays `/workstream` -- `/feature` never debriefs, ships, or lands. For a one-line patch, skip it (fix on the trunk)."
 ---
 
 # feature -- the executable planning spine
 
 `/feature <verb> [args]` makes the host's `dev/docs/PLANNING.md` spine **executable**. Its four core verbs ARE
-the spine's plan-and-build stages (1-4); stage 5 (debrief) stays the separate `/dev debrief` skill. A
+the spine's plan-and-build stages (1-4); stage 5 (debrief) stays the separate `/backlog debrief` skill. A
 fifth verb, `review`, is **cross-cutting** -- an independent ground-truthed critique of an artifact any
 stage produced, callable at any point. Each verb
 distills the planning discipline it needs into a compact checklist, pointed at the host's gate
@@ -24,7 +24,7 @@ settings change, no precedence question.
   <design-file>`, or `/feature review <doc>`, by hand works exactly as when a flow calls it).
 - **The flow** is the orchestration that sequences verbs and owns the seams *around* planning --
   landing the work and capturing what it surfaced. The orchestrator is the user (standalone), the
-  `/dev` router, or a `/workstream` loop. **`/feature` itself never lands or debriefs** (see
+  `/foreman` router, or a `/workstream` loop. **`/feature` itself never lands or debriefs** (see
   *Composition*).
 
 ## The verbs (the spine, executable)
@@ -215,7 +215,7 @@ debrief -- the orchestrator owns both (see *Composition*).
 Review a spine artifact someone already wrote -- a design, an implementation plan, a roadmap, or an
 ADR -- as an **independent** second set of eyes, distinct from the *self*-review baked into `design`
 and `plan` (self-review is the author checking their own work; this verb is not the author). The
-**cross-cutting** verb: callable any time on any artifact, by any orchestrator (you, `/dev`, a
+**cross-cutting** verb: callable any time on any artifact, by any orchestrator (you, `/foreman`, a
 `/workstream`, or a coordinator reviewing another stream's doc). Like `brainstorm` it is
 **artifact-free** -- output is findings + a verdict in context, no file written; like every verb it
 never edits, lands, or debriefs. It reviews **documents, not diffs** -- a code change is `/code-review`.
@@ -269,11 +269,11 @@ in-context verdict, adding nothing to the chain (artifact-free, like `brainstorm
 them. **`/feature` never debriefs, ships, or lands.**
 
 - **Standalone** (a one-off feature) -> the user runs `brainstorm -> design -> plan -> build`, then
-  lands the work and runs **`/dev debrief`** at the done-when (PLANNING.md -> *When a plan completes*).
+  lands the work and runs **`/backlog debrief`** at the done-when (PLANNING.md -> *When a plan completes*).
 - **Inside `/workstream`** -> the stream calls `/feature` per queue item; `build` stops at gate-green
-  and **hands back**. `/workstream` owns the **reset ritual** (`/dev debrief` #1 -> `ship` -> *(if the
-  ship was eventful)* `/dev debrief` #2 -> `save` -> reset). `/feature` initiates none of it.
-- **`/dev`** (router) -> for a feature, dispatches into `/feature` at the right verb (start at
+  and **hands back**. `/workstream` owns the **reset ritual** (`/backlog debrief` #1 -> `ship` -> *(if the
+  ship was eventful)* `/backlog debrief` #2 -> `save` -> reset). `/feature` initiates none of it.
+- **`/foreman`** (router) -> for a feature, dispatches into `/feature` at the right verb (start at
   `brainstorm`, or jump to `design`/`plan` if an approach/spec already exists).
 - **`review`** (cross-cutting) -> any orchestrator can call it on an artifact at any point: after
   `design` as an independent gate before `plan`, after `plan` before `build`, or standalone (a

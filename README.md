@@ -30,17 +30,18 @@ git clone https://github.com/cmdruid/grimoire && cd grimoire
 |---|---|
 | `architect` | the design-system engine: a project's regenerable `design/` seed and its verbs |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
+| `backlog` | the capture desk: file follow-ups to trackers, sweep finished work, groom them |
 | `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
-| `dev` | the dev-workflow umbrella: route changes, deploy/operate a `dev/` docs system |
 | `feature` | the planning spine: brainstorm → design → plan → build, plus independent review |
+| `foreman` | the dev-workflow hub: route changes, deploy/operate a `dev/` docs system |
 | `handoff` | save/resume a session as a self-contained hand-off any agent can pick up |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
 ## The packs
 
-- **`clankshop`** (`packs/clankshop.md`) — all nine skills as one disciplined development loop:
+- **`clankshop`** (`packs/clankshop.md`) — all ten skills as one disciplined development loop:
   the layer map, the seam contracts, and which skill owns what live in the manifest.
 
 ## Authoring conventions
