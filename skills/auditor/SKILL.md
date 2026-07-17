@@ -3,7 +3,7 @@ name: auditor
 description: Deploy and operate a code-quality audit framework via a project's .agents/dev/audit/ system. Calibrate against the host's .agents/dev/audit/GUIDE.md, scope by risk-weight, run metrics.sh, score targets against the rules/ dimensions, log raw output, record findings, and drain actionable findings to the host's trackers. Use when the user runs `/auditor`, asks to audit/quality-check the codebase or a module, or to stand up the audit framework on a project that lacks one. `/auditor deploy` bootstraps .agents/dev/audit/ from the bundled BOOTSTRAP.md; `/auditor metrics` runs metrics.sh; `/auditor check` runs the invariant gate. This audits PROJECT CODE -- distinct from any .agents/dev/ docs-system maintenance sweep.
 ---
 
-# Audit skill
+# auditor — the code-quality audit driver
 
 Drive a **code-quality audit** over a project's own code using a `.agents/dev/audit/` system.
 This skill is a **thin driver**: the methodology, rubric, scoring rules, and severity

@@ -6,7 +6,7 @@ for the durability gradient and the two-tier spec this validates against.
 ## Run it
 
 ```bash
-bash <skill-dir>/scripts/architect-check.sh <project>/design [<repo-root>]
+bash <skill-dir>/scripts/architect-check.sh <project>/.agents/design [<repo-root>]
 ```
 
 - `<repo-root>` (default `<design-dir>/..`) is where `src/…:NN` reference-arch pointers resolve

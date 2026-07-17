@@ -152,7 +152,7 @@ fix the one-liner" is exactly the boundary this step exists to hold.
 ## 6. Run `check` — the completion gate
 
 ```bash
-bash <skill-dir>/scripts/architect-check.sh <project>/design [<repo-root>]
+bash <skill-dir>/scripts/architect-check.sh <project>/.agents/design [<repo-root>]
 ```
 
 `init` is not done until:
