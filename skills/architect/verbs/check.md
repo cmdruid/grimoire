@@ -1,4 +1,4 @@
-# `/design check` — validate seed health
+# `/architect check` — validate seed health
 
 Runs the read-only fact-computing script, then **you** judge the facts. See `docs/DOCTRINE.md`
 for the durability gradient and the two-tier spec this validates against.
@@ -6,7 +6,7 @@ for the durability gradient and the two-tier spec this validates against.
 ## Run it
 
 ```bash
-bash <skill-dir>/scripts/design-check.sh <project>/design [<repo-root>]
+bash <skill-dir>/scripts/architect-check.sh <project>/design [<repo-root>]
 ```
 
 - `<repo-root>` (default `<design-dir>/..`) is where `src/…:NN` reference-arch pointers resolve
@@ -35,7 +35,7 @@ Turn each into a judgment, don't auto-fix:
   Drift means the reference-arch snapshot rotted since it was last distilled; a placeholder
   acceptance means there is no concrete gate a rebuild could pass — both need a real editorial
   pass, not a mechanical fill-in.
-- **A stale `baseline_date:<sys>` relative to the project's current ADRs → recommend `/design
+- **A stale `baseline_date:<sys>` relative to the project's current ADRs → recommend `/architect
   distill`** for that system, rather than hand-patching the reference-arch tier yourself.
 - **`spine_missing` / `contract:<sys>=false` → these are the hard blockers** (the exit-1
   conditions): a rebuild has no constitution, or no binding contract, to work from.

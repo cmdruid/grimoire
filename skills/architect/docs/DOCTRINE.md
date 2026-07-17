@@ -1,4 +1,4 @@
-# The `/design` doctrine — the `design/` seed methodology
+# The `/architect` doctrine — the `design/` seed methodology
 
 This is the portable methodology every verb links to. It encodes the founding
 design spec as durable doctrine;
@@ -34,7 +34,7 @@ deep is disposable.
 MOST DURABLE   design/VISION.md        — what the product IS (north star)
    ▲           design/PHILOSOPHY.md    — core ideals ("seeds are sacred")     required spine
    │           design/GLOSSARY.md      — shared vocabulary                    (presence-checked
-   │           design/MAP.md           — system index + seam graph             by /design check)
+   │           design/MAP.md           — system index + seam graph             by /architect check)
    │           design/src/<system>.md  · CONTRACT tier    — binding invariants, behavior, seams
    ▼                                    · REFERENCE-ARCH  — current shape, DISPOSABLE (a snapshot)
 LEAST DURABLE
@@ -42,7 +42,7 @@ LEAST DURABLE
 
 - **Spine at `design/` root** is the "constitution" that *governs* the compile (like a repo's
   README/LICENSE/config). It is not itself compiled to code, and it is **required, not
-  optional** — `/design check` fails if `VISION`, `PHILOSOPHY`, `GLOSSARY`, or `MAP` is missing.
+  optional** — `/architect check` fails if `VISION`, `PHILOSOPHY`, `GLOSSARY`, or `MAP` is missing.
   The spine is what makes radical change *safe*: you can rewrite everything about one system
   without renegotiating a durable tenet like "seeds are sacred."
 - **`design/src/`** holds the compilable source specs, roughly 1:1 with code units. The compile
@@ -64,7 +64,7 @@ Each `design/src/<system>.md` carries two tiers with different authority:
 - **REFERENCE-ARCHITECTURE (disposable).** The current shape of the implementation — explicitly
   stamped "current best guess; a rebuild MAY discard this." Kept **pointer-heavy**
   (`src/…:line`, never pasted code) so it rots gracefully instead of silently, and a validator
-  (`/design check`) can catch drift between the pointers and the code they point at.
+  (`/architect check`) can catch drift between the pointers and the code they point at.
   Baseline-stamped (`distilled_through_adr`, `distilled_through_commit`, `distilled_through_date`)
   so `distill` can work incrementally and `check` can compute distill-debt from clean,
   machine-parseable facts.
@@ -84,7 +84,7 @@ seams included — in the contract tier, where a rebuild cannot accidentally ski
 This is made **structural**, not a rule to police, by running the clear and the build as **two
 independent `/feature` executions**:
 
-- A **clear run** (`/feature plan`+`build` executing a `/design prep` brief) removes the retired
+- A **clear run** (`/feature plan`+`build` executing a `/architect prep` brief) removes the retired
   code and/or exposes the new boundary. This is the *only* run that ever sees the retired code —
   it must, in order to remove it.
 - A **build run** (`/feature plan`+`build` executing the feature design plan) rebuilds against the
@@ -95,32 +95,32 @@ independent `/feature` executions**:
 Because the two runs are separate invocations, "deletion is context hygiene" is not something an
 agent has to remember to uphold — it *falls out* of running two independent executions instead of
 one folded reasoning pass. That separation is a hard requirement on `/feature`'s execution
-(never fold clear+build into one pass); `/design`'s job ends once the prep brief exists. (Forward
-reference: this is the mechanism `/design prep`, Plan B, hands to `/feature`.)
+(never fold clear+build into one pass); `/architect`'s job ends once the prep brief exists. (Forward
+reference: this is the mechanism `/architect prep`, Plan B, hands to `/feature`.)
 
 ## The seam — altitude, not medium
 
-> `/design` owns the *seed-altitude standing design*; `/feature` owns *feature-scope change +
+> `/architect` owns the *seed-altitude standing design*; `/feature` owns *feature-scope change +
 > execution*.
 
 The seam is **altitude**, not "docs vs. code" — `/feature design`/`plan` already produce documents
-too, so docs-vs-code was never the real line. `/design` reasons about and edits the *durable
+too, so docs-vs-code was never the real line. `/architect` reasons about and edits the *durable
 seed* — the standing specs and the spine — and hands `/feature` **plans to execute**. `/feature`
 takes a plan and runs its ordinary `plan`+`build` cycle to change code.
 
 **"Code-blind" is a derived property, not the definition.** It falls out of the altitude split:
-`/design` never writes executable code, but that is a *consequence* of authoring seed-altitude
-plans, not the reason the skill exists. Don't define `/design` by what it refuses to touch —
+`/architect` never writes executable code, but that is a *consequence* of authoring seed-altitude
+plans, not the reason the skill exists. Don't define `/architect` by what it refuses to touch —
 define it by the altitude it operates at.
 
 **The altitude discriminator** (the one collision risk — `/feature` also has `brainstorm`/`plan`):
 
 > `/feature brainstorm|plan` mutate **code** (a change you build against the seed).
-> `/design brainstorm|plan` mutate **the seed itself** (the foundation you later regenerate code
-> from). *Changing the foundation → `/design`. Building on it → `/feature`.*
+> `/architect brainstorm|plan` mutate **the seed itself** (the foundation you later regenerate code
+> from). *Changing the foundation → `/architect`. Building on it → `/feature`.*
 
-`/design`'s own non-seed wiring (for example, updating a host's doc-linter when a folder moves) is
-a **handoff to `/dev` or `/feature`**, not done by `/design` itself — that is code/operational
+`/architect`'s own non-seed wiring (for example, updating a host's doc-linter when a folder moves) is
+a **handoff to `/dev` or `/feature`**, not done by `/architect` itself — that is code/operational
 work, not seed authoring.
 
 ## Sufficiency, and its circularity
@@ -142,5 +142,5 @@ only valid under discipline that breaks the circle:
 Only a rebuild that clears *independent* acceptance tests from a *frozen* seed, via the two-run
 structural separation above, is evidence of sufficiency. This is the empirical test that Plan B
 (`prep` + a clear run + a fresh-context build run) exists to run, and it is a hard gate before
-adopting the rebuild workflow on any real project — not a routine check `/design check` can
+adopting the rebuild workflow on any real project — not a routine check `/architect check` can
 substitute for.

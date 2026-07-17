@@ -1,4 +1,4 @@
-# `/design plan` — sequence a design-evolution campaign
+# `/architect plan` — sequence a design-evolution campaign
 
 Sequences how a seed change becomes reality: which specs get revised, which systems get
 prepped/regenerated, and in what order — a **seed-altitude roadmap**, not a build plan. See
@@ -7,13 +7,13 @@ prepped/regenerated, and in what order — a **seed-altitude roadmap**, not a bu
 
 ## The altitude discriminator
 
-`plan` is the other verb name `/design` shares with `/feature`. Same seam as `brainstorm`:
+`plan` is the other verb name `/architect` shares with `/feature`. Same seam as `brainstorm`:
 
 > `/feature brainstorm|plan` mutate **code** (a change you build against the seed).
-> `/design brainstorm|plan` mutate **the seed itself** (the foundation you later regenerate code
-> from). *Changing the foundation → `/design`. Building on it → `/feature`.*
+> `/architect brainstorm|plan` mutate **the seed itself** (the foundation you later regenerate code
+> from). *Changing the foundation → `/architect`. Building on it → `/feature`.*
 
-`/design plan` never produces an implementation plan — it produces a **sequence of seed work and
+`/architect plan` never produces an implementation plan — it produces a **sequence of seed work and
 seed-driven downstream work**, expressed as references to other verbs, not as steps a developer
 codes directly.
 
@@ -27,7 +27,7 @@ the top one:
   hit-resolution invariant before touching `inventory.md`'s drop-table seam, since the latter
   depends on the former."
 - **Per-system readiness + build work** (`plan` only *references* this — it is Plan B's job, not
-  this verb's): for each system the campaign touches, whether it needs `/design prep` first
+  this verb's): for each system the campaign touches, whether it needs `/architect prep` first
   (code already exists and is in the way, or a seam needs hardening before a feature attaches) and
   then an ordinary `/feature plan` → `/feature build` cycle. `plan` names *that this step exists
   and in what order it runs*, and stops there — it does not scope the prep brief, does not write
@@ -40,7 +40,7 @@ code yet), say so in the sequence rather than inserting a no-op prep step.
 
 ## Procedure
 
-1. **Establish the input.** Usually a freshly-edited standing spec from `/design brainstorm` (the
+1. **Establish the input.** Usually a freshly-edited standing spec from `/architect brainstorm` (the
    tenet/contract/seam/vision change already landed in `design/`) whose blast radius needs
    sequencing. It can also be a seed change the human made by hand, or a set of several related
    `brainstorm` edits landed separately that now need reconciling into one campaign. Read the
@@ -62,7 +62,7 @@ code yet), say so in the sequence rather than inserting a no-op prep step.
    the tenet or seam it depends on is settled.
 
 4. **Sequence the per-system readiness + build work.** For each system whose *code* will need to
-   change once its spec is settled, note in order: does it need `/design prep` (code exists, needs
+   change once its spec is settled, note in order: does it need `/architect prep` (code exists, needs
    clearing or a hardened seam) or does it go straight to `/feature plan` (no code yet, or the
    change is additive enough that no readiness pass is needed)? Record this as a reference —
    "system X: prep (replace) → feature build" — not as an executed step. Sequence across systems
@@ -86,10 +86,10 @@ code yet), say so in the sequence rather than inserting a no-op prep step.
      planning surface inside the seed.
 
    State which home was used and why in the report — don't silently default without recording the
-   reasoning, since the next `/design prep` invocation needs to find this document.
+   reasoning, since the next `/architect prep` invocation needs to find this document.
 
 6. **Stop at the campaign doc — this verb never executes the sequence.** `plan` doesn't invoke
-   `/design prep`, doesn't invoke `/feature`, and doesn't touch code. Handing the campaign doc to
+   `/architect prep`, doesn't invoke `/feature`, and doesn't touch code. Handing the campaign doc to
    the human (or to `/dev`/`/workstream` as the project's own orchestration layer) to actually walk
    the sequence is the next step, and it's outside this verb.
 

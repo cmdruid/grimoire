@@ -1,4 +1,4 @@
-# `/design distill` — the collapse ritual
+# `/architect distill` — the collapse ritual
 
 Folds accreted change-records (ADRs, plans, roadmap deltas) back into the standing spec they
 describe, so the seed stays a clean present-tense source of truth as the project churns. See
@@ -89,7 +89,7 @@ read, not an auto-commit.
 6. **Re-stamp.** Update `design/src/<system>.md`'s frontmatter to the new baseline:
    `distilled_through_adr` (the newest change-record's id folded in), `distilled_through_commit`
    (the repo's current HEAD short SHA), `distilled_through_date` (today, `YYYY-MM-DD`). This is
-   what makes the next `distill` pass on this system incremental (Step 1) and lets `/design check`
+   what makes the next `distill` pass on this system incremental (Step 1) and lets `/architect check`
    compute distill-debt from a clean fact instead of re-deriving it.
 
 ## Report

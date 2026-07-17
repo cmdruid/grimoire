@@ -18,7 +18,7 @@ design/
 ```
 
 The four root files (`VISION`, `PHILOSOPHY`, `GLOSSARY`, `MAP`) are the **required spine** —
-`/design check` fails if any is missing. `design/src/` holds the compilable per-system specs,
+`/architect check` fails if any is missing. `design/src/` holds the compilable per-system specs,
 roughly 1:1 with code units, organized by the same durability gradient: the spine is the
 constitution; `src/` is the source code of the design.
 

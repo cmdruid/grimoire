@@ -1,4 +1,4 @@
-# `/design init` — bootstrap or migrate the `design/` seed
+# `/architect init` — bootstrap or migrate the `design/` seed
 
 Stands up a project's `design/` seed (see `docs/DOCTRINE.md` for the durability gradient and the
 two-tier system-spec this verb populates). Two modes, one procedure with a fork at Step 3:
@@ -10,7 +10,7 @@ two-tier system-spec this verb populates). Two modes, one procedure with a fork 
   `DESIGN.md` and a per-subsystem docs directory (e.g. `docs/design/*`). `init` folds that
   material into the seed's shape rather than writing it fresh.
 
-Both modes end the same way: `init` is not done until `/design check` reports a complete spine
+Both modes end the same way: `init` is not done until `/architect check` reports a complete spine
 (and every migrated system has a contract).
 
 ## 1. Detect mode
@@ -75,13 +75,13 @@ modes — greenfield just has thinner sources.
      the init report, not something to paper over by keeping the stale prose.
    - **Acceptance:** carry over any concrete scenarios/gates/determinism checks the source doc
      already names. If the source doc has nothing concrete, leave the template's `<...>`
-     placeholder rather than inventing one — `/design check` will flag it as
+     placeholder rather than inventing one — `/architect check` will flag it as
      `acceptance_placeholder`, which is correct: a fabricated acceptance bullet is worse than an
      honest gap.
 3. Stamp the frontmatter `distilled_through_adr: none`, `distilled_through_commit: none`,
    `distilled_through_date: none` — a migrated spec has not been through a `distill` pass yet, even
    though its content is freshly written today. (This is the three-key form the `system-spec.md`
-   template and `design-check.sh` both parse; don't use an older single-key `distilled-through:`
+   template and `architect-check.sh` both parse; don't use an older single-key `distilled-through:`
    shape.)
 4. **Not every doc under the subsystem-docs directory is a committed system spec.** Some are
    explicitly speculative or forward-looking (e.g. a subsystem doc marked "not committed").
@@ -95,7 +95,7 @@ modes — greenfield just has thinner sources.
 source doc: partition the codebase into systems (informed by its actual module boundaries), draft
 each contract from what the code visibly does, and skip straight to pointer-heavy reference-arch
 since there's no prose to reshape. If there's no code either, `src/` starts empty — `MAP.md`
-records the intended systems from the brief, and their specs are the first thing a `/design plan`
+records the intended systems from the brief, and their specs are the first thing a `/architect plan`
 pass writes.
 
 **What never gets migrated into `design/`:** change-records — ADRs, plans, roadmap deltas — stay
@@ -145,14 +145,14 @@ For each, ask: *is the thing I'd edit a document, or executable code?*
   has one (a backlog file, an issue tracker), file it there per that project's convention, and
   otherwise surface the note directly in `init`'s final report so the human can route it.
 
-This is a direct consequence of the altitude split in `docs/DOCTRINE.md`: `/design` never writes
+This is a direct consequence of the altitude split in `docs/DOCTRINE.md`: `/architect` never writes
 executable code, even code as small as a one-line linter glob update. The rebuild-instinct to "just
 fix the one-liner" is exactly the boundary this step exists to hold.
 
 ## 6. Run `check` — the completion gate
 
 ```bash
-bash <skill-dir>/scripts/design-check.sh <project>/design [<repo-root>]
+bash <skill-dir>/scripts/architect-check.sh <project>/design [<repo-root>]
 ```
 
 `init` is not done until:
@@ -160,7 +160,7 @@ bash <skill-dir>/scripts/design-check.sh <project>/design [<repo-root>]
 - `spine_complete=true`, and
 - `contract:<sys>=true` for every system `init` migrated or inventoried.
 
-Both are `design-check.sh`'s exit-1 conditions (see `verbs/check.md`) — a missing spine or a
+Both are `architect-check.sh`'s exit-1 conditions (see `verbs/check.md`) — a missing spine or a
 contract-less system means there's no constitution, or no binding contract, for anything
 downstream to build against. If either is still false, that's `init` unfinished, not `init` done
 with follow-ups: go back and fill the gap.

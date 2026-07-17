@@ -28,10 +28,10 @@ git clone https://github.com/cmdruid/grimoire && cd grimoire
 
 | skill | what it does |
 |---|---|
+| `architect` | the design-system engine: a project's regenerable `design/` seed and its verbs |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
 | `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
-| `design` | the design-system engine: a project's regenerable `design/` seed and its verbs |
 | `dev` | the dev-workflow umbrella: route changes, deploy/operate a `dev/` docs system |
 | `feature` | the planning spine: brainstorm → design → plan → build, plus independent review |
 | `handoff` | save/resume a session as a self-contained hand-off any agent can pick up |

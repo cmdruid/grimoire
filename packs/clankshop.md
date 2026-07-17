@@ -1,7 +1,7 @@
 ---
 name: clankshop
 description: "The full development loop as a skill pack: route a change, design at seed altitude, plan and build features gate-green, ship them from long-lived workstreams, delegate work without polluting context, keep sessions resumable, and audit both code quality and doc ergonomics."
-skills: auditor chiropractor delegate design dev feature handoff mailbox workstream
+skills: architect auditor chiropractor delegate dev feature handoff mailbox workstream
 ---
 
 # clankshop — the disciplined development loop
@@ -11,7 +11,7 @@ ends at gate-green; `/workstream` lands; `/dev` captures** — no skill crosses 
 
 ```
   workflow      dev ─────── the hub/router: classify a change, deploy/operate the dev/ system
-  engines       design ──── the design-system engine: maintains a project's regenerable `design/` seed
+  engines       architect ── the design-system engine: maintains a project's regenerable `design/` seed
                 feature ─── the planning spine: brainstorm → design → plan → build (+ review)
                 workstream ─ the loop orchestrator: one worktree, one stream, ship after ship
 
@@ -29,7 +29,7 @@ ends at gate-green; `/workstream` lands; `/dev` captures** — no skill crosses 
 - **`dev`** — the dev-workflow umbrella. A thin router + verbs (`route` default, `init`, `bug`,
   `backlog`, `issue`, `feedback`, `debrief`, `upkeep`). Deploys and operates a project's `dev/`
   development-docs system.
-- **`design`** — the design-system engine: maintains a project's regenerable `design/` seed;
+- **`architect`** — the design-system engine: maintains a project's regenerable `design/` seed;
   verbs `init`/`brainstorm`/`plan`/`prep`/`distill`/`check`. Seed-altitude peer to `feature`.
 - **`feature`** — the planning spine as verbs: `brainstorm | design | plan | build`, plus the
   cross-cutting `review`. Never lands or debriefs.

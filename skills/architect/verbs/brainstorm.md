@@ -1,4 +1,4 @@
-# `/design brainstorm` — foundation-altitude ideation on the seed
+# `/architect brainstorm` — foundation-altitude ideation on the seed
 
 Explores a **radical** change to the durable seed — a `PHILOSOPHY.md` tenet, a system's
 `CONTRACT`, a seam in `MAP.md`'s seam graph, or `VISION.md` itself. This is the direct antidote to
@@ -9,12 +9,12 @@ durability gradient this verb edits along.
 
 ## The altitude discriminator
 
-`brainstorm` is one of the two verb names `/design` shares with `/feature` — the one collision
+`brainstorm` is one of the two verb names `/architect` shares with `/feature` — the one collision
 risk in the whole system. Hold this line before starting any session:
 
 > `/feature brainstorm|plan` mutate **code** (a change you build against the seed).
-> `/design brainstorm|plan` mutate **the seed itself** (the foundation you later regenerate code
-> from). *Changing the foundation → `/design`. Building on it → `/feature`.*
+> `/architect brainstorm|plan` mutate **the seed itself** (the foundation you later regenerate code
+> from). *Changing the foundation → `/architect`. Building on it → `/feature`.*
 
 If the question in front of you is "how should we build feature X" — even a gnarly, cross-cutting
 X — that's `/feature brainstorm`. If the question is "is the tenet/contract/seam X *builds on*
@@ -42,7 +42,7 @@ technique) as its **dialogue engine** — the back-and-forth that surfaces the r
 the candidate change against counter-examples, and pressure-tests whether it's actually durable
 rather than a one-off preference. What it must not borrow is that skill's terminal artifact: a
 generic brainstorming session ends in a feature idea or a design write-up handed off for planning.
-`/design brainstorm` ends in an **edited standing spec** — a diff to a file already living under
+`/architect brainstorm` ends in an **edited standing spec** — a diff to a file already living under
 `design/` (or a new `design/src/<system>.md` if the session concludes a system needs to exist that
 doesn't yet). If a session's conclusion is "here's a feature to build," that conclusion belongs to
 `/feature brainstorm`, not here — don't let this verb's report stand in for that one.
@@ -77,17 +77,17 @@ doesn't yet). If a session's conclusion is "here's a feature to build," that con
    invalidates more than the one file edited — sibling systems that depended on the old shape, a
    `MAP.md` row that now points at a stale seam. Name what else looks affected in the report (Step
    5 below), but resist the urge to cascade-edit every downstream file in the same session:
-   sequencing that cascade is `/design plan`'s job, not this verb's. `brainstorm` changes the one
+   sequencing that cascade is `/architect plan`'s job, not this verb's. `brainstorm` changes the one
    thing it was asked about and hands off the ripple.
 
 5. **Stop at the edit — this verb never touches code.** `brainstorm` doesn't validate the change
    against `check`, doesn't scope prep, and doesn't queue `/feature` work. If the human wants the
-   change sequenced into reality next, that's `/design plan`; if they want the seed's structural
-   health re-verified, that's `/design check`.
+   change sequenced into reality next, that's `/architect plan`; if they want the seed's structural
+   health re-verified, that's `/architect check`.
 
 ## Report
 
 Close `brainstorm` with: the altitude target named at Step 1, a summary of the dialogue's key
 turns (what was rejected and why, not just the winning idea), the file(s) actually edited (a
 diff-shaped summary, not the full new text), and the blast-radius list from Step 4 — flagged
-explicitly as *unactioned*, for the human to route to `/design plan` if they want it sequenced.
+explicitly as *unactioned*, for the human to route to `/architect plan` if they want it sequenced.

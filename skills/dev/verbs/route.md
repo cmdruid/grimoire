@@ -17,9 +17,9 @@ through it.
    - **feature** → the host's `PLANNING.md` tier decision → `/feature` (the plan+build engine:
      `brainstorm | design | plan | build`), built in a `/workstream` when it needs isolation.
    - **foundational / seed-altitude design change** (a `PHILOSOPHY` tenet, a system contract, a
-     seam, the `VISION` — not a feature to build) → `/design brainstorm` (then `/design plan` to
+     seam, the `VISION` — not a feature to build) → `/architect brainstorm` (then `/architect plan` to
      sequence the rollout). See *altitude discriminator* below for the test.
-   - **distilling accreted ADRs/plans** back into a coherent present-tense spec → `/design distill`.
+   - **distilling accreted ADRs/plans** back into a coherent present-tense spec → `/architect distill`.
    - **capture a follow-up** → `/dev backlog` (product/feature) · `/dev issue` (dev-friction) ·
      `/dev feedback` (qualitative). A defect → `/dev bug`.
    - **finished a body of work** → `/dev debrief`; **maintenance** → `/dev upkeep`;
@@ -30,15 +30,15 @@ through it.
 ## Relationship to neighboring lanes
 
 - `route` dispatches to the capture verbs (`bug`, `backlog`, `issue`, `feedback`, `debrief`,
-  `upkeep`) and to the companion skills `/feature`, `/design`, `/workstream`, `/auditor`, `/handoff`
+  `upkeep`) and to the companion skills `/feature`, `/architect`, `/workstream`, `/auditor`, `/handoff`
   when the host has them.
 - `/feature` is the feature-lane **plan+build engine** — it executes the host's `PLANNING.md` spine
   as verbs and stops at gate-green; landing + capture stay with `/workstream` + `/dev debrief`.
-- `/design` is the **seed-altitude design engine** — a peer to `/feature`, not a subset of it. The
+- `/architect` is the **seed-altitude design engine** — a peer to `/feature`, not a subset of it. The
   seam is **altitude**, not docs-vs-code (`/feature design`/`plan` already produce documents too):
-  `/feature brainstorm|plan` mutate **code** (a change you build against the seed); `/design
+  `/feature brainstorm|plan` mutate **code** (a change you build against the seed); `/architect
   brainstorm|plan` mutate **the seed itself** (the foundation you later regenerate code from).
-  *Changing the foundation → `/design`. Building on it → `/feature`.* Without this check, the
+  *Changing the foundation → `/architect`. Building on it → `/feature`.* Without this check, the
   router silently keeps sending foundational work down the incremental `/feature` lane — route
   there whenever the change is asking "should this tenet/contract/seam even be this way," not
   "how do I build the next thing on top of it." See the `design` skill's bundled `docs/DOCTRINE.md` for

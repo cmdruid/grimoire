@@ -1,6 +1,6 @@
 # Map
 
-The system index and seam graph — the input `/design prep` and `/design plan` read to scope work.
+The system index and seam graph — the input `/architect prep` and `/architect plan` read to scope work.
 Every system with a standing spec belongs in the index below; every coupling between systems
 belongs in the seam graph.
 

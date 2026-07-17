@@ -72,7 +72,7 @@ rubric), and it does not do the development itself — `route` dispatches you to
 
 ## Companion skills (separate, not absorbed)
 
-`/design` (the design-system engine — `init/brainstorm/plan/prep/distill/check`), `/feature` (the plan+build engine — `brainstorm | design | plan | build`), `/workstream` (drive a
+`/architect` (the design-system engine — `init/brainstorm/plan/prep/distill/check`), `/feature` (the plan+build engine — `brainstorm | design | plan | build`), `/workstream` (drive a
 stream in a worktree; owns landing), `/handoff` (save/resume a session snapshot), `/auditor` (score
 project code). The router dispatches to these where the host has them; the by-hand fallback is
 always "do it per the deployed `dev/docs/`".
