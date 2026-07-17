@@ -32,10 +32,10 @@ bash <skill-dir>/scripts/dev-health.sh stale-refs <root>
 
 Then check the two things the script can't compute, by reading:
 
-- **Glue ↔ runbook drift.** Does the deployed `.agents/dev/docs/` doctrine still match the runbook
-  `/foreman init` generates from? A section the runbook dropped or reworded, but the deployed docs
-  still carry, is drift — flag it for a re-`init` or a `tune` pass. (Until the runbook exists, this
-  reduces to "do the deployed docs still describe the system as it actually works?")
+- **Glue ↔ composition drift.** Does the deployed `.agents/dev/docs/` doctrine still match the
+  composition `/foreman init` recorded — the pack runbook if one drove init, else the baseline
+  introspection? A section the composition dropped or reworded, but the deployed docs still carry,
+  is drift — flag it for a re-`init` or a `tune` pass.
 - **Glue ↔ installed-skills drift.** The doctrine names companion skills generically (`/architect`,
   `/workstream`, `/backlog`, `/auditor`, `/handoff`) and resolves host entrypoints (the gate, the
   fast doc-linter, the diagnostics tooling) **through `AGENTS.md`**. Confirm each named skill is still
