@@ -40,7 +40,7 @@ If available, **`/dev bug`** runs the diagnose -> file-from-template -> link-fro
 
 ## Audit code quality
 `<stack: describe any project audit rubric or tooling; note the distinction from the dev/
-docs-system health sweep.>` If available, **`/audit`** drives a pass.
+docs-system health sweep.>` If available, **`/auditor`** drives a pass.
 
 ## Capture follow-ups
 The four-tracker taxonomy (what goes where + each drain) is in `dev/docs/DEVELOPMENT.md` ->

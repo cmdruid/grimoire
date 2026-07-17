@@ -1,6 +1,6 @@
 ---
 name: dev
-description: "The dev-workflow umbrella — one skill, many verbs over a project's dev/ system. `/dev` (no arg, or a change description) is the change ROUTER: classify a bug/patch/feature/spike and dispatch to the right lane. `/dev init` stands up the dev/ system on a project that lacks one. Capture verbs each file one follow-up into its tracker: `/dev bug`, `/dev backlog`, `/dev issue`, `/dev feedback`. `/dev debrief` sweeps a finished body of work to its trackers; `/dev upkeep` runs the periodic docs-system health pass. Use when the user runs `/dev ...`, asks where a change starts, asks to set up a dev workflow/docs system, or to capture/route/maintain follow-ups. The DEV WORKFLOW router — distinct from the code-quality audit (/audit)."
+description: "The dev-workflow umbrella — one skill, many verbs over a project's dev/ system. `/dev` (no arg, or a change description) is the change ROUTER: classify a bug/patch/feature/spike and dispatch to the right lane. `/dev init` stands up the dev/ system on a project that lacks one. Capture verbs each file one follow-up into its tracker: `/dev bug`, `/dev backlog`, `/dev issue`, `/dev feedback`. `/dev debrief` sweeps a finished body of work to its trackers; `/dev upkeep` runs the periodic docs-system health pass. Use when the user runs `/dev ...`, asks where a change starts, asks to set up a dev workflow/docs system, or to capture/route/maintain follow-ups. The DEV WORKFLOW router — distinct from the code-quality audit (/auditor)."
 ---
 
 # dev — the dev-workflow umbrella
@@ -67,12 +67,12 @@ umbrella adds no always-on context beyond this file. When a verb is selected, **
 ## Scope boundary
 
 `/dev` routes the **dev workflow** (how to make a change) and deploys/maintains the `dev/`
-doc-system. It is **not** the code-quality audit (`/audit`, which scores project code against a
+doc-system. It is **not** the code-quality audit (`/auditor`, which scores project code against a
 rubric), and it does not do the development itself — `route` dispatches you to the lane that does.
 
 ## Companion skills (separate, not absorbed)
 
 `/design` (the design-system engine — `init/brainstorm/plan/prep/distill/check`), `/feature` (the plan+build engine — `brainstorm | design | plan | build`), `/workstream` (drive a
-stream in a worktree; owns landing), `/handoff` (save/resume a session snapshot), `/audit` (score
+stream in a worktree; owns landing), `/handoff` (save/resume a session snapshot), `/auditor` (score
 project code). The router dispatches to these where the host has them; the by-hand fallback is
 always "do it per the deployed `dev/docs/`".

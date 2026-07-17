@@ -43,7 +43,7 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13):
    skills carry **no** project-specific commands, by design; if `AGENTS.md` doesn't name the gate,
    "run the gate" has nothing to resolve to. (`dev/docs/` holds the longer-form detail;
    `AGENTS.md` is the always-loaded surface.)
-9. **List the companion skills** (`/feature`, `/workstream`, `/handoff`, `/audit`) as recommended
+9. **List the companion skills** (`/feature`, `/workstream`, `/handoff`, `/auditor`) as recommended
    installs — and note that `/dev`'s own verbs (`bug`, `backlog`, `issue`, `feedback`, `debrief`,
    `upkeep`) cover capture/route/maintain. The deployed system also works by hand (BOOTSTRAP's
    "follow the conventions by hand").

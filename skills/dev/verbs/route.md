@@ -23,14 +23,14 @@ through it.
    - **capture a follow-up** → `/dev backlog` (product/feature) · `/dev issue` (dev-friction) ·
      `/dev feedback` (qualitative). A defect → `/dev bug`.
    - **finished a body of work** → `/dev debrief`; **maintenance** → `/dev upkeep`;
-     **code-quality** → `/audit`; **context snapshot** → `/handoff`.
+     **code-quality** → `/auditor`; **context snapshot** → `/handoff`.
 3. Where a lane's skill isn't installed, fall back to "do it by hand per the deployed doc." `/dev`
    owns the routing *policy*; the verbs and companion skills own the *operations*.
 
 ## Relationship to neighboring lanes
 
 - `route` dispatches to the capture verbs (`bug`, `backlog`, `issue`, `feedback`, `debrief`,
-  `upkeep`) and to the companion skills `/feature`, `/design`, `/workstream`, `/audit`, `/handoff`
+  `upkeep`) and to the companion skills `/feature`, `/design`, `/workstream`, `/auditor`, `/handoff`
   when the host has them.
 - `/feature` is the feature-lane **plan+build engine** — it executes the host's `PLANNING.md` spine
   as verbs and stops at gate-green; landing + capture stay with `/workstream` + `/dev debrief`.
@@ -43,7 +43,7 @@ through it.
   there whenever the change is asking "should this tenet/contract/seam even be this way," not
   "how do I build the next thing on top of it." See the `design` skill's bundled `docs/DOCTRINE.md` for
   the full doctrine.
-- `/audit` is the code-quality analogue (it scores project code + invariants); `/dev` routes the dev
+- `/auditor` is the code-quality analogue (it scores project code + invariants); `/dev` routes the dev
   workflow and deploys/maintains the doc-system. Keep them distinct.
 
 ## Done when

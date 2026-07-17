@@ -70,7 +70,7 @@ renumber existing entries.
   sweep. `issue` is the in-the-moment, single-friction path to the same `ISSUES.md` log.
 - **`/dev upkeep`** (its `issues` pass) drains `ISSUES.md` — resolved entries → `dev/done/`, durable
   gotchas → `GOTCHAS.md`. Capture is this verb's job; draining is upkeep's.
-- **`/dev bug`** is the product-defect sibling; **`/audit`** may surface friction it routes here.
+- **`/dev bug`** is the product-defect sibling; **`/auditor`** may surface friction it routes here.
 
 ## Done when
 

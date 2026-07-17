@@ -1,7 +1,7 @@
 ---
 name: clankshop
 description: "The full development loop as a skill pack: route a change, design at seed altitude, plan and build features gate-green, ship them from long-lived workstreams, delegate work without polluting context, keep sessions resumable, and audit both code quality and doc ergonomics."
-skills: audit chiropractor delegate design dev feature handoff mailbox workstream
+skills: auditor chiropractor delegate design dev feature handoff mailbox workstream
 ---
 
 # clankshop — the disciplined development loop
@@ -20,7 +20,7 @@ ends at gate-green; `/workstream` lands; `/dev` captures** — no skill crosses 
 
   session       handoff ─── save/resume disciplines (root sessions; workstream reuses them)
 
-  auditors      audit ───── project CODE quality (rubric + metrics + findings → trackers)
+  auditors      auditor ─── project CODE quality (rubric + metrics + findings → trackers)
                 chiropractor ─ doc-SPINE ergonomics (scan → diagnose → adjust)
 ```
 
@@ -45,14 +45,14 @@ ends at gate-green; `/workstream` lands; `/dev` captures** — no skill crosses 
   The worktree-safe transport `delegate` routes to; canonical home of the single-writer rule.
 - **`handoff`** — save/resume a session snapshot; provides the Save/Resume disciplines the other
   skills reuse.
-- **`audit`** — code-quality audit framework (per-dimension rubric, metrics, findings → trackers).
+- **`auditor`** — code-quality audit framework (per-dimension rubric, metrics, findings → trackers).
 - **`chiropractor`** — audit and tune a repository's documentation *spine* (the link tree rooted
   at the agent entry door) for agent ergonomics: scan → diagnose → adjust. Self-contained; runs
   in any repo.
 
 ## Which audit?
 
-Project *code* → `audit`. The repo's *doc spine* (links, entry door, navigability) →
+Project *code* → `auditor`. The repo's *doc spine* (links, entry door, navigability) →
 `chiropractor`. A deployed *dev/ docs system's* health (trackers, drains, staleness) →
 `dev upkeep`. Three domains, three tools — they don't overlap.
 

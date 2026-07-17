@@ -28,7 +28,7 @@ git clone https://github.com/cmdruid/grimoire && cd grimoire
 
 | skill | what it does |
 |---|---|
-| `audit` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
+| `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
 | `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `design` | the design-system engine: a project's regenerable `design/` seed and its verbs |

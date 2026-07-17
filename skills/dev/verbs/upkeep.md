@@ -9,7 +9,7 @@ mechanical half (links resolve, enumerable series indexed, store-dir frontmatter
 
 **Scope boundary (read this):** `upkeep` maintains the **dev/ docs system** (spine, memory,
 trackers, archives — `MAINTENANCE.md`). It is **not** the **project-code** quality audit — that's
-`/audit`. Different domain, different files.
+`/auditor`. Different domain, different files.
 
 ## When to use
 
@@ -18,7 +18,7 @@ trackers, archives — `MAINTENANCE.md`). It is **not** the **project-code** qua
   is accumulating, the backlog is stale).
 - **Periodically, when the tree is quiet** — and after a structural change to `dev/`.
 
-**Do NOT use** mid-task, for game-code quality (`/audit`), or **while the tree is churning**:
+**Do NOT use** mid-task, for game-code quality (`/auditor`), or **while the tree is churning**:
 `MAINTENANCE.md` is explicit that these files are concurrently edited, so a sweep mid-churn fights
 other agents. Confirm quiet first (see step 1).
 
@@ -79,8 +79,8 @@ Follow `dev/docs/MAINTENANCE.md`; in brief, go **item by item**, **when the tree
   drain (removing shipped/dead items in the done/relevance pass).
 - **`/dev debrief`**, **`/dev bug`**, **`/dev issue`**, **`/dev feedback`** *feed* the trackers
   `upkeep` drains — capture is their job, draining is this one's.
-- **`/audit`** is the game-code analogue: same surface-then-drain shape, different domain. Keep them
-  distinct — `/audit` scores code; `upkeep` keeps the dev/ docs system healthy and lean.
+- **`/auditor`** is the game-code analogue: same surface-then-drain shape, different domain. Keep them
+  distinct — `/auditor` scores code; `upkeep` keeps the dev/ docs system healthy and lean.
 - The **doc-linter** (in the gate) is the mechanical backstop; `upkeep` covers the semantic drift it
   can't see (a missing pointer, a convention stated as fact that has since changed).
 

@@ -77,7 +77,7 @@ discipline) — don't guess.
   and the same store-not-queue rule. Use `bug` when something breaks *now*; let `debrief` catch the
   rest.
 - **`/dev backlog`** owns the linked `BACKLOG.md` item that schedules the fix.
-- **`/audit`** drains code-quality *defects* to `bugs/` too — it can call this flow to file one.
+- **`/auditor`** drains code-quality *defects* to `bugs/` too — it can call this flow to file one.
 
 ## Done when
 
