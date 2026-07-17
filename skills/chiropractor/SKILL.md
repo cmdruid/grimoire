@@ -177,7 +177,7 @@ absent, structural repair needed).
 
 **Archive/store orphans are not a coverage gap.** When `orphan_docs_count` is high, check where the
 orphans concentrate before scoring. A large **dated archive or store** -- a directory of
-date-prefixed files (e.g. `dev/done/<YYYY-MM-DD>-*.md`), or any directory the index references as a
+date-prefixed files (e.g. `.agents/dev/done/<YYYY-MM-DD>-*.md`), or any directory the index references as a
 glob/store rather than per-file (logs, completed-work archives, per-record notes) -- is reached by
 convention or glob, not by navigation, so it is *legitimately* not link-reachable. That is
 intentional, not drift. Score reachability/coverage on the orphans **outside** such stores; report

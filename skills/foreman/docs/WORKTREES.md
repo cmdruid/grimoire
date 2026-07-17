@@ -11,9 +11,9 @@ Use a worktree for **anything that earns a feature branch** -- a feature, a road
 multi-commit scope. Patches, emergency fixes, and small changes unrelated to a feature stay on
 `main`. Rule of thumb: *if it'd get its own branch, give it a worktree.*
 
-`dev/` work scoped to a feature (its plan, its hand-off) rides in that feature's worktree and merges
-with it; small standalone `dev/` edits -- a backlog entry, a doc tweak -- go straight on `main`. The
-load-bearing rule is **no *uncommitted* churn on the shared root**, not "never touch `dev/` on
+`.agents/dev/` work scoped to a feature (its plan, its hand-off) rides in that feature's worktree and merges
+with it; small standalone `.agents/dev/` edits -- a backlog entry, a doc tweak -- go straight on `main`. The
+load-bearing rule is **no *uncommitted* churn on the shared root**, not "never touch `.agents/dev/` on
 `main`."
 
 A **large, multi-commit dev-system / meta overhaul** (a skills refactor, a tracker-lifecycle change,
@@ -67,7 +67,7 @@ git worktree prune                            # tidy stale metadata
 ```
 
 `git worktree list` shows every active worktree and the branch each holds. Common rebase conflicts
-are additive (config files, registration chains, shared `dev/` coordination files) -- resolution is
+are additive (config files, registration chains, shared `.agents/dev/` coordination files) -- resolution is
 usually "keep both". Each worktree has its own build output directory.
 
 `<stack: shared compile cache note>` -- if the stack supports it, a per-machine shared compile

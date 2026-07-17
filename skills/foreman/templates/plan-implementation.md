@@ -2,14 +2,14 @@
 type: implementation
 status: draft
 updated: <YYYY-MM-DD>
-related: [<dev/plans/<feature>-design.md>]
+related: [<.agents/dev/plans/<feature>-design.md>]
 ---
 
 # <Feature> — Implementation Plan
 
 ## Global Constraints (verify vs HEAD before editing) — the plan gate (PLANNING.md -> Writing plans)
 <Cross-cutting rules every task must honor — fill in, or delete the section if none:
-- **Invariants:** what no task may break (the project's sacred keystone — see `dev/MEMORY.md`).
+- **Invariants:** what no task may break (the project's sacred keystone — see `.agents/dev/MEMORY.md`).
 - **Live-API gotchas:** signatures / paths / lints that drift — the plan is a snapshot, so re-read
   each file against the worktree's HEAD before editing (the trunk moves; PLANNING.md -> *Writing plans*).
 - **Coexisting work:** other active worktrees/streams this overlaps; the expected rebase seams.

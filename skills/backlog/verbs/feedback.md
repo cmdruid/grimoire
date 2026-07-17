@@ -1,12 +1,12 @@
 # `/backlog feedback` — capture a qualitative / directional note
 
 Capture the agent's **qualitative voice** on the project, process, docs, or tools into
-`dev/FEEDBACK.md` — what worked, what didn't, a directional suggestion, a surprise that isn't a bug.
+`.agents/dev/FEEDBACK.md` — what worked, what didn't, a directional suggestion, a surprise that isn't a bug.
 This is the quick, one-shot path to the feedback log (the new sibling of `/backlog backlog`); the full
 end-of-work sweep is `/backlog debrief`.
 
 **Qualitative, not actionable.** `FEEDBACK.md` is **not** a task tracker. An actionable thing goes
-to its real home — the taxonomy is canonical in `dev/docs/DEVELOPMENT.md` → *Capture follow-ups*
+to its real home — the taxonomy is canonical in `.agents/dev/docs/DEVELOPMENT.md` → *Capture follow-ups*
 (feature → `/backlog backlog`, defect → `/backlog bug`, dev-friction → `/backlog issue`).
 
 This file is for observations, praise, critique, and open musings the owner reviews: "the
@@ -33,8 +33,8 @@ Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't g
 
 ## Feedback structure
 
-`dev/FEEDBACK.md` is a single **flat** list of dated entries — **no sections**, newest added at the
-bottom of the live region. Each entry follows `dev/templates/feedback.md`:
+`.agents/dev/FEEDBACK.md` is a single **flat** list of dated entries — **no sections**, newest added at the
+bottom of the live region. Each entry follows `.agents/dev/templates/feedback.md`:
 
 ```
 ### <short title> · YYYY-MM-DD
@@ -58,7 +58,7 @@ each item to its real home or acting on it — so it stays a live signal, not a 
    adding a near-duplicate.
 4. **Append** the dated entry to the live region (don't disturb the drained-marker history above).
 5. **Commit (standalone only).** Invoked **standalone**, scoped-commit via
-   `scripts/scoped-commit.sh <root> "Feedback: <short title>" dev/FEEDBACK.md`, then run the host
+   `scripts/scoped-commit.sh <root> "Feedback: <short title>" .agents/dev/FEEDBACK.md`, then run the host
    doc-linter. Invoked **inside `/backlog debrief` or a `/foreman tune` sweep**, do **not** commit —
    only write; the sweep makes the single atomic commit.
 6. **Report** the entry title and the path.
@@ -80,6 +80,6 @@ each item to its real home or acting on it — so it stays a live signal, not a 
 
 ## Done when
 
-The qualitative note is a dated `dev/FEEDBACK.md` entry (positive / concern / directional, with where
+The qualitative note is a dated `.agents/dev/FEEDBACK.md` entry (positive / concern / directional, with where
 it might lead), deduped against what's there, with any actionable part routed to its real home — and
 the chat names the entry and path.

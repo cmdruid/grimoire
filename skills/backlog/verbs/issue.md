@@ -1,12 +1,12 @@
 # `/backlog issue` — capture dev-experience friction
 
-File a **dev-experience friction** point into `dev/ISSUES.md` the moment it bites — slow/opaque
+File a **dev-experience friction** point into `.agents/dev/ISSUES.md` the moment it bites — slow/opaque
 iteration, a silent failure, missing/wrong docs, a harness or workflow papercut. This is the
 quick, one-shot path to the friction log (the new sibling of `/backlog bug`); the full end-of-work sweep
 is `/backlog debrief`.
 
 **Friction, not a defect.** `ISSUES.md` is "the dev experience got in my way." Anything else goes
-to its own tracker — the taxonomy is canonical in `dev/docs/DEVELOPMENT.md` → *Capture follow-ups*
+to its own tracker — the taxonomy is canonical in `.agents/dev/docs/DEVELOPMENT.md` → *Capture follow-ups*
 (defect → `/backlog bug`, feature → `/backlog backlog`, qualitative → `/backlog feedback`).
 
 The model owns the **friction-vs-bug call** (does this break the *product*, or just slow the
@@ -21,7 +21,7 @@ The model owns the **friction-vs-bug call** (does this break the *product*, or j
 
 **Do NOT use** for a product defect (`/backlog bug`), a feature wish (`/backlog backlog`), or a purely
 qualitative note (`/backlog feedback`). A durable *gotcha* discovered here should **also** be added to
-`dev/docs/GOTCHAS.md` so the next agent avoids the trap.
+`.agents/dev/docs/GOTCHAS.md` so the next agent avoids the trap.
 
 ## File location
 
@@ -32,7 +32,7 @@ Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't g
 
 ## Issues structure & numbering
 
-`dev/ISSUES.md` groups entries under category sections and gives each a **category-prefixed running
+`.agents/dev/ISSUES.md` groups entries under category sections and gives each a **category-prefixed running
 number**:
 - **`E#`** — Environment / Tooling (build, harness, render, scenario papercuts).
 - **`W#`** — Workflow / workstream (the worktree pipeline, landing, the skills themselves).
@@ -46,7 +46,7 @@ renumber existing entries.
 
 1. **Confirm it's friction.** Dev-experience pain, not a product defect / feature / qualitative item
    (route those to their home and stop). If it's a working-as-coded trap, add it to
-   `dev/docs/GOTCHAS.md` (and optionally log the friction of hitting it blind).
+   `.agents/dev/docs/GOTCHAS.md` (and optionally log the friction of hitting it blind).
 2. **Form the entry.** Pick the category (E/W) and the next free number. Write:
    - `### <prefix><n> — <short title> (<HIGH|MEDIUM|LOW>)`
    - **What happened** — the concrete friction, with `file:line` / command / log line where it
@@ -57,9 +57,9 @@ renumber existing entries.
    rather than adding a near-duplicate.
 4. **Append** under the right category section, continuing the numbering. Never edit unrelated
    entries.
-5. **Promote a durable trap** to `dev/docs/GOTCHAS.md` if one surfaced.
+5. **Promote a durable trap** to `.agents/dev/docs/GOTCHAS.md` if one surfaced.
 6. **Commit (standalone only).** Invoked **standalone**, scoped-commit via
-   `scripts/scoped-commit.sh <root> "Issue <prefix><n>: <short what>" dev/ISSUES.md` (+ `GOTCHAS.md` if you
+   `scripts/scoped-commit.sh <root> "Issue <prefix><n>: <short what>" .agents/dev/ISSUES.md` (+ `GOTCHAS.md` if you
    touched it), then run the host doc-linter. Invoked **inside `/backlog debrief` or a `/foreman tune`
    sweep**, do **not** commit — only write; the sweep makes the single atomic commit.
 7. **Report** the entry id (`E#`/`W#`) and the path.
@@ -68,7 +68,7 @@ renumber existing entries.
 
 - **`/backlog debrief`** routes *all* byproducts of a finished body of work, friction included, in one
   sweep. `issue` is the in-the-moment, single-friction path to the same `ISSUES.md` log.
-- **`/foreman tune`** (its `issues` pass) drains `ISSUES.md` — resolved entries → `dev/done/`, durable
+- **`/foreman tune`** (its `issues` pass) drains `ISSUES.md` — resolved entries → `.agents/dev/done/`, durable
   gotchas → `GOTCHAS.md`. Capture is this verb's job; draining is `/foreman tune`'s.
 - **`/backlog bug`** is the product-defect sibling; **`/auditor`** may surface friction it routes here.
 

@@ -78,14 +78,14 @@ cmd_stream_state() {
 
   # Untracked plan drafts (e.g. ship's next-plan draft) are EXPECTED dirt, not
   # WIP -- separate them so the agent doesn't read a drafted plan as unsaved work.
-  drafts="$(printf '%s\n' "$porcelain" | sed -n 's#^?? \(dev/plans/.*\.md\)$#\1#p' | grep -v '/archive/' | paste -sd, - || true)"
+  drafts="$(printf '%s\n' "$porcelain" | sed -n 's#^?? \(\.agents/dev/plans/.*\.md\)$#\1#p' | grep -v '/archive/' | paste -sd, - || true)"
   [ -z "$drafts" ] && drafts="none"
-  # Real WIP = any porcelain line that is NOT an untracked TOP-LEVEL dev/plans
+  # Real WIP = any porcelain line that is NOT an untracked TOP-LEVEL .agents/dev/plans
   # draft (the same set `drafts` reports). An untracked file under
-  # dev/plans/archive/ (or deeper) is real WIP, not a draft -- it must surface in
+  # .agents/dev/plans/archive/ (or deeper) is real WIP, not a draft -- it must surface in
   # wip_tracked rather than as dirt no fact explains.
   local wip
-  wip="$(printf '%s\n' "$porcelain" | grep -v '^$' | grep -vE '^\?\? dev/plans/[^/]+\.md$' || true)"
+  wip="$(printf '%s\n' "$porcelain" | grep -v '^$' | grep -vE '^\?\? \.agents/dev/plans/[^/]+\.md$' || true)"
 
   echo "branch_matches=$([ "$head_branch" = "$branch" ] && echo true || echo false)"
   echo "toplevel_matches=$([ "$toplevel" = "$wt" ] && echo true || echo false)"

@@ -1,11 +1,11 @@
 # BOOTSTRAP -- a portable code-quality audit system
 
-A self-contained, language-neutral blueprint for a `dev/audit/` system that audits a project's
+A self-contained, language-neutral blueprint for a `.agents/dev/audit/` system that audits a project's
 *own code* for quality and invariant-conformance, surfaces findings as a bounded + drained tracker,
 and is re-runnable each cycle. Drop this file into any project and an agent can **reconstruct the
 whole system**, or **borrow a piece**.
 
-It is a sibling to any companion dev-system blueprint (one that blueprints the surrounding `dev/` doc-system, if the host has one). This
+It is a sibling to any companion dev-system blueprint (one that blueprints the surrounding `.agents/dev/` doc-system, if the host has one). This
 file blueprints only the audit subsystem. It is deliberately project-agnostic: anything specific to
 a host project -- its language, its sacred invariants, its trackers -- appears here as a **slot you
 fill**, marked `<like this>`.
@@ -26,7 +26,7 @@ fill**, marked `<like this>`.
 
 These are *why* the system is shaped as it is. Keep them even if you change the file layout.
 
-- **Bounded + drained, like every dev/ artifact.** The methodology is durable (re-read each pass);
+- **Bounded + drained, like every .agents/dev/ artifact.** The methodology is durable (re-read each pass);
   the finding tracker is *living* and **drains into the host project's existing trackers**, so it
   never becomes a second graveyard. (Same principle as the dev-system blueprint.)
 - **One rule file per dimension, all in one shape.** An agent (or subagent) reads exactly one file
@@ -58,7 +58,7 @@ Decide these before reconstructing. They are what make the generic framework you
 | `<language>` | The implementation language -> drives the anti-pattern greps + metrics recipes. | Rust / TypeScript / Python |
 | `<native dimensions>` | The host's sacred invariants, each promoted to a scored dimension atop the 12 portable ones. | "Determinism" (worldgen pure in `(seed, pos)`); "AI-boundary" |
 | `<targets>` | The audited units, each tagged Deep / Mid / Light by blast radius. | `voxel/`, `content/` (Deep); `ai/` (Mid); `config.rs` (Light) |
-| `<drains>` | The host's **existing** trackers a finding graduates into -- never a parallel queue. | `dev/BACKLOG.md` (feature work) + `dev/bugs/` (defects) |
+| `<drains>` | The host's **existing** trackers a finding graduates into -- never a parallel queue. | `.agents/dev/BACKLOG.md` (feature work) + `.agents/dev/bugs/` (defects) |
 | `<exemplars>` | The in-repo files a score of 5 is measured against (often one library file + one service/system file). | filled by the *Select exemplars* step |
 | `<gate>` | The host's quality command + the doc-linter the audit docs must satisfy. | `./tests/scripts/ci.sh` |
 
@@ -82,7 +82,7 @@ are in §7.
 ## 4. Directory & file manifest
 
 ```
-dev/audit/
+.agents/dev/audit/
   README.md          -- subsystem index: the two lifecycles, the audit loop, the drains, and the
                         (deferred) "Select exemplars" step
   GUIDE.md           -- durable methodology hub: framing, risk-weighted scope, the rubric index,

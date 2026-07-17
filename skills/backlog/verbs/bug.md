@@ -1,15 +1,15 @@
 # `/backlog bug` — file an observed defect
 
 File an observed **defect** the right way, the moment it surfaces — so the repro survives even if
-you move on (or can't reproduce it later). Encodes `dev/docs/DEVELOPMENT.md` → *When it's a bug* and
-the `dev/docs/DIAGNOSTICS.md` playbook into one pass.
+you move on (or can't reproduce it later). Encodes `.agents/dev/docs/DEVELOPMENT.md` → *When it's a bug* and
+the `.agents/dev/docs/DIAGNOSTICS.md` playbook into one pass.
 
 A **bug** is an observed defect: a crash, wrong render/output, dropped state, or flaky behavior.
 Anything that is *not* a defect goes to its own tracker — the four-tracker taxonomy is canonical
-in `dev/docs/DEVELOPMENT.md` → *Capture follow-ups* (feature → `/backlog backlog`, dev-friction →
+in `.agents/dev/docs/DEVELOPMENT.md` → *Capture follow-ups* (feature → `/backlog backlog`, dev-friction →
 `/backlog issue`, qualitative → `/backlog feedback`).
 
-The load-bearing rule: **`dev/bugs/` is a store, not a work queue.** You file a report there and
+The load-bearing rule: **`.agents/dev/bugs/` is a store, not a work queue.** You file a report there and
 track the fix from a **linked actionable item**; you never fish in `bugs/` for work. So a report is
 never left with nothing pointing at it.
 
@@ -22,7 +22,7 @@ never left with nothing pointing at it.
 
 **Do NOT use** for a feature wish (`/backlog backlog`), tooling friction (`/backlog issue`), or a qualitative
 note (`/backlog feedback`). And if it turns out to be **working-as-coded but surprising**, it's not a
-bug — promote it to `dev/docs/GOTCHAS.md` and file no report. For the end-of-work *sweep* that routes
+bug — promote it to `.agents/dev/docs/GOTCHAS.md` and file no report. For the end-of-work *sweep* that routes
 many surfaced items at once (including any defects), that's `/backlog debrief`; this verb is the
 single-defect, right-now path to the same destination.
 
@@ -33,24 +33,24 @@ discipline) — don't guess.
 
 - Report: `<root>/dev/bugs/<YYYY-MM-DD>-<slug>.md`, from `<root>/dev/templates/bug-report.md`. Start
   the file with the template's `type: bug` frontmatter block (`type`/`status`/`updated`) — the
-  doc-linter gate rejects a `dev/bugs/` file without it. Schema: `dev/docs/TAXONOMY.md`.
+  doc-linter gate rejects a `.agents/dev/bugs/` file without it. Schema: `.agents/dev/docs/TAXONOMY.md`.
 - Fixed reports move to `<root>/dev/bugs/archive/`.
-- The linking actionable item lives in `dev/BACKLOG.md` (or `dev/ISSUES.md` if it's a dev-tooling
+- The linking actionable item lives in `.agents/dev/BACKLOG.md` (or `.agents/dev/ISSUES.md` if it's a dev-tooling
   defect) — never in `bugs/` itself.
 
 ## Procedure
 
 1. **Confirm it's a bug.** It's an observed defect, not a feature/friction/qualitative item (route
-   those to their home and stop). **Check `dev/docs/GOTCHAS.md` first** — it may be a known trap
+   those to their home and stop). **Check `.agents/dev/docs/GOTCHAS.md` first** — it may be a known trap
    (working-as-coded). If so, it's not a bug: add it to `GOTCHAS.md` if it's missing, and stop.
-2. **Diagnose enough to capture a repro** (per the host's `dev/docs/DIAGNOSTICS.md`: observe →
+2. **Diagnose enough to capture a repro** (per the host's `.agents/dev/docs/DIAGNOSTICS.md`: observe →
    reproduce → isolate). Cheapest first — logs, the host's diagnostic overlays / state dumps; pin any
    seed/state and capture it in the host's scripted scenario/test harness (a scripted repro the
    harness replays *is* the repro); for a render/visual bug, the host's isolated-render tool surfaces
    errors the normal run swallows. **If it's flaky, capture everything the moment it happens** — seed,
    scenario, log line, screenshot — before anything else.
 3. **Resolve root + date; slug** the defect (short kebab).
-4. **Write the report** to `dev/bugs/<YYYY-MM-DD>-<slug>.md` from `templates/bug-report.md`:
+4. **Write the report** to `.agents/dev/bugs/<YYYY-MM-DD>-<slug>.md` from `templates/bug-report.md`:
    - **Status** (open), **Severity** (crash | wrong-output | dropped-state | flaky | cosmetic),
      **Flaky/transient?**
    - **Repro** — seed + scenario or exact commands/steps (a scripted repro is best).
@@ -60,8 +60,8 @@ discipline) — don't guess.
 5. **Link it from an actionable item** — `bugs/` is a store, so the report must be tracked from
    somewhere actionable:
    - **Fixing now?** Make the fix (patch or feature, by size), note the commit in the report's
-     Status, then `git mv` the report to `dev/bugs/archive/`.
-   - **Deferring?** Add a `dev/BACKLOG.md` item (or `dev/ISSUES.md` if it's dev-tooling) that
+     Status, then `git mv` the report to `.agents/dev/bugs/archive/`.
+   - **Deferring?** Add a `.agents/dev/BACKLOG.md` item (or `.agents/dev/ISSUES.md` if it's dev-tooling) that
      **links** the report path. Never leave a report unlinked.
 6. **Commit (standalone only).** Invoked **standalone**, scoped-commit the report + its linking item
    in one step via `scripts/scoped-commit.sh <root> "File <slug> bug + tracker link" <paths…>`, then run
@@ -81,6 +81,6 @@ discipline) — don't guess.
 
 ## Done when
 
-The defect has a report in `dev/bugs/` with a real repro + evidence, that report is **linked from an
+The defect has a report in `.agents/dev/bugs/` with a real repro + evidence, that report is **linked from an
 actionable item** (or already fixed-and-archived with its commit), no working-as-coded "bug" was
 filed (promoted to `GOTCHAS.md` instead), and the chat names where the report and its tracker live.

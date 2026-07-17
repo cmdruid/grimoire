@@ -23,7 +23,7 @@ hardcode `main`.
    <target>` (full gate only when both `own` and `incoming` are build-relevant; doc-linter only when
    `own_docs_only=true`; skip entirely when only the incoming side changed or nothing did). The
    ship-specific notes on top of that matrix:
-   - **The skip case is the common case at a land** — most ships land only `dev/done/` records,
+   - **The skip case is the common case at a land** — most ships land only `.agents/dev/done/` records,
      roadmap rows, and plans, so a code stream should **not** pay a full gate run for a sibling's
      markdown (the *incoming-changes* waste the matrix exists to kill).
    - The doc-linter-only case holds **even after a code-heavy rebase**: markdown doesn't compile,
@@ -75,7 +75,7 @@ additions:
     doctrine as the local ff-advance.
   - **`pr`** — do NOT advance `<target>` locally. Instead: `git -C <root> push origin <branch>`,
     then `gh pr create --base <target> --head <branch> --title "<feature subject>" --body "<the
-    dev/done records this lands>"`. The queue does NOT advance at ship — it advances when the PR
+    .agents/dev/done records this lands>"`. The queue does NOT advance at ship — it advances when the PR
     merges, checked at the next `sync`/`load` (`git -C <root> fetch origin` then `git -C <root>
     log <branch>..origin/<target>` contains the merge, or `gh pr view <branch> --json state`).
     Step 3 of the ship procedure (queue advance) is deferred accordingly; record a line-start
@@ -97,17 +97,17 @@ independent of what the root has checked out. Never hand-commit these records to
 1. **Commit the shipping records on the branch — BEFORE landing.** These are doc-only, so gate them
    with the host's fast doc-linter (from the worktree), not the full gate:
    - **A record per accumulated feature.** For **each** feature completed since the last ship (one under
-     `per-stage`; possibly several under `milestone`/`per-track`), write `dev/done/<YYYY-MM-DD>-<slug>.md`
+     `per-stage`; possibly several under `milestone`/`per-track`), write `.agents/dev/done/<YYYY-MM-DD>-<slug>.md`
      (add a `-N` suffix if a same-day record for that slug exists). **Reference the feature's commits by
      subject line, NOT by sha:** Landing (step 2) rebases this branch *after* this record is written,
      which rewrites every sha but **preserves subjects** — a sha-cited record would strand dead refs and
      need a correction commit (worse under deferred cadence: many records, and contention can force
      *several* rebases per ship; subject-refs survived two contention rebases with zero fixups). **Open
      each with the `type: task-record` frontmatter block** (`type`/`status: shipped`/`updated`), from
-     `dev/templates/task-record.md` -- the doc-linter gate rejects a `dev/done/` file without it (schema:
-     `dev/docs/TAXONOMY.md`). Then `git -C <worktree> add dev/done/<f> && git -C <worktree> commit -m "Record <slug> shipped" -- dev/done/<f>`.
+     `.agents/dev/templates/task-record.md` -- the doc-linter gate rejects a `.agents/dev/done/` file without it (schema:
+     `.agents/dev/docs/TAXONOMY.md`). Then `git -C <worktree> add .agents/dev/done/<f> && git -C <worktree> commit -m "Record <slug> shipped" -- .agents/dev/done/<f>`.
    - If the feature had its own implementation plan, archive it in one atomic commit:
-     `git -C <worktree> mv dev/plans/<feature-plan> dev/plans/archive/ && git -C <worktree> commit -m "Archive <feature-plan>" -- dev/plans/<feature-plan> dev/plans/archive/<feature-plan>`.
+     `git -C <worktree> mv .agents/dev/plans/<feature-plan> .agents/dev/plans/archive/ && git -C <worktree> commit -m "Archive <feature-plan>" -- .agents/dev/plans/<feature-plan> .agents/dev/plans/archive/<feature-plan>`.
    - If the queue is tracked in a roadmap doc, update its ledger/queue row for this stream and commit
      it on the branch too: `git -C <worktree> commit -m "Roadmap: <stream> shipped <feature>" -- <roadmap-path>`.
      (At `sync` this may additively conflict with a sibling stream's row — resolve "keep both".)
@@ -118,7 +118,7 @@ independent of what the root has checked out. Never hand-commit these records to
    atomically; it is the only shared-root mutation and is independent of the root's current HEAD.
 3. **Advance the queue — hand-off only** (the ledger row already rode the branch in step 1): in the
    (ignored) worktree hand-off, mark **all landed features** done and set the next queue item current.
-   Then **draft** the next feature's implementation plan from the queue source into `dev/plans/` (a
+   Then **draft** the next feature's implementation plan from the queue source into `.agents/dev/plans/` (a
    working-tree draft — it rides the *next* ship; do not commit it now). Do not start the next
    feature automatically. **In `manual` mode, skip this draft** — plan-authoring belongs to the next
    PLAN session on the plan-model (`flow.md` -> *Manual mode: the phase loop*); set `Phase: plan`

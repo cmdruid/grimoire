@@ -2,7 +2,7 @@
 type: design
 status: draft
 updated: <YYYY-MM-DD>
-related: [<dev/adr/NNNN-... or roadmap path, or omit this key>]
+related: [<.agents/dev/adr/NNNN-... or roadmap path, or omit this key>]
 ---
 
 # <Feature> — Design

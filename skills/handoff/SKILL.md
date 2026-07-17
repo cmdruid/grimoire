@@ -15,8 +15,8 @@ Three layers, by isolation — pick by where the session lives:
 - **Concurrent root-level (non-worktree) sessions** → **named** `/handoff`s → `.sessions/<name>.md`,
   one file per session, so they don't collide on the single root file.
 
-A *durable* record of *finished* work is a `dev/done/` entry, not a hand-off. (The retired
-`dev/sessions/` layer is not revived: named hand-offs are gitignored scratch, not a tracked store.)
+A *durable* record of *finished* work is a `.agents/dev/done/` entry, not a hand-off. (The retired
+`.agents/dev/sessions/` layer is not revived: named hand-offs are gitignored scratch, not a tracked store.)
 
 Verbs:
 - **save** / **save `<name>`** — synthesize the current conversation into the hand-off file.
@@ -70,7 +70,7 @@ create the directory if it is missing.
 Both kinds are **gitignored scratch** — never merged, overwritten in place each save. They differ
 only in isolation: root `HANDOFF.md` is the single active session; `.sessions/<name>.md` lets
 concurrent **root-level** sessions each keep their own. (Worktree streams are `/workstream`'s
-worktree-local `WORKSTREAM.md`; a durable record of finished work is a `dev/done/` entry.)
+worktree-local `WORKSTREAM.md`; a durable record of finished work is a `.agents/dev/done/` entry.)
 
 ## Save procedure
 
@@ -169,7 +169,7 @@ only if it would be empty.
    host's gate, not a snapshot).
 8. **What's pending.** Numbered list of next steps in priority order.
 9. **Critical considerations.** Constraints, gotchas, easy-to-miss context — always with the WHY.
-10. **Pointers.** Links to the project's other entry docs — `AGENTS.md`, `README`, `dev/README.md`,
+10. **Pointers.** Links to the project's other entry docs — `AGENTS.md`, `README`, `.agents/dev/README.md`,
     relevant plans/roadmaps — so the next agent finds the wider doc set.
 11. **Suggested first action.** A concrete first move, specific enough to act on immediately.
     (Resume echoes this line, so keep it sharp and self-contained.)

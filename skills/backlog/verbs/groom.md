@@ -1,8 +1,8 @@
 # `/backlog groom` — tidy the backlog: dedupe, rank, sharpen, weed
 
-Keep `dev/BACKLOG.md` sharp. This verb **reshapes** the existing list — it does not capture new
+Keep `.agents/dev/BACKLOG.md` sharp. This verb **reshapes** the existing list — it does not capture new
 items (that's the sibling `/backlog backlog`). Grooming is the anytime, BACKLOG-only tidy; the
-periodic drain/audit across the whole `dev/` system is `/foreman tune`.
+periodic drain/audit across the whole `.agents/dev/` system is `/foreman tune`.
 
 ## When to use
 
@@ -29,10 +29,10 @@ Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't g
    file's group headings and heading level; don't restructure the groups.
 3. **Sharpen** vague items: split a broad item, fill a missing `file:line` / why / effort.
 4. **Weed** dead items — already done, obsolete, or decided against. Remove them; if *why* it's dead
-   isn't obvious, drop a one-line note in the removal commit (or `dev/done/`) so the rationale
+   isn't obvious, drop a one-line note in the removal commit (or `.agents/dev/done/`) so the rationale
    survives.
 5. **Commit (standalone only).** Invoked **standalone**, scoped-commit the groomed list via
-   `scripts/scoped-commit.sh <root> "Backlog: groom" dev/BACKLOG.md`, then run the host doc-linter.
+   `scripts/scoped-commit.sh <root> "Backlog: groom" .agents/dev/BACKLOG.md`, then run the host doc-linter.
    Invoked **inside a `/foreman tune` sweep**, do **not** commit — only write; the sweep makes the
    single atomic commit.
 6. **Report** what moved, split, and got removed.
@@ -55,6 +55,6 @@ leave it and flag it.
 
 ## Done when
 
-`dev/BACKLOG.md` is sharper — reordered by relevance, vague items split/filled, dead items weeded with
+`.agents/dev/BACKLOG.md` is sharper — reordered by relevance, vague items split/filled, dead items weeded with
 their rationale preserved — and the chat names what moved, split, and got removed. To *add* a new
 item, run `/backlog backlog`.

@@ -95,11 +95,11 @@ cmd_inventory() {
   echo "tree_quiet=$([ -z "$porcelain" ] && echo true || echo false)"
   echo "linked_worktrees=$(( $(git -C "$root" worktree list 2>/dev/null | wc -l | tr -d ' ') - 1 ))"
   for t in BACKLOG ISSUES FEEDBACK; do
-    f="$root/dev/$t.md"; tl="$(lower "$t")"
+    f="$root/.agents/dev/$t.md"; tl="$(lower "$t")"
     if [ -f "$f" ]; then
       b="$(grep -cE '^[-*] ' "$f" || true)"
       l="$(wc -l < "$f" | tr -d ' ')"
-      mod="$(git -C "$root" log -1 --format=%cr -- "dev/$t.md" 2>/dev/null || echo unknown)"
+      mod="$(git -C "$root" log -1 --format=%cr -- ".agents/dev/$t.md" 2>/dev/null || echo unknown)"
       echo "${tl}_bullets=$b"
       echo "${tl}_lines=$l"
       echo "${tl}_last_change=$mod"
@@ -107,9 +107,9 @@ cmd_inventory() {
       echo "${tl}=absent"
     fi
   done
-  echo "bugs_open=$(count_files "$root/dev/bugs")"
-  echo "bugs_archived=$(find "$root/dev/bugs/archive" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
-  echo "done_records=$(count_files "$root/dev/done")"
+  echo "bugs_open=$(count_files "$root/.agents/dev/bugs")"
+  echo "bugs_archived=$(find "$root/.agents/dev/bugs/archive" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
+  echo "done_records=$(count_files "$root/.agents/dev/done")"
 }
 
 cmd_stale_refs() {
@@ -121,7 +121,7 @@ cmd_stale_refs() {
   else
     # default set: trackers + index + spine docs that exist
     local f docs=()
-    for f in dev/BACKLOG.md dev/ISSUES.md dev/FEEDBACK.md dev/MEMORY.md dev/README.md AGENTS.md README.md; do
+    for f in .agents/dev/BACKLOG.md .agents/dev/ISSUES.md .agents/dev/FEEDBACK.md .agents/dev/MEMORY.md .agents/dev/README.md AGENTS.md README.md; do
       [ -f "$root/$f" ] && docs+=("$root/$f")
     done
     if [ "${#docs[@]}" -gt 0 ]; then
@@ -140,7 +140,7 @@ cmd_coverage() {
     name="$(basename "$d")"
     case "$name" in .*) continue;; esac
     found=0
-    for s in "$root/AGENTS.md" "$root/dev/README.md" "$root/README.md"; do
+    for s in "$root/AGENTS.md" "$root/.agents/dev/README.md" "$root/README.md"; do
       # Fixed-string, dir-shaped match ("name/" or a backticked mention): an
       # unanchored regex match on the bare name false-covers short names
       # (substring hits) and breaks on regex metachars.

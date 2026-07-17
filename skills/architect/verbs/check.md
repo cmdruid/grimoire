@@ -10,7 +10,7 @@ bash <skill-dir>/scripts/architect-check.sh <project>/design [<repo-root>]
 ```
 
 - `<repo-root>` (default `<design-dir>/..`) is where `src/…:NN` reference-arch pointers resolve
-  against — pass the actual repo root if `design/` doesn't sit directly above it.
+  against — pass the actual repo root if `.agents/design/` doesn't sit directly above it.
 - Exit **1** iff `spine_complete=false` or any `contract:<sys>=false`; everything else is
   advisory and doesn't affect the exit code.
 

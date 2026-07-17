@@ -21,7 +21,7 @@ usage() {
   cat >&2 <<'EOF'
 usage: dev-health.sh <subcommand> <root> [args...]
 
-  debrief-scan  <root> [<trunk-ref>]  uncommitted dev/ writes, new TODO/FIXME, recent done-records
+  debrief-scan  <root> [<trunk-ref>]  uncommitted .agents/dev/ writes, new TODO/FIXME, recent done-records
 
 Prints `key=value` facts then evidence. Read-only; emits no recommendation.
 EOF
@@ -32,7 +32,7 @@ cmd_debrief_scan() {
   local root="$1" trunk="${2:-}" dirty todos done_recent
 
   echo "dirty_dev:"
-  dirty="$(git -C "$root" status --porcelain 2>/dev/null | grep 'dev/' || true)"
+  dirty="$(git -C "$root" status --porcelain 2>/dev/null | grep -F '.agents/dev/' || true)"
   if [ -n "$dirty" ]; then printf '%s\n' "$dirty" | sed 's/^/  /'; else echo "  (none)"; fi
 
   # New TODO/FIXME/XXX/HACK markers added vs <trunk-ref> (or the working tree if omitted).
@@ -50,10 +50,10 @@ cmd_debrief_scan() {
   fi
   if [ -n "$todos" ]; then printf '%s\n' "$todos" | sed 's/^\+/  +/'; else echo "  (none)"; fi
 
-  # Most-recent dev/done records, so the agent can confirm the shipped-record exists.
+  # Most-recent .agents/dev/done records, so the agent can confirm the shipped-record exists.
   echo "recent_done:"
   # shellcheck disable=SC2012  # ls -t sorts by mtime (find can't portably on macOS); names are controlled dated slugs
-  done_recent="$(ls -t "$root"/dev/done/*.md 2>/dev/null | head -3 || true)"
+  done_recent="$(ls -t "$root"/.agents/dev/done/*.md 2>/dev/null | head -3 || true)"
   if [ -n "$done_recent" ]; then printf '%s\n' "$done_recent" | sed "s#^$root/#  #"; else echo "  (none)"; fi
 }
 

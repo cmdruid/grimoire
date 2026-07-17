@@ -1,6 +1,6 @@
 # Vision
 
-The durable what/why. This is the north star every other spec in `design/` ultimately serves —
+The durable what/why. This is the north star every other spec in `.agents/design/` ultimately serves —
 change it rarely, and know that a change here reshapes everything below it.
 
 ## North star

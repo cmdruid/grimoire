@@ -5,13 +5,13 @@ description: "Execute the planning spine as verbs -- `/feature brainstorm | desi
 
 # feature -- the executable planning spine
 
-`/feature <verb> [args]` makes the host's `dev/docs/PLANNING.md` spine **executable**. Its four core verbs ARE
+`/feature <verb> [args]` makes the host's `.agents/dev/docs/PLANNING.md` spine **executable**. Its four core verbs ARE
 the spine's plan-and-build stages (1-4); stage 5 (debrief) stays the separate `/backlog debrief` skill. A
 fifth verb, `review`, is **cross-cutting** -- an independent ground-truthed critique of an artifact any
 stage produced, callable at any point. Each verb
 distills the planning discipline it needs into a compact checklist, pointed at the host's gate
-(named in its `AGENTS.md`), templates (`dev/templates/`), frontmatter (`dev/docs/TAXONOMY.md`), and
-home (planning artifacts always land in `dev/plans/`; ADRs in `dev/adr/`).
+(named in its `AGENTS.md`), templates (`.agents/dev/templates/`), frontmatter (`.agents/dev/docs/TAXONOMY.md`), and
+home (planning artifacts always land in `.agents/dev/plans/`; ADRs in `.agents/dev/adr/`).
 
 This skill is **self-contained and uniquely named**: it depends on no other skill and collides with
 none. The upstream superpowers planning skills stay installed but go unused for planning -- no
@@ -32,8 +32,8 @@ settings change, no precedence question.
 | Verb | Does | Consumes -> Produces | Args |
 |---|---|---|---|
 | `brainstorm` | idea -> validated approach; **classifies the tier** | prompt -> approved approach (in context) + tier call | `<prompt>` |
-| `design` | write the design spec; self-review; user-review gate | approach -> `dev/plans/<date>-<slug>-design.md` | `[notes/context]` |
-| `plan` | write the impl plan; run the **plan gate** | design -> `dev/plans/<date>-<slug>-implementation.md` | `<design-file>` |
+| `design` | write the design spec; self-review; user-review gate | approach -> `.agents/dev/plans/<date>-<slug>-design.md` | `[notes/context]` |
+| `plan` | write the impl plan; run the **plan gate** | design -> `.agents/dev/plans/<date>-<slug>-implementation.md` | `<design-file>` |
 | `build` | execute task-by-task to the green gate | plan -> code + checked-off tasks | `<plan-file>` |
 | `review` | **cross-cutting:** independent ground-truthed critique of an existing artifact | any spine artifact -> a verdict (in context) | `<doc-file> [focus]` |
 
@@ -67,7 +67,7 @@ know how much to produce. No file is written; the output is an agreed approach h
 
 Checklist:
 1. **Explore context first** -- read the relevant code/docs/recent commits and `PROJECT.md` /
-   `DESIGN.md` / `dev/MEMORY.md` invariants before asking anything. Don't brainstorm blind.
+   `DESIGN.md` / `.agents/dev/MEMORY.md` invariants before asking anything. Don't brainstorm blind.
 2. **Scope check** -- if the idea spans several independent subsystems, say so and decompose into
    separate features before refining details; brainstorm the first one.
 3. **Ask one question at a time** -- multiple-choice when you can, open-ended when you must. One
@@ -89,16 +89,16 @@ for a patch, stop -- `/feature` isn't used).
 Write the design that argues the chosen approach before any code, then gate it on review. Skip the
 standalone design for a patch; for a **small feature** this is the **brief that doubles as the plan**
 (keep it short -- problem, approach, a task list, a done-when); for a **track** it is the **roadmap**
-(written once, settling all phases). Copy the shape from `dev/templates/plan-design.md` (or
-`dev/templates/roadmap.md` for a track) -- do not double-plan by also re-filling a template by hand.
+(written once, settling all phases). Copy the shape from `.agents/dev/templates/plan-design.md` (or
+`.agents/dev/templates/roadmap.md` for a track) -- do not double-plan by also re-filling a template by hand.
 
 Checklist:
 1. **Write the spec** with the template's sections: **Problem** (the root need, not a surface knob),
    **Goal**, **Approach** (+ the 1-2 alternatives rejected and why), **Mechanism** (concrete enough
    to implement from), **Verification** (how we'll know it works).
-2. **Land it in `dev/plans/`** as `dev/plans/<YYYY-MM-DD>-<slug>-design.md`, with frontmatter
+2. **Land it in `.agents/dev/plans/`** as `.agents/dev/plans/<YYYY-MM-DD>-<slug>-design.md`, with frontmatter
    `type: design`, `status: draft`, `updated: <today>`, `related: [...]` -- the `type`/`status`
-   vocabulary `dev/docs/TAXONOMY.md` defines and the doc-linter enforces (`design` moves
+   vocabulary `.agents/dev/docs/TAXONOMY.md` defines and the doc-linter enforces (`design` moves
    `draft -> active -> shipped` as the feature advances).
 3. **Spec self-review** (PLANNING.md gate 2, part 1) -- scan the written spec for: placeholders
    (TBD/TODO/vague), internal contradictions, scope (focused enough for one plan?), ambiguity (any
@@ -114,7 +114,7 @@ the design file).
 Turn the approved design into a plan an implementer executes step by step, after re-grounding it
 against the live tree. For a **small feature** this folds into `design`'s brief (no separate plan);
 for a **track**, write one plan **per phase** from the roadmap. Copy
-`dev/templates/plan-implementation.md`.
+`.agents/dev/templates/plan-implementation.md`.
 
 Checklist:
 1. **Writing discipline** -- decompose into **bite-sized tasks** (each an independently testable
@@ -141,14 +141,14 @@ Checklist:
      member of an existing set, a new caller of a proven system): a wiring/membership **unit test
      suffices** -- a live visual spike there adds fiddly cost for low marginal assurance. Classify
      which case you are in before defaulting to the visual spike.
-   - Name the load-bearing live-API traps from `dev/docs/GOTCHAS.md` in the plan's **Global
+   - Name the load-bearing live-API traps from `.agents/dev/docs/GOTCHAS.md` in the plan's **Global
      Constraints** so each task re-verifies them.
 3. **Plan self-review** -- spec coverage (every spec requirement maps to a task -- list gaps), a
    placeholder scan, and type/name consistency across tasks. Fix inline; add a task for any
    uncovered requirement.
-4. **Land it** as `dev/plans/<YYYY-MM-DD>-<slug>-implementation.md`, frontmatter `type:
-   implementation`, `status: draft`, `updated`, `related: [<the design>]`. An ADR (`dev/adr/`, via
-   `dev/templates/adr.md`) is part of this stage **only** if a cross-cutting decision surfaced -- one
+4. **Land it** as `.agents/dev/plans/<YYYY-MM-DD>-<slug>-implementation.md`, frontmatter `type:
+   implementation`, `status: draft`, `updated`, `related: [<the design>]`. An ADR (`.agents/dev/adr/`, via
+   `.agents/dev/templates/adr.md`) is part of this stage **only** if a cross-cutting decision surfaced -- one
    per track, never per phase.
 
 Consumes the design file; produces the implementation plan. Terminal step: proceed to `build`
@@ -231,7 +231,7 @@ Checklist:
 3. **Apply the rubric for the doc's type:**
    - **design** -- Problem is the *root need*, not a surface knob; Approach justified with alternatives
      rejected; Mechanism implementable; **grounded** (refs resolve, claims match code); aligned with
-     `DESIGN.md`/`dev/MEMORY.md` invariants, ADRs, `GOTCHAS`; scope = one plan; ambiguity resolved; YAGNI.
+     `DESIGN.md`/`.agents/dev/MEMORY.md` invariants, ADRs, `GOTCHAS`; scope = one plan; ambiguity resolved; YAGNI.
    - **implementation** -- **spec->plan coverage** (every design requirement maps to a task -- list
      gaps); bite-sized testable tasks, exact paths, complete code (no "similar to Task N"); plan-gate
      grounding; riskiest piece spiked first; load-bearing `GOTCHAS` in Global Constraints; per-task verify.
@@ -258,7 +258,7 @@ to whoever owns the artifact -- `review` changes nothing itself.
 There is no separate `/feature` state file. Each verb consumes the previous verb's artifact by path:
 `brainstorm`'s approach lives in context -> `design` writes the design doc -> `plan` reads it and
 writes the implementation plan -> `build` reads the plan and checks off its tasks. Those artifacts are
-the `dev/plans/` docs the frontmatter/taxonomy system already catalogs; `/feature` is the engine that
+the `.agents/dev/plans/` docs the frontmatter/taxonomy system already catalogs; `/feature` is the engine that
 *produces what the taxonomy indexes*, and each doc's frontmatter `status` tracks its lifecycle.
 `review` is the exception: it **consumes** any of these artifacts by path and produces only an
 in-context verdict, adding nothing to the chain (artifact-free, like `brainstorm`).
@@ -285,7 +285,7 @@ them. **`/feature` never debriefs, ships, or lands.**
 ## Structure, plugin posture, portability
 
 - A self-contained skill directory (`SKILL.md` + an optional `templates/` subdir only if a verb ever
-  needs a shape not already in the host's `dev/templates/` -- it shouldn't, since it reuses
+  needs a shape not already in the host's `.agents/dev/templates/` -- it shouldn't, since it reuses
   `plan-design.md` / `plan-implementation.md` / `roadmap.md` / `adr.md`).
 - The upstream superpowers planning skills stay **installed and unused** for planning -- `/feature` is
   uniquely named, so nothing collides and no settings/plugin toggle is needed; their session bootstrap

@@ -3,19 +3,19 @@
 The **self-growing curation loop**. As work ships, `/backlog`'s trackers accumulate signal *about the
 development system itself* — friction with a workflow, a routing rule that misfired, a convention
 that has quietly changed, a `FEEDBACK` note that the docs are getting heavy. `tune` **drains the
-system-relevant slice of that signal into concrete improvements** to the doctrine (`dev/docs/*`), the
+system-relevant slice of that signal into concrete improvements** to the doctrine (`.agents/dev/docs/*`), the
 workflow, and the `AGENTS.md` wiring. The living docs both **drift** (as code and the filesystem
 move) and **accumulate** a backlog of "the system should work differently" — `tune` turns that into
 edits, so the factory tunes itself instead of ossifying.
 
-It is a **thin driver**: the maintenance methodology lives in `dev/docs/MAINTENANCE.md` (the single
+It is a **thin driver**: the maintenance methodology lives in `.agents/dev/docs/MAINTENANCE.md` (the single
 source of truth) — **re-read it each pass**; this verb orchestrates the drain and surfaces the
 routine, it does not restate the per-audit checklists.
 
 **Scope boundary (read this).** Three neighboring jobs are deliberately *not* here:
 
 - **Draining the trackers as lists** — sharpening/reordering `BACKLOG.md`, removing shipped items,
-  archiving to `dev/done/` — is **`/backlog groom`**, not `tune`. `tune` *consumes* the trackers'
+  archiving to `.agents/dev/done/` — is **`/backlog groom`**, not `tune`. `tune` *consumes* the trackers'
   signal to improve doctrine; it does not curate the lists themselves.
 - **Mechanically validating that the deployed glue still resolves** — spine coverage, stale
   `file:line` refs, runbook-vs-installed-skills drift — is **`/foreman check`** (the cheap
@@ -28,7 +28,7 @@ routine, it does not restate the per-audit checklists.
   the docs", "the workflow keeps tripping me — fix the doctrine", or notes that the system-facing
   signal (`FEEDBACK.md`, `ISSUES.md`) is **piling up** with recurring complaints about how development
   works here.
-- **Periodically, when the tree is quiet** — and after a structural change to the `dev/` system, or
+- **Periodically, when the tree is quiet** — and after a structural change to the `.agents/dev/` system, or
   once a body of friction has accumulated enough to see a pattern.
 
 **Do NOT use** mid-task, or **while the tree is churning**: `MAINTENANCE.md` is explicit that these
@@ -43,17 +43,17 @@ branch):
    `tree_quiet`, `linked_worktrees`, and per-tracker sizes/last-change in one read — a sweep during
    churn (`tree_quiet=false` or live worktrees) fights concurrent edits, so confirm quiet first. The
    tracker sizes tell you which trackers carry accumulating system-facing signal and earn a deep read.
-2. **Harvest the system-relevant signal.** Read `/backlog`'s `dev/FEEDBACK.md` and `dev/ISSUES.md` for
+2. **Harvest the system-relevant signal.** Read `/backlog`'s `.agents/dev/FEEDBACK.md` and `.agents/dev/ISSUES.md` for
    the slice that is about **the development system, not the product**: dev-experience friction, a
    routing rule that misfires, a convention stated as fact that has since changed, a doc that keeps
    getting reached for and isn't wired in. (Product/feature items stay in `BACKLOG.md` — those are
    `/backlog groom`'s, not signal for the doctrine.) Look for **patterns**: one complaint is a note;
    the same friction three times is a doctrine bug.
 3. **Drain each pattern into a concrete doctrine edit.** Turn the signal into a real change:
-   - a routing gap → sharpen `dev/docs/DEVELOPMENT.md` (the change-router walk);
-   - a recurring how-to question → add/repoint it in `dev/docs/WORKFLOWS.md`;
-   - a planning-weight mismatch → adjust the tiers in `dev/docs/PLANNING.md`;
-   - a load-bearing invariant that changed → update `dev/MEMORY.md` (highest stakes — a wrong "fact"
+   - a routing gap → sharpen `.agents/dev/docs/DEVELOPMENT.md` (the change-router walk);
+   - a recurring how-to question → add/repoint it in `.agents/dev/docs/WORKFLOWS.md`;
+   - a planning-weight mismatch → adjust the tiers in `.agents/dev/docs/PLANNING.md`;
+   - a load-bearing invariant that changed → update `.agents/dev/MEMORY.md` (highest stakes — a wrong "fact"
      agents internalize is actively harmful; hand-edit, never bulk);
    - a command/entrypoint the skills resolve generically but `AGENTS.md` no longer names → fix the
      `AGENTS.md` wiring so "run the gate" / "the fast doc-linter" still resolve.
@@ -64,7 +64,7 @@ branch):
    a finding.
 5. **Commit.** Commit the doctrine edits atomically with **explicit paths** via
    `scripts/scoped-commit.sh <root> "<msg>" <paths…>` (never `git add -A` on the shared root — see
-   `dev/docs/WORKTREES.md`). As a sweep, `tune` makes the single commit; capture verbs it touched only
+   `.agents/dev/docs/WORKTREES.md`). As a sweep, `tune` makes the single commit; capture verbs it touched only
    write. Commits carry **no** `Co-Authored-By` trailer. Then run the host's gate / doc-linter.
 
 ## Relationship to neighboring verbs & skills

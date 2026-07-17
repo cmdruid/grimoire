@@ -28,15 +28,15 @@ distinct from `BACKLOG.md` ("build X") and `ISSUES.md` ("dev-friction got in my 
 
 1. **Diagnose** -- observe -> reproduce -> isolate. Check any gotchas doc: it may be a known trap
    (working-as-coded but surprising), not a bug.
-2. **File a report** into `dev/bugs/` -- `dev/bugs/YYYY-MM-DD-<slug>.md` from
-   `dev/templates/bug-report.md`: the **repro** (`<stack: a deterministic repro + evidence
+2. **File a report** into `.agents/dev/bugs/` -- `.agents/dev/bugs/YYYY-MM-DD-<slug>.md` from
+   `.agents/dev/templates/bug-report.md`: the **repro** (`<stack: a deterministic repro + evidence
    artifact>`), **expected vs actual** with evidence, **status + severity**. Capture while fresh;
    reports can run large -- that's what the store is for.
 3. **Then fix or defer** -- fixing now -> fix (patch or feature, by size), note the commit,
-   `git mv` the report to `dev/bugs/archive/`. Deferring -> add a `BACKLOG.md` item that
+   `git mv` the report to `.agents/dev/bugs/archive/`. Deferring -> add a `BACKLOG.md` item that
    **links** the report. Working-as-coded -> promote to the gotchas doc, drop the report.
 
-**`dev/bugs/` is a report *store*, not a work queue** -- file reports there; track the fix from
+**`.agents/dev/bugs/` is a report *store*, not a work queue** -- file reports there; track the fix from
 a linked `BACKLOG.md` item / task / plan. Don't fish in it for work.
 
 ## Fixes & patches (on `main`)
@@ -81,7 +81,7 @@ fix from a linked actionable item; don't fish in it for work. The periodic *drai
 trackers is the maintenance engine's job (`MAINTENANCE.md`; `/backlog groom` for the lists).
 
 When an entry needs **more than a line** -- rationale, a worked example, design context that isn't
-an ADR -- write the long form to **`dev/notes/<slug>.md`** and link it from the tracker entry (or
+an ADR -- write the long form to **`.agents/dev/notes/<slug>.md`** and link it from the tracker entry (or
 from a `MEMORY.md` line). `notes/` is a *store* like `bugs/`: reached only through that link, never
 enumerated or drained on its own. It is spillover for any tracker, not a fifth bucket. A
 *standalone* investigation you'd open on its own is a `reports/` doc, not a note.
@@ -92,5 +92,5 @@ everything it surfaced -- is what **`/backlog debrief`** automates (if available
 
 ## Invariants that always apply
 
-Whatever the change, don't break the load-bearing invariants in `dev/MEMORY.md` (`<keystone>`),
+Whatever the change, don't break the load-bearing invariants in `.agents/dev/MEMORY.md` (`<keystone>`),
 and keep abstractions earned -- extract a trait at the *second* consumer, not the first.

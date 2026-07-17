@@ -1,6 +1,6 @@
 # BOOTSTRAP -- a portable agent-development documentation system
 
-A self-contained, generic blueprint for a `dev/` documentation system that lets parallel agents
+A self-contained, generic blueprint for a `.agents/dev/` documentation system that lets parallel agents
 develop a software project without clobbering each other or letting the docs rot. Drop this file
 into any project and an agent can **reconstruct the whole system**, or **borrow a module or two**.
 
@@ -67,9 +67,9 @@ Everything else is optional and depends on Core.
 
 | Module | Files | Depends on | Borrow when |
 |---|---|---|---|
-| **Core: entry + index** | front-door `AGENTS`/`README`, `dev/README` (index), `dev/MEMORY` | -- | always |
+| **Core: entry + index** | front-door `AGENTS`/`README`, `.agents/dev/README` (index), `.agents/dev/MEMORY` | -- | always |
 | **Capture trackers** | `BACKLOG`, `bugs/`, `ISSUES`, `FEEDBACK` | Core | you want bounded follow-up capture |
-| **Templates** | `dev/templates/*` | Core | always (consistency) |
+| **Templates** | `.agents/dev/templates/*` | Core | always (consistency) |
 | **Change router** | `docs/DEVELOPMENT` | Core | >1 kind of change (bug/patch/feature) |
 | **Planning** | `docs/PLANNING` | Change router, Templates | features need design before build |
 | **Worktree pipeline** | `docs/WORKTREES` | Planning, git | parallel agents / isolated feature work |
@@ -90,9 +90,9 @@ The generic tree. Adjust names to your host's conventions (e.g. the front door i
 ```
 <repo root>/
   <front door>            -- bootstrap entry: "read first" order, build/test/run, repo map,
-                             conventions, and a "making a change? -> dev/docs/DEVELOPMENT" pointer
-  dev/
-    README.md             -- THE index for dev/: what each dir/file is + the conventions. No
+                             conventions, and a "making a change? -> .agents/dev/docs/DEVELOPMENT" pointer
+  .agents/dev/
+    README.md             -- THE index for .agents/dev/: what each dir/file is + the conventions. No
                              per-directory READMEs to chase.
     MEMORY.md             -- the tiny set of load-bearing invariants agents internalize. <keystone>
                              lives here. Kept deliberately small.
@@ -106,7 +106,7 @@ The generic tree. Adjust names to your host's conventions (e.g. the front door i
       WORKTREES.md        -- the build pipeline + git-worktree mechanics
       WORKFLOWS.md        -- index of common how-tos (pointers, not restatements)
       MAINTENANCE.md      -- audits (catch drift) + prune/archive (keep lean)
-      SYNC.md             -- contract keeping the front door in step with dev/
+      SYNC.md             -- contract keeping the front door in step with .agents/dev/
       ARCHITECTURE.md     -- <content doc> one-page system map
       GOTCHAS.md          -- <content doc> running list of traps that cost time
       DIAGNOSTICS.md      -- <content doc> the debugging playbook
@@ -132,13 +132,13 @@ The spine an agent follows. Each arrow is a pointer in a doc, never a duplicated
 
 ```
 <front door>  ("making a change? start at DEVELOPMENT")
-   -> dev/docs/DEVELOPMENT  (classify the change)
+   -> .agents/dev/docs/DEVELOPMENT  (classify the change)
         bug    -> DIAGNOSTICS (diagnose) + GOTCHAS (known trap?) -> file a report in bugs/
         patch  -> land directly on the main branch, committed promptly (no plan)
         feature-> PLANNING (plan it) -> WORKTREES (build it)
         spike  -> explore in isolation; capture learnings; build properly as a feature
-   dev/README   answers "where does X live"
-   dev/MEMORY   holds the invariants to internalize first
+   .agents/dev/README   answers "where does X live"
+   .agents/dev/MEMORY   holds the invariants to internalize first
 ```
 
 Keep the three navigation docs non-overlapping: **README** = *where things live*, **DEVELOPMENT**
@@ -239,7 +239,7 @@ Its own small doc, or a section of *Maintenance* -- it's the per-change half of 
 concern as the periodic spine audit, so a small system folds the two together. The front door
 (`AGENTS`/`README`) is the most volatile doc -- many agents touch it. The contract:
 
-- **Change `dev/` -> reflect it in the front door in the same commit.** A pointer that lags the
+- **Change `.agents/dev/` -> reflect it in the front door in the same commit.** A pointer that lags the
   system is the drift this prevents.
 - **The front door is an index, not a copy.** It gives one named pointer to the canonical doc for
   each thing; it never duplicates content. Tier it: name directly only what an agent reaches for
@@ -260,12 +260,12 @@ A small check wired into `<gate>` (implement in your stack -- it's a spec, not c
 
 1. **Resolve internal links.** Every internal doc link (`](path)` and, ideally, backtick path
    refs to docs) points at a file that exists. Catches renames/deletes that leave dead links.
-2. **Index enumerable doc series.** Every file in an enumerable directory (e.g. `dev/docs/`,
-   `dev/adr/`) is named in its index (`dev/README`). Catches docs that exist but are unreachable.
+2. **Index enumerable doc series.** Every file in an enumerable directory (e.g. `.agents/dev/docs/`,
+   `.agents/dev/adr/`) is named in its index (`.agents/dev/README`). Catches docs that exist but are unreachable.
 3. **Forbid stray paths.** Any path your conventions ban (e.g. a skill's default output dir you
    don't use) does not exist. Catches convention violations silently reintroduced.
-4. **Validate store-dir frontmatter.** Every file in an artifact-instance store dir (`dev/plans/`,
-   `dev/adr/`, `dev/bugs/`, `dev/done/`, ... -- the explicit gated-dir list) carries a valid
+4. **Validate store-dir frontmatter.** Every file in an artifact-instance store dir (`.agents/dev/plans/`,
+   `.agents/dev/adr/`, `.agents/dev/bugs/`, `.agents/dev/done/`, ... -- the explicit gated-dir list) carries a valid
    frontmatter block: `type` legal for the dir, `status` in that type's set, `updated` shaped
    `YYYY-MM-DD` (schema: the host's capture-taxonomy doc). Catches records that would silently escape the
    type/status search recipes.
@@ -278,7 +278,7 @@ miss, not to enforce style.
 ## 12. Templates
 
 The authored template set ships as **files in this skill's `templates/` directory** -- copy them
-into the host's `dev/templates/` (playbook step 3): `plan-design`, `plan-implementation`,
+into the host's `.agents/dev/templates/` (playbook step 3): `plan-design`, `plan-implementation`,
 `roadmap`, `adr`, `bug-report`, `report`, `note`, `task-record`, `feedback`. Those files are the
 **single source of truth** for each artifact's shape, frontmatter block included (the linter's
 store-dir check, §11.4, rejects an instance without it; schema in the host's capture-taxonomy doc). Do **not**
@@ -328,8 +328,8 @@ _Last updated: <date>_
 
 **Full deploy:**
 1. Fill the *Slots* (§2): `<keystone>`, `<gate>`, `<stack>`.
-2. Create the *Manifest* tree (§4). Start the front door, `dev/README`, and `dev/MEMORY`.
-3. Copy the bundled `templates/` into `dev/templates/` (§12).
+2. Create the *Manifest* tree (§4). Start the front door, `.agents/dev/README`, and `.agents/dev/MEMORY`.
+3. Copy the bundled `templates/` into `.agents/dev/templates/` (§12).
 4. Add the *Trackers* (§6) as empty files with a one-line "what goes here" header each.
 5. Add the routing + planning + worktree + maintenance + sync docs (§5, §7-§10), genericized to
    your stack.

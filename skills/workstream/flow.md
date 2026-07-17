@@ -66,7 +66,7 @@ rather than blocking the loop**. Delegates author read-only into a `.mailbox/` s
 applies and gates. The **gate stays single-location** in this worktree regardless of who authored the
 change. Earlier stages map
 the same way: `/feature brainstorm | design | plan` produce the queue's design/plan artifacts. When
-`/feature` isn't installed, build the plan **by hand** per the host's `dev/docs/PLANNING.md` — the
+`/feature` isn't installed, build the plan **by hand** per the host's `.agents/dev/docs/PLANNING.md` — the
 loop is unchanged either way; `/feature` is the preferred *realization*, not a hard dependency. (The
 seam ownership is the contract: whoever builds, `build` stops at gate-green and `/workstream` lands +
 debriefs.)
@@ -122,10 +122,10 @@ hand-off path — see SKILL.md *Helper scripts*). Then:
   the `/model` swap, and you cannot reliably introspect which model you are, so state the target rather
   than trying to detect a mismatch.
 
-**Verify a queued item is still real before offering it *to build*.** A `dev/BACKLOG.md` / roadmap item
+**Verify a queued item is still real before offering it *to build*.** A `.agents/dev/BACKLOG.md` / roadmap item
 can already be **shipped** — by a sibling stream, with the entry never pruned. Before presenting such an
 item as buildable work (a KNOWN next-item *or* an AMBIGUOUS pick), cheaply confirm it isn't already done:
-grep `dev/done/` for the slug + glance at the code surface it names. A stale entry otherwise costs a
+grep `.agents/dev/done/` for the slug + glance at the code surface it names. A stale entry otherwise costs a
 wasted question round-trip + an Explore dispatch before `build` discovers there is nothing to build.
 (Same doctrine as `/feature plan`'s grounding gate: verify inherited/queued work is real before building it.)
 
@@ -213,7 +213,7 @@ ritual's **save** + a **park** for a `/model` swap. The hand-off records the cur
 hand-off's *Phase model map*). The three phases, each ending `save -> park -> reset -> load`:
 
 > **PLAN** (plan-model) — author the feature's plan: `/feature design` + `/feature plan` into
-> `dev/plans/`. Then **save** (record `Phase: build`) -> **park**: "Plan ready. Switch to <build-model>
+> `.agents/dev/plans/`. Then **save** (record `Phase: build`) -> **park**: "Plan ready. Switch to <build-model>
 > (`/model <m>`), `/clear`, `/workstream load <stream>`."
 >
 > **BUILD** (build-model) — `/feature build <plan>` to gate-green, then `/backlog debrief` #1 (the
@@ -255,7 +255,7 @@ redundant:
   **In `manual` mode a low/0 tally is *expected*** — delegation there is fan-out-only, not the model
   lever — so do **not** route it as `[delegate]` feedback; the per-phase model swaps are the model story.
   **Forward-reference guard:** if a debrief-#1 follow-up references the feature being shipped *this*
-  cycle, cite it **by intent/slug, not as a `dev/done/<slug>.md` path link** — `ship` step 1 writes that
+  cycle, cite it **by intent/slug, not as a `.agents/dev/done/<slug>.md` path link** — `ship` step 1 writes that
   record *after* debrief, so a path link is transiently dangling and the host doc-linter rejects the
   debrief commit (gated on its own, before ship). Cite the slug in prose; the record materializes at ship.
 - **#2 (after `ship`, conditional)** — the *process* friction. **Recommended, not automatic:** flag

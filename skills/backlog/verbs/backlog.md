@@ -1,6 +1,6 @@
 # `/backlog backlog` — capture product/feature follow-ups
 
-Capture follow-up work into `dev/BACKLOG.md`. BACKLOG is the one tracker with a **human producer** —
+Capture follow-up work into `.agents/dev/BACKLOG.md`. BACKLOG is the one tracker with a **human producer** —
 "put this in the backlog" is something *you* say — alongside agents. This verb is the quick, anytime
 way to add a well-formed item.
 
@@ -13,8 +13,8 @@ tune`; the end-of-work sweep that routes byproducts across *all* trackers is `/b
 - "put this in the backlog", "add a backlog item: X", "remind me to …", "/backlog backlog", or "any
   follow-ups worth capturing from this?" — anytime, by you or an agent.
 
-**Do NOT use** for: a defect (`/backlog bug` → `dev/bugs/`), dev-experience friction (`/backlog
-issue` → `dev/ISSUES.md`), qualitative observations (`/backlog feedback` → `dev/FEEDBACK.md`), the
+**Do NOT use** for: a defect (`/backlog bug` → `.agents/dev/bugs/`), dev-experience friction (`/backlog
+issue` → `.agents/dev/ISSUES.md`), qualitative observations (`/backlog feedback` → `.agents/dev/FEEDBACK.md`), the
 end-of-work multi-tracker sweep (`/backlog debrief`), tidying the list (`/backlog groom`), or draining
 shipped/stale items (`/foreman tune`). Don't invoke it mid-task for routine status checks.
 
@@ -23,13 +23,13 @@ shipped/stale items (`/foreman tune`). Don't invoke it mid-task for routine stat
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
 - Backlog: `<root>/dev/BACKLOG.md`. Create it if missing (`# Backlog` header + a one-line note that
-  an item is *removed when it ships*, recorded in `dev/done/`).
+  an item is *removed when it ships*, recorded in `.agents/dev/done/`).
 
 ## Backlog structure
 
-`dev/BACKLOG.md` is a single **living** list — one top-level header, one section per group. Items
+`.agents/dev/BACKLOG.md` is a single **living** list — one top-level header, one section per group. Items
 are plain `-` bullets (**no checkboxes**): an item is *open* while it's listed and simply **removed
-when it ships** — the commit, plus any `dev/done/` stream digest, is the record (the drain is
+when it ships** — the commit, plus any `.agents/dev/done/` stream digest, is the record (the drain is
 `/foreman tune`, not a checkbox).
 
 **Follow the file's existing groups.** If `BACKLOG.md` exists, adopt its group headings and heading
@@ -68,7 +68,7 @@ Procedure:
    **Dedupe** against existing items — skip a near-duplicate rather than add it. Never edit or
    remove existing items in capture; you only add. (To *reshape* the list, that's `/backlog groom`.)
 5. **Commit (standalone only).** Invoked **standalone**, scoped-commit the backlog change via
-   `scripts/scoped-commit.sh <root> "Backlog: <short what>" dev/BACKLOG.md`, then run the host doc-linter.
+   `scripts/scoped-commit.sh <root> "Backlog: <short what>" .agents/dev/BACKLOG.md`, then run the host doc-linter.
    Invoked **inside `/backlog debrief`**, do **not** commit — only write; the sweep makes the
    single atomic commit. (This standalone self-commit is a deliberate refinement: a `/backlog backlog`
    add now lands on its own rather than waiting for an unrelated commit.)
@@ -78,8 +78,8 @@ Procedure:
 
 A shipped or abandoned item is **removed**, not checked off: delete the bullet (in the commit that
 ships the work, or when `/backlog groom` weeds a dead one). There is no `prune` step and no `[x]` —
-the commit history plus any `dev/done/` stream digest are the record, and the periodic drain/audit is
-`/foreman tune`. **This verb never writes `dev/done/`.**
+the commit history plus any `.agents/dev/done/` stream digest are the record, and the periodic drain/audit is
+`/foreman tune`. **This verb never writes `.agents/dev/done/`.**
 
 ## Relationship to neighboring verbs
 
@@ -100,6 +100,6 @@ the commit history plus any `dev/done/` stream digest are the record, and the pe
 
 ## Done when
 
-The named follow-up(s) are in `dev/BACKLOG.md` as well-formed, deduped, grouped bullets — and nothing
+The named follow-up(s) are in `.agents/dev/BACKLOG.md` as well-formed, deduped, grouped bullets — and nothing
 shipped is left lingering (that removal is on-ship + `/foreman tune`, never this verb). To reshape or
 weed the list, run `/backlog groom`.

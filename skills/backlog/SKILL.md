@@ -1,12 +1,12 @@
 ---
 name: backlog
-description: "The capture bureau — the single collection front-door for a project's `dev/` trackers. Owns the trackers, their formats, and the capture schema (`docs/TAXONOMY.md`). Capture verbs each file one follow-up: `/backlog bug` (defect), `/backlog backlog` (feature), `/backlog issue` (dev-friction), `/backlog feedback` (qualitative). `/backlog debrief` sweeps a finished body of work to every tracker; `/backlog groom` dedupes/ranks/weeds the backlog. Captures uniformly — the code-vs-factory cut is made downstream by `/foreman`, not at capture time. Use when the user runs `/backlog ...`, or asks to file/capture/sweep/groom a follow-up. Distinct from routing/tuning the dev system (`/foreman`) and the code audit (`/auditor`)."
+description: "The capture bureau — the single collection front-door for a project's `.agents/dev/` trackers. Owns the trackers, their formats, and the capture schema (`docs/TAXONOMY.md`). Capture verbs each file one follow-up: `/backlog bug` (defect), `/backlog backlog` (feature), `/backlog issue` (dev-friction), `/backlog feedback` (qualitative). `/backlog debrief` sweeps a finished body of work to every tracker; `/backlog groom` dedupes/ranks/weeds the backlog. Captures uniformly — the code-vs-factory cut is made downstream by `/foreman`, not at capture time. Use when the user runs `/backlog ...`, or asks to file/capture/sweep/groom a follow-up. Distinct from routing/tuning the dev system (`/foreman`) and the code audit (`/auditor`)."
 ---
 
 # backlog — the capture bureau
 
-One skill: the **single collection front-door** for a project's `dev/` trackers. It owns the tracker
-artifacts (`BACKLOG.md`, `ISSUES.md`, `FEEDBACK.md`, `dev/bugs/`), their **formats**, the capture
+One skill: the **single collection front-door** for a project's `.agents/dev/` trackers. It owns the tracker
+artifacts (`BACKLOG.md`, `ISSUES.md`, `FEEDBACK.md`, `.agents/dev/bugs/`), their **formats**, the capture
 **schema** (`docs/TAXONOMY.md`), the end-of-work **sweep**, and backlog **grooming**. Everything that
 *captures a follow-up* lives here; standing up, routing, and tuning the dev system is a separate
 skill, `/foreman`.
@@ -26,10 +26,10 @@ and follow it**; do not reconstruct a procedure from memory.
 
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
-| `/backlog bug` | `verbs/bug.md` | File an observed **defect** → `dev/bugs/` (linked from an actionable item) | "file a bug", "this is broken — repro" |
-| `/backlog backlog` | `verbs/backlog.md` | Capture a product/feature follow-up → `dev/BACKLOG.md` | "put X in the backlog", "remind me to…" |
-| `/backlog issue` | `verbs/issue.md` | Capture dev-experience **friction** → `dev/ISSUES.md` | "the tooling got in my way" |
-| `/backlog feedback` | `verbs/feedback.md` | Capture a qualitative / directional note → `dev/FEEDBACK.md` | "felt great", "docs getting heavy" |
+| `/backlog bug` | `verbs/bug.md` | File an observed **defect** → `.agents/dev/bugs/` (linked from an actionable item) | "file a bug", "this is broken — repro" |
+| `/backlog backlog` | `verbs/backlog.md` | Capture a product/feature follow-up → `.agents/dev/BACKLOG.md` | "put X in the backlog", "remind me to…" |
+| `/backlog issue` | `verbs/issue.md` | Capture dev-experience **friction** → `.agents/dev/ISSUES.md` | "the tooling got in my way" |
+| `/backlog feedback` | `verbs/feedback.md` | Capture a qualitative / directional note → `.agents/dev/FEEDBACK.md` | "felt great", "docs getting heavy" |
 | `/backlog debrief` | `verbs/debrief.md` | **Sweep** a finished body of work; route every byproduct to its tracker | "wrap up before I reset", "capture what surfaced" |
 | `/backlog groom` | `verbs/groom.md` | Tidy `BACKLOG.md` — dedupe, re-rank, sharpen, weed | "triage the backlog", "reprioritize what's left" |
 
@@ -52,7 +52,7 @@ tracker's format and drain, plus the store-dir frontmatter rules — is canonica
   *judgment* — what classifies as a bug vs. friction, how to rank impact, when to dedupe, whether an
   entry is really done, whether the shipped-record exists. The bundled scripts do only the
   deterministic, mechanical work: the **read-only** fact script `scripts/dev-health.sh` (its
-  `debrief-scan` subcommand — uncommitted `dev/` writes, newly added TODO/FIXME markers, recent
+  `debrief-scan` subcommand — uncommitted `.agents/dev/` writes, newly added TODO/FIXME markers, recent
   done-records — for the sweep, emitting compact `key=value` facts + evidence) and the **mutating
   mechanical helper** `scripts/scoped-commit.sh` (the atomic pathspec-scoped commit — it mutates by
   design, but only ever the paths it is handed). **Never push a decision into a script:** a script is
@@ -60,7 +60,7 @@ tracker's format and drain, plus the store-dir frontmatter rules — is canonica
   (worse than none), while a *fact* the prose reasons over is not. `dev-health.sh` **complements** the
   host doc-linter (which owns link resolution, indexing, frontmatter); it never re-implements it.
 - **Commit on the integration trunk, never a work branch.** A capture commit writes *new* shared
-  `dev/` content, so it can't ride a feature ref — it lands on the **root checkout's current branch**,
+  `.agents/dev/` content, so it can't ride a feature ref — it lands on the **root checkout's current branch**,
   which must be the integration **trunk** (`main` today, `dev` later; never hardcode `main`).
   **Guard:** check `git -C <root> branch --show-current`; if it is empty (detached HEAD) or a work
   branch (`stream/*`, `feature/*`), STOP and tell the user to switch the root to its trunk (or run
@@ -85,7 +85,7 @@ tracker's format and drain, plus the store-dir frontmatter rules — is canonica
 ## Scope boundary
 
 `/backlog` is the **capture bureau** — it files, sweeps, and grooms the trackers, and it owns their
-formats and schema. It is **not** the dev-system integration layer: standing up the `dev/` system,
+formats and schema. It is **not** the dev-system integration layer: standing up the `.agents/dev/` system,
 the change-router (where a change starts), and the curation loop that folds captured signal back into
 doctrine are `/foreman`'s (`init` / `route` / `tune` / `check`). It is **not** the code-quality audit
 (`/auditor`, which scores project code against a rubric), and it does not do the development itself.
@@ -97,4 +97,4 @@ doctrine are `/foreman`'s (`init` / `route` / `tune` / `check`). It is **not** t
 `/feature` (the plan+build engine — `brainstorm | design | plan | build`), `/workstream` (drive a
 stream in a worktree; owns landing), `/handoff` (save/resume a session snapshot), `/auditor` (score
 project code). The verbs defer to these where the host has them; the by-hand fallback is always "do it
-per the deployed `dev/docs/`".
+per the deployed `.agents/dev/docs/`".
