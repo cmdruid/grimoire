@@ -17,7 +17,7 @@ for routine status checks.
 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
-- Backlog: `<root>/dev/BACKLOG.md`. If it doesn't exist, there's nothing to groom — say so and stop.
+- Backlog: `<root>/.agents/dev/BACKLOG.md`. If it doesn't exist, there's nothing to groom — say so and stop.
 
 ## Procedure
 

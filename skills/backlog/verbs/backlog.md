@@ -22,7 +22,7 @@ shipped/stale items (`/foreman tune`). Don't invoke it mid-task for routine stat
 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
-- Backlog: `<root>/dev/BACKLOG.md`. Create it if missing (`# Backlog` header + a one-line note that
+- Backlog: `<root>/.agents/dev/BACKLOG.md`. Create it if missing (`# Backlog` header + a one-line note that
   an item is *removed when it ships*, recorded in `.agents/dev/done/`).
 
 ## Backlog structure

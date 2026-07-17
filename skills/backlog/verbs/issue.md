@@ -27,7 +27,7 @@ qualitative note (`/backlog feedback`). A durable *gotcha* discovered here shoul
 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
-- Issues log: `<root>/dev/ISSUES.md`. It is a flat markdown log, **not** a store dir — no
+- Issues log: `<root>/.agents/dev/ISSUES.md`. It is a flat markdown log, **not** a store dir — no
   per-file frontmatter (the doc-linter does not gate it).
 
 ## Issues structure & numbering

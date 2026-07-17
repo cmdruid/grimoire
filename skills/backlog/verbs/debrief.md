@@ -65,9 +65,9 @@ it to you. The doc-linter gate rejects a store-dir file without it. Schema: `.ag
 
 All paths project-relative. Resolve the project root + real date with `date +%Y-%m-%d` — don't guess.
 
-- `<root>/dev/BACKLOG.md`, `<root>/dev/ISSUES.md`, `<root>/dev/FEEDBACK.md`, `<root>/dev/MEMORY.md`
-- `<root>/dev/bugs/<YYYY-MM-DD>-<slug>.md` (from `.agents/dev/templates/bug-report.md`)
-- `<root>/dev/notes/<slug>.md` (from `.agents/dev/templates/note.md`)
+- `<root>/.agents/dev/BACKLOG.md`, `<root>/.agents/dev/ISSUES.md`, `<root>/.agents/dev/FEEDBACK.md`, `<root>/.agents/dev/MEMORY.md`
+- `<root>/.agents/dev/bugs/<YYYY-MM-DD>-<slug>.md` (from `.agents/dev/templates/bug-report.md`)
+- `<root>/.agents/dev/notes/<slug>.md` (from `.agents/dev/templates/note.md`)
 
 **Landing debrief captures (the root may be off-trunk):** these are **shared `.agents/dev/` files** —
 cross-cutting captures that must be durable + visible *now*, independent of any stream. `debrief`

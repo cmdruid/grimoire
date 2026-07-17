@@ -27,7 +27,7 @@ is *partly* actionable, file the action in its real home and keep only the quali
 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
-- Feedback: `<root>/dev/FEEDBACK.md`. Create it if missing (`# FEEDBACK` header + the one-line note
+- Feedback: `<root>/.agents/dev/FEEDBACK.md`. Create it if missing (`# FEEDBACK` header + the one-line note
   that actionable items go to their real home). It is a flat log, **not** a store dir — no per-file
   frontmatter.
 

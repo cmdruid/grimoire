@@ -90,7 +90,7 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
   A `cd` is UX-only — it positions the user's prompt, never the agent's correctness.
 - **Present worktree-local references as absolute worktree paths.** When you show the user (in chat,
   a summary, a hand-off) a doc/file you created or changed in the worktree, give its **absolute
-  worktree path** (`<worktree>/dev/plans/foo.md`), not a bare repo-relative one — a bare path
+  worktree path** (`<worktree>/.agents/dev/plans/foo.md`), not a bare repo-relative one — a bare path
   resolves against the **root checkout**, where the worktree's unmerged work doesn't exist yet, so the
   link is broken until the stream ships. The same applies to a `file:line` you cite. Note such a doc
   is "on the stream branch until ship" so the reader knows why the root copy isn't there.

@@ -31,10 +31,10 @@ single-defect, right-now path to the same destination.
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` (see the router's shared
 discipline) — don't guess.
 
-- Report: `<root>/dev/bugs/<YYYY-MM-DD>-<slug>.md`, from `<root>/dev/templates/bug-report.md`. Start
+- Report: `<root>/.agents/dev/bugs/<YYYY-MM-DD>-<slug>.md`, from `<root>/.agents/dev/templates/bug-report.md`. Start
   the file with the template's `type: bug` frontmatter block (`type`/`status`/`updated`) — the
   doc-linter gate rejects a `.agents/dev/bugs/` file without it. Schema: `.agents/dev/docs/TAXONOMY.md`.
-- Fixed reports move to `<root>/dev/bugs/archive/`.
+- Fixed reports move to `<root>/.agents/dev/bugs/archive/`.
 - The linking actionable item lives in `.agents/dev/BACKLOG.md` (or `.agents/dev/ISSUES.md` if it's a dev-tooling
   defect) — never in `bugs/` itself.
 
