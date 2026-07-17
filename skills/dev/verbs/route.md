@@ -41,7 +41,7 @@ through it.
   *Changing the foundation → `/architect`. Building on it → `/feature`.* Without this check, the
   router silently keeps sending foundational work down the incremental `/feature` lane — route
   there whenever the change is asking "should this tenet/contract/seam even be this way," not
-  "how do I build the next thing on top of it." See the `design` skill's bundled `docs/DOCTRINE.md` for
+  "how do I build the next thing on top of it." See the `architect` skill's bundled `docs/DOCTRINE.md` for
   the full doctrine.
 - `/auditor` is the code-quality analogue (it scores project code + invariants); `/dev` routes the dev
   workflow and deploys/maintains the doc-system. Keep them distinct.
