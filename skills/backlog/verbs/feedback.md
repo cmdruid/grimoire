@@ -59,8 +59,8 @@ each item to its real home or acting on it — so it stays a live signal, not a 
 4. **Append** the dated entry to the live region (don't disturb the drained-marker history above).
 5. **Commit (standalone only).** Invoked **standalone**, scoped-commit via
    `scripts/scoped-commit.sh <root> "Feedback: <short title>" dev/FEEDBACK.md`, then run the host
-   doc-linter. Invoked **inside `/backlog debrief`/`upkeep`**, do **not** commit — only write; the sweep
-   makes the single atomic commit.
+   doc-linter. Invoked **inside `/backlog debrief` or a `/foreman tune` sweep**, do **not** commit —
+   only write; the sweep makes the single atomic commit.
 6. **Report** the entry title and the path.
 
 ## Relationship to neighboring verbs
@@ -68,7 +68,7 @@ each item to its real home or acting on it — so it stays a live signal, not a 
 - **`/backlog debrief`** — the completion sweep across *all* trackers; it routes the qualitative share
   here. `feedback` is the anytime, FEEDBACK-only, direct add.
 - **`/foreman tune`** (its `feedback` pass) drains `FEEDBACK.md` — routing actionable items to their
-  real home, clearing absorbed ones. Capture is this verb's job; draining is upkeep's.
+  real home, clearing absorbed ones. Capture is this verb's job; draining is `/foreman tune`'s.
 - **`/backlog backlog`**, **`/backlog bug`**, **`/backlog issue`** — the actionable homes; this verb is the
   qualitative residue only.
 

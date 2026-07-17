@@ -60,8 +60,8 @@ renumber existing entries.
 5. **Promote a durable trap** to `dev/docs/GOTCHAS.md` if one surfaced.
 6. **Commit (standalone only).** Invoked **standalone**, scoped-commit via
    `scripts/scoped-commit.sh <root> "Issue <prefix><n>: <short what>" dev/ISSUES.md` (+ `GOTCHAS.md` if you
-   touched it), then run the host doc-linter. Invoked **inside `/backlog debrief`/`upkeep`**, do **not**
-   commit — only write; the sweep makes the single atomic commit.
+   touched it), then run the host doc-linter. Invoked **inside `/backlog debrief` or a `/foreman tune`
+   sweep**, do **not** commit — only write; the sweep makes the single atomic commit.
 7. **Report** the entry id (`E#`/`W#`) and the path.
 
 ## Relationship to neighboring verbs
@@ -69,7 +69,7 @@ renumber existing entries.
 - **`/backlog debrief`** routes *all* byproducts of a finished body of work, friction included, in one
   sweep. `issue` is the in-the-moment, single-friction path to the same `ISSUES.md` log.
 - **`/foreman tune`** (its `issues` pass) drains `ISSUES.md` — resolved entries → `dev/done/`, durable
-  gotchas → `GOTCHAS.md`. Capture is this verb's job; draining is upkeep's.
+  gotchas → `GOTCHAS.md`. Capture is this verb's job; draining is `/foreman tune`'s.
 - **`/backlog bug`** is the product-defect sibling; **`/auditor`** may surface friction it routes here.
 
 ## Done when
