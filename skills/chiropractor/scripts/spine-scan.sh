@@ -152,7 +152,7 @@ emit_edges() {
       # without this the reference graph misses almost everything. ONLY .md targets become
       # reachability edges (a backtick `src/foo.rs` is a code ref, handled by stale_refs). The
       # path char class ([A-Za-z0-9_./-], like @import/stale_refs) naturally excludes glob and
-      # template tokens (`*.md`, `dev/done/<YYYY-MM-DD>-<slug>.md`) -- the bracket chars break
+      # template tokens (`*.md`, `.agents/dev/done/<YYYY-MM-DD>-<slug>.md`) -- the bracket chars break
       # the run. These edges are typed "code" so they grow reachability without inflating
       # broken_links: a backtick ref that does not resolve surfaces under stale_refs instead.
       s = $0
@@ -420,9 +420,9 @@ printf '%s\n' "$ALL" | tr '\n' '\0' | xargs -0 wc -c 2>/dev/null | awk '
   }'
 
 # Affordance flags.
-gl=0; for g in GLOSSARY.md docs/GLOSSARY.md dev/GLOSSARY.md; do [ -f "$g" ] && gl=1; done
+gl=0; for g in GLOSSARY.md docs/GLOSSARY.md dev/GLOSSARY.md .agents/dev/GLOSSARY.md; do [ -f "$g" ] && gl=1; done
 echo "has_glossary=$gl"
-ix=0; for i in INDEX.md docs/INDEX.md dev/README.md docs/README.md; do [ -f "$i" ] && ix=1; done
+ix=0; for i in INDEX.md docs/INDEX.md dev/README.md docs/README.md .agents/dev/README.md .agents/dev/INDEX.md; do [ -f "$i" ] && ix=1; done
 echo "has_index=$ix"
 
 # Frontmatter coverage over reached docs.
