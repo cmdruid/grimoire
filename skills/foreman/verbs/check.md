@@ -3,7 +3,7 @@
 The **cheap validator**. It flags **drift** between the glue `/foreman init` generated — the deployed
 `.agents/foreman/docs/` doctrine plus the `AGENTS.md` wiring — and the current reality: the runbook that system
 was generated from, and the skills actually installed. Run it **often and cheaply**; it finds the
-mechanical rot so `/foreman tune` can spend its turns on the semantic fixes.
+mechanical rot so `/foreman calibrate` can spend its turns on the semantic fixes.
 
 It runs the read-only fact script, then **you** judge the facts. Like every validator here it emits
 `key=value` facts, never verdicts — a stateless script can't see session context, so it reports the
@@ -12,8 +12,8 @@ variables and the prose decides.
 ## Run it
 
 ```bash
-bash <skill-dir>/scripts/dev-health.sh coverage   <root>
-bash <skill-dir>/scripts/dev-health.sh stale-refs <root>
+bash <skill-dir>/scripts/foreman-health.sh coverage   <root>
+bash <skill-dir>/scripts/foreman-health.sh stale-refs <root>
 ```
 
 - `<root>` is the host repo root (resolve it as the *Shared discipline* says; never guess).
@@ -35,7 +35,7 @@ Then check the two things the script can't compute, by reading:
 - **Glue ↔ composition drift.** Does the deployed `.agents/foreman/docs/` doctrine still match the
   composition `/foreman init` recorded — the pack runbook if one drove init, else the baseline
   introspection? A section the composition dropped or reworded, but the deployed docs still carry,
-  is drift — flag it for a re-`init` or a `tune` pass.
+  is drift — flag it for a re-`init` or a `calibrate` pass.
 - **Glue ↔ installed-skills drift.** The doctrine names companion skills generically (`/architect`,
   `/workstream`, `/backlog`, `/auditor`, `/handoff`) and resolves host entrypoints (the gate, the
   fast doc-linter, the diagnostics tooling) **through `AGENTS.md`**. Confirm each named skill is still
@@ -45,9 +45,9 @@ Then check the two things the script can't compute, by reading:
 
 ## Turn facts into action, don't auto-fix
 
-- **`spine_uncovered` / `stale_refs` → flag, then fix in place or hand to `/foreman tune`.** A single
+- **`spine_uncovered` / `stale_refs` → flag, then fix in place or hand to `/foreman calibrate`.** A single
   dead pointer is a fix-in-place; a *pattern* (the docs keep drifting the same way) is signal for
-  `tune` to fold back into the doctrine.
+  `calibrate` to fold back into the doctrine.
 - **A deliberate negative example is not drift.** A doc that references a path to say "don't create
   this" is working as intended — judge, don't mechanically repoint.
 
@@ -65,6 +65,6 @@ Project-code quality is `/auditor`. Curating the trackers as lists is `/backlog 
 ref, a named skill that vanished — because those are mechanically checkable. It **cannot** tell you
 whether doctrine that passes every check still *describes the system correctly*: a `DEVELOPMENT.md`
 routing rule can resolve every pointer and still send the wrong change down the wrong lane. That
-semantic judgment is `/foreman tune`'s (and, for a deep read, the fresh-agent test: hand an agent only
+semantic judgment is `/foreman calibrate`'s (and, for a deep read, the fresh-agent test: hand an agent only
 the deployed docs and confirm they can route a real change without guessing). `check` is the floor you
-run cheaply; `tune` is where the drift it surfaces gets fixed.
+run cheaply; `calibrate` is where the drift it surfaces gets fixed.

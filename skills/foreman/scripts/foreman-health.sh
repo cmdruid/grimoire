@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# dev-health.sh <subcommand> <root> [args...]
+# foreman-health.sh <subcommand> <root> [args...]
 #
-# Read-only state analysis for a project's dev/ docs-system, for the /foreman
-# verbs (tune, check). Each subcommand emits compact `key=value` facts +
+# Read-only state analysis for a project's .agents/foreman/ docs-system, for the
+# /foreman verbs (calibrate, check). Each subcommand emits compact `key=value` facts +
 # evidence so the agent spends turns DECIDING (is this entry really done? is
 # this drift real?), not scanning ten files to find the candidates.
 #
@@ -13,13 +13,13 @@
 # frontmatter; this surfaces what the linter can't see -- tracker inventory,
 # code `file:line` references in tracker prose, and spine coverage.
 #
-# Portable over the standardized dev/ layout (`/foreman init` creates it) and
+# Portable over the standardized .agents/foreman/ + .records/ layout (`/foreman init` creates it) and
 # bash-3.2 safe (macOS default). Read-only; never mutates.
 set -euo pipefail
 
 usage() {
   cat >&2 <<'EOF'
-usage: dev-health.sh <subcommand> <root> [args...]
+usage: foreman-health.sh <subcommand> <root> [args...]
 
   inventory     <root>                tracker sizes + bug/done/archive counts + quiet
   stale-refs    <root> [<file>...]    path / file:line refs that no longer resolve
@@ -86,7 +86,7 @@ report_stale() {
 }
 
 cmd_inventory() {
-  [ "$#" -eq 1 ] || { echo "usage: dev-health.sh inventory <root>" >&2; exit 2; }
+  [ "$#" -eq 1 ] || { echo "usage: foreman-health.sh inventory <root>" >&2; exit 2; }
   local root="$1" porcelain t f b l mod
   porcelain="$(git -C "$root" status --porcelain 2>/dev/null || true)"
   echo "tree_quiet=$([ -z "$porcelain" ] && echo true || echo false)"
@@ -110,7 +110,7 @@ cmd_inventory() {
 }
 
 cmd_stale_refs() {
-  [ "$#" -ge 1 ] || { echo "usage: dev-health.sh stale-refs <root> [<file>...]" >&2; exit 2; }
+  [ "$#" -ge 1 ] || { echo "usage: foreman-health.sh stale-refs <root> [<file>...]" >&2; exit 2; }
   local root="$1"; shift
   local tlds; tlds="$(top_level_dirs "$root")"
   if [ "$#" -ge 1 ]; then
@@ -130,7 +130,7 @@ cmd_stale_refs() {
 }
 
 cmd_coverage() {
-  [ "$#" -eq 1 ] || { echo "usage: dev-health.sh coverage <root>" >&2; exit 2; }
+  [ "$#" -eq 1 ] || { echo "usage: foreman-health.sh coverage <root>" >&2; exit 2; }
   local root="$1" d name s found any=0 tick='`'
   echo "spine_uncovered:"
   for d in "$root"/*/; do

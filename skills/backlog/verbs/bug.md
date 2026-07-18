@@ -25,7 +25,7 @@ never left with nothing pointing at it.
 (`/backlog issue`), a durable fact (`/backlog note`), or a dev-experience observation
 (`/backlog feedback`). And if it turns out to be **working-as-coded but surprising**, it's not a
 bug — capture it as a `/backlog note` (`/foreman` promotes it to `.agents/foreman/docs/GOTCHAS.md` during
-`tune`) and file no report. For the end-of-work *sweep* that routes
+`calibrate`) and file no report. For the end-of-work *sweep* that routes
 many surfaced items at once (including any defects), that's `/backlog debrief`; this verb is the
 single-defect, right-now path to the same destination.
 
@@ -47,7 +47,7 @@ discipline) — don't guess.
    (route those to their home and stop). **Check `.agents/foreman/docs/GOTCHAS.md` first** (and
    `.records/notes/` for a trap not yet promoted) — it may be a known trap (working-as-coded).
    If so, it's not a bug: capture it as a `/backlog note` if it isn't one already (`/foreman` promotes
-   it to `GOTCHAS.md` during `tune`), and stop.
+   it to `GOTCHAS.md` during `calibrate`), and stop.
 2. **Diagnose enough to capture a repro** (per the host's `.agents/foreman/docs/DIAGNOSTICS.md`: observe →
    reproduce → isolate). Cheapest first — logs, the host's diagnostic overlays / state dumps; pin any
    seed/state and capture it in the host's scripted scenario/test harness (a scripted repro the

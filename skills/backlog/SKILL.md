@@ -54,13 +54,13 @@ tracker's format, plus the store-dir frontmatter rules — is canonical here in
 - **Scripts compute facts; the verb prose decides.** The verb files (and this router) carry the
   *judgment* — what classifies as a bug vs. an issue, how to rank impact, when to dedupe, whether an
   entry is really done, whether the shipped-record exists. The bundled scripts do only the
-  deterministic, mechanical work: the **read-only** fact script `scripts/dev-health.sh` (its
+  deterministic, mechanical work: the **read-only** fact script `scripts/backlog-health.sh` (its
   `debrief-scan` subcommand — uncommitted tracker writes, newly added TODO/FIXME markers, recent
   done-records — for the sweep, emitting compact `key=value` facts + evidence) and the **mutating
   mechanical helper** `scripts/scoped-commit.sh` (the atomic pathspec-scoped commit — it mutates by
   design, but only ever the paths it is handed). **Never push a decision into a script:** a script is
   stateless and can't see session context, so a *verdict* it emits is sometimes confidently wrong
-  (worse than none), while a *fact* the prose reasons over is not. `dev-health.sh` **complements** the
+  (worse than none), while a *fact* the prose reasons over is not. `backlog-health.sh` **complements** the
   host doc-linter (which owns link resolution, indexing, frontmatter); it never re-implements it.
 - **Commit on the integration trunk, never a work branch.** A capture commit writes *new* shared
   `.records/` content, so it can't ride a feature ref — it lands on the **root checkout's current branch**,
@@ -83,21 +83,21 @@ tracker's format, plus the store-dir frontmatter rules — is canonical here in
   lands on its own rather than waiting for an unrelated commit. A capture verb invoked **inside a
   sweep** (`/backlog debrief`) only **writes** — the sweep makes the single atomic multi-file commit
   over every file it touched. `/backlog curate` follows the same rule (standalone self-commits; inside a
-  `/foreman tune` sweep it is write-only). Each verb file states which path applies.
+  `/foreman calibrate` sweep it is write-only). Each verb file states which path applies.
 
 ## Scope boundary
 
 `/backlog` is the **capture bureau** — it files, sweeps, and keeps the trackers tidy, and it owns their
 formats and schema. It **captures; it never drains.** It is **not** the dev-system integration layer:
 standing up the `.agents/foreman/` system, the change-router (where a change starts), and the curation
-loop that folds captured signal back into doctrine are `/foreman`'s (`init` / `route` / `tune` /
+loop that folds captured signal back into doctrine are `/foreman`'s (`init` / `route` / `calibrate` /
 `check`). It is **not** the code-quality audit (`/auditor`, which scores project code against a
 rubric), and it does not do the development itself.
 
 ## Companion skills (separate, not absorbed)
 
-`/foreman` (stand up / route / tune the dev system — drains this bureau's system-relevant signal into
-doctrine via `tune`), `/architect` (the design-system engine — `init/brainstorm/plan/prep/distill/check`),
+`/foreman` (stand up / route / calibrate the dev system — drains this bureau's system-relevant signal into
+doctrine via `calibrate`), `/architect` (the design-system engine — `init/brainstorm/plan/prep/distill/check`),
 `/feature` (the plan+build engine — `brainstorm | design | plan | build`), `/workstream` (drive a
 stream in a worktree; owns landing), `/handoff` (save/resume a session snapshot), `/auditor` (score
 project code). The verbs defer to these where the host has them; the by-hand fallback is always "do it

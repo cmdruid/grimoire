@@ -62,9 +62,9 @@ body). Feature/plan-scoped work goes in a worktree branch and merges; small unre
 directly on `main` -- either way, commit promptly so the shared root doesn't accumulate uncommitted
 changes that throw off other agents. See `.agents/foreman/docs/WORKTREES.md`.
 
-## Maintain the .agents/foreman/ system (validate, tune, drain)
+## Maintain the .agents/foreman/ system (validate, calibrate, drain)
 Periodic upkeep that keeps the living docs honest *and* lean: **validate** the deployed glue
-(`/foreman check` -- spine coverage, stale refs, glue-vs-skills drift), **tune** the doctrine from
-accumulated signal (`/foreman tune`), and **drain** the trackers (`/backlog curate` for list hygiene;
-`/foreman tune` promotes durable notes; archive shipped work). See `.agents/foreman/docs/MAINTENANCE.md`. (Docs-system health -- distinct from
+(`/foreman check` -- spine coverage, stale refs, glue-vs-skills drift), **calibrate** the doctrine from
+accumulated signal (`/foreman calibrate`), and **drain** the trackers (`/backlog curate` for list hygiene;
+`/foreman calibrate` promotes durable notes; archive shipped work). See `.agents/foreman/docs/MAINTENANCE.md`. (Docs-system health -- distinct from
 code-quality audits.)

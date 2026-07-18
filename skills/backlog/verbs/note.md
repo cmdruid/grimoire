@@ -58,7 +58,7 @@ report, a `MEMORY.md` line), never left orphaned.
    adding a near-duplicate.
 6. **Commit (standalone only).** Invoked **standalone**, scoped-commit the note + any linking entry in
    one step via `scripts/scoped-commit.sh <root> "Note: <short title>" <paths…>`, then run the host
-   doc-linter. Invoked **inside `/backlog debrief` or a `/foreman tune` sweep**, do **not** commit —
+   doc-linter. Invoked **inside `/backlog debrief` or a `/foreman calibrate` sweep**, do **not** commit —
    only write; the sweep makes the single atomic commit.
 7. **Report** the note title and the path.
 

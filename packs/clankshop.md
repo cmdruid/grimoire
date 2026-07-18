@@ -37,7 +37,7 @@ lists these as the constellation the deployed doctrine resolves to.
 
 ### The members
 
-- **`foreman`** — the dev-workflow hub. A thin router + verbs (`route` default, `init`, `tune`,
+- **`foreman`** — the dev-workflow hub. A thin router + verbs (`route` default, `init`, `calibrate`,
   `check`). Deploys and operates a project's `.agents/foreman/` development-docs system.
 - **`backlog`** — the capture desk. Files each follow-up by kind (`task`, `bug`, `issue`,
   `feedback`, `note`), sweeps finished work (`debrief`), and curates the trackers (`curate`).
@@ -70,7 +70,7 @@ validates for drift. The load-bearing invariant: **no skill crosses another's se
 
 | seam | contract |
 |---|---|
-| `backlog` ↔ `foreman` | `backlog` **captures** (single front-door, uniform); `foreman tune` **drains** the system-relevant slice into doctrine. Inbox vs. curator. |
+| `backlog` ↔ `foreman` | `backlog` **captures** (single front-door, uniform); `foreman calibrate` **drains** the system-relevant slice into doctrine. Inbox vs. curator. |
 | `foreman` ↔ `clankshop` (this pack) | `foreman` = mechanism (oven); this runbook = composition (recipe). The pack **calls** foreman; foreman never depends on the pack. |
 | `foreman` ↔ `chiropractor` | `foreman` **authors** the `AGENTS.md` workflow-glue section; `chiropractor` **audits** the whole front-door's ergonomics. Author vs. auditor. |
 | `architect` ↔ `chiropractor` | `architect`'s GLOSSARY = **domain** terms (part of the seed); `chiropractor`'s concern = a **navigational** glossary/index exists and is linked. Domain vs. navigation. |
@@ -93,7 +93,7 @@ validates for drift. The load-bearing invariant: **no skill crosses another's se
   model; the orchestrator keeps its context lean.
 - **Survive a reset.** `/handoff save` snapshots the root session; `/handoff resume` picks it up.
   `/workstream save`/`load` reuse the same discipline for worktree streams.
-- **Tune the system from its own signal.** `/backlog` captures friction; `/foreman tune` drains the
+- **Calibrate the system from its own signal.** `/backlog` captures friction; `/foreman calibrate` drains the
   system-relevant slice back into the deployed doctrine + `AGENTS.md` — the self-growing curation
   loop. `/foreman check` is the cheap drift validator between ships.
 
@@ -101,7 +101,7 @@ validates for drift. The load-bearing invariant: **no skill crosses another's se
 
 Project *code* → `auditor`. The repo's *doc spine* (links, entry door, navigability) →
 `chiropractor`. A deployed *`.agents/foreman/` docs system's* health (trackers, drains, staleness) →
-`/foreman tune` / `/foreman check`. Three domains, three tools — they don't overlap.
+`/foreman calibrate` / `/foreman check`. Three domains, three tools — they don't overlap.
 
 ## Install
 

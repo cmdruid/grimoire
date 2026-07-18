@@ -89,12 +89,12 @@ Most captures are obvious. Three boundaries carry real judgment; the model makes
   - **Suggested direction** — the change or investigation that would address it (a line or two).
 
   A durable *working-as-coded gotcha* discovered here is captured as a `/backlog note`; `/foreman`
-  promotes it to `.agents/foreman/docs/GOTCHAS.md` during `tune`.
+  promotes it to `.agents/foreman/docs/GOTCHAS.md` during `calibrate`.
 
 ### `bug` — a reproducible code defect
 - **What:** an observed, reproducible defect — crash, wrong render/output, dropped state, flaky
   behavior. If it turns out **working-as-coded but surprising**, it's not a bug: capture it as a
-  `/backlog note` (`/foreman` promotes it to `.agents/foreman/docs/GOTCHAS.md` during `tune`) and file no
+  `/backlog note` (`/foreman` promotes it to `.agents/foreman/docs/GOTCHAS.md` during `calibrate`) and file no
   report.
 - **Store:** `.records/bugs/<YYYY-MM-DD>-<slug>.md`, from `templates/bug-report.md`. A
   **store dir** — carries frontmatter (see below). Load-bearing rule: **`bugs/` is a store, not a
@@ -163,7 +163,7 @@ rg -l '^type: note'   .records/notes/    # every note
 `/backlog` **captures, never drains.** Each tracker's captured signal is worked *downstream*, not
 here:
 
-- **`issues`, `feedback`, and note-promotion** → `/foreman tune` (drains system-relevant signal into
+- **`issues`, `feedback`, and note-promotion** → `/foreman calibrate` (drains system-relevant signal into
   doctrine, routes project items to their home, promotes a durable note to a `MEMORY.md` invariant or
   a working-as-coded gotcha to `.agents/foreman/docs/GOTCHAS.md`).
 - **`tasks`** → `/feature` / `/workstream` (turn a captured item into shipped work; the item is

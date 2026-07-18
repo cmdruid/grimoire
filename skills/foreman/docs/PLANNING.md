@@ -94,7 +94,7 @@ finished, while the session still holds everything it surfaced. It sweeps the co
 routes each byproduct to its one home in `.records/`: a thing to build -> `tasks.md`, a
 project problem / concern / limitation -> `issues.md`, a defect -> a linked report in `bugs/`, a
 dev-experience observation -> `feedback.md`, and a durable project fact (including a would-be
-invariant or gotcha) **parked as a `note`** (capture never promotes; `/foreman tune` later promotes
+invariant or gotcha) **parked as a `note`** (capture never promotes; `/foreman calibrate` later promotes
 it into `.agents/foreman/MEMORY.md` / `.agents/foreman/GOTCHAS.md`), with any long-form context spilled to a
 linked `.records/notes/` file (the canonical taxonomy is `/backlog`'s `docs/TAXONOMY.md`).
 

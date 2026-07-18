@@ -176,7 +176,7 @@ restate what each kind means or where a signal goes -- that would fork the schem
 Two things this system *does* own about capture:
 
 - **Draining is not capture.** The trackers collect; they never self-drain. Folding captured signal
-  into doctrine is the **consumers'** job -- `/foreman tune` promotes a `note` into `MEMORY`/`GOTCHAS`
+  into doctrine is the **consumers'** job -- `/foreman calibrate` promotes a `note` into `MEMORY`/`GOTCHAS`
   and drains system-relevant `feedback`/`issue`s into workflow doctrine; a `task`/`bug` drains when the
   work ships. There is no drain-lifecycle column here.
 - **`bugs/` and `notes/` are stores, not work queues.** You file into them and track the actionable

@@ -1,14 +1,16 @@
-# `/foreman tune` — drain the system's own signal into doctrine
+# `/foreman calibrate` — tune the doctrine to its correct settings from its own signal
 
-The **self-growing curation loop**. As work ships, `/backlog`'s trackers accumulate signal *about the
-development system itself* — friction with a workflow, a routing rule that misfired, a convention
-that has quietly changed, a `FEEDBACK` note that the docs are getting heavy. `tune` **drains the
-system-relevant slice of that signal into concrete improvements** to the doctrine (`.agents/foreman/docs/*`), the
-workflow, and the `AGENTS.md` wiring — and **promotes durable `notes`** `/backlog` parked into
-`.agents/foreman/MEMORY.md` / `.agents/foreman/GOTCHAS.md` / the docs (the promotion `/backlog debrief`
-deliberately no longer does). The living docs both **drift** (as code and the filesystem
-move) and **accumulate** a backlog of "the system should work differently" — `tune` turns that into
-edits, so the factory tunes itself instead of ossifying.
+The **self-growing curation loop**. As work ships, `/backlog`'s trackers accumulate a **dev-experience
+signal** *about the development system itself* — friction with a workflow, a routing rule that
+misfired, a convention that has quietly changed, a `FEEDBACK` note that the docs are getting heavy.
+`calibrate` **consumes that signal and adjusts foreman's own doctrine to its correct settings**:
+`.records/feedback` (the primary instrument), plus the system-relevant slice of `.records/issues`
+and `.records/notes`, folded into concrete edits of foreman's docs (`.agents/foreman/…`) and the
+project's `AGENTS.md` wiring — and **durable `notes` promoted** into `.agents/foreman/MEMORY.md` /
+`.agents/foreman/GOTCHAS.md` / the docs (the promotion `/backlog debrief` deliberately no longer
+does). The living docs both **drift** (as code and the filesystem move) and **accumulate** a backlog
+of "the system should work differently"; `calibrate` reads the signal like a gauge and turns the
+knobs, so the factory re-tunes itself to reality instead of ossifying at last year's settings.
 
 It is a **thin driver**: the maintenance methodology lives in `.agents/foreman/docs/MAINTENANCE.md` (the single
 source of truth) — **re-read it each pass**; this verb orchestrates the drain and surfaces the
@@ -17,16 +19,16 @@ routine, it does not restate the per-audit checklists.
 **Scope boundary (read this).** Three neighboring jobs are deliberately *not* here:
 
 - **Curating the trackers as lists** — sharpening/reordering `tasks.md`, removing shipped items,
-  archiving to `.records/archive/` — is **`/backlog curate`**, not `tune`. `tune` *consumes* the trackers'
-  signal to improve doctrine and promote durable notes; it does not curate the lists themselves.
+  archiving to `.records/archive/` — is **`/backlog curate`**, not `calibrate`. `calibrate` *consumes* the trackers'
+  signal to adjust doctrine and promote durable notes; it does not curate the lists themselves.
 - **Mechanically validating that the deployed glue still resolves** — spine coverage, stale
   `file:line` refs, runbook-vs-installed-skills drift — is **`/foreman check`** (the cheap
-  validator). Run `check` first to *find* drift; `tune` is where you *act* on the semantic half.
+  validator). Run `check` first to *find* drift; `calibrate` is where you *act* on the semantic half.
 - **Project-code quality** is **`/auditor`**. Different domain, different files.
 
 ## When to use
 
-- The user runs **`/foreman tune`**, or asks to "tune the dev system", "fold this friction back into
+- The user runs **`/foreman calibrate`**, or asks to "calibrate the dev system", "fold this friction back into
   the docs", "the workflow keeps tripping me — fix the doctrine", or notes that the system-facing
   signal (`feedback.md`, `issues.md`) is **piling up** with recurring complaints about how development
   works here.
@@ -41,19 +43,20 @@ files are concurrently edited, so a sweep mid-churn fights other agents. Confirm
 Go **item by item**, **when the tree is quiet**, and **worktree it if the pass is big** (it earns a
 branch):
 
-1. **Confirm quiet + take the inventory.** `scripts/dev-health.sh inventory <root>` emits
+1. **Confirm quiet + take the inventory.** `scripts/foreman-health.sh inventory <root>` emits
    `tree_quiet`, `linked_worktrees`, and per-tracker sizes/last-change in one read — a sweep during
    churn (`tree_quiet=false` or live worktrees) fights concurrent edits, so confirm quiet first. The
    tracker sizes tell you which trackers carry accumulating system-facing signal and earn a deep read.
-2. **Harvest the system-relevant signal.** Read `/backlog`'s `.records/feedback.md`,
-   `.records/issues.md`, and `.records/notes/` for the slice that is about **the
+2. **Harvest the dev-experience signal.** Read `/backlog`'s `.records/feedback.md` (the primary
+   instrument), `.records/issues.md`, and `.records/notes/` for the slice that is about **the
    development system, not the product**: dev-experience friction, a routing rule that misfires, a
    convention stated as fact that has since changed, a doc that keeps getting reached for and isn't
    wired in, a durable fact parked as a `note` that belongs in memory or a gotchas doc. (Product/feature
    items stay in `.records/tasks.md` — those are `/backlog curate`'s, not signal for the
    doctrine.) Look for **patterns**: one complaint is a note; the same friction three times is a
-   doctrine bug.
-3. **Drain each pattern into a concrete doctrine edit.** Turn the signal into a real change:
+   doctrine miscalibration.
+3. **Turn each pattern into a concrete doctrine edit — the calibration.** A gauge reading is only
+   useful once it moves a knob; turn the signal into a real change:
    - a routing gap → sharpen `.agents/foreman/docs/DEVELOPMENT.md` (the change-router walk);
    - a recurring how-to question → add/repoint it in `.agents/foreman/docs/WORKFLOWS.md`;
    - a planning-weight mismatch → adjust the tiers in `.agents/foreman/docs/PLANNING.md`;
@@ -71,25 +74,25 @@ branch):
    a finding.
 5. **Commit.** Commit the doctrine edits atomically with **explicit paths** via
    `scripts/scoped-commit.sh <root> "<msg>" <paths…>` (never `git add -A` on the shared root — see
-   `.agents/foreman/docs/WORKTREES.md`). As a sweep, `tune` makes the single commit; capture verbs it touched only
+   `.agents/foreman/docs/WORKTREES.md`). As a sweep, `calibrate` makes the single commit; capture verbs it touched only
    write. Commits carry **no** `Co-Authored-By` trailer. Then run the host's gate / doc-linter.
 
 ## Relationship to neighboring verbs & skills
 
 - **`/foreman check`** finds the *mechanical* drift (missing pointer, stale ref, glue-vs-runbook gap);
-  `tune` acts on the *semantic* drift it can't see and folds accumulated friction into the doctrine.
-- **`/backlog curate`** owns the tracker lists (sharpen, reorder, remove shipped, archive). `tune`
+  `calibrate` acts on the *semantic* drift it can't see and folds accumulated friction into the doctrine.
+- **`/backlog curate`** owns the tracker lists (sharpen, reorder, remove shipped, archive). `calibrate`
   consumes their signal and promotes durable notes; it does not curate the lists.
-- **`/backlog feedback`** and the other capture verbs *feed* the trackers `tune` drains — capture is
+- **`/backlog feedback`** and the other capture verbs *feed* the trackers `calibrate` drains — capture is
   their job, folding-into-doctrine is this one's.
 - **`/chiropractor`** owns general doc-spine *ergonomics* for any repo (front-door bloat, navigation,
-  glossaries). `tune` stays scoped to *this system's* doctrine; hand broad doc-tuning to
+  glossaries). `calibrate` stays scoped to *this system's* doctrine; hand broad doc-tuning to
   `/chiropractor`.
 - **`/auditor`** is the project-code analogue: same surface-then-drain shape, different domain.
 
 ## Done when
 
-The recurring system-facing signal in `/backlog`'s trackers has been folded into concrete doctrine /
+The recurring dev-experience signal in `/backlog`'s trackers has been folded into concrete doctrine /
 workflow / `AGENTS.md` edits (and durable notes promoted into `.agents/foreman/MEMORY.md` /
 `.agents/foreman/GOTCHAS.md` / docs), or filed back to `/backlog` when too big; each acted-on source entry
 recorded and cleared, and the changes committed atomically with explicit paths. Gate green.

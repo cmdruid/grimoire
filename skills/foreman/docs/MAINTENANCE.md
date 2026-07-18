@@ -14,7 +14,7 @@ agents), and **worktree it if the sweep is big** (it earns a branch). Record wha
 `.records/archive/`.
 
 **If the host has a `/foreman` skill**, its `check` verb validates the deployed glue (spine coverage,
-stale refs, glue-vs-skills drift) and its `tune` verb folds accumulated system signal back into this
+stale refs, glue-vs-skills drift) and its `calibrate` verb folds accumulated system signal back into this
 doctrine and promotes durable notes; otherwise run those by hand from this doc.
 **If the host has a `/backlog` skill**, `/backlog curate` automates the TASKS sharpen/reorder and
 tidies the tracker lists; removal of shipped items is part of the backlog audit (no separate prune step).
@@ -113,12 +113,12 @@ is the source of truth; `.records/archive/` is the human-readable index into it.
 - **`.records/bugs/`** -- fixed -> note the commit in the report, `git mv` to `bugs/archive/`.
 - **`.records/notes/`** -- a note is subordinate to the entry that links it (a `MEMORY`/tracker/report
   line); when that entry is pruned or archived, archive the note with it (or drop it if spent).
-  Never drained on its own -- it's a store, reached only via its link (but `/foreman tune` may promote a
+  Never drained on its own -- it's a store, reached only via its link (but `/foreman calibrate` may promote a
   durable note into `MEMORY.md`/`GOTCHAS.md` before clearing it).
 - **The capture trackers** (the five capture kinds -- `task`/`bug`/`issue`/`feedback`/`note`) drain
   per their taxonomy (`DEVELOPMENT.md` -> *Capture follow-ups*): `TASKS`/`ISSUES` items to a dated
   `.records/archive/<YYYY-MM-DD>-<slug>.md`, `bugs/` to its archive. `/backlog` itself never drains --
-  `/backlog curate` only keeps the lists tidy (dedupe/rank/sharpen/weed); `/foreman tune` is what
+  `/backlog curate` only keeps the lists tidy (dedupe/rank/sharpen/weed); `/foreman calibrate` is what
   drains and promotes durable signal into doctrine. (No checkbox/prune step -- an item is removed
   when its work ships; the audit drains the stragglers.)
 - **`.agents/foreman/MEMORY.md`** -- prune a durable fact only when it goes obsolete (a reversed convention, a

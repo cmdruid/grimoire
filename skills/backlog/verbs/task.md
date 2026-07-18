@@ -6,7 +6,7 @@ way to add a well-formed item.
 
 It **only adds to** `tasks.md`. Tidying the list — dedupe / rank / weed — is the sibling
 `/backlog curate`; turning a task into shipped work is `/feature` / `/workstream`; draining
-system-relevant signal back into doctrine is `/foreman tune`; the end-of-work sweep that routes
+system-relevant signal back into doctrine is `/foreman calibrate`; the end-of-work sweep that routes
 byproducts across *all* trackers is `/backlog debrief`.
 
 ## When to use
@@ -32,7 +32,7 @@ Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't g
 `.records/tasks.md` is a single **living** list — one top-level header, one section per group. Items
 are plain `-` bullets (**no checkboxes**): an item is *open* while it's listed and simply **removed
 when it ships** — the commit, plus any `.records/archive/` stream digest, is the record (turning it into
-work is `/feature` / `/workstream`; the periodic relevance pass is `/foreman tune`, not a checkbox).
+work is `/feature` / `/workstream`; the periodic relevance pass is `/foreman calibrate`, not a checkbox).
 
 **Follow the file's existing groups.** If `tasks.md` exists, adopt its group headings and heading
 level exactly — extend them, don't restructure. Add a new group only when nothing fits. A long-lived
@@ -83,7 +83,7 @@ Procedure:
 A shipped or abandoned item is **removed**, not checked off: delete the bullet (in the commit that
 ships the work, or when `/backlog curate` weeds a dead one). There is no `prune` step and no `[x]` —
 the commit history plus any `.records/archive/` stream digest are the record, and the periodic relevance
-pass is `/foreman tune`. **This verb never writes `.records/archive/`.**
+pass is `/foreman calibrate`. **This verb never writes `.records/archive/`.**
 
 ## Relationship to neighboring verbs
 
@@ -91,7 +91,7 @@ pass is `/foreman tune`. **This verb never writes `.records/archive/`.**
   verb only adds; `curate` reshapes.
 - **`/backlog debrief`** — the completion sweep across *all* trackers; it defers TASKS item-format
   to this verb. `task` is the anytime, TASKS-only, direct add.
-- **`/foreman tune`** — drains system-relevant signal into doctrine (the curation loop). `task` itself
+- **`/foreman calibrate`** — drains system-relevant signal into doctrine (the curation loop). `task` itself
   never drains; it only captures.
 - **`/backlog bug`**, **`/backlog issue`**, **`/backlog feedback`**, **`/backlog note`** — the other capture
   homes; this verb is `tasks.md` only.

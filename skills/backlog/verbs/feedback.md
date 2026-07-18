@@ -49,7 +49,7 @@ a directional idea, and where it might lead if anywhere (a project item it shoul
 change, or "just an observation").>
 ```
 
-The **feedback audit** (`/foreman tune`) periodically *drains* this file — routing each item to its
+The **feedback audit** (`/foreman calibrate`) periodically *drains* this file — routing each item to its
 real home, folding system-relevant signal into doctrine, or acting on it — so it stays a live signal,
 not a graveyard.
 
@@ -65,7 +65,7 @@ not a graveyard.
 4. **Append** the dated entry to the live region (don't disturb the drained-marker history above).
 5. **Commit (standalone only).** Invoked **standalone**, scoped-commit via
    `scripts/scoped-commit.sh <root> "Feedback: <short title>" .records/feedback.md`, then run the host
-   doc-linter. Invoked **inside `/backlog debrief` or a `/foreman tune` sweep**, do **not** commit —
+   doc-linter. Invoked **inside `/backlog debrief` or a `/foreman calibrate` sweep**, do **not** commit —
    only write; the sweep makes the single atomic commit.
 6. **Report** the entry title and the path.
 
@@ -73,7 +73,7 @@ not a graveyard.
 
 - **`/backlog debrief`** — the completion sweep across *all* trackers; it routes the dev-experience
   share here. `feedback` is the anytime, FEEDBACK-only, direct add.
-- **`/foreman tune`** drains `feedback.md` — routing project items to their real home, folding
+- **`/foreman calibrate`** drains `feedback.md` — routing project items to their real home, folding
   system-relevant signal into doctrine, clearing absorbed ones. Capture is this verb's job; draining
   is `/foreman`'s.
 - **`/backlog task`**, **`/backlog issue`**, **`/backlog bug`**, **`/backlog note`** — the project-subject homes;

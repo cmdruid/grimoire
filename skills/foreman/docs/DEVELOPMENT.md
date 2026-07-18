@@ -80,7 +80,7 @@ concern / limitation -> `issue`; a durable project fact -> `note`; a dev-experie
 
 The boundary that matters: **`bugs/` and `notes/` are stores, not work queues** -- file into them and
 track the actionable item from a linked tracker line; don't fish in them for work. Capture never
-drains: the periodic *draining* of these trackers into doctrine is `/foreman tune`'s job
+drains: the periodic *draining* of these trackers into doctrine is `/foreman calibrate`'s job
 (`MAINTENANCE.md`), and keeping the lists tidy is `/backlog curate`.
 
 `notes/` is a **first-class capture kind** (`/backlog note` -- a durable project fact: rationale, a

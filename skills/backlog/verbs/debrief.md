@@ -46,7 +46,7 @@ apply it as written; each home's format authority is its capture verb.
 **Would-be invariant or gotcha → a `note`.** A load-bearing invariant or a working-as-coded trap that
 surfaces is captured as a `/backlog note` (a durable project fact) — `debrief` never writes
 `MEMORY.md` or `GOTCHAS.md`, and never anything under `.agents/foreman/`. Promoting a note into a
-`MEMORY.md` invariant or a `GOTCHAS.md` entry is `/foreman`'s job (during `tune`), not this sweep's.
+`MEMORY.md` invariant or a `GOTCHAS.md` entry is `/foreman`'s job (during `calibrate`), not this sweep's.
 
 **Frontmatter is mandatory on any store-dir file you create here** (`.records/bugs/`,
 `.records/notes/`): start it with that type's frontmatter block — copying from the named
@@ -102,7 +102,7 @@ ignored hand-off is not a debrief target.
    defects noticed in passing, tooling/workflow friction, "out of scope for now" mentions,
    surprises, directional ideas, invariants learned, code touched-but-not-cleaned, files referenced
    but not opened. The scan is primarily over the **conversation** (the richest source), but ground
-   it with filesystem facts: `scripts/dev-health.sh debrief-scan <root> [<trunk-ref>]` emits
+   it with filesystem facts: `scripts/backlog-health.sh debrief-scan <root> [<trunk-ref>]` emits
    `dirty_backlog:` (uncommitted writes to backlog's own trackers --
    `.records/tasks.md`/`issues.md`/`feedback.md`/`bugs/`/`notes/` — captured along the way but not
    yet routed) and `new_todos:` (TODO/FIXME/XXX/HACK markers this work added — candidates to route
@@ -121,7 +121,7 @@ ignored hand-off is not a debrief target.
    - **notes** → the `/backlog note` convention: a durable project fact in
      `.records/notes/<slug>.md` (frontmatter block + `_backs:_` line), linked from the tracker
      entry it backs. A would-be **invariant or gotcha** is captured here as a note — `/foreman`
-     promotes it to `MEMORY.md`/`GOTCHAS.md` during `tune`.
+     promotes it to `MEMORY.md`/`GOTCHAS.md` during `calibrate`.
    - **FEEDBACK** → the `/backlog feedback` convention: a dated entry (`templates/feedback.md`), noting
      whether it's praise, a concern, a friction, or a directional idea, and where it might lead. This
      is the **single dev-experience channel** — a reaction to a *workflow skill you used* (`/foreman`,
@@ -137,7 +137,7 @@ ignored hand-off is not a debrief target.
   **`/backlog note`**, and **`/backlog feedback`** own `bugs/`, `issues.md`, `notes/`, and
   `feedback.md`. `debrief` routes each share through that verb's convention; for a single-tracker add,
   use the verb directly.
-- **`/foreman`** drains this bureau's captured signal into doctrine (`tune`) — it is what promotes a
+- **`/foreman`** drains this bureau's captured signal into doctrine (`calibrate`) — it is what promotes a
   durable `note` into a `MEMORY.md` invariant or a `GOTCHAS.md` entry, and it (with `/workstream`'s
   land step) owns the shipped-record. `debrief` captures; `/foreman` drains.
 - **`/handoff`** saves the session as a resumable narrative doc. `debrief` is complementary: at a

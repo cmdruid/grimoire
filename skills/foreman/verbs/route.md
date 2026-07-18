@@ -23,7 +23,7 @@ through it.
    - **capture a follow-up** → `/backlog task` (a thing to build) · `/backlog issue` (a project
      problem/concern/limitation) · `/backlog note` (a durable project fact) · `/backlog feedback` (a
      dev-experience observation). A defect → `/backlog bug`.
-   - **finished a body of work** → `/backlog debrief`; **tune the dev system** → `/foreman tune`;
+   - **finished a body of work** → `/backlog debrief`; **calibrate the dev system** → `/foreman calibrate`;
      **validate the setup** → `/foreman check`; **code-quality** → `/auditor`; **context snapshot** →
      `/handoff`.
 3. Where a lane's skill isn't installed, fall back to "do it by hand per the deployed doc." `/foreman`

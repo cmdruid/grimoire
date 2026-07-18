@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# dev-health.sh <subcommand> <root> [args...]
+# backlog-health.sh <subcommand> <root> [args...]
 #
-# Read-only state analysis for a project's dev/ docs-system, for the /backlog
+# Read-only state analysis for a project's .records/ trackers, for the /backlog
 # verbs (debrief). The subcommand emits compact `key=value` facts + evidence so
 # the agent spends turns DECIDING (did this really surface?), not scanning ten
 # files to find the candidates.
@@ -13,13 +13,13 @@
 # frontmatter; this surfaces what the linter can't see -- the working-tree
 # byproduct signals a sweep consumes.
 #
-# Portable over the standardized dev/ layout (`/foreman init` creates it) and
+# Portable over the standardized .records/ layout (`/foreman init` creates it) and
 # bash-3.2 safe (macOS default). Read-only; never mutates.
 set -euo pipefail
 
 usage() {
   cat >&2 <<'EOF'
-usage: dev-health.sh <subcommand> <root> [args...]
+usage: backlog-health.sh <subcommand> <root> [args...]
 
   debrief-scan  <root> [<trunk-ref>]  uncommitted .records/ writes, new TODO/FIXME, recent done-records
 
@@ -28,7 +28,7 @@ EOF
 }
 
 cmd_debrief_scan() {
-  [ "$#" -ge 1 ] || { echo "usage: dev-health.sh debrief-scan <root> [<trunk-ref>]" >&2; exit 2; }
+  [ "$#" -ge 1 ] || { echo "usage: backlog-health.sh debrief-scan <root> [<trunk-ref>]" >&2; exit 2; }
   local root="$1" trunk="${2:-}" dirty todos done_recent
 
   echo "dirty_backlog:"

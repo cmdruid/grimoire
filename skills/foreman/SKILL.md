@@ -1,12 +1,12 @@
 ---
 name: foreman
-description: "Stand up, run, and tune the project's development factory. `/foreman` (no arg, or a change description) is the change ROUTER: classify a bug/patch/feature/spike and dispatch it. `/foreman init` stands up the `.agents/foreman/` system where none exists; `/foreman tune` drains `/backlog`'s system-relevant signal into doctrine/workflow/AGENTS.md improvements (the self-growing curation loop); `/foreman check` validates the deployed glue against the runbook + installed skills. No-arg = `route`. Owns the change-router + curation loop; the capture bureau is `/backlog`. Use when the user runs `/foreman ...`, asks where a change starts, or asks to set up / route / tune a dev workflow. Distinct from the code-quality audit (`/auditor`)."
+description: "Stand up, run, and calibrate the project's development factory. `/foreman` (no arg, or a change description) is the change ROUTER: classify a bug/patch/feature/spike and dispatch it. `/foreman init` stands up the `.agents/foreman/` system where none exists; `/foreman calibrate` drains `/backlog`'s dev-experience signal into doctrine/workflow/AGENTS.md improvements (the self-growing curation loop); `/foreman check` validates the deployed glue against the runbook + installed skills. No-arg = `route`. Owns the change-router + curation loop; the capture bureau is `/backlog`. Use when the user runs `/foreman ...`, asks where a change starts, or asks to set up / route / calibrate a dev workflow. Distinct from the code-quality audit (`/auditor`)."
 ---
 
 # foreman — the dev-system integration layer
 
-One skill that **stands up, runs, and tunes** a project's `.agents/foreman/` development factory. It owns the
-**change-router** (where any change starts) and the **self-growing curation loop** (the system tuning
+One skill that **stands up, runs, and calibrates** a project's `.agents/foreman/` development factory. It owns the
+**change-router** (where any change starts) and the **self-growing curation loop** (the system calibrating
 itself from its own signal). The **capture bureau** — the trackers and their capture/debrief/curate
 verbs — is a separate skill, `/backlog`.
 
@@ -21,7 +21,7 @@ umbrella adds no always-on context beyond this file. When a verb is selected, **
 |---|---|---|---|
 | `/foreman` *(no arg, or a change description)* | `verbs/route.md` | **Router** — classify a change + dispatch it to its lane | "where do I start?", "I'm about to change X" |
 | `/foreman init` *(alias `deploy`)* | `verbs/init.md` | Stand up the whole `.agents/foreman/` system on a project that lacks one | "set up a dev workflow / docs system" |
-| `/foreman tune` | `verbs/tune.md` | Drain the system-relevant slice of `/backlog`'s signal into doctrine / workflow / `AGENTS.md` improvements (the curation loop) | "tune the dev system", "fold this friction back into the docs" |
+| `/foreman calibrate` | `verbs/calibrate.md` | Drain `/backlog`'s dev-experience signal into doctrine / workflow / `AGENTS.md` improvements — tune the doctrine to its correct settings (the curation loop) | "calibrate the dev system", "fold this friction back into the docs" |
 | `/foreman check` | `verbs/check.md` | Cheap validator — flag drift between the deployed glue and the runbook / installed skills | "is the dev system still consistent?", "validate the setup" |
 
 **Default (no recognized verb):** treat the argument as a change description and run `verbs/route.md`.
@@ -33,14 +33,14 @@ umbrella adds no always-on context beyond this file. When a verb is selected, **
 - **Scripts compute facts; the verb prose decides.** The verb files (and this router) carry the
   *judgment* — how to classify a change, whether drift is real, which signal earns a doctrine edit.
   The bundled scripts do only the deterministic, mechanical work: the **read-only** fact script
-  `scripts/dev-health.sh` (state analysis — `inventory`, `stale-refs`, `coverage` — for `tune`/`check`,
+  `scripts/foreman-health.sh` (state analysis — `inventory`, `stale-refs`, `coverage` — for `calibrate`/`check`,
   emitting compact `key=value` facts + evidence) and the **mutating mechanical helper**
   `scripts/scoped-commit.sh` (the atomic pathspec-scoped commit — it mutates by design, but only ever
   the paths it is handed). **Never push a decision into a script:** a script is stateless and can't see
   session context, so a *verdict* it emits is sometimes confidently wrong (worse than none), while a
-  *fact* the prose reasons over is not. `dev-health.sh` **complements** the host doc-linter (which owns
+  *fact* the prose reasons over is not. `foreman-health.sh` **complements** the host doc-linter (which owns
   link resolution, indexing, frontmatter); it never re-implements it.
-- **Commit on the integration trunk, never a work branch.** A `foreman` write (a `tune` doctrine edit,
+- **Commit on the integration trunk, never a work branch.** A `foreman` write (a `calibrate` doctrine edit,
   an `init` scaffold) creates *shared* `.agents/foreman/` content, so it can't ride a feature ref — it lands on the
   **root checkout's current branch**, which must be the integration **trunk** (`main` today, `dev`
   later; never hardcode `main`). **Guard:** check `git -C <root> branch --show-current`; if it is empty
