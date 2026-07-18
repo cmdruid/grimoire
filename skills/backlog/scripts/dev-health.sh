@@ -21,7 +21,7 @@ usage() {
   cat >&2 <<'EOF'
 usage: dev-health.sh <subcommand> <root> [args...]
 
-  debrief-scan  <root> [<trunk-ref>]  uncommitted .agents/dev/ writes, new TODO/FIXME, recent done-records
+  debrief-scan  <root> [<trunk-ref>]  uncommitted .agents/backlog/ writes, new TODO/FIXME, recent done-records
 
 Prints `key=value` facts then evidence. Read-only; emits no recommendation.
 EOF
@@ -31,8 +31,8 @@ cmd_debrief_scan() {
   [ "$#" -ge 1 ] || { echo "usage: dev-health.sh debrief-scan <root> [<trunk-ref>]" >&2; exit 2; }
   local root="$1" trunk="${2:-}" dirty todos done_recent
 
-  echo "dirty_dev:"
-  dirty="$(git -C "$root" status --porcelain 2>/dev/null | grep -F '.agents/dev/' || true)"
+  echo "dirty_backlog:"
+  dirty="$(git -C "$root" status --porcelain 2>/dev/null | grep -F '.agents/backlog/' || true)"
   if [ -n "$dirty" ]; then printf '%s\n' "$dirty" | sed 's/^/  /'; else echo "  (none)"; fi
 
   # New TODO/FIXME/XXX/HACK markers added vs <trunk-ref> (or the working tree if omitted).
