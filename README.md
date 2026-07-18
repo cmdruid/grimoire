@@ -69,7 +69,7 @@ paths no longer encode ownership, `foreman init` writes an **ownership index** (
 | tasks · issues · feedback · bugs/ · notes/ | `.records/` | `backlog` |
 | plans / roadmaps | `.records/plans/` | `feature` |
 | shipped / done records | `.records/archive/` | `workstream` |
-| architecture decision records | `.records/adr/` | `architect` |
+| architecture decision records | `.records/adr/` | `feature` (writer); distilled by `architect` |
 | research reports · run logs | `.records/reports/`, `.records/logs/` | foreman / various |
 | audit deliverables: `FINDINGS` · `metrics.csv` · `history/` | `.records/audit/` | `auditor` |
 

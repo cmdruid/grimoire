@@ -144,7 +144,7 @@ and its capture verbs also create a store if it's missing.
     notes/                 -- durable project facts / knowledge, one file each (a first-class capture kind)
     plans/                 -- design plans / roadmaps (writer: /feature; live until shipped, then archived)
     archive/               -- append-only records of shipped work (writer: /workstream; dated)
-    adr/                   -- architecture decision records (writer: /architect; distilled into the seed)
+    adr/                   -- architecture decision records (writer: /feature; distilled into the seed by /architect)
     reports/               -- research investigations / findings (standalone, browse-worthy)
     logs/                  -- captured run/measurement artifacts
     audit/                 -- audit deliverables: FINDINGS.md, metrics.csv, history/ (writer: /auditor)
@@ -170,7 +170,7 @@ actually installed; where a steward is absent, the row's work falls to by-hand p
 | tasks · issues · feedback · bugs/ · notes/ | `.records/` (trackers + stores) | `/backlog` |
 | plans / roadmaps | `.records/plans/` | `/feature` (writer) |
 | shipped / done records | `.records/archive/` | `/workstream` (writer) |
-| architecture decision records | `.records/adr/` | `/architect` (writer; distilled into the seed) |
+| architecture decision records | `.records/adr/` | `/feature` (writer); distilled into the seed by `/architect` |
 | research reports · run logs | `.records/reports/`, `.records/logs/` | foreman / various |
 | audit deliverables: FINDINGS · metrics.csv · history/ | `.records/audit/` | `/auditor` (writer) |
 | session hand-offs (gitignored scratch) | root `HANDOFF.md` · `.sessions/` | `/handoff` |

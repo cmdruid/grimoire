@@ -80,10 +80,11 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    `.records/README.md` mapping **content → location → steward** (design seed → `.agents/architect/`
    `/architect`; doctrine → `.agents/foreman/` `/foreman`; audit rubric → `.agents/auditor/` `/auditor`;
    tasks/issues/feedback/bugs/notes → `.records/` `/backlog`; plans → `.records/plans/` `/feature`;
-   archive → `.records/archive/` `/workstream`; adr → `.records/adr/` `/architect`; audit deliverables
-   → `.records/audit/` `/auditor`), keyed to the composition from Step 0, and add a one-line pointer to
-   them from the front door. Then write the trackers + `.agents/foreman/README` from the `BOOTSTRAP`
-   templates (empty files with their one-line headers; the index genericized to the host) — the
+   archive → `.records/archive/` `/workstream`; adr → `.records/adr/` `/feature` (writer, distilled by
+   `/architect`); audit deliverables → `.records/audit/` `/auditor`), keyed to the composition from
+   Step 0, and add a one-line pointer to them from the front door. Then write the trackers +
+   `.agents/foreman/README` from the `BOOTSTRAP` templates (empty files with their one-line
+   headers; the index genericized to the host) — the
    trackers + capture taxonomy come from `/backlog` where it is installed.
 4. **Wire the linter** (§11) into the host's `<gate>`: internal links resolve; enumerable doc series
    are indexed; banned paths are absent; store-dir files carry valid frontmatter.

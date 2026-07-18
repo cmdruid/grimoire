@@ -77,7 +77,7 @@ encode ownership, so a cold agent needs the index to learn *what lives where, an
   tasks.md · issues.md · feedback.md · bugs/ · notes/             (steward: /backlog)
   plans/                  design plans / roadmaps                  (writer: /feature)
   archive/                shipped / done records                   (writer: /workstream)
-  adr/                    architecture decision records            (writer: /architect; distilled into seed)
+  adr/                    architecture decision records            (writer: /feature; distilled into seed by /architect)
   reports/ · logs/        research findings / run artifacts        (foreman / various)
   audit/                  FINDINGS · metrics.csv · history/        (writer: /auditor)
 ```
