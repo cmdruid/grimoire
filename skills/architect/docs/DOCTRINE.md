@@ -144,3 +144,51 @@ structural separation above, is evidence of sufficiency. This is the empirical t
 (`prep` + a clear run + a fresh-context build run) exists to run, and it is a hard gate before
 adopting the rebuild workflow on any real project — not a routine check `/architect check` can
 substitute for.
+
+## Extraction — the brownfield onramp
+
+Greenfield projects grow a seed as they grow code. A brownfield codebase with **no design layer**
+has the opposite problem: working code and nothing that says what it is *supposed* to do. `extract`
+is the onramp — it recovers a first *draft* of the design from the code. But the draft it produces
+is **descriptive, never prescriptive**, and keeping that distinction sharp is the whole point:
+
+- **Descriptive** — a *map of what the code appears to do*. Contracts phrased as observation ("the
+  code enforces X", "callers appear to rely on Y"), not as law.
+- **Prescriptive** — a binding seed that *dictates* what a rebuild must guarantee. This is what
+  `.agents/architect/` holds, and `extract` **cannot** produce it directly.
+
+The reason is the **circularity trap** (§ Sufficiency, and its circularity): a seed reverse-engineered
+from code and then used to regenerate that code proves only reverse-engineering skill — never that
+the *standing seed was sufficient on its own*. An extracted draft that looks complete looks that way
+*because* it was traced off working code; that resemblance is exactly the false confidence the
+sufficiency discipline exists to break. So `extract`'s output is honest about its own status:
+
+- Every drafted file is **stamped provisional** (`status: extracted — sufficiency-unproven`).
+- A **sufficiency-gap report** ships alongside it — the ledger of invariants the code implies but
+  never explains, acceptance criteria that can't be inferred, and everything a rebuild would have to
+  guess. Each entry is a known place the draft is *not* self-sufficient, not a to-do afterthought.
+
+A draft becomes a seed only through a **hardening** step `extract` hands off and does not perform: a
+human editorial pass (deciding intended design, resolving the gap report) **then** the fresh-agent
+read-test (§ Sufficiency) — and only then a fold into `.agents/architect/` via `/architect init`
+migrate-mode. The human deciding what the design *should* guarantee is what breaks the circle; the
+code deciding what it *happens* to do is what keeps a raw extraction circular.
+
+## Deliverables in `.records/`, seed in `.agents/architect/`
+
+There are two homes, and the write-boundary between them is a hard rule, not a convention:
+
+| | **The seed** | **Deliverables** |
+|---|---|---|
+| Home | `.agents/architect/` | `.records/` (e.g. `.records/design-draft/`) |
+| Status | curated, present-tense, binding | provisional analysis / working artifacts |
+| Mutated by | `init`, `distill`, human editorial **only** | `extract`, `reconcile` (and other analysis verbs) |
+
+**`extract` and `reconcile` write only `.records/`.** They produce analysis *about* the design — a
+recovered draft, a drift report — which is a deliverable, not the design itself. Letting an analysis
+verb write into `.agents/architect/` would relaunder the code's current shape back over curated
+design, reintroducing exactly the "code is the source of truth" inversion the seed exists to invert
+(§ Two temporal kinds of doc; the durability gradient). The seed is mutated only by the curated path:
+`init` (compile/migrate), `distill` (collapse change-records), and direct human editorial. This is
+the same source-vs-record split `auditor` and `foreman` run — the rubric/seed is durable and curated;
+the findings/deliverables accumulate in `.records/`.
