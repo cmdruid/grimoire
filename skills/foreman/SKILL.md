@@ -1,6 +1,6 @@
 ---
 name: foreman
-description: "Stand up, run, and calibrate the project's development factory. `/foreman` (no arg, or a change description) is the change ROUTER: classify a bug/patch/feature/spike and dispatch it. `/foreman init` stands up the `.agents/foreman/` system where none exists; `/foreman calibrate` drains `/backlog`'s dev-experience signal into doctrine/workflow/AGENTS.md improvements (the self-growing curation loop); `/foreman check` validates the deployed glue against the runbook + installed skills. No-arg = `route`. Owns the change-router + curation loop; the capture bureau is `/backlog`. Use when the user runs `/foreman ...`, asks where a change starts, or asks to set up / route / calibrate a dev workflow. Distinct from the code-quality audit (`/auditor`)."
+description: "Stand up, run, and calibrate the project's development factory. `/foreman` (no arg, or a change description) is the change ROUTER: classify a bug/patch/feature/spike and dispatch it. `/foreman init` stands up the `.agents/foreman/` system on a greenfield project; `/foreman migrate` is the brownfield onramp — bring an existing (pre-grimoire / ad-hoc) project into the layout (locate, propose a mapping, confirm, git-mv, scaffold gaps); `/foreman calibrate` drains `/backlog`'s dev-experience signal into doctrine/workflow/AGENTS.md improvements (the self-growing curation loop); `/foreman check` validates the deployed glue against the runbook + installed skills. No-arg = `route`. Owns the change-router + curation loop; the capture bureau is `/backlog`. Use when the user runs `/foreman ...`, asks where a change starts, or asks to set up / route / calibrate a dev workflow. Distinct from the code-quality audit (`/auditor`)."
 ---
 
 # foreman — the dev-system integration layer
@@ -20,11 +20,18 @@ umbrella adds no always-on context beyond this file. When a verb is selected, **
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
 | `/foreman` *(no arg, or a change description)* | `verbs/route.md` | **Router** — classify a change + dispatch it to its lane | "where do I start?", "I'm about to change X" |
-| `/foreman init` *(alias `deploy`)* | `verbs/init.md` | Stand up the whole `.agents/foreman/` system on a project that lacks one | "set up a dev workflow / docs system" |
+| `/foreman init` *(alias `deploy`)* | `verbs/init.md` | **Greenfield** — stand up the whole `.agents/foreman/` system on a project that lacks one | "set up a dev workflow / docs system" |
+| `/foreman migrate` | `verbs/migrate.md` | **Brownfield onramp** — bring an existing (pre-grimoire / ad-hoc) project into the layout (locate → propose mapping → confirm → git-mv + scaffold gaps) | "migrate our `dev/` setup", "onboard this old project" |
 | `/foreman calibrate` | `verbs/calibrate.md` | Drain `/backlog`'s dev-experience signal into doctrine / workflow / `AGENTS.md` improvements — tune the doctrine to its correct settings (the curation loop) | "calibrate the dev system", "fold this friction back into the docs" |
 | `/foreman check` | `verbs/check.md` | Cheap validator — flag drift between the deployed glue and the runbook / installed skills | "is the dev system still consistent?", "validate the setup" |
 
 **Default (no recognized verb):** treat the argument as a change description and run `verbs/route.md`.
+
+The verb set is **`route` / `init` / `migrate` / `calibrate` / `check`**. `init` and `migrate` are the
+two onramps and share a seam: **`init` = greenfield** (scaffold fresh onto a blank project) while
+**`migrate` = brownfield** (locate an existing `dev/` / ad-hoc setup, relocate it into the layout, then
+scaffold the gaps). A project with no `.agents/foreman/` yet goes to one of them; both leave it
+`check`-valid.
 
 ## Shared discipline (every verb relies on this — stated here once)
 
