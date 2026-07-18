@@ -1,6 +1,6 @@
 # Philosophy
 
-The core ideals ("tenets") every system in `.agents/design/` is expected to honor. A tenet is a durable
+The core ideals ("tenets") every system in `.agents/architect/` is expected to honor. A tenet is a durable
 constraint, not a preference — it should be the kind of thing you'd cite as the *reason* a design
 choice was rejected.
 

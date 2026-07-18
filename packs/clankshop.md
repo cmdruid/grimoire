@@ -41,7 +41,7 @@ lists these as the constellation the deployed doctrine resolves to.
   `check`). Deploys and operates a project's `.agents/dev/` development-docs system.
 - **`backlog`** — the capture desk. Files each follow-up by kind (`task`, `bug`, `issue`,
   `feedback`, `note`), sweeps finished work (`debrief`), and curates the trackers (`curate`).
-- **`architect`** — the design-system engine: maintains a project's regenerable `.agents/design/`
+- **`architect`** — the design-system engine: maintains a project's regenerable `.agents/architect/`
   seed; verbs `init`/`brainstorm`/`plan`/`prep`/`distill`/`check`. Seed-altitude peer to `feature`.
 - **`feature`** — the planning spine as verbs: `brainstorm | design | plan | build`, plus the
   cross-cutting `review`. Ends at gate-green; never lands or debriefs.
@@ -86,7 +86,7 @@ validates for drift. The load-bearing invariant: **no skill crosses another's se
 - **Ship continuously.** `/workstream create` opens a stream in its own worktree and loops:
   `/feature build` per queue item → land per the stream's mode → `/backlog debrief` → advance. The
   worktree and hand-off **persist** across ships; teardown is rare.
-- **Design at seed altitude.** `/architect` maintains the regenerable `.agents/design/` seed;
+- **Design at seed altitude.** `/architect` maintains the regenerable `.agents/architect/` seed;
   `/feature design` builds a change *against* that seed. Seed altitude vs. feature scope.
 - **Delegate without polluting context.** `/delegate` decides delegate-or-not and picks the route;
   `mailbox` is the worktree-safe transport for the out-of-band result. Grunt work goes to a cheap

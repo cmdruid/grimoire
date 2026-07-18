@@ -1,6 +1,6 @@
-# `/architect init` — bootstrap or migrate the `.agents/design/` seed
+# `/architect init` — bootstrap or migrate the `.agents/architect/` seed
 
-Stands up a project's `.agents/design/` seed (see `docs/DOCTRINE.md` for the durability gradient and the
+Stands up a project's `.agents/architect/` seed (see `docs/DOCTRINE.md` for the durability gradient and the
 two-tier system-spec this verb populates). Two modes, one procedure with a fork at Step 3:
 
 - **Greenfield** — compile a loose `PROJECT.md` vision brief into the seed. There is little or no
@@ -60,7 +60,7 @@ modes — greenfield just has thinner sources.
 
 **Migrate mode.** For each doc in the existing subsystem-docs directory:
 
-1. Copy the template `templates/system-spec.md` to `.agents/design/src/<system>.md`.
+1. Copy the template `templates/system-spec.md` to `.agents/architect/src/<system>.md`.
 2. Reshape the doc's content into the two tiers — this is a **reshape, not a paste**:
    - **Contract (BINDING):** purpose, invariants (cite `PHILOSOPHY.md` tenets where the doc
      already implies one), **interfaces/seams**, behavior, the *why* behind hard constraints.
@@ -91,14 +91,14 @@ modes — greenfield just has thinner sources.
    "maybe someday" doc into a binding contract.
 
 **Greenfield mode.** If there's a live codebase but no prior design docs, build the same
-`.agents/design/src/<system>.md` files directly from code inspection + the vision brief instead of from a
+`.agents/architect/src/<system>.md` files directly from code inspection + the vision brief instead of from a
 source doc: partition the codebase into systems (informed by its actual module boundaries), draft
 each contract from what the code visibly does, and skip straight to pointer-heavy reference-arch
 since there's no prose to reshape. If there's no code either, `src/` starts empty — `MAP.md`
 records the intended systems from the brief, and their specs are the first thing a `/architect plan`
 pass writes.
 
-**What never gets migrated into `.agents/design/`:** change-records — ADRs, plans, roadmap deltas — stay
+**What never gets migrated into `.agents/architect/`:** change-records — ADRs, plans, roadmap deltas — stay
 in the project's own operational history (`.agents/dev/adr/`, `.agents/dev/plans/`, etc.). Per `docs/DOCTRINE.md`,
 change-records and standing specs are temporally distinct; folding an ADR chain's *history* into
 the seed reintroduces exactly the scar-smear the seed exists to avoid. `distill` is the verb that
@@ -109,13 +109,13 @@ later mines those change-records to refresh a spec — `init` only establishes t
 
 Once their content lives in the seed, the source material is **spent** — in migrate mode this is
 `PROJECT.md`/`DESIGN.md` **and** every per-subsystem doc actually migrated in Step 3 (e.g.
-`docs/design/<system>.md` for each system now living at `.agents/design/src/<system>.md`); in greenfield
+`docs/design/<system>.md` for each system now living at `.agents/architect/src/<system>.md`); in greenfield
 mode it's just `PROJECT.md`. Leaving a migrated subsystem doc in place, unlinked, recreates the
 two-source-of-truth problem `init` exists to close — don't stop at the root files. This is a
 document edit — `init` performs it directly:
 
-- Default: replace each with a one-line pointer to `.agents/design/` (e.g. "Superseded by `.agents/design/` — see
-  `.agents/design/README.md`." for the root files, or "Superseded by `.agents/design/src/<system>.md`." for a
+- Default: replace each with a one-line pointer to `.agents/architect/` (e.g. "Superseded by `.agents/architect/` — see
+  `.agents/architect/README.md`." for the root files, or "Superseded by `.agents/architect/src/<system>.md`." for a
   migrated subsystem doc). This is the safer default; deleting a root file a human may still link
   to is more disruptive than leaving a pointer.
 - Delete outright only if the project's own conventions call for it (e.g. an "alpha, no dead
@@ -127,7 +127,7 @@ document edit — `init` performs it directly:
 
 This step is the one place `init` must actively watch the altitude seam (`docs/DOCTRINE.md` § The
 seam — altitude, not medium). "Update project wiring" covers three kinds of reference that can go
-stale once `.agents/design/` exists and the old docs are gone/moved:
+stale once `.agents/architect/` exists and the old docs are gone/moved:
 
 1. **Repo-map docs** (e.g. `AGENTS.md`) that describe where design docs live.
 2. **A doc-linter or indexer** that enumerates the old design-doc directory.
@@ -152,7 +152,7 @@ fix the one-liner" is exactly the boundary this step exists to hold.
 ## 6. Run `check` — the completion gate
 
 ```bash
-bash <skill-dir>/scripts/architect-check.sh <project>/.agents/design [<repo-root>]
+bash <skill-dir>/scripts/architect-check.sh <project>/.agents/architect [<repo-root>]
 ```
 
 `init` is not done until:

@@ -13,7 +13,7 @@ this verb never depends on any pack. That separation is what lets `init` serve a
 partial install, or a bare one skill deep.
 
 **On-disk home root (spec §3.1).** The artifact homes live under a single `.agents/` root: `init`
-scaffolds `.agents/dev/`, and `/architect` uses `.agents/design/`. **Record the chosen root in the
+scaffolds `.agents/dev/`, and `/architect` uses `.agents/architect/`. **Record the chosen root in the
 glue you write** (the host's `AGENTS.md`, step 6) so every companion skill and agent **reads the
 recorded location** rather than assuming a hardcoded path — the root is a pointer, not a constant.
 
@@ -77,7 +77,7 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    diagnostics tooling" — and rely on `AGENTS.md` being in the agent's context to resolve them to
    concrete commands. The skills carry **no** project-specific commands, by design; if `AGENTS.md`
    doesn't name the gate, "run the gate" has nothing to resolve to. **Also record the on-disk home
-   root here** (the `.agents/dev/` — and `.agents/design/` — location) so the recorded pointer, not a
+   root here** (the `.agents/dev/` — and `.agents/architect/` — location) so the recorded pointer, not a
    hardcoded path, is what agents resolve (§3.1). (`.agents/dev/docs/` holds the longer-form detail;
    `AGENTS.md` is the always-loaded surface.)
 7. **List the composition's companion skills in `AGENTS.md`** — the members from Step 0 (`/backlog`,

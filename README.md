@@ -36,7 +36,7 @@ and **plumbing** (`delegate`, `mailbox`, `handoff` — orchestration/transport u
 
 | skill | what it does |
 |---|---|
-| `architect` | the design-system engine: a project's regenerable `.agents/design/` seed and its verbs |
+| `architect` | the design-system engine: a project's regenerable `.agents/architect/` seed and its verbs |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
 | `backlog` | the capture desk: file follow-ups by kind (task/bug/issue/feedback/note), sweep finished work (`debrief`), curate the lists (`curate`) |
 | `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |
@@ -58,7 +58,7 @@ full rationale).
 Committed, agent-tooling-managed project artifacts live under one visible-but-namespaced root,
 `.agents/` — durable homes, not scratch, filtered from a direct code read the way `.github/` is:
 
-- `.agents/design/` — the design seed (`architect`)
+- `.agents/architect/` — the design seed (`architect`)
 - `.agents/dev/` — the development system: the `docs/` glue (`foreman`) + the trackers (`backlog`)
 
 ## The packs

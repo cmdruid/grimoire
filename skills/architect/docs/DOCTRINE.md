@@ -1,8 +1,8 @@
-# The `/architect` doctrine — the `.agents/design/` seed methodology
+# The `/architect` doctrine — the `.agents/architect/` seed methodology
 
 This is the portable methodology every verb links to. It encodes the founding
 design spec as durable doctrine;
-project-specific content (a project's actual `.agents/design/` folder) never lives here.
+project-specific content (a project's actual `.agents/architect/` folder) never lives here.
 
 ## Two temporal kinds of doc
 
@@ -14,7 +14,7 @@ this system exists to cure:
 | Tense | past ("we decided to change X→Y") | present ("this is how it **is**") |
 | Good for | building *forward*, incrementally | *regenerating* from a clean seed |
 | Failure mode | superseding-chains → scar debt | — |
-| Home | `.agents/dev/` (ADRs, plans) — operational | `.agents/design/` — the seed |
+| Home | `.agents/dev/` (ADRs, plans) — operational | `.agents/architect/` — the seed |
 
 **The ADR-smear disease:** a project's authoritative present-tense truth ends up smeared across a
 stack of past-tense decisions — to know how a system works *today*, an agent has to read ADR N
@@ -31,22 +31,22 @@ The seed is organized along a durability gradient, encoded in directory depth: s
 deep is disposable.
 
 ```
-MOST DURABLE   .agents/design/VISION.md        — what the product IS (north star)
-   ▲           .agents/design/PHILOSOPHY.md    — core ideals ("seeds are sacred")     required spine
-   │           .agents/design/GLOSSARY.md      — shared vocabulary                    (presence-checked
-   │           .agents/design/MAP.md           — system index + seam graph             by /architect check)
-   │           .agents/design/src/<system>.md  · CONTRACT tier    — binding invariants, behavior, seams
+MOST DURABLE   .agents/architect/VISION.md        — what the product IS (north star)
+   ▲           .agents/architect/PHILOSOPHY.md    — core ideals ("seeds are sacred")     required spine
+   │           .agents/architect/GLOSSARY.md      — shared vocabulary                    (presence-checked
+   │           .agents/architect/MAP.md           — system index + seam graph             by /architect check)
+   │           .agents/architect/src/<system>.md  · CONTRACT tier    — binding invariants, behavior, seams
    ▼                                    · REFERENCE-ARCH  — current shape, DISPOSABLE (a snapshot)
 LEAST DURABLE
 ```
 
-- **Spine at `.agents/design/` root** is the "constitution" that *governs* the compile (like a repo's
+- **Spine at `.agents/architect/` root** is the "constitution" that *governs* the compile (like a repo's
   README/LICENSE/config). It is not itself compiled to code, and it is **required, not
   optional** — `/architect check` fails if `VISION`, `PHILOSOPHY`, `GLOSSARY`, or `MAP` is missing.
   The spine is what makes radical change *safe*: you can rewrite everything about one system
   without renegotiating a durable tenet like "seeds are sacred."
-- **`.agents/design/src/`** holds the compilable source specs, roughly 1:1 with code units. The compile
-  metaphor is exact: `.agents/design/src/<system>.md` is to `src/<code>` as a source file is to its build
+- **`.agents/architect/src/`** holds the compilable source specs, roughly 1:1 with code units. The compile
+  metaphor is exact: `.agents/architect/src/<system>.md` is to `src/<code>` as a source file is to its build
   artifact — the spec is the durable input, the code is the disposable output regenerated from it.
 - Depth tracks durability because it tracks *how much a single revision can invalidate*. A change
   to `VISION.md` reshapes everything below it; a change to one `src/<system>.md` reference-arch
@@ -54,7 +54,7 @@ LEAST DURABLE
 
 ## The two-tier system spec
 
-Each `.agents/design/src/<system>.md` carries two tiers with different authority:
+Each `.agents/architect/src/<system>.md` carries two tiers with different authority:
 
 - **CONTRACT (binding).** Purpose, invariants, interfaces/seams, behavior, acceptance criteria,
   and the *why* behind hard constraints. This is law: a rebuild reads the contract — including its
@@ -79,7 +79,7 @@ seams included — in the contract tier, where a rebuild cannot accidentally ski
 > You do not need a special "rebuild mode" or a fresh-context discipline to escape rotten code's
 > incremental bias — if the rotten code is *gone*, there is nothing to inherit. The magic is not
 > in the build; it is in the *prep that precedes it*. Code is the disposable **build output** of
-> `.agents/design/`.
+> `.agents/architect/`.
 
 This is made **structural**, not a rule to police, by running the clear and the build as **two
 independent `/feature` executions**:

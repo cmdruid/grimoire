@@ -1,6 +1,6 @@
 # Glossary
 
-Shared vocabulary for this project's `.agents/design/` seed. Every spec in `src/` should use these terms
+Shared vocabulary for this project's `.agents/architect/` seed. Every spec in `src/` should use these terms
 consistently rather than redefining them locally — if a spec needs a term that isn't here yet,
 add it here first.
 

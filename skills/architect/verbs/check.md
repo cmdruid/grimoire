@@ -6,11 +6,11 @@ for the durability gradient and the two-tier spec this validates against.
 ## Run it
 
 ```bash
-bash <skill-dir>/scripts/architect-check.sh <project>/.agents/design [<repo-root>]
+bash <skill-dir>/scripts/architect-check.sh <project>/.agents/architect [<repo-root>]
 ```
 
 - `<repo-root>` (default `<design-dir>/..`) is where `src/…:NN` reference-arch pointers resolve
-  against — pass the actual repo root if `.agents/design/` doesn't sit directly above it.
+  against — pass the actual repo root if `.agents/architect/` doesn't sit directly above it.
 - Exit **1** iff `spine_complete=false` or any `contract:<sys>=false`; everything else is
   advisory and doesn't affect the exit code.
 
