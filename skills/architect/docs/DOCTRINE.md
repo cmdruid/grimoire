@@ -158,7 +158,7 @@ starves the other — the same shape as the cheap-check / expensive-read-test sp
 | How | a read-only fact script (`architect-check.sh`) | an agent reads each contract against the code it points at |
 | Writes | nothing (facts to stdout) | one drift report to `.records/reports/` |
 
-`check` is necessary but not sufficient (§ The one thing `check` cannot tell you, `verbs/check.md`):
+`check` is necessary but not sufficient (§ The one thing this script cannot tell you, `verbs/check.md`):
 a contract can be present, concrete, and driftless while the code it governs has quietly grown a new
 guarantee, lost an old invariant, or moved a named seam. That gap — *does the binding contract still
 mean what the code does?* — is only closeable by reading, and reading every system's contract against
