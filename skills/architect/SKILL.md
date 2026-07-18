@@ -1,6 +1,6 @@
 ---
 name: architect
-description: "The design-system engine — verbs over a project's `.agents/architect/` seed: the present-tense, regenerable design that code is a build output of. `/architect init` stands up `.agents/architect/` (compiles a PROJECT.md brief, or migrates existing docs). `/architect extract` is the brownfield onramp — recover a descriptive, provisional design draft from code into `.records/design-draft/`. `/architect brainstorm` and `/architect plan` do seed-altitude (foundational, not feature-scope) design work. `/architect distill` collapses accreted ADRs/plans into clean present-tense specs at a milestone. `/architect check` validates seed health (spine, drift, distill-debt). `/architect prep` (Plan B) plans clearing retired code so `/feature` can rebuild. Use when the user runs `/architect ...`, sets up a design-doc system, distills ADRs into a coherent spec, or makes a foundational (not incremental) design change. Seed-altitude peer to /feature (feature-scope build engine) and /foreman (operational system)."
+description: "The design-system engine — verbs over a project's `.agents/architect/` seed: the present-tense, regenerable design that code is a build output of. `/architect init` stands up `.agents/architect/` (compiles a PROJECT.md brief, or migrates existing docs). `/architect extract` is the brownfield onramp — recover a provisional design draft from code into `.records/design-draft/`. `/architect brainstorm` and `/architect plan` do seed-altitude (foundational, not feature-scope) design work. `/architect distill` collapses accreted ADRs/plans into clean present-tense specs. `/architect check` validates seed health (spine, drift, distill-debt); `/architect reconcile` reports deep semantic seed↔code drift to `.records/reports/`. `/architect prep` (Plan B) plans clearing retired code so `/feature` can rebuild. Use when the user runs `/architect ...`, sets up a design-doc system, or makes a foundational design change. Seed-altitude peer to /feature (feature-scope build engine) and /foreman (operational system)."
 ---
 
 # architect — the design-system engine
@@ -25,6 +25,7 @@ lives in `verbs/<verb>.md`; the portable doctrine lives in `docs/DOCTRINE.md`.
 | `plan` | `verbs/plan.md` | sequence a design-evolution campaign |
 | `distill` | `verbs/distill.md` | collapse accreted change-records into clean present-tense specs |
 | `check` | `verbs/check.md` | validate seed health (runs `scripts/architect-check.sh`) |
+| `reconcile` | `verbs/reconcile.md` | deep semantic seed↔code drift check; writes a report to `.records/reports/` (recommends, never applies) |
 | `prep` | *(verb file pending — method in `docs/DOCTRINE.md`)* | *(Plan B)* plan the clearing of retired code so `/feature` can rebuild |
 
 ## Discipline every verb shares

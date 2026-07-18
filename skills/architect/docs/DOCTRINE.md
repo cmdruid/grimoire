@@ -145,6 +145,37 @@ structural separation above, is evidence of sufficiency. This is the empirical t
 adopting the rebuild workflow on any real project — not a routine check `/architect check` can
 substitute for.
 
+## Cheap `check`, deep `reconcile`
+
+Validating the seed against reality is two jobs at two costs, and conflating them wastes one or
+starves the other — the same shape as the cheap-check / expensive-read-test split in § Sufficiency:
+
+| | **`check`** | **`reconcile`** |
+|---|---|---|
+| Cost | cheap, run often (every commit) | expensive, run occasionally (milestone / suspected drift) |
+| Depth | **structural** — mechanically checkable | **semantic** — requires reading and judgment |
+| Catches | missing spine/contract, pointer-drift, stale baselines, MAP gaps | contract and code diverged in *meaning* |
+| How | a read-only fact script (`architect-check.sh`) | an agent reads each contract against the code it points at |
+| Writes | nothing (facts to stdout) | one drift report to `.records/reports/` |
+
+`check` is necessary but not sufficient (§ The one thing `check` cannot tell you, `verbs/check.md`):
+a contract can be present, concrete, and driftless while the code it governs has quietly grown a new
+guarantee, lost an old invariant, or moved a named seam. That gap — *does the binding contract still
+mean what the code does?* — is only closeable by reading, and reading every system's contract against
+its code is too expensive to run on every commit. So it is its own occasional verb, `reconcile`,
+aimed by `check`'s cheap facts: the `drift:<sys>` and stale-baseline signals point the expensive
+semantic read at the systems most likely to have diverged first.
+
+**`reconcile` detects and adjudicates; it never applies.** For each divergence it decides which side
+is authoritative — **seed stale** (the code is the intended reality → recommend a seed update, or
+`/architect distill` when the drift is accreted-ADR smear) vs **code drifted** (the code strayed from
+the intended design → a defect for the caller to fix) — and *recommends*, human-in-the-loop. It
+**never patches the seed and never touches code**: a seed edit is the human's or `distill`'s to make
+on the recommendation, a code fix is the caller's. And it **writes only `.records/`** — the drift
+report is a deliverable *about* the design, never the design itself (§ Deliverables in `.records/`,
+seed in `.agents/architect/`). This is distinct from `/auditor`, which judges code *quality*;
+`reconcile` judges design *conformance* — whether code and seed still agree.
+
 ## Extraction — the brownfield onramp
 
 Greenfield projects grow a seed as they grow code. A brownfield codebase with **no design layer**
