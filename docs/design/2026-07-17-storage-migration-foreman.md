@@ -32,7 +32,8 @@
 | `.agents/dev/adr/…` | `.records/adr/…` | architect writes / distills |
 | `.agents/dev/reports/…` | `.records/reports/…` | foreman (spikes) |
 | `.agents/dev/logs/…` | `.records/logs/…` | various |
-| `.agents/dev/audit/…` | **`.agents/auditor/…`** *(OPEN — see Decisions)* | auditor |
+| `.agents/dev/audit/{GUIDE.md,rules/}` | `.agents/auditor/{GUIDE.md,rules/}` (rubric = seed) | auditor |
+| `.agents/dev/audit/{FINDINGS.md,metrics.csv,history/,logs}` | `.records/audit/…` (deliverables) | auditor writes |
 | `.agents/dev/templates/…` | *(removed — skills use their bundled `templates/`)* | — |
 | `.agents/backlog/TASKS.md` | `.records/tasks.md` | backlog stewards |
 | `.agents/backlog/ISSUES.md` | `.records/issues.md` | backlog stewards |
@@ -48,9 +49,9 @@
 
 **Record shape:** flat-list trackers are single files (`.records/tasks.md`, `.records/issues.md`, `.records/feedback.md`); multi-file stores are dirs (`.records/{bugs,notes,plans,done,adr,reports,logs}/`).
 
-## Open decisions (resolve at review — recommendations baked in)
+## Open decisions
 
-1. **The auditor subsystem `.agents/dev/audit/` → `.agents/auditor/` (recommended).** This wasn't in the design conversation. The audit framework (`GUIDE.md`, `rules/`, `FINDINGS.md`, `metrics.csv`, `history/`) is a cohesive body `auditor` deploys and stewards 1:1 — so a skill-named home (`.agents/auditor/`) is consistent with `architect`/`foreman`. Alternative: split config (`GUIDE`/`rules` → `.agents/auditor/`) from findings (`FINDINGS`/`metrics`/`history` → `.records/audit/`). **Plan assumes the cohesive `.agents/auditor/`; confirm or override.**
+1. **RESOLVED — the auditor subsystem splits by the source-vs-record cut.** The *rubric* (`GUIDE.md` + `rules/`) is a source-of-truth seed → **`.agents/auditor/`** (auditor joins architect/foreman as a seed-steward). The *deliverables* (`FINDINGS.md`, `metrics.csv`, `history/`, logs) are accumulated outputs → **`.records/audit/`**. Task 4 classifies each `.agents/dev/audit/<x>` ref as rubric (seed) or deliverable (record) accordingly.
 2. **Edge-case paths (1 ref each), classify per context in Task 3:** `.agents/dev/GLOSSARY.md` (→ `.agents/architect/` if it's the design glossary, else foreman index), `.agents/dev/ROADMAP.md` (→ `.records/` as a roadmap record, or `feature`), `.agents/dev/INDEX.md` (→ the Task-7 layout index), `.agents/dev/sessions` (→ `.records/sessions/` or `handoff`'s scratch). Implementer flags any it can't classify confidently.
 
 ---
@@ -105,20 +106,23 @@ bash scripts/skills-lint.sh                                                     
 
 ---
 
-## Task 4: auditor subsystem `.agents/dev/audit/` → `.agents/auditor/`
-
-*(Contingent on Decision #1. If overridden to a split, adjust.)*
+## Task 4: auditor subsystem — split rubric (seed) from deliverables (records)
 
 **Files:** `skills/auditor/{SKILL.md,BOOTSTRAP.md}` (the 21 refs) + any cross-refs.
 
-- [ ] **Step 1: Apply.** `.agents/dev/audit/` → `.agents/auditor/` across `skills/auditor/**` and anywhere else it appears. Update `auditor`'s BOOTSTRAP/SKILL to describe its home as `.agents/auditor/`.
+- [ ] **Step 1: Classify + apply the split.** For each `.agents/dev/audit/<x>` reference, route by kind:
+  - **Rubric / source-of-truth → `.agents/auditor/`:** `GUIDE.md`, `rules/` (and any authored calibration config). This is auditor's seed home.
+  - **Deliverables / accumulated outputs → `.records/audit/`:** `FINDINGS.md`, `metrics.csv`, `history/`, run logs, and any per-run report.
+  Update `auditor`'s `SKILL.md`/`BOOTSTRAP.md` to describe the split: it *reads/curates* its rubric in `.agents/auditor/` and *writes* deliverables to `.records/audit/`. Note the pipeline (findings in `.records/audit/` inform calibrating the `.agents/auditor/` rubric — same shape as architect/foreman).
 - [ ] **Step 2: Verify.**
 ```bash
 grep -rn '\.agents/dev/audit' skills/ README.md AGENTS.md packs/   # no output
+grep -rn '\.agents/auditor/' skills/auditor | head                 # rubric refs present
+grep -rn '\.records/audit/' skills/auditor | head                  # deliverable refs present
 grep -rn '\.agents/dev/' skills/ README.md AGENTS.md packs/ | grep -v '\.agents/dev/templates'   # empty (only templates remain, Task 6)
 bash scripts/skills-lint.sh                                        # fails=0
 ```
-- [ ] **Step 3: Commit.** `git commit -m "storage: auditor subsystem .agents/dev/audit -> .agents/auditor" -- skills/auditor $(git diff --cached --name-only)`
+- [ ] **Step 3: Commit.** `git commit -m "storage: auditor rubric -> .agents/auditor, deliverables -> .records/audit" -- skills/auditor $(git diff --cached --name-only)`
 
 ---
 
@@ -172,8 +176,8 @@ bash scripts/skills-lint.sh                                                     
 
 **Files:** `foreman/verbs/init.md`, `foreman/BOOTSTRAP.md`, `packs/clankshop.md`, `README.md`, `AGENTS.md`.
 
-- [ ] **Step 1: `foreman init` / `BOOTSTRAP` scaffold the two-root layout.** Update the scaffold + directory manifest to stand up `.agents/{architect,foreman,auditor}/` (seed homes) + `.records/{tasks.md,issues.md,feedback.md,bugs/,notes/,plans/,done/,adr/,reports/,logs/}` (typed records). Ensure the BOOTSTRAP `docs/` manifest names only files `foreman` actually bundles (lint check #3).
-- [ ] **Step 2: Generate the layout index (the load-bearing piece).** `foreman init` writes an index that maps **content → location → steward** — e.g. a top-level `AGENTS.md` pointer block and/or `.records/README.md` + `.agents/README.md`. Since paths no longer encode ownership, this index is required: "tasks/issues/feedback/bugs/notes → `.records/…`, stewarded by `/backlog`; plans → `.records/plans/` (feature); design seed → `.agents/architect/`; doctrine → `.agents/foreman/`; audit → `.agents/auditor/`."
+- [ ] **Step 1: `foreman init` / `BOOTSTRAP` scaffold the two-root layout.** Update the scaffold + directory manifest to stand up `.agents/{architect,foreman,auditor}/` (seed homes — architect's design seed, foreman's doctrine, auditor's rubric) + `.records/{tasks.md,issues.md,feedback.md,bugs/,notes/,plans/,done/,adr/,reports/,logs/,audit/}` (typed records). Ensure the BOOTSTRAP `docs/` manifest names only files `foreman` actually bundles (lint check #3).
+- [ ] **Step 2: Generate the layout index (the load-bearing piece).** `foreman init` writes an index that maps **content → location → steward** — e.g. a top-level `AGENTS.md` pointer block and/or `.records/README.md` + `.agents/README.md`. Since paths no longer encode ownership, this index is required: "tasks/issues/feedback/bugs/notes → `.records/…`, stewarded by `/backlog`; plans → `.records/plans/` (feature); design seed → `.agents/architect/`; doctrine → `.agents/foreman/`; audit rubric → `.agents/auditor/`, audit deliverables → `.records/audit/`."
 - [ ] **Step 3: Runbook documents the canonical layout.** In `packs/clankshop.md`, add the two-root layout + ownership map as the composition `foreman init` instantiates (extends the existing seam catalog).
 - [ ] **Step 4: README/AGENTS.** Reflect the two-root layout + the ownership map.
 - [ ] **Step 5: Verify.** `bash scripts/skills-lint.sh` → `fails=0`; the BOOTSTRAP manifest validates; the layout + ownership map appear in the index/runbook.
