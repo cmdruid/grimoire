@@ -12,7 +12,9 @@ This file is a **runbook**, not a brochure. To stand up this constellation in a 
 **Mechanism vs. composition.** `/foreman` is the **oven** (the mechanism: how to instantiate *any*
 composition — pack-agnostic, it never names a specific skill). This file is the **recipe** (the
 composition: which skills, and the seams that bind them). The pack **calls** the tool; the tool
-never depends on the pack. On a bare install with no pack, `/foreman init` **baselines** —
+never depends on the pack. **The recipe owns the glue content and *births* the constellation; the
+oven *stamps* that glue at `init` and *grows* it afterward via `calibrate` — it never authors the
+pack-specific glue.** On a bare install with no pack, `/foreman init` **baselines** —
 introspects the installed skills, wires the ones it recognizes, and names by-hand fallbacks for the
 rest. This runbook is the *enrichment* that baseline can't derive: the cross-skill seams live
 *between* skills, in no single skill's frontmatter, so they must live here.
@@ -102,10 +104,12 @@ validates for drift. The load-bearing invariant: **no skill crosses another's se
 |---|---|
 | `backlog` ↔ `foreman` | `backlog` **captures** (single front-door, uniform); `foreman calibrate` **drains** the system-relevant slice into doctrine. Inbox vs. curator. |
 | `foreman` ↔ `clankshop` (this pack) | `foreman` = mechanism (oven); this runbook = composition (recipe). The pack **calls** foreman; foreman never depends on the pack. |
-| `foreman` ↔ `chiropractor` | `foreman` **authors** the `AGENTS.md` workflow-glue section; `chiropractor` **audits** the whole front-door's ergonomics. Author vs. auditor. |
+| `foreman` ↔ `chiropractor` | `clankshop` **specifies** the `AGENTS.md` workflow-glue (content); `foreman` **stamps** it at `init` and **grows** it via `calibrate` (mechanism); `chiropractor` **audits** the front-door's ergonomics. Specify → stamp → audit — none authors another's part. |
 | `architect` ↔ `chiropractor` | `architect`'s GLOSSARY = **domain** terms (part of the seed); `chiropractor`'s concern = a **navigational** glossary/index exists and is linked. Domain vs. navigation. |
 | `architect` ↔ `feature` | `architect` authors the seed (seed altitude); `feature` builds a change against it (feature scope). The altitude seam. |
 | `feature` ↔ `workstream` ↔ `backlog` | `feature` ends at gate-green; `workstream` lands; `backlog debrief` captures. Three seams, one rule: none crosses another's. |
+| `delegate` ↔ `mailbox` | `delegate` **decides** (delegate-or-not, mechanism, route, return contract); `mailbox` **carries** (the worktree-safe slot transport `delegate` routes to). Decision vs. transport. |
+| `auditor` ↔ `chiropractor` | `auditor` scores **project code** against a quality rubric; `chiropractor` tunes the **doc spine's** ergonomics. Code vs. docs (see *"Which audit?"* below). |
 
 ## The glue-workflows (how the seams run in practice)
 
