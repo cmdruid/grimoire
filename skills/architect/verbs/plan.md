@@ -7,11 +7,9 @@ prepped/regenerated, and in what order — a **seed-altitude roadmap**, not a bu
 
 ## The altitude discriminator
 
-`plan` is the other verb name `/architect` shares with `/feature`. Same seam as `brainstorm`:
-
-> `/feature brainstorm|plan` mutate **code** (a change you build against the seed).
-> `/architect brainstorm|plan` mutate **the seed itself** (the foundation you later regenerate code
-> from). *Changing the foundation → `/architect`. Building on it → `/feature`.*
+`plan` is the other verb name `/architect` shares with `/feature` — same collision, same resolver as
+`brainstorm`: **this verb plans work on the seed itself; the same-named `/feature` verb plans a code
+change built against it.** (The altitude seam is the runbook's — `packs/clankshop.md`.)
 
 `/architect plan` never produces an implementation plan — it produces a **sequence of seed work and
 seed-driven downstream work**, expressed as references to other verbs, not as steps a developer

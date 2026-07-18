@@ -144,10 +144,9 @@ ignored hand-off is not a debrief target.
   checkpoint, `handoff` writes the story, `debrief` drains the byproducts to the trackers. Do both.
 - **`/workstream`** drives a stream in a worktree. Run `/backlog debrief` when a feature — or a phase of
   it — meets its Done-when, which is *before* you `/workstream ship` it, **not** as part of that verb.
-  Landing the code is transport; debrief is tied to the work being finished. The workstream sequences
-  two passes around the reset: **#1 before `ship`** (rides the ff-merge free), and — only if the ship
-  was *eventful* (conflicts, contention retries, multiple syncs) — **#2 after `ship`**, both before
-  the pre-reset `save` (see the workstream skill's *Reset ritual*).
+  Landing the code is transport; debrief is tied to the work being finished. Where a stream runs more
+  than one debrief pass around its reset, that sequencing is the workstream skill's to define (see its
+  *Reset ritual*).
 
 ## Style notes
 

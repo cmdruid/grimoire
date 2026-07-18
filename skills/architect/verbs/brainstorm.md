@@ -10,11 +10,10 @@ durability gradient this verb edits along.
 ## The altitude discriminator
 
 `brainstorm` is one of the two verb names `/architect` shares with `/feature` — the one collision
-risk in the whole system. Hold this line before starting any session:
-
-> `/feature brainstorm|plan` mutate **code** (a change you build against the seed).
-> `/architect brainstorm|plan` mutate **the seed itself** (the foundation you later regenerate code
-> from). *Changing the foundation → `/architect`. Building on it → `/feature`.*
+risk in the whole system. The invocation-time resolver: **this verb mutates the seed itself (the
+foundation you later regenerate code from); the same-named `/feature` verb mutates code built against
+it.** Changing the foundation → here; building on it → `/feature`. (The altitude seam itself is the
+runbook's — `packs/clankshop.md` + `docs/DOCTRINE.md`.)
 
 If the question in front of you is "how should we build feature X" — even a gnarly, cross-cutting
 X — that's `/feature brainstorm`. If the question is "is the tenet/contract/seam X *builds on*

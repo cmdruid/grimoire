@@ -43,9 +43,8 @@ isolated worktree), never editing the shared tree.
 
 ## Delegation route (confirmed once at create — persists across resets)
 <Set at `create` (propose-and-confirm; see the skill's `create` step 6). **One of three states:**
-- **a route** — the per-phase map `/delegate` uses (default: planning/design/review → strong,
-  implementation/remediation → mid, testing → cheap; override per-phase, e.g. `implementation: <model>`).
-  Models are opaque per-harness strings.
+- **a route** — the per-phase model map `/delegate` uses (its defaults, or a per-phase override like
+  `implementation: <model>`). Models are opaque per-harness strings; the map itself is `/delegate`'s.
 - **`inline-only`** — this stream delegates nothing (small tasks / tight loops). A *deliberate* choice,
   so a `0` delegation tally is **correct**, not a firing failure.
 - **`unconfirmed`** — `create` ran unattended; defaults to inline until a human confirms. Re-confirm at

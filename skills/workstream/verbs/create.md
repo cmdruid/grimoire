@@ -126,11 +126,10 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
      the phase model map. (A `manual` stream still *records* a delegation route, but only for **fan-out**
      — default `inline-only`; its model lever is the phase map, not delegation.)
    - **Pre-confirm the delegation route** (so the autonomous loop delegates without per-dispatch friction,
-     and the per-feature tally is interpretable). Defer to `/delegate`'s route-confirmation — don't
-     reimplement it: **self-check the checkable** (`command -v codex`; what sub-agent model tiers the
-     harness offers), then **propose** a route — the `/delegate` default map (planning/review → strong,
-     impl → mid, testing → cheap) with the concrete available models — **or `inline-only`** if there's no
-     cheaper tier / no sub-agent capability. `create` runs on the root checkout **with the human present**,
+     and the per-feature tally is interpretable). Defer to `/delegate`'s route-confirmation — **don't
+     reimplement it here**: run its confirm-the-route step (self-check the checkable, propose a route
+     with the concrete available models **or `inline-only`** if there's no cheaper tier / no sub-agent
+     capability, get the human's OK). The per-phase model map is `/delegate`'s to define, not this file's. `create` runs on the root checkout **with the human present**,
      so **confirm it now** (the human owns the unobservable cost/quota; one touch pays off across the whole
      loop). Record the result in the hand-off's **`Delegation route`** section: the per-phase route +
      fallback policy, or `inline-only` (a *deliberate* `0` tally, not a firing failure). **Unattended
