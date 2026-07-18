@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Save the current conversation as a temporary, self-contained hand-off a future agent (any vendor) can resume from, or resume one. `/handoff save` writes the root HANDOFF.md (gitignored scratch, the single active root session); `/handoff resume` loads and consumes it (one-shot). `/handoff save <name>` / `/handoff load <name>` use `.sessions/<name>.md` for concurrent root-level (non-worktree) sessions that would collide on the one root file -- these are rolling and re-loadable, removed with `/handoff close <name>`; `/handoff list` shows what exists. Use when asked to save/snapshot context before a reset or pick up where you left off. For isolated worktree streams use /workstream instead.
+description: Save the current conversation as a temporary, self-contained hand-off a future agent (any vendor) can resume from, or resume one. `/handoff save` writes the root HANDOFF.md (gitignored scratch, the single active root session); `/handoff resume` loads and consumes it (one-shot). `/handoff save <name>` / `/handoff load <name>` use `.sessions/<name>.md` for concurrent root-level (non-worktree) sessions that would collide on the one root file -- these are rolling and re-loadable, removed with `/handoff close <name>`; `/handoff list` shows what exists. Use when asked to save/snapshot context before a reset or pick up where you left off. Scoped to root, non-worktree sessions.
 ---
 
 # Hand-off skill

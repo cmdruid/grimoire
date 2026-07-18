@@ -1,6 +1,6 @@
 ---
 name: delegate
-description: "Use when about to do work a sub-agent could do (or on explicit /delegate [task]) -- the delegation front-door. Route work for speed, token cost, or context hygiene: offload grunt work to a cheaper model, keep your own context lean. Decide delegate-or-not, pick the mechanism (inline sub-agent / mailbox slot / Codex executor / parallel fan-out / isolated worktree), and confirm the route (which provider/model) with the human -- live cost/quota/availability is state you cannot see. Degrades to a fallback ladder (down to inline) on provider failure, so it runs safely in an autonomous loop. Harness-agnostic (Claude or Codex). Keywords: delegate, sub-agent, dispatch, model routing, token cost, context isolation, byproducts, handoff, parallel, codex, fallback, autonomous, provider failure."
+description: "Use when about to do work a sub-agent could do (or on explicit /delegate [task]) -- the delegation front-door. Route work for speed, token cost, or context hygiene: offload grunt work to a cheaper model, keep your own context lean. Decide delegate-or-not, pick the mechanism (inline sub-agent / mailbox slot / Codex executor / parallel fan-out / isolated worktree), and confirm the route (which provider/model) with the human -- live cost/quota/availability is state you cannot see. Degrades to a fallback ladder (down to inline) on provider failure, so it runs safely in an autonomous loop. Harness-agnostic (Claude or Codex). Keywords: delegate, sub-agent, dispatch, model routing, token cost, context isolation, byproducts, parallel, codex, fallback, autonomous, provider failure."
 ---
 
 # delegate -- hand work to a sub-agent, keep the judgment
@@ -25,7 +25,8 @@ Everything else stays **pass-by-reference**: a path is paid once; pasted content
 
 This skill is a **router**: it owns the decisions (delegate-or-not, mechanism, route gate, return
 contract) and the inline + fan-out mechanics, and points at one specialist for deep mechanics
-(`mailbox` for the slot protocol). It is a **leaf** -- it names delegation *mechanisms*, never *task
+(`mailbox` — the slot protocol; don't re-document it here). It is a **leaf** -- it names delegation
+*mechanisms*, never *task
 workflows*: a workflow skill may use `/delegate`; `/delegate` never says "use `/feature`".
 
 ## When to use
