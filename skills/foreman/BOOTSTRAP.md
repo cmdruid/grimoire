@@ -16,6 +16,14 @@ of the installed skills. `/foreman init` reads the composition, then instantiate
 The seams live *between* skills, in no single skill's frontmatter — so only a runbook can supply
 them; baseline wires the members but not the seams. (See `verbs/init.md` Step 0.)
 
+**`init` (greenfield) vs. `migrate` (brownfield).** This blueprint describes standing the system up
+**from nothing** — that's `/foreman init`. A project that already has an existing `dev/`/ad-hoc setup
+(a prior convention, a pre-grimoire layout) doesn't start from nothing: `/foreman migrate` locates it,
+proposes a complete relocation mapping against this file's manifest (§4) and the ownership index
+(§4.1), lets the user confirm/edit it, relocates with `git mv` (history preserved, no clobber), then
+scaffolds whatever's missing — the same target state `init` produces. See `verbs/migrate.md` for the
+procedure; this file stays the structure both onramps converge on.
+
 _A distillation of the bundled `docs/` + `templates/` -- those files are the source of truth for
 their own content; this blueprint carries the structure, contracts, and playbook around them.
 When they change structurally, update this file (see §13 *Keeping this file current*)._

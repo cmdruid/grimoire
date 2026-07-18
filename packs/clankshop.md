@@ -37,8 +37,10 @@ lists these as the constellation the deployed doctrine resolves to.
 
 ### The members
 
-- **`foreman`** — the dev-workflow hub. A thin router + verbs (`route` default, `init`, `calibrate`,
-  `check`). Deploys and operates a project's `.agents/foreman/` development-docs system.
+- **`foreman`** — the dev-workflow hub. A thin router + verbs (`route` default, `init`, `migrate`,
+  `calibrate`, `check`). Deploys and operates a project's `.agents/foreman/` development-docs system —
+  `init` on a greenfield project (nothing there yet), `migrate` as the brownfield onramp (locate an
+  existing `dev/`/ad-hoc setup, propose a relocation mapping, confirm, `git mv`, scaffold the gaps).
 - **`backlog`** — the capture desk. Files each follow-up by kind (`task`, `bug`, `issue`,
   `feedback`, `note`), sweeps finished work (`debrief`), and curates the trackers (`curate`).
 - **`architect`** — the design-system engine: maintains a project's regenerable `.agents/architect/`
@@ -136,5 +138,6 @@ From the clone root:
 ./install.sh --pack clankshop
 ```
 
-Then, in a target project, run **`/foreman init`** — it consumes this runbook as the composition and
-stands up the `.agents/foreman/` glue.
+Then, in a target project, run **`/foreman init`** (greenfield — nothing there yet) or **`/foreman
+migrate`** (brownfield — an existing `dev/`/ad-hoc setup) — either consumes this runbook as the
+composition and stands the `.agents/foreman/` glue up to the same target state.

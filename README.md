@@ -42,7 +42,7 @@ and **plumbing** (`delegate`, `mailbox`, `handoff` — orchestration/transport u
 | `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `feature` | the planning spine: brainstorm → design → plan → build, plus independent review |
-| `foreman` | the dev-workflow hub: route changes, deploy/operate a `.agents/foreman/` docs system |
+| `foreman` | the dev-workflow hub: route changes, deploy/operate a `.agents/foreman/` docs system — `init` (greenfield) or `migrate` (brownfield onramp) |
 | `handoff` | save/resume a session as a self-contained hand-off any agent can pick up |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |

@@ -1,6 +1,6 @@
 # `foreman migrate` — the brownfield onramp — Implementation Plan
 
-**Status:** Design agreed; not yet implemented.
+**Status:** Implemented (2026-07-18).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
 
