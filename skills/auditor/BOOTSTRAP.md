@@ -1,6 +1,8 @@
 # BOOTSTRAP -- a portable code-quality audit system
 
-A self-contained, language-neutral blueprint for a `.agents/dev/audit/` system that audits a project's
+A self-contained, language-neutral blueprint for a code-quality audit system, split across two
+homes by how often each part changes: the rubric (`.agents/auditor/`, hand-curated source of
+truth) and the deliverables (`.records/audit/`, accumulated per-run output). It audits a project's
 *own code* for quality and invariant-conformance, surfaces findings as a bounded + drained tracker,
 and is re-runnable each cycle. Drop this file into any project and an agent can **reconstruct the
 whole system**, or **borrow a piece**.
@@ -66,39 +68,51 @@ Decide these before reconstructing. They are what make the generic framework you
 
 ## 3. The two lifecycles
 
-The system splits cleanly by how often each part changes -- keep them in separate files.
+The system splits cleanly by how often each part changes -- keep them in separate **homes**, not
+just separate files.
 
-- **Durable methodology** -- `GUIDE.md` (the thin hub) + `rules/` (one file per dimension). Re-read
-  each pass; revised only when the *method* changes, not when findings do.
-- **Living tracker** -- `FINDINGS.md` (scorecards + open findings) + append-only `logs/` (raw
-  per-pass output). Churns every pass.
+- **Durable methodology -- the seed, `.agents/auditor/`.** `README.md`, `GUIDE.md` (the thin hub),
+  `TEMPLATE.md` (the finding-entry shape), `rules/` (one file per dimension), and `metrics.sh` (the
+  authored metric-computation tool). Re-read each pass; revised only when the *method* changes, not
+  when findings do. Hand-curated, like `.agents/architect/` or `.agents/foreman/`.
+- **Living tracker -- the record, `.records/audit/`.** `FINDINGS.md` (scorecards + open findings),
+  append-only `logs/` (raw per-pass output + `metrics.csv`), and `history/` (swept-resolved
+  findings). Churns every pass; nothing here is hand-authored, only accumulated.
 
 Never mix them: a finding in `GUIDE.md`, or methodology in `FINDINGS.md`, is the drift this split
-prevents. The living tracker's mechanics -- the finding entry shape, IDs, drains, and the sweep --
-are in §7.
+prevents -- now enforced by directory, not just by convention. The living tracker's mechanics --
+the finding entry shape, IDs, drains, and the sweep -- are in §7. The two homes are not one-way:
+`.records/audit/`'s accumulated findings are the signal that periodically **calibrates**
+`.agents/auditor/`'s rubric (exemplars, thresholds, known false-positives) -- the same
+deliverables-inform-seed shape as `architect`/`foreman`.
 
 ---
 
 ## 4. Directory & file manifest
 
+Two homes, split by the two lifecycles (§3):
+
 ```
-.agents/dev/audit/
+.agents/auditor/      -- the rubric (seed, hand-curated, source of truth)
   README.md          -- subsystem index: the two lifecycles, the audit loop, the drains, and the
                         (deferred) "Select exemplars" step
   GUIDE.md           -- durable methodology hub: framing, risk-weighted scope, the rubric index,
                         scoring rules, process, severity, drains
   TEMPLATE.md        -- the finding-entry shape + how to file (IDs, themes, status, draining)
-  FINDINGS.md        -- living tracker: pass-history table + per-pass scorecard + open findings
   rules/             -- one file per dimension, all in the uniform shape (§6)
+  metrics.sh         -- the <language> objective-metrics script (§8)
+
+.records/audit/        -- the deliverables (accumulated per-run output)
+  FINDINGS.md        -- living tracker: pass-history table + per-pass scorecard + open findings
   logs/
     README.md        -- the append-only per-pass log convention
-    metrics.csv      -- trend history, one row per run, written by metrics.sh
-  metrics.sh         -- the <language> objective-metrics script (§8)
+    metrics.csv      -- trend history, one row per run, written by `.agents/auditor/metrics.sh`
   history/           -- (created on first sweep) dated resolved-findings records
 ```
 
-Dependency direction: `README` -> `GUIDE` -> `rules/`; `TEMPLATE` -> `FINDINGS`. Build leaves
-before indexes (rules before GUIDE before README) so each commit stays `<gate>`-green.
+Dependency direction: `README` -> `GUIDE` -> `rules/` (all within `.agents/auditor/`); `TEMPLATE`
+(`.agents/auditor/`) -> `FINDINGS` (`.records/audit/`, the one dependency that crosses homes). Build
+leaves before indexes (rules before GUIDE before README) so each commit stays `<gate>`-green.
 
 ---
 
@@ -251,21 +265,22 @@ Answer these in order; the answers fill the *Slots* and shape the rubric:
 2. Write the `rules/<dimension>.md` files from the *Rule-file shape* (§6) -- the 12 portable
    dimensions + your `<native dimensions>`, with `<language>` greps. (They reference `../GUIDE.md`
    in backticks, since it does not exist yet.)
-3. Write `GUIDE.md` (the hub): framing, the risk-weighted `<targets>` table, the rubric index
-   (linking each `rules/` file), scoring rules, process, severity, drains.
-4. Write `TEMPLATE.md` then `FINDINGS.md` (the tracker skeleton).
-5. Write `logs/README.md` + the `metrics.csv` header, then `README.md` (the index -- everything it
-   links now exists).
-6. Write `metrics.sh` (§8); run it for a baseline `metrics.csv` row; wire `--check` if you have an
-   invariant to gate.
-7. Wire the subsystem into the host's doc index (one pointer) and run `<gate>`.
+3. Write `GUIDE.md` (`.agents/auditor/`, the hub): framing, the risk-weighted `<targets>` table,
+   the rubric index (linking each `rules/` file), scoring rules, process, severity, drains.
+4. Write `TEMPLATE.md` (`.agents/auditor/`) then `FINDINGS.md` (`.records/audit/`, the tracker
+   skeleton).
+5. Write `logs/README.md` + the `metrics.csv` header (both `.records/audit/logs/`), then
+   `README.md` (`.agents/auditor/`, the index -- everything it links now exists).
+6. Write `metrics.sh` (`.agents/auditor/metrics.sh`, §8); run it for a baseline
+   `.records/audit/logs/metrics.csv` row; wire `--check` if you have an invariant to gate.
+7. Wire the subsystem into the host's doc index (one pointer per home) and run `<gate>`.
 8. Run a **lean baseline pass** (one reader per Deep/Mid target) to seed `FINDINGS.md` and prove
    the rubric is usable.
 
 **Select exemplars (the deferred step).** Once the framework has landed, anchor it to real code:
 scan the source, nominate the best-documented / cleanest representative file(s) (often one
 pure-logic/library file + one service/system file), pin them as the score-5 `<exemplars>` in
-`GUIDE.md`, and backfill calibrated `file:line` examples into each rule's *Calibrated examples* and
+`.agents/auditor/GUIDE.md`, and backfill calibrated `file:line` examples into each rule's *Calibrated examples* and
 *Exemplars* sections. Do this before relying on cross-pass score comparisons.
 
 **Build the verify automation when the rubric has stabilized.** A score-then-verify fan-out (one
