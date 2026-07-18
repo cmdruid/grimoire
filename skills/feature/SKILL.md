@@ -12,7 +12,7 @@ stage produced, callable at any point. Each verb
 distills the planning discipline it needs into a compact checklist, pointed at the host's gate
 (named in its `AGENTS.md`), templates (`.agents/dev/templates/`), frontmatter (the capture taxonomy
 `/backlog` owns, `docs/TAXONOMY.md`), and
-home (planning artifacts always land in `.agents/dev/plans/`; ADRs in `.agents/dev/adr/`).
+home (planning artifacts always land in `.records/plans/`; ADRs in `.records/adr/`).
 
 This skill is **self-contained and uniquely named**: it depends on no other skill and collides with
 none. The upstream superpowers planning skills stay installed but go unused for planning -- no
@@ -33,8 +33,8 @@ settings change, no precedence question.
 | Verb | Does | Consumes -> Produces | Args |
 |---|---|---|---|
 | `brainstorm` | idea -> validated approach; **classifies the tier** | prompt -> approved approach (in context) + tier call | `<prompt>` |
-| `design` | write the design spec; self-review; user-review gate | approach -> `.agents/dev/plans/<date>-<slug>-design.md` | `[notes/context]` |
-| `plan` | write the impl plan; run the **plan gate** | design -> `.agents/dev/plans/<date>-<slug>-implementation.md` | `<design-file>` |
+| `design` | write the design spec; self-review; user-review gate | approach -> `.records/plans/<date>-<slug>-design.md` | `[notes/context]` |
+| `plan` | write the impl plan; run the **plan gate** | design -> `.records/plans/<date>-<slug>-implementation.md` | `<design-file>` |
 | `build` | execute task-by-task to the green gate | plan -> code + checked-off tasks | `<plan-file>` |
 | `review` | **cross-cutting:** independent ground-truthed critique of an existing artifact | any spine artifact -> a verdict (in context) | `<doc-file> [focus]` |
 
@@ -97,7 +97,7 @@ Checklist:
 1. **Write the spec** with the template's sections: **Problem** (the root need, not a surface knob),
    **Goal**, **Approach** (+ the 1-2 alternatives rejected and why), **Mechanism** (concrete enough
    to implement from), **Verification** (how we'll know it works).
-2. **Land it in `.agents/dev/plans/`** as `.agents/dev/plans/<YYYY-MM-DD>-<slug>-design.md`, with frontmatter
+2. **Land it in `.records/plans/`** as `.records/plans/<YYYY-MM-DD>-<slug>-design.md`, with frontmatter
    `type: design`, `status: draft`, `updated: <today>`, `related: [...]` -- the `type`/`status`
    vocabulary the capture taxonomy `/backlog` owns (`docs/TAXONOMY.md`) defines and the doc-linter
    enforces (`design` moves
@@ -148,8 +148,8 @@ Checklist:
 3. **Plan self-review** -- spec coverage (every spec requirement maps to a task -- list gaps), a
    placeholder scan, and type/name consistency across tasks. Fix inline; add a task for any
    uncovered requirement.
-4. **Land it** as `.agents/dev/plans/<YYYY-MM-DD>-<slug>-implementation.md`, frontmatter `type:
-   implementation`, `status: draft`, `updated`, `related: [<the design>]`. An ADR (`.agents/dev/adr/`, via
+4. **Land it** as `.records/plans/<YYYY-MM-DD>-<slug>-implementation.md`, frontmatter `type:
+   implementation`, `status: draft`, `updated`, `related: [<the design>]`. An ADR (`.records/adr/`, via
    `.agents/dev/templates/adr.md`) is part of this stage **only** if a cross-cutting decision surfaced -- one
    per track, never per phase.
 
@@ -260,7 +260,7 @@ to whoever owns the artifact -- `review` changes nothing itself.
 There is no separate `/feature` state file. Each verb consumes the previous verb's artifact by path:
 `brainstorm`'s approach lives in context -> `design` writes the design doc -> `plan` reads it and
 writes the implementation plan -> `build` reads the plan and checks off its tasks. Those artifacts are
-the `.agents/dev/plans/` docs the frontmatter/taxonomy system already catalogs; `/feature` is the engine that
+the `.records/plans/` docs the frontmatter/taxonomy system already catalogs; `/feature` is the engine that
 *produces what the taxonomy indexes*, and each doc's frontmatter `status` tracks its lifecycle.
 `review` is the exception: it **consumes** any of these artifacts by path and produces only an
 in-context verdict, adding nothing to the chain (artifact-free, like `brainstorm`).

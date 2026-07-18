@@ -23,7 +23,7 @@ a track the moment a second phase or a cross-cutting decision appears.
 ## The artifacts
 
 Most link to a template in `.agents/dev/templates/`. Copy it, or have your planning skill produce its shape
-(see *Working with your planning skills*). All planning docs live in `.agents/dev/plans/`; ADRs in `.agents/dev/adr/`.
+(see *Working with your planning skills*). All planning docs live in `.records/plans/`; ADRs in `.records/adr/`.
 Every artifact instance carries the uniform frontmatter block -- types, per-type status sets, and
 search recipes are the **capture taxonomy** `/backlog` owns and deploys (don't restate them here).
 
@@ -36,7 +36,7 @@ search recipes are the **capture taxonomy** `/backlog` owns and deploys (don't r
   design is rare outside a track.
 - **Roadmap** (`templates/roadmap.md`) -- a track's spec: the phase sequence, shared foundations,
   and per-phase goal / scope / done-when / risks. Written **once** for the whole track and kept
-  live in `.agents/dev/plans/` until it ships. The roadmap settles the design for *all* phases -- a phase
+  live in `.records/plans/` until it ships. The roadmap settles the design for *all* phases -- a phase
   is not re-brainstormed.
 - **Implementation plan** (`templates/plan-implementation.md`) -- the task-by-task brief an
   implementer executes: each task's files, change, verify, plus a done-when. A small feature
@@ -45,7 +45,7 @@ search recipes are the **capture taxonomy** `/backlog` owns and deploys (don't r
 - **ADR** (`templates/adr.md`) -- a Nygard record of a cross-cutting architecture decision:
   context, decision, alternatives, consequences. Write one **only** when a choice shapes the
   system beyond the feature and is worth remembering -- one per track, not per phase. It lands in
-  `.agents/dev/adr/NNNN-<slug>.md` and stays live after the feature ships. (`WORKTREES.md` covers where
+  `.records/adr/NNNN-<slug>.md` and stays live after the feature ships. (`WORKTREES.md` covers where
   the file sits in the git flow.)
 
 ## Writing plans -- pitfalls that recur
@@ -78,8 +78,8 @@ where it lands. They are not a competing process.
 - **Don't double-plan.** Run your skill, then map its output onto the repo convention -- don't
   run a skill *and* re-fill a template by hand. The template is the shape your plan lands as, not
   extra busywork.
-- **Land in `.agents/dev/plans/`, never a skill-default path.** Some skills default to their own output
-  dirs; this system requires `.agents/dev/plans/` (and `.agents/dev/adr/` for ADRs). Redirect the output there.
+- **Land in `.records/plans/`, never a skill-default path.** Some skills default to their own output
+  dirs; this system requires `.records/plans/` (and `.records/adr/` for ADRs). Redirect the output there.
 - **Carry the repo bits.** However it was produced, a planning doc needs its status line and links
   to its ADR/roadmap.
 - **Spend planning effort by tier.** A patch needs none; a small feature rarely needs a full
@@ -91,12 +91,12 @@ where it lands. They are not a competing process.
 When an implementation plan or feature brief meets its **Done when** -- or a roadmap phase its
 **Definition of done** -- run **`/backlog debrief`** (if available) before the work is considered
 finished, while the session still holds everything it surfaced. It sweeps the completed work and
-routes each byproduct to its one home in `.agents/backlog/`: a thing to build -> `TASKS.md`, a
-project problem / concern / limitation -> `ISSUES.md`, a defect -> a linked report in `bugs/`, a
-dev-experience observation -> `FEEDBACK.md`, and a durable project fact (including a would-be
+routes each byproduct to its one home in `.records/`: a thing to build -> `tasks.md`, a
+project problem / concern / limitation -> `issues.md`, a defect -> a linked report in `bugs/`, a
+dev-experience observation -> `feedback.md`, and a durable project fact (including a would-be
 invariant or gotcha) **parked as a `note`** (capture never promotes; `/foreman tune` later promotes
 it into `.agents/dev/MEMORY.md` / `.agents/dev/GOTCHAS.md`), with any long-form context spilled to a
-linked `.agents/backlog/notes/` file (the canonical taxonomy is `/backlog`'s `docs/TAXONOMY.md`).
+linked `.records/notes/` file (the canonical taxonomy is `/backlog`'s `docs/TAXONOMY.md`).
 
 This trigger is the work being **done**, not *landing* it: run it at completion -- before you
 commit / merge / ship -- never as a step of the transport. If no `/backlog debrief` skill is available,
@@ -112,7 +112,7 @@ repetition is the waste this avoids.
 meets its done-when run **`/backlog debrief`** (the phase is finished -- capture what it surfaced while
 context is rich, per *When a plan completes*); then **`ship`** it to `main` so it's reviewable --
 **without tearing the worktree down**. Record what shipped (archive
-the finished phase's plan to `plans/archive/`, and write a dated `.agents/dev/done/<YYYY-MM-DD>-<slug>.md`
+the finished phase's plan to `plans/archive/`, and write a dated `.records/archive/<YYYY-MM-DD>-<slug>.md`
 with commit refs), advance the hand-off to the next phase, and draft N+1's plan from the roadmap.
 The roadmap and worktree live on; only the hand-off advances. Tear down (run `close` manually, or via `/workstream close` if available) only
 when the queue is exhausted or the stream is paused. (`/workstream` automates this whole loop if available:

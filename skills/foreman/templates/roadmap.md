@@ -2,7 +2,7 @@
 type: roadmap
 status: active
 updated: <YYYY-MM-DD>
-related: [<.agents/dev/adr/NNNN-...>]
+related: [<.records/adr/NNNN-...>]
 ---
 
 # <Track> — Roadmap

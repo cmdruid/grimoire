@@ -30,9 +30,6 @@ Each prints `key=value` facts then evidence. Read-only; emits no recommendation.
 EOF
 }
 
-# lower <STR> -- lowercase without bash-4 ${x,,}.
-lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
-
 # count_files <dir> -- *.md directly under <dir> (0 if absent), whitespace-trimmed.
 count_files() { find "$1" -maxdepth 1 -name '*.md' 2>/dev/null | wc -l | tr -d ' '; }
 
@@ -90,26 +87,26 @@ report_stale() {
 
 cmd_inventory() {
   [ "$#" -eq 1 ] || { echo "usage: dev-health.sh inventory <root>" >&2; exit 2; }
-  local root="$1" porcelain t f tl b l mod
+  local root="$1" porcelain t f b l mod
   porcelain="$(git -C "$root" status --porcelain 2>/dev/null || true)"
   echo "tree_quiet=$([ -z "$porcelain" ] && echo true || echo false)"
   echo "linked_worktrees=$(( $(git -C "$root" worktree list 2>/dev/null | wc -l | tr -d ' ') - 1 ))"
-  for t in TASKS ISSUES FEEDBACK; do
-    f="$root/.agents/backlog/$t.md"; tl="$(lower "$t")"
+  for t in tasks issues feedback; do
+    f="$root/.records/$t.md"
     if [ -f "$f" ]; then
       b="$(grep -cE '^[-*] ' "$f" || true)"
       l="$(wc -l < "$f" | tr -d ' ')"
-      mod="$(git -C "$root" log -1 --format=%cr -- ".agents/backlog/$t.md" 2>/dev/null || echo unknown)"
-      echo "${tl}_bullets=$b"
-      echo "${tl}_lines=$l"
-      echo "${tl}_last_change=$mod"
+      mod="$(git -C "$root" log -1 --format=%cr -- ".records/$t.md" 2>/dev/null || echo unknown)"
+      echo "${t}_bullets=$b"
+      echo "${t}_lines=$l"
+      echo "${t}_last_change=$mod"
     else
-      echo "${tl}=absent"
+      echo "${t}=absent"
     fi
   done
-  echo "bugs_open=$(count_files "$root/.agents/backlog/bugs")"
-  echo "bugs_archived=$(find "$root/.agents/backlog/bugs/archive" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
-  echo "done_records=$(count_files "$root/.agents/dev/done")"
+  echo "bugs_open=$(count_files "$root/.records/bugs")"
+  echo "bugs_archived=$(find "$root/.records/bugs/archive" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
+  echo "done_records=$(count_files "$root/.records/archive")"
 }
 
 cmd_stale_refs() {
@@ -121,7 +118,7 @@ cmd_stale_refs() {
   else
     # default set: trackers + index + spine docs that exist
     local f docs=()
-    for f in .agents/backlog/TASKS.md .agents/backlog/ISSUES.md .agents/backlog/FEEDBACK.md .agents/dev/MEMORY.md .agents/dev/README.md AGENTS.md README.md; do
+    for f in .records/tasks.md .records/issues.md .records/feedback.md .agents/dev/MEMORY.md .agents/dev/README.md AGENTS.md README.md; do
       [ -f "$root/$f" ] && docs+=("$root/$f")
     done
     if [ "${#docs[@]}" -gt 0 ]; then

@@ -1,6 +1,6 @@
 # Capture taxonomy — the five kinds, their subjects, stores, formats, and frontmatter
 
-The **canonical capture schema** for `.agents/backlog/`: what kinds of follow-up exist, how to tell
+The **canonical capture schema** for `.records/`: what kinds of follow-up exist, how to tell
 them apart, where each one lands, the shape each store takes, and the per-file frontmatter the two
 store dirs carry. Every `/backlog` verb defers to this doc, and other skills reference it rather than
 restating it. `/backlog` owns this schema.
@@ -17,11 +17,11 @@ of building it? Four kinds are project-subject; one (`feedback`) is the single d
 
 | kind | subject | nature | store |
 |---|---|---|---|
-| `note` | project | a durable fact / piece of knowledge | `.agents/backlog/notes/<slug>.md` |
-| `task` | project | an action to build / do | `.agents/backlog/TASKS.md` |
-| `issue` | project | a problem / concern / limitation | `.agents/backlog/ISSUES.md` |
-| `bug` | project | a reproducible code defect | `.agents/backlog/bugs/<YYYY-MM-DD>-<slug>.md` |
-| `feedback` | dev-experience | any observation (skills / tooling / env / workflow) | `.agents/backlog/FEEDBACK.md` |
+| `note` | project | a durable fact / piece of knowledge | `.records/notes/<slug>.md` |
+| `task` | project | an action to build / do | `.records/tasks.md` |
+| `issue` | project | a problem / concern / limitation | `.records/issues.md` |
+| `bug` | project | a reproducible code defect | `.records/bugs/<YYYY-MM-DD>-<slug>.md` |
+| `feedback` | dev-experience | any observation (skills / tooling / env / workflow) | `.records/feedback.md` |
 
 These five kinds and their stores are the same set the `SKILL.md` verb-dispatch table routes to;
 keep the two identical. A host does **not** extend this set — the five kinds are the whole taxonomy.
@@ -56,7 +56,7 @@ Most captures are obvious. Three boundaries carry real judgment; the model makes
   decision, a detail too long for one tracker line. **Subordinate:** a note exists to be reached
   through the tracker entry that links it, never by browsing. If it reads as a standalone
   investigation someone would open on its own, it belongs in `reports/`, not `notes/`.
-- **Store:** `.agents/backlog/notes/<slug>.md` (short kebab slug), from `templates/note.md`. A
+- **Store:** `.records/notes/<slug>.md` (short kebab slug), from `templates/note.md`. A
   **store dir** — carries frontmatter (see below).
 - **Format:** the frontmatter block, then a `# <Title> — note` heading, a `_backs:_` line naming the
   tracker entry it backs, then the long-form context. Link it from that entry (fill `related:`) — a
@@ -67,19 +67,19 @@ Most captures are obvious. Three boundaries carry real judgment; the model makes
   decision, out-of-batch future scope. (A problem observed but *not* a build item is an `issue`; a
   reproducible defect is a `bug`.) TASKS is the one tracker with a **human producer** ("put this in
   the backlog") alongside agents.
-- **Store:** `.agents/backlog/TASKS.md` — a single **flat living list**, not a store dir (no
+- **Store:** `.records/tasks.md` — a single **flat living list**, not a store dir (no
   per-file frontmatter). One top-level header, one section per durable **domain / milestone group**
   (e.g. `Performance`, `Tooling / CI`, `Known limitations`); a fresh file seeds from `Loose ends` /
   `Adjacent improvements` / `Open questions` / `Future scope`.
 - **Format:** plain `-` bullets, **no checkboxes** — an item is *open* while listed and simply
-  **removed** when it ships (the commit, plus any `.agents/dev/done/` stream digest, is the record).
+  **removed** when it ships (the commit, plus any `.records/archive/` stream digest, is the record).
   Per item: concrete description (with `file:line` where it applies) · **why** (one line) · **effort**
   `(S/M/L)` · trailing `· added YYYY-MM-DD`. Mark a genuine maybe `(unsure)` and say why.
 
 ### `issue` — a project problem / concern / limitation
 - **What:** "something about the project is wrong, risky, or limited" that isn't a reproducible
   defect and isn't a build item — a known limitation, an architectural risk, a design concern, a gap.
-- **Store:** `.agents/backlog/ISSUES.md` — a **flat log**, not a store dir (no per-file frontmatter).
+- **Store:** `.records/issues.md` — a **flat log**, not a store dir (no per-file frontmatter).
 - **Format:** entries grouped under category sections with a **category-prefixed running number** —
   `P#` (Problem / limitation) or `R#` (Risk / concern) — taking the next free number under that
   prefix, never renumbering existing entries. Each entry:
@@ -96,11 +96,11 @@ Most captures are obvious. Three boundaries carry real judgment; the model makes
   behavior. If it turns out **working-as-coded but surprising**, it's not a bug: capture it as a
   `/backlog note` (`/foreman` promotes it to `.agents/dev/docs/GOTCHAS.md` during `tune`) and file no
   report.
-- **Store:** `.agents/backlog/bugs/<YYYY-MM-DD>-<slug>.md`, from `templates/bug-report.md`. A
+- **Store:** `.records/bugs/<YYYY-MM-DD>-<slug>.md`, from `templates/bug-report.md`. A
   **store dir** — carries frontmatter (see below). Load-bearing rule: **`bugs/` is a store, not a
-  work queue** — a report is tracked from a **linked actionable item** (a `TASKS.md` line, or an
-  `ISSUES.md` entry when it's a broader project problem), never fished out of `bugs/` for work. Fixed
-  reports move to `.agents/backlog/bugs/archive/`.
+  work queue** — a report is tracked from a **linked actionable item** (a `tasks.md` line, or an
+  `issues.md` entry when it's a broader project problem), never fished out of `bugs/` for work. Fixed
+  reports move to `.records/bugs/archive/`.
 - **Format** (per the template): **Severity** (crash | wrong-output | dropped-state | flaky |
   cosmetic) and **flaky/transient?**; a **Repro** (a seed + scripted scenario, or exact commands +
   steps — a scripted repro the harness can replay is best); **Expected vs actual** with evidence (a
@@ -112,7 +112,7 @@ Most captures are obvious. Three boundaries carry real judgment; the model makes
   directional ideas about the skills, scripts, tooling, and environment. The **single**
   dev-experience channel (observations that once split into `issue`s now all land here). Anything
   about the *project itself* goes to its project home; keep only the dev-experience residue here.
-- **Store:** `.agents/backlog/FEEDBACK.md` — a **flat list** of dated entries, no sections, not a
+- **Store:** `.records/feedback.md` — a **flat list** of dated entries, no sections, not a
   store dir (no per-file frontmatter). Newest added at the bottom of the live region.
 - **Format** (per `templates/feedback.md`): `### <short title> · YYYY-MM-DD` + a short body noting
   whether it's positive / a concern / a friction / a directional idea, and where it might lead if
@@ -143,19 +143,19 @@ related: [<the tracker entry this note backs>]   # omit the key if empty
 ---
 ```
 
-The three **flat aggregators** — `TASKS.md`, `ISSUES.md`, `FEEDBACK.md` — hold their entries as
+The three **flat aggregators** — `tasks.md`, `issues.md`, `feedback.md` — hold their entries as
 blocks inside one shared file, where per-file frontmatter can't sit; the doc-linter does **not** gate
 them. Templates, and any `README.md` / `archive/` inside a store, carry no frontmatter either.
 
 | Carries frontmatter — store dirs | Does NOT — flat aggregators / non-instances |
 |---|---|
-| `.agents/backlog/bugs/`, `.agents/backlog/notes/` | `.agents/backlog/TASKS.md`, `.agents/backlog/ISSUES.md`, `.agents/backlog/FEEDBACK.md`, `templates/*`, a store's `README.md` / `archive/` |
+| `.records/bugs/`, `.records/notes/` | `.records/tasks.md`, `.records/issues.md`, `.records/feedback.md`, `templates/*`, a store's `README.md` / `archive/` |
 
 Because coverage of the store dirs is total, the metadata is queryable:
 
 ```sh
-rg -l '^status: open' .agents/backlog/bugs/     # all open bug reports
-rg -l '^type: note'   .agents/backlog/notes/    # every note
+rg -l '^status: open' .records/bugs/     # all open bug reports
+rg -l '^type: note'   .records/notes/    # every note
 ```
 
 ## Draining is the consumer's job (this schema captures only)
@@ -168,7 +168,7 @@ here:
   a working-as-coded gotcha to `.agents/dev/docs/GOTCHAS.md`).
 - **`tasks`** → `/feature` / `/workstream` (turn a captured item into shipped work; the item is
   removed on ship).
-- **a `bug`'s fix** → whoever works the linked actionable item (the `TASKS.md` line or `ISSUES.md`
+- **a `bug`'s fix** → whoever works the linked actionable item (the `tasks.md` line or `issues.md`
   entry that points at the report).
 
 Those consumers own their own procedures — this doc does not restate them.

@@ -99,7 +99,7 @@ records the intended systems from the brief, and their specs are the first thing
 pass writes.
 
 **What never gets migrated into `.agents/architect/`:** change-records — ADRs, plans, roadmap deltas — stay
-in the project's own operational history (`.agents/dev/adr/`, `.agents/dev/plans/`, etc.). Per `docs/DOCTRINE.md`,
+in the project's own operational history (`.records/adr/`, `.records/plans/`, etc.). Per `docs/DOCTRINE.md`,
 change-records and standing specs are temporally distinct; folding an ADR chain's *history* into
 the seed reintroduces exactly the scar-smear the seed exists to avoid. `distill` is the verb that
 later mines those change-records to refresh a spec — `init` only establishes the baseline stamp

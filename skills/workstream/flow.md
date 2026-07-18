@@ -122,10 +122,10 @@ hand-off path — see SKILL.md *Helper scripts*). Then:
   the `/model` swap, and you cannot reliably introspect which model you are, so state the target rather
   than trying to detect a mismatch.
 
-**Verify a queued item is still real before offering it *to build*.** A `.agents/backlog/TASKS.md` / roadmap item
+**Verify a queued item is still real before offering it *to build*.** A `.records/tasks.md` / roadmap item
 can already be **shipped** — by a sibling stream, with the entry never pruned. Before presenting such an
 item as buildable work (a KNOWN next-item *or* an AMBIGUOUS pick), cheaply confirm it isn't already done:
-grep `.agents/dev/done/` for the slug + glance at the code surface it names. A stale entry otherwise costs a
+grep `.records/archive/` for the slug + glance at the code surface it names. A stale entry otherwise costs a
 wasted question round-trip + an Explore dispatch before `build` discovers there is nothing to build.
 (Same doctrine as `/feature plan`'s grounding gate: verify inherited/queued work is real before building it.)
 
@@ -213,7 +213,7 @@ ritual's **save** + a **park** for a `/model` swap. The hand-off records the cur
 hand-off's *Phase model map*). The three phases, each ending `save -> park -> reset -> load`:
 
 > **PLAN** (plan-model) — author the feature's plan: `/feature design` + `/feature plan` into
-> `.agents/dev/plans/`. Then **save** (record `Phase: build`) -> **park**: "Plan ready. Switch to <build-model>
+> `.records/plans/`. Then **save** (record `Phase: build`) -> **park**: "Plan ready. Switch to <build-model>
 > (`/model <m>`), `/clear`, `/workstream load <stream>`."
 >
 > **BUILD** (build-model) — `/feature build <plan>` to gate-green, then `/backlog debrief` #1 (the
@@ -250,12 +250,12 @@ redundant:
   *What's been done* — `delegations: N` by mode (`mailbox`/`codex`/`isolated`, or `0 — all inline`) — so
   stream-wide `/delegate` adoption is **auditable at a glance** instead of vanishing into the loop. A
   **persistent 0 across the stream** is itself skill feedback (`/delegate` not firing where substantial
-  delegable work existed) → route it to the skills' `FEEDBACK.md`, tagged `[delegate]`. (A genuine
+  delegable work existed) → route it to the skills' `.records/feedback.md`, tagged `[delegate]`. (A genuine
   all-inline stream — small tasks, tight loops — is a legitimate 0; the tally is the fact, you judge.)
   **In `manual` mode a low/0 tally is *expected*** — delegation there is fan-out-only, not the model
   lever — so do **not** route it as `[delegate]` feedback; the per-phase model swaps are the model story.
   **Forward-reference guard:** if a debrief-#1 follow-up references the feature being shipped *this*
-  cycle, cite it **by intent/slug, not as a `.agents/dev/done/<slug>.md` path link** — `ship` step 1 writes that
+  cycle, cite it **by intent/slug, not as a `.records/archive/<slug>.md` path link** — `ship` step 1 writes that
   record *after* debrief, so a path link is transiently dangling and the host doc-linter rejects the
   debrief commit (gated on its own, before ship). Cite the slug in prose; the record materializes at ship.
 - **#2 (after `ship`, conditional)** — the *process* friction. **Recommended, not automatic:** flag

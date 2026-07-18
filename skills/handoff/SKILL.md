@@ -15,7 +15,7 @@ Three layers, by isolation — pick by where the session lives:
 - **Concurrent root-level (non-worktree) sessions** → **named** `/handoff`s → `.sessions/<name>.md`,
   one file per session, so they don't collide on the single root file.
 
-A *durable* record of *finished* work is a `.agents/dev/done/` entry, not a hand-off. (The retired
+A *durable* record of *finished* work is a `.records/archive/` entry, not a hand-off. (The retired
 `.agents/dev/sessions/` layer is not revived: named hand-offs are gitignored scratch, not a tracked store.)
 
 Verbs:
@@ -70,7 +70,7 @@ create the directory if it is missing.
 Both kinds are **gitignored scratch** — never merged, overwritten in place each save. They differ
 only in isolation: root `HANDOFF.md` is the single active session; `.sessions/<name>.md` lets
 concurrent **root-level** sessions each keep their own. (Worktree streams are `/workstream`'s
-worktree-local `WORKSTREAM.md`; a durable record of finished work is a `.agents/dev/done/` entry.)
+worktree-local `WORKSTREAM.md`; a durable record of finished work is a `.records/archive/` entry.)
 
 ## Save procedure
 

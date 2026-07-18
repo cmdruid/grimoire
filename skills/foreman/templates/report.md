@@ -18,4 +18,4 @@ _stream / context · <what prompted this investigation>_
 <What the data means; what is actionable vs. expected.>
 
 ## Follow-ups
-<Items this surfaced -> `.agents/backlog/TASKS.md` / `.agents/backlog/ISSUES.md` entries.>
+<Items this surfaced -> `.records/tasks.md` / `.records/issues.md` entries.>

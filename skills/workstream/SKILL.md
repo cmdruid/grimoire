@@ -35,7 +35,7 @@ is the harm this rule exists to prevent. Two consequences follow, keyed on *what
 
 - **You never spawn a stream for your own work.** When in-stream work surfaces something that *would
   be* its own stream — a tangent, a debug bug, the next roadmap track — you **capture or surface it;
-  you never stand it up to drive**: a **defect** → `/backlog bug`; **feature work** → `/backlog task` (`.agents/backlog/TASKS.md`);
+  you never stand it up to drive**: a **defect** → `/backlog bug`; **feature work** → `/backlog task` (`.records/tasks.md`);
   the **next track / a new stream** → name it at a seam and hand it to the human/coordinator. Plain
   `create` *enters the loop*, so standing up a stream to drive is a **coordinator-only**,
   trunk-resident action — never yours. Needing isolation for a sub-task of your *own* feature is a
@@ -90,7 +90,7 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
   A `cd` is UX-only — it positions the user's prompt, never the agent's correctness.
 - **Present worktree-local references as absolute worktree paths.** When you show the user (in chat,
   a summary, a hand-off) a doc/file you created or changed in the worktree, give its **absolute
-  worktree path** (`<worktree>/.agents/dev/plans/foo.md`), not a bare repo-relative one — a bare path
+  worktree path** (`<worktree>/.records/plans/foo.md`), not a bare repo-relative one — a bare path
   resolves against the **root checkout**, where the worktree's unmerged work doesn't exist yet, so the
   link is broken until the stream ships. The same applies to a `file:line` you cite. Note such a doc
   is "on the stream branch until ship" so the reader knows why the root copy isn't there.
@@ -105,7 +105,7 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 - **The live hand-off never merges.** It lives at `.workstreams/<stream>/WORKSTREAM.md`. The
   `.workstreams/` .gitignore hides it from the **main** checkout; `create` ALSO adds it to the
   worktree's own `info/exclude` so it's ignored from **inside** the worktree too. Durable records
-  (the feature's `.agents/dev/done/` entry, plan-archive, roadmap-ledger row, ADR) are committed **on the
+  (the feature's `.records/archive/` entry, plan-archive, roadmap-ledger row, ADR) are committed **on the
   branch** and reach the trunk through the ff-merge — not hand-committed to the root.
 - **No remote.** Integrate locally against the workstream's `<target>` (Coordinates
   `integration-target`): `git -C <worktree> rebase <target>` + a by-ref advance of `<target>`
@@ -114,7 +114,7 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
   passes through the *one* root index, and `git commit` records the **entire** index — not just what
   you `git add`'d this turn — so a sibling staging concurrently gets swept into your commit (ISSUES
   W1). Two rules: **(1) Don't hand-commit a stream's own records to the root at all** — the feature's
-  `.agents/dev/done` entry, plan-archive, and roadmap-ledger row commit **on the branch** and reach the trunk
+  `.records/archive` entry, plan-archive, and roadmap-ledger row commit **on the branch** and reach the trunk
   via the **ff-merge**, the single root mutation (and `--ff-only` fails safe: rejected → re-`sync` +
   retry). **(2) For the few commits that must touch the root** (`/backlog debrief`'s captures — `create`
   seeds its plan **on the branch**, and `close` writes nothing), stage **and** commit in **one** tool call scoped with an

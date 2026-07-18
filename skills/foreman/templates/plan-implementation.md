@@ -2,7 +2,7 @@
 type: implementation
 status: draft
 updated: <YYYY-MM-DD>
-related: [<.agents/dev/plans/<feature>-design.md>]
+related: [<.records/plans/<feature>-design.md>]
 ---
 
 # <Feature> — Implementation Plan

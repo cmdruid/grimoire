@@ -72,14 +72,14 @@ The system is generic; these make it yours. Decide them before reconstructing.
 ## 3. Module map (compose what you need)
 
 **Core (always):** the front door, the index, the memory, the templates. Everything else is optional
-and depends on Core. The **capture trackers** are `/backlog`'s home under `.agents/backlog/` --
+and depends on Core. The **capture trackers** are `/backlog`'s home under the top-level `.records/` --
 `/foreman init` scaffolds them alongside `.agents/dev/`, but `/backlog` owns and scopes them and its
 `docs/TAXONOMY.md` is the capture schema (this file never restates it).
 
 | Module | Files | Depends on | Borrow when |
 |---|---|---|---|
 | **Core: entry + index** | front-door `AGENTS`/`README`, `.agents/dev/README` (index), `.agents/dev/MEMORY` | -- | always |
-| **Capture trackers** (`/backlog`) | `.agents/backlog/{TASKS,ISSUES,FEEDBACK}.md`, `.agents/backlog/bugs/`, `.agents/backlog/notes/` -- owned/scoped by `/backlog`, schema in its `docs/TAXONOMY.md` | Core | you want bounded follow-up capture |
+| **Capture trackers** (`/backlog`) | `.records/{tasks,issues,feedback}.md`, `.records/bugs/`, `.records/notes/` -- owned/scoped by `/backlog`, schema in its `docs/TAXONOMY.md` | Core | you want bounded follow-up capture |
 | **Templates** | `.agents/dev/templates/*` | Core | always (consistency) |
 | **Change router** | `docs/DEVELOPMENT` | Core | >1 kind of change (bug/patch/feature) |
 | **Planning** | `docs/PLANNING` | Change router, Templates | features need design before build |
@@ -89,7 +89,7 @@ and depends on Core. The **capture trackers** are `/backlog`'s home under `.agen
 | **Sync contract** | `docs/SYNC` (or a section of `docs/MAINTENANCE`) | Entry + index | the front door is volatile / multi-agent |
 | **Linter** | `<linter>` in `<gate>` | Core | links + indexes are worth guarding |
 | **Reference docs** | `docs/ARCHITECTURE`, `docs/GOTCHAS`, `docs/DIAGNOSTICS`, `docs/PERFORMANCE` | Core | `<content docs>` slots -- you fill |
-| **Records** | `.agents/dev/{done,plans,adr,reports,logs}` | varies | you want durable history |
+| **Records** | `.records/{archive,plans,adr,reports,logs}` | varies | you want durable history |
 
 ---
 
@@ -98,21 +98,16 @@ and depends on Core. The **capture trackers** are `/backlog`'s home under `.agen
 The generic tree. Adjust names to your host's conventions (e.g. the front door is often
 `AGENTS.md`/`README.md`/`CONTRIBUTING.md` at the repo root).
 
-Two sibling homes under `.agents/`: **`.agents/backlog/`** (the capture trackers -- owned and scoped
-by `/backlog`; the one-line kinds below are a signpost, the schema is `/backlog`'s `docs/TAXONOMY.md`)
-and **`.agents/dev/`** (the dev system -- foreman's). `/foreman init` scaffolds both skeletons;
-`/backlog` has no init of its own, and the capture verbs also create a store if it's missing.
+Two homes: **`.agents/dev/`** (the dev system -- foreman's) and the top-level **`.records/`** (every
+typed record -- the capture trackers, owned and scoped by `/backlog`; the one-line kinds below are a
+signpost, the schema is `/backlog`'s `docs/TAXONOMY.md` -- plus foreman's own operational records).
+`/foreman init` scaffolds both skeletons; `/backlog` has no init of its own, and the capture verbs
+also create a store if it's missing.
 
 ```
 <repo root>/
   <front door>            -- bootstrap entry: "read first" order, build/test/run, repo map,
                              conventions, and a "making a change? -> .agents/dev/docs/DEVELOPMENT" pointer
-  .agents/backlog/         -- /backlog's capture home; schema in its docs/TAXONOMY.md (do not restate here)
-    TASKS.md              -- a thing to build / do ("build X") -- flat living list (was BACKLOG.md)
-    ISSUES.md             -- a project problem / concern / limitation
-    FEEDBACK.md           -- a dev-experience observation (skills / tooling / env / workflow)
-    bugs/                 -- reproducible code defects, one file each (a STORE, not a work queue)
-    notes/                -- durable project facts / knowledge, one file each (a first-class capture kind)
   .agents/dev/
     README.md             -- THE index for .agents/dev/: what each dir/file is + the conventions. No
                              per-directory READMEs to chase.
@@ -132,12 +127,19 @@ and **`.agents/dev/`** (the dev system -- foreman's). `/foreman init` scaffolds 
     templates/            -- copy-me starting points (bundled with this skill; see §12)
     (no sessions/ dir)    -- hand-offs are temporary: a gitignored root HANDOFF for the active
                              stream; concurrent streams use the worktree-local hand-off (see §8)
-    done/                -- append-only records of shipped work (dated)
-    plans/                -- design plans / roadmaps (live until shipped, then archived)
-    adr/                  -- architecture decision records (Nygard form)
-    reports/              -- research investigations / findings (standalone, browse-worthy)
-    logs/                 -- captured run/measurement artifacts
-  (each of .agents/dev/{plans,reports} and .agents/backlog/bugs also has an archive/ subdir)
+  .records/                -- every typed record: /backlog's capture trackers (schema in its
+                             docs/TAXONOMY.md) + foreman's operational records
+    tasks.md               -- a thing to build / do ("build X") -- flat living list (was BACKLOG.md)
+    issues.md              -- a project problem / concern / limitation
+    feedback.md            -- a dev-experience observation (skills / tooling / env / workflow)
+    bugs/                  -- reproducible code defects, one file each (a STORE, not a work queue)
+    notes/                 -- durable project facts / knowledge, one file each (a first-class capture kind)
+    plans/                 -- design plans / roadmaps (live until shipped, then archived)
+    archive/               -- append-only records of shipped work (dated)
+    adr/                   -- architecture decision records (Nygard form)
+    reports/               -- research investigations / findings (standalone, browse-worthy)
+    logs/                  -- captured run/measurement artifacts
+  (each of .records/{plans,reports,bugs} also has an archive/ subdir)
 ```
 
 ---
@@ -149,7 +151,7 @@ The spine an agent follows. Each arrow is a pointer in a doc, never a duplicated
 ```
 <front door>  ("making a change? start at DEVELOPMENT")
    -> .agents/dev/docs/DEVELOPMENT  (classify the change)
-        bug    -> DIAGNOSTICS (diagnose) + GOTCHAS (known trap?) -> file a report in .agents/backlog/bugs/
+        bug    -> DIAGNOSTICS (diagnose) + GOTCHAS (known trap?) -> file a report in .records/bugs/
         patch  -> land directly on the main branch, committed promptly (no plan)
         feature-> PLANNING (plan it) -> WORKTREES (build it)
         spike  -> explore in isolation; capture learnings; build properly as a feature
@@ -165,9 +167,9 @@ one is wrong.
 
 ## 6. The capture taxonomy (owned by `/backlog`)
 
-The capture trackers live under `.agents/backlog/` and are **`/backlog`'s** domain. The five capture
-kinds -- `task` (`TASKS.md`), `bug` (`bugs/`), `issue` (`ISSUES.md`), `note` (`notes/`), `feedback`
-(`FEEDBACK.md`) -- their subjects, formats, stores, and frontmatter are the **canonical schema in
+The capture trackers live under `.records/` and are **`/backlog`'s** domain. The five capture
+kinds -- `task` (`tasks.md`), `bug` (`bugs/`), `issue` (`issues.md`), `note` (`notes/`), `feedback`
+(`feedback.md`) -- their subjects, formats, stores, and frontmatter are the **canonical schema in
 `/backlog`'s `docs/TAXONOMY.md`**. This file scaffolds the skeleton and points there; it does **not**
 restate what each kind means or where a signal goes -- that would fork the schema and rot.
 
@@ -181,7 +183,7 @@ Two things this system *does* own about capture:
   item from a linked tracker line; you don't fish in them for work. `notes/` is a **first-class
   capture kind** (`/backlog note` -- durable project facts) that can *also* hold spillover: when a
   tracker or memory entry needs more than a line, write the long form to a `notes/<slug>.md` and link
-  it. (A *standalone* investigation someone would browse belongs in `.agents/dev/reports/` instead.)
+  it. (A *standalone* investigation someone would browse belongs in `.records/reports/` instead.)
 
 ---
 
@@ -277,15 +279,15 @@ A small check wired into `<gate>` (implement in your stack -- it's a spec, not c
 1. **Resolve internal links.** Every internal doc link (`](path)` and, ideally, backtick path
    refs to docs) points at a file that exists. Catches renames/deletes that leave dead links.
 2. **Index enumerable doc series.** Every file in an enumerable directory (e.g. `.agents/dev/docs/`,
-   `.agents/dev/adr/`) is named in its index (`.agents/dev/README`). Catches docs that exist but are unreachable.
+   `.records/adr/`) is named in its index (`.agents/dev/README`). Catches docs that exist but are unreachable.
 3. **Forbid stray paths.** Any path your conventions ban (e.g. a skill's default output dir you
    don't use) does not exist. Catches convention violations silently reintroduced.
-4. **Validate store-dir frontmatter.** Every file in an artifact-instance store dir (`.agents/dev/plans/`,
-   `.agents/dev/adr/`, `.agents/dev/done/`, `.agents/backlog/bugs/`, `.agents/backlog/notes/`, ... -- the explicit gated-dir list) carries a valid
+4. **Validate store-dir frontmatter.** Every file in an artifact-instance store dir (`.records/plans/`,
+   `.records/adr/`, `.records/archive/`, `.records/bugs/`, `.records/notes/`, ... -- the explicit gated-dir list) carries a valid
    frontmatter block: `type` legal for the dir, `status` in that type's set, `updated` shaped
    `YYYY-MM-DD` (schema: each dir's own template -- `plan-design.md`/`plan-implementation.md`/
    `roadmap.md`/`adr.md`/`done-record.md` for the `.agents/dev/` dirs; `/backlog`'s capture
-   taxonomy, `docs/TAXONOMY.md`, for `.agents/backlog/bugs/` and `.agents/backlog/notes/` --
+   taxonomy, `docs/TAXONOMY.md`, for `.records/bugs/` and `.records/notes/` --
    `plans`/`adr`/`done` are foreman artifacts, not capture kinds, so TAXONOMY.md doesn't cover
    them). Catches records that would silently escape the
    type/status search recipes.

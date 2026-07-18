@@ -1,7 +1,7 @@
 # `/backlog note` — capture a durable project fact / knowledge
 
 Capture a **durable fact or piece of knowledge about the project** — the kind of thing worth
-remembering but not yet a load-bearing invariant — into `.agents/backlog/notes/<slug>.md`. This is the
+remembering but not yet a load-bearing invariant — into `.records/notes/<slug>.md`. This is the
 quick, one-shot path to the notes store; the full end-of-work sweep is `/backlog debrief`.
 
 **A fact about the project, not an action and not the dev experience.** A note records *what is true*
@@ -33,7 +33,7 @@ browsing. If it reads as a standalone investigation someone would open on its ow
 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
-- Note: `<root>/.agents/backlog/notes/<slug>.md`, from `<root>/.agents/backlog/templates/note.md`. Start
+- Note: `<root>/.records/notes/<slug>.md`, from `<root>/.agents/backlog/templates/note.md`. Start
   the file with the template's frontmatter block (`type: note` / `status` / `updated` / `related`) —
   the doc-linter gate rejects a `notes/` store-dir file without it. Schema: `docs/TAXONOMY.md`.
 
@@ -41,7 +41,7 @@ Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't g
 
 Each `notes/<slug>.md` follows `templates/note.md`: the frontmatter block, a `# <Title> — note`
 heading, a `_backs:_` line naming the tracker entry it backs, then the long-form context. A note is
-**subordinate** — it is linked from the entry it backs (a `TASKS.md` line, an `ISSUES.md` entry, a bug
+**subordinate** — it is linked from the entry it backs (a `tasks.md` line, an `issues.md` entry, a bug
 report, a `MEMORY.md` line), never left orphaned.
 
 ## Procedure
@@ -50,7 +50,7 @@ report, a `MEMORY.md` line), never left orphaned.
    really about the dev experience — write no note (route it to its home) and say so.
 2. **Confirm the kind.** It's a project *fact*, not a follow-up and not dev-experience feedback; it's
    worth remembering but below the `MEMORY.md` invariant bar.
-3. **Slug** the note (short kebab). **Write** it to `.agents/backlog/notes/<slug>.md` from
+3. **Slug** the note (short kebab). **Write** it to `.records/notes/<slug>.md` from
    `templates/note.md` — frontmatter block first, then the `_backs:_` line and the long-form context.
 4. **Link it** from the tracker entry it backs (fill the `related:` frontmatter and the entry's
    pointer). A note that nothing links to is an orphan — either link it or it doesn't belong here.
@@ -79,6 +79,6 @@ report, a `MEMORY.md` line), never left orphaned.
 
 ## Done when
 
-The durable fact is a `.agents/backlog/notes/<slug>.md` file with the `templates/note.md` frontmatter,
+The durable fact is a `.records/notes/<slug>.md` file with the `templates/note.md` frontmatter,
 linked from the tracker entry it backs, deduped against what's there — and the chat names the note
 title and path.

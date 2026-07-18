@@ -2,14 +2,14 @@
 
 The **single end-of-work sweep**: right after a body of work finishes — when the conversation still
 holds everything that happened — walk it once and route every byproduct it surfaced to its **one
-durable home** in `.agents/backlog/`, so nothing evaporates on the next reset. This is the moment
+durable home** in `.records/`, so nothing evaporates on the next reset. This is the moment
 context is richest; a follow-up, a friction point, or a directional idea not captured now is usually
 lost.
 
 `debrief` is an **orchestrator**, not a new tracker. It fans out across the five-kind capture
 taxonomy (canonical in `docs/TAXONOMY.md`) and defers item-format to the capture verbs:
-`/backlog task` for `TASKS.md`, `/backlog issue` for `ISSUES.md`, `/backlog bug` for a `bugs/`
-report, `/backlog note` for a `notes/` fact, `/backlog feedback` for `FEEDBACK.md`. It **writes only
+`/backlog task` for `tasks.md`, `/backlog issue` for `issues.md`, `/backlog bug` for a `bugs/`
+report, `/backlog note` for a `notes/` fact, `/backlog feedback` for `feedback.md`. It **writes only
 backlog's five stores** — nothing under `.agents/dev/`.
 
 ## When to use
@@ -37,19 +37,19 @@ apply it as written; each home's format authority is its capture verb.
 
 | Surfaced thing | Home | Capture verb |
 |---|---|---|
-| a thing to build / an unfinished or adjacent action | `.agents/backlog/TASKS.md` | `/backlog task` |
-| a reproducible code defect | `.agents/backlog/bugs/<YYYY-MM-DD>-<slug>.md` | `/backlog bug` |
-| a project problem / concern / limitation | `.agents/backlog/ISSUES.md` | `/backlog issue` |
-| a durable project fact / knowledge — including a would-be **invariant or gotcha** | `.agents/backlog/notes/<slug>.md` | `/backlog note` |
-| a dev-experience observation (skills / tooling / env / workflow) | `.agents/backlog/FEEDBACK.md` | `/backlog feedback` |
+| a thing to build / an unfinished or adjacent action | `.records/tasks.md` | `/backlog task` |
+| a reproducible code defect | `.records/bugs/<YYYY-MM-DD>-<slug>.md` | `/backlog bug` |
+| a project problem / concern / limitation | `.records/issues.md` | `/backlog issue` |
+| a durable project fact / knowledge — including a would-be **invariant or gotcha** | `.records/notes/<slug>.md` | `/backlog note` |
+| a dev-experience observation (skills / tooling / env / workflow) | `.records/feedback.md` | `/backlog feedback` |
 
 **Would-be invariant or gotcha → a `note`.** A load-bearing invariant or a working-as-coded trap that
 surfaces is captured as a `/backlog note` (a durable project fact) — `debrief` never writes
 `MEMORY.md` or `GOTCHAS.md`, and never anything under `.agents/dev/`. Promoting a note into a
 `MEMORY.md` invariant or a `GOTCHAS.md` entry is `/foreman`'s job (during `tune`), not this sweep's.
 
-**Frontmatter is mandatory on any store-dir file you create here** (`.agents/backlog/bugs/`,
-`.agents/backlog/notes/`): start it with that type's frontmatter block — copying from the named
+**Frontmatter is mandatory on any store-dir file you create here** (`.records/bugs/`,
+`.records/notes/`): start it with that type's frontmatter block — copying from the named
 template gives it to you. The doc-linter gate rejects a store-dir file without it. Schema:
 `docs/TAXONOMY.md`.
 
@@ -61,8 +61,8 @@ template gives it to you. The doc-linter gate rejects a store-dir file without i
   conversation — code touched, a defect observed, a decision deferred, a tool that fought you, an
   idea the user floated. Do **not** pad with pattern-matched generics ("add more tests"). Mark a
   genuine maybe `(unsure)` and say why; surfacing uncertainty beats false confidence.
-- **`bugs/` is a store, not a queue.** A defect → file the **report** in `.agents/backlog/bugs/` *and*
-  create the actionable item (a `TASKS.md` line, or an `ISSUES.md` entry) that **links** it. The
+- **`bugs/` is a store, not a queue.** A defect → file the **report** in `.records/bugs/` *and*
+  create the actionable item (a `tasks.md` line, or an `issues.md` entry) that **links** it. The
   report is the evidence; the linked item is what gets worked. Never leave a report with nothing
   pointing at it.
 - **`note` is lower-bar than an invariant.** A `note` just captures a durable fact worth remembering;
@@ -75,11 +75,11 @@ template gives it to you. The doc-linter gate rejects a store-dir file without i
 
 All paths project-relative. Resolve the project root + real date with `date +%Y-%m-%d` — don't guess.
 
-- `<root>/.agents/backlog/TASKS.md`, `<root>/.agents/backlog/ISSUES.md`, `<root>/.agents/backlog/FEEDBACK.md`
-- `<root>/.agents/backlog/bugs/<YYYY-MM-DD>-<slug>.md` (from `.agents/backlog/templates/bug-report.md`)
-- `<root>/.agents/backlog/notes/<slug>.md` (from `.agents/backlog/templates/note.md`)
+- `<root>/.records/tasks.md`, `<root>/.records/issues.md`, `<root>/.records/feedback.md`
+- `<root>/.records/bugs/<YYYY-MM-DD>-<slug>.md` (from `.agents/backlog/templates/bug-report.md`)
+- `<root>/.records/notes/<slug>.md` (from `.agents/backlog/templates/note.md`)
 
-**Landing debrief captures (the root may be off-trunk):** these are **shared `.agents/backlog/`
+**Landing debrief captures (the root may be off-trunk):** these are **shared `.records/`
 files** — cross-cutting captures that must be durable + visible *now*, independent of any stream.
 `debrief` writes *new* content, so it can't ride a ref: it commits to the **root checkout's current
 branch**, which must be your **integration trunk** (`main` today, `dev` later) — never hardcode
@@ -89,8 +89,8 @@ lands it. The trunk-branch guard + the pathspec-atomic commit rule are in the ro
 discipline*; apply them here. `debrief` is a **sweep**, so it makes **one** atomic commit over
 **every** file it touched (the capture verbs it fans out to only *write* — they don't self-commit
 inside the sweep): `scripts/scoped-commit.sh <root> "Debrief: route follow-ups" <every file this
-debrief wrote>` — list `.agents/backlog/TASKS.md` `.agents/backlog/ISSUES.md`
-`.agents/backlog/FEEDBACK.md`, any bug report, any `.agents/backlog/notes/<slug>.md`. The worktree's
+debrief wrote>` — list `.records/tasks.md` `.records/issues.md`
+`.records/feedback.md`, any bug report, any `.records/notes/<slug>.md`. The worktree's
 ignored hand-off is not a debrief target.
 
 ## Procedure
@@ -103,7 +103,7 @@ ignored hand-off is not a debrief target.
    surprises, directional ideas, invariants learned, code touched-but-not-cleaned, files referenced
    but not opened. The scan is primarily over the **conversation** (the richest source), but ground
    it with filesystem facts: `scripts/dev-health.sh debrief-scan <root> [<trunk-ref>]` emits
-   `dirty_backlog:` (uncommitted `.agents/backlog/` writes — captured along the way but not yet
+   `dirty_backlog:` (uncommitted `.records/` writes — captured along the way but not yet
    routed) and `new_todos:` (TODO/FIXME/XXX/HACK markers this work added — candidates to route or
    resolve).
 4. **Bin each into exactly one home** per the taxonomy. Sketch the routing plan first (what goes
@@ -118,7 +118,7 @@ ignored hand-off is not a debrief target.
    - **ISSUES** → the `/backlog issue` convention: an impact-ranked entry (what's wrong · impact ·
      suggested direction), continuing the file's category numbering (`P#`/`R#`).
    - **notes** → the `/backlog note` convention: a durable project fact in
-     `.agents/backlog/notes/<slug>.md` (frontmatter block + `_backs:_` line), linked from the tracker
+     `.records/notes/<slug>.md` (frontmatter block + `_backs:_` line), linked from the tracker
      entry it backs. A would-be **invariant or gotcha** is captured here as a note — `/foreman`
      promotes it to `MEMORY.md`/`GOTCHAS.md` during `tune`.
    - **FEEDBACK** → the `/backlog feedback` convention: a dated entry (`templates/feedback.md`), noting
@@ -132,9 +132,9 @@ ignored hand-off is not a debrief target.
 
 ## Relationship to neighboring verbs
 
-- **`/backlog task`** owns the `TASKS.md` bucket; **`/backlog bug`**, **`/backlog issue`**,
-  **`/backlog note`**, and **`/backlog feedback`** own `bugs/`, `ISSUES.md`, `notes/`, and
-  `FEEDBACK.md`. `debrief` routes each share through that verb's convention; for a single-tracker add,
+- **`/backlog task`** owns the `tasks.md` bucket; **`/backlog bug`**, **`/backlog issue`**,
+  **`/backlog note`**, and **`/backlog feedback`** own `bugs/`, `issues.md`, `notes/`, and
+  `feedback.md`. `debrief` routes each share through that verb's convention; for a single-tracker add,
   use the verb directly.
 - **`/foreman`** drains this bureau's captured signal into doctrine (`tune`) — it is what promotes a
   durable `note` into a `MEMORY.md` invariant or a `GOTCHAS.md` entry, and it (with `/workstream`'s
@@ -158,6 +158,6 @@ ignored hand-off is not a debrief target.
 ## Done when
 
 Every byproduct the work surfaced sits in exactly one durable backlog home — with a
-`.agents/backlog/notes/` fact linked where an entry needed depth (or a would-be invariant/gotcha
+`.records/notes/` fact linked where an entry needed depth (or a would-be invariant/gotcha
 parked as a note for `/foreman` to promote) — nothing is double-logged, nothing was written under
 `.agents/dev/`, and the chat report names what went where.

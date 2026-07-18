@@ -24,20 +24,20 @@ order.**
 ## When it's a bug -- diagnose, then file or fix
 
 A **bug** is an observed defect (crash, wrong output, dropped state, flaky behavior). That's
-distinct from `TASKS.md` ("build X") and `ISSUES.md` (a project problem / concern / limitation).
+distinct from `tasks.md` ("build X") and `issues.md` (a project problem / concern / limitation).
 
 1. **Diagnose** -- observe -> reproduce -> isolate. Check any gotchas doc: it may be a known trap
    (working-as-coded but surprising), not a bug.
-2. **File a report** into `.agents/backlog/bugs/` -- `.agents/backlog/bugs/YYYY-MM-DD-<slug>.md` from
+2. **File a report** into `.records/bugs/` -- `.records/bugs/YYYY-MM-DD-<slug>.md` from
    `.agents/dev/templates/bug-report.md`: the **repro** (`<stack: a deterministic repro + evidence
    artifact>`), **expected vs actual** with evidence, **status + severity**. Capture while fresh;
    reports can run large -- that's what the store is for.
 3. **Then fix or defer** -- fixing now -> fix (patch or feature, by size), note the commit,
-   `git mv` the report to `.agents/backlog/bugs/archive/`. Deferring -> add a `TASKS.md` item that
+   `git mv` the report to `.records/bugs/archive/`. Deferring -> add a `tasks.md` item that
    **links** the report. Working-as-coded -> promote to the gotchas doc, drop the report.
 
-**`.agents/backlog/bugs/` is a report *store*, not a work queue** -- file reports there; track the fix from
-a linked `TASKS.md` item / task / plan. Don't fish in it for work.
+**`.records/bugs/` is a report *store*, not a work queue** -- file reports there; track the fix from
+a linked `tasks.md` item / task / plan. Don't fish in it for work.
 
 ## Fixes & patches (on `main`)
 
@@ -70,8 +70,8 @@ invariants, are in `WORKTREES.md`.
 ## Capture follow-ups
 
 A change always surfaces more than it fixes. Every follow-up has **exactly one home**. The **capture
-bureau `/backlog`** owns those homes -- the trackers (`TASKS.md`, `bugs/`, `ISSUES.md`, `notes/`,
-`FEEDBACK.md`) and the canonical **capture taxonomy** (its `docs/TAXONOMY.md`) that says which signal
+bureau `/backlog`** owns those homes -- the trackers (`tasks.md`, `bugs/`, `issues.md`, `notes/`,
+`feedback.md`) and the canonical **capture taxonomy** (its `docs/TAXONOMY.md`) that says which signal
 goes where, its per-store frontmatter schema, and the shape each store takes. Capture with `/backlog`
 (`/backlog task | bug | issue | note | feedback`) and route by that taxonomy rather than restating it
 here. In shorthand: a thing to build -> `task`; a reproducible defect -> `bug`; a project problem /
@@ -86,7 +86,7 @@ drains: the periodic *draining* of these trackers into doctrine is `/foreman tun
 `notes/` is a **first-class capture kind** (`/backlog note` -- a durable project fact: rationale, a
 worked example, design context that isn't an ADR) that can *also* hold **spillover**: when a tracker
 or `MEMORY.md` entry needs more than a line, write the long form to a
-**`.agents/backlog/notes/<slug>.md`** and link it from that entry. A note is reached through its link,
+**`.records/notes/<slug>.md`** and link it from that entry. A note is reached through its link,
 never browsed; a *standalone* investigation you'd open on its own is a `reports/` doc, not a note.
 
 Running this whole sweep at the **moment a plan completes** -- while the session still holds

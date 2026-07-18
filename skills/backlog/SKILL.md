@@ -1,12 +1,12 @@
 ---
 name: backlog
-description: "The capture bureau — the single collection front-door for a project's `.agents/backlog/` trackers. Owns the trackers, their formats, and the capture schema (`docs/TAXONOMY.md`). Seven verbs: five capture one follow-up by subject/kind — `/backlog task` (a thing to build), `/backlog bug` (a reproducible defect), `/backlog issue` (a project problem/concern/limitation), `/backlog note` (a durable project fact), `/backlog feedback` (a dev-experience observation) — plus `/backlog debrief` (sweep a finished body of work to every tracker) and `/backlog curate` (keep the lists tidy: dedupe/rank/sharpen/weed). Captures uniformly, never drains — `/foreman` drains the captured signal into doctrine. Use when the user runs `/backlog ...`, or asks to file/capture/sweep/curate a follow-up. Distinct from routing/tuning the dev system (`/foreman`) and the code audit (`/auditor`)."
+description: "The capture bureau — the single collection front-door for a project's `.records/` trackers. Owns the trackers, their formats, and the capture schema (`docs/TAXONOMY.md`). Seven verbs: five capture one follow-up by subject/kind — `/backlog task` (a thing to build), `/backlog bug` (a reproducible defect), `/backlog issue` (a project problem/concern/limitation), `/backlog note` (a durable project fact), `/backlog feedback` (a dev-experience observation) — plus `/backlog debrief` (sweep a finished body of work to every tracker) and `/backlog curate` (keep the lists tidy: dedupe/rank/sharpen/weed). Captures uniformly, never drains — `/foreman` drains the captured signal into doctrine. Use when the user runs `/backlog ...`, or asks to file/capture/sweep/curate a follow-up. Distinct from routing/tuning the dev system (`/foreman`) and the code audit (`/auditor`)."
 ---
 
 # backlog — the capture bureau
 
-One skill: the **single collection front-door** for a project's `.agents/backlog/` trackers. It owns the tracker
-artifacts (`TASKS.md`, `ISSUES.md`, `FEEDBACK.md`, `notes/`, `bugs/`), their **formats**, the capture
+One skill: the **single collection front-door** for a project's `.records/` trackers. It owns the tracker
+artifacts (`tasks.md`, `issues.md`, `feedback.md`, `notes/`, `bugs/`), their **formats**, the capture
 **schema** (`docs/TAXONOMY.md`), the end-of-work **sweep**, and tracker **hygiene**. Everything that
 *captures a follow-up* lives here; standing up, routing, and tuning the dev system is a separate
 skill, `/foreman`.
@@ -28,11 +28,11 @@ and follow it**; do not reconstruct a procedure from memory.
 
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
-| `/backlog bug` | `verbs/bug.md` | File a reproducible **defect** → `.agents/backlog/bugs/` (linked from an actionable item) | "file a bug", "this is broken — repro" |
-| `/backlog task` | `verbs/task.md` | Capture a thing to build (product/feature follow-up) → `.agents/backlog/TASKS.md` | "put X in the backlog", "remind me to…" |
-| `/backlog issue` | `verbs/issue.md` | Capture a **project** problem/concern/limitation → `.agents/backlog/ISSUES.md` | "known limitation", "architectural risk" |
-| `/backlog feedback` | `verbs/feedback.md` | Capture a **dev-experience** observation → `.agents/backlog/FEEDBACK.md` | "felt great", "the gate is too slow", "docs heavy" |
-| `/backlog note` | `verbs/note.md` | Capture a durable **project fact** → `.agents/backlog/notes/<slug>.md` | "capture this fact", "write down how this works" |
+| `/backlog bug` | `verbs/bug.md` | File a reproducible **defect** → `.records/bugs/` (linked from an actionable item) | "file a bug", "this is broken — repro" |
+| `/backlog task` | `verbs/task.md` | Capture a thing to build (product/feature follow-up) → `.records/tasks.md` | "put X in the backlog", "remind me to…" |
+| `/backlog issue` | `verbs/issue.md` | Capture a **project** problem/concern/limitation → `.records/issues.md` | "known limitation", "architectural risk" |
+| `/backlog feedback` | `verbs/feedback.md` | Capture a **dev-experience** observation → `.records/feedback.md` | "felt great", "the gate is too slow", "docs heavy" |
+| `/backlog note` | `verbs/note.md` | Capture a durable **project fact** → `.records/notes/<slug>.md` | "capture this fact", "write down how this works" |
 | `/backlog debrief` | `verbs/debrief.md` | **Sweep** a finished body of work; route every byproduct to its tracker | "wrap up before I reset", "capture what surfaced" |
 | `/backlog curate` | `verbs/curate.md` | Tidy the lists — dedupe, re-rank, sharpen, weed (hygiene, never draining) | "tidy the backlog", "reprioritize what's left" |
 
@@ -63,7 +63,7 @@ tracker's format, plus the store-dir frontmatter rules — is canonical here in
   (worse than none), while a *fact* the prose reasons over is not. `dev-health.sh` **complements** the
   host doc-linter (which owns link resolution, indexing, frontmatter); it never re-implements it.
 - **Commit on the integration trunk, never a work branch.** A capture commit writes *new* shared
-  `.agents/backlog/` content, so it can't ride a feature ref — it lands on the **root checkout's current branch**,
+  `.records/` content, so it can't ride a feature ref — it lands on the **root checkout's current branch**,
   which must be the integration **trunk** (`main` today, `dev` later; never hardcode `main`).
   **Guard:** check `git -C <root> branch --show-current`; if it is empty (detached HEAD) or a work
   branch (`stream/*`, `feature/*`), STOP and tell the user to switch the root to its trunk (or run

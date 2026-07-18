@@ -11,7 +11,7 @@ work ships. Maintenance keeps both in check, in three modes:
 All three share a shape: run after a structural change or periodically, go **item by item**, do it
 **when the tree is quiet** (these files are concurrently edited -- a sweep mid-churn fights other
 agents), and **worktree it if the sweep is big** (it earns a branch). Record whatever you remove in
-`.agents/dev/done/`.
+`.records/archive/`.
 
 **If the host has a `/foreman` skill**, its `check` verb validates the deployed glue (spine coverage,
 stale refs, glue-vs-skills drift) and its `tune` verb folds accumulated system signal back into this
@@ -69,7 +69,7 @@ synced mirror to track -- the host repo's own `.agents/dev/` is the live example
 5. **Onboarding** -- following `AGENTS.md`'s "Read first" reaches the vision, the invariants, the
    current work, the tool how-tos, and the worktree workflow.
 
-Fix drift in place; file bigger gaps to `TASKS.md` (or `ISSUES.md` if it's a doc-tooling gap).
+Fix drift in place; file bigger gaps to `tasks.md` (or `issues.md` if it's a doc-tooling gap).
 
 ### The memory (`.agents/dev/MEMORY.md`) -- highest stakes
 Agents *internalize* it, so a wrong "fact" is actively harmful. Per fact / invariant: **still
@@ -78,21 +78,21 @@ stated as fact) · **still load-bearing?** (keystone only -- move lesser facts t
 drop them here) · **redundant?** (trim to a one-line pointer) · **missing?** (a new invariant not
 yet here) · **pointers resolve?** No auto-prune -- MEMORY is rewritten by hand.
 
-### The tasks tracker (`.agents/backlog/TASKS.md`)
+### The tasks tracker (`.records/tasks.md`)
 A deep pass over **every** item: **done?** (cross-ref `git log` -> **remove** it; the commit + any
-`.agents/dev/done/` stream digest is the record) · **still relevant?** (obsolete/superseded -> remove,
-rationale to `done/`) · **accurate?** (repoint stale `file:line`) · **right scope?** (split or
+`.records/archive/` stream digest is the record) · **still relevant?** (obsolete/superseded -> remove,
+rationale to `archive/`) · **accurate?** (repoint stale `file:line`) · **right scope?** (split or
 merge) · **right classification?** (effort tag, group, order). If available, `/backlog curate`
 automates the sharpen/re-order; this audit adds the done/relevance pass and the removal drain.
 (Items are plain bullets, removed when shipped -- there is no checkbox/prune step.)
 
-### The issues log (`.agents/backlog/ISSUES.md`)
+### The issues log (`.records/issues.md`)
 Per entry: **resolved?** (fixed in code *or* now documented in a gotchas doc / `AGENTS.md` ->
-prune to `.agents/dev/done/`) · **still a real constraint?** · **fix superseded?** (rewrite to current
+prune to `.records/archive/`) · **still a real constraint?** · **fix superseded?** (rewrite to current
 reality -- a stale recommendation is worse than none) · **rank still right?** (`HIGH`/`MEDIUM`/`LOW`)
 · **promote** any durable gotcha into the project's gotchas doc, then prune the entry.
 
-### The feedback (`.agents/backlog/FEEDBACK.md`)
+### The feedback (`.records/feedback.md`)
 A qualitative catch-all -- drain it or it rots. Per entry: **actionable?** (route to its real
 home) · **acted on / absorbed?** (record the outcome, clear it) · **still an open observation?**
 (keep -- but don't let it sit unrouted across two audits). Goal: a live signal the owner skims,
@@ -101,23 +101,23 @@ never a graveyard.
 ## Prune & archive -- keep it lean
 
 Move finished or stale material out of the live docs into archives and dated records. **Git history
-is the source of truth; `.agents/dev/done/` is the human-readable index into it.**
+is the source of truth; `.records/archive/` is the human-readable index into it.**
 
-- **`.agents/dev/plans/`** -- a one-shot plan or spike *ships* -> `git mv` to `plans/archive/`. Roadmaps and
+- **`.records/plans/`** -- a one-shot plan or spike *ships* -> `git mv` to `plans/archive/`. Roadmaps and
   ongoing design docs stay live until the track ships.
-- **`.agents/dev/adr/`** -- an ADR must stand on its own: decision rationale lives *in* the ADR, which cites
+- **`.records/adr/`** -- an ADR must stand on its own: decision rationale lives *in* the ADR, which cites
   the `.agents/dev/ROADMAP.md` track (or another ADR), **never** a plan path -- a durable doc must not depend
   on a volatile one. Before archiving a plan an ADR references, confirm no rationale lives only in
   that plan (lift it into the ADR if so), then drop/repoint the pointer.
-- **`.agents/dev/reports/`** -- conclusions acted on or superseded -> `reports/archive/`.
-- **`.agents/backlog/bugs/`** -- fixed -> note the commit in the report, `git mv` to `bugs/archive/`.
-- **`.agents/backlog/notes/`** -- a note is subordinate to the entry that links it (a `MEMORY`/tracker/report
+- **`.records/reports/`** -- conclusions acted on or superseded -> `reports/archive/`.
+- **`.records/bugs/`** -- fixed -> note the commit in the report, `git mv` to `bugs/archive/`.
+- **`.records/notes/`** -- a note is subordinate to the entry that links it (a `MEMORY`/tracker/report
   line); when that entry is pruned or archived, archive the note with it (or drop it if spent).
   Never drained on its own -- it's a store, reached only via its link (but `/foreman tune` may promote a
   durable note into `MEMORY.md`/`GOTCHAS.md` before clearing it).
 - **The capture trackers** (the five capture kinds -- `task`/`bug`/`issue`/`feedback`/`note`) drain
   per their taxonomy (`DEVELOPMENT.md` -> *Capture follow-ups*): `TASKS`/`ISSUES` items to a dated
-  `.agents/dev/done/<YYYY-MM-DD>-<slug>.md`, `bugs/` to its archive. `/backlog` itself never drains --
+  `.records/archive/<YYYY-MM-DD>-<slug>.md`, `bugs/` to its archive. `/backlog` itself never drains --
   `/backlog curate` only keeps the lists tidy (dedupe/rank/sharpen/weed); `/foreman tune` is what
   drains and promotes durable signal into doctrine. (No checkbox/prune step -- an item is removed
   when its work ships; the audit drains the stragglers.)

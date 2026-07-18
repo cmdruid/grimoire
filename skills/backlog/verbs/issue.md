@@ -1,11 +1,11 @@
 # `/backlog issue` — capture a project problem / concern / limitation
 
-File a **project problem, concern, or limitation** into `.agents/backlog/ISSUES.md` the moment it
+File a **project problem, concern, or limitation** into `.records/issues.md` the moment it
 surfaces — a known limitation, an architectural concern, a risk, a non-code problem that isn't a
 reproducible defect and isn't a build item. This is the quick, one-shot path to the issues log; the
 full end-of-work sweep is `/backlog debrief`.
 
-**A project problem, not a defect and not a build item.** `ISSUES.md` is "something about the project
+**A project problem, not a defect and not a build item.** `issues.md` is "something about the project
 is wrong, risky, or limited." Anything else goes to its own tracker — the taxonomy is canonical in
 `docs/TAXONOMY.md` (a reproducible code defect → `/backlog bug`, a thing to build → `/backlog task`, a
 durable fact → `/backlog note`, a dev-experience observation → `/backlog feedback`).
@@ -34,12 +34,12 @@ agent avoids the trap.
 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
-- Issues log: `<root>/.agents/backlog/ISSUES.md`. It is a flat markdown log, **not** a store dir — no
+- Issues log: `<root>/.records/issues.md`. It is a flat markdown log, **not** a store dir — no
   per-file frontmatter (the doc-linter does not gate it).
 
 ## Issues structure & numbering
 
-`.agents/backlog/ISSUES.md` groups entries under category sections and gives each a **category-prefixed running
+`.records/issues.md` groups entries under category sections and gives each a **category-prefixed running
 number**:
 - **`P#`** — Problem / limitation (a project defect-of-design, a known limitation, a gap).
 - **`R#`** — Risk / concern (an architectural risk, a fragility, a concern to revisit).
@@ -69,15 +69,15 @@ renumber existing entries.
 5. **Capture a durable trap as a `/backlog note`** if one surfaced — `/foreman` promotes it to
    `.agents/dev/docs/GOTCHAS.md` during `tune`.
 6. **Commit (standalone only).** Invoked **standalone**, scoped-commit via
-   `scripts/scoped-commit.sh <root> "Issue <prefix><n>: <short what>" .agents/backlog/ISSUES.md` (+ the
-   note file under `.agents/backlog/notes/` if you captured a trap), then run the host doc-linter. Invoked **inside `/backlog debrief` or a `/foreman tune`
+   `scripts/scoped-commit.sh <root> "Issue <prefix><n>: <short what>" .records/issues.md` (+ the
+   note file under `.records/notes/` if you captured a trap), then run the host doc-linter. Invoked **inside `/backlog debrief` or a `/foreman tune`
    sweep**, do **not** commit — only write; the sweep makes the single atomic commit.
 7. **Report** the entry id (`P#`/`R#`) and the path.
 
 ## Relationship to neighboring verbs
 
 - **`/backlog debrief`** routes *all* byproducts of a finished body of work, project problems included,
-  in one sweep. `issue` is the in-the-moment, single-problem path to the same `ISSUES.md` log.
+  in one sweep. `issue` is the in-the-moment, single-problem path to the same `issues.md` log.
 - **`/foreman tune`** drains system-relevant signal from the trackers into doctrine. Capture is this
   verb's job; draining is `/foreman`'s.
 - **`/backlog bug`** is the reproducible-defect sibling; **`/backlog feedback`** is the dev-experience
@@ -85,7 +85,7 @@ renumber existing entries.
 
 ## Done when
 
-The problem is an impact-ranked `ISSUES.md` entry (what's wrong · impact · suggested direction) under
+The problem is an impact-ranked `issues.md` entry (what's wrong · impact · suggested direction) under
 the right category, continuing the numbering, deduped against what's there — any durable trap
 captured as a `/backlog note` (for `/foreman` to promote to `GOTCHAS.md`) — and the chat names the
 entry id and path.

@@ -16,8 +16,8 @@ routine, it does not restate the per-audit checklists.
 
 **Scope boundary (read this).** Three neighboring jobs are deliberately *not* here:
 
-- **Curating the trackers as lists** — sharpening/reordering `TASKS.md`, removing shipped items,
-  archiving to `.agents/dev/done/` — is **`/backlog curate`**, not `tune`. `tune` *consumes* the trackers'
+- **Curating the trackers as lists** — sharpening/reordering `tasks.md`, removing shipped items,
+  archiving to `.records/archive/` — is **`/backlog curate`**, not `tune`. `tune` *consumes* the trackers'
   signal to improve doctrine and promote durable notes; it does not curate the lists themselves.
 - **Mechanically validating that the deployed glue still resolves** — spine coverage, stale
   `file:line` refs, runbook-vs-installed-skills drift — is **`/foreman check`** (the cheap
@@ -28,7 +28,7 @@ routine, it does not restate the per-audit checklists.
 
 - The user runs **`/foreman tune`**, or asks to "tune the dev system", "fold this friction back into
   the docs", "the workflow keeps tripping me — fix the doctrine", or notes that the system-facing
-  signal (`FEEDBACK.md`, `ISSUES.md`) is **piling up** with recurring complaints about how development
+  signal (`feedback.md`, `issues.md`) is **piling up** with recurring complaints about how development
   works here.
 - **Periodically, when the tree is quiet** — and after a structural change to the `.agents/dev/` system, or
   once a body of friction has accumulated enough to see a pattern.
@@ -45,12 +45,12 @@ branch):
    `tree_quiet`, `linked_worktrees`, and per-tracker sizes/last-change in one read — a sweep during
    churn (`tree_quiet=false` or live worktrees) fights concurrent edits, so confirm quiet first. The
    tracker sizes tell you which trackers carry accumulating system-facing signal and earn a deep read.
-2. **Harvest the system-relevant signal.** Read `/backlog`'s `.agents/backlog/FEEDBACK.md`,
-   `.agents/backlog/ISSUES.md`, and `.agents/backlog/notes/` for the slice that is about **the
+2. **Harvest the system-relevant signal.** Read `/backlog`'s `.records/feedback.md`,
+   `.records/issues.md`, and `.records/notes/` for the slice that is about **the
    development system, not the product**: dev-experience friction, a routing rule that misfires, a
    convention stated as fact that has since changed, a doc that keeps getting reached for and isn't
    wired in, a durable fact parked as a `note` that belongs in memory or a gotchas doc. (Product/feature
-   items stay in `.agents/backlog/TASKS.md` — those are `/backlog curate`'s, not signal for the
+   items stay in `.records/tasks.md` — those are `/backlog curate`'s, not signal for the
    doctrine.) Look for **patterns**: one complaint is a note; the same friction three times is a
    doctrine bug.
 3. **Drain each pattern into a concrete doctrine edit.** Turn the signal into a real change:
@@ -61,7 +61,7 @@ branch):
      agents internalize is actively harmful; hand-edit, never bulk);
    - a durable project fact `/backlog` parked as a `note` → **promote** it: a load-bearing invariant into
      `.agents/dev/MEMORY.md`, a known trap into `.agents/dev/GOTCHAS.md`, else the fact's home doc — then
-     clear the note from `.agents/backlog/notes/` (this is the promotion `/backlog debrief` no longer does);
+     clear the note from `.records/notes/` (this is the promotion `/backlog debrief` no longer does);
    - a command/entrypoint the skills resolve generically but `AGENTS.md` no longer names → fix the
      `AGENTS.md` wiring so "run the gate" / "the fast doc-linter" still resolve.
    Fix drift in place; file anything too big for this pass back to `/backlog` as its own item.

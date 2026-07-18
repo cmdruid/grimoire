@@ -98,7 +98,7 @@ before trusting it**; `workstream-git.sh cheatsheet-check <worktree>` flags any 
 at HEAD. Pointer-heavy by design (paths/IDs rot gracefully; pasted code rots silently)._
 - built-against: <commit sha this map was last built/refreshed against>
 - **Files / module map:** `<src/path>` — <one-line role>; key entry points + where systems register.
-- **ADRs / design docs:** `<.agents/dev/adr/...>`, `<project: design docs>` — the decisions governing this domain.
+- **ADRs / design docs:** `<.records/adr/...>`, `<project: design docs>` — the decisions governing this domain.
 - **Tests / scenarios:** `<unit-test modules>`, `<project: E2E/scenario files>` — what exercises this domain.
 - **Gotchas / invariants:** the `.agents/dev/docs/GOTCHAS.md` traps + `.agents/dev/MEMORY.md` invariants that bite here.
 

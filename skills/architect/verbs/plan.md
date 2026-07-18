@@ -78,7 +78,7 @@ code yet), say so in the sequence rather than inserting a no-op prep step.
    - **`.agents/architect/` (e.g. `.agents/architect/plans/<slug>.md`)** — only if the project has no existing
      roadmap/plan convention of its own. Simple, portable default for a fixture or a
      brand-new project.
-   - **The project's own roadmap location** (`<project: .agents/dev/plans/<date>-<slug>.md, indexed
+   - **The project's own roadmap location** (`<project: .records/plans/<date>-<slug>.md, indexed
      from ROADMAP.md>`; conventions vary) — **the recommended default**
      whenever the project already has one. A design-evolution campaign is a plan of forthcoming
      change, exactly the shape `.agents/dev/`'s operational history already exists to hold, and landing it

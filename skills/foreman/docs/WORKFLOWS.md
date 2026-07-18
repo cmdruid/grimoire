@@ -5,8 +5,8 @@ Each entry is a pointer -- follow the linked doc for detail.
 
 ## Start or resume a work stream
 Bootstrap in order: root project doc (e.g. `PROJECT.md`) -> `.agents/dev/MEMORY.md` + root `AGENTS.md`
--> `.agents/dev/README.md` -> `.agents/dev/docs/` + `.agents/dev/plans/` as needed. To resume a specific stream:
-`/workstream load <name>` for an active stream, or read its roadmap in `.agents/dev/plans/`. `/handoff`
+-> `.agents/dev/README.md` -> `.agents/dev/docs/` + `.records/plans/` as needed. To resume a specific stream:
+`/workstream load <name>` for an active stream, or read its roadmap in `.records/plans/`. `/handoff`
 saves/loads a temporary `HANDOFF.md` for the one stream you're actively on.
 
 ## Work in parallel without clobbering
@@ -35,7 +35,7 @@ and where to record perf logs.>`
 
 ## Diagnose a bug
 Full playbook (observe -> reproduce -> isolate -> file): `.agents/dev/docs/DIAGNOSTICS.md` (if present).
-Classifying and filing the defect into `.agents/backlog/bugs/`: `.agents/dev/docs/DEVELOPMENT.md` (*When it's a bug*).
+Classifying and filing the defect into `.records/bugs/`: `.agents/dev/docs/DEVELOPMENT.md` (*When it's a bug*).
 If available, **`/backlog bug`** runs the diagnose -> file-from-template -> link-from-tracker flow.
 
 ## Audit code quality
@@ -45,14 +45,14 @@ docs-system health sweep.>` If available, **`/auditor`** drives a pass.
 ## Capture follow-ups
 The capture taxonomy (the five kinds, what goes where + each store's shape) is `/backlog`'s
 `docs/TAXONOMY.md`; `.agents/dev/docs/DEVELOPMENT.md` -> *Capture follow-ups* points there. Quick: a
-thing to build -> `.agents/backlog/TASKS.md`; a project problem/concern -> `.agents/backlog/ISSUES.md`;
-a dev-experience observation -> `.agents/backlog/FEEDBACK.md`; a durable project fact -> `.agents/backlog/notes/`.
-When an entry needs more than a line, spill the long form to a linked `.agents/backlog/notes/<slug>.md`. At the
+thing to build -> `.records/tasks.md`; a project problem/concern -> `.records/issues.md`;
+a dev-experience observation -> `.records/feedback.md`; a durable project fact -> `.records/notes/`.
+When an entry needs more than a line, spill the long form to a linked `.records/notes/<slug>.md`. At the
 end of a body of work, **`/backlog debrief`** (if available) sweeps everything surfaced to its one home in
 a single pass -- it fires at plan completion (`.agents/dev/docs/PLANNING.md` -> *When a plan completes*).
 
 ## Prune / archive completed work
-Keep the live docs lean -- archive shipped/stale material and record it in dated `.agents/dev/done/`
+Keep the live docs lean -- archive shipped/stale material and record it in dated `.records/archive/`
 files. The full how-to (what moves where: plans, reports, bugs, backlog, issues, memory) is in
 `.agents/dev/docs/MAINTENANCE.md` -> *Prune & archive*.
 
