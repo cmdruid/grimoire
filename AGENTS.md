@@ -15,6 +15,13 @@ group as operators (`feature`, `backlog`, `workstream`) and plumbing (`delegate`
 `handoff`). See `README.md` for the full inventory and `docs/design/2026-07-17-library-refactor.md`
 for the refactor that produced this shape.
 
+These skills deploy to **two roots**: hand-curated **seeds** under `.agents/` (one home per steward —
+`architect`/`foreman`/`auditor`) and typed **records** under `.records/` (trackers + durable
+history). Because the paths no longer encode ownership, `foreman init` writes an **ownership index**
+(`.agents/README.md` + `.records/README.md`) mapping content → location → steward — a stamped
+snapshot, per the *snapshot must never pose as authoritative* rule below. The full layout + steward
+map live in `README.md` (*Storage convention*) and `packs/clankshop.md`.
+
 ## Design philosophy
 
 - **Scripts compute facts; agents decide.** Push mechanical, deterministic state-analysis into small

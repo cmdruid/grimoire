@@ -12,10 +12,14 @@ hardcode a specific skill or pack. It reads a composition and wires it. The pack
 this verb never depends on any pack. That separation is what lets `init` serve a full pack, a
 partial install, or a bare one skill deep.
 
-**On-disk home root (spec §3.1).** The artifact homes live under a single `.agents/` root: `init`
-scaffolds `.agents/foreman/`, and `/architect` uses `.agents/architect/`. **Record the chosen root in the
-glue you write** (the host's `AGENTS.md`, step 6) so every companion skill and agent **reads the
-recorded location** rather than assuming a hardcoded path — the root is a pointer, not a constant.
+**On-disk home root (spec §3.1).** Two roots: the **seeds** under `.agents/` (one home per steward —
+`.agents/architect/`, `.agents/foreman/`, `.agents/auditor/`) and the typed **records** under
+`.records/`. `init` scaffolds both roots; the sibling stewards (`/architect`, `/auditor`) populate
+their own seed homes. Because the paths no longer encode ownership, `init` also writes the
+**ownership index** (BOOTSTRAP §4.1) that maps content → location → steward. **Record the chosen root
+in the glue you write** (the host's `AGENTS.md`, step 6, and the ownership index) so every companion
+skill and agent **reads the recorded location** rather than assuming a hardcoded path — the root is a
+pointer, not a constant.
 
 ## Step 0 — Determine the composition
 
@@ -63,13 +67,24 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
 1. **Fill the slots** (§2): `<keystone>` (the project's sacred invariants), `<gate>` (the one
    test/lint command), `<stack>`; pick modules from the Module Map (§3) — Core always; worktree
    pipeline / maintenance / sync / etc. opt-in.
-2. **Scaffold the tree** (§4) from the manifest (§12), and copy the generic `docs/` into the host's
-   `.agents/foreman/docs/`, filling the slots. Templates are **not** copied anywhere — planning
-   docs, operational records, and capture reports are each produced from the owning skill's own
-   bundled `templates/` (`/feature`, `foreman`, `/backlog` respectively) at the point they're used.
-3. **Write the trackers + `.agents/foreman/README`** from the `BOOTSTRAP` templates (empty files with
-   their one-line headers; the index genericized to the host) — the trackers + capture taxonomy come
-   from `/backlog` where it is installed.
+2. **Scaffold both roots** (§4) from the manifest: the `.agents/` seed homes (`architect/`,
+   `foreman/`, `auditor/` — sibling stewards populate their own via their deploy verbs; `init`
+   stands up the `.agents/` root so those homes have a place to land) and the full `.records/` tree
+   (`tasks.md`, `issues.md`, `feedback.md`, `bugs/`, `notes/`, `plans/`, `archive/`, `adr/`,
+   `reports/`, `logs/`, `audit/`). Copy the generic `docs/` into the host's `.agents/foreman/docs/`,
+   filling the slots. Templates are **not** copied anywhere — planning docs, operational records, and
+   capture reports are each produced from the owning skill's own bundled `templates/` (`/feature`,
+   `foreman`, `/backlog` respectively) at the point they're used.
+3. **Write the ownership index + trackers + `.agents/foreman/README`.** The **ownership index** (§4.1)
+   is load-bearing — since the paths no longer encode ownership, write `.agents/README.md` +
+   `.records/README.md` mapping **content → location → steward** (design seed → `.agents/architect/`
+   `/architect`; doctrine → `.agents/foreman/` `/foreman`; audit rubric → `.agents/auditor/` `/auditor`;
+   tasks/issues/feedback/bugs/notes → `.records/` `/backlog`; plans → `.records/plans/` `/feature`;
+   archive → `.records/archive/` `/workstream`; adr → `.records/adr/` `/architect`; audit deliverables
+   → `.records/audit/` `/auditor`), keyed to the composition from Step 0, and add a one-line pointer to
+   them from the front door. Then write the trackers + `.agents/foreman/README` from the `BOOTSTRAP`
+   templates (empty files with their one-line headers; the index genericized to the host) — the
+   trackers + capture taxonomy come from `/backlog` where it is installed.
 4. **Wire the linter** (§11) into the host's `<gate>`: internal links resolve; enumerable doc series
    are indexed; banned paths are absent; store-dir files carry valid frontmatter.
 5. **Author the `<content docs>`** (ARCHITECTURE / GOTCHAS / DIAGNOSTICS / PERFORMANCE) — the
@@ -109,9 +124,11 @@ re-sync.
 
 ## Done when
 
-A `.agents/foreman/` system that passes the host's `<gate>` — trackers, templates, routing/planning/worktree/
-maintenance docs, the linter wired, the `<content docs>` authored, the **gate / doc-linter /
-diagnostics surfaced in `AGENTS.md`** (so the skills' generic instructions resolve), the
+A `.agents/foreman/` system that passes the host's `<gate>` — **both roots scaffolded** (`.agents/`
+seed homes + the `.records/` tree), the **ownership index** written (`.agents/README` +
+`.records/README`, content → location → steward), trackers, templates,
+routing/planning/worktree/maintenance docs, the linter wired, the `<content docs>` authored, the
+**gate / doc-linter / diagnostics surfaced in `AGENTS.md`** (so the skills' generic instructions resolve), the
 **composition's companion skills listed** (with by-hand fallbacks for the absent), and a **stamp**
 recording the runbook + skill versions built against, pointing at `/foreman check` as the drift
 validator.

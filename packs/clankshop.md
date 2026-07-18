@@ -62,6 +62,31 @@ lists these as the constellation the deployed doctrine resolves to.
   at the agent entry door) for agent ergonomics: scan → diagnose → adjust. Self-contained; runs
   in any repo.
 
+## The canonical layout foreman init instantiates
+
+`/foreman init` stands up **two roots**, then writes an **ownership index** (`.agents/README.md` +
+`.records/README.md`, plus a front-door pointer) — load-bearing here because the paths no longer
+encode ownership, so a cold agent needs the index to learn *what lives where, and who stewards it*.
+
+```
+.agents/                  the SEEDS root -- hand-curated source of truth, one home per steward
+  architect/              the design seed                          (steward: /architect -- distill)
+  foreman/                dev doctrine + MEMORY + GOTCHAS + docs/   (steward: /foreman -- calibrate)
+  auditor/                the audit rubric: GUIDE, rules/, metrics.sh  (steward: /auditor)
+.records/                 the RECORDS root -- every typed record
+  tasks.md · issues.md · feedback.md · bugs/ · notes/             (steward: /backlog)
+  plans/                  design plans / roadmaps                  (writer: /feature)
+  archive/                shipped / done records                   (writer: /workstream)
+  adr/                    architecture decision records            (writer: /architect; distilled into seed)
+  reports/ · logs/        research findings / run artifacts        (foreman / various)
+  audit/                  FINDINGS · metrics.csv · history/        (writer: /auditor)
+```
+
+Session hand-offs are **gitignored scratch** (root `HANDOFF.md`; concurrent named sessions under
+`.sessions/`), stewarded by `handoff` — deliberately *not* a `.records/` store. The mechanics of the
+tree live in `foreman`'s `BOOTSTRAP.md` (§4 + §4.1); this runbook supplies the steward map, which is
+the composition `init` records and `/foreman check` validates for drift.
+
 ## The seam contracts (the architecture is in the seams)
 
 The layers describe *what each skill is*; the **seams** describe *how they compose without

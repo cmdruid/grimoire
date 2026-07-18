@@ -78,7 +78,7 @@ and depends on Core. The **capture trackers** are `/backlog`'s home under the to
 
 | Module | Files | Depends on | Borrow when |
 |---|---|---|---|
-| **Core: entry + index** | front-door `AGENTS`/`README`, `.agents/foreman/README` (index), `.agents/foreman/MEMORY` | -- | always |
+| **Core: entry + index** | front-door `AGENTS`/`README`, the **ownership index** (`.agents/README` + `.records/README`, §4.1), `.agents/foreman/README` (index), `.agents/foreman/MEMORY` | -- | always |
 | **Capture trackers** (`/backlog`) | `.records/{tasks,issues,feedback}.md`, `.records/bugs/`, `.records/notes/` -- owned/scoped by `/backlog`, schema in its `docs/TAXONOMY.md` | Core | you want bounded follow-up capture |
 | **Templates** | each producing skill's own bundled `templates/` (`/feature`, `foreman`, `/backlog` -- no host copy) | Core | always (consistency) |
 | **Change router** | `docs/DEVELOPMENT` | Core | >1 kind of change (bug/patch/feature) |
@@ -89,7 +89,7 @@ and depends on Core. The **capture trackers** are `/backlog`'s home under the to
 | **Sync contract** | `docs/SYNC` (or a section of `docs/MAINTENANCE`) | Entry + index | the front door is volatile / multi-agent |
 | **Linter** | `<linter>` in `<gate>` | Core | links + indexes are worth guarding |
 | **Reference docs** | `docs/ARCHITECTURE`, `docs/GOTCHAS`, `docs/DIAGNOSTICS`, `docs/PERFORMANCE` | Core | `<content docs>` slots -- you fill |
-| **Records** | `.records/{archive,plans,adr,reports,logs}` | varies | you want durable history |
+| **Records** | `.records/{archive,plans,adr,reports,logs,audit}` | varies | you want durable history |
 
 ---
 
@@ -98,17 +98,26 @@ and depends on Core. The **capture trackers** are `/backlog`'s home under the to
 The generic tree. Adjust names to your host's conventions (e.g. the front door is often
 `AGENTS.md`/`README.md`/`CONTRIBUTING.md` at the repo root).
 
-Two homes: **`.agents/foreman/`** (the dev system -- foreman's) and the top-level **`.records/`** (every
-typed record -- the capture trackers, owned and scoped by `/backlog`; the one-line kinds below are a
-signpost, the schema is `/backlog`'s `docs/TAXONOMY.md` -- plus foreman's own operational records).
-`/foreman init` scaffolds both skeletons; `/backlog` has no init of its own, and the capture verbs
-also create a store if it's missing.
+**Two roots.** Source-of-truth **seeds** live under `.agents/` -- one home per steward skill:
+`.agents/architect/` (the design seed), `.agents/foreman/` (this dev system), `.agents/auditor/`
+(the audit rubric). Typed **records** live under `.records/` -- the capture trackers (owned and
+scoped by `/backlog`; the one-line kinds below are a signpost, the schema is `/backlog`'s
+`docs/TAXONOMY.md`) plus every durable record (plans, ADRs, archive, reports, logs, audit
+deliverables). `/foreman init` scaffolds **both roots** -- the `.agents/` seed homes and the full
+`.records/` tree -- and writes the **ownership index** (§4.1), because the paths no longer encode
+ownership. Each steward populates its own seed home (`/architect`, `/auditor` via their own deploy
+verbs; foreman fills `.agents/foreman/`); `/backlog` owns the trackers and has no init of its own,
+and its capture verbs also create a store if it's missing.
 
 ```
 <repo root>/
   <front door>            -- bootstrap entry: "read first" order, build/test/run, repo map,
-                             conventions, and a "making a change? -> .agents/foreman/docs/DEVELOPMENT" pointer
-  .agents/foreman/
+                             conventions, a "making a change? -> .agents/foreman/docs/DEVELOPMENT"
+                             pointer, and a pointer to the ownership index (§4.1)
+  .agents/README.md        -- SEEDS-root ownership index (§4.1): what each seed home is + who stewards it
+  .agents/architect/       -- the design seed (steward: /architect) -- stood up by /architect
+  .agents/auditor/         -- the audit rubric: GUIDE, rules/, metrics.sh (steward: /auditor) -- by /auditor
+  .agents/foreman/          -- THIS dev system (steward: /foreman)
     README.md             -- THE index for .agents/foreman/: what each dir/file is + the conventions. No
                              per-directory READMEs to chase.
     MEMORY.md             -- the tiny set of load-bearing invariants agents internalize. <keystone>
@@ -126,22 +135,45 @@ also create a store if it's missing.
       PERFORMANCE.md      -- <content doc> how to benchmark
     (no templates/ dir)   -- templates are never deployed; each producing skill uses its own
                              bundled `templates/` directly (see §12)
-    (no sessions/ dir)    -- hand-offs are temporary: a gitignored root HANDOFF for the active
-                             stream; concurrent streams use the worktree-local hand-off (see §8)
-  .records/                -- every typed record: /backlog's capture trackers (schema in its
-                             docs/TAXONOMY.md) + foreman's operational records
+  .records/                -- the RECORDS root: every typed record
+    README.md             -- RECORDS-root ownership index (§4.1): what each record dir is + who writes it
     tasks.md               -- a thing to build / do ("build X") -- flat living list (was BACKLOG.md)
     issues.md              -- a project problem / concern / limitation
     feedback.md            -- a dev-experience observation (skills / tooling / env / workflow)
     bugs/                  -- reproducible code defects, one file each (a STORE, not a work queue)
     notes/                 -- durable project facts / knowledge, one file each (a first-class capture kind)
-    plans/                 -- design plans / roadmaps (live until shipped, then archived)
-    archive/               -- append-only records of shipped work (dated)
-    adr/                   -- architecture decision records (Nygard form)
+    plans/                 -- design plans / roadmaps (writer: /feature; live until shipped, then archived)
+    archive/               -- append-only records of shipped work (writer: /workstream; dated)
+    adr/                   -- architecture decision records (writer: /architect; distilled into the seed)
     reports/               -- research investigations / findings (standalone, browse-worthy)
     logs/                  -- captured run/measurement artifacts
+    audit/                 -- audit deliverables: FINDINGS.md, metrics.csv, history/ (writer: /auditor)
   (each of .records/{plans,reports,bugs} also has an archive/ subdir)
+  (no .records/sessions/)  -- hand-offs are gitignored scratch (root HANDOFF.md; concurrent named
+                             sessions under .sessions/), not a tracked record (steward: /handoff; see §8)
 ```
+
+### 4.1 The ownership index (load-bearing -- paths don't encode ownership)
+
+A location like `.records/plans/` no longer says *who* stewards it, so `/foreman init` writes a
+small **content -> location -> steward** index a cold agent reads to learn "what lives where, and who
+tends it." Keep it **pointer-heavy** (paths + steward names, never pasted content) so it rots
+gracefully. It lives as two directory READMEs -- `.agents/README.md` and `.records/README.md` -- with
+a one-line pointer to them from the front door. The map (map each row to the steward the host
+actually installed; where a steward is absent, the row's work falls to by-hand per this file):
+
+| content | location | steward |
+|---|---|---|
+| design seed | `.agents/architect/` | `/architect` (distill) |
+| dev doctrine + MEMORY + GOTCHAS + docs/ | `.agents/foreman/` | `/foreman` (calibrate) |
+| audit rubric: GUIDE, rules/, metrics.sh | `.agents/auditor/` | `/auditor` |
+| tasks · issues · feedback · bugs/ · notes/ | `.records/` (trackers + stores) | `/backlog` |
+| plans / roadmaps | `.records/plans/` | `/feature` (writer) |
+| shipped / done records | `.records/archive/` | `/workstream` (writer) |
+| architecture decision records | `.records/adr/` | `/architect` (writer; distilled into the seed) |
+| research reports · run logs | `.records/reports/`, `.records/logs/` | foreman / various |
+| audit deliverables: FINDINGS · metrics.csv · history/ | `.records/audit/` | `/auditor` (writer) |
+| session hand-offs (gitignored scratch) | root `HANDOFF.md` · `.sessions/` | `/handoff` |
 
 ---
 
@@ -354,13 +386,19 @@ _Last updated: <date>_
 
 **Full deploy:**
 1. Fill the *Slots* (§2): `<keystone>`, `<gate>`, `<stack>`.
-2. Create the *Manifest* tree (§4). Start the front door, `.agents/foreman/README`, and `.agents/foreman/MEMORY`.
-3. No template copy step -- each producing skill's bundled `templates/` is used directly (§12).
-4. Add the *Trackers* (§6) as empty files with a one-line "what goes here" header each.
-5. Add the routing + planning + worktree + maintenance + sync docs (§5, §7-§10), genericized to
+2. Create the *Manifest* tree (§4) -- **both roots**: the `.agents/` seed homes (`architect/`,
+   `foreman/`, `auditor/`) and the full `.records/` tree. Start the front door, `.agents/foreman/README`,
+   and `.agents/foreman/MEMORY`. (Sibling stewards populate their own seed homes via their deploy verbs;
+   foreman scaffolds the `.agents/` root so those homes have a place to land.)
+3. **Write the ownership index** (§4.1): `.agents/README` + `.records/README` mapping content ->
+   location -> steward, and a one-line pointer to them from the front door. Load-bearing -- paths no
+   longer encode ownership.
+4. No template copy step -- each producing skill's bundled `templates/` is used directly (§12).
+6. Add the *Trackers* (§6) as empty files with a one-line "what goes here" header each.
+7. Add the routing + planning + worktree + maintenance + sync docs (§5, §7-§10), genericized to
    your stack.
-6. Implement the *Linter* (§11) and wire it into `<gate>`.
-7. Write your `<content docs>` (architecture/gotchas/diagnostics/perf) -- these are yours.
+8. Implement the *Linter* (§11) and wire it into `<gate>`.
+9. Write your `<content docs>` (architecture/gotchas/diagnostics/perf) -- these are yours.
 
 **Partial borrow:** pick modules from the *Module map* (§3); honor their dependencies. The most
 valuable standalone borrow is **Core + the capture trackers + Templates** -- bounded capture and

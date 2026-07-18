@@ -53,13 +53,28 @@ of a shared one. `architect` is a rename of `design` (verbs unchanged); `auditor
 `audit` (see *Storage convention* below and `docs/design/2026-07-17-library-refactor.md` for the
 full rationale).
 
-### Storage convention: `.agents/`
+### Storage convention: two roots (`.agents/` + `.records/`)
 
-Committed, agent-tooling-managed project artifacts live under one visible-but-namespaced root,
-`.agents/` — durable homes, not scratch, filtered from a direct code read the way `.github/` is:
+Committed, agent-tooling-managed project artifacts split by *kind*, filtered from a direct code read
+the way `.github/` is. **`.agents/`** holds hand-curated **seeds** (source of truth, one home per
+steward); **`.records/`** holds every typed **record** (trackers + durable history). Because the
+paths no longer encode ownership, `foreman init` writes an **ownership index** (`.agents/README.md` +
+`.records/README.md`) mapping content → location → steward:
 
-- `.agents/architect/` — the design seed (`architect`)
-- `.agents/foreman/` — the development-system doctrine: the `docs/` + `MEMORY`/`GOTCHAS`/`README` glue (`foreman`)
+| content | location | steward |
+|---|---|---|
+| design seed | `.agents/architect/` | `architect` |
+| dev doctrine: `docs/` + `MEMORY`/`GOTCHAS`/`README` glue | `.agents/foreman/` | `foreman` |
+| audit rubric: `GUIDE`, `rules/`, `metrics.sh` | `.agents/auditor/` | `auditor` |
+| tasks · issues · feedback · bugs/ · notes/ | `.records/` | `backlog` |
+| plans / roadmaps | `.records/plans/` | `feature` |
+| shipped / done records | `.records/archive/` | `workstream` |
+| architecture decision records | `.records/adr/` | `architect` |
+| audit deliverables: `FINDINGS` · `metrics.csv` · `history/` | `.records/audit/` | `auditor` |
+
+Session hand-offs stay **gitignored scratch** (root `HANDOFF.md` · `.sessions/`, steward `handoff`) —
+not a `.records/` store. The full tree lives in `foreman`'s `BOOTSTRAP.md` (§4); the steward map is
+the runbook's (`packs/clankshop.md`).
 
 ## The packs
 
