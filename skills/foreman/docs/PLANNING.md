@@ -91,12 +91,12 @@ where it lands. They are not a competing process.
 When an implementation plan or feature brief meets its **Done when** -- or a roadmap phase its
 **Definition of done** -- run **`/backlog debrief`** (if available) before the work is considered
 finished, while the session still holds everything it surfaced. It sweeps the completed work and
-routes each byproduct to its one home in `.agents/backlog/`: follow-ups -> `TASKS.md`, dev-friction
--> `ISSUES.md`, a defect -> a linked report in `bugs/`, qualitative -> `FEEDBACK.md`, and a
-would-be invariant or gotcha **parked as a `note`** (capture never promotes; `/foreman tune` later
-promotes it into `.agents/dev/MEMORY.md` / `.agents/dev/GOTCHAS.md`), with any long-form context
-spilled to a linked `.agents/backlog/notes/` file (the canonical taxonomy is `DEVELOPMENT.md` ->
-*Capture follow-ups*).
+routes each byproduct to its one home in `.agents/backlog/`: a thing to build -> `TASKS.md`, a
+project problem / concern / limitation -> `ISSUES.md`, a defect -> a linked report in `bugs/`, a
+dev-experience observation -> `FEEDBACK.md`, and a durable project fact (including a would-be
+invariant or gotcha) **parked as a `note`** (capture never promotes; `/foreman tune` later promotes
+it into `.agents/dev/MEMORY.md` / `.agents/dev/GOTCHAS.md`), with any long-form context spilled to a
+linked `.agents/backlog/notes/` file (the canonical taxonomy is `/backlog`'s `docs/TAXONOMY.md`).
 
 This trigger is the work being **done**, not *landing* it: run it at completion -- before you
 commit / merge / ship -- never as a step of the transport. If no `/backlog debrief` skill is available,

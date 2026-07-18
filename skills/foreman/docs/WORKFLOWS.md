@@ -43,8 +43,10 @@ If available, **`/backlog bug`** runs the diagnose -> file-from-template -> link
 docs-system health sweep.>` If available, **`/auditor`** drives a pass.
 
 ## Capture follow-ups
-The four-tracker taxonomy (what goes where + each drain) is in `.agents/dev/docs/DEVELOPMENT.md` ->
-*Capture follow-ups*. Quick: product/feature -> `.agents/backlog/TASKS.md`; dev-friction -> `.agents/backlog/ISSUES.md`.
+The capture taxonomy (the five kinds, what goes where + each store's shape) is `/backlog`'s
+`docs/TAXONOMY.md`; `.agents/dev/docs/DEVELOPMENT.md` -> *Capture follow-ups* points there. Quick: a
+thing to build -> `.agents/backlog/TASKS.md`; a project problem/concern -> `.agents/backlog/ISSUES.md`;
+a dev-experience observation -> `.agents/backlog/FEEDBACK.md`; a durable project fact -> `.agents/backlog/notes/`.
 When an entry needs more than a line, spill the long form to a linked `.agents/backlog/notes/<slug>.md`. At the
 end of a body of work, **`/backlog debrief`** (if available) sweeps everything surfaced to its one home in
 a single pass -- it fires at plan completion (`.agents/dev/docs/PLANNING.md` -> *When a plan completes*).

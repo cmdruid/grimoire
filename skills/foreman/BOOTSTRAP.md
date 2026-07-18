@@ -71,13 +71,15 @@ The system is generic; these make it yours. Decide them before reconstructing.
 
 ## 3. Module map (compose what you need)
 
-**Core (always):** the front door, the index, the capture trackers, the memory, the templates.
-Everything else is optional and depends on Core.
+**Core (always):** the front door, the index, the memory, the templates. Everything else is optional
+and depends on Core. The **capture trackers** are `/backlog`'s home under `.agents/backlog/` --
+`/foreman init` scaffolds them alongside `.agents/dev/`, but `/backlog` owns and scopes them and its
+`docs/TAXONOMY.md` is the capture schema (this file never restates it).
 
 | Module | Files | Depends on | Borrow when |
 |---|---|---|---|
 | **Core: entry + index** | front-door `AGENTS`/`README`, `.agents/dev/README` (index), `.agents/dev/MEMORY` | -- | always |
-| **Capture trackers** | `BACKLOG`, `bugs/`, `ISSUES`, `FEEDBACK` | Core | you want bounded follow-up capture |
+| **Capture trackers** (`/backlog`) | `.agents/backlog/{TASKS,ISSUES,FEEDBACK}.md`, `.agents/backlog/bugs/`, `.agents/backlog/notes/` -- owned/scoped by `/backlog`, schema in its `docs/TAXONOMY.md` | Core | you want bounded follow-up capture |
 | **Templates** | `.agents/dev/templates/*` | Core | always (consistency) |
 | **Change router** | `docs/DEVELOPMENT` | Core | >1 kind of change (bug/patch/feature) |
 | **Planning** | `docs/PLANNING` | Change router, Templates | features need design before build |
@@ -87,7 +89,7 @@ Everything else is optional and depends on Core.
 | **Sync contract** | `docs/SYNC` (or a section of `docs/MAINTENANCE`) | Entry + index | the front door is volatile / multi-agent |
 | **Linter** | `<linter>` in `<gate>` | Core | links + indexes are worth guarding |
 | **Reference docs** | `docs/ARCHITECTURE`, `docs/GOTCHAS`, `docs/DIAGNOSTICS`, `docs/PERFORMANCE` | Core | `<content docs>` slots -- you fill |
-| **Records** | `done/`, `plans/`, `adr/`, `reports/`, `notes/`, `logs/` | varies | you want durable history |
+| **Records** | `.agents/dev/{done,plans,adr,reports,logs}` | varies | you want durable history |
 
 ---
 
@@ -96,19 +98,26 @@ Everything else is optional and depends on Core.
 The generic tree. Adjust names to your host's conventions (e.g. the front door is often
 `AGENTS.md`/`README.md`/`CONTRIBUTING.md` at the repo root).
 
+Two sibling homes under `.agents/`: **`.agents/backlog/`** (the capture trackers -- owned and scoped
+by `/backlog`; the one-line kinds below are a signpost, the schema is `/backlog`'s `docs/TAXONOMY.md`)
+and **`.agents/dev/`** (the dev system -- foreman's). `/foreman init` scaffolds both skeletons;
+`/backlog` has no init of its own, and the capture verbs also create a store if it's missing.
+
 ```
 <repo root>/
   <front door>            -- bootstrap entry: "read first" order, build/test/run, repo map,
                              conventions, and a "making a change? -> .agents/dev/docs/DEVELOPMENT" pointer
+  .agents/backlog/         -- /backlog's capture home; schema in its docs/TAXONOMY.md (do not restate here)
+    TASKS.md              -- a thing to build / do ("build X") -- flat living list (was BACKLOG.md)
+    ISSUES.md             -- a project problem / concern / limitation
+    FEEDBACK.md           -- a dev-experience observation (skills / tooling / env / workflow)
+    bugs/                 -- reproducible code defects, one file each (a STORE, not a work queue)
+    notes/                -- durable project facts / knowledge, one file each (a first-class capture kind)
   .agents/dev/
     README.md             -- THE index for .agents/dev/: what each dir/file is + the conventions. No
                              per-directory READMEs to chase.
     MEMORY.md             -- the tiny set of load-bearing invariants agents internalize. <keystone>
                              lives here. Kept deliberately small.
-    BACKLOG.md            -- live list of product/feature follow-ups ("build X")
-    ISSUES.md             -- live log of developer-friction ("the dev experience got in my way")
-    FEEDBACK.md           -- qualitative observations, drained periodically
-    bugs/                 -- a STORE of bug reports (one file each), not a work queue
     docs/
       DEVELOPMENT.md      -- the change router: classify (bug/patch/feature/spike), then route
       PLANNING.md         -- how much to plan + how to write each planning artifact
@@ -127,10 +136,8 @@ The generic tree. Adjust names to your host's conventions (e.g. the front door i
     plans/                -- design plans / roadmaps (live until shipped, then archived)
     adr/                  -- architecture decision records (Nygard form)
     reports/              -- research investigations / findings (standalone, browse-worthy)
-    notes/                -- a STORE of contextual write-ups, each linked from an index entry
-                             (a memory line, a tracker item); never enumerated or drained itself
     logs/                 -- captured run/measurement artifacts
-  (each of plans/ reports/ bugs/ also has an archive/ subdir)
+  (each of .agents/dev/{plans,reports} and .agents/backlog/bugs also has an archive/ subdir)
 ```
 
 ---
@@ -142,7 +149,7 @@ The spine an agent follows. Each arrow is a pointer in a doc, never a duplicated
 ```
 <front door>  ("making a change? start at DEVELOPMENT")
    -> .agents/dev/docs/DEVELOPMENT  (classify the change)
-        bug    -> DIAGNOSTICS (diagnose) + GOTCHAS (known trap?) -> file a report in bugs/
+        bug    -> DIAGNOSTICS (diagnose) + GOTCHAS (known trap?) -> file a report in .agents/backlog/bugs/
         patch  -> land directly on the main branch, committed promptly (no plan)
         feature-> PLANNING (plan it) -> WORKTREES (build it)
         spike  -> explore in isolation; capture learnings; build properly as a feature
@@ -156,25 +163,25 @@ one is wrong.
 
 ---
 
-## 6. The capture taxonomy (four trackers, four drains)
+## 6. The capture taxonomy (owned by `/backlog`)
 
-Each tracker answers a different question and has a drain so it can't become a graveyard.
+The capture trackers live under `.agents/backlog/` and are **`/backlog`'s** domain. The five capture
+kinds -- `task` (`TASKS.md`), `bug` (`bugs/`), `issue` (`ISSUES.md`), `note` (`notes/`), `feedback`
+(`FEEDBACK.md`) -- their subjects, formats, stores, and frontmatter are the **canonical schema in
+`/backlog`'s `docs/TAXONOMY.md`**. This file scaffolds the skeleton and points there; it does **not**
+restate what each kind means or where a signal goes -- that would fork the schema and rot.
 
-| Tracker | Captures | Drain |
-|---|---|---|
-| `BACKLOG.md` | "the project needs X" (product/feature work) | when an item ships -> remove it, record in `done/` |
-| `bugs/` | "X is broken" (a defect report, one file each) | fixed -> note the commit, move to `bugs/archive/`; tracked from a linked `BACKLOG` item |
-| `ISSUES.md` | "the dev experience got in my way" (tooling/workflow friction) | resolved/documented -> record in `done/`, remove |
-| `FEEDBACK.md` | qualitative observations, directional ideas | periodically routed to its real home (a backlog item, a bug, an issue) or acted on |
+Two things this system *does* own about capture:
 
-The boundary that matters: **`bugs/` is a store, not a work queue** -- you file reports there and
-track the fix from a linked actionable item; you don't fish in it for work.
-
-**Spillover store (`notes/`).** When a tracker (or memory) entry needs more than a line, write the
-long form to a `notes/<slug>.md` and link it from the entry. `notes/` is a store like `bugs/` --
-reached only through its link, never enumerated or drained on its own; its lifecycle follows the
-entry that points at it. It is spillover for *any* tracker, not a fifth tracker. (A *standalone*
-investigation belongs in `reports/`; a note is *subordinate* to the entry it backs.)
+- **Draining is not capture.** The trackers collect; they never self-drain. Folding captured signal
+  into doctrine is the **consumers'** job -- `/foreman tune` promotes a `note` into `MEMORY`/`GOTCHAS`
+  and drains system-relevant `feedback`/`issue`s into workflow doctrine; a `task`/`bug` drains when the
+  work ships. There is no drain-lifecycle column here.
+- **`bugs/` and `notes/` are stores, not work queues.** You file into them and track the actionable
+  item from a linked tracker line; you don't fish in them for work. `notes/` is a **first-class
+  capture kind** (`/backlog note` -- durable project facts) that can *also* hold spillover: when a
+  tracker or memory entry needs more than a line, write the long form to a `notes/<slug>.md` and link
+  it. (A *standalone* investigation someone would browse belongs in `.agents/dev/reports/` instead.)
 
 ---
 
@@ -274,7 +281,7 @@ A small check wired into `<gate>` (implement in your stack -- it's a spec, not c
 3. **Forbid stray paths.** Any path your conventions ban (e.g. a skill's default output dir you
    don't use) does not exist. Catches convention violations silently reintroduced.
 4. **Validate store-dir frontmatter.** Every file in an artifact-instance store dir (`.agents/dev/plans/`,
-   `.agents/dev/adr/`, `.agents/backlog/bugs/`, `.agents/dev/done/`, ... -- the explicit gated-dir list) carries a valid
+   `.agents/dev/adr/`, `.agents/dev/done/`, `.agents/backlog/bugs/`, `.agents/backlog/notes/`, ... -- the explicit gated-dir list) carries a valid
    frontmatter block: `type` legal for the dir, `status` in that type's set, `updated` shaped
    `YYYY-MM-DD` (schema: the host's capture-taxonomy doc). Catches records that would silently escape the
    type/status search recipes.

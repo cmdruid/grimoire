@@ -20,8 +20,9 @@ through it.
      seam, the `VISION` — not a feature to build) → `/architect brainstorm` (then `/architect plan` to
      sequence the rollout). See *altitude discriminator* below for the test.
    - **distilling accreted ADRs/plans** back into a coherent present-tense spec → `/architect distill`.
-   - **capture a follow-up** → `/backlog` (product/feature) · `/backlog issue` (dev-friction) ·
-     `/backlog feedback` (qualitative). A defect → `/backlog bug`.
+   - **capture a follow-up** → `/backlog task` (a thing to build) · `/backlog issue` (a project
+     problem/concern/limitation) · `/backlog note` (a durable project fact) · `/backlog feedback` (a
+     dev-experience observation). A defect → `/backlog bug`.
    - **finished a body of work** → `/backlog debrief`; **tune the dev system** → `/foreman tune`;
      **validate the setup** → `/foreman check`; **code-quality** → `/auditor`; **context snapshot** →
      `/handoff`.

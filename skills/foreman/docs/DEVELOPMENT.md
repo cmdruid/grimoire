@@ -24,7 +24,7 @@ order.**
 ## When it's a bug -- diagnose, then file or fix
 
 A **bug** is an observed defect (crash, wrong output, dropped state, flaky behavior). That's
-distinct from `TASKS.md` ("build X") and `ISSUES.md` ("dev-friction got in my way").
+distinct from `TASKS.md` ("build X") and `ISSUES.md` (a project problem / concern / limitation).
 
 1. **Diagnose** -- observe -> reproduce -> isolate. Check any gotchas doc: it may be a known trap
    (working-as-coded but surprising), not a bug.
@@ -69,23 +69,25 @@ invariants, are in `WORKTREES.md`.
 
 ## Capture follow-ups
 
-A change always surfaces more than it fixes. Every follow-up has **exactly one home**, and each home
-has a *drain* so it can't become a graveyard. The **capture bureau `/backlog`** owns those homes --
-the trackers (`TASKS.md`, `bugs/`, `ISSUES.md`, `FEEDBACK.md`) and the canonical **capture
-taxonomy** that says which signal goes where, its frontmatter schema, and each drain. Capture with
-`/backlog` (`/backlog task | bug | issue | feedback`) and route by that
-taxonomy rather than restating it here.
+A change always surfaces more than it fixes. Every follow-up has **exactly one home**. The **capture
+bureau `/backlog`** owns those homes -- the trackers (`TASKS.md`, `bugs/`, `ISSUES.md`, `notes/`,
+`FEEDBACK.md`) and the canonical **capture taxonomy** (its `docs/TAXONOMY.md`) that says which signal
+goes where, its per-store frontmatter schema, and the shape each store takes. Capture with `/backlog`
+(`/backlog task | bug | issue | note | feedback`) and route by that taxonomy rather than restating it
+here. In shorthand: a thing to build -> `task`; a reproducible defect -> `bug`; a project problem /
+concern / limitation -> `issue`; a durable project fact -> `note`; a dev-experience observation
+(skills / tooling / env) -> `feedback`.
 
-The boundary that matters: **`bugs/` is a store, not a work queue** -- file reports and track the
-fix from a linked actionable item; don't fish in it for work. The periodic *draining* of these
-trackers into doctrine is `/foreman tune`'s job (`MAINTENANCE.md`); keeping the lists tidy is
-`/backlog curate`.
+The boundary that matters: **`bugs/` and `notes/` are stores, not work queues** -- file into them and
+track the actionable item from a linked tracker line; don't fish in them for work. Capture never
+drains: the periodic *draining* of these trackers into doctrine is `/foreman tune`'s job
+(`MAINTENANCE.md`), and keeping the lists tidy is `/backlog curate`.
 
-When an entry needs **more than a line** -- rationale, a worked example, design context that isn't
-an ADR -- write the long form to **`.agents/backlog/notes/<slug>.md`** and link it from the tracker entry (or
-from a `MEMORY.md` line). `notes/` is a *store* like `bugs/`: reached only through that link, never
-enumerated or drained on its own. It is spillover for any tracker, not a fifth bucket. A
-*standalone* investigation you'd open on its own is a `reports/` doc, not a note.
+`notes/` is a **first-class capture kind** (`/backlog note` -- a durable project fact: rationale, a
+worked example, design context that isn't an ADR) that can *also* hold **spillover**: when a tracker
+or `MEMORY.md` entry needs more than a line, write the long form to a
+**`.agents/backlog/notes/<slug>.md`** and link it from that entry. A note is reached through its link,
+never browsed; a *standalone* investigation you'd open on its own is a `reports/` doc, not a note.
 
 Running this whole sweep at the **moment a plan completes** -- while the session still holds
 everything it surfaced -- is what **`/backlog debrief`** automates (if available). See `PLANNING.md` ->
