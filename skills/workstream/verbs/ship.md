@@ -104,9 +104,9 @@ independent of what the root has checked out. Never hand-commit these records to
      need a correction commit (worse under deferred cadence: many records, and contention can force
      *several* rebases per ship; subject-refs survived two contention rebases with zero fixups). **Open
      each with the `type: done-record` frontmatter block** (`type`/`status: shipped`/`updated`), from
-     `.agents/dev/templates/done-record.md` -- the doc-linter gate rejects a `.records/archive/` file without it (schema:
-     the done-record template `/foreman` owns, `foreman/templates/done-record.md` -- a done-record
-     is a foreman artifact, not a capture kind, so it's not in `/backlog`'s TAXONOMY.md). Then `git -C <worktree> add .records/archive/<f> && git -C <worktree> commit -m "Record <slug> shipped" -- .records/archive/<f>`.
+     the done-record template `/foreman` owns, `foreman/templates/done-record.md` -- the doc-linter
+     gate rejects a `.records/archive/` file without it (a done-record is a foreman artifact, not a
+     capture kind, so it's not in `/backlog`'s TAXONOMY.md). Then `git -C <worktree> add .records/archive/<f> && git -C <worktree> commit -m "Record <slug> shipped" -- .records/archive/<f>`.
    - If the feature had its own implementation plan, archive it in one atomic commit:
      `git -C <worktree> mv .records/plans/<feature-plan> .records/plans/archive/ && git -C <worktree> commit -m "Archive <feature-plan>" -- .records/plans/<feature-plan> .records/plans/archive/<feature-plan>`.
    - If the queue is tracked in a roadmap doc, update its ledger/queue row for this stream and commit

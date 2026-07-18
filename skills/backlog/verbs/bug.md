@@ -34,7 +34,7 @@ single-defect, right-now path to the same destination.
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` (see the router's shared
 discipline) — don't guess.
 
-- Report: `<root>/.records/bugs/<YYYY-MM-DD>-<slug>.md`, from `<root>/.agents/backlog/templates/bug-report.md`. Start
+- Report: `<root>/.records/bugs/<YYYY-MM-DD>-<slug>.md`, from this skill's `templates/bug-report.md`. Start
   the file with the template's `type: bug` frontmatter block (`type`/`status`/`updated`) — the
   doc-linter gate rejects a `.records/bugs/` file without it. Schema: `docs/TAXONOMY.md`.
 - Fixed reports move to `<root>/.records/bugs/archive/`.

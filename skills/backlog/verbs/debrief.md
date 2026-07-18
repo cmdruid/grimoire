@@ -76,8 +76,8 @@ template gives it to you. The doc-linter gate rejects a store-dir file without i
 All paths project-relative. Resolve the project root + real date with `date +%Y-%m-%d` — don't guess.
 
 - `<root>/.records/tasks.md`, `<root>/.records/issues.md`, `<root>/.records/feedback.md`
-- `<root>/.records/bugs/<YYYY-MM-DD>-<slug>.md` (from `.agents/backlog/templates/bug-report.md`)
-- `<root>/.records/notes/<slug>.md` (from `.agents/backlog/templates/note.md`)
+- `<root>/.records/bugs/<YYYY-MM-DD>-<slug>.md` (from this skill's `templates/bug-report.md`)
+- `<root>/.records/notes/<slug>.md` (from this skill's `templates/note.md`)
 
 **Landing debrief captures (the root may be off-trunk):** these are **shared `.records/`
 files** — cross-cutting captures that must be durable + visible *now*, independent of any stream.

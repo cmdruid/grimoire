@@ -3,7 +3,7 @@
 Reached from `DEVELOPMENT.md` once you know you're building something. This doc decides *how
 much* planning a change needs, sets the rules for each planning artifact, and keeps you friendly
 to whatever planning skills you have active. The walk is `DEVELOPMENT.md` -> here -> a template in
-`.agents/dev/templates/`.
+the owning skill's bundle (design/plan/roadmap/ADR ship with `/feature`; see *The artifacts*).
 
 ## Pick a tier
 
@@ -14,7 +14,7 @@ under-planning a large one.
 |---|---|---|
 | **Patch** | a fix, a tweak, one self-contained change | none -- land on `main` (`DEVELOPMENT.md` -> *Fixes & patches*) |
 | **Small feature** | one coherent feature, a single worktree's worth | one **feature brief** (prose: problem + task list + done-when) |
-| **Track** | multi-phase, or a cross-cutting architecture call | a **roadmap** (`templates/roadmap.md`) + per-phase **implementation plans**, plus one **ADR** if it makes an architecture decision |
+| **Track** | multi-phase, or a cross-cutting architecture call | a **roadmap** (`/feature`'s `feature/templates/roadmap.md`) + per-phase **implementation plans**, plus one **ADR** if it makes an architecture decision |
 
 The line between small feature and track: **more than one phase, or a decision worth recording in
 an ADR -> track.** Otherwise it's a small feature. When unsure, start with a brief and promote to
@@ -22,31 +22,33 @@ a track the moment a second phase or a cross-cutting decision appears.
 
 ## The artifacts
 
-Most link to a template in `.agents/dev/templates/`. Copy it, or have your planning skill produce its shape
-(see *Working with your planning skills*). All planning docs live in `.records/plans/`; ADRs in `.records/adr/`.
-Every artifact instance carries the uniform frontmatter block -- types, per-type status sets, and
-search recipes are the **capture taxonomy** `/backlog` owns and deploys (don't restate them here).
+Most link to a template bundled with the skill that owns it -- `/feature` ships the design, roadmap,
+implementation-plan, and ADR shapes in its own `templates/`. Copy it, or have your planning skill
+produce its shape (see *Working with your planning skills*). All planning docs live in
+`.records/plans/`; ADRs in `.records/adr/`. Every artifact instance carries the uniform frontmatter
+block -- types, per-type status sets, and search recipes are the **capture taxonomy** `/backlog`
+owns and deploys (don't restate them here).
 
 - **Feature brief** -- the small-feature fast path (no template, just prose): problem & approach in
   a few sentences, a task list (files / change / verify each), and a done-when. If it earns a
   worktree, the brief doubles as the hand-off.
-- **Design / spec** (`templates/plan-design.md`) -- when a feature's approach is contested or
-  large enough that the *why* must be argued before the *how*: problem, chosen approach,
-  alternatives rejected, mechanism, verification. A track's design is its roadmap; a standalone
-  design is rare outside a track.
-- **Roadmap** (`templates/roadmap.md`) -- a track's spec: the phase sequence, shared foundations,
-  and per-phase goal / scope / done-when / risks. Written **once** for the whole track and kept
-  live in `.records/plans/` until it ships. The roadmap settles the design for *all* phases -- a phase
-  is not re-brainstormed.
-- **Implementation plan** (`templates/plan-implementation.md`) -- the task-by-task brief an
-  implementer executes: each task's files, change, verify, plus a done-when. A small feature
-  folds this into its brief; a track writes one per phase
+- **Design / spec** (`/feature`'s `feature/templates/plan-design.md`) -- when a feature's approach
+  is contested or large enough that the *why* must be argued before the *how*: problem, chosen
+  approach, alternatives rejected, mechanism, verification. A track's design is its roadmap; a
+  standalone design is rare outside a track.
+- **Roadmap** (`/feature`'s `feature/templates/roadmap.md`) -- a track's spec: the phase sequence,
+  shared foundations, and per-phase goal / scope / done-when / risks. Written **once** for the whole
+  track and kept live in `.records/plans/` until it ships. The roadmap settles the design for *all*
+  phases -- a phase is not re-brainstormed.
+- **Implementation plan** (`/feature`'s `feature/templates/plan-implementation.md`) -- the
+  task-by-task brief an implementer executes: each task's files, change, verify, plus a done-when. A
+  small feature folds this into its brief; a track writes one per phase
   (`plans/<track>-phaseN-implementation.md`).
-- **ADR** (`templates/adr.md`) -- a Nygard record of a cross-cutting architecture decision:
-  context, decision, alternatives, consequences. Write one **only** when a choice shapes the
-  system beyond the feature and is worth remembering -- one per track, not per phase. It lands in
-  `.records/adr/NNNN-<slug>.md` and stays live after the feature ships. (`WORKTREES.md` covers where
-  the file sits in the git flow.)
+- **ADR** (`/feature`'s `feature/templates/adr.md`) -- a Nygard record of a cross-cutting
+  architecture decision: context, decision, alternatives, consequences. Write one **only** when a
+  choice shapes the system beyond the feature and is worth remembering -- one per track, not per
+  phase. It lands in `.records/adr/NNNN-<slug>.md` and stays live after the feature ships.
+  (`WORKTREES.md` covers where the file sits in the git flow.)
 
 ## Writing plans -- pitfalls that recur
 

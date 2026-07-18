@@ -60,8 +60,9 @@ blocks every stream's `ship`).
   (task-by-task implementation plan), build (gate-green code), review (independent verdict on any
   artifact, callable anytime).
   `<project: planning tier docs -- see host AGENTS.md>`
-- **Templates:** `<project: spec, ADR, roadmap, implementation plan templates -- see host .agents/dev/templates/ or equivalent>`
-  Match the host repo's frontmatter schema (type / status / updated fields).
+- **Templates:** `<project: spec, ADR, roadmap, implementation plan templates -- if the host has
+  /feature installed, its bundled templates/ (plan-design, plan-implementation, roadmap, adr); else
+  equivalent>` Match the host repo's frontmatter schema (type / status / updated fields).
 - **Change router:** `<project: change router doc (classifies any change -> the right lane) -- see host AGENTS.md>`
 - **Capture:** file feature follow-ups to the backlog; dev-tool friction to the issues tracker;
   qualitative notes to feedback; defects to the bug tracker. Run the debrief sweep at the end of a

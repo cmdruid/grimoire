@@ -46,12 +46,15 @@ introspection can.
 - **`docs/`** — a generic, language-neutral process-doc set (`DEVELOPMENT`, `PLANNING`, `WORKTREES`,
   `WORKFLOWS`, `MAINTENANCE`) with host specifics as `<slots>`. The deployable rubric: copy and fill.
   The capture taxonomy (the `TAXONOMY` doc + the trackers) is `/backlog`'s to deploy — install it alongside.
-- **`templates/`** — a generic, hand-authored template seed (`plan-design`, `plan-implementation`,
-  `roadmap`, `adr`, `report`, `done-record`) to copy into the host's `.agents/dev/templates/`. The capture templates
-  (`bug-report`, `feedback`, `note`) ship with `/backlog`.
+- **`templates/`** — this skill's own operational-record shapes (`report`, `done-record`); a skill
+  uses its bundled template directly, it is never deployed into a host path. The **planning**
+  shapes (`plan-design`, `plan-implementation`, `roadmap`, `adr`) ship with `/feature`, and the
+  **capture** templates (`bug-report`, `feedback`, `note`) ship with `/backlog` — each skill's verbs
+  reference its own bundle.
 
-There is **no generated worked-example mirror.** Scaffold from the bundled `docs/` + `templates/`
-(BOOTSTRAP §12) and use the **host repo's own `.agents/foreman/`**, as it fills in, as the live example.
+There is **no generated worked-example mirror.** Scaffold from the bundled `docs/` + the owning
+skills' `templates/` (BOOTSTRAP §12) and use the **host repo's own `.agents/foreman/`**, as it fills
+in, as the live example.
 
 ## Procedure
 
@@ -60,9 +63,10 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
 1. **Fill the slots** (§2): `<keystone>` (the project's sacred invariants), `<gate>` (the one
    test/lint command), `<stack>`; pick modules from the Module Map (§3) — Core always; worktree
    pipeline / maintenance / sync / etc. opt-in.
-2. **Scaffold the tree** (§4) from the manifest + the bundled `templates/` (§12), and copy the
-   generic `docs/` into the host's `.agents/foreman/docs/` and fill the slots. Copy the generic
-   `templates/` into the host's `.agents/dev/templates/`, adjusting any host specifics.
+2. **Scaffold the tree** (§4) from the manifest (§12), and copy the generic `docs/` into the host's
+   `.agents/foreman/docs/`, filling the slots. Templates are **not** copied anywhere — planning
+   docs, operational records, and capture reports are each produced from the owning skill's own
+   bundled `templates/` (`/feature`, `foreman`, `/backlog` respectively) at the point they're used.
 3. **Write the trackers + `.agents/foreman/README`** from the `BOOTSTRAP` templates (empty files with
    their one-line headers; the index genericized to the host) — the trackers + capture taxonomy come
    from `/backlog` where it is installed.

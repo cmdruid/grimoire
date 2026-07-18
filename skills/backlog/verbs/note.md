@@ -33,7 +33,7 @@ browsing. If it reads as a standalone investigation someone would open on its ow
 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
-- Note: `<root>/.records/notes/<slug>.md`, from `<root>/.agents/backlog/templates/note.md`. Start
+- Note: `<root>/.records/notes/<slug>.md`, from this skill's `templates/note.md`. Start
   the file with the template's frontmatter block (`type: note` / `status` / `updated` / `related`) —
   the doc-linter gate rejects a `notes/` store-dir file without it. Schema: `docs/TAXONOMY.md`.
 

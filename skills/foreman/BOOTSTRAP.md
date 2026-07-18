@@ -80,7 +80,7 @@ and depends on Core. The **capture trackers** are `/backlog`'s home under the to
 |---|---|---|---|
 | **Core: entry + index** | front-door `AGENTS`/`README`, `.agents/foreman/README` (index), `.agents/foreman/MEMORY` | -- | always |
 | **Capture trackers** (`/backlog`) | `.records/{tasks,issues,feedback}.md`, `.records/bugs/`, `.records/notes/` -- owned/scoped by `/backlog`, schema in its `docs/TAXONOMY.md` | Core | you want bounded follow-up capture |
-| **Templates** | `.agents/dev/templates/*` | Core | always (consistency) |
+| **Templates** | each producing skill's own bundled `templates/` (`/feature`, `foreman`, `/backlog` -- no host copy) | Core | always (consistency) |
 | **Change router** | `docs/DEVELOPMENT` | Core | >1 kind of change (bug/patch/feature) |
 | **Planning** | `docs/PLANNING` | Change router, Templates | features need design before build |
 | **Worktree pipeline** | `docs/WORKTREES` | Planning, git | parallel agents / isolated feature work |
@@ -124,7 +124,8 @@ also create a store if it's missing.
       GOTCHAS.md          -- <content doc> running list of traps that cost time
       DIAGNOSTICS.md      -- <content doc> the debugging playbook
       PERFORMANCE.md      -- <content doc> how to benchmark
-    templates/            -- copy-me starting points (bundled with this skill; see §12)
+    (no templates/ dir)   -- templates are never deployed; each producing skill uses its own
+                             bundled `templates/` directly (see §12)
     (no sessions/ dir)    -- hand-offs are temporary: a gitignored root HANDOFF for the active
                              stream; concurrent streams use the worktree-local hand-off (see §8)
   .records/                -- every typed record: /backlog's capture trackers (schema in its
@@ -299,13 +300,15 @@ miss, not to enforce style.
 
 ## 12. Templates
 
-The authored template set ships as **files in `templates/` directories** -- copy them
-into the host's `.agents/dev/templates/` (playbook step 3): this skill ships `plan-design`,
-`plan-implementation`, `roadmap`, `adr`, `report`, `done-record`; the **capture** templates
-(`bug-report`, `note`, `feedback`) ship with `/backlog`. Those files are the
-**single source of truth** for each artifact's shape, frontmatter block included (the linter's
-store-dir check, §11.4, rejects an instance without it; schema in the host's capture-taxonomy doc). Do **not**
-restate template bodies here -- an inline copy drifts from the authored file.
+The authored template set ships as **files in each producing skill's own `templates/` directory --
+never deployed or copied into a host path.** A skill uses its bundled template directly at the point
+it produces the artifact: `/feature` ships `plan-design`, `plan-implementation`, `roadmap`, `adr`
+(the planning shapes it produces); this skill (`foreman`) ships `report`, `done-record` (its own
+operational-record shapes); the **capture** templates (`bug-report`, `note`, `feedback`) ship with
+`/backlog`. Those files are the **single source of truth** for each artifact's shape, frontmatter
+block included (the linter's store-dir check, §11.4, rejects an instance without it; schema in the
+host's capture-taxonomy doc). Do **not** restate template bodies here -- an inline copy drifts from
+the authored file.
 
 The small-feature **brief** deliberately has no template: it is prose -- problem & approach, a task
 list, a done-when (`docs/PLANNING.md` -> *The artifacts*).
@@ -352,7 +355,7 @@ _Last updated: <date>_
 **Full deploy:**
 1. Fill the *Slots* (§2): `<keystone>`, `<gate>`, `<stack>`.
 2. Create the *Manifest* tree (§4). Start the front door, `.agents/foreman/README`, and `.agents/foreman/MEMORY`.
-3. Copy the bundled `templates/` into `.agents/dev/templates/` (§12).
+3. No template copy step -- each producing skill's bundled `templates/` is used directly (§12).
 4. Add the *Trackers* (§6) as empty files with a one-line "what goes here" header each.
 5. Add the routing + planning + worktree + maintenance + sync docs (§5, §7-§10), genericized to
    your stack.

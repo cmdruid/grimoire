@@ -10,7 +10,7 @@ the spine's plan-and-build stages (1-4); stage 5 (debrief) stays the separate `/
 fifth verb, `review`, is **cross-cutting** -- an independent ground-truthed critique of an artifact any
 stage produced, callable at any point. Each verb
 distills the planning discipline it needs into a compact checklist, pointed at the host's gate
-(named in its `AGENTS.md`), templates (`.agents/dev/templates/`), frontmatter (the capture taxonomy
+(named in its `AGENTS.md`), templates (this skill's own bundled `templates/`), frontmatter (the capture taxonomy
 `/backlog` owns, `docs/TAXONOMY.md`), and
 home (planning artifacts always land in `.records/plans/`; ADRs in `.records/adr/`).
 
@@ -90,8 +90,8 @@ for a patch, stop -- `/feature` isn't used).
 Write the design that argues the chosen approach before any code, then gate it on review. Skip the
 standalone design for a patch; for a **small feature** this is the **brief that doubles as the plan**
 (keep it short -- problem, approach, a task list, a done-when); for a **track** it is the **roadmap**
-(written once, settling all phases). Copy the shape from `.agents/dev/templates/plan-design.md` (or
-`.agents/dev/templates/roadmap.md` for a track) -- do not double-plan by also re-filling a template by hand.
+(written once, settling all phases). Copy the shape from `templates/plan-design.md` (or
+`templates/roadmap.md` for a track) -- do not double-plan by also re-filling a template by hand.
 
 Checklist:
 1. **Write the spec** with the template's sections: **Problem** (the root need, not a surface knob),
@@ -116,7 +116,7 @@ the design file).
 Turn the approved design into a plan an implementer executes step by step, after re-grounding it
 against the live tree. For a **small feature** this folds into `design`'s brief (no separate plan);
 for a **track**, write one plan **per phase** from the roadmap. Copy
-`.agents/dev/templates/plan-implementation.md`.
+`templates/plan-implementation.md`.
 
 Checklist:
 1. **Writing discipline** -- decompose into **bite-sized tasks** (each an independently testable
@@ -150,7 +150,7 @@ Checklist:
    uncovered requirement.
 4. **Land it** as `.records/plans/<YYYY-MM-DD>-<slug>-implementation.md`, frontmatter `type:
    implementation`, `status: draft`, `updated`, `related: [<the design>]`. An ADR (`.records/adr/`, via
-   `.agents/dev/templates/adr.md`) is part of this stage **only** if a cross-cutting decision surfaced -- one
+   `templates/adr.md`) is part of this stage **only** if a cross-cutting decision surfaced -- one
    per track, never per phase.
 
 Consumes the design file; produces the implementation plan. Terminal step: proceed to `build`
@@ -286,9 +286,8 @@ them. **`/feature` never debriefs, ships, or lands.**
 
 ## Structure, plugin posture, portability
 
-- A self-contained skill directory (`SKILL.md` + an optional `templates/` subdir only if a verb ever
-  needs a shape not already in the host's `.agents/dev/templates/` -- it shouldn't, since it reuses
-  `plan-design.md` / `plan-implementation.md` / `roadmap.md` / `adr.md`).
+- A self-contained skill directory (`SKILL.md` + `templates/` -- this skill bundles the artifact
+  shapes it produces: `plan-design.md` / `plan-implementation.md` / `roadmap.md` / `adr.md`).
 - The upstream superpowers planning skills stay **installed and unused** for planning -- `/feature` is
   uniquely named, so nothing collides and no settings/plugin toggle is needed; their session bootstrap
   is unaffected. They simply go unused for the plan-and-build path.

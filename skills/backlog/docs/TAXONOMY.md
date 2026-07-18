@@ -175,6 +175,6 @@ Those consumers own their own procedures — this doc does not restate them.
 
 ## Pointer
 
-`.agents/backlog/templates/` is where you copy the shape from when capturing a new `bug` or `note`;
-this doc is where you learn the taxonomy that shape belongs to. Reach the format from either
+This skill's bundled `templates/` is where you copy the shape from when capturing a new `bug` or
+`note`; this doc is where you learn the taxonomy that shape belongs to. Reach the format from either
 direction.

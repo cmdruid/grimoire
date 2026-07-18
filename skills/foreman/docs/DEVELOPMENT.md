@@ -29,7 +29,7 @@ distinct from `tasks.md` ("build X") and `issues.md` (a project problem / concer
 1. **Diagnose** -- observe -> reproduce -> isolate. Check any gotchas doc: it may be a known trap
    (working-as-coded but surprising), not a bug.
 2. **File a report** into `.records/bugs/` -- `.records/bugs/YYYY-MM-DD-<slug>.md` from
-   `.agents/dev/templates/bug-report.md`: the **repro** (`<stack: a deterministic repro + evidence
+   `/backlog`'s `backlog/templates/bug-report.md`: the **repro** (`<stack: a deterministic repro + evidence
    artifact>`), **expected vs actual** with evidence, **status + severity**. Capture while fresh;
    reports can run large -- that's what the store is for.
 3. **Then fix or defer** -- fixing now -> fix (patch or feature, by size), note the commit,
