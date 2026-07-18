@@ -47,7 +47,7 @@
      survived — capture it **at the moment** (not deferred to reset, where the detail is lost), two ways:
      - leave a grep-able marker at the band-aid site: `// REVIEW(conflict): <one-line why>` — this **is**
        the review-pass target, and it satisfies the host's annotate-debt-in-source rule;
-     - add a one-line entry to the host's dev-experience/friction tracker (e.g. `.agents/dev/ISSUES.md`) tagged
+     - add a one-line entry to the host's dev-experience/friction tracker (e.g. `.agents/backlog/ISSUES.md`) tagged
        `[conflict band-aid]`: `<file:line>` + why + this stream's name.
      A later review pass walks `grep -rn "REVIEW(conflict)"` (or the `[conflict band-aid]` entries) with
      the host's code-review tooling or `/feature review`.

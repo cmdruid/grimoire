@@ -35,7 +35,7 @@ and where to record perf logs.>`
 
 ## Diagnose a bug
 Full playbook (observe -> reproduce -> isolate -> file): `.agents/dev/docs/DIAGNOSTICS.md` (if present).
-Classifying and filing the defect into `.agents/dev/bugs/`: `.agents/dev/docs/DEVELOPMENT.md` (*When it's a bug*).
+Classifying and filing the defect into `.agents/backlog/bugs/`: `.agents/dev/docs/DEVELOPMENT.md` (*When it's a bug*).
 If available, **`/backlog bug`** runs the diagnose -> file-from-template -> link-from-tracker flow.
 
 ## Audit code quality
@@ -44,8 +44,8 @@ docs-system health sweep.>` If available, **`/auditor`** drives a pass.
 
 ## Capture follow-ups
 The four-tracker taxonomy (what goes where + each drain) is in `.agents/dev/docs/DEVELOPMENT.md` ->
-*Capture follow-ups*. Quick: product/feature -> `.agents/dev/BACKLOG.md`; dev-friction -> `.agents/dev/ISSUES.md`.
-When an entry needs more than a line, spill the long form to a linked `.agents/dev/notes/<slug>.md`. At the
+*Capture follow-ups*. Quick: product/feature -> `.agents/backlog/TASKS.md`; dev-friction -> `.agents/backlog/ISSUES.md`.
+When an entry needs more than a line, spill the long form to a linked `.agents/backlog/notes/<slug>.md`. At the
 end of a body of work, **`/backlog debrief`** (if available) sweeps everything surfaced to its one home in
 a single pass -- it fires at plan completion (`.agents/dev/docs/PLANNING.md` -> *When a plan completes*).
 
@@ -63,6 +63,6 @@ changes that throw off other agents. See `.agents/dev/docs/WORKTREES.md`.
 ## Maintain the .agents/dev/ system (validate, tune, drain)
 Periodic upkeep that keeps the living docs honest *and* lean: **validate** the deployed glue
 (`/foreman check` -- spine coverage, stale refs, glue-vs-skills drift), **tune** the doctrine from
-accumulated signal (`/foreman tune`), and **drain** the trackers (`/backlog groom` for the lists;
-archive shipped work). See `.agents/dev/docs/MAINTENANCE.md`. (Docs-system health -- distinct from
+accumulated signal (`/foreman tune`), and **drain** the trackers (`/backlog curate` for list hygiene;
+`/foreman tune` promotes durable notes; archive shipped work). See `.agents/dev/docs/MAINTENANCE.md`. (Docs-system health -- distinct from
 code-quality audits.)

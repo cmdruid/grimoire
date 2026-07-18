@@ -103,8 +103,8 @@ independent of what the root has checked out. Never hand-commit these records to
      which rewrites every sha but **preserves subjects** — a sha-cited record would strand dead refs and
      need a correction commit (worse under deferred cadence: many records, and contention can force
      *several* rebases per ship; subject-refs survived two contention rebases with zero fixups). **Open
-     each with the `type: task-record` frontmatter block** (`type`/`status: shipped`/`updated`), from
-     `.agents/dev/templates/task-record.md` -- the doc-linter gate rejects a `.agents/dev/done/` file without it (schema:
+     each with the `type: done-record` frontmatter block** (`type`/`status: shipped`/`updated`), from
+     `.agents/dev/templates/done-record.md` -- the doc-linter gate rejects a `.agents/dev/done/` file without it (schema:
      `.agents/dev/docs/TAXONOMY.md`). Then `git -C <worktree> add .agents/dev/done/<f> && git -C <worktree> commit -m "Record <slug> shipped" -- .agents/dev/done/<f>`.
    - If the feature had its own implementation plan, archive it in one atomic commit:
      `git -C <worktree> mv .agents/dev/plans/<feature-plan> .agents/dev/plans/archive/ && git -C <worktree> commit -m "Archive <feature-plan>" -- .agents/dev/plans/<feature-plan> .agents/dev/plans/archive/<feature-plan>`.

@@ -57,7 +57,7 @@ Then check the two things the script can't compute, by reading:
 and installed skills. It is **not** a general documentation-ergonomics pass. Broad doc-spine health
 for a repo — front-door bloat, onboarding navigation, missing glossary/index, duplicated or
 contradictory prose — is **`/chiropractor`**'s job; defer there rather than growing this verb into it.
-Project-code quality is `/auditor`. Draining the trackers as lists is `/backlog groom`.
+Project-code quality is `/auditor`. Curating the trackers as lists is `/backlog curate`.
 
 ## The one thing this cannot tell you
 

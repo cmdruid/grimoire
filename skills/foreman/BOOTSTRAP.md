@@ -274,7 +274,7 @@ A small check wired into `<gate>` (implement in your stack -- it's a spec, not c
 3. **Forbid stray paths.** Any path your conventions ban (e.g. a skill's default output dir you
    don't use) does not exist. Catches convention violations silently reintroduced.
 4. **Validate store-dir frontmatter.** Every file in an artifact-instance store dir (`.agents/dev/plans/`,
-   `.agents/dev/adr/`, `.agents/dev/bugs/`, `.agents/dev/done/`, ... -- the explicit gated-dir list) carries a valid
+   `.agents/dev/adr/`, `.agents/backlog/bugs/`, `.agents/dev/done/`, ... -- the explicit gated-dir list) carries a valid
    frontmatter block: `type` legal for the dir, `status` in that type's set, `updated` shaped
    `YYYY-MM-DD` (schema: the host's capture-taxonomy doc). Catches records that would silently escape the
    type/status search recipes.
@@ -286,9 +286,10 @@ miss, not to enforce style.
 
 ## 12. Templates
 
-The authored template set ships as **files in this skill's `templates/` directory** -- copy them
-into the host's `.agents/dev/templates/` (playbook step 3): `plan-design`, `plan-implementation`,
-`roadmap`, `adr`, `bug-report`, `report`, `note`, `task-record`, `feedback`. Those files are the
+The authored template set ships as **files in `templates/` directories** -- copy them
+into the host's `.agents/dev/templates/` (playbook step 3): this skill ships `plan-design`,
+`plan-implementation`, `roadmap`, `adr`, `report`, `done-record`; the **capture** templates
+(`bug-report`, `note`, `feedback`) ship with `/backlog`. Those files are the
 **single source of truth** for each artifact's shape, frontmatter block included (the linter's
 store-dir check, §11.4, rejects an instance without it; schema in the host's capture-taxonomy doc). Do **not**
 restate template bodies here -- an inline copy drifts from the authored file.

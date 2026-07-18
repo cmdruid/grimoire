@@ -47,8 +47,8 @@ introspection can.
   `WORKFLOWS`, `MAINTENANCE`) with host specifics as `<slots>`. The deployable rubric: copy and fill.
   The capture taxonomy (the `TAXONOMY` doc + the trackers) is `/backlog`'s to deploy — install it alongside.
 - **`templates/`** — a generic, hand-authored template seed (`plan-design`, `plan-implementation`,
-  `roadmap`, `adr`, `report`) to copy into the host's `.agents/dev/templates/`. The capture templates
-  (`bug-report`, `feedback`, `task-record`, `note`) ship with `/backlog`.
+  `roadmap`, `adr`, `report`, `done-record`) to copy into the host's `.agents/dev/templates/`. The capture templates
+  (`bug-report`, `feedback`, `note`) ship with `/backlog`.
 
 There is **no generated worked-example mirror.** Scaffold from the bundled `docs/` + `templates/`
 (BOOTSTRAP §12) and use the **host repo's own `.agents/dev/`**, as it fills in, as the live example.

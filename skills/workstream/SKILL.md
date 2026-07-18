@@ -35,7 +35,7 @@ is the harm this rule exists to prevent. Two consequences follow, keyed on *what
 
 - **You never spawn a stream for your own work.** When in-stream work surfaces something that *would
   be* its own stream — a tangent, a debug bug, the next roadmap track — you **capture or surface it;
-  you never stand it up to drive**: a **defect** → `/backlog bug`; **feature work** → `.agents/dev/BACKLOG.md`;
+  you never stand it up to drive**: a **defect** → `/backlog bug`; **feature work** → `/backlog task` (`.agents/backlog/TASKS.md`);
   the **next track / a new stream** → name it at a seam and hand it to the human/coordinator. Plain
   `create` *enters the loop*, so standing up a stream to drive is a **coordinator-only**,
   trunk-resident action — never yours. Needing isolation for a sub-task of your *own* feature is a

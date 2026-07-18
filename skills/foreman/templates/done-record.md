@@ -1,5 +1,5 @@
 ---
-type: task-record
+type: done-record
 status: shipped
 updated: <YYYY-MM-DD>
 ---

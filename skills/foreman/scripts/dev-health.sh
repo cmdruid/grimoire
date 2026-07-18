@@ -94,12 +94,12 @@ cmd_inventory() {
   porcelain="$(git -C "$root" status --porcelain 2>/dev/null || true)"
   echo "tree_quiet=$([ -z "$porcelain" ] && echo true || echo false)"
   echo "linked_worktrees=$(( $(git -C "$root" worktree list 2>/dev/null | wc -l | tr -d ' ') - 1 ))"
-  for t in BACKLOG ISSUES FEEDBACK; do
-    f="$root/.agents/dev/$t.md"; tl="$(lower "$t")"
+  for t in TASKS ISSUES FEEDBACK; do
+    f="$root/.agents/backlog/$t.md"; tl="$(lower "$t")"
     if [ -f "$f" ]; then
       b="$(grep -cE '^[-*] ' "$f" || true)"
       l="$(wc -l < "$f" | tr -d ' ')"
-      mod="$(git -C "$root" log -1 --format=%cr -- ".agents/dev/$t.md" 2>/dev/null || echo unknown)"
+      mod="$(git -C "$root" log -1 --format=%cr -- ".agents/backlog/$t.md" 2>/dev/null || echo unknown)"
       echo "${tl}_bullets=$b"
       echo "${tl}_lines=$l"
       echo "${tl}_last_change=$mod"
@@ -107,8 +107,8 @@ cmd_inventory() {
       echo "${tl}=absent"
     fi
   done
-  echo "bugs_open=$(count_files "$root/.agents/dev/bugs")"
-  echo "bugs_archived=$(find "$root/.agents/dev/bugs/archive" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
+  echo "bugs_open=$(count_files "$root/.agents/backlog/bugs")"
+  echo "bugs_archived=$(find "$root/.agents/backlog/bugs/archive" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
   echo "done_records=$(count_files "$root/.agents/dev/done")"
 }
 
@@ -121,7 +121,7 @@ cmd_stale_refs() {
   else
     # default set: trackers + index + spine docs that exist
     local f docs=()
-    for f in .agents/dev/BACKLOG.md .agents/dev/ISSUES.md .agents/dev/FEEDBACK.md .agents/dev/MEMORY.md .agents/dev/README.md AGENTS.md README.md; do
+    for f in .agents/backlog/TASKS.md .agents/backlog/ISSUES.md .agents/backlog/FEEDBACK.md .agents/dev/MEMORY.md .agents/dev/README.md AGENTS.md README.md; do
       [ -f "$root/$f" ] && docs+=("$root/$f")
     done
     if [ "${#docs[@]}" -gt 0 ]; then

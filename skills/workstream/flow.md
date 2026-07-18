@@ -122,7 +122,7 @@ hand-off path — see SKILL.md *Helper scripts*). Then:
   the `/model` swap, and you cannot reliably introspect which model you are, so state the target rather
   than trying to detect a mismatch.
 
-**Verify a queued item is still real before offering it *to build*.** A `.agents/dev/BACKLOG.md` / roadmap item
+**Verify a queued item is still real before offering it *to build*.** A `.agents/backlog/TASKS.md` / roadmap item
 can already be **shipped** — by a sibling stream, with the entry never pruned. Before presenting such an
 item as buildable work (a KNOWN next-item *or* an AMBIGUOUS pick), cheaply confirm it isn't already done:
 grep `.agents/dev/done/` for the slug + glance at the code surface it names. A stale entry otherwise costs a

@@ -58,7 +58,7 @@ Decide these before reconstructing. They are what make the generic framework you
 | `<language>` | The implementation language -> drives the anti-pattern greps + metrics recipes. | Rust / TypeScript / Python |
 | `<native dimensions>` | The host's sacred invariants, each promoted to a scored dimension atop the 12 portable ones. | "Determinism" (worldgen pure in `(seed, pos)`); "AI-boundary" |
 | `<targets>` | The audited units, each tagged Deep / Mid / Light by blast radius. | `voxel/`, `content/` (Deep); `ai/` (Mid); `config.rs` (Light) |
-| `<drains>` | The host's **existing** trackers a finding graduates into -- never a parallel queue. | `.agents/dev/BACKLOG.md` (feature work) + `.agents/dev/bugs/` (defects) |
+| `<drains>` | The host's **existing** trackers a finding graduates into -- never a parallel queue. | `.agents/backlog/TASKS.md` (feature work) + `.agents/backlog/bugs/` (defects) |
 | `<exemplars>` | The in-repo files a score of 5 is measured against (often one library file + one service/system file). | filled by the *Select exemplars* step |
 | `<gate>` | The host's quality command + the doc-linter the audit docs must satisfy. | `./tests/scripts/ci.sh` |
 
