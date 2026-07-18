@@ -85,7 +85,7 @@ map live in `README.md` (*Storage convention*) and `packs/clankshop.md`.
   and the next starts — belongs in the pack/runbook (`packs/clankshop.md`'s seam table), never
   duplicated into a leaf's frontmatter. The load-bearing invariant: **no skill crosses another's
   seam.** A seam asserted in a leaf but absent from the runbook is drift; a seam duplicated into a leaf
-  is co-mingling — audit for both.
+  is co-mingling — audit for both (the maintainer workflow: `docs/boundary-audit.md`).
 
 - **Glue is content (the pack's) vs. mechanism (the engine's) — birth vs. growth.** The glue *content*
   — the seams, the initial `AGENTS.md`/`WORKFLOWS.md` wiring — is owned by the pack/runbook, which

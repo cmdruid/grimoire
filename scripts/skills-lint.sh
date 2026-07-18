@@ -23,6 +23,10 @@
 #   6. Cross-skill name refs: a backticked `/name` slash-invocation that matches
 #      no skill dir and no known generic term (WARN -- catches references to
 #      external/plugin skills that break portability).
+#   7. Sibling refs in descriptions: a `description:` naming another skill via a
+#      `/name` that resolves to a sibling skill dir (WARN -- boundary-audit
+#      candidate; the router/fragment exceptions are legitimate, so never FAIL.
+#      See docs/boundary-audit.md).
 set -euo pipefail
 
 root="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
@@ -142,6 +146,32 @@ while IFS= read -r line; do
   warn "$2: references \`/$3\` which is not a skill in this suite (external dependency?)"
 done < <(awk '$1=="XREF"{print}' /tmp/skills-lint-xref.$$)
 rm -f /tmp/skills-lint-xref.$$
+
+# ---- 7. sibling refs in descriptions (boundary-audit candidate) --------------
+# A `description:` naming another skill via `/name` is a candidate boundary
+# violation (co-mingling) -- WARN so the maintainer judges it against
+# docs/boundary-audit.md. Self-invocations (`/<own-name>`) are fine; the
+# router/fragment exceptions are legitimate, so this never FAILs. Keys on a
+# *backticked* `/name` (the convention for an invocation, per check 6) so bare
+# separators/paths (`bug/patch/feature`, `.agents/foreman/`) don't false-positive.
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  f="$sk/SKILL.md"
+  [ -f "$f" ] || continue
+  fm="$(awk '/^---$/{n++; next} n==1{print} n>=2{exit}' "$f")"
+  desc="$(printf '%s\n' "$fm" | sed -n 's/^description:[[:space:]]*//p' | head -1)"
+  printf '%s\n' "$desc" | grep -oE '`[^`]+`' | tr -d '`' \
+    | sed -n 's|^/\([a-z][a-z-]*\).*|\1|p' | sort -u \
+    | while IFS= read -r ref; do
+        [ "$ref" = "$name" ] && continue          # self-invocation -- fine
+        [ -d "$skills_dir/$ref" ] && echo "SIB $name $ref"
+      done
+done | sort -u > /tmp/skills-lint-sib.$$ || true
+while IFS= read -r line; do
+  set -- $line
+  warn "$2: description names sibling \`/$3\` -- boundary candidate (self-scope it, or confirm a router/fragment exception per docs/boundary-audit.md)"
+done < <(awk '$1=="SIB"{print}' /tmp/skills-lint-sib.$$)
+rm -f /tmp/skills-lint-sib.$$
 
 # ---- summary -----------------------------------------------------------------
 echo "fails=$fails warns=$warns"
