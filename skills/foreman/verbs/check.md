@@ -1,7 +1,7 @@
 # `/foreman check` — validate the deployed dev system
 
 The **cheap validator**. It flags **drift** between the glue `/foreman init` generated — the deployed
-`.agents/dev/docs/` doctrine plus the `AGENTS.md` wiring — and the current reality: the runbook that system
+`.agents/foreman/docs/` doctrine plus the `AGENTS.md` wiring — and the current reality: the runbook that system
 was generated from, and the skills actually installed. Run it **often and cheaply**; it finds the
 mechanical rot so `/foreman tune` can spend its turns on the semantic fixes.
 
@@ -25,14 +25,14 @@ bash <skill-dir>/scripts/dev-health.sh stale-refs <root>
 
 | fact | means | judgment |
 |---|---|---|
-| `spine_uncovered: <dir>/` | a top-level dir not reachable from the spine (`AGENTS.md` / `.agents/dev/README.md` / `README.md`) | wire it into the spine, or confirm it's deliberately out of scope |
+| `spine_uncovered: <dir>/` | a top-level dir not reachable from the spine (`AGENTS.md` / `.agents/foreman/README.md` / `README.md`) | wire it into the spine, or confirm it's deliberately out of scope |
 | `stale_refs: <ref> (missing)` | a rooted path in a spine/tracker doc no longer resolves | repoint or drop it — a rename/delete left a dead pointer |
 | `stale_refs: <ref> (file has N lines)` | a `file:line` ref points past the file's end | the referenced code moved or shrank — re-anchor it |
 | `checked=` / `stale=` | how many rooted refs were checked and how many rotted | a nonzero `stale` is the currency-drift count |
 
 Then check the two things the script can't compute, by reading:
 
-- **Glue ↔ composition drift.** Does the deployed `.agents/dev/docs/` doctrine still match the
+- **Glue ↔ composition drift.** Does the deployed `.agents/foreman/docs/` doctrine still match the
   composition `/foreman init` recorded — the pack runbook if one drove init, else the baseline
   introspection? A section the composition dropped or reworded, but the deployed docs still carry,
   is drift — flag it for a re-`init` or a `tune` pass.

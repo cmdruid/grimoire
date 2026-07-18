@@ -33,7 +33,7 @@
 2. **Capture the pre-rebase base** (you need it to scope the re-gate):
    `BASE=$(git -C <worktree> merge-base <branch> <target>)`. Then
    `git -C <worktree> rebase <target>`. Resolve conflicts (commonly additive: a shared registration
-   point — config/module/system registry — build manifests, or shared `.agents/dev/` ledger files — usually
+   point — config/module/system registry — build manifests, or shared `.agents/foreman/` ledger files — usually
    "keep both"), then
    `git -C <worktree> add <file>` and `GIT_EDITOR=true git -C <worktree> rebase --continue`.
    - **Pre-flight the collision (from step 1's forecast).** You already hold `will_conflict` /
@@ -72,7 +72,7 @@
    This is the fix for the fresh-stream full-build: a markdown-only stream that rebases onto a moved
    `<target>` now runs at most the seconds-long doc-linter, never a from-scratch full build. Report
    which path you took and the result. (The concrete gate and doc-linter are the host's — surfaced in
-   its `AGENTS.md` / `.agents/dev/docs/`; the docs-vs-build split needs no host globs, it is just the `.md`
+   its `AGENTS.md` / `.agents/foreman/docs/`; the docs-vs-build split needs no host globs, it is just the `.md`
    test, so it stays portable.)
 
 `sync` **does not save** — it rebases + gates, nothing else (saves are coupled to the reset;

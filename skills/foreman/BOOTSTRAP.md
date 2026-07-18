@@ -1,6 +1,6 @@
 # BOOTSTRAP -- a portable agent-development documentation system
 
-A self-contained, generic blueprint for a `.agents/dev/` documentation system that lets parallel agents
+A self-contained, generic blueprint for a `.agents/foreman/` documentation system that lets parallel agents
 develop a software project without clobbering each other or letting the docs rot. Drop this file
 into any project and an agent can **reconstruct the whole system**, or **borrow a module or two**.
 
@@ -73,12 +73,12 @@ The system is generic; these make it yours. Decide them before reconstructing.
 
 **Core (always):** the front door, the index, the memory, the templates. Everything else is optional
 and depends on Core. The **capture trackers** are `/backlog`'s home under the top-level `.records/` --
-`/foreman init` scaffolds them alongside `.agents/dev/`, but `/backlog` owns and scopes them and its
+`/foreman init` scaffolds them alongside `.agents/foreman/`, but `/backlog` owns and scopes them and its
 `docs/TAXONOMY.md` is the capture schema (this file never restates it).
 
 | Module | Files | Depends on | Borrow when |
 |---|---|---|---|
-| **Core: entry + index** | front-door `AGENTS`/`README`, `.agents/dev/README` (index), `.agents/dev/MEMORY` | -- | always |
+| **Core: entry + index** | front-door `AGENTS`/`README`, `.agents/foreman/README` (index), `.agents/foreman/MEMORY` | -- | always |
 | **Capture trackers** (`/backlog`) | `.records/{tasks,issues,feedback}.md`, `.records/bugs/`, `.records/notes/` -- owned/scoped by `/backlog`, schema in its `docs/TAXONOMY.md` | Core | you want bounded follow-up capture |
 | **Templates** | `.agents/dev/templates/*` | Core | always (consistency) |
 | **Change router** | `docs/DEVELOPMENT` | Core | >1 kind of change (bug/patch/feature) |
@@ -98,7 +98,7 @@ and depends on Core. The **capture trackers** are `/backlog`'s home under the to
 The generic tree. Adjust names to your host's conventions (e.g. the front door is often
 `AGENTS.md`/`README.md`/`CONTRIBUTING.md` at the repo root).
 
-Two homes: **`.agents/dev/`** (the dev system -- foreman's) and the top-level **`.records/`** (every
+Two homes: **`.agents/foreman/`** (the dev system -- foreman's) and the top-level **`.records/`** (every
 typed record -- the capture trackers, owned and scoped by `/backlog`; the one-line kinds below are a
 signpost, the schema is `/backlog`'s `docs/TAXONOMY.md` -- plus foreman's own operational records).
 `/foreman init` scaffolds both skeletons; `/backlog` has no init of its own, and the capture verbs
@@ -107,9 +107,9 @@ also create a store if it's missing.
 ```
 <repo root>/
   <front door>            -- bootstrap entry: "read first" order, build/test/run, repo map,
-                             conventions, and a "making a change? -> .agents/dev/docs/DEVELOPMENT" pointer
-  .agents/dev/
-    README.md             -- THE index for .agents/dev/: what each dir/file is + the conventions. No
+                             conventions, and a "making a change? -> .agents/foreman/docs/DEVELOPMENT" pointer
+  .agents/foreman/
+    README.md             -- THE index for .agents/foreman/: what each dir/file is + the conventions. No
                              per-directory READMEs to chase.
     MEMORY.md             -- the tiny set of load-bearing invariants agents internalize. <keystone>
                              lives here. Kept deliberately small.
@@ -119,7 +119,7 @@ also create a store if it's missing.
       WORKTREES.md        -- the build pipeline + git-worktree mechanics
       WORKFLOWS.md        -- index of common how-tos (pointers, not restatements)
       MAINTENANCE.md      -- audits (catch drift) + prune/archive (keep lean)
-      SYNC.md             -- contract keeping the front door in step with .agents/dev/
+      SYNC.md             -- contract keeping the front door in step with .agents/foreman/
       ARCHITECTURE.md     -- <content doc> one-page system map
       GOTCHAS.md          -- <content doc> running list of traps that cost time
       DIAGNOSTICS.md      -- <content doc> the debugging playbook
@@ -150,13 +150,13 @@ The spine an agent follows. Each arrow is a pointer in a doc, never a duplicated
 
 ```
 <front door>  ("making a change? start at DEVELOPMENT")
-   -> .agents/dev/docs/DEVELOPMENT  (classify the change)
+   -> .agents/foreman/docs/DEVELOPMENT  (classify the change)
         bug    -> DIAGNOSTICS (diagnose) + GOTCHAS (known trap?) -> file a report in .records/bugs/
         patch  -> land directly on the main branch, committed promptly (no plan)
         feature-> PLANNING (plan it) -> WORKTREES (build it)
         spike  -> explore in isolation; capture learnings; build properly as a feature
-   .agents/dev/README   answers "where does X live"
-   .agents/dev/MEMORY   holds the invariants to internalize first
+   .agents/foreman/README   answers "where does X live"
+   .agents/foreman/MEMORY   holds the invariants to internalize first
 ```
 
 Keep the three navigation docs non-overlapping: **README** = *where things live*, **DEVELOPMENT**
@@ -257,7 +257,7 @@ Its own small doc, or a section of *Maintenance* -- it's the per-change half of 
 concern as the periodic spine audit, so a small system folds the two together. The front door
 (`AGENTS`/`README`) is the most volatile doc -- many agents touch it. The contract:
 
-- **Change `.agents/dev/` -> reflect it in the front door in the same commit.** A pointer that lags the
+- **Change `.agents/foreman/` -> reflect it in the front door in the same commit.** A pointer that lags the
   system is the drift this prevents.
 - **The front door is an index, not a copy.** It gives one named pointer to the canonical doc for
   each thing; it never duplicates content. Tier it: name directly only what an agent reaches for
@@ -278,8 +278,8 @@ A small check wired into `<gate>` (implement in your stack -- it's a spec, not c
 
 1. **Resolve internal links.** Every internal doc link (`](path)` and, ideally, backtick path
    refs to docs) points at a file that exists. Catches renames/deletes that leave dead links.
-2. **Index enumerable doc series.** Every file in an enumerable directory (e.g. `.agents/dev/docs/`,
-   `.records/adr/`) is named in its index (`.agents/dev/README`). Catches docs that exist but are unreachable.
+2. **Index enumerable doc series.** Every file in an enumerable directory (e.g. `.agents/foreman/docs/`,
+   `.records/adr/`) is named in its index (`.agents/foreman/README`). Catches docs that exist but are unreachable.
 3. **Forbid stray paths.** Any path your conventions ban (e.g. a skill's default output dir you
    don't use) does not exist. Catches convention violations silently reintroduced.
 4. **Validate store-dir frontmatter.** Every file in an artifact-instance store dir (`.records/plans/`,
@@ -351,7 +351,7 @@ _Last updated: <date>_
 
 **Full deploy:**
 1. Fill the *Slots* (§2): `<keystone>`, `<gate>`, `<stack>`.
-2. Create the *Manifest* tree (§4). Start the front door, `.agents/dev/README`, and `.agents/dev/MEMORY`.
+2. Create the *Manifest* tree (§4). Start the front door, `.agents/foreman/README`, and `.agents/foreman/MEMORY`.
 3. Copy the bundled `templates/` into `.agents/dev/templates/` (§12).
 4. Add the *Trackers* (§6) as empty files with a one-line "what goes here" header each.
 5. Add the routing + planning + worktree + maintenance + sync docs (§5, §7-§10), genericized to

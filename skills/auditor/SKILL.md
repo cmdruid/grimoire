@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: Deploy and operate a code-quality audit framework via a project's .agents/dev/audit/ system. Calibrate against the host's .agents/dev/audit/GUIDE.md, scope by risk-weight, run metrics.sh, score targets against the rules/ dimensions, log raw output, record findings, and drain actionable findings to the host's trackers. Use when the user runs `/auditor`, asks to audit/quality-check the codebase or a module, or to stand up the audit framework on a project that lacks one. `/auditor deploy` bootstraps .agents/dev/audit/ from the bundled BOOTSTRAP.md; `/auditor metrics` runs metrics.sh; `/auditor check` runs the invariant gate. This audits PROJECT CODE -- distinct from any .agents/dev/ docs-system maintenance sweep.
+description: Deploy and operate a code-quality audit framework via a project's .agents/dev/audit/ system. Calibrate against the host's .agents/dev/audit/GUIDE.md, scope by risk-weight, run metrics.sh, score targets against the rules/ dimensions, log raw output, record findings, and drain actionable findings to the host's trackers. Use when the user runs `/auditor`, asks to audit/quality-check the codebase or a module, or to stand up the audit framework on a project that lacks one. `/auditor deploy` bootstraps .agents/dev/audit/ from the bundled BOOTSTRAP.md; `/auditor metrics` runs metrics.sh; `/auditor check` runs the invariant gate. This audits PROJECT CODE -- distinct from any .agents/foreman/ docs-system maintenance sweep.
 ---
 
 # auditor — the code-quality audit driver
@@ -98,7 +98,7 @@ When `FINDINGS.md` grows large, sweep resolved entries into `.agents/dev/audit/h
 
 ## Keeping the bundle current (host = this skill's home repo)
 
-`BOOTSTRAP.md` is **canonical here** -- edit it in place (there is no `.agents/dev/` copy). The
+`BOOTSTRAP.md` is **canonical here** -- edit it in place (there is no `.agents/foreman/` copy). The
 generic `rules/` are an authored distillation -- update them by hand when a dimension's
 *method* changes. There is no mirror to re-sync; this repo's own `.agents/dev/audit/` is the
 live worked example.

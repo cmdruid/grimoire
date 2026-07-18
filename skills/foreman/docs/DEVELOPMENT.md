@@ -95,5 +95,5 @@ everything it surfaced -- is what **`/backlog debrief`** automates (if available
 
 ## Invariants that always apply
 
-Whatever the change, don't break the load-bearing invariants in `.agents/dev/MEMORY.md` (`<keystone>`),
+Whatever the change, don't break the load-bearing invariants in `.agents/foreman/MEMORY.md` (`<keystone>`),
 and keep abstractions earned -- extract a trait at the *second* consumer, not the first.

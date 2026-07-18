@@ -1,11 +1,11 @@
 ---
 name: foreman
-description: "Stand up, run, and tune the project's development factory. `/foreman` (no arg, or a change description) is the change ROUTER: classify a bug/patch/feature/spike and dispatch it. `/foreman init` stands up the `.agents/dev/` system where none exists; `/foreman tune` drains `/backlog`'s system-relevant signal into doctrine/workflow/AGENTS.md improvements (the self-growing curation loop); `/foreman check` validates the deployed glue against the runbook + installed skills. No-arg = `route`. Owns the change-router + curation loop; the capture bureau is `/backlog`. Use when the user runs `/foreman ...`, asks where a change starts, or asks to set up / route / tune a dev workflow. Distinct from the code-quality audit (`/auditor`)."
+description: "Stand up, run, and tune the project's development factory. `/foreman` (no arg, or a change description) is the change ROUTER: classify a bug/patch/feature/spike and dispatch it. `/foreman init` stands up the `.agents/foreman/` system where none exists; `/foreman tune` drains `/backlog`'s system-relevant signal into doctrine/workflow/AGENTS.md improvements (the self-growing curation loop); `/foreman check` validates the deployed glue against the runbook + installed skills. No-arg = `route`. Owns the change-router + curation loop; the capture bureau is `/backlog`. Use when the user runs `/foreman ...`, asks where a change starts, or asks to set up / route / tune a dev workflow. Distinct from the code-quality audit (`/auditor`)."
 ---
 
 # foreman — the dev-system integration layer
 
-One skill that **stands up, runs, and tunes** a project's `.agents/dev/` development factory. It owns the
+One skill that **stands up, runs, and tunes** a project's `.agents/foreman/` development factory. It owns the
 **change-router** (where any change starts) and the **self-growing curation loop** (the system tuning
 itself from its own signal). The **capture bureau** — the trackers and their capture/debrief/curate
 verbs — is a separate skill, `/backlog`.
@@ -20,7 +20,7 @@ umbrella adds no always-on context beyond this file. When a verb is selected, **
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
 | `/foreman` *(no arg, or a change description)* | `verbs/route.md` | **Router** — classify a change + dispatch it to its lane | "where do I start?", "I'm about to change X" |
-| `/foreman init` *(alias `deploy`)* | `verbs/init.md` | Stand up the whole `.agents/dev/` system on a project that lacks one | "set up a dev workflow / docs system" |
+| `/foreman init` *(alias `deploy`)* | `verbs/init.md` | Stand up the whole `.agents/foreman/` system on a project that lacks one | "set up a dev workflow / docs system" |
 | `/foreman tune` | `verbs/tune.md` | Drain the system-relevant slice of `/backlog`'s signal into doctrine / workflow / `AGENTS.md` improvements (the curation loop) | "tune the dev system", "fold this friction back into the docs" |
 | `/foreman check` | `verbs/check.md` | Cheap validator — flag drift between the deployed glue and the runbook / installed skills | "is the dev system still consistent?", "validate the setup" |
 
@@ -41,7 +41,7 @@ umbrella adds no always-on context beyond this file. When a verb is selected, **
   *fact* the prose reasons over is not. `dev-health.sh` **complements** the host doc-linter (which owns
   link resolution, indexing, frontmatter); it never re-implements it.
 - **Commit on the integration trunk, never a work branch.** A `foreman` write (a `tune` doctrine edit,
-  an `init` scaffold) creates *shared* `.agents/dev/` content, so it can't ride a feature ref — it lands on the
+  an `init` scaffold) creates *shared* `.agents/foreman/` content, so it can't ride a feature ref — it lands on the
   **root checkout's current branch**, which must be the integration **trunk** (`main` today, `dev`
   later; never hardcode `main`). **Guard:** check `git -C <root> branch --show-current`; if it is empty
   (detached HEAD) or a work branch (`stream/*`, `feature/*`), STOP and tell the user to switch the root
@@ -70,4 +70,4 @@ itself — `route` dispatches you to the lane that does.
 engine — `brainstorm | design | plan | build`), `/workstream` (drive a stream in a worktree; owns
 landing), `/handoff` (save/resume a session snapshot), `/auditor` (score project code), `/chiropractor`
 (general doc-spine ergonomics). The router dispatches to these where the host has them; the by-hand
-fallback is always "do it per the deployed `.agents/dev/docs/`".
+fallback is always "do it per the deployed `.agents/foreman/docs/`".

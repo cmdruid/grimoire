@@ -10,7 +10,7 @@ lost.
 taxonomy (canonical in `docs/TAXONOMY.md`) and defers item-format to the capture verbs:
 `/backlog task` for `tasks.md`, `/backlog issue` for `issues.md`, `/backlog bug` for a `bugs/`
 report, `/backlog note` for a `notes/` fact, `/backlog feedback` for `feedback.md`. It **writes only
-backlog's five stores** — nothing under `.agents/dev/`.
+backlog's five stores** — nothing under `.agents/foreman/`.
 
 ## When to use
 
@@ -45,7 +45,7 @@ apply it as written; each home's format authority is its capture verb.
 
 **Would-be invariant or gotcha → a `note`.** A load-bearing invariant or a working-as-coded trap that
 surfaces is captured as a `/backlog note` (a durable project fact) — `debrief` never writes
-`MEMORY.md` or `GOTCHAS.md`, and never anything under `.agents/dev/`. Promoting a note into a
+`MEMORY.md` or `GOTCHAS.md`, and never anything under `.agents/foreman/`. Promoting a note into a
 `MEMORY.md` invariant or a `GOTCHAS.md` entry is `/foreman`'s job (during `tune`), not this sweep's.
 
 **Frontmatter is mandatory on any store-dir file you create here** (`.records/bugs/`,
@@ -161,4 +161,4 @@ ignored hand-off is not a debrief target.
 Every byproduct the work surfaced sits in exactly one durable backlog home — with a
 `.records/notes/` fact linked where an entry needed depth (or a would-be invariant/gotcha
 parked as a note for `/foreman` to promote) — nothing is double-logged, nothing was written under
-`.agents/dev/`, and the chat report names what went where.
+`.agents/foreman/`, and the chat report names what went where.

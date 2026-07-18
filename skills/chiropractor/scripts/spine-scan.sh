@@ -420,9 +420,9 @@ printf '%s\n' "$ALL" | tr '\n' '\0' | xargs -0 wc -c 2>/dev/null | awk '
   }'
 
 # Affordance flags.
-gl=0; for g in GLOSSARY.md docs/GLOSSARY.md dev/GLOSSARY.md .agents/dev/GLOSSARY.md; do [ -f "$g" ] && gl=1; done
+gl=0; for g in GLOSSARY.md docs/GLOSSARY.md dev/GLOSSARY.md .agents/foreman/GLOSSARY.md; do [ -f "$g" ] && gl=1; done
 echo "has_glossary=$gl"
-ix=0; for i in INDEX.md docs/INDEX.md dev/README.md docs/README.md .agents/dev/README.md .agents/dev/INDEX.md; do [ -f "$i" ] && ix=1; done
+ix=0; for i in INDEX.md docs/INDEX.md dev/README.md docs/README.md .agents/foreman/README.md .agents/foreman/INDEX.md; do [ -f "$i" ] && ix=1; done
 echo "has_index=$ix"
 
 # Frontmatter coverage over reached docs.

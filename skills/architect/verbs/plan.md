@@ -81,7 +81,7 @@ code yet), say so in the sequence rather than inserting a no-op prep step.
    - **The project's own roadmap location** (`<project: .records/plans/<date>-<slug>.md, indexed
      from ROADMAP.md>`; conventions vary) — **the recommended default**
      whenever the project already has one. A design-evolution campaign is a plan of forthcoming
-     change, exactly the shape `.agents/dev/`'s operational history already exists to hold, and landing it
+     change, exactly the shape `.records/`'s operational history already exists to hold, and landing it
      there keeps it discoverable next to the ordinary feature roadmap instead of forking a second
      planning surface inside the seed.
 

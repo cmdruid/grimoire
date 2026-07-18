@@ -95,7 +95,7 @@ routes each byproduct to its one home in `.records/`: a thing to build -> `tasks
 project problem / concern / limitation -> `issues.md`, a defect -> a linked report in `bugs/`, a
 dev-experience observation -> `feedback.md`, and a durable project fact (including a would-be
 invariant or gotcha) **parked as a `note`** (capture never promotes; `/foreman tune` later promotes
-it into `.agents/dev/MEMORY.md` / `.agents/dev/GOTCHAS.md`), with any long-form context spilled to a
+it into `.agents/foreman/MEMORY.md` / `.agents/foreman/GOTCHAS.md`), with any long-form context spilled to a
 linked `.records/notes/` file (the canonical taxonomy is `/backlog`'s `docs/TAXONOMY.md`).
 
 This trigger is the work being **done**, not *landing* it: run it at completion -- before you

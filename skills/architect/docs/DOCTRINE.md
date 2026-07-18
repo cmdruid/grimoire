@@ -14,7 +14,7 @@ this system exists to cure:
 | Tense | past ("we decided to change X→Y") | present ("this is how it **is**") |
 | Good for | building *forward*, incrementally | *regenerating* from a clean seed |
 | Failure mode | superseding-chains → scar debt | — |
-| Home | `.agents/dev/` (ADRs, plans) — operational | `.agents/architect/` — the seed |
+| Home | `.records/` (ADRs, plans) — operational | `.agents/architect/` — the seed |
 
 **The ADR-smear disease:** a project's authoritative present-tense truth ends up smeared across a
 stack of past-tense decisions — to know how a system works *today*, an agent has to read ADR N

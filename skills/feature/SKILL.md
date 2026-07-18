@@ -5,7 +5,7 @@ description: "Execute the planning spine as verbs -- `/feature brainstorm | desi
 
 # feature -- the executable planning spine
 
-`/feature <verb> [args]` makes the host's `.agents/dev/docs/PLANNING.md` spine **executable**. Its four core verbs ARE
+`/feature <verb> [args]` makes the host's `.agents/foreman/docs/PLANNING.md` spine **executable**. Its four core verbs ARE
 the spine's plan-and-build stages (1-4); stage 5 (debrief) stays the separate `/backlog debrief` skill. A
 fifth verb, `review`, is **cross-cutting** -- an independent ground-truthed critique of an artifact any
 stage produced, callable at any point. Each verb
@@ -68,7 +68,7 @@ know how much to produce. No file is written; the output is an agreed approach h
 
 Checklist:
 1. **Explore context first** -- read the relevant code/docs/recent commits and `PROJECT.md` /
-   `DESIGN.md` / `.agents/dev/MEMORY.md` invariants before asking anything. Don't brainstorm blind.
+   `DESIGN.md` / `.agents/foreman/MEMORY.md` invariants before asking anything. Don't brainstorm blind.
 2. **Scope check** -- if the idea spans several independent subsystems, say so and decompose into
    separate features before refining details; brainstorm the first one.
 3. **Ask one question at a time** -- multiple-choice when you can, open-ended when you must. One
@@ -143,7 +143,7 @@ Checklist:
      member of an existing set, a new caller of a proven system): a wiring/membership **unit test
      suffices** -- a live visual spike there adds fiddly cost for low marginal assurance. Classify
      which case you are in before defaulting to the visual spike.
-   - Name the load-bearing live-API traps from `.agents/dev/docs/GOTCHAS.md` in the plan's **Global
+   - Name the load-bearing live-API traps from `.agents/foreman/docs/GOTCHAS.md` in the plan's **Global
      Constraints** so each task re-verifies them.
 3. **Plan self-review** -- spec coverage (every spec requirement maps to a task -- list gaps), a
    placeholder scan, and type/name consistency across tasks. Fix inline; add a task for any
@@ -233,7 +233,7 @@ Checklist:
 3. **Apply the rubric for the doc's type:**
    - **design** -- Problem is the *root need*, not a surface knob; Approach justified with alternatives
      rejected; Mechanism implementable; **grounded** (refs resolve, claims match code); aligned with
-     `DESIGN.md`/`.agents/dev/MEMORY.md` invariants, ADRs, `GOTCHAS`; scope = one plan; ambiguity resolved; YAGNI.
+     `DESIGN.md`/`.agents/foreman/MEMORY.md` invariants, ADRs, `GOTCHAS`; scope = one plan; ambiguity resolved; YAGNI.
    - **implementation** -- **spec->plan coverage** (every design requirement maps to a task -- list
      gaps); bite-sized testable tasks, exact paths, complete code (no "similar to Task N"); plan-gate
      grounding; riskiest piece spiked first; load-bearing `GOTCHAS` in Global Constraints; per-task verify.

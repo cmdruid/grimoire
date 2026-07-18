@@ -1,8 +1,8 @@
 # `/backlog bug` — file an observed defect
 
 File an observed **defect** the right way, the moment it surfaces — so the repro survives even if
-you move on (or can't reproduce it later). Encodes `.agents/dev/docs/DEVELOPMENT.md` → *When it's a bug* and
-the `.agents/dev/docs/DIAGNOSTICS.md` playbook into one pass.
+you move on (or can't reproduce it later). Encodes `.agents/foreman/docs/DEVELOPMENT.md` → *When it's a bug* and
+the `.agents/foreman/docs/DIAGNOSTICS.md` playbook into one pass.
 
 A **bug** is an observed, reproducible defect: a crash, wrong render/output, dropped state, or flaky
 behavior. Anything that is *not* a reproducible defect goes to its own tracker — the five-kind
@@ -24,7 +24,7 @@ never left with nothing pointing at it.
 **Do NOT use** for a thing to build (`/backlog task`), a project problem/concern/limitation
 (`/backlog issue`), a durable fact (`/backlog note`), or a dev-experience observation
 (`/backlog feedback`). And if it turns out to be **working-as-coded but surprising**, it's not a
-bug — capture it as a `/backlog note` (`/foreman` promotes it to `.agents/dev/docs/GOTCHAS.md` during
+bug — capture it as a `/backlog note` (`/foreman` promotes it to `.agents/foreman/docs/GOTCHAS.md` during
 `tune`) and file no report. For the end-of-work *sweep* that routes
 many surfaced items at once (including any defects), that's `/backlog debrief`; this verb is the
 single-defect, right-now path to the same destination.
@@ -44,11 +44,11 @@ discipline) — don't guess.
 ## Procedure
 
 1. **Confirm it's a bug.** It's an observed, reproducible defect, not a task/issue/note/feedback item
-   (route those to their home and stop). **Check `.agents/dev/docs/GOTCHAS.md` first** (and
+   (route those to their home and stop). **Check `.agents/foreman/docs/GOTCHAS.md` first** (and
    `.records/notes/` for a trap not yet promoted) — it may be a known trap (working-as-coded).
    If so, it's not a bug: capture it as a `/backlog note` if it isn't one already (`/foreman` promotes
    it to `GOTCHAS.md` during `tune`), and stop.
-2. **Diagnose enough to capture a repro** (per the host's `.agents/dev/docs/DIAGNOSTICS.md`: observe →
+2. **Diagnose enough to capture a repro** (per the host's `.agents/foreman/docs/DIAGNOSTICS.md`: observe →
    reproduce → isolate). Cheapest first — logs, the host's diagnostic overlays / state dumps; pin any
    seed/state and capture it in the host's scripted scenario/test harness (a scripted repro the
    harness replays *is* the repro); for a render/visual bug, the host's isolated-render tool surfaces

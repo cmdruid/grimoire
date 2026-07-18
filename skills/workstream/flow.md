@@ -66,7 +66,7 @@ rather than blocking the loop**. Delegates author read-only into a `.mailbox/` s
 applies and gates. The **gate stays single-location** in this worktree regardless of who authored the
 change. Earlier stages map
 the same way: `/feature brainstorm | design | plan` produce the queue's design/plan artifacts. When
-`/feature` isn't installed, build the plan **by hand** per the host's `.agents/dev/docs/PLANNING.md` — the
+`/feature` isn't installed, build the plan **by hand** per the host's `.agents/foreman/docs/PLANNING.md` — the
 loop is unchanged either way; `/feature` is the preferred *realization*, not a hard dependency. (The
 seam ownership is the contract: whoever builds, `build` stops at gate-green and `/workstream` lands +
 debriefs.)

@@ -118,7 +118,7 @@ cmd_stale_refs() {
   else
     # default set: trackers + index + spine docs that exist
     local f docs=()
-    for f in .records/tasks.md .records/issues.md .records/feedback.md .agents/dev/MEMORY.md .agents/dev/README.md AGENTS.md README.md; do
+    for f in .records/tasks.md .records/issues.md .records/feedback.md .agents/foreman/MEMORY.md .agents/foreman/README.md AGENTS.md README.md; do
       [ -f "$root/$f" ] && docs+=("$root/$f")
     done
     if [ "${#docs[@]}" -gt 0 ]; then
@@ -137,7 +137,7 @@ cmd_coverage() {
     name="$(basename "$d")"
     case "$name" in .*) continue;; esac
     found=0
-    for s in "$root/AGENTS.md" "$root/.agents/dev/README.md" "$root/README.md"; do
+    for s in "$root/AGENTS.md" "$root/.agents/foreman/README.md" "$root/README.md"; do
       # Fixed-string, dir-shaped match ("name/" or a backticked mention): an
       # unanchored regex match on the bare name false-covers short names
       # (substring hits) and breaks on regex metachars.

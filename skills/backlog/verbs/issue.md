@@ -27,7 +27,7 @@ The model owns that **bug-vs-issue call** and the **impact ranking** (HIGH / MED
 **Do NOT use** for a reproducible code defect (`/backlog bug`), a thing to build (`/backlog task`), a
 durable project fact (`/backlog note`), or a dev-experience observation about skills / tooling /
 workflow (`/backlog feedback`). A durable *gotcha* discovered here should **also** be captured as a
-`/backlog note` — `/foreman` promotes it to `.agents/dev/docs/GOTCHAS.md` during `tune` so the next
+`/backlog note` — `/foreman` promotes it to `.agents/foreman/docs/GOTCHAS.md` during `tune` so the next
 agent avoids the trap.
 
 ## File location
@@ -54,7 +54,7 @@ renumber existing entries.
 1. **Confirm it's an issue.** A project problem/concern/limitation — not a reproducible defect (that's
    `/backlog bug`), a build item (`/backlog task`), a fact (`/backlog note`), or a dev-experience
    observation (`/backlog feedback`); route those to their home and stop. If it's a working-as-coded
-   trap, capture it as a `/backlog note` (`/foreman` promotes it to `.agents/dev/docs/GOTCHAS.md`
+   trap, capture it as a `/backlog note` (`/foreman` promotes it to `.agents/foreman/docs/GOTCHAS.md`
    during `tune`).
 2. **Form the entry.** Pick the category (P/R) and the next free number. Write:
    - `### <prefix><n> — <short title> (<HIGH|MEDIUM|LOW>)`
@@ -67,7 +67,7 @@ renumber existing entries.
 4. **Append** under the right category section, continuing the numbering. Never edit unrelated
    entries.
 5. **Capture a durable trap as a `/backlog note`** if one surfaced — `/foreman` promotes it to
-   `.agents/dev/docs/GOTCHAS.md` during `tune`.
+   `.agents/foreman/docs/GOTCHAS.md` during `tune`.
 6. **Commit (standalone only).** Invoked **standalone**, scoped-commit via
    `scripts/scoped-commit.sh <root> "Issue <prefix><n>: <short what>" .records/issues.md` (+ the
    note file under `.records/notes/` if you captured a trap), then run the host doc-linter. Invoked **inside `/backlog debrief` or a `/foreman tune`

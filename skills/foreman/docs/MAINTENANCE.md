@@ -1,10 +1,10 @@
-# Maintenance -- keeping the .agents/dev/ system healthy
+# Maintenance -- keeping the .agents/foreman/ system healthy
 
-The `.agents/dev/` system's living docs **drift** as the code and filesystem change, and **accumulate** as
+The `.agents/foreman/` system's living docs **drift** as the code and filesystem change, and **accumulate** as
 work ships. Maintenance keeps both in check, in three modes:
 
 - **The front-door contract** -- the *per-change* discipline that keeps `AGENTS.md` in step with
-  `.agents/dev/` as you work.
+  `.agents/foreman/` as you work.
 - **Audits** -- the *periodic* pass that catches drift the contract missed.
 - **Prune & archive** -- draining shipped/stale material so what's live is what's *active*.
 
@@ -22,22 +22,22 @@ tidies the tracker lists; removal of shipped items is part of the backlog audit 
 Three mechanisms, one job each -- keep them distinct: the **front-door contract** (per-change, by
 hand), the **spine audit** (periodic enforcement), and the **doc-linter** (`<stack: doc-linter
 command in the gate>` -- the mechanical check: links resolve, enumerable series indexed, no
-skill-default output paths in source, and backtick'd `.agents/dev/<path>` file refs in the stable
+skill-default output paths in source, and backtick'd `.agents/foreman/<path>` file refs in the stable
 reference docs resolve). Don't expect the linter to catch a *missing* pointer -- it checks the
 series it can enumerate, not whether a how-to is actually surfaced.
 
 ## The front-door contract -- keep `AGENTS.md` in step
 
 `AGENTS.md` is the shared onboarding entry point and the most volatile doc -- every agent and
-harness touches it. The contract keeps it honest as `.agents/dev/` grows.
+harness touches it. The contract keeps it honest as `.agents/foreman/` grows.
 
 - **Index, not copy.** `AGENTS.md` gives one named pointer to the canonical doc for each thing and
   stops. One source of truth per fact; duplication is what rots.
-- **Change `.agents/dev/` -> reflect it in `AGENTS.md` in the same commit.** A tracker, a how-to, a tool, or
+- **Change `.agents/foreman/` -> reflect it in `AGENTS.md` in the same commit.** A tracker, a how-to, a tool, or
   a top-level dir -- its pointer lands *then*, not "later."
 - **Tier the pointers.** Name directly only what an agent reaches for first (`DEVELOPMENT.md`,
-  `.agents/dev/MEMORY.md`, the bug docs, the trackers, the core commands); everything else hangs off an
-  index (`WORKFLOWS.md` for how-tos, `.agents/dev/README.md` for the rest). When unsure, default to the
+  `.agents/foreman/MEMORY.md`, the bug docs, the trackers, the core commands); everything else hangs off an
+  index (`WORKFLOWS.md` for how-tos, `.agents/foreman/README.md` for the rest). When unsure, default to the
   index -- keeping `AGENTS.md` lean matters more than saving a hop.
 
 | You... | ...in the same commit |
@@ -46,32 +46,32 @@ harness touches it. The contract keeps it honest as `.agents/dev/` grows.
 | add a **how-to / process doc** | add it to `WORKFLOWS.md`; name it directly in `AGENTS.md` only if it's first-reach |
 | add a **tool / command** | add it to *Build / test / run* |
 | add a **top-level dir** | add a one-line *Repo map* entry |
-| **rename / move / remove** an artifact | repoint (or drop) every `AGENTS.md` pointer, and fix `.agents/dev/README.md` too |
+| **rename / move / remove** an artifact | repoint (or drop) every `AGENTS.md` pointer, and fix `.agents/foreman/README.md` too |
 
 ## Audits -- catch drift
 
-Audits keep the **.agents/dev/ docs** honest. (To audit the **project code** quality, see whatever
+Audits keep the **.agents/foreman/ docs** honest. (To audit the **project code** quality, see whatever
 audit rubric the project defines -- that is separate from the docs-system health sweep here.)
 
 ### The docs spine -- the periodic enforcement of the front-door contract
-The spine -- `AGENTS.md`, `.agents/dev/README.md`, and any `README.md` files for major subdirs (plus the
-root project doc and `.agents/dev/MEMORY.md`) -- is the onboarding path; it drifts whenever the filesystem
+The spine -- `AGENTS.md`, `.agents/foreman/README.md`, and any `README.md` files for major subdirs (plus the
+root project doc and `.agents/foreman/MEMORY.md`) -- is the onboarding path; it drifts whenever the filesystem
 changes. If the project's operations live as skills (e.g. a `/foreman` bundle), the spine audit should
 also check that the skill bundles' blueprint still matches the system's structure (there is no
-synced mirror to track -- the host repo's own `.agents/dev/` is the live example).
+synced mirror to track -- the host repo's own `.agents/foreman/` is the live example).
 
 1. **Linter does the mechanical half** (`<gate>`): internal links resolve; the doc series are
    indexed; no skill-default output paths appear in source.
 2. **Coverage** -- every top-level dir and dev/testing tool is reachable from the spine.
 3. **Currency** -- every path and command in the spine resolves/runs.
 4. **Consistency** -- no spine doc contradicts another or the code; conventions match across
-   `AGENTS.md` / `.agents/dev/README.md` / `.agents/dev/MEMORY.md`.
+   `AGENTS.md` / `.agents/foreman/README.md` / `.agents/foreman/MEMORY.md`.
 5. **Onboarding** -- following `AGENTS.md`'s "Read first" reaches the vision, the invariants, the
    current work, the tool how-tos, and the worktree workflow.
 
 Fix drift in place; file bigger gaps to `tasks.md` (or `issues.md` if it's a doc-tooling gap).
 
-### The memory (`.agents/dev/MEMORY.md`) -- highest stakes
+### The memory (`.agents/foreman/MEMORY.md`) -- highest stakes
 Agents *internalize* it, so a wrong "fact" is actively harmful. Per fact / invariant: **still
 true?** (re-verify against the source -- the sharpest rot is a convention that changed but is still
 stated as fact) · **still load-bearing?** (keystone only -- move lesser facts to their home doc and
@@ -106,7 +106,7 @@ is the source of truth; `.records/archive/` is the human-readable index into it.
 - **`.records/plans/`** -- a one-shot plan or spike *ships* -> `git mv` to `plans/archive/`. Roadmaps and
   ongoing design docs stay live until the track ships.
 - **`.records/adr/`** -- an ADR must stand on its own: decision rationale lives *in* the ADR, which cites
-  the `.agents/dev/ROADMAP.md` track (or another ADR), **never** a plan path -- a durable doc must not depend
+  the roadmap track in `.records/plans/` (or another ADR), **never** a plan path -- a durable doc must not depend
   on a volatile one. Before archiving a plan an ADR references, confirm no rationale lives only in
   that plan (lift it into the ADR if so), then drop/repoint the pointer.
 - **`.records/reports/`** -- conclusions acted on or superseded -> `reports/archive/`.
@@ -121,5 +121,5 @@ is the source of truth; `.records/archive/` is the human-readable index into it.
   `/backlog curate` only keeps the lists tidy (dedupe/rank/sharpen/weed); `/foreman tune` is what
   drains and promotes durable signal into doctrine. (No checkbox/prune step -- an item is removed
   when its work ships; the audit drains the stragglers.)
-- **`.agents/dev/MEMORY.md`** -- prune a durable fact only when it goes obsolete (a reversed convention, a
+- **`.agents/foreman/MEMORY.md`** -- prune a durable fact only when it goes obsolete (a reversed convention, a
   retired invariant). Rare -- keep it true; a stale "fact" is worse than none.

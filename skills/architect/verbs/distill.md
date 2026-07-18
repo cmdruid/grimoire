@@ -58,7 +58,7 @@ read, not an auto-commit.
 
    The scars — every dead end, reversal, and superseded chain member — drop out of the reconciled
    result. They are not lost: git retains them as archaeology, and the change-records themselves
-   stay in `.agents/dev/` untouched. `distill` only changes what the *standing spec* says; it never edits
+   stay in `.records/` untouched. `distill` only changes what the *standing spec* says; it never edits
    or deletes an ADR.
 
 3. **Fold into the standing spec, present-tense.** Rewrite the affected sections of

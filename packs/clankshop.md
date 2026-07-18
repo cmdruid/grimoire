@@ -19,11 +19,11 @@ rest. This runbook is the *enrichment* that baseline can't derive: the cross-ski
 
 ## The composition foreman instantiates
 
-Ten skills in four layers. `/foreman init` deploys the `.agents/dev/` glue, wires `AGENTS.md`, and
+Ten skills in four layers. `/foreman init` deploys the `.agents/foreman/` glue, wires `AGENTS.md`, and
 lists these as the constellation the deployed doctrine resolves to.
 
 ```
-  workflow      foreman ──── the hub/router: classify a change, deploy/operate the .agents/dev/ system
+  workflow      foreman ──── the hub/router: classify a change, deploy/operate the .agents/foreman/ system
                 backlog ──── the capture desk: file follow-ups to trackers, sweep finished work
   engines       architect ── the design-system engine: maintains a project's regenerable design/ seed
                 feature ─── the planning spine: brainstorm → design → plan → build (+ review)
@@ -38,7 +38,7 @@ lists these as the constellation the deployed doctrine resolves to.
 ### The members
 
 - **`foreman`** — the dev-workflow hub. A thin router + verbs (`route` default, `init`, `tune`,
-  `check`). Deploys and operates a project's `.agents/dev/` development-docs system.
+  `check`). Deploys and operates a project's `.agents/foreman/` development-docs system.
 - **`backlog`** — the capture desk. Files each follow-up by kind (`task`, `bug`, `issue`,
   `feedback`, `note`), sweeps finished work (`debrief`), and curates the trackers (`curate`).
 - **`architect`** — the design-system engine: maintains a project's regenerable `.agents/architect/`
@@ -100,7 +100,7 @@ validates for drift. The load-bearing invariant: **no skill crosses another's se
 ## Which audit?
 
 Project *code* → `auditor`. The repo's *doc spine* (links, entry door, navigability) →
-`chiropractor`. A deployed *`.agents/dev/` docs system's* health (trackers, drains, staleness) →
+`chiropractor`. A deployed *`.agents/foreman/` docs system's* health (trackers, drains, staleness) →
 `/foreman tune` / `/foreman check`. Three domains, three tools — they don't overlap.
 
 ## Install
@@ -112,4 +112,4 @@ From the clone root:
 ```
 
 Then, in a target project, run **`/foreman init`** — it consumes this runbook as the composition and
-stands up the `.agents/dev/` glue.
+stands up the `.agents/foreman/` glue.

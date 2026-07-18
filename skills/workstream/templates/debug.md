@@ -82,7 +82,7 @@ Full harness guide + debug playbook: `<project: debug tooling docs -- see host A
   state at each -- the A/B IS the proof.
 - **Asset-root trap:** run debug/scenario/harness commands via the build tool wrapper, never the bare
   compiled binary -- else assets fail to load and meshes render invisibly.
-- `<project: additional hard-won lessons -- see host .agents/dev/MEMORY.md and the host gotchas doc>`
+- `<project: additional hard-won lessons -- see host .agents/foreman/MEMORY.md and the host gotchas doc>`
 
 ## Where fixes land
 - **Trivial one-liner** (no design) -> directly on the integration trunk (Coordinates `integration-target`), pathspec-scoped

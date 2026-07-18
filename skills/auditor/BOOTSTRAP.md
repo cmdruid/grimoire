@@ -5,7 +5,7 @@ A self-contained, language-neutral blueprint for a `.agents/dev/audit/` system t
 and is re-runnable each cycle. Drop this file into any project and an agent can **reconstruct the
 whole system**, or **borrow a piece**.
 
-It is a sibling to any companion dev-system blueprint (one that blueprints the surrounding `.agents/dev/` doc-system, if the host has one). This
+It is a sibling to any companion dev-system blueprint (one that blueprints the surrounding `.agents/foreman/` doc-system, if the host has one). This
 file blueprints only the audit subsystem. It is deliberately project-agnostic: anything specific to
 a host project -- its language, its sacred invariants, its trackers -- appears here as a **slot you
 fill**, marked `<like this>`.
@@ -26,7 +26,7 @@ fill**, marked `<like this>`.
 
 These are *why* the system is shaped as it is. Keep them even if you change the file layout.
 
-- **Bounded + drained, like every .agents/dev/ artifact.** The methodology is durable (re-read each pass);
+- **Bounded + drained, like every .agents/foreman/ artifact.** The methodology is durable (re-read each pass);
   the finding tracker is *living* and **drains into the host project's existing trackers**, so it
   never becomes a second graveyard. (Same principle as the dev-system blueprint.)
 - **One rule file per dimension, all in one shape.** An agent (or subagent) reads exactly one file

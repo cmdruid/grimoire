@@ -89,7 +89,7 @@ tracker's format, plus the store-dir frontmatter rules — is canonical here in
 
 `/backlog` is the **capture bureau** — it files, sweeps, and keeps the trackers tidy, and it owns their
 formats and schema. It **captures; it never drains.** It is **not** the dev-system integration layer:
-standing up the `.agents/dev/` system, the change-router (where a change starts), and the curation
+standing up the `.agents/foreman/` system, the change-router (where a change starts), and the curation
 loop that folds captured signal back into doctrine are `/foreman`'s (`init` / `route` / `tune` /
 `check`). It is **not** the code-quality audit (`/auditor`, which scores project code against a
 rubric), and it does not do the development itself.
@@ -101,4 +101,4 @@ doctrine via `tune`), `/architect` (the design-system engine — `init/brainstor
 `/feature` (the plan+build engine — `brainstorm | design | plan | build`), `/workstream` (drive a
 stream in a worktree; owns landing), `/handoff` (save/resume a session snapshot), `/auditor` (score
 project code). The verbs defer to these where the host has them; the by-hand fallback is always "do it
-per the deployed `.agents/dev/docs/`".
+per the deployed `.agents/foreman/docs/`".
