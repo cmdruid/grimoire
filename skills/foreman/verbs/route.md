@@ -46,7 +46,7 @@ through it.
   "how do I build the next thing on top of it." See the `architect` skill's bundled `docs/DOCTRINE.md` for
   the full doctrine.
 - `/auditor` is the code-quality analogue (it scores project code + invariants); `/foreman` routes the
-  dev workflow and deploys/tunes the doc-system. Keep them distinct.
+  dev workflow and deploys/calibrates the doc-system. Keep them distinct.
 
 ## Done when
 

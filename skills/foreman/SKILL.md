@@ -57,7 +57,7 @@ umbrella adds no always-on context beyond this file. When a verb is selected, **
 
 ## Scope boundary
 
-`/foreman` stands up, routes, and tunes the **dev workflow system** (how to make a change + the doctrine
+`/foreman` stands up, routes, and calibrates the **dev workflow system** (how to make a change + the doctrine
 behind it). It is **not** the **capture bureau** — filing bugs/backlog/issues/feedback, sweeping a
 finished body of work, and curating the tracker lists are `/backlog`'s. It is **not** the code-quality
 audit (`/auditor`, which scores project code against a rubric), and it does not do the development
