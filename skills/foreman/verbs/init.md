@@ -85,7 +85,7 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    pack; a subset for a baseline install), and where a runbook drove `init`, a one-line note on the
    **seams** that bind them (feature ends at gate-green → workstream lands → backlog debriefs). Note
    that `/foreman`'s own verbs (`route`, `tune`, `check`) cover route/tune/validate and `/backlog`
-   covers capture/debrief/groom; for any *absent* recognized companion, state the by-hand fallback.
+   covers capture/debrief/curate; for any *absent* recognized companion, state the by-hand fallback.
    The deployed system also works entirely by hand (BOOTSTRAP's "follow the conventions by hand").
 8. **Stamp what you built against (snapshot doctrine).** The generated glue is a snapshot of a moving
    target — record, in the deployed glue (a stamp line in `.agents/dev/README.md`, or an `AGENTS.md`

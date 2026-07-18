@@ -7,7 +7,7 @@ description: "Stand up, run, and tune the project's development factory. `/forem
 
 One skill that **stands up, runs, and tunes** a project's `.agents/dev/` development factory. It owns the
 **change-router** (where any change starts) and the **self-growing curation loop** (the system tuning
-itself from its own signal). The **capture bureau** — the trackers and their capture/debrief/groom
+itself from its own signal). The **capture bureau** — the trackers and their capture/debrief/curate
 verbs — is a separate skill, `/backlog`.
 
 This `SKILL.md` is a **thin router**: it dispatches and states the discipline every verb shares
@@ -59,13 +59,13 @@ umbrella adds no always-on context beyond this file. When a verb is selected, **
 
 `/foreman` stands up, routes, and tunes the **dev workflow system** (how to make a change + the doctrine
 behind it). It is **not** the **capture bureau** — filing bugs/backlog/issues/feedback, sweeping a
-finished body of work, and grooming the tracker lists are `/backlog`'s. It is **not** the code-quality
+finished body of work, and curating the tracker lists are `/backlog`'s. It is **not** the code-quality
 audit (`/auditor`, which scores project code against a rubric), and it does not do the development
 itself — `route` dispatches you to the lane that does.
 
 ## Companion skills (separate, not absorbed)
 
-`/backlog` (the capture bureau — trackers + `bug`/`issue`/`feedback`/`debrief`/`groom`), `/architect`
+`/backlog` (the capture bureau — trackers + `task`/`bug`/`issue`/`feedback`/`note`/`debrief`/`curate`), `/architect`
 (the design-system engine — `init/brainstorm/plan/prep/distill/check`), `/feature` (the plan+build
 engine — `brainstorm | design | plan | build`), `/workstream` (drive a stream in a worktree; owns
 landing), `/handoff` (save/resume a session snapshot), `/auditor` (score project code), `/chiropractor`

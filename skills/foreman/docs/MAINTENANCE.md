@@ -115,8 +115,11 @@ is the source of truth; `.agents/dev/done/` is the human-readable index into it.
   line); when that entry is pruned or archived, archive the note with it (or drop it if spent).
   Never drained on its own -- it's a store, reached only via its link (but `/foreman tune` may promote a
   durable note into `MEMORY.md`/`GOTCHAS.md` before clearing it).
-- **The four trackers** drain per their taxonomy (`DEVELOPMENT.md` -> *Capture follow-ups*):
-  `TASKS`/`ISSUES` items to a dated `.agents/dev/done/<YYYY-MM-DD>-<slug>.md`, `bugs/` to its archive.
-  (No checkbox/prune step -- an item is removed when its work ships; the audit drains the stragglers.)
+- **The capture trackers** (the five capture kinds -- `task`/`bug`/`issue`/`feedback`/`note`) drain
+  per their taxonomy (`DEVELOPMENT.md` -> *Capture follow-ups*): `TASKS`/`ISSUES` items to a dated
+  `.agents/dev/done/<YYYY-MM-DD>-<slug>.md`, `bugs/` to its archive. `/backlog` itself never drains --
+  `/backlog curate` only keeps the lists tidy (dedupe/rank/sharpen/weed); `/foreman tune` is what
+  drains and promotes durable signal into doctrine. (No checkbox/prune step -- an item is removed
+  when its work ships; the audit drains the stragglers.)
 - **`.agents/dev/MEMORY.md`** -- prune a durable fact only when it goes obsolete (a reversed convention, a
   retired invariant). Rare -- keep it true; a stale "fact" is worse than none.

@@ -354,7 +354,7 @@ _Last updated: <date>_
 7. Write your `<content docs>` (architecture/gotchas/diagnostics/perf) -- these are yours.
 
 **Partial borrow:** pick modules from the *Module map* (§3); honor their dependencies. The most
-valuable standalone borrow is **Core + the four trackers + Templates** -- bounded capture and
+valuable standalone borrow is **Core + the capture trackers + Templates** -- bounded capture and
 consistent artifacts with almost no overhead.
 
 **Keeping this file current:** `BOOTSTRAP.md` is a snapshot of a living system; it drifts unless

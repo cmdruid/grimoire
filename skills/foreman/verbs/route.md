@@ -31,7 +31,7 @@ through it.
 
 ## Relationship to neighboring lanes
 
-- `route` dispatches to `/backlog`'s capture verbs (`bug`, `issue`, `feedback`, `debrief`, `groom`)
+- `route` dispatches to `/backlog`'s capture verbs (`task`, `bug`, `issue`, `feedback`, `note`, `debrief`, `curate`)
   and to the companion skills `/feature`, `/architect`, `/workstream`, `/auditor`, `/handoff` when the
   host has them.
 - `/feature` is the feature-lane **plan+build engine** — it executes the host's `PLANNING.md` spine
