@@ -173,6 +173,7 @@ actually installed; where a steward is absent, the row's work falls to by-hand p
 | content | location | steward |
 |---|---|---|
 | design seed | `.agents/architect/` | `/architect` (distill) |
+| provisional design draft (brownfield onramp, not yet a seed) | `.records/design-draft/` | `/architect extract` (writer) |
 | dev doctrine + MEMORY + GOTCHAS + docs/ | `.agents/foreman/` | `/foreman` (calibrate) |
 | audit rubric: GUIDE, rules/, metrics.sh | `.agents/auditor/` | `/auditor` |
 | tasks · issues · feedback · bugs/ · notes/ | `.records/` (trackers + stores) | `/backlog` |
@@ -180,6 +181,7 @@ actually installed; where a steward is absent, the row's work falls to by-hand p
 | shipped / done records | `.records/archive/` | `/workstream` (writer) |
 | architecture decision records | `.records/adr/` | `/feature` (writer); distilled into the seed by `/architect` |
 | research reports · run logs | `.records/reports/`, `.records/logs/` | foreman / various |
+| seed↔code drift reports (`reconcile-<date>.md`) | `.records/reports/` | `/architect reconcile` (writer) |
 | audit deliverables: FINDINGS · metrics.csv · history/ | `.records/audit/` | `/auditor` (writer) |
 | session hand-offs (gitignored scratch) | root `HANDOFF.md` · `.sessions/` | `/handoff` |
 

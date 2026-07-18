@@ -21,6 +21,7 @@ Look for existing design material in the project root:
 |---|---|---|
 | `DESIGN.md` (or an equivalently-named principles doc) | → **migrate** | — |
 | a per-subsystem docs directory (e.g. `docs/design/`) with more than a couple of files | → **migrate** | — |
+| `.records/design-draft/` (an `/architect extract` handoff — see `verbs/extract.md`) | → **migrate**, seed-shaped source (Step 3) | — |
 | only a `PROJECT.md` (or similarly-named vision brief), nothing above | → **greenfield**, using it as the compile input | — |
 | nothing at all | → **greenfield**, but stop and ask the human for a short vision brief first — `VISION.md` cannot be stamped from nothing | |
 
@@ -29,6 +30,13 @@ migrate"): a bare `PROJECT.md` alone, with no `DESIGN.md` and no subsystem-docs 
 the greenfield case — it is exactly the "loose vision brief" `init` is meant to compile. Treat
 `DESIGN.md` or a real subsystem-docs directory as the actual migrate signal; `PROJECT.md`'s role
 differs by what else is present, not by its own existence.
+
+**`.records/design-draft/` is a distinct migrate source, not a subsystem-docs directory.** It is the
+deliverable `/architect extract` writes when hardening a brownfield onramp — already **seed-shaped**
+(the same spine + `src/<system>.md` layout `.agents/architect/` uses) rather than prose to reshape from
+scratch, but every file in it is stamped `status: extracted — sufficiency-unproven` and its
+`SUFFICIENCY-GAPS.md` lists what a hardening pass must still resolve. Fold it per Step 3's "seed-shaped
+source" case, not the generic subsystem-docs reshape.
 
 Report the detected mode before proceeding — this governs every step below.
 
@@ -89,6 +97,24 @@ modes — greenfield just has thinner sources.
    either skip it and note the decision in the init report for the human to make, or migrate it
    with a contract that's honest about its non-committal status — don't silently launder a
    "maybe someday" doc into a binding contract.
+
+**Migrate mode — seed-shaped source (`.records/design-draft/`, an `extract` handoff).** This source
+folds like subsystem docs (same Step 3 procedure — copy the template, reshape into the two tiers,
+stamp the three-key `distilled_through_*` frontmatter, consume the source when spent) with one
+difference: instead of reshaping loose prose, you are **hardening an already seed-shaped draft**.
+
+1. Map `.records/design-draft/src/<system>.md` → `.agents/architect/src/<system>.md` one-to-one (the
+   draft already used `templates/system-spec.md`'s two-tier shape) and `.records/design-draft/{VISION,
+   PHILOSOPHY,GLOSSARY,MAP}.md` onto the four root files, same as any other source feeds Step 2.
+2. **Resolve every entry in `SUFFICIENCY-GAPS.md` — do not fold the draft silently.** Per
+   `docs/DOCTRINE.md` § Sufficiency, a draft traced off code is circular until a human decides what the
+   design *should* guarantee; folding it unresolved just relaunders that circularity into
+   `.agents/architect/`. For each gap: turn an "apparent"/"appears to" observation into decided intent,
+   fill or knowingly accept each placeholder acceptance, and state the resolution in the init report.
+3. Drop the `status: extracted — sufficiency-unproven` stamp once resolved — a folded system carries the
+   normal `distilled_through_*: none` stamp (Step 3, point 3 above), not the draft's provisional one.
+4. `.records/design-draft/` itself is a **deliverable**, not a source-of-truth doc — after folding, treat
+   it as spent per Step 4 (a pointer or removal, per that step's rule), same as a consumed subsystem doc.
 
 **Greenfield mode.** If there's a live codebase but no prior design docs, build the same
 `.agents/architect/src/<system>.md` files directly from code inspection + the vision brief instead of from a

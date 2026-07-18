@@ -58,7 +58,7 @@ the budget the semantic pass is *for*. Use the facts as a suspect list:
 
 Start with the systems these signals flag; **widen to the rest as the session budget allows.** A
 system `check` reports clean is not proven semantically conformant (that's the whole reason
-`reconcile` exists — see § The one thing `check` cannot tell you in `verbs/check.md`), so a full pass
+`reconcile` exists — see § The one thing this script cannot tell you in `verbs/check.md`), so a full pass
 reads every system; a budget-limited pass reads the suspects and says in the report which systems it
 did **not** reach.
 

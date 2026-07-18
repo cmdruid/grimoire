@@ -36,7 +36,7 @@ and **plumbing** (`delegate`, `mailbox`, `handoff` — orchestration/transport u
 
 | skill | what it does |
 |---|---|
-| `architect` | the design-system engine: a project's regenerable `.agents/architect/` seed and its verbs |
+| `architect` | the design-system engine: a project's regenerable `.agents/architect/` seed — stand up (`init`/`extract`), evaluate (`check`), drift-correct (`reconcile`), evolve (`distill`/`plan`/`brainstorm`), plus `prep` |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
 | `backlog` | the capture desk: file follow-ups by kind (task/bug/issue/feedback/note), sweep finished work (`debrief`), curate the lists (`curate`) |
 | `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |
@@ -64,6 +64,7 @@ paths no longer encode ownership, `foreman init` writes an **ownership index** (
 | content | location | steward |
 |---|---|---|
 | design seed | `.agents/architect/` | `architect` |
+| provisional design draft (brownfield onramp) | `.records/design-draft/` | `architect extract` (writer) |
 | dev doctrine: `docs/` + `MEMORY`/`GOTCHAS`/`README` glue | `.agents/foreman/` | `foreman` |
 | audit rubric: `GUIDE`, `rules/`, `metrics.sh` | `.agents/auditor/` | `auditor` |
 | tasks · issues · feedback · bugs/ · notes/ | `.records/` | `backlog` |
@@ -71,6 +72,7 @@ paths no longer encode ownership, `foreman init` writes an **ownership index** (
 | shipped / done records | `.records/archive/` | `workstream` |
 | architecture decision records | `.records/adr/` | `feature` (writer); distilled by `architect` |
 | research reports · run logs | `.records/reports/`, `.records/logs/` | foreman / various |
+| seed↔code drift reports | `.records/reports/` | `architect reconcile` (writer) |
 | audit deliverables: `FINDINGS` · `metrics.csv` · `history/` | `.records/audit/` | `auditor` |
 
 Session hand-offs stay **gitignored scratch** (root `HANDOFF.md` · `.sessions/`, steward `handoff`) —

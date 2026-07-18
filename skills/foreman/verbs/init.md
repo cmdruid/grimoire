@@ -78,11 +78,13 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
 3. **Write the ownership index + trackers + `.agents/foreman/README`.** The **ownership index** (§4.1)
    is load-bearing — since the paths no longer encode ownership, write `.agents/README.md` +
    `.records/README.md` mapping **content → location → steward** (design seed → `.agents/architect/`
-   `/architect`; doctrine → `.agents/foreman/` `/foreman`; audit rubric → `.agents/auditor/` `/auditor`;
-   tasks/issues/feedback/bugs/notes → `.records/` `/backlog`; plans → `.records/plans/` `/feature`;
-   archive → `.records/archive/` `/workstream`; adr → `.records/adr/` `/feature` (writer, distilled by
-   `/architect`); audit deliverables → `.records/audit/` `/auditor`), keyed to the composition from
-   Step 0, and add a one-line pointer to them from the front door. Then write the trackers +
+   `/architect`; provisional design draft (brownfield onramp) → `.records/design-draft/`
+   `/architect extract` (writer); doctrine → `.agents/foreman/` `/foreman`; audit rubric →
+   `.agents/auditor/` `/auditor`; tasks/issues/feedback/bugs/notes → `.records/` `/backlog`; plans →
+   `.records/plans/` `/feature`; archive → `.records/archive/` `/workstream`; adr → `.records/adr/`
+   `/feature` (writer, distilled by `/architect`); seed↔code drift reports → `.records/reports/`
+   `/architect reconcile` (writer); audit deliverables → `.records/audit/` `/auditor`), keyed to the
+   composition from Step 0, and add a one-line pointer to them from the front door. Then write the trackers +
    `.agents/foreman/README` from the `BOOTSTRAP` templates (empty files with their one-line
    headers; the index genericized to the host) — the
    trackers + capture taxonomy come from `/backlog` where it is installed.

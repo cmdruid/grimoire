@@ -44,7 +44,9 @@ lists these as the constellation the deployed doctrine resolves to.
 - **`backlog`** — the capture desk. Files each follow-up by kind (`task`, `bug`, `issue`,
   `feedback`, `note`), sweeps finished work (`debrief`), and curates the trackers (`curate`).
 - **`architect`** — the design-system engine: maintains a project's regenerable `.agents/architect/`
-  seed; verbs `init`/`brainstorm`/`plan`/`prep`/`distill`/`check`. Seed-altitude peer to `feature`.
+  seed as layer-steward — stand up (`init`, `extract` the brownfield onramp), evaluate (`check`),
+  drift-correct (`reconcile`), evolve (`distill`/`plan`/`brainstorm`), plus `prep` (Plan B). Seed-altitude
+  peer to `feature`.
 - **`feature`** — the planning spine as verbs: `brainstorm | design | plan | build`, plus the
   cross-cutting `review`. Ends at gate-green; never lands or debriefs.
 - **`workstream`** — drive a long-lived stream in a git worktree (create → save/load → sync →
@@ -76,11 +78,12 @@ encode ownership, so a cold agent needs the index to learn *what lives where, an
   foreman/                dev doctrine + MEMORY + GOTCHAS + docs/   (steward: /foreman -- calibrate)
   auditor/                the audit rubric: GUIDE, rules/, metrics.sh  (steward: /auditor)
 .records/                 the RECORDS root -- every typed record
+  design-draft/           provisional design draft (brownfield onramp) (writer: /architect extract)
   tasks.md · issues.md · feedback.md · bugs/ · notes/             (steward: /backlog)
   plans/                  design plans / roadmaps                  (writer: /feature)
   archive/                shipped / done records                   (writer: /workstream)
   adr/                    architecture decision records            (writer: /feature; distilled into seed by /architect)
-  reports/ · logs/        research findings / run artifacts        (foreman / various)
+  reports/ · logs/        research findings / run artifacts / seed<->code drift reports  (foreman / various; drift reports writer: /architect reconcile)
   audit/                  FINDINGS · metrics.csv · history/        (writer: /auditor)
 ```
 
