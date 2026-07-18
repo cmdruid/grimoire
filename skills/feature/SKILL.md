@@ -10,7 +10,8 @@ the spine's plan-and-build stages (1-4); stage 5 (debrief) stays the separate `/
 fifth verb, `review`, is **cross-cutting** -- an independent ground-truthed critique of an artifact any
 stage produced, callable at any point. Each verb
 distills the planning discipline it needs into a compact checklist, pointed at the host's gate
-(named in its `AGENTS.md`), templates (`.agents/dev/templates/`), frontmatter (`.agents/dev/docs/TAXONOMY.md`), and
+(named in its `AGENTS.md`), templates (`.agents/dev/templates/`), frontmatter (the capture taxonomy
+`/backlog` owns, `docs/TAXONOMY.md`), and
 home (planning artifacts always land in `.agents/dev/plans/`; ADRs in `.agents/dev/adr/`).
 
 This skill is **self-contained and uniquely named**: it depends on no other skill and collides with
@@ -98,7 +99,8 @@ Checklist:
    to implement from), **Verification** (how we'll know it works).
 2. **Land it in `.agents/dev/plans/`** as `.agents/dev/plans/<YYYY-MM-DD>-<slug>-design.md`, with frontmatter
    `type: design`, `status: draft`, `updated: <today>`, `related: [...]` -- the `type`/`status`
-   vocabulary `.agents/dev/docs/TAXONOMY.md` defines and the doc-linter enforces (`design` moves
+   vocabulary the capture taxonomy `/backlog` owns (`docs/TAXONOMY.md`) defines and the doc-linter
+   enforces (`design` moves
    `draft -> active -> shipped` as the feature advances).
 3. **Spec self-review** (PLANNING.md gate 2, part 1) -- scan the written spec for: placeholders
    (TBD/TODO/vague), internal contradictions, scope (focused enough for one plan?), ambiguity (any

@@ -3,8 +3,8 @@
 #
 # Read-only state analysis for a project's dev/ docs-system, for the /backlog
 # verbs (debrief). The subcommand emits compact `key=value` facts + evidence so
-# the agent spends turns DECIDING (did this really surface? is the shipped-record
-# there?), not scanning ten files to find the candidates.
+# the agent spends turns DECIDING (did this really surface?), not scanning ten
+# files to find the candidates.
 #
 # DOCTRINE: facts, not verdicts. Nothing here decides to remove, archive, or
 # route anything -- it reports the variables the verb prose consumes. It also
@@ -50,7 +50,8 @@ cmd_debrief_scan() {
   fi
   if [ -n "$todos" ]; then printf '%s\n' "$todos" | sed 's/^\+/  +/'; else echo "  (none)"; fi
 
-  # Most-recent .agents/dev/done records, so the agent can confirm the shipped-record exists.
+  # Most-recent .agents/dev/done records -- informational context only (debrief does not
+  # verify a shipped-record's existence; that check was dropped).
   echo "recent_done:"
   # shellcheck disable=SC2012  # ls -t sorts by mtime (find can't portably on macOS); names are controlled dated slugs
   done_recent="$(ls -t "$root"/.agents/dev/done/*.md 2>/dev/null | head -3 || true)"

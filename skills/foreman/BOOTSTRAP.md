@@ -283,7 +283,11 @@ A small check wired into `<gate>` (implement in your stack -- it's a spec, not c
 4. **Validate store-dir frontmatter.** Every file in an artifact-instance store dir (`.agents/dev/plans/`,
    `.agents/dev/adr/`, `.agents/dev/done/`, `.agents/backlog/bugs/`, `.agents/backlog/notes/`, ... -- the explicit gated-dir list) carries a valid
    frontmatter block: `type` legal for the dir, `status` in that type's set, `updated` shaped
-   `YYYY-MM-DD` (schema: the host's capture-taxonomy doc). Catches records that would silently escape the
+   `YYYY-MM-DD` (schema: each dir's own template -- `plan-design.md`/`plan-implementation.md`/
+   `roadmap.md`/`adr.md`/`done-record.md` for the `.agents/dev/` dirs; `/backlog`'s capture
+   taxonomy, `docs/TAXONOMY.md`, for `.agents/backlog/bugs/` and `.agents/backlog/notes/` --
+   `plans`/`adr`/`done` are foreman artifacts, not capture kinds, so TAXONOMY.md doesn't cover
+   them). Catches records that would silently escape the
    type/status search recipes.
 
 Keep it small and fast (no network, no build). Its job is to guard the rot-prone bits that humans

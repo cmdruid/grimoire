@@ -105,7 +105,8 @@ independent of what the root has checked out. Never hand-commit these records to
      *several* rebases per ship; subject-refs survived two contention rebases with zero fixups). **Open
      each with the `type: done-record` frontmatter block** (`type`/`status: shipped`/`updated`), from
      `.agents/dev/templates/done-record.md` -- the doc-linter gate rejects a `.agents/dev/done/` file without it (schema:
-     `.agents/dev/docs/TAXONOMY.md`). Then `git -C <worktree> add .agents/dev/done/<f> && git -C <worktree> commit -m "Record <slug> shipped" -- .agents/dev/done/<f>`.
+     the done-record template `/foreman` owns, `foreman/templates/done-record.md` -- a done-record
+     is a foreman artifact, not a capture kind, so it's not in `/backlog`'s TAXONOMY.md). Then `git -C <worktree> add .agents/dev/done/<f> && git -C <worktree> commit -m "Record <slug> shipped" -- .agents/dev/done/<f>`.
    - If the feature had its own implementation plan, archive it in one atomic commit:
      `git -C <worktree> mv .agents/dev/plans/<feature-plan> .agents/dev/plans/archive/ && git -C <worktree> commit -m "Archive <feature-plan>" -- .agents/dev/plans/<feature-plan> .agents/dev/plans/archive/<feature-plan>`.
    - If the queue is tracked in a roadmap doc, update its ledger/queue row for this stream and commit
