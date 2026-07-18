@@ -39,8 +39,8 @@ lists these as the constellation the deployed doctrine resolves to.
 
 - **`foreman`** — the dev-workflow hub. A thin router + verbs (`route` default, `init`, `tune`,
   `check`). Deploys and operates a project's `.agents/dev/` development-docs system.
-- **`backlog`** — the capture desk. Files each follow-up into its tracker (`bug`, `backlog`,
-  `issue`, `feedback`), sweeps finished work (`debrief`), and grooms the trackers (`groom`).
+- **`backlog`** — the capture desk. Files each follow-up by kind (`task`, `bug`, `issue`,
+  `feedback`, `note`), sweeps finished work (`debrief`), and curates the trackers (`curate`).
 - **`architect`** — the design-system engine: maintains a project's regenerable `.agents/design/`
   seed; verbs `init`/`brainstorm`/`plan`/`prep`/`distill`/`check`. Seed-altitude peer to `feature`.
 - **`feature`** — the planning spine as verbs: `brainstorm | design | plan | build`, plus the

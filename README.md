@@ -38,7 +38,7 @@ and **plumbing** (`delegate`, `mailbox`, `handoff` — orchestration/transport u
 |---|---|
 | `architect` | the design-system engine: a project's regenerable `.agents/design/` seed and its verbs |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
-| `backlog` | the capture desk: file follow-ups to trackers, sweep finished work, groom them |
+| `backlog` | the capture desk: file follow-ups by kind (task/bug/issue/feedback/note), sweep finished work (`debrief`), curate the lists (`curate`) |
 | `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `feature` | the planning spine: brainstorm → design → plan → build, plus independent review |

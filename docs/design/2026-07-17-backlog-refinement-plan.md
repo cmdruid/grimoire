@@ -1,5 +1,7 @@
 # `backlog` Refinement — Implementation Plan
 
+**Status:** Implemented (2026-07-17).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
 
 **Goal:** Sharpen `backlog` into a pure capture-and-curate bureau over its own `.agents/backlog/` home — rename the confusing `backlog` verb to `task` and `groom` to `curate`, add a `note` capture, re-cut the taxonomy by *subject* (project vs dev-experience), and remove all *draining* (that moves to the consuming skills, chiefly `foreman`).
