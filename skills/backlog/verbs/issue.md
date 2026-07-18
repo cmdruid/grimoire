@@ -1,41 +1,47 @@
-# `/backlog issue` — capture dev-experience friction
+# `/backlog issue` — capture a project problem / concern / limitation
 
-File a **dev-experience friction** point into `.agents/dev/ISSUES.md` the moment it bites — slow/opaque
-iteration, a silent failure, missing/wrong docs, a harness or workflow papercut. This is the
-quick, one-shot path to the friction log (the new sibling of `/backlog bug`); the full end-of-work sweep
-is `/backlog debrief`.
+File a **project problem, concern, or limitation** into `.agents/backlog/ISSUES.md` the moment it
+surfaces — a known limitation, an architectural concern, a risk, a non-code problem that isn't a
+reproducible defect and isn't a build item. This is the quick, one-shot path to the issues log; the
+full end-of-work sweep is `/backlog debrief`.
 
-**Friction, not a defect.** `ISSUES.md` is "the dev experience got in my way." Anything else goes
-to its own tracker — the taxonomy is canonical in `.agents/dev/docs/DEVELOPMENT.md` → *Capture follow-ups*
-(defect → `/backlog bug`, feature → `/backlog backlog`, qualitative → `/backlog feedback`).
+**A project problem, not a defect and not a build item.** `ISSUES.md` is "something about the project
+is wrong, risky, or limited." Anything else goes to its own tracker — the taxonomy is canonical in
+`docs/TAXONOMY.md` (a reproducible code defect → `/backlog bug`, a thing to build → `/backlog task`, a
+durable fact → `/backlog note`, a dev-experience observation → `/backlog feedback`).
 
-The model owns the **friction-vs-bug call** (does this break the *product*, or just slow the
-*developer*?) and the **impact ranking** (HIGH / MEDIUM / LOW).
+**`bug` vs `issue` — the classifier.** A **reproducible code defect** (a crash, wrong output, dropped
+state, flaky behavior — something with a repro) → `/backlog bug`. A **broader or non-code project
+problem** (a limitation, a design concern, a risk, a gap without a single repro) → `issue`. If you can
+write a repro, it's a bug; if it's a concern about the project rather than a defect you can reproduce,
+it's an issue.
+
+The model owns that **bug-vs-issue call** and the **impact ranking** (HIGH / MEDIUM / LOW).
 
 ## When to use
 
-- Tooling/harness/docs/workflow friction surfaces **mid-work** and you want it logged before it's
-  lost — a gate that's too slow, a silent capture drop, a doc that misled you, a papercut.
-- The user says: "/backlog issue", "log this friction", "the tooling got in my way", "this workflow is
-  painful — note it".
+- A project problem/concern/limitation surfaces and you want it logged before it's lost — a known
+  limitation, an architectural risk, a gap, a non-code problem without a clean repro.
+- The user says: "/backlog issue", "log this concern", "this is a known limitation", "note this risk".
 
-**Do NOT use** for a product defect (`/backlog bug`), a feature wish (`/backlog backlog`), or a purely
-qualitative note (`/backlog feedback`). A durable *gotcha* discovered here should **also** be added to
+**Do NOT use** for a reproducible code defect (`/backlog bug`), a thing to build (`/backlog task`), a
+durable project fact (`/backlog note`), or a dev-experience observation about skills / tooling /
+workflow (`/backlog feedback`). A durable *gotcha* discovered here should **also** be added to
 `.agents/dev/docs/GOTCHAS.md` so the next agent avoids the trap.
 
 ## File location
 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
-- Issues log: `<root>/.agents/dev/ISSUES.md`. It is a flat markdown log, **not** a store dir — no
+- Issues log: `<root>/.agents/backlog/ISSUES.md`. It is a flat markdown log, **not** a store dir — no
   per-file frontmatter (the doc-linter does not gate it).
 
 ## Issues structure & numbering
 
-`.agents/dev/ISSUES.md` groups entries under category sections and gives each a **category-prefixed running
+`.agents/backlog/ISSUES.md` groups entries under category sections and gives each a **category-prefixed running
 number**:
-- **`E#`** — Environment / Tooling (build, harness, render, scenario papercuts).
-- **`W#`** — Workflow / workstream (the worktree pipeline, landing, the skills themselves).
+- **`P#`** — Problem / limitation (a project defect-of-design, a known limitation, a gap).
+- **`R#`** — Risk / concern (an architectural risk, a fragility, a concern to revisit).
 
 (Sessions also add dated `## Added <date> — <session>` sections; an entry still takes the next free
 number for its category prefix.) **Follow the file's existing scheme** — pick the category that
@@ -44,36 +50,38 @@ renumber existing entries.
 
 ## Procedure
 
-1. **Confirm it's friction.** Dev-experience pain, not a product defect / feature / qualitative item
-   (route those to their home and stop). If it's a working-as-coded trap, add it to
-   `.agents/dev/docs/GOTCHAS.md` (and optionally log the friction of hitting it blind).
-2. **Form the entry.** Pick the category (E/W) and the next free number. Write:
+1. **Confirm it's an issue.** A project problem/concern/limitation — not a reproducible defect (that's
+   `/backlog bug`), a build item (`/backlog task`), a fact (`/backlog note`), or a dev-experience
+   observation (`/backlog feedback`); route those to their home and stop. If it's a working-as-coded
+   trap, add it to `.agents/dev/docs/GOTCHAS.md`.
+2. **Form the entry.** Pick the category (P/R) and the next free number. Write:
    - `### <prefix><n> — <short title> (<HIGH|MEDIUM|LOW>)`
-   - **What happened** — the concrete friction, with `file:line` / command / log line where it
+   - **What's wrong** — the concrete problem/concern/limitation, with `file:line` / context where it
      applies.
-   - **Impact** — who/what it slows, how often.
-   - **Suggested fix** — the concrete change that would remove it (one or two lines).
-3. **Dedupe** against existing entries — if the friction is already logged, sharpen that entry
+   - **Impact** — who/what it affects, how badly.
+   - **Suggested direction** — the change or investigation that would address it (one or two lines).
+3. **Dedupe** against existing entries — if the problem is already logged, sharpen that entry
    rather than adding a near-duplicate.
 4. **Append** under the right category section, continuing the numbering. Never edit unrelated
    entries.
 5. **Promote a durable trap** to `.agents/dev/docs/GOTCHAS.md` if one surfaced.
 6. **Commit (standalone only).** Invoked **standalone**, scoped-commit via
-   `scripts/scoped-commit.sh <root> "Issue <prefix><n>: <short what>" .agents/dev/ISSUES.md` (+ `GOTCHAS.md` if you
+   `scripts/scoped-commit.sh <root> "Issue <prefix><n>: <short what>" .agents/backlog/ISSUES.md` (+ `GOTCHAS.md` if you
    touched it), then run the host doc-linter. Invoked **inside `/backlog debrief` or a `/foreman tune`
    sweep**, do **not** commit — only write; the sweep makes the single atomic commit.
-7. **Report** the entry id (`E#`/`W#`) and the path.
+7. **Report** the entry id (`P#`/`R#`) and the path.
 
 ## Relationship to neighboring verbs
 
-- **`/backlog debrief`** routes *all* byproducts of a finished body of work, friction included, in one
-  sweep. `issue` is the in-the-moment, single-friction path to the same `ISSUES.md` log.
-- **`/foreman tune`** (its `issues` pass) drains `ISSUES.md` — resolved entries → `.agents/dev/done/`, durable
-  gotchas → `GOTCHAS.md`. Capture is this verb's job; draining is `/foreman tune`'s.
-- **`/backlog bug`** is the product-defect sibling; **`/auditor`** may surface friction it routes here.
+- **`/backlog debrief`** routes *all* byproducts of a finished body of work, project problems included,
+  in one sweep. `issue` is the in-the-moment, single-problem path to the same `ISSUES.md` log.
+- **`/foreman tune`** drains system-relevant signal from the trackers into doctrine. Capture is this
+  verb's job; draining is `/foreman`'s.
+- **`/backlog bug`** is the reproducible-defect sibling; **`/backlog feedback`** is the dev-experience
+  channel; **`/auditor`** may surface problems it routes here.
 
 ## Done when
 
-The friction is an impact-ranked `ISSUES.md` entry (what happened · impact · suggested fix) under
+The problem is an impact-ranked `ISSUES.md` entry (what's wrong · impact · suggested direction) under
 the right category, continuing the numbering, deduped against what's there — any durable trap also in
 `GOTCHAS.md` — and the chat names the entry id and path.
