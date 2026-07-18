@@ -28,7 +28,7 @@
 | `.agents/dev/GOTCHAS.md` | `.agents/foreman/GOTCHAS.md` | foreman |
 | `.agents/dev/README.md` (home index) | `.agents/foreman/README.md` | foreman |
 | `.agents/dev/plans/…` | `.records/plans/…` | feature writes |
-| `.agents/dev/done/…` | `.records/done/…` | workstream writes |
+| `.agents/dev/done/…` | `.records/archive/…` | workstream writes |
 | `.agents/dev/adr/…` | `.records/adr/…` | architect writes / distills |
 | `.agents/dev/reports/…` | `.records/reports/…` | foreman (spikes) |
 | `.agents/dev/logs/…` | `.records/logs/…` | various |
@@ -78,12 +78,12 @@ bash scripts/skills-lint.sh                                         # fails=0
 **Files:** `skills/backlog/**`, plus every skill referencing `.agents/dev/{plans,done,adr,reports,logs}` (workstream, feature, foreman docs, architect, auditor, etc.).
 
 - [ ] **Step 1: Backlog trackers → `.records/`.** Apply: `.agents/backlog/TASKS.md`→`.records/tasks.md`, `ISSUES.md`→`.records/issues.md`, `FEEDBACK.md`→`.records/feedback.md`, `.agents/backlog/bugs/`→`.records/bugs/`, `.agents/backlog/notes/`→`.records/notes/`. **Do NOT** touch `.agents/backlog/templates/` here (Task 6). Sweep `grep -rln '\.agents/backlog/\(TASKS\|ISSUES\|FEEDBACK\|bugs\|notes\)' skills/ README.md AGENTS.md packs/`.
-- [ ] **Step 2: Operational records → `.records/`.** Apply: `.agents/dev/plans/`→`.records/plans/`, `done/`→`.records/done/`, `adr/`→`.records/adr/`, `reports/`→`.records/reports/`, `logs/`→`.records/logs/`. Sweep `grep -rnE '\.agents/dev/(plans|done|adr|reports|logs)' …`. **Leave** `.agents/dev/{docs,MEMORY,GOTCHAS,README,audit,templates}` (Tasks 3/4/6).
+- [ ] **Step 2: Operational records → `.records/`.** Apply: `.agents/dev/plans/`→`.records/plans/`, `done/`→`.records/archive/`, `adr/`→`.records/adr/`, `reports/`→`.records/reports/`, `logs/`→`.records/logs/`. Sweep `grep -rnE '\.agents/dev/(plans|done|adr|reports|logs)' …`. **Leave** `.agents/dev/{docs,MEMORY,GOTCHAS,README,audit,templates}` (Tasks 3/4/6).
 - [ ] **Step 3: Verify.**
 ```bash
 grep -rnE '\.agents/backlog/(TASKS|ISSUES|FEEDBACK|bugs|notes)' skills/ README.md AGENTS.md packs/   # no output
 grep -rnE '\.agents/dev/(plans|done|adr|reports|logs)' skills/ README.md AGENTS.md packs/            # no output
-grep -rlE '\.records/(tasks|issues|feedback|bugs|notes|plans|done|adr|reports)' skills/ | head       # present
+grep -rlE '\.records/(tasks|issues|feedback|bugs|notes|plans|archive|adr|reports)' skills/ | head    # present
 bash scripts/skills-lint.sh                                                                          # fails=0
 ```
 - [ ] **Step 4: Commit.** `git commit -m "storage: trackers + operational records -> .records/" -- $(git diff --cached --name-only)` (stage deliberately).
@@ -176,7 +176,7 @@ bash scripts/skills-lint.sh                                                     
 
 **Files:** `foreman/verbs/init.md`, `foreman/BOOTSTRAP.md`, `packs/clankshop.md`, `README.md`, `AGENTS.md`.
 
-- [ ] **Step 1: `foreman init` / `BOOTSTRAP` scaffold the two-root layout.** Update the scaffold + directory manifest to stand up `.agents/{architect,foreman,auditor}/` (seed homes — architect's design seed, foreman's doctrine, auditor's rubric) + `.records/{tasks.md,issues.md,feedback.md,bugs/,notes/,plans/,done/,adr/,reports/,logs/,audit/}` (typed records). Ensure the BOOTSTRAP `docs/` manifest names only files `foreman` actually bundles (lint check #3).
+- [ ] **Step 1: `foreman init` / `BOOTSTRAP` scaffold the two-root layout.** Update the scaffold + directory manifest to stand up `.agents/{architect,foreman,auditor}/` (seed homes — architect's design seed, foreman's doctrine, auditor's rubric) + `.records/{tasks.md,issues.md,feedback.md,bugs/,notes/,plans/,archive/,adr/,reports/,logs/,audit/}` (typed records). Ensure the BOOTSTRAP `docs/` manifest names only files `foreman` actually bundles (lint check #3).
 - [ ] **Step 2: Generate the layout index (the load-bearing piece).** `foreman init` writes an index that maps **content → location → steward** — e.g. a top-level `AGENTS.md` pointer block and/or `.records/README.md` + `.agents/README.md`. Since paths no longer encode ownership, this index is required: "tasks/issues/feedback/bugs/notes → `.records/…`, stewarded by `/backlog`; plans → `.records/plans/` (feature); design seed → `.agents/architect/`; doctrine → `.agents/foreman/`; audit rubric → `.agents/auditor/`, audit deliverables → `.records/audit/`."
 - [ ] **Step 3: Runbook documents the canonical layout.** In `packs/clankshop.md`, add the two-root layout + ownership map as the composition `foreman init` instantiates (extends the existing seam catalog).
 - [ ] **Step 4: README/AGENTS.** Reflect the two-root layout + the ownership map.
