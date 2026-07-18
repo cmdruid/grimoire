@@ -2,7 +2,8 @@
 
 Stand up a project's `.agents/foreman/` development system where none exists, wired to the **composition**
 of skills the host actually has. This verb is the **oven, not the recipe**: it knows *how* to
-instantiate glue from a composition, but the composition itself comes from **outside** — a pack
+instantiate glue from a composition — it **stamps** the glue the composition specifies, never
+**authors** it — but the composition itself comes from **outside** — a pack
 runbook when one is present, otherwise a **baseline** introspection of the installed skills. The
 methodology lives in the bundled `BOOTSTRAP.md` (the portable blueprint) and, once deployed, in the
 host's own `.agents/foreman/docs/` (the source of truth). The verb orchestrates; it does not restate the policy.
