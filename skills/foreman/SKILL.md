@@ -64,17 +64,17 @@ scaffold the gaps). A project with no `.agents/foreman/` yet goes to one of them
 
 ## Scope boundary
 
-`/foreman` stands up, routes, and calibrates the **dev workflow system** (how to make a change + the doctrine
-behind it). It is **not** the **capture bureau** — filing bugs/backlog/issues/feedback, sweeping a
-finished body of work, and curating the tracker lists are `/backlog`'s. It is **not** the code-quality
-audit (`/auditor`, which scores project code against a rubric), and it does not do the development
-itself — `route` dispatches you to the lane that does.
+`/foreman` stands up, routes, and calibrates the **dev workflow system** (how to make a change + the
+doctrine behind it). It **routes, it does not execute**: capturing follow-ups, auditing code, designing
+the seed, and doing the development itself each belong to a **lane** `route` dispatches to — not to
+`foreman`. *Which* lane owns *what* is the runbook's seam map (`packs/clankshop.md`) and the deployed
+**ownership index** (`.agents/README.md` / `.records/README.md`), not this file.
 
 ## Companion skills (separate, not absorbed)
 
-`/backlog` (the capture bureau — trackers + `task`/`bug`/`issue`/`feedback`/`note`/`debrief`/`curate`), `/architect`
-(the design-system engine — `init/brainstorm/plan/prep/distill/check`), `/feature` (the plan+build
-engine — `brainstorm | design | plan | build`), `/workstream` (drive a stream in a worktree; owns
-landing), `/handoff` (save/resume a session snapshot), `/auditor` (score project code), `/chiropractor`
-(general doc-spine ergonomics). The router dispatches to these where the host has them; the by-hand
-fallback is always "do it per the deployed `.agents/foreman/docs/`".
+`route` dispatches to whichever companion skills the host has installed. The **composition and the
+seams between them** live in `packs/clankshop.md` (the runbook) and, once deployed, in the **ownership
+index** `init` writes (`.agents/README.md` / `.records/README.md`) — the authoritative map of
+content → location → steward. This file deliberately does **not** restate each companion's verbs: that
+list rots (it is each skill's own `description:` to state). Where a recognized companion is absent, the
+by-hand fallback is always the deployed `.agents/foreman/docs/`.
