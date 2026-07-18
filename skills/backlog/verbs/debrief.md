@@ -103,9 +103,10 @@ ignored hand-off is not a debrief target.
    surprises, directional ideas, invariants learned, code touched-but-not-cleaned, files referenced
    but not opened. The scan is primarily over the **conversation** (the richest source), but ground
    it with filesystem facts: `scripts/dev-health.sh debrief-scan <root> [<trunk-ref>]` emits
-   `dirty_backlog:` (uncommitted `.records/` writes — captured along the way but not yet
-   routed) and `new_todos:` (TODO/FIXME/XXX/HACK markers this work added — candidates to route or
-   resolve).
+   `dirty_backlog:` (uncommitted writes to backlog's own trackers --
+   `.records/tasks.md`/`issues.md`/`feedback.md`/`bugs/`/`notes/` — captured along the way but not
+   yet routed) and `new_todos:` (TODO/FIXME/XXX/HACK markers this work added — candidates to route
+   or resolve).
 4. **Bin each into exactly one home** per the taxonomy. Sketch the routing plan first (what goes
    where) so the user can see it in the report.
 5. **Route each bucket** (each capture verb invoked here only *writes* — the single commit is step 7):

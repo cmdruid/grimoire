@@ -286,8 +286,8 @@ A small check wired into `<gate>` (implement in your stack -- it's a spec, not c
    `.records/adr/`, `.records/archive/`, `.records/bugs/`, `.records/notes/`, ... -- the explicit gated-dir list) carries a valid
    frontmatter block: `type` legal for the dir, `status` in that type's set, `updated` shaped
    `YYYY-MM-DD` (schema: each dir's own template -- `plan-design.md`/`plan-implementation.md`/
-   `roadmap.md`/`adr.md`/`done-record.md` for the `.agents/dev/` dirs; `/backlog`'s capture
-   taxonomy, `docs/TAXONOMY.md`, for `.records/bugs/` and `.records/notes/` --
+   `roadmap.md`/`adr.md`/`done-record.md` for the `.records/{plans,adr,archive}` dirs; `/backlog`'s
+   capture taxonomy, `docs/TAXONOMY.md`, for `.records/bugs/` and `.records/notes/` --
    `plans`/`adr`/`done` are foreman artifacts, not capture kinds, so TAXONOMY.md doesn't cover
    them). Catches records that would silently escape the
    type/status search recipes.

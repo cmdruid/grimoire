@@ -32,7 +32,7 @@ cmd_debrief_scan() {
   local root="$1" trunk="${2:-}" dirty todos done_recent
 
   echo "dirty_backlog:"
-  dirty="$(git -C "$root" status --porcelain 2>/dev/null | grep -F '.records/' || true)"
+  dirty="$(git -C "$root" status --porcelain 2>/dev/null | grep -E '\.records/(tasks|issues|feedback|bugs|notes)' || true)"
   if [ -n "$dirty" ]; then printf '%s\n' "$dirty" | sed 's/^/  /'; else echo "  (none)"; fi
 
   # New TODO/FIXME/XXX/HACK markers added vs <trunk-ref> (or the working tree if omitted).
