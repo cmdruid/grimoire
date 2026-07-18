@@ -70,6 +70,7 @@ paths no longer encode ownership, `foreman init` writes an **ownership index** (
 | plans / roadmaps | `.records/plans/` | `feature` |
 | shipped / done records | `.records/archive/` | `workstream` |
 | architecture decision records | `.records/adr/` | `architect` |
+| research reports · run logs | `.records/reports/`, `.records/logs/` | foreman / various |
 | audit deliverables: `FINDINGS` · `metrics.csv` · `history/` | `.records/audit/` | `auditor` |
 
 Session hand-offs stay **gitignored scratch** (root `HANDOFF.md` · `.sessions/`, steward `handoff`) —

@@ -394,11 +394,11 @@ _Last updated: <date>_
    location -> steward, and a one-line pointer to them from the front door. Load-bearing -- paths no
    longer encode ownership.
 4. No template copy step -- each producing skill's bundled `templates/` is used directly (§12).
-6. Add the *Trackers* (§6) as empty files with a one-line "what goes here" header each.
-7. Add the routing + planning + worktree + maintenance + sync docs (§5, §7-§10), genericized to
+5. Add the *Trackers* (§6) as empty files with a one-line "what goes here" header each.
+6. Add the routing + planning + worktree + maintenance + sync docs (§5, §7-§10), genericized to
    your stack.
-8. Implement the *Linter* (§11) and wire it into `<gate>`.
-9. Write your `<content docs>` (architecture/gotchas/diagnostics/perf) -- these are yours.
+7. Implement the *Linter* (§11) and wire it into `<gate>`.
+8. Write your `<content docs>` (architecture/gotchas/diagnostics/perf) -- these are yours.
 
 **Partial borrow:** pick modules from the *Module map* (§3); honor their dependencies. The most
 valuable standalone borrow is **Core + the capture trackers + Templates** -- bounded capture and
