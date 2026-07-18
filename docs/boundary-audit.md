@@ -61,6 +61,11 @@ Worked probes (extend as the library grows):
 | "hand this grunt work to a cheaper model" | `delegate` |
 | "design the foundational architecture" | `architect` |
 
+**Last run: 2026-07-18** — 12 probes, **12/12** routed correctly against the thinned descriptions
+alone (fresh sub-agent, no runbook/reasoning in context). The auditor/chiropractor,
+foreman/backlog, architect/feature, and handoff/workstream pairs all disambiguated on self-scope
+without a cross-reference. Re-run after any description change.
+
 ## The mechanical backstop
 
 `scripts/skills-lint.sh` **check 7** WARNs when a `description:` names a sibling skill via `/name`.

@@ -1,6 +1,8 @@
 # Skill boundaries + glue ownership — Design & Implementation Plan
 
-**Status:** Proposed (2026-07-18).
+**Status:** Implemented (2026-07-18) on branch `skill-boundaries-glue-ownership`. Routing-probe gate
+passed 12/12 against the thinned descriptions alone (fresh sub-agent); `skills-lint.sh` `fails=0` with
+the only check-7 WARN being the documented `mailbox → /delegate` fragment exception.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to
 > implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
