@@ -87,18 +87,16 @@ tracker's format, plus the store-dir frontmatter rules — is canonical here in
 
 ## Scope boundary
 
-`/backlog` is the **capture bureau** — it files, sweeps, and keeps the trackers tidy, and it owns their
-formats and schema. It **captures; it never drains.** It is **not** the dev-system integration layer:
-standing up the `.agents/foreman/` system, the change-router (where a change starts), and the curation
-loop that folds captured signal back into doctrine are `/foreman`'s (`init` / `route` / `calibrate` /
-`check`). It is **not** the code-quality audit (`/auditor`, which scores project code against a
-rubric), and it does not do the development itself.
+`/backlog` is the **capture bureau** — it files, sweeps, and keeps the trackers tidy, and owns their
+formats and schema. It **captures; it never drains.** Draining the captured signal into doctrine,
+standing up and routing the dev system, auditing code, and doing the development itself each belong to
+another skill — *which* owns *what* is the runbook's seam map (`packs/clankshop.md`) and the deployed
+**ownership index**, not this file.
 
 ## Companion skills (separate, not absorbed)
 
-`/foreman` (stand up / route / calibrate the dev system — drains this bureau's system-relevant signal into
-doctrine via `calibrate`), `/architect` (the design-system engine — `init/brainstorm/plan/prep/distill/check`),
-`/feature` (the plan+build engine — `brainstorm | design | plan | build`), `/workstream` (drive a
-stream in a worktree; owns landing), `/handoff` (save/resume a session snapshot), `/auditor` (score
-project code). The verbs defer to these where the host has them; the by-hand fallback is always "do it
-per the deployed `.agents/foreman/docs/`".
+`backlog`'s verbs defer to companion skills where the host has them (its system-relevant signal is
+drained into doctrine downstream). The composition and the seams between them live in
+`packs/clankshop.md` and the deployed **ownership index** (`.agents/README.md` / `.records/README.md`);
+this file does **not** restate each companion's verbs — that list rots. Where a companion is absent,
+the by-hand fallback is the deployed `.agents/foreman/docs/`.

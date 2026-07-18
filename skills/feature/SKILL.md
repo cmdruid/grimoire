@@ -273,8 +273,8 @@ them. **`/feature` never debriefs, ships, or lands.**
 - **Standalone** (a one-off feature) -> the user runs `brainstorm -> design -> plan -> build`, then
   lands the work and runs **`/backlog debrief`** at the done-when (PLANNING.md -> *When a plan completes*).
 - **Inside `/workstream`** -> the stream calls `/feature` per queue item; `build` stops at gate-green
-  and **hands back**. `/workstream` owns the **reset ritual** (`/backlog debrief` #1 -> `ship` -> *(if the
-  ship was eventful)* `/backlog debrief` #2 -> `save` -> reset). `/feature` initiates none of it.
+  and **hands back**. Landing, capture, and the reset ritual around the hand-back are `/workstream`'s to
+  run and document — `/feature` initiates none of it.
 - **`/foreman`** (router) -> for a feature, dispatches into `/feature` at the right verb (start at
   `brainstorm`, or jump to `design`/`plan` if an approach/spec already exists).
 - **`review`** (cross-cutting) -> any orchestrator can call it on an artifact at any point: after

@@ -9,12 +9,11 @@ A skill over a project's `.agents/architect/` **seed**: the clean, present-tense
 truth that code is the disposable build output of. This `SKILL.md` is a thin **router**; each verb
 lives in `verbs/<verb>.md`; the portable doctrine lives in `docs/DOCTRINE.md`.
 
-## The seam this skill lives on
-- The seam is **altitude**: `/architect` owns the *seed-altitude standing design*; `/feature` owns
-  *feature-scope change + execution*.
-- `/architect` authors plans; `/feature` executes them. A *derived* property: `/architect` never writes
-  executable code (it may *read* `src/` for `prep`).
-- The seed is the shared contract. See `docs/DOCTRINE.md`.
+## Altitude — what this skill owns
+- `/architect` owns the **seed-altitude standing design**: it *authors* the seed and never writes
+  executable code (it may *read* `src/` for `prep`). Feature-scope change and execution live elsewhere.
+- The altitude seam (who owns which) is in the runbook (`packs/clankshop.md`); the seed is the shared
+  contract (`docs/DOCTRINE.md`).
 
 ## Verbs
 | verb | file | one-liner |
