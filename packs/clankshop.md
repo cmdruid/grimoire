@@ -107,6 +107,7 @@ validates for drift. The load-bearing invariant: **no skill crosses another's se
 | `foreman` ↔ `chiropractor` | `clankshop` **specifies** the `AGENTS.md` workflow-glue (content); `foreman` **stamps** it at `init` and **grows** it via `calibrate` (mechanism); `chiropractor` **audits** the front-door's ergonomics. Specify → stamp → audit — none authors another's part. |
 | `architect` ↔ `chiropractor` | `architect`'s GLOSSARY = **domain** terms (part of the seed); `chiropractor`'s concern = a **navigational** glossary/index exists and is linked. Domain vs. navigation. |
 | `architect` ↔ `feature` | `architect` authors the seed (seed altitude); `feature` builds a change against it (feature scope). The altitude seam. |
+| `architect` ↔ `foreman` | `architect` owns the **design system** (the regenerable seed code builds from); `foreman` owns the **operational system** (how a change is routed, built, calibrated). Design vs. operation. |
 | `feature` ↔ `workstream` ↔ `backlog` | `feature` ends at gate-green; `workstream` lands; `backlog debrief` captures. Three seams, one rule: none crosses another's. |
 | `delegate` ↔ `mailbox` | `delegate` **decides** (delegate-or-not, mechanism, route, return contract); `mailbox` **carries** (the worktree-safe slot transport `delegate` routes to). Decision vs. transport. |
 | `auditor` ↔ `chiropractor` | `auditor` scores **project code** against a quality rubric; `chiropractor` tunes the **doc spine's** ergonomics. Code vs. docs (see *"Which audit?"* below). |
