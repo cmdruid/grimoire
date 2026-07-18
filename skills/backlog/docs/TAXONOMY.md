@@ -88,12 +88,14 @@ Most captures are obvious. Three boundaries carry real judgment; the model makes
   - **Impact** — who/what it affects, how badly.
   - **Suggested direction** — the change or investigation that would address it (a line or two).
 
-  A durable *working-as-coded gotcha* discovered here also goes to `.agents/dev/docs/GOTCHAS.md`.
+  A durable *working-as-coded gotcha* discovered here is captured as a `/backlog note`; `/foreman`
+  promotes it to `.agents/dev/docs/GOTCHAS.md` during `tune`.
 
 ### `bug` — a reproducible code defect
 - **What:** an observed, reproducible defect — crash, wrong render/output, dropped state, flaky
-  behavior. If it turns out **working-as-coded but surprising**, it's not a bug: promote it to
-  `.agents/dev/docs/GOTCHAS.md` and file no report.
+  behavior. If it turns out **working-as-coded but surprising**, it's not a bug: capture it as a
+  `/backlog note` (`/foreman` promotes it to `.agents/dev/docs/GOTCHAS.md` during `tune`) and file no
+  report.
 - **Store:** `.agents/backlog/bugs/<YYYY-MM-DD>-<slug>.md`, from `templates/bug-report.md`. A
   **store dir** — carries frontmatter (see below). Load-bearing rule: **`bugs/` is a store, not a
   work queue** — a report is tracked from a **linked actionable item** (a `TASKS.md` line, or an
@@ -162,7 +164,8 @@ rg -l '^type: note'   .agents/backlog/notes/    # every note
 here:
 
 - **`issues`, `feedback`, and note-promotion** → `/foreman tune` (drains system-relevant signal into
-  doctrine, routes project items to their home, promotes a durable note to a `MEMORY.md` invariant).
+  doctrine, routes project items to their home, promotes a durable note to a `MEMORY.md` invariant or
+  a working-as-coded gotcha to `.agents/dev/docs/GOTCHAS.md`).
 - **`tasks`** → `/feature` / `/workstream` (turn a captured item into shipped work; the item is
   removed on ship).
 - **a `bug`'s fix** → whoever works the linked actionable item (the `TASKS.md` line or `ISSUES.md`

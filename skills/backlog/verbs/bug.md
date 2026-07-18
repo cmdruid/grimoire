@@ -24,7 +24,8 @@ never left with nothing pointing at it.
 **Do NOT use** for a thing to build (`/backlog task`), a project problem/concern/limitation
 (`/backlog issue`), a durable fact (`/backlog note`), or a dev-experience observation
 (`/backlog feedback`). And if it turns out to be **working-as-coded but surprising**, it's not a
-bug — promote it to `.agents/dev/docs/GOTCHAS.md` and file no report. For the end-of-work *sweep* that routes
+bug — capture it as a `/backlog note` (`/foreman` promotes it to `.agents/dev/docs/GOTCHAS.md` during
+`tune`) and file no report. For the end-of-work *sweep* that routes
 many surfaced items at once (including any defects), that's `/backlog debrief`; this verb is the
 single-defect, right-now path to the same destination.
 
@@ -43,8 +44,10 @@ discipline) — don't guess.
 ## Procedure
 
 1. **Confirm it's a bug.** It's an observed, reproducible defect, not a task/issue/note/feedback item
-   (route those to their home and stop). **Check `.agents/dev/docs/GOTCHAS.md` first** — it may be a known trap
-   (working-as-coded). If so, it's not a bug: add it to `GOTCHAS.md` if it's missing, and stop.
+   (route those to their home and stop). **Check `.agents/dev/docs/GOTCHAS.md` first** (and
+   `.agents/backlog/notes/` for a trap not yet promoted) — it may be a known trap (working-as-coded).
+   If so, it's not a bug: capture it as a `/backlog note` if it isn't one already (`/foreman` promotes
+   it to `GOTCHAS.md` during `tune`), and stop.
 2. **Diagnose enough to capture a repro** (per the host's `.agents/dev/docs/DIAGNOSTICS.md`: observe →
    reproduce → isolate). Cheapest first — logs, the host's diagnostic overlays / state dumps; pin any
    seed/state and capture it in the host's scripted scenario/test harness (a scripted repro the
@@ -70,7 +73,8 @@ discipline) — don't guess.
    the host's doc-linter. Invoked **inside `/backlog debrief`**, do **not**
    commit — only write; the sweep makes the single atomic commit.
 7. **Report in chat** — the report path and either the linking item or the fix commit. If a durable
-   trap surfaced during diagnosis, note that it was also added to `GOTCHAS.md`.
+   trap surfaced during diagnosis, note that it was captured as a `/backlog note` (for `/foreman` to
+   promote to `GOTCHAS.md`).
 
 ## Relationship to neighboring verbs
 
@@ -86,4 +90,5 @@ discipline) — don't guess.
 
 The defect has a report in `.agents/backlog/bugs/` with a real repro + evidence, that report is **linked from an
 actionable item** (or already fixed-and-archived with its commit), no working-as-coded "bug" was
-filed (promoted to `GOTCHAS.md` instead), and the chat names where the report and its tracker live.
+filed (captured as a `/backlog note` instead, for `/foreman` to promote to `GOTCHAS.md`), and the chat
+names where the report and its tracker live.
