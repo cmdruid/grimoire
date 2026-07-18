@@ -72,3 +72,8 @@ without a cross-reference. Re-run after any description change.
 Facts, not verdicts: it surfaces a **candidate**; you judge it against this rubric (the router/fragment
 exceptions are real, so it never FAILs). A new WARN that isn't a documented exception is a regression —
 self-scope it.
+
+**Known limitation.** Check 7 covers only *description*-level backticked `/name` refs. **Body-level
+re-documentation** (rubric V1 — a section restating a sibling's verbs/protocol/seam) has **no
+mechanical backstop**; it is caught only by the manual scan (step 2). Don't over-trust a green lint for
+bodies — the roster/scope-boundary rot lives there.
