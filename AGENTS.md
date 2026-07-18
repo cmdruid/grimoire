@@ -66,3 +66,29 @@ map live in `README.md` (*Storage convention*) and `packs/clankshop.md`.
   tracker, where it strands and the authors never see it. For this library that channel is **GitHub
   issues** (an installation may override it with its own collection file — see `README.md`). The
   bar: *would this change the skill?*
+
+- **Self-scoping descriptions — the runbook holds the glue, not the leaves.** A skill's frontmatter
+  `description:` is its **routing surface**, and it must route **on its own**: the harness selects from
+  descriptions alone, and a bare install (skills present, no pack deployed) has no seam map in context.
+  So a description states only its **own** job and domain; it does **not** name a sibling to defer,
+  disambiguate, or contrast (*"for X use /other"*, *"distinct from /other"*, *"peer to /other"*) — that
+  contrast is the runbook's job. Two narrow exceptions: a **router** may name the mechanisms it
+  dispatches among (describing its own function — `delegate` → inline/mailbox/codex), and a genuine
+  **fragment** may carry one orientation pointer to its parent (`mailbox` → `delegate`). A **body** may
+  keep a soft operational pointer a reader needs mid-task, but must not re-document or own another
+  skill's seam — point, don't paste. **Competence is the hard constraint:** drop a cross-reference only
+  when the two self-scopes still route correctly without it (verify with a routing probe); where they
+  can't, **sharpen the scope, never restore the pointer**. Independence is maximized under routing
+  accuracy, never traded for it.
+
+- **Cross-skill seams live in the runbook.** How two skills compose — who owns what, where one stops
+  and the next starts — belongs in the pack/runbook (`packs/clankshop.md`'s seam table), never
+  duplicated into a leaf's frontmatter. The load-bearing invariant: **no skill crosses another's
+  seam.** A seam asserted in a leaf but absent from the runbook is drift; a seam duplicated into a leaf
+  is co-mingling — audit for both.
+
+- **Glue is content (the pack's) vs. mechanism (the engine's) — birth vs. growth.** The glue *content*
+  — the seams, the initial `AGENTS.md`/`WORKFLOWS.md` wiring — is owned by the pack/runbook, which
+  **births** the constellation. The workflow engine (`foreman`) is the pack-agnostic **oven**: it
+  **stamps** whatever the recipe specifies and **grows** it afterward (via `calibrate`), but it
+  **never authors** the pack-specific glue. Recipe owns *what*; oven owns *how* and *ongoing*.
