@@ -1,6 +1,6 @@
 ---
 name: feature
-description: "Execute the planning spine as verbs -- `/feature brainstorm | design | plan | build`, plus the cross-cutting `review` (an independent ground-truthed verdict on an existing design/plan/roadmap/ADR). Use when the user runs `/feature ...`, or asks to brainstorm / design / plan / build / review a feature or its design, plan, or roadmap. Turns an idea into a validated approach, an argued spec, a task-by-task plan, and tested code at gate-green, tuned to the host's gate and templates. The four stages are primitives an orchestrator sequences; `feature` ends at gate-green and never debriefs, ships, or lands. For a one-line patch, skip it (fix on the trunk)."
+description: "Execute the planning spine as verbs -- `/feature brainstorm | design | plan | build`, plus the cross-cutting `review` (an independent ground-truthed verdict on an existing design/plan/roadmap/ADR) and `/feature templates` (scaffold its project-overridable planning-templates seed). Use when the user runs `/feature ...`, or asks to brainstorm / design / plan / build / review a feature or its design, plan, or roadmap. Turns an idea into a validated approach, an argued spec, a task-by-task plan, and tested code at gate-green, tuned to the host's gate and templates. The four stages are primitives an orchestrator sequences; `feature` ends at gate-green and never debriefs, ships, or lands. For a one-line patch, skip it (fix on the trunk)."
 ---
 
 # feature -- the executable planning spine
@@ -39,7 +39,12 @@ settings change, no precedence question.
 | `review` | **cross-cutting:** independent ground-truthed critique of an existing artifact | any spine artifact -> a verdict (in context) | `<doc-file> [focus]` |
 
 The first four are the linear spine (stages 1-4); `review` is orthogonal -- it critiques any artifact
-the others produce, at any point, and is not part of the brainstorm->build sequence.
+the others produce, at any point, and is not part of the brainstorm->build sequence. A sixth verb,
+`templates`, is **infrastructure** -- it deploys the project-overridable templates seed the spine reads
+from (see *templates*, below).
+
+**New here? Read `docs/ideal-use.md`** -- a self-contained worked arc (`brainstorm -> design -> plan ->
+build`) on one concrete feature, showing how the spine runs and where its output hands off.
 
 State flows between verbs through the **spine artifacts themselves** -- there is no separate
 `/feature` state file (see *State between verbs*).
@@ -91,7 +96,9 @@ Write the design that argues the chosen approach before any code, then gate it o
 standalone design for a patch; for a **small feature** this is the **brief that doubles as the plan**
 (keep it short -- problem, approach, a task list, a done-when); for a **track** it is the **roadmap**
 (written once, settling all phases). Copy the shape from `templates/plan-design.md` (or
-`templates/roadmap.md` for a track) -- do not double-plan by also re-filling a template by hand.
+`templates/roadmap.md` for a track) -- **preferring the project's `.agents/feature/templates/` override
+if present**, else this bundled default (see *templates*) -- do not double-plan by also re-filling a
+template by hand.
 
 Checklist:
 1. **Write the spec** with the template's sections: **Problem** (the root need, not a surface knob),
@@ -116,7 +123,8 @@ the design file).
 Turn the approved design into a plan an implementer executes step by step, after re-grounding it
 against the live tree. For a **small feature** this folds into `design`'s brief (no separate plan);
 for a **track**, write one plan **per phase** from the roadmap. Copy
-`templates/plan-implementation.md`.
+`templates/plan-implementation.md` (preferring the project's `.agents/feature/templates/` override if
+present, else this bundled default -- see *templates*).
 
 Checklist:
 1. **Writing discipline** -- decompose into **bite-sized tasks** (each an independently testable
@@ -255,6 +263,34 @@ synthesize. Read-only **only**: never an editing subagent (the `build` worktree 
 Consumes an existing artifact by path; produces a verdict in context. Terminal step: hand the verdict
 to whoever owns the artifact -- `review` changes nothing itself.
 
+## templates -- scaffold the project-overridable templates seed
+
+Deploy this skill's planning-artifact shapes as a **project-overridable seed** at
+`<root>/.agents/feature/templates/`, so a project can tailor a template without editing the skill. This
+is the **infrastructure** verb (not a spine stage): `design`/`plan` produce their docs from these
+shapes, and this verb is how a project takes ownership of them.
+
+**Resolution order (baked default vs. project override).** When `design` or `plan` copies a shape, it
+**prefers the deployed seed** `<root>/.agents/feature/templates/<name>.md` **if present**, and falls
+back to this skill's **bundled** `templates/<name>.md` otherwise. The bundle is always the working
+default; the seed is an optional per-project override layer. A skill that ships customizable assets is
+**still not a steward** -- it owns no cross-cutting layer, it just deploys files a project may edit.
+
+Checklist:
+1. **Scaffold the seed** with `scripts/seed-templates.sh <root>` -- it copies the bundled `templates/*.md`
+   (plus a short README stating the override contract) into `.agents/feature/templates/`,
+   **create-if-absent**. A template a project has already edited is **never** overwritten; re-running
+   only backfills missing files (idempotent). It needs no other skill to have run first -- feature
+   stands up its own asset home (self-init, no floor).
+2. **Report** what was created vs. already present (the script's `created=`/`exists=` facts), and the
+   seed path.
+3. **Author/override (optional).** To tailor a shape, edit the file in the seed directly -- the next
+   `design`/`plan` picks it up by the resolution order above. v0 scope is just the scaffold; richer
+   template authoring can wait.
+
+Produces the deployable templates seed; consumes nothing. Terminal step: the seed is on disk and the
+spine verbs resolve against it.
+
 ## State between verbs = the spine artifacts
 
 There is no separate `/feature` state file. Each verb consumes the previous verb's artifact by path:
@@ -283,6 +319,25 @@ them. **`/feature` never debriefs, ships, or lands.**
   plan between `plan` and `build` is recommended by default**, not only on request -- an independent
   ground-truthed pass there has repeatedly caught must-fix bugs before any code was written. It is artifact-free and changes nothing -- the verdict
   goes back to whoever owns the artifact, who decides what to revise.
+
+## Edges
+
+Feature's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
+names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A composer derives
+cross-skill seams by matching these types against other skills' edges; feature names no successor.
+
+<!-- edges:feature -->
+- produces: design, plan, gate-green-code — the design spec, the implementation plan, and code at gate-green
+- handoff: gate-green-code — build terminates expecting a landing step; the baton it passes is code at gate-green
+- consumes: design, plan — plan reads the design; build reads the plan (feature's own internal stage chain)
+<!-- /edges:feature -->
+
+**The internal chain is not a seam.** `design -> plan -> build` shows up as feature *producing* `design`
+and `plan` and *consuming* them again -- but both ends are the **same skill**, so a composer must
+**exclude same-skill produces↔consumes pairs** from seam derivation (else it would draw a spurious
+"feature → feature" arrow). The only *external* control edge feature asserts is `handoff: gate-green-code`,
+which pairs with whatever `consumes: gate-green-code` (a landing step) -- matched by **type**, so feature
+never names that consumer. The `docs/ideal-use.md` example ends exactly on this edge.
 
 ## Structure, plugin posture, portability
 

@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: "The capture bureau — the single collection front-door for a project's `.records/` trackers. Owns the trackers, their formats, and the capture schema (`docs/TAXONOMY.md`). Seven verbs: five capture one follow-up by subject/kind — `/backlog task` (a thing to build), `/backlog bug` (a reproducible defect), `/backlog issue` (a project problem/concern/limitation), `/backlog note` (a durable project fact), `/backlog feedback` (a dev-experience observation) — plus `/backlog debrief` (sweep a finished body of work to every tracker) and `/backlog curate` (keep the lists tidy: dedupe/rank/sharpen/weed). Captures uniformly; never drains. Use when the user runs `/backlog ...`, or asks to file/capture/sweep/curate a follow-up."
+description: "The capture bureau — the single collection front-door for a project's `.records/` trackers. Owns the trackers, their formats, and the capture schema (`docs/TAXONOMY.md`). Self-initializing: `/backlog init` stands up its own `.records/` home and registers its route into the project front-door with no external setup step. Five capture verbs take one follow-up by subject/kind — `/backlog task` (a thing to build), `/backlog bug` (a reproducible defect), `/backlog issue` (a project problem/concern/limitation), `/backlog note` (a durable project fact), `/backlog feedback` (a dev-experience observation) — plus `/backlog debrief` (sweep a finished body of work to every tracker) and `/backlog curate` (keep the lists tidy: dedupe/rank/sharpen/weed). Captures uniformly; never drains. Use when the user runs `/backlog ...`, or asks to set up the trackers, file/capture/sweep/curate a follow-up."
 ---
 
 # backlog — the capture bureau
@@ -28,6 +28,7 @@ and follow it**; do not reconstruct a procedure from memory.
 
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
+| `/backlog init` | `verbs/init.md` | Stand up backlog's own `.records/` home + register its route into the front-door (idempotent, no external floor) | "set up the trackers", "stand up the backlog" |
 | `/backlog bug` | `verbs/bug.md` | File a reproducible **defect** → `.records/bugs/` (linked from an actionable item) | "file a bug", "this is broken — repro" |
 | `/backlog task` | `verbs/task.md` | Capture a thing to build (product/feature follow-up) → `.records/tasks.md` | "put X in the backlog", "remind me to…" |
 | `/backlog issue` | `verbs/issue.md` | Capture a **project** problem/concern/limitation → `.records/issues.md` | "known limitation", "architectural risk" |
@@ -92,6 +93,24 @@ formats and schema. It **captures; it never drains.** Draining the captured sign
 standing up and routing the dev system, auditing code, and doing the development itself each belong to
 another skill — *which* owns *what* is the runbook's seam map (`packs/clankshop.md`) and the deployed
 **ownership index**, not this file.
+
+## Edges
+
+Backlog's **typed edges** — its place in a workflow declared as artifact/capability *types*, never as
+sibling names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A composer
+(`/foreman`/runbook) **derives** cross-skill seams by matching these types against other skills' edges;
+backlog names no successor of its own. The delimited block is machine-findable and idempotently
+rewritten by `init`'s registration.
+
+<!-- edges:backlog -->
+- produces: tracker-entry — task/bug/issue/note/feedback rows under `.records/`
+- handoff: — (none; a filed item sits until a composer drains it — backlog hands off no baton)
+- consumes: — (none; capture is a front-door — inputs come from the human/the work, not another skill)
+<!-- /edges:backlog -->
+
+`produces: tracker-entry` is a **data source**: something (a drainer/curator) *may* pick the entry up,
+but backlog does not itself hand control onward — hence `handoff: —`. That is the deliberate distinction
+between a weak `produces` edge and a strong `handoff` edge (model §2.1).
 
 ## Companion skills (separate, not absorbed)
 
