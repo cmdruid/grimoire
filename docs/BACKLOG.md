@@ -14,6 +14,28 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-6 — register-route.sh is now duplicated per-skill; keep the write-protocol in sync
+- **source:** Phase 5 rollout, `feature` landing (2026-07-19); commit `77c2a52`.
+- **status:** open
+- **body:** `feature` landed its own front-door self-registration by bundling a **second copy** of
+  backlog's `scripts/register-route.sh` (byte-identical mechanism, only the doc comment reworded) —
+  deliberate, per the *self-contained skill directory* rule: a portable skill carries no cross-skill
+  script dependency, so `feature` cannot `source` or shell out to `../backlog/scripts/register-route.sh`.
+  Phase 5 will produce a **third and fourth** copy (`architect`, `auditor`; `foreman` last). All four
+  copies share one write **contract** — delimiter syntax (`skill:<name> BEGIN built-against:<ba>` /
+  `skill:<name> END`), the `## Skill routes (self-registered)` section name, and the
+  absent→append / present→replace / malformed→refuse-and-report idempotency rule (model §3.4) — with
+  **no shared code**, by the same design tradeoff BL-5 already accepted for the edge-block parsers.
+  **Follow-up:** no fix needed now (each copy is independently tested — see the fixture transcript in
+  commit `77c2a52`'s neighbor) — but a **future change to the write protocol** (a new delimiter shape, a
+  different section name) must update every copy, and nothing mechanical catches a divergence. Same
+  candidate remedy as BL-5: a shared test fixture the write-protocol tests run against per copy, so an
+  edit that updates one copy's behavior without the others fails visibly. Natural home: alongside BL-5,
+  once Phase 5's rollout finishes and the final copy count is known (up to 5: `backlog`, `feature`,
+  `architect`, `auditor`, `foreman` — `foreman` still writes its **own** `skill:foreman` block as a
+  registering leaf per Phase 4 §5.3, even though it is *also* the composer that owns the arrangement
+  around every skill's block).
+
 ### BL-5 — keep skills-lint.sh check 8 and foreman-health.sh derive-seams parsers in sync
 - **source:** Phase 4 `/foreman` re-scope (2026-07-19);
   `docs/design/2026-07-19-phase4-foreman-rescope.md` §4.2, §9.
