@@ -51,7 +51,11 @@ one-line resolution; delete only when the reason it existed is gone.
 - **source:** Phase 5 rollout, `foreman` landing (2026-07-19); reproduced via
   `foreman-health.sh check-projection` against a scratch fixture registering `backlog`/`auditor`/
   `foreman` from grimoire's own `skills/`.
-- **status:** open
+- **status:** done (2026-07-19) — swapped the formula to `git -C <skill-dir> log -1 --format=%h -- .`
+  (path-scoped, not whole-repo `HEAD`) in `backlog`/`architect`/`feature`/`auditor`'s registration
+  prose, `foreman-health.sh`'s `cmd_check_projection`, and `skill-builder new`'s scaffold template
+  (so future skills get it right from day one). Re-verified against a scratch fixture:
+  `check-projection` now stamps `backlog` at its own last-touch sha (`4b32a2b`), not the repo tip.
 - **body:** every `init`'s `built-against` stamp (and `check-projection`'s "current version" side) is
   computed as `git -C <skill-dir> rev-parse --short HEAD` (backlog's `verbs/init.md`, and now
   feature/architect/auditor/foreman's equivalents, plus `foreman-health.sh`'s `cmd_check_projection`).

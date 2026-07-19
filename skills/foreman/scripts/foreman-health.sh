@@ -276,7 +276,10 @@ cmd_check_projection() {
   for sk in "$skills_root"/*/; do
     name="$(basename "$sk")"
     [ -f "$sk/SKILL.md" ] || continue
-    ba="$(git -C "$sk" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+    # Path-scoped (log -1 -- .), not rev-parse HEAD: the whole-repo tip collapses
+    # every skill to one value on a monorepo skills-root (BL-7); this tracks the
+    # last commit that actually touched THIS skill's own directory.
+    ba="$(git -C "$sk" log -1 --format=%h -- . 2>/dev/null || echo unknown)"
     printf '%s\t%s\n' "$name" "$ba" >> "$inst"
   done
 

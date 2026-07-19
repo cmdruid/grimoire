@@ -69,8 +69,10 @@ When the host has no `.agents/auditor/` or `.records/audit/`, follow the bundled
    (`docs/design/2026-07-18-skill-self-init-model.md` §1, §3) -- auditor already self-inits both
    homes with no `/foreman` required; this makes that bare install *visible* too.
    Resolve the project's always-loaded front-door doc (`AGENTS.md`/`CLAUDE.md`) and a
-   `built-against` stamp (this skill dir's short git sha, else a version string, else
-   `v0-<date>`) -- it must **exist**; a missing front-door is a project-setup gap, say so and
+   `built-against` stamp (the short sha of the last commit that touched **this skill's own
+   directory** -- `git -C <skill-dir> log -1 --format=%h -- .`, path-scoped, not the whole repo's
+   `HEAD`, so it tracks this skill even on a monorepo skills-root, BL-7 -- else a version string,
+   else `v0-<date>`) -- it must **exist**; a missing front-door is a project-setup gap, say so and
    stop before writing. Feed the block body on stdin to
    `scripts/register-route.sh <front-door> auditor <built-against>`:
    ```markdown

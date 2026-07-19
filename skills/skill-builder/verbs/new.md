@@ -59,6 +59,10 @@ verb's job).
      copy at runtime — each durable-home skill bundles its own, so it stays self-contained and works
      installed alone (BL-6). `skill-builder check`'s drift pass verifies every deployed copy stays in
      functional sync with the reference going forward.
+   - State the `built-against` stamp formula as **path-scoped to the new skill's own directory** —
+     `git -C <skill-dir> log -1 --format=%h -- .`, never `git -C <skill-dir> rev-parse --short HEAD`
+     (the latter collapses to one value across every skill on a monorepo skills-root, BL-7) — else a
+     version string, else `v0-<date>`.
    - State the **fixture caveat** explicitly in the new skill's `init` verb if this scaffold is being built
      *inside* the same library that authors the doctrine: never register against that library's own
      real front-door; exercise against a throwaway fixture.

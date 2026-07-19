@@ -67,10 +67,12 @@ judgment (which front-door, what the route says):
 ## Procedure
 
 1. **Resolve the root + the built-against stamp.** Project root from a project dir the conversation
-   references, else cwd, else ask. Compute `<built-against>` as backlog's own version: the skill dir's
-   short git sha where it lives in a repo (`git -C <skill-dir> rev-parse --short HEAD`), else a version
-   string, else `v0-<date>` (`date +%Y-%m-%d`, never guessed). The stamp is what the drift validator
-   compares — a pointer to what was projected, not a guarantee.
+   references, else cwd, else ask. Compute `<built-against>` as backlog's own version: the short sha
+   of the last commit that touched **backlog's own directory** where it lives in a repo
+   (`git -C <skill-dir> log -1 --format=%h -- .` — path-scoped, not the whole repo's `HEAD`, so the
+   stamp actually tracks this skill even on a monorepo skills-root, BL-7), else a version string, else
+   `v0-<date>` (`date +%Y-%m-%d`, never guessed). The stamp is what the drift validator compares — a
+   pointer to what was projected, not a guarantee.
 2. **Scaffold the home.** Run `scripts/scaffold-records.sh <root>`. Report what was created vs. already
    present (the facts are its output). No `/foreman` is required or consulted.
 3. **Resolve the front-door doc — parameterized, never assumed.** The registration target is the

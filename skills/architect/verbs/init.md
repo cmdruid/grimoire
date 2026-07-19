@@ -209,8 +209,10 @@ needed no `/foreman init` to stand up.
 1. **Resolve the front-door doc + a `built-against` stamp.** The registration target is the project's
    always-loaded front-door (`AGENTS.md`/`CLAUDE.md`, whichever the harness auto-loads); it must
    **exist** — if the project has none, that's a project-setup gap, say so and stop before writing.
-   `built-against` is this skill dir's short git sha (`git -C <skill-dir> rev-parse --short HEAD`), else
-   a version string, else `v0-<date>`.
+   `built-against` is the short sha of the last commit that touched **this skill's own directory**
+   (`git -C <skill-dir> log -1 --format=%h -- .`) — path-scoped, not the whole repo's `HEAD`, so the
+   stamp actually reflects when *this skill* last changed even on a monorepo skills-root where other
+   directories commit more often (BL-7) — else a version string, else `v0-<date>`.
    **Grimoire caveat (patient-zero):** never register against grimoire's own authored `AGENTS.md` — this
    verb is exercised only against a throwaway fixture front-door (a temp `AGENTS.md` under the
    scratchpad, never the real one); in a consuming project the parameter resolves to that project's real

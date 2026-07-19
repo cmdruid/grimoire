@@ -297,8 +297,10 @@ Checklist:
 3. **Resolve the front-door doc + a `built-against` stamp.** The registration target is the project's
    always-loaded front-door (`AGENTS.md`/`CLAUDE.md`, whichever the harness auto-loads); it must
    **exist** -- if the project has none, that's a project-setup gap, say so and stop before writing.
-   `built-against` is this skill dir's short git sha (`git -C <skill-dir> rev-parse --short HEAD`), else
-   a version string, else `v0-<date>`.
+   `built-against` is the short sha of the last commit that touched **this skill's own directory**
+   (`git -C <skill-dir> log -1 --format=%h -- .` -- path-scoped, not the whole repo's `HEAD`, so the
+   stamp tracks this skill even on a monorepo skills-root, BL-7), else a version string, else
+   `v0-<date>`.
    **Grimoire caveat (patient-zero):** never register against grimoire's own authored `AGENTS.md` -- see
    *The fixture caveat* below.
 4. **Register the route.** Feed the block body on stdin to
