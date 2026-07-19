@@ -119,3 +119,17 @@ findings. Route per that table; mailbox just carries the artifact.
 It is the agent-tooling "pointer-heavy, not pasted content" principle applied to inter-agent handoffs:
 a pasted artifact is paid for repeatedly and a delegate that writes the tree is unsafe; a **path** is
 paid once and a delegate that writes only its slot can't corrupt anything.
+
+## Edges
+
+Mailbox's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
+names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). **Pure-mechanism
+plumbing**: `.mailbox/` is gitignored scratch, no typed artifact edges (a slot's patch/verdict is
+ephemeral and consumed inline by the applying parent), and no registration -- transport, not a
+capture home. All three edges are a *stated* empty (model §2.3), not an omission.
+
+<!-- edges:mailbox -->
+- produces: — (a slot's patch/verdict is consumed inline by the applying parent, not a typed artifact)
+- handoff: — (none; a slot is applied and gated by the parent, it doesn't terminate a workflow)
+- consumes: — (none; it reads the delegate's task description, not another skill's typed output)
+<!-- /edges:mailbox -->

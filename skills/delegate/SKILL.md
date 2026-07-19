@@ -191,3 +191,18 @@ The protocol above is harness-neutral; only *how you spawn a sub-agent on the na
 | dispatch | self-contained task, no inherited context; on the confirmed model |
 | return | deliverable (tiny) + byproducts block (debrief taxonomy, empty OK); stash byproducts now |
 | trust | re-establish from diff / gates / output -- never the self-report |
+
+## Edges
+
+Delegate's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
+names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). **Pure-mechanism
+plumbing**: no storage, no typed artifact edges (a dispatched task's deliverable is ephemeral and
+consumed inline by whoever called `/delegate`), and no registration -- it is ambient doctrine/routing
+with no captured items to surface, the exact thing registration exists for. All three edges are a
+*stated* empty (model §2.3), not an omission.
+
+<!-- edges:delegate -->
+- produces: — (a dispatch's deliverable is consumed inline by the caller, not a typed artifact)
+- handoff: — (none; delegate routes a task, it doesn't terminate a workflow expecting a landing step)
+- consumes: — (none; it reads the caller's task description, not another skill's typed output)
+<!-- /edges:delegate -->

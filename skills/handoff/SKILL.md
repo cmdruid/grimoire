@@ -195,3 +195,22 @@ only if it would be empty.
   and the file is **left in place** (rolling).
 - **close `<name>`:** the named file is deleted and confirmed.
 - **list:** the existing hand-offs (named + root) are reported, nothing written.
+
+## Edges
+
+Handoff's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
+names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A real
+**self-chain**: `save` produces the doc, `resume`/`load` consume it back -- the second intra-skill
+produces↔consumes pair after feature's `design -> plan -> build` (a composer must exclude this pair
+from seam derivation, same F2 rule). No durable home (`.sessions/`/root `HANDOFF.md` are gitignored
+scratch, lazily created) -- registration is optional and not implemented in v0.
+
+<!-- edges:handoff -->
+- produces: handoff-doc — the written save file (root `HANDOFF.md` or `.sessions/<name>.md`)
+- handoff: — (none; the doc is picked up by *resume*/*load*, not handed to another skill)
+- consumes: handoff-doc — resume/load read the doc back (intra-skill: same skill on both ends)
+<!-- /edges:handoff -->
+
+**`handoff-doc` is used by exactly one skill**, so `skills-lint.sh` check 8 legitimately WARNs
+(single-use type) even though the pair is correctly matched -- a known false-positive for an
+intra-skill artifact (BL-4), not a fix to make here.
