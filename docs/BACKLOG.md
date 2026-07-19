@@ -14,6 +14,24 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-5 — keep skills-lint.sh check 8 and foreman-health.sh derive-seams parsers in sync
+- **source:** Phase 4 `/foreman` re-scope (2026-07-19);
+  `docs/design/2026-07-19-phase4-foreman-rescope.md` §4.2, §9.
+- **status:** open
+- **body:** `scripts/skills-lint.sh` check 8 (grimoire's dev-time gate) and
+  `skills/foreman/scripts/foreman-health.sh derive-seams` (the shipped runtime composer) both parse the
+  identical `## Edges` block format (delimiters, `- kind: type,type — note` lines, the
+  produces/consumes/handoff vocabulary, `/`-prefixed values as sibling names not types) — deliberately
+  **not** shared code, since one is a dev-only gate over the library clone and the other ships inside
+  the deployed `foreman` skill bundle (mechanism vs. harness-specifics-at-the-edge). **Follow-up:** no
+  fix needed now — both parsers are correct and tested (fixture transcript in the Phase 4 design doc
+  §4.2's neighbor commit) — but a **future change to the block format** (a new delimiter syntax, a
+  fourth edge kind) must update both. No mechanical backstop catches a divergence; this is a **process**
+  note for whoever next touches either parser, not a code fix. Candidate: a shared test fixture (a
+  sample `## Edges` block both scripts' tests run against) so a future edit that only updates one parser
+  fails the other's test. Natural home: alongside Phase 5's rollout (which will exercise `derive-seams`
+  against real multi-skill data for the first time) or Phase 7's `skill-builder`.
+
 ### BL-4 — check-8 single-use WARN misfires on intra-skill produce↔consume pairs
 - **source:** Phase 3 disposition audit (2026-07-19); `docs/design/2026-07-19-phase3-skill-dispositions.md` §5.
 - **status:** open
