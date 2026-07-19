@@ -1,9 +1,11 @@
 # Skill Self-Initialization & Typed Edges — Roadmap
 
-**Status:** In progress (2026-07-19). **Phases 0–2 landed** — model doc + maintainer backlog (Phase 0);
-`backlog` + `feature` self-init/edges/registration pilots (Phase 1); the typed-edge tenet promoted into
-`AGENTS.md` + `skills-lint.sh` check 8 edge backstop (Phase 2, the first-milestone slice). **Phase 3
-(evaluate all skills) is next.** (Grimoire is patient-zero: phases are tracked here + in git history, not
+**Status:** In progress (2026-07-19). **Phases 0–2 landed + Phase 3 done (unshipped)** — model doc +
+maintainer backlog (Phase 0); `backlog` + `feature` self-init/edges/registration pilots (Phase 1); the
+typed-edge tenet promoted into `AGENTS.md` + `skills-lint.sh` check 8 edge backstop (Phase 2, the
+first-milestone slice); the **per-skill disposition audit**
+(`docs/design/2026-07-19-phase3-skill-dispositions.md`, Phase 3 — accumulating on the branch). **Phase 4
+(`/foreman` re-scope) is next.** (Grimoire is patient-zero: phases are tracked here + in git history, not
 in a `.records/` ledger — grimoire authors these skills, it does not self-run them.)
 
 **Goal:** Make every skill **self-initializing** and **self-describing via typed edges**, so the
@@ -84,12 +86,15 @@ skills commit to the pattern:
   names a sibling in its edges** (the co-mingling backstop, one level up).
 - **Deliverable:** live doctrine + mechanical gate.
 
-### Phase 3 — Evaluate *all* skills (the audit)
+### Phase 3 — Evaluate *all* skills (the audit) — ✅ DONE (2026-07-19, unshipped)
 - Assess each of the 10 skills against the doctrine → a **per-skill disposition table**: current
   init-dependency, its typed edges (`produces`/`consumes`/`handoff`), what changes, migration notes.
   Some skills already self-contained (e.g. `handoff`, `chiropractor`) may need little; the point is a
   deliberate, recorded call per skill.
-- **Deliverable:** a disposition doc driving Phases 4–5.
+- **Deliverable:** `docs/design/2026-07-19-phase3-skill-dispositions.md` — the disposition table (§2)
+  + five cross-cutting findings (§4: four self-init tiers, universal edge block, registration tracks
+  captured-items, `foreman` dual-role sequenced first, vocab holds) + pilot-edge confirmation and a
+  lint-refinement candidate for the `handoff-doc` intra-skill single-use WARN (§5). Drives Phases 4–5.
 
 ### Phase 4 — `/foreman` re-scope (its own design doc — the biggest change)
 - `/foreman`: **bootstrapper/stamper → composer/extractor/drain.** Introspect installed skills, wire
