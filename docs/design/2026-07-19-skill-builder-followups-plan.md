@@ -1,10 +1,14 @@
 # `skill-builder` follow-ups — a plan
 
-**Status:** Proposed (2026-07-19). Post-capstone hardening: the four follow-ups filed against
+**Status:** Implemented (2026-07-19). Post-capstone hardening: the four follow-ups filed against
 `skill-builder` as its first real tasks (BL-4, BL-6, BL-7, BL-8 in `docs/BACKLOG.md`), sequenced and
 scoped. Not a new roadmap phase — the self-init roadmap is closed
 (`docs/design/2026-07-18-skill-self-initialization-roadmap.md`); this is small, independent
 maintenance that happens to land in the same stream/session because nothing about it needs isolation.
+**All four items landed** (commits `5530c13` BL-8, `3b5b56a` BL-6, `a27ea6a` BL-7, `bbbb193` BL-4),
+each independently gated (`skills-lint.sh fails=0`, warns dropping from 12 → 11 as BL-4's real fix
+landed). BL-6's resolution differs from its literal ask — see §2 below — per the human's confirmed
+call.
 
 ## Sequencing
 
