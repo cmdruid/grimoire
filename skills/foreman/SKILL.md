@@ -79,3 +79,22 @@ index** `init` writes (`.agents/README.md` / `.records/README.md`) — the autho
 content → location → steward. This file deliberately does **not** restate each companion's verbs: that
 list rots (it is each skill's own `description:` to state). Where a recognized companion is absent, the
 by-hand fallback is always the deployed `.agents/foreman/docs/`.
+
+## Edges
+
+Foreman's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
+names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). Foreman is the
+**special case** (Phase 3 disposition doc §3, F4): it is **also the composer** — `route` dispatches a
+change to a lane, and `init`/`check` **derive** cross-skill seams and **write/validate the projection**
+(`docs/design/2026-07-19-phase4-foreman-rescope.md` §4-§5). That dispatch/derive behavior is
+**composer mechanism**, not an ordinary typed edge, so foreman's **leaf** edges below are just its two
+`consumes` — `produces: —` and `handoff: —` at the leaf level.
+
+<!-- edges:foreman -->
+- produces: — (none; deriving/writing the seam projection is composer mechanism, not a typed edge)
+- handoff: — (none; `route`'s dispatch is composer mechanism, not a control-flow baton)
+- consumes: tracker-entry, audit-finding — `calibrate` drains backlog's captured signal and auditor's findings
+<!-- /edges:foreman -->
+
+A composer derives cross-skill seams by matching **other** skills' `handoff`/`produces` against these
+`consumes` — foreman names no producer by name, only by type, same as every other leaf.

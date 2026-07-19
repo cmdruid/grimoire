@@ -139,7 +139,26 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    that `/foreman`'s own verbs (`route`, `calibrate`, `check`) cover route/calibrate/validate and `/backlog`
    covers capture/debrief/curate; for any *absent* recognized companion, state the by-hand fallback.
    The deployed system also works entirely by hand (BOOTSTRAP's "follow the conventions by hand").
-8. **Derive + write the seam annotations (composer-owned, regenerated wholesale).** Run
+8. **Register foreman's own front-door route (self-registration).** Foreman is the **composer** that
+   owns everything *around* the skill blocks (step 9, below, and step 10's stamp), but it is *also* an ordinary
+   **registering leaf** for its own bytes — the same "self-init, no floor" + "visibility by
+   construction" corollaries every durable-home skill's `init` realizes
+   (`docs/design/2026-07-18-skill-self-init-model.md` §1, §3; Phase 4 §5.3 fixes this split: a skill
+   owns only the bytes inside its own `skill:<name>` delimiters, the composer owns the arrangement
+   around them). Resolve the front-door doc + a `built-against` stamp exactly as step 2's dispatched
+   skills do (this skill dir's short git sha, else a version string, else `v0-<date>`), then feed the
+   block body on stdin to `scripts/register-route.sh <front-door> foreman <built-against>`:
+   ```markdown
+   ### /foreman -- the dev-system integration layer
+   Route: stand up, run, and calibrate the project's development factory; route a change to its lane.
+   `/foreman|init|migrate|calibrate|check`.
+   Edges: consumes `tracker-entry, audit-finding`.
+   ```
+   Report `appended`/`replaced`; if **malformed**, surface it and stop, same as any other skill's
+   `init`. **Grimoire caveat (patient-zero):** never register against grimoire's own authored
+   `AGENTS.md` — this step, like every skill's self-registration, is exercised only against a
+   throwaway fixture front-door in this repo.
+9. **Derive + write the seam annotations (composer-owned, regenerated wholesale).** Run
    `scripts/foreman-health.sh derive-seams <skills-root>` (step -1's resolved root) and write the
    `<!-- seam: A -> B (T) -->` annotations it reports into the `## Skill routes (self-registered)`
    section, between the two skills' own blocks — format + rationale in
@@ -148,7 +167,7 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    hand-authored content, so a full delete-and-rewrite each pass is correct, not destructive); they must
    **never** edit a byte inside another skill's own `skill:<name>` delimiters — that region is the
    skill's own to write via its own `init` (model §3.4).
-9. **Stamp what you built against (snapshot doctrine).** The generated glue is a snapshot of a moving
+10. **Stamp what you built against (snapshot doctrine).** The generated glue is a snapshot of a moving
    target — record, in the deployed glue (a stamp line in `.agents/foreman/README.md`, or an `AGENTS.md`
    footer), **which composition and skill versions this `init` ran against**: the runbook source
    (pack name + its file, or "baseline / introspection" when none) and the set of companion skills
@@ -172,6 +191,8 @@ that isn't landed yet, **legacy-scaffolded**, and the report says which), the **
 written (`.agents/README` + `.records/README`, content → location → steward), routing/planning/
 worktree/maintenance docs, the linter wired, the `<content docs>` authored, the **gate / doc-linter /
 diagnostics surfaced in `AGENTS.md`** (so the skills' generic instructions resolve), the **composition's
-companion skills listed** (with by-hand fallbacks for the absent), the **seam annotations** derived and
-written between the registered skill blocks, and a **stamp** recording the runbook + skill versions +
-resolved skills-root built against, pointing at `/foreman check` as the drift validator.
+companion skills listed** (with by-hand fallbacks for the absent), foreman's **own `skill:foreman`
+front-door block registered** alongside the sibling skills it dispatched in step 2, the **seam
+annotations** derived and written between the registered skill blocks, and a **stamp** recording the
+runbook + skill versions + resolved skills-root built against, pointing at `/foreman check` as the
+drift validator.
