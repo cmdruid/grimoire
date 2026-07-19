@@ -64,7 +64,27 @@ When the host has no `.agents/auditor/` or `.records/audit/`, follow the bundled
    `<language>`; run it for a baseline `.records/audit/logs/metrics.csv` row; wire `--check`
    on the native invariant.
 5. **Wire + gate** -- add one pointer from the host's doc index; run the host's gate.
-6. **Baseline pass + Select exemplars** -- run a lean pass to seed `FINDINGS.md`, then
+6. **Register the front-door route (self-registration).** Same "self-init, no floor" +
+   "visibility by construction" corollaries `/backlog init` established
+   (`docs/design/2026-07-18-skill-self-init-model.md` §1, §3) -- auditor already self-inits both
+   homes with no `/foreman` required; this makes that bare install *visible* too.
+   Resolve the project's always-loaded front-door doc (`AGENTS.md`/`CLAUDE.md`) and a
+   `built-against` stamp (this skill dir's short git sha, else a version string, else
+   `v0-<date>`) -- it must **exist**; a missing front-door is a project-setup gap, say so and
+   stop before writing. Feed the block body on stdin to
+   `scripts/register-route.sh <front-door> auditor <built-against>`:
+   ```markdown
+   ### /auditor -- code-quality audit driver
+   Route: deploy + run a code-quality audit scored against the project's own rubric.
+   `/auditor deploy|metrics|check|<target>`.
+   Edges: produces `audit-finding`.
+   ```
+   Report `appended`/`replaced`; if **malformed**, surface it and stop -- a delimiter was
+   hand-broken, the human or composer repairs it, never force it. Idempotent: re-running
+   `deploy` rewrites only auditor's own `skill:auditor` block, never a sibling's.
+   **Grimoire caveat (patient-zero):** never register against grimoire's own authored
+   `AGENTS.md` -- this step is exercised only against a throwaway fixture front-door.
+7. **Baseline pass + Select exemplars** -- run a lean pass to seed `FINDINGS.md`, then
    pin the score-5 `<exemplars>` in `.agents/auditor/GUIDE.md` and backfill calibrated
    examples (`BOOTSTRAP.md §10`).
 
@@ -119,4 +139,21 @@ contracts (every 5 evidence-backed, false-positives refuted), raw output logged,
 findings recorded with permanent IDs, and **every** actionable finding drained with
 `Graduated:` backfilled. For a **deploy**: a `.agents/auditor/` + `.records/audit/` pair that
 passes the host's gate,
-a baseline `FINDINGS.md`, pinned exemplars, and a wired doc-index pointer.
+a baseline `FINDINGS.md`, pinned exemplars, a wired doc-index pointer, and a front-door
+`skill:auditor` route block (Deploy mode step 6).
+
+## Edges
+
+Auditor's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
+names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A composer derives
+cross-skill seams by matching these types against other skills' edges; auditor names no successor.
+
+<!-- edges:auditor -->
+- produces: audit-finding — a scored, evidence-backed `FINDINGS.md` entry
+- handoff: — (none; a finding sits in `.records/audit/FINDINGS.md` until drained, same shape as backlog)
+- consumes: — (none; a pass reads the host's own `.agents/auditor/GUIDE.md` rubric, not another skill's typed output)
+<!-- /edges:auditor -->
+
+`produces: audit-finding` is a **data source**, same distinction backlog's `tracker-entry` draws
+(model §2.1): a drainer (`/foreman calibrate`, a `/backlog` drain) *may* pick a finding up, but auditor
+does not itself hand control onward -- hence `handoff: —`.
