@@ -1,15 +1,16 @@
-# `/skill-builder distill` — fold accreted authoring decisions back into `docs/DOCTRINE.md`
+# `/skill-builder calibrate` — fold accreted authoring decisions back into `docs/DOCTRINE.md`
 
-The same collapse-ritual shape a design-seed steward runs for a project's spec, applied to
+The same collapse-ritual shape a design-seed steward runs for a project's spec — and the same *name*
+`foreman calibrate` already uses for "drain accumulated signal into doctrine" — applied to
 skill-authoring itself: as design docs, ADRs, and one-off authoring decisions accrete around *how this
-library builds skills*, `distill` folds the ones that proved durable back into `docs/DOCTRINE.md` so it
-stays a clean, current reference — and marks the source records as historical rather than leaving them
-to silently disagree with the doctrine they fed.
+library builds skills*, `calibrate` folds the ones that proved durable back into `docs/DOCTRINE.md` so
+it stays a clean, current reference — and marks the source records as historical rather than leaving
+them to silently disagree with the doctrine they fed.
 
 ## Cadence — manual, milestone-triggered
 
 Design docs and one-off decisions are allowed to accrete freely during fast incremental work — that's
-the point of keeping them separate from the doctrine. `distill` is a deliberate, **human-enacted**
+the point of keeping them separate from the doctrine. `calibrate` is a deliberate, **human-enacted**
 counter-motion run at a milestone the human chooses (a roadmap track closing, a doctrine bullet proven
 across several skills), never a per-change tax and never triggered automatically.
 
@@ -19,7 +20,7 @@ Reconciling a chain of authoring decisions into one coherent doctrine bullet req
 record's actual content and judging what survived — not taking the most recent file wholesale, and not
 mechanically diffing. An agent does the reading and drafts the fold; a human makes the call on whether
 a recurring pattern is actually a durable tenet worth stating generically (vs. a one-off that shouldn't
-generalize). Never present a distill as a done deal the human didn't review.
+generalize). Never present a calibration as a done deal the human didn't review.
 
 ## Procedure
 

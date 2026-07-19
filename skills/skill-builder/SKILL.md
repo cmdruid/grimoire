@@ -1,6 +1,6 @@
 ---
 name: skill-builder
-description: "The toolmaker steward for a skills library itself -- not project code, the skills that build it. `new` scaffolds a skill's SKILL.md against the proven self-init tiers + typed-edge pattern; `check` (alias `audit`) runs the mechanical lint gate plus the independence/boundary-audit workflow (self-scoping descriptions, seam-table cross-check, routing-probe); `distill` folds accreted authoring decisions back into the portable doctrine. Bundles the doctrine, the gate, and the audit workflow as one deployable package -- install it in any skills library and the authoring discipline travels with it, no host-repo dependency. Use when scaffolding a new skill, auditing/linting an existing one, asking about skill-authoring conventions (self-init tiers, typed edges, self-scoping descriptions), or checking whether a skill's description routes on its own."
+description: "The toolmaker steward for a skills library itself -- not project code, the skills that build it. `new` scaffolds a skill's SKILL.md against the proven self-init tiers + typed-edge pattern; `check` (alias `audit`) runs the mechanical lint gate plus the independence/boundary-audit workflow (self-scoping descriptions, seam-table cross-check, routing-probe); `calibrate` folds accreted authoring decisions back into the portable doctrine. Bundles the doctrine, the gate, and the audit workflow as one deployable package -- install it in any skills library and the authoring discipline travels with it, no host-repo dependency. Use when scaffolding a new skill, auditing/linting an existing one, asking about skill-authoring conventions (self-init tiers, typed edges, self-scoping descriptions), or checking whether a skill's description routes on its own."
 ---
 
 # skill-builder — the toolmaker steward
@@ -25,7 +25,7 @@ memory.
 |---|---|---|
 | `new` | `verbs/new.md` | Scaffold a new skill's `SKILL.md` (+ `init` if durable-home tier) against `docs/DOCTRINE.md`'s pattern |
 | `check` (alias `audit`) | `verbs/check.md` | Run `scripts/skills-lint.sh` + the boundary-audit workflow; report findings |
-| `distill` | `verbs/distill.md` | Fold accreted authoring decisions back into `docs/DOCTRINE.md` (milestone-triggered, human-curated) |
+| `calibrate` | `verbs/calibrate.md` | Fold accreted authoring decisions back into `docs/DOCTRINE.md` (milestone-triggered, human-curated) |
 
 ## What this skill bundles
 

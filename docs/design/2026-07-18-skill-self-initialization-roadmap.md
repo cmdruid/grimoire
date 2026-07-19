@@ -163,7 +163,7 @@ homeless by design (*"a toolmaker workflow, not a `/foreman` verb"*). `skill-bui
 steward: it **consolidates** `scripts/skills-lint.sh` (the gate), `docs/boundary-audit.md` (the audit
 workflow), new-skill **scaffolding**, and the **authoring doctrine** (boundary tenets + the three
 layers + self-init/edges + *name-your-floor*). Verbs: `new` (scaffold), `check`/alias `audit`
-(boundary + layers + edges + lint), `distill`.
+(boundary + layers + edges + lint), `calibrate`.
 - **Portable, and the doctrine's new home.** `skills/skill-builder/docs/DOCTRINE.md` carries the
   generalizable design philosophy (moved from `AGENTS.md`, generalized to name no grimoire-specific
   path); grimoire's `AGENTS.md` thins to a pointer + two local overrides (the feedback-channel choice,
@@ -173,7 +173,7 @@ layers + self-init/edges + *name-your-floor*). Verbs: `new` (scaffold), `check`/
   steward with nothing private to scaffold).
 - **Deliverable:** `docs/design/2026-07-19-phase7-skill-builder.md` (the disposition + build record);
   `skills/skill-builder/` (`SKILL.md`, `docs/{DOCTRINE,BOUNDARY-AUDIT}.md`,
-  `scripts/skills-lint.sh` moved from the repo root, `verbs/{new,check,distill}.md`); `AGENTS.md` /
+  `scripts/skills-lint.sh` moved from the repo root, `verbs/{new,check,calibrate}.md`); `AGENTS.md` /
   `README.md` / `docs/boundary-audit.md` (now a pointer + grimoire's own routing-probe run log) /
   `packs/clankshop.md` (one orientation note — `skill-builder` stays outside the pack's manifest)
   reconciled to point at it. **Not folded in:** collapsing the five skills' duplicated

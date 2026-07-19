@@ -8,7 +8,7 @@ just the one `skill-builder` ships from: install `skill-builder` anywhere and th
 A host library imports this doctrine into its own front-door doc (`AGENTS.md`/`CLAUDE.md`) with a
 short pointer, then lists only its **local overrides** underneath — the same public-doctrine +
 private-override shape a personal dotfiles config uses over a shared one. Apply this doc whenever you
-add or revise a skill; `skill-builder distill` is what keeps it current as practice evolves.
+add or revise a skill; `skill-builder calibrate` is what keeps it current as practice evolves.
 
 ## Design philosophy
 
@@ -216,4 +216,4 @@ assumption baked silently into the skill's own procedure.
 - `docs/BOUNDARY-AUDIT.md` — the independence-auditing workflow (`skill-builder check`).
 - `scripts/skills-lint.sh` — the mechanical gate (`skill-builder check`).
 - `verbs/new.md` — scaffolds a skill against this doctrine's tiers.
-- `verbs/distill.md` — folds accreted authoring decisions back into this doc.
+- `verbs/calibrate.md` — folds accreted authoring decisions back into this doc.

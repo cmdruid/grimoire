@@ -40,7 +40,7 @@ scaffold).
 
 ## Verbs
 
-Three, matching the roadmap's own naming (`new`, `audit`/`check`, `distill`):
+Three, matching the roadmap's own naming (`new`, `check`/alias `audit`, `calibrate`):
 
 - **`new`** — scaffold a new skill's `SKILL.md` (frontmatter + self-scoping description reminder +
   an empty `## Edges` block) against the **tier-templated pattern** Phase 3's F1 finding proved
@@ -52,8 +52,9 @@ Three, matching the roadmap's own naming (`new`, `audit`/`check`, `distill`):
   `docs/BOUNDARY-AUDIT.md`'s workflow (inventory → scan descriptions → cross-check the runbook's seam
   table → findings → routing-probe). One verb, both checks — the roadmap's "boundary + layers + edges
   + lint, replacing/wrapping `skills-lint.sh` + the manual boundary-audit workflow."
-- **`distill`** — architect's ADR→distill→seed pattern, applied to skill-authoring: fold accreted
-  design docs about skill-authoring (this roadmap's own trail, `docs/design/2026-07-18-skill-
+- **`calibrate`** — architect's ADR→distill→seed pattern (renamed to match `foreman calibrate`'s own
+  "drain accumulated signal into doctrine" naming), applied to skill-authoring: fold accreted design
+  docs about skill-authoring (this roadmap's own trail, `docs/design/2026-07-18-skill-
   boundaries-and-glue-ownership.md`, the self-init model doc) back into `docs/DOCTRINE.md` as stable
   doctrine grows, the same collapse-ritual shape `architect distill` already runs for a project's
   design seed.

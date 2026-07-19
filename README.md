@@ -34,7 +34,7 @@ cross-cutting layer against the code (`architect` the design seed, `foreman` the
 **operators** (`feature`, `backlog`, `workstream` — consume the stewards' seeds and act) and
 **plumbing** (`delegate`, `mailbox`, `handoff` — orchestration/transport used throughout). The
 eleventh, `skill-builder`, is a category of one: the **toolmaker** — it stewards the skills in this
-library themselves (scaffold new ones, audit boundary health, distill authoring doctrine), not
+library themselves (scaffold new ones, audit boundary health, calibrate authoring doctrine), not
 project code, and is deliberately outside the `clankshop` pack (see *The packs* below).
 
 | skill | what it does |
@@ -48,7 +48,7 @@ project code, and is deliberately outside the `clankshop` pack (see *The packs* 
 | `foreman` | the dev-workflow hub: route changes, deploy/operate a `.agents/foreman/` docs system — `init` (greenfield) or `migrate` (brownfield onramp) |
 | `handoff` | save/resume a session as a self-contained hand-off any agent can pick up |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
-| `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and distill the doctrine for building skills — bundles the portable authoring doctrine + gate |
+| `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
 `foreman` and `backlog` split what used to be one skill (`dev`): `foreman` kept the router +
