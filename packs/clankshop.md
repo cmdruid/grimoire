@@ -16,8 +16,18 @@ never depends on the pack. **The recipe owns the glue content and *births* the c
 oven *stamps* that glue at `init` and *grows* it afterward via `calibrate` — it never authors the
 pack-specific glue.** On a bare install with no pack, `/foreman init` **baselines** —
 introspects the installed skills, wires the ones it recognizes, and names by-hand fallbacks for the
-rest. This runbook is the *enrichment* that baseline can't derive: the cross-skill seams live
-*between* skills, in no single skill's frontmatter, so they must live here.
+rest.
+
+**Since Phase 5's typed-edge rollout (`docs/design/2026-07-18-skill-self-init-model.md`), a real
+subset of cross-skill wiring lives in each skill's *own* `## Edges` block and is mechanically
+**derivable** — `scripts/foreman-health.sh derive-seams <skills-root>` reads every installed skill's
+edges and reports the control-flow `seam:`s and data `dep:`s that fall out of matching
+produces/handoff against consumes (model §2.1, §5.1). This runbook is now the *enrichment* that
+edge-matching **can't** derive: an altitude/scope boundary (who owns *which layer*, not who reads
+whose typed output), a role split with no shared artifact type, or a framing metaphor a bare `X reads
+Y's T` fact doesn't carry. Where a row below restates a fact `derive-seams` already reports
+mechanically, it's marked **(derived)** — kept for the human-readable narrative, not because the
+wiring itself still needs hand-authoring here.
 
 ## The composition foreman instantiates
 
@@ -100,17 +110,19 @@ The layers describe *what each skill is*; the **seams** describe *how they compo
 overlapping*. These are what `/foreman init` records as the composition, and what `/foreman check`
 validates for drift. The load-bearing invariant: **no skill crosses another's seam.**
 
-| seam | contract |
-|---|---|
-| `backlog` ↔ `foreman` | `backlog` **captures** (single front-door, uniform); `foreman calibrate` **drains** the system-relevant slice into doctrine. Inbox vs. curator. |
-| `foreman` ↔ `clankshop` (this pack) | `foreman` = mechanism (oven); this runbook = composition (recipe). The pack **calls** foreman; foreman never depends on the pack. |
-| `foreman` ↔ `chiropractor` | `clankshop` **specifies** the `AGENTS.md` workflow-glue (content); `foreman` **stamps** it at `init` and **grows** it via `calibrate` (mechanism); `chiropractor` **audits** the front-door's ergonomics. Specify → stamp → audit — none authors another's part. |
-| `architect` ↔ `chiropractor` | `architect`'s GLOSSARY = **domain** terms (part of the seed); `chiropractor`'s concern = a **navigational** glossary/index exists and is linked. Domain vs. navigation. |
-| `architect` ↔ `feature` | `architect` authors the seed (seed altitude); `feature` builds a change against it (feature scope). The altitude seam. |
-| `architect` ↔ `foreman` | `architect` owns the **design system** (the regenerable seed code builds from); `foreman` owns the **operational system** (how a change is routed, built, calibrated). Design vs. operation. |
-| `feature` ↔ `workstream` ↔ `backlog` | `feature` ends at gate-green; `workstream` lands; `backlog debrief` captures. Three seams, one rule: none crosses another's. |
-| `delegate` ↔ `mailbox` | `delegate` **decides** (delegate-or-not, mechanism, route, return contract); `mailbox` **carries** (the worktree-safe slot transport `delegate` routes to). Decision vs. transport. |
-| `auditor` ↔ `chiropractor` | `auditor` scores **project code** against a quality rubric; `chiropractor` tunes the **doc spine's** ergonomics. Code vs. docs (see *"Which audit?"* below). |
+| seam | contract | edge-matching |
+|---|---|---|
+| `backlog` ↔ `foreman` | `backlog` **captures** (single front-door, uniform); `foreman calibrate` **drains** the system-relevant slice into doctrine. Inbox vs. curator. | **dep** — `foreman` reads `backlog`'s `tracker-entry` |
+| `foreman` ↔ `clankshop` (this pack) | `foreman` = mechanism (oven); this runbook = composition (recipe). The pack **calls** foreman; foreman never depends on the pack. | — (this pack's own relationship to the tool, not a skill-to-skill artifact flow) |
+| `foreman` ↔ `chiropractor` | `clankshop` **specifies** the `AGENTS.md` workflow-glue (content); `foreman` **stamps** it at `init` and **grows** it via `calibrate` (mechanism); `chiropractor` **audits** the front-door's ergonomics. Specify → stamp → audit — none authors another's part. | — (a maintenance-role split; neither skill declares a type the other consumes) |
+| `architect` ↔ `chiropractor` | `architect`'s GLOSSARY = **domain** terms (part of the seed); `chiropractor`'s concern = a **navigational** glossary/index exists and is linked. Domain vs. navigation. | — (chiropractor's edges are all `—`; no shared type) |
+| `architect` ↔ `feature` | `architect` authors the seed (seed altitude); `feature` builds a change against it (feature scope). The altitude seam. | **dep** — `feature` reads `architect`'s `design`, `architect` reads `feature`'s `design` (coarse-shared type, model §2.2) |
+| `architect` ↔ `foreman` | `architect` owns the **design system** (the regenerable seed code builds from); `foreman` owns the **operational system** (how a change is routed, built, calibrated). Design vs. operation. | — (an altitude boundary; foreman doesn't consume `design`/`roadmap`) |
+| `feature` ↔ `workstream` ↔ `backlog` | `feature` ends at gate-green; `workstream` lands; `backlog debrief` captures. Three seams, one rule: none crosses another's. | **seam** — `feature -> workstream (gate-green-code)` (a real control-flow arrow, `feature`'s `handoff` matched); the `backlog` leg stays hand-authored (no shared type — a debrief captures *about* the ship, it doesn't consume workstream's typed output) |
+| `delegate` ↔ `mailbox` | `delegate` **decides** (delegate-or-not, mechanism, route, return contract); `mailbox` **carries** (the worktree-safe slot transport `delegate` routes to). Decision vs. transport. | — (both are pure-mechanism, deliberately no typed artifacts — exactly the case edge-matching can't and shouldn't derive) |
+| `auditor` ↔ `chiropractor` | `auditor` scores **project code** against a quality rubric; `chiropractor` tunes the **doc spine's** ergonomics. Code vs. docs (see *"Which audit?"* below). | — (chiropractor's edges are all `—`; no shared type) |
+
+Two rows carry a **dep** or **seam** tag — those facts now come from `derive-seams`, not from hand-maintaining this table; the *contract* column's framing (why the wiring exists, which layer owns what) stays hand-authored regardless, since edge-matching reports only "`X` reads `Y`'s `T`," never the altitude/scope reasoning behind it. The other six rows are genuinely **not** derivable — a role/scope/altitude split with no shared typed artifact — and stay this runbook's to state, per Phase 5's "shrink to the seams edge-matching can't derive" (the fuller reconciliation — trimming/restructuring this table itself — is Phase 6's, not this pass's).
 
 ## The glue-workflows (how the seams run in practice)
 

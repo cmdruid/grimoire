@@ -1,13 +1,16 @@
 # Skill Self-Initialization & Typed Edges — Roadmap
 
-**Status:** In progress (2026-07-19). **Phases 0–2 landed + Phases 3–4 done (unshipped)** — model doc +
-maintainer backlog (Phase 0); `backlog` + `feature` self-init/edges/registration pilots (Phase 1); the
-typed-edge tenet promoted into `AGENTS.md` + `skills-lint.sh` check 8 edge backstop (Phase 2, the
-first-milestone slice); the **per-skill disposition audit**
+**Status:** In progress (2026-07-19). **Phases 0–5 done** (0–2 shipped at milestone #1 `ad84452`; 3–4
+shipped at milestone #2 `1abad3c`; Phase 5 landed on the branch, accumulating toward the next
+milestone) — model doc + maintainer backlog (Phase 0); `backlog` + `feature` self-init/edges/
+registration pilots (Phase 1); the typed-edge tenet promoted into `AGENTS.md` + `skills-lint.sh`
+check 8 edge backstop (Phase 2); the **per-skill disposition audit**
 (`docs/design/2026-07-19-phase3-skill-dispositions.md`, Phase 3); the **`/foreman` re-scope**
-(`docs/design/2026-07-19-phase4-foreman-rescope.md`, Phase 4 — accumulating on the branch). **Phase 5
-(roll out to the remaining skills) is next.** (Grimoire is patient-zero: phases are tracked here + in
-git history, not in a `.records/` ledger — grimoire authors these skills, it does not self-run them.)
+(`docs/design/2026-07-19-phase4-foreman-rescope.md`, Phase 4); **rollout to all 9 remaining skills** —
+`feature`/`architect`/`auditor`/`foreman` landed self-init + registration, all 9 landed `## Edges`,
+`packs/clankshop.md` shrunk to the seams edge-matching can't derive (Phase 5). **Phase 6 (reconcile
+docs & runbook) is next**, or hold for track end. (Grimoire is patient-zero: phases are tracked here +
+in git history, not in a `.records/` ledger — grimoire authors these skills, it does not self-run them.)
 
 **Goal:** Make every skill **self-initializing** and **self-describing via typed edges**, so the
 constellation works **bare** — each skill registers its *own* route/workflow into `AGENTS.md` on init —
@@ -111,10 +114,22 @@ skills commit to the pattern:
   scripts/foreman-health.sh}`; `/foreman route` and `verbs/migrate.md` deliberately untouched (§5, §6 of
   the design doc). Gate green (`fails=0 warns=13`, matching the pre-existing baseline).
 
-### Phase 5 — Roll out to the remaining skills
+### Phase 5 — Roll out to the remaining skills — ✅ DONE (2026-07-19, unshipped)
 - Apply self-init + edges per the Phase 3 dispositions; wire `/foreman`-as-composer; **shrink
   `clankshop`** to the seams edge-matching can't derive (its stated "enrichment baseline can't derive").
-- **Deliverable:** all skills self-initializing; `/foreman` composing; runbook slimmed.
+- **Deliverable:** all skills self-initializing; `/foreman` composing; runbook slimmed. Landed:
+  `feature`/`architect`/`auditor` each gained `## Edges` + a self-registering `init`/`templates` verb
+  (own `register-route.sh` copy); `foreman` gained `## Edges` + its own leaf `skill:foreman`
+  registration (step 8 of `init`, distinct from its composer role deriving seams around every block);
+  the remaining 5 skills (`chiropractor`, `workstream`, `handoff`, `delegate`, `mailbox`) gained
+  `## Edges` per F1/F2 (mostly all-`—`; `handoff`'s is a real self-chain). `packs/clankshop.md`'s seam
+  table now tags which rows `derive-seams` confirms mechanically (2 of 9: `backlog↔foreman`,
+  `architect↔feature`/`feature↔workstream`) vs. which stay hand-authored (6 of 9 — altitude/scope
+  splits with no shared type, by design). `skills-lint.sh` `fails=0 warns=11` (down from the 13
+  baseline — two orphan WARNs resolved as real consumers wired; `derive-seams` now draws its first live
+  `seam:`, `feature -> workstream (gate-green-code)`). Filed **BL-6** (register-route.sh now duplicated
+  5×, keep the write-protocol in sync) and **BL-7** (`built-against: git rev-parse HEAD` collapses to
+  one value across a monorepo skills-root — advisory, deferred).
 
 ### Phase 6 — Reconcile docs & runbook
 - `clankshop`, `README`, the ownership index, and `AGENTS.md` reflect the new model; distill the
