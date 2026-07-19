@@ -1,6 +1,10 @@
 # Skill Self-Initialization & Typed Edges — Roadmap
 
-**Status:** Proposed (2026-07-18).
+**Status:** In progress (2026-07-19). **Phases 0–2 landed** — model doc + maintainer backlog (Phase 0);
+`backlog` + `feature` self-init/edges/registration pilots (Phase 1); the typed-edge tenet promoted into
+`AGENTS.md` + `skills-lint.sh` check 8 edge backstop (Phase 2, the first-milestone slice). **Phase 3
+(evaluate all skills) is next.** (Grimoire is patient-zero: phases are tracked here + in git history, not
+in a `.records/` ledger — grimoire authors these skills, it does not self-run them.)
 
 **Goal:** Make every skill **self-initializing** and **self-describing via typed edges**, so the
 constellation works **bare** — each skill registers its *own* route/workflow into `AGENTS.md` on init —
