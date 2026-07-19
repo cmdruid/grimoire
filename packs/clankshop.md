@@ -33,8 +33,8 @@ human-readable narrative, not because the wiring itself still needs hand-authori
 
 ## The composition foreman instantiates
 
-Ten skills in four layers. `/foreman init` deploys the `.agents/foreman/` glue, wires `AGENTS.md`, and
-lists these as the constellation the deployed doctrine resolves to.
+The skills below, grouped by layer. `/foreman init` deploys the `.agents/foreman/` glue, wires
+`AGENTS.md`, and lists these as the constellation the deployed doctrine resolves to.
 
 ```
   workflow      foreman ──── the hub/router: classify a change, deploy/operate the .agents/foreman/ system
@@ -191,7 +191,7 @@ Project *code* → `auditor`. The repo's *doc spine* (links, entry door, navigab
 `## Edges` well-formedness, the lint gate) → `skill-builder check` — a **toolmaker** concern, distinct
 from the other three (which audit a project this pack is deployed *onto*; `skill-builder` audits the
 skills doing the deploying, and stays outside this pack for that reason — see *Outside this pack:
-`skill-builder`* above). Four domains, four tools — they don't overlap.
+`skill-builder`* above). They don't overlap.
 
 ## Install
 
