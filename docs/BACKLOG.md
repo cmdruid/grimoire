@@ -14,6 +14,30 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-7 — `built-against: git rev-parse HEAD` collapses to one value across a monorepo skills-root
+- **source:** Phase 5 rollout, `foreman` landing (2026-07-19); reproduced via
+  `foreman-health.sh check-projection` against a scratch fixture registering `backlog`/`auditor`/
+  `foreman` from grimoire's own `skills/`.
+- **status:** open
+- **body:** every `init`'s `built-against` stamp (and `check-projection`'s "current version" side) is
+  computed as `git -C <skill-dir> rev-parse --short HEAD` (backlog's `verbs/init.md`, and now
+  feature/architect/auditor/foreman's equivalents, plus `foreman-health.sh`'s `cmd_check_projection`).
+  That command returns the **whole repo's HEAD**, not a per-directory version, whenever `<skill-dir>`
+  is a subdirectory of one git repo rather than its own repo/submodule — exactly grimoire's own shape,
+  and exactly what a consuming project would get if it vendors grimoire's `skills/` as a git submodule
+  rather than a flat copy. Reproduced: registering `backlog`+`auditor` in one commit then `foreman` in a
+  later commit, `check-projection` reports **both** earlier skills as `stale-stamp` with an identical
+  `now=<latest-repo-HEAD>` — even though neither skill's own files changed since it registered. A flat,
+  non-git copy of `skills/` (the more common deployed shape, per BOOTSTRAP's playbook) sidesteps this
+  cleanly (`git -C` fails, falls back to `unknown` on both sides, no spurious diff) — so this is a
+  **monorepo/submodule-specific** false-positive, not universal. **Follow-up:** swap the formula to a
+  per-directory last-touch stamp — `git -C <repo-root> log -1 --format=%h -- <skill-dir>` (or `(cd
+  <skill-dir> && git log -1 --format=%h -- .)`) — in both the registering skills' `init` prose and
+  `check-projection`'s `cmd_check_projection`. Advisory severity (a spurious `stale-stamp` just prompts
+  an unnecessary re-`init`, no data loss — distinct from BL-3's silent-write-failure class), so deferred
+  rather than fixed inline; natural home: alongside BL-5/BL-6, once Phase 5's rollout finishes and every
+  `init` site touching the formula is known.
+
 ### BL-6 — register-route.sh is now duplicated per-skill; keep the write-protocol in sync
 - **source:** Phase 5 rollout, `feature` landing (2026-07-19); commit `77c2a52`.
 - **status:** open
