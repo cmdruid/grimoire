@@ -198,9 +198,40 @@ acceptance to the human; note orphan/dangling MAP rows as cheap hygiene). A migr
 with a handful of honest `acceptance_placeholder`s and a filed handoff note is a correct outcome;
 one that fabricates acceptance criteria to clear the check is not.
 
+## 7. Register the front-door route (self-registration)
+
+Once `check` reports `spine_complete=true`, register architect's route into the project's
+always-loaded front-door doc — the same "self-init, no floor" + "visibility by construction"
+corollaries `/backlog init` established (`docs/design/2026-07-18-skill-self-init-model.md` §1, §3).
+This makes a bare install of `/architect` visible with **no composer** present, same as the seed itself
+needed no `/foreman init` to stand up.
+
+1. **Resolve the front-door doc + a `built-against` stamp.** The registration target is the project's
+   always-loaded front-door (`AGENTS.md`/`CLAUDE.md`, whichever the harness auto-loads); it must
+   **exist** — if the project has none, that's a project-setup gap, say so and stop before writing.
+   `built-against` is this skill dir's short git sha (`git -C <skill-dir> rev-parse --short HEAD`), else
+   a version string, else `v0-<date>`.
+   **Grimoire caveat (patient-zero):** never register against grimoire's own authored `AGENTS.md` — this
+   verb is exercised only against a throwaway fixture front-door (a temp `AGENTS.md` under the
+   scratchpad, never the real one); in a consuming project the parameter resolves to that project's real
+   front-door, which is the whole point (model §3.2).
+2. **Register the route.** Feed the block body on stdin to
+   `scripts/register-route.sh <front-door> architect <built-against>`:
+   ```markdown
+   ### /architect -- the design-system engine
+   Route: stand up + maintain a project's `.agents/architect/` seed (present-tense design source).
+   `/architect init|extract|brainstorm|plan|distill|check|reconcile`.
+   Edges: produces `design, roadmap`.
+   ```
+   Report `appended` / `replaced`. If it reports **malformed**, surface that — a delimiter was
+   hand-broken; the human or composer repairs it, then re-run. Do **not** force it. The write is
+   **idempotent**: re-running `init` (e.g. after a migration adds a new system) rewrites only
+   architect's own `skill:architect` block, never a sibling's.
+
 ## Report
 
 Close `init` with: the detected mode, the spine files stamped, the systems migrated/inventoried
 (and any skipped as speculative, per Step 3), what happened to `PROJECT.md`/`DESIGN.md` (pointer
-or delete), any handoff note(s) emitted for code-side wiring (Step 5), and the final `check` facts
-— pass/fail on the hard blockers plus a list of what's advisory-outstanding.
+or delete), any handoff note(s) emitted for code-side wiring (Step 5), the final `check` facts
+— pass/fail on the hard blockers plus a list of what's advisory-outstanding — and the front-door
+registration result (Step 7): `appended`/`replaced`/`malformed` + the `built-against` stamp.
