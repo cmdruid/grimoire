@@ -43,6 +43,13 @@ one-line resolution; delete only when the reason it existed is gone.
   skills / Scope boundary" heading). Keep it a **WARN, not FAIL** — some cross-mention is legitimate;
   the maintainer judges against the rubric. Natural home: Phase 2's lint work, or Phase 7's
   `skill-builder audit`.
+- **Phase 2 evaluation (2026-07-19):** *deferred, not folded in.* Phase 2 added `skills-lint.sh`
+  **check 8** (typed-edge blocks), but a body-roster backstop does **not** fit that pass — check 8
+  parses the *delimited, bounded* `<!-- edges:<name> -->` block, whereas BL-1 must scan *all body
+  prose* for runs of `/sibling <verb>` attributions, a different pass with real false-positive risk
+  (routers legitimately name sibling verbs) that needs the boundary-audit rubric to tune. Rushing it
+  under the milestone would ship a noisy check that erodes gate trust. Reaffirmed home: **Phase 7's
+  `skill-builder audit`** (or a dedicated pass), not check 8.
 
 ### BL-2 — the body-roster sweep was targeted, not exhaustive
 - **source:** boundary body audit (2026-07-18); commits `0380885`, `689309f`, `da76945`.

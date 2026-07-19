@@ -27,6 +27,14 @@
 #      `/name` that resolves to a sibling skill dir (WARN -- boundary-audit
 #      candidate; the router/fragment exceptions are legitimate, so never FAIL.
 #      See docs/boundary-audit.md).
+#   8. Typed-edge blocks: the delimited `<!-- edges:<name> -->` block in a SKILL.md
+#      (self-init model 2026-07-18-skill-self-init-model.md) is well-formed --
+#      matched open/close delimiters naming the skill itself, edge kind in
+#      produces|consumes|handoff, and a type token that is a plain string, never a
+#      sibling `/name` or bare skill-dir name (FAIL -- edges name types, not
+#      siblings; model 1 corollary 3). A type declared by exactly one skill across
+#      the suite is a WARN (likely an orphan/typo -- or a consumer not yet wired;
+#      expected to fire during rollout until Phase 5, model 2.2 "facts not verdicts").
 set -euo pipefail
 
 root="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
@@ -172,6 +180,67 @@ while IFS= read -r line; do
   warn "$2: description names sibling \`/$3\` -- boundary candidate (self-scope it, or confirm a router/fragment exception per docs/boundary-audit.md)"
 done < <(awk '$1=="SIB"{print}' /tmp/skills-lint-sib.$$)
 rm -f /tmp/skills-lint-sib.$$
+
+# ---- 8. typed-edge blocks (self-init model 1-2) ------------------------------
+# Parse the delimited `<!-- edges:<name> -->` block in each SKILL.md. An edge line
+# is `- <kind>: <type>[, <type>...] [<emdash> <note>]`; an empty edge is
+# `- <kind>: <emdash> (none...)`. We check delimiter well-formedness, the edge
+# kind, and the type-not-sibling invariant, and collect types for the orphan WARN.
+# BSD/macOS-safe: no multi-line `awk -v` (BL-3) -- single-line -v (the skill name)
+# only; the em-dash split is bash parameter expansion, not awk.
+emdash="—"
+edge_types="$(mktemp "${TMPDIR:-/tmp}/skills-lint-edges.XXXXXX")"
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  f="$sk/SKILL.md"
+  [ -f "$f" ] || continue
+  # Extract the delimiter names present (open + close). `|| true`: grep exits 1 on
+  # no match and `pipefail`+`set -e` would kill the assignment otherwise.
+  opens="$(grep -oE '^<!-- edges:[a-z][a-z-]* -->$' "$f" | sed 's/^<!-- edges://; s/ -->$//' || true)"
+  closes="$(grep -oE '^<!-- /edges:[a-z][a-z-]* -->$' "$f" | sed 's|^<!-- /edges:||; s/ -->$//' || true)"
+  # No block at all is fine -- not every skill has declared edges yet (Phase 5).
+  # (An `if` guard, not an `&&`-list -- a false `&&`-list at statement level trips set -e.)
+  if [ -z "$opens" ] && [ -z "$closes" ]; then continue; fi
+  # Well-formedness: exactly one open + one close, both naming this skill.
+  if [ "$(printf '%s\n' "$opens" | grep -c .)" -ne 1 ] || [ "$(printf '%s\n' "$closes" | grep -c .)" -ne 1 ] \
+     || [ "$opens" != "$name" ] || [ "$closes" != "$name" ]; then
+    fail "$name: malformed \`## Edges\` delimiters (need one \`<!-- edges:$name -->\` + one \`<!-- /edges:$name -->\`; found open='$opens' close='$closes')"
+    continue
+  fi
+  # Body between the delimiters (single-line -v is BSD-safe).
+  block="$(awk -v n="$name" '$0=="<!-- edges:"n" -->"{b=1;next} $0=="<!-- /edges:"n" -->"{b=0} b' "$f")"
+  while IFS= read -r line; do
+    case "$line" in "- "*) ;; *) continue ;; esac      # only edge bullets
+    kind="$(printf '%s' "$line" | sed -n 's/^- \([a-z]*\):.*/\1/p')"
+    case "$kind" in
+      produces|consumes|handoff) ;;
+      "") fail "$name: edge line is not \`- <kind>: ...\` (\"$line\")"; continue ;;
+      *)  fail "$name: unknown edge kind \`$kind\` (expected produces|consumes|handoff)"; continue ;;
+    esac
+    value="$(printf '%s' "$line" | sed 's/^- [a-z]*:[[:space:]]*//')"
+    types_part="${value%%"$emdash"*}"                  # strip the em-dash note, if any
+    IFS=',' read -ra toks <<< "$types_part" || true    # read hits EOF -> nonzero; set -e safe
+    for t in ${toks[@]+"${toks[@]}"}; do               # bash-3.2 + set -u safe empty expansion
+      t="$(printf '%s' "$t" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+      [ -z "$t" ] && continue                          # empty edge (`<kind>: —`)
+      case "$t" in
+        /*) fail "$name: edge \`$kind: $t\` names a slash-invocation, not a type (edges name types, not siblings -- model 1 corollary 3)"; continue ;;
+      esac
+      if [ -d "$skills_dir/$t" ]; then
+        fail "$name: edge \`$kind: $t\` names sibling skill \`$t\`, not a type (edges name types, not siblings -- model 1 corollary 3)"
+        continue
+      fi
+      printf '%s\t%s\n' "$t" "$name" >> "$edge_types"
+    done
+  done < <(printf '%s\n' "$block")
+done
+# Orphan WARN: a type declared by exactly one skill across the suite.
+if [ -s "$edge_types" ]; then
+  while IFS=$'\t' read -r t who; do
+    warn "edge type \`$t\` is declared by only one skill (\`$who\`) -- orphan/typo, or a consumer not yet wired (expected during rollout)"
+  done < <(sort -u "$edge_types" | awk -F'\t' '{c[$1]++; who[$1]=$2} END{for(t in c) if(c[t]==1) print t"\t"who[t]}' | sort)
+fi
+rm -f "$edge_types"
 
 # ---- summary -----------------------------------------------------------------
 echo "fails=$fails warns=$warns"

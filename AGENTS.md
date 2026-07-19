@@ -92,3 +92,26 @@ map live in `README.md` (*Storage convention*) and `packs/clankshop.md`.
   **births** the constellation. The workflow engine (`foreman`) is the pack-agnostic **oven**: it
   **stamps** whatever the recipe specifies and **grows** it afterward (via `calibrate`), but it
   **never authors** the pack-specific glue. Recipe owns *what*; oven owns *how* and *ongoing*.
+
+- **Skills self-initialize and self-describe via typed edges; the composer wires the seams.** The three
+  tenets above govern what a skill's `description:` may *say*; this one — their extension from **routing
+  to initialization** — governs what a skill's `init` may *write* and what its edges may *name*. A skill
+  stands up **its own** home (`.records/`/`.agents/`) and registers **its own** route into the
+  always-loaded front-door doc, so the constellation works **bare**, with no composer deployed. What it
+  declares about its place in a workflow is a set of **typed edges** (`produces` / `consumes` /
+  `handoff`) keyed on artifact/capability **types, never sibling names** (`consumes: plan`, never
+  `handoff: /feature`); a composer (`/foreman`/runbook) **derives** the cross-skill seams by *matching*
+  one skill's edges against another's. A skill that names its successor has authored a seam — the
+  co-mingling the tenets above removed, one level up. Four corollaries, each a testable rule: **(1)
+  self-init, no floor** — every skill creates its own home; none depends on `/foreman init` running
+  first; **(2) visibility by construction** — registration lands in the *always-loaded* front-door, so a
+  bare reader sees the route (and captured items) without a composer reading the skill; **(3) edges name
+  types, not siblings** — the type namespace is shared, the sibling namespace invisible to a leaf; **(4)
+  optimization, not dependency** — the bare self-init + registration experience is complete on its own;
+  `/foreman`/`clankshop` *enrich* (arrange, derive seams, drain accumulation) but are never required for
+  a skill to **function**. The model, edge vocabulary, and idempotent registration protocol live in
+  `docs/design/2026-07-18-skill-self-init-model.md` (§1 tenet, §2 edges, §3 projection); edges are
+  declared in a delimited `## Edges` block in each `SKILL.md`, and `scripts/skills-lint.sh` (check 8)
+  backstops the type-not-sibling invariant. **Grimoire is patient-zero:** the mechanism is built and
+  tested here, but grimoire's own `AGENTS.md` is authored library doctrine — never let self-registration
+  blocks accrete in it; the pilots register against a throwaway fixture front-door (model §3.2).
