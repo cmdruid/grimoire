@@ -1,7 +1,9 @@
 # Library refactor — sharper seams: `dev` split, `design`→`architect`, the runbook mechanism
 
 **Date:** 2026-07-17
-**Status:** Phase 1 implemented (2026-07-17). Phase 2 deferred.
+**Status:** Phase 1 implemented (2026-07-17). Phase 2: extraction + drift-check shipped (as `architect
+extract`/`architect reconcile`, 2026-07-18/19 — see `docs/design/2026-07-18-architect-phase2.md`);
+the spec-driven / "ralph-loop" expansion still deferred (BL-8, `docs/BACKLOG.md`).
 **Scope:** The grimoire skill library (`skills/`, `packs/`). A structural refactor to make each
 skill independent, single-identity, and joined to its neighbors by named seams.
 
@@ -218,12 +220,12 @@ handles bare installs; the runbook is enrichment.
 5. Update `install.sh`, `README.md`, `AGENTS.md`, and all cross-references.
 - **Architect's verbs stay unchanged** — no new capability work mixed into the rename.
 
-**Phase 2 — capability expansion (deferred, seams reserved in Phase 1):**
-- `architect`: code → design **extraction**, and design ↔ code **drift-check** (top of the list — the
-  "huge issue": projects with no design layer are hard to understand). `check` is kept scoped thin in
-  Phase 1 so this lifts in cleanly.
+**Phase 2 — capability expansion (seams reserved in Phase 1):**
+- ~~`architect`: code → design **extraction**, and design ↔ code **drift-check**~~ — ✅ shipped
+  2026-07-18/19 as `architect extract` (the brownfield onramp) and `architect reconcile` (the deep
+  semantic drift check, distinct from cheap `check`) — see `docs/design/2026-07-18-architect-phase2.md`.
 - `architect`: spec-driven / "ralph-loop" expansion (a loop-ready spec/queue that `workstream` or a
-  ralph-style runner consumes).
+  ralph-style runner consumes) — **still deferred** (BL-8, `docs/BACKLOG.md`).
 
 ---
 

@@ -34,7 +34,8 @@ one-line resolution; delete only when the reason it existed is gone.
 ### BL-8 — `2026-07-17-library-refactor.md`'s "Phase 2 deferred" status is now partly stale
 - **source:** Phase 6 doc-reconciliation pass (2026-07-19), incidental find while distilling the
   self-init roadmap's own accreted docs.
-- **status:** open
+- **status:** done (2026-07-19) — status line + Phase 2 section updated to reflect `extract`/`reconcile`
+  shipped; ralph-loop expansion called out as still deferred, in place.
 - **body:** that doc's §4/§8 mark `architect`'s **Phase 2** ("extract a design seed from code" +
   "`check` extended to design ↔ code drift") as *deferred*. Both have since landed — under different
   verb names than the doc predicted: extraction is `architect extract` (writing
