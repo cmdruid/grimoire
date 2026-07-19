@@ -1,0 +1,155 @@
+# Skill Self-Initialization & Typed Edges — Roadmap
+
+**Status:** Proposed (2026-07-18).
+
+**Goal:** Make every skill **self-initializing** and **self-describing via typed edges**, so the
+constellation works **bare** — each skill registers its *own* route/workflow into `AGENTS.md` on init —
+and `/foreman` becomes a **pure, optional composer/optimizer**, never a dependency. Evaluate *all*
+skills against this doctrine and apply it where it fits.
+
+**Why (the through-line):** the `/backlog` critique exposed a real seam — `/backlog` can't stand up its
+own home (`/foreman init` scaffolds `.records/`) and has no passive visibility (its items surface only
+when `/foreman` reads them). So the "capture bureau" is, standalone, a *write-only, invisible drawer*.
+The fix isn't "add a floor"; it's **self-initialization + typed edges**: a skill creates its own home,
+registers its own route/workflow into the always-loaded `AGENTS.md` (visibility by construction), and
+`/foreman` optimizes rather than bootstraps. The friction found the architecture.
+
+## Guiding invariants (carried from the boundary work — do not regress)
+
+- **Skills stay independent.** A skill self-registers only its *own* route/workflow; it never names a
+  sibling. (The boundary tenets still hold — this extends them to *init*.)
+- **Seams live in the composer, derived not declared-in-leaves.** Skills emit **typed edges**
+  (`produces` / `consumes` / `handoff`); `/foreman`/runbook **wire** edges into seams. A skill naming
+  its successor is the co-mingling we just removed — forbidden.
+- **Doctrine trails reality by zero.** The typed-edge tenet lands in `AGENTS.md` **only after** the
+  first skill implements it (Phase 2), never before — no doctrine for a system that doesn't exist yet.
+- **Optimization, not dependency.** `AGENTS.md` works bare; `/foreman` and `clankshop` are enrichment
+  layers. Every skill must function with neither installed.
+
+## The model (recap)
+
+- **Skill = source of truth** for its own route/workflow (declared in the skill, as typed edges).
+- **`AGENTS.md` = projection** — written by the skill's own `init` (self-registration) or by a composer
+  reading the skill. A projection can drift; re-validating it against the source is `/foreman`'s job
+  (*snapshot must never pose as authoritative*).
+- **`/foreman`/runbook = composer/drain** — introspect installed skills, wire typed edges into seams,
+  drain accumulated `AGENTS.md` entries into organized doctrine, validate drift. This is `/foreman`'s
+  existing **baseline** mode, promoted from fallback to primary.
+- **Three registration modes:** self-registered (organic) · foreman-composed (curated) ·
+  clankshop-declared (orchestrated up front).
+
+**What a skill self-describes — three layers:**
+1. **Typed edges** (`produces`/`consumes`/`handoff`) — the mechanical wiring points. **Required.**
+2. **Ideal-use examples** — self-contained *"how to use me"* route/workflow the composer and **role
+   skills ingest** to understand usage. **Enrichment.**
+3. **Deployable seed** — project-customizable assets (e.g. `.agents/<skill>/templates/`) plus an
+   authoring verb. **Enrichment.**
+
+Edges are the minimum; layers 2–3 are optional enrichment a role *may* ingest. **Examples stay
+self-contained** — a cross-skill workflow is a seam the composer *generates* from edges, never a
+hardcoded sibling reference (the route-vs-seam line, applied to examples). A deployable-assets home
+(layer 3) does **not** make an operator a steward — it just means the skill has customizable files.
+
+---
+
+## Phases
+
+### Phase 0 — Design & scaffolding
+- Write the **design doc** for the model: typed-edge tenet (as founding principle), the edge
+  vocabulary v0, the hard parts below, a task-by-task plan for the pilot.
+- Stand up **`docs/BACKLOG.md`** — the "simple version" backlog for this repo's own loose ends
+  (`#4`/`#5` from the body audit, and future maintainer follow-ups).
+- **Deliverable:** design doc (Proposed); tenet captured in the doc, **not** in `AGENTS.md`.
+
+### Phase 1 — Pilot: `backlog` + `feature` (two shapes, de-risk the mechanism)
+Two parallel pilots covering different layers, dogfooded upfront to prove they synergize before ten
+skills commit to the pattern:
+- **`backlog` — Layer 1 (core mechanism).** `/backlog init` (self-creates its `.records/` home), an
+  **edge declaration** (`produces`/`consumes`/`handoff`), **`AGENTS.md` self-registration** (idempotent,
+  delimited section). Settles the registration mechanism + edge vocabulary.
+- **`feature` — Layers 2–3 (enrichment).** A self-contained **ideal-use example** (*"how to use me,"*
+  no sibling named), a deployable **`.agents/feature/templates/`** seed with baked-in defaults, and a
+  **template-authoring verb**. Settles the example-declaration format + templates-as-seed.
+- Resolve the hard parts *empirically on two skill shapes* before generalizing.
+- **Deliverable:** self-initializing `/backlog` + `/feature`; mechanism, edge vocab, example format,
+  and templates-seed pattern all settled.
+
+### Phase 2 — Land the tenet + a lint backstop
+- Promote the **self-init / typed-edge tenet** to `AGENTS.md` (doctrine now trails reality).
+- Extend `scripts/skills-lint.sh`: every skill declares edges; registration is idempotent; **no skill
+  names a sibling in its edges** (the co-mingling backstop, one level up).
+- **Deliverable:** live doctrine + mechanical gate.
+
+### Phase 3 — Evaluate *all* skills (the audit)
+- Assess each of the 10 skills against the doctrine → a **per-skill disposition table**: current
+  init-dependency, its typed edges (`produces`/`consumes`/`handoff`), what changes, migration notes.
+  Some skills already self-contained (e.g. `handoff`, `chiropractor`) may need little; the point is a
+  deliberate, recorded call per skill.
+- **Deliverable:** a disposition doc driving Phases 4–5.
+
+### Phase 4 — `/foreman` re-scope (its own design doc — the biggest change)
+- `/foreman`: **bootstrapper/stamper → composer/extractor/drain.** Introspect installed skills, wire
+  their typed edges into seams, drain `AGENTS.md` accumulation into organized doctrine
+  (`.records/docs/foreman/…`), validate drift. `init` stops *scaffolding others' homes* (they self-init)
+  and becomes *compose + organize*.
+- **Deliverable:** re-scoped `/foreman` design + implementation. (Flagged as the highest-stakes verb
+  change; treat like `migrate`.)
+
+### Phase 5 — Roll out to the remaining skills
+- Apply self-init + edges per the Phase 3 dispositions; wire `/foreman`-as-composer; **shrink
+  `clankshop`** to the seams edge-matching can't derive (its stated "enrichment baseline can't derive").
+- **Deliverable:** all skills self-initializing; `/foreman` composing; runbook slimmed.
+
+### Phase 6 — Reconcile docs & runbook
+- `clankshop`, `README`, the ownership index, and `AGENTS.md` reflect the new model; distill the
+  accreted design docs (this roadmap + the two design docs) into clean present-tense doctrine.
+- **Deliverable:** coherent doctrine, no drift.
+
+### Phase 7 (capstone) — Distill the doctrine into a portable `skill-builder` steward
+The library stewards design (`architect`), workflow (`foreman`), docs (`chiropractor`), and code
+(`auditor`) — but **nothing stewards the skills themselves.** The boundary audit built this session is
+homeless by design (*"a toolmaker workflow, not a `/foreman` verb"*). `skill-builder` is that missing
+steward: it **consolidates** `scripts/skills-lint.sh` (the gate), `docs/boundary-audit.md` (the audit
+workflow), new-skill **scaffolding**, and the **authoring doctrine** (boundary tenets + the three
+layers + self-init/edges + *name-your-floor*). Verbs, roughly: `new` (scaffold), `audit`/`check`
+(boundary + layers + edges + lint), `distill`.
+- **Portable, and the doctrine's new home.** The doctrine we're shaping is generalizable — it applies
+  to any agent-skill library — so `skill-builder` **carries** it, and grimoire's `AGENTS.md` thins to
+  local overrides that *import* it (the public-doctrine + private-override shape).
+- **Sequenced last on purpose.** The doctrine stabilizes through Phases 0–6; principles are captured in
+  the design docs (mutable) meanwhile. `skill-builder` **distills** the proven doctrine into a clean
+  portable steward — `architect`'s ADRs→distill→seed pattern, applied to skill-authoring. Building it
+  around still-moving doctrine would be premature.
+- **Deliverable:** a `skill-builder` skill; `AGENTS.md` / `README` / `boundary-audit` reconciled to
+  point at it as the doctrine home.
+
+---
+
+## Open questions (resolve as we go — do not block Phase 0)
+
+- **Edge vocabulary granularity.** Lightweight tags (`produces:`/`consumes:`/`handoff:`) vs. something
+  richer. Bias: lightweight — a full type system is over-engineering.
+- **Registration target.** A delimited section *inside* `AGENTS.md`, or an included `ROUTES`-style file
+  `AGENTS.md` references (keeps hand-authored doctrine clean).
+- **Skill-vs-foreman write protocol.** Skill registers if absent; `/foreman` may reorganize; re-init
+  respects foreman's layout. Needs a precise, idempotent contract.
+- **Seed vs. record for drained doctrine.** `.records/docs/foreman/…` (record, grows with the code) vs.
+  `.agents/foreman/` (seed, hand-curated). The roadmap leans record; settle it in Phase 4.
+- **Migration model.** Lazy self-registration (on first invocation) vs. a one-time sweep. Bias: lazy —
+  a skill registers when first relevant; unused skills stay out of `AGENTS.md`.
+
+## Sequencing & dependencies
+
+- **Phases 0 → 1 → 2 are the critical path** and gate everything: the pilot proves the mechanism
+  *before* the tenet lands or any rollout begins.
+- **Phase 3** (evaluate) can begin once Phase 1 settles the pattern; it feeds Phases 4–5.
+- **Phase 4** (`/foreman`) is the critical path for the *"with foreman"* experience — but the **bare**
+  experience (self-init + `AGENTS.md` registration) is fully working after Phase 2, independent of it.
+- Each phase ends `skills-lint` green and is independently reviewable.
+
+## Non-goals
+
+- Not building a rich edge/type system — lightweight tags only.
+- Not making `AGENTS.md` registration mandatory to *use* a skill inline — a skill still works if never
+  registered; registration is what makes it *visible/routable*, not what makes it *function*.
+- Not touching consuming-project deployments until the model is proven here (grimoire is patient-zero).
