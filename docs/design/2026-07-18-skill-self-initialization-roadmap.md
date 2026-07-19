@@ -1,15 +1,19 @@
 # Skill Self-Initialization & Typed Edges — Roadmap
 
-**Status:** In progress (2026-07-19). **Phases 0–5 done** (0–2 shipped at milestone #1 `ad84452`; 3–4
-shipped at milestone #2 `1abad3c`; Phase 5 landed on the branch, accumulating toward the next
-milestone) — model doc + maintainer backlog (Phase 0); `backlog` + `feature` self-init/edges/
-registration pilots (Phase 1); the typed-edge tenet promoted into `AGENTS.md` + `skills-lint.sh`
-check 8 edge backstop (Phase 2); the **per-skill disposition audit**
+**Status:** In progress (2026-07-19). **Phases 0–6 done** (0–2 shipped at milestone #1 `ad84452`; 3–4
+shipped at milestone #2 `1abad3c`; 5 shipped at milestone #3 `0db26cf`; Phase 6 landed on the branch,
+accumulating toward track end) — model doc + maintainer backlog (Phase 0); `backlog` + `feature`
+self-init/edges/registration pilots (Phase 1); the typed-edge tenet promoted into `AGENTS.md` +
+`skills-lint.sh` check 8 edge backstop (Phase 2); the **per-skill disposition audit**
 (`docs/design/2026-07-19-phase3-skill-dispositions.md`, Phase 3); the **`/foreman` re-scope**
 (`docs/design/2026-07-19-phase4-foreman-rescope.md`, Phase 4); **rollout to all 9 remaining skills** —
 `feature`/`architect`/`auditor`/`foreman` landed self-init + registration, all 9 landed `## Edges`,
-`packs/clankshop.md` shrunk to the seams edge-matching can't derive (Phase 5). **Phase 6 (reconcile
-docs & runbook) is next**, or hold for track end. (Grimoire is patient-zero: phases are tracked here +
+`packs/clankshop.md` shrunk to the seams edge-matching can't derive (Phase 5); **docs & runbook
+reconciled** — `derive-seams` re-run against the live tree surfaced two real deps the Phase 5 seam-table
+pass hadn't folded in (`architect ↔ workstream`, `foreman ↔ auditor`), the vocabulary table promised for
+"Phase 5/6" graduated into `packs/clankshop.md`, and the model/Phase 4 design docs' stale "Proposed"
+status lines now point at their shipped, living-doc homes (Phase 6). **Phase 7 (capstone: distill into
+`skill-builder`) is next and closes the track.** (Grimoire is patient-zero: phases are tracked here +
 in git history, not in a `.records/` ledger — grimoire authors these skills, it does not self-run them.)
 
 **Goal:** Make every skill **self-initializing** and **self-describing via typed edges**, so the
@@ -131,10 +135,23 @@ skills commit to the pattern:
   5×, keep the write-protocol in sync) and **BL-7** (`built-against: git rev-parse HEAD` collapses to
   one value across a monorepo skills-root — advisory, deferred).
 
-### Phase 6 — Reconcile docs & runbook
+### Phase 6 — Reconcile docs & runbook — ✅ DONE (2026-07-19, unshipped)
 - `clankshop`, `README`, the ownership index, and `AGENTS.md` reflect the new model; distill the
   accreted design docs (this roadmap + the two design docs) into clean present-tense doctrine.
-- **Deliverable:** coherent doctrine, no drift.
+- **Deliverable:** coherent doctrine, no drift. **README/AGENTS.md were already accurate** (Phases 2/5
+  kept them current as they landed — no drift found, no edits needed). **`packs/clankshop.md`** needed
+  real reshaping: a live re-run of `derive-seams` against the installed skills found two mechanically-
+  derivable rows the Phase 5 pass hadn't captured (`architect ↔ workstream` via `roadmap`, `foreman ↔
+  auditor` via `audit-finding`) — added, and the seam table's own summary count corrected (4 of 11 rows
+  now derived, not 2 of 9). Graduated the model doc's §2.2 "starter vocabulary" table into a **`##
+  Typed edge vocabulary (reference)`** section in `clankshop.md`, as that doc had earmarked for
+  "Phase 5/6" but Phase 5 didn't do. Updated the model doc's and the Phase 4 doc's stale `Status:
+  Proposed` headers to point at where the doctrine now actually lives (both are fully implemented) —
+  they stay as historical records of the reasoning, not live doctrine. Re-verified `skills-lint.sh
+  fails=0 warns=11` (unchanged) and `derive-seams`/`check-projection` (fixture-tested) after the edits —
+  clean. Filed **BL-8** (an incidental, out-of-scope find: an unrelated earlier design doc's own
+  "Phase 2 deferred" status line is now partly stale). **No skill/script code changed** — pure doc
+  reconciliation, so only the fast doc-linter path applied.
 
 ### Phase 7 (capstone) — Distill the doctrine into a portable `skill-builder` steward
 The library stewards design (`architect`), workflow (`foreman`), docs (`chiropractor`), and code

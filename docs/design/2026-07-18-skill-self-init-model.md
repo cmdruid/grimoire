@@ -1,8 +1,12 @@
 # Skill Self-Init & Typed Edges — Model & Pilot Plan
 
-**Status:** Proposed (2026-07-18). Companion to
-`docs/design/2026-07-18-skill-self-initialization-roadmap.md` (this doc is that roadmap's **Phase 0**
-deliverable — the model the phases build).
+**Status:** Implemented (2026-07-19, as of Phase 5/`0db26cf`). Companion to
+`docs/design/2026-07-18-skill-self-initialization-roadmap.md` (this doc was that roadmap's **Phase 0**
+deliverable — the model the phases built). The tenet lives in `AGENTS.md` (last design-philosophy
+bullet); the vocabulary + seam table live in `packs/clankshop.md`; every skill's own `## Edges` block
+and (where applicable) `init`/`templates` verb are the projected reality. This doc stays as the
+**historical record** of the reasoning behind those decisions — read it for *why*, the living docs for
+*what's true now*.
 
 **What this doc is.** The roadmap says *what* order to build in; this doc fixes *the model*: the
 founding **tenet**, the **edge vocabulary v0**, the **self-registration/projection** mechanism, the

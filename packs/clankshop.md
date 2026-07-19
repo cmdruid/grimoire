@@ -118,11 +118,30 @@ validates for drift. The load-bearing invariant: **no skill crosses another's se
 | `architect` ↔ `chiropractor` | `architect`'s GLOSSARY = **domain** terms (part of the seed); `chiropractor`'s concern = a **navigational** glossary/index exists and is linked. Domain vs. navigation. | — (chiropractor's edges are all `—`; no shared type) |
 | `architect` ↔ `feature` | `architect` authors the seed (seed altitude); `feature` builds a change against it (feature scope). The altitude seam. | **dep** — `feature` reads `architect`'s `design`, `architect` reads `feature`'s `design` (coarse-shared type, model §2.2) |
 | `architect` ↔ `foreman` | `architect` owns the **design system** (the regenerable seed code builds from); `foreman` owns the **operational system** (how a change is routed, built, calibrated). Design vs. operation. | — (an altitude boundary; foreman doesn't consume `design`/`roadmap`) |
-| `feature` ↔ `workstream` ↔ `backlog` | `feature` ends at gate-green; `workstream` lands; `backlog debrief` captures. Three seams, one rule: none crosses another's. | **seam** — `feature -> workstream (gate-green-code)` (a real control-flow arrow, `feature`'s `handoff` matched); the `backlog` leg stays hand-authored (no shared type — a debrief captures *about* the ship, it doesn't consume workstream's typed output) |
+| `architect` ↔ `workstream` | A stream's queue can source **directly** from architect's roadmap — bypassing `feature` — when the work is already plan-shaped at seed altitude. | **dep** — `workstream` reads `architect`'s `roadmap` |
+| `feature` ↔ `workstream` ↔ `backlog` | `feature` ends at gate-green; `workstream` lands; `backlog debrief` captures. Three seams, one rule: none crosses another's. | **seam** — `feature -> workstream (gate-green-code)` (a real control-flow arrow, `feature`'s `handoff` matched) **+ dep** — `workstream` reads `feature`'s `plan` (the other queue-source shape); the `backlog` leg stays hand-authored (no shared type — a debrief captures *about* the ship, it doesn't consume workstream's typed output) |
 | `delegate` ↔ `mailbox` | `delegate` **decides** (delegate-or-not, mechanism, route, return contract); `mailbox` **carries** (the worktree-safe slot transport `delegate` routes to). Decision vs. transport. | — (both are pure-mechanism, deliberately no typed artifacts — exactly the case edge-matching can't and shouldn't derive) |
 | `auditor` ↔ `chiropractor` | `auditor` scores **project code** against a quality rubric; `chiropractor` tunes the **doc spine's** ergonomics. Code vs. docs (see *"Which audit?"* below). | — (chiropractor's edges are all `—`; no shared type) |
+| `foreman` ↔ `auditor` | `auditor` scores; `foreman calibrate` **drains** the scored signal into doctrine, the same drain relationship it has with `backlog`. Scorer vs. curator. | **dep** — `foreman` reads `auditor`'s `audit-finding` |
 
-Two rows carry a **dep** or **seam** tag — those facts now come from `derive-seams`, not from hand-maintaining this table; the *contract* column's framing (why the wiring exists, which layer owns what) stays hand-authored regardless, since edge-matching reports only "`X` reads `Y`'s `T`," never the altitude/scope reasoning behind it. The other six rows are genuinely **not** derivable — a role/scope/altitude split with no shared typed artifact — and stay this runbook's to state, per Phase 5's "shrink to the seams edge-matching can't derive" (the fuller reconciliation — trimming/restructuring this table itself — is Phase 6's, not this pass's).
+Four rows carry a **dep** or **seam** tag — those facts now come from `derive-seams`, not from hand-maintaining this table; the *contract* column's framing (why the wiring exists, which layer owns what) stays hand-authored regardless, since edge-matching reports only "`X` reads `Y`'s `T`," never the altitude/scope reasoning behind it. The remaining six rows are genuinely **not** derivable — a role/scope/altitude split with no shared typed artifact — and stay this runbook's to state. (Phase 6 re-ran `derive-seams` against the live tree and reshaped this table to match its full current output — `architect ↔ workstream` and `foreman ↔ auditor` were real deps the Phase 5 pass hadn't yet folded in.)
+
+## Typed edge vocabulary (reference)
+
+The **known types** in current use, for a human or composer scanning what strings mean something —
+not a schema a skill must import (the vocabulary stays open-string, per the model doc §2.2). This
+table is itself a **snapshot**: regenerate it from `scripts/foreman-health.sh derive-seams
+<skills-root>` rather than trusting it once `## Edges` blocks drift.
+
+| type | produced by | consumed by |
+|---|---|---|
+| `tracker-entry` | `backlog` | `foreman` (calibrate) |
+| `design` | `architect` (brainstorm/plan/distill), `feature` (design) | `feature` (its own plan stage), `architect` (its own distill/reconcile) — each also reads the *other's* `design`, the derived cross-skill dep above |
+| `plan` | `feature` (plan) | `feature` (its own build stage), `workstream` (queue source) |
+| `gate-green-code` | `feature` (build) — also declared as a `handoff` | `workstream` (ship) |
+| `roadmap` | `architect` (plan) | `workstream` (queue source) |
+| `audit-finding` | `auditor` | `foreman` (calibrate) |
+| `handoff-doc` | `handoff` (save) | `handoff` (resume) — intra-skill only; no cross-skill consumer yet (the standing orphan WARN, BL-4) |
 
 ## The glue-workflows (how the seams run in practice)
 

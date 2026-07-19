@@ -1,10 +1,12 @@
 # Phase 4 — `/foreman` Re-scope (bootstrapper/stamper → composer/extractor/drain)
 
-**Status:** Proposed (2026-07-19). Deliverable of **Phase 4** of
+**Status:** Implemented (2026-07-19, shipped at milestone #2 `1abad3c`). Deliverable of **Phase 4** of
 `docs/design/2026-07-18-skill-self-initialization-roadmap.md`, consuming **Phase 3**'s disposition
 table (`docs/design/2026-07-19-phase3-skill-dispositions.md`, especially **F4** and the §5 type-pairing
 table) and settling the questions the model doc (`docs/design/2026-07-18-skill-self-init-model.md`) §4
 deferred here. Flagged by the roadmap as the **highest-stakes verb change** — treat like `migrate`.
+Landed in `skills/foreman/{BOOTSTRAP.md,SKILL.md,verbs/{init,check,calibrate}.md,scripts/foreman-health.sh}`;
+this doc stays as the historical record of the redesign's reasoning.
 
 **What this doc is.** The concrete redesign of `/foreman`'s four re-scoped responsibilities: (1) **init's
 per-skill dispatch** — who scaffolds what once skills self-init; (2) **edge-matching seam derivation** —

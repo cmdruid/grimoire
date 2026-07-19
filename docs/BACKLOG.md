@@ -14,6 +14,21 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-8 — `2026-07-17-library-refactor.md`'s "Phase 2 deferred" status is now partly stale
+- **source:** Phase 6 doc-reconciliation pass (2026-07-19), incidental find while distilling the
+  self-init roadmap's own accreted docs.
+- **status:** open
+- **body:** that doc's §4/§8 mark `architect`'s **Phase 2** ("extract a design seed from code" +
+  "`check` extended to design ↔ code drift") as *deferred*. Both have since landed — under different
+  verb names than the doc predicted: extraction is `architect extract` (writing
+  `.records/design-draft/`, exactly the described shape) and the drift-check is `architect reconcile`
+  (not an extension of `check`). The doc's third Phase 2 item — the spec-driven / "ralph-loop"
+  expansion — genuinely remains undone. **Follow-up:** update that doc's status line to something like
+  "Phase 2: extraction + drift-check shipped (as `extract`/`reconcile`); ralph-loop expansion still
+  deferred" — a small, low-risk edit, just outside this roadmap's own Phase 6 scope (that doc predates
+  this roadmap and isn't one of its accreted design docs), so left for whoever next touches
+  `architect`'s doc trail, or a Phase 7 `skill-builder` sweep.
+
 ### BL-7 — `built-against: git rev-parse HEAD` collapses to one value across a monorepo skills-root
 - **source:** Phase 5 rollout, `foreman` landing (2026-07-19); reproduced via
   `foreman-health.sh check-projection` against a scratch fixture registering `backlog`/`auditor`/
