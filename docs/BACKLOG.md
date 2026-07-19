@@ -14,6 +14,19 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-4 — check-8 single-use WARN misfires on intra-skill produce↔consume pairs
+- **source:** Phase 3 disposition audit (2026-07-19); `docs/design/2026-07-19-phase3-skill-dispositions.md` §5.
+- **status:** open
+- **body:** `scripts/skills-lint.sh` **check 8** WARNs on a type used by exactly one skill (orphan/typo
+  signal). But a legitimate **intra-skill chain** — `handoff` `produces: handoff-doc` **and** `consumes:
+  handoff-doc` (save→resume), `feature` `design→plan→build` — is a *single skill* on both ends and will
+  trip the single-use WARN even though it is correctly paired. This is distinct from the *rollout*
+  orphan-WARNs (a type with no consumer yet), which resolve once Phase 5 wires consumers; the intra-skill
+  WARN never resolves. **Follow-up (Phase 5):** refine check 8 to count producer-vs-consumer *skills*
+  separately, so a same-skill produce↔consume pair does not read as single-use (it also cleanly covers
+  feature's internal chain). Keep the genuine cross-skill orphan WARN. Alternative: accept the WARN as a
+  documented known case. Recommend the refinement.
+
 ### BL-3 — block-splicing helpers must avoid multi-line `awk -v` (BSD/macOS portability)
 - **source:** Phase 1 pilot A4 (2026-07-18); `docs/design/2026-07-18-phase1-pilot-acceptance.md`;
   commit `4b32a2b`.
@@ -62,6 +75,11 @@ one-line resolution; delete only when the reason it existed is gone.
   recording per-skill "clean / fixed" — folded naturally into **Phase 3** (evaluate all skills) or run
   standalone. Closing BL-1 (a lint) would make future recurrences cheap to catch and largely retire
   this manual sweep.
+- **Phase 3 note (2026-07-19):** *still open — Phase 3 was a different lens.* The Phase 3 disposition
+  audit (`docs/design/2026-07-19-phase3-skill-dispositions.md`) read all 10 `SKILL.md` bodies, but
+  scored them for **self-init / typed edges / registration**, not for rubric-V1 **sibling-verb-roster
+  rot**. The exhaustive roster sweep was **not** performed here; it remains a distinct pass (best done
+  once BL-1's lint exists to ground it).
 
 ---
 
