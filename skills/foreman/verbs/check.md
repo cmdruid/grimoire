@@ -11,6 +11,25 @@ variables and the prose decides.
 
 ## Run it
 
+**Pass 1 — the projection (primary since Phase 4).** Validates the front door's `## Skill routes
+(self-registered)` section against the installed skills' own `## Edges` blocks
+(`docs/design/2026-07-19-phase4-foreman-rescope.md` §5.2) — resolve `<skills-root>` first (skill
+discovery, `verbs/init.md` step -1; reuse the stamp if `init` already ran).
+
+```bash
+bash <skill-dir>/scripts/foreman-health.sh derive-seams     <skills-root>
+bash <skill-dir>/scripts/foreman-health.sh check-projection <front-door> <skills-root>
+```
+
+| fact | means | judgment |
+|---|---|---|
+| `unregistered: <name>` | installed + register-worthy (durable-home/steward tier, Phase 3 F3) but no block | it should self-`init`; **not** drift for a plumbing-tier skill (delegate/mailbox skip registration by design) |
+| `orphaned: <name>` | a block exists but the skill isn't installed at the resolved root | flag, don't auto-prune — a temporarily-uninstalled skill may return (safe-by-default) |
+| `stale-stamp: <name> built-against=<old> now=<new>` | the skill changed since it last registered | the skill should re-run its own `init` to refresh the stamp |
+| `seam-drift: missing/stale <A> -> <B> (<T>)` | `derive-seams`'s current output disagrees with the written `<!-- seam: ... -->` annotations | **mechanical** — this half you may fix directly (delete-and-rewrite all seam annotations, §5.1 — they carry no hand-authored content, so a wholesale regenerate is correct, not destructive) |
+
+**Pass 2 — the docs (unchanged).**
+
 ```bash
 bash <skill-dir>/scripts/foreman-health.sh coverage   <root>
 bash <skill-dir>/scripts/foreman-health.sh stale-refs <root>
@@ -20,6 +39,9 @@ bash <skill-dir>/scripts/foreman-health.sh stale-refs <root>
 - Both are **read-only** and emit no recommendation — they surface what the host doc-linter can't see
   (spine reachability, rooted `file:line` currency), *complementing* the gate's link/index/frontmatter
   checks, not re-implementing them. Run the host gate for the mechanical half first.
+- **Section ownership** (both passes write only what `init` writes — model §3.4): fixing `seam-drift`
+  may reorder/rewrite the composer-owned region between skill blocks; it must never touch a byte inside
+  another skill's own `skill:<name>` delimiters — that repair belongs to the skill's own re-`init`.
 
 ## Read the facts, don't just relay them
 

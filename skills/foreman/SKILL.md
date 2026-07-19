@@ -40,8 +40,9 @@ scaffold the gaps). A project with no `.agents/foreman/` yet goes to one of them
 - **Scripts compute facts; the verb prose decides.** The verb files (and this router) carry the
   *judgment* — how to classify a change, whether drift is real, which signal earns a doctrine edit.
   The bundled scripts do only the deterministic, mechanical work: the **read-only** fact script
-  `scripts/foreman-health.sh` (state analysis — `inventory`, `stale-refs`, `coverage` — for `calibrate`/`check`,
-  emitting compact `key=value` facts + evidence) and the **mutating mechanical helper**
+  `scripts/foreman-health.sh` (state analysis — `inventory`, `stale-refs`, `coverage`, `derive-seams`,
+  `check-projection` — for `calibrate`/`check`/`init`, emitting compact `key=value` facts + evidence)
+  and the **mutating mechanical helper**
   `scripts/scoped-commit.sh` (the atomic pathspec-scoped commit — it mutates by design, but only ever
   the paths it is handed). **Never push a decision into a script:** a script is stateless and can't see
   session context, so a *verdict* it emits is sometimes confidently wrong (worse than none), while a

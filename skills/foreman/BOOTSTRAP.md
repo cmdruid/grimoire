@@ -184,6 +184,26 @@ actually installed; where a steward is absent, the row's work falls to by-hand p
 | seed↔code drift reports (`reconcile-<date>.md`) | `.records/reports/` | `/architect reconcile` (writer) |
 | audit deliverables: FINDINGS · metrics.csv · history/ | `.records/audit/` | `/auditor` (writer) |
 | session hand-offs (gitignored scratch) | root `HANDOFF.md` · `.sessions/` | `/handoff` |
+| calibration pass log (append-only history of `/foreman calibrate` runs) | `.records/logs/foreman-calibrate.md` | `/foreman` (calibrate) |
+
+### 4.2 Self-init dispatch & section ownership
+
+A skill that **self-initializes** stands up its own home and registers its own route into the front
+door with no dependency on `/foreman init` having run first (a skill's own `init`/`deploy` verb, where
+it has one). `/foreman init` therefore **dispatches** rather than scaffolds directly: for each installed
+skill capable of self-init, it invokes (or instructs the user to run) that skill's own init verb; it
+scaffolds a home itself only as a **fallback**, for a skill that has no self-init verb yet, so the
+project still reaches a complete state either way. `init`'s report always names which skills it
+dispatched to vs. scaffolded itself — a mixed fleet stays visible, never silently uniform. See
+`verbs/init.md` Step -1 (resolving which skills are installed) and Step 2 (the dispatch table).
+
+The registered `## Skill routes (self-registered)` section in the front door splits ownership the same
+way: **each skill owns only the bytes inside its own `skill:<name>` delimiters** (written by that
+skill's own `init`); `/foreman` owns everything **around** them — the section header, block ordering,
+and any composer-derived **seam annotations** between blocks (`<!-- seam: A -> B (T) -->`, matched by
+`/foreman check`/`init` from the skills' own `## Edges` declarations — never hand-authored, so a full
+regenerate each pass is correct, not destructive). Neither party edits the other's region. `/foreman
+check` re-derives the seams and flags where the written section has drifted from what's installed.
 
 ---
 
@@ -396,15 +416,17 @@ _Last updated: <date>_
 
 **Full deploy:**
 1. Fill the *Slots* (§2): `<keystone>`, `<gate>`, `<stack>`.
-2. Create the *Manifest* tree (§4) -- **both roots**: the `.agents/` seed homes (`architect/`,
-   `foreman/`, `auditor/`) and the full `.records/` tree. Start the front door, `.agents/foreman/README`,
-   and `.agents/foreman/MEMORY`. (Sibling stewards populate their own seed homes via their deploy verbs;
-   foreman scaffolds the `.agents/` root so those homes have a place to land.)
+2. Resolve the skills root (skill discovery, §4.2) and **dispatch** each self-initializing skill's own
+   `init`/`deploy` verb to stand up its own home (trackers, seed) -- `foreman` scaffolds a home directly
+   only as a fallback, for a skill with no self-init verb yet (§4.2). Either way `foreman` creates the
+   `.agents/` root directory itself, and starts the front door, `.agents/foreman/README`, and
+   `.agents/foreman/MEMORY`.
 3. **Write the ownership index** (§4.1): `.agents/README` + `.records/README` mapping content ->
    location -> steward, and a one-line pointer to them from the front door. Load-bearing -- paths no
    longer encode ownership.
 4. No template copy step -- each producing skill's bundled `templates/` is used directly (§12).
-5. Add the *Trackers* (§6) as empty files with a one-line "what goes here" header each.
+5. **Derive + write the seam annotations** (§4.2) between the registered skill blocks, matched from the
+   installed skills' own `## Edges` declarations.
 6. Add the routing + planning + worktree + maintenance + sync docs (§5, §7-§10), genericized to
    your stack.
 7. Implement the *Linter* (§11) and wire it into `<gate>`.

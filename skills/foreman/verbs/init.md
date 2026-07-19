@@ -22,6 +22,18 @@ in the glue you write** (the host's `AGENTS.md`, step 6, and the ownership index
 skill and agent **reads the recorded location** rather than assuming a hardcoded path — the root is a
 pointer, not a constant.
 
+## Step -1 — Resolve the skills root (skill discovery)
+
+Before anything else, `init` (and `check`, `calibrate`) must answer "what skills are installed?" —
+resolved, never guessed, same discipline as every other path this verb touches
+(`docs/design/2026-07-19-phase4-foreman-rescope.md` §2): (1) an explicit `<skills-root>` the user names;
+(2) `~/.claude/skills/` if it exists (the Claude Code install target); (3) a dir-scanning harness's own
+skills root, if the conversation names one (Codex-style — point the harness at a dir directly); (4) ask.
+A skill is "installed" if `<skills-root>/<name>/SKILL.md` exists. **Grimoire's own `skills/`** (the
+library clone) is a source, never a discovery target — this verb never introspects grimoire as if it
+were a deployed project (patient-zero, model §3.2). Record the resolved root alongside the
+`built-against` stamp (step 9) so `check`/`calibrate` reuse it without re-asking.
+
 ## Step 0 — Determine the composition
 
 Before scaffolding, decide *what* you are wiring. Two sources, in order:
@@ -68,14 +80,31 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
 1. **Fill the slots** (§2): `<keystone>` (the project's sacred invariants), `<gate>` (the one
    test/lint command), `<stack>`; pick modules from the Module Map (§3) — Core always; worktree
    pipeline / maintenance / sync / etc. opt-in.
-2. **Scaffold both roots** (§4) from the manifest: the `.agents/` seed homes (`architect/`,
-   `foreman/`, `auditor/` — sibling stewards populate their own via their deploy verbs; `init`
-   stands up the `.agents/` root so those homes have a place to land) and the full `.records/` tree
-   (`tasks.md`, `issues.md`, `feedback.md`, `bugs/`, `notes/`, `plans/`, `archive/`, `adr/`,
-   `reports/`, `logs/`, `audit/`). Copy the generic `docs/` into the host's `.agents/foreman/docs/`,
-   filling the slots. Templates are **not** copied anywhere — planning docs, operational records, and
-   capture reports are each produced from the owning skill's own bundled `templates/` (`/feature`,
-   `foreman`, `/backlog` respectively) at the point they're used.
+2. **Dispatch each skill's home-scaffolding — do not scaffold it directly.** Per the self-init tenet
+   (`docs/design/2026-07-18-skill-self-init-model.md` §1) and the per-skill dispatch table
+   (`docs/design/2026-07-19-phase4-foreman-rescope.md` §3.1), `init` **stands up the `.agents/` root
+   directory itself** (so self-initializing seed skills have a place to land) but does **not** write a
+   self-initializing skill's own home:
+   - **Durable-home skill, its own `init`/`deploy` verb landed** (e.g. `/backlog init`) → **dispatch**:
+     invoke that verb (or, in a human-directed session, instruct "run `/backlog init`"). Never write
+     `.records/tasks.md` or any other file a self-initializing skill owns.
+   - **Durable-home skill, self-init not yet landed** (pre-Phase-5 rollout) → **legacy fallback**, below.
+   - **In-place steward / scratch-only / pure-mechanism tier** (`chiropractor`; `workstream`, `handoff`,
+     `mailbox`; `delegate`) → **no scaffold** — nothing to create; scratch dirs are lazily created on
+     first use.
+   Report, per skill, whether it was **dispatched** or **legacy-scaffolded** — a partially-migrated
+   fleet must be visible in the report, never silently uniform.
+
+   > **Legacy scaffold (pre-Phase-5 compatibility — remove in Phase 6 once every durable-home skill has
+   > landed its own `init`).** For a durable-home skill still on the fallback path, scaffold its home
+   > directly exactly as before Phase 4: the relevant slice of the `.records/` tree and/or its
+   > `.agents/<skill>/` seed, from this skill's bundled `docs/`/templates. This is the *same* code path
+   > `migrate`'s gap-fill already reuses (`verbs/migrate.md` §"What this reuses from init") — Phase 4
+   > adds a second reason to enter it (not-yet-self-initializing), it does not add a second
+   > implementation. Copy the generic `docs/` into the host's `.agents/foreman/docs/`, filling the
+   > slots, as part of this path. Templates are **not** copied anywhere in either path — planning docs,
+   > operational records, and capture reports are each produced from the owning skill's own bundled
+   > `templates/` at the point they're used.
 3. **Write the ownership index + trackers + `.agents/foreman/README`.** The **ownership index** (§4.1)
    is load-bearing — since the paths no longer encode ownership, write `.agents/README.md` +
    `.records/README.md` mapping **content → location → steward** (design seed → `.agents/architect/`
@@ -85,10 +114,10 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    `.records/plans/` `/feature`; archive → `.records/archive/` `/workstream`; adr → `.records/adr/`
    `/feature` (writer, distilled by `/architect`); seed↔code drift reports → `.records/reports/`
    `/architect reconcile` (writer); audit deliverables → `.records/audit/` `/auditor`), keyed to the
-   composition from Step 0, and add a one-line pointer to them from the front door. Then write the trackers +
-   `.agents/foreman/README` from the `BOOTSTRAP` templates (empty files with their one-line
-   headers; the index genericized to the host) — the
-   trackers + capture taxonomy come from `/backlog` where it is installed.
+   composition from Step 0, and add a one-line pointer to them from the front door. Then write
+   `.agents/foreman/README` from the `BOOTSTRAP` templates (the index genericized to the host). The
+   trackers themselves are **step 2's job, not this one's** — dispatched to `/backlog init` where it is
+   installed and landed, legacy-scaffolded only as step 2's fallback.
 4. **Wire the linter** (§11) into the host's `<gate>`: internal links resolve; enumerable doc series
    are indexed; banned paths are absent; store-dir files carry valid frontmatter.
 5. **Author the `<content docs>`** (ARCHITECTURE / GOTCHAS / DIAGNOSTICS / PERFORMANCE) — the
@@ -110,7 +139,16 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    that `/foreman`'s own verbs (`route`, `calibrate`, `check`) cover route/calibrate/validate and `/backlog`
    covers capture/debrief/curate; for any *absent* recognized companion, state the by-hand fallback.
    The deployed system also works entirely by hand (BOOTSTRAP's "follow the conventions by hand").
-8. **Stamp what you built against (snapshot doctrine).** The generated glue is a snapshot of a moving
+8. **Derive + write the seam annotations (composer-owned, regenerated wholesale).** Run
+   `scripts/foreman-health.sh derive-seams <skills-root>` (step -1's resolved root) and write the
+   `<!-- seam: A -> B (T) -->` annotations it reports into the `## Skill routes (self-registered)`
+   section, between the two skills' own blocks — format + rationale in
+   `docs/design/2026-07-19-phase4-foreman-rescope.md` §5.1. **Section ownership**: `init`/`check` may
+   reorder skill blocks, regroup them, and rewrite seam annotations wholesale (they carry no
+   hand-authored content, so a full delete-and-rewrite each pass is correct, not destructive); they must
+   **never** edit a byte inside another skill's own `skill:<name>` delimiters — that region is the
+   skill's own to write via its own `init` (model §3.4).
+9. **Stamp what you built against (snapshot doctrine).** The generated glue is a snapshot of a moving
    target — record, in the deployed glue (a stamp line in `.agents/foreman/README.md`, or an `AGENTS.md`
    footer), **which composition and skill versions this `init` ran against**: the runbook source
    (pack name + its file, or "baseline / introspection" when none) and the set of companion skills
@@ -129,10 +167,11 @@ re-sync.
 ## Done when
 
 A `.agents/foreman/` system that passes the host's `<gate>` — **both roots scaffolded** (`.agents/`
-seed homes + the `.records/` tree), the **ownership index** written (`.agents/README` +
-`.records/README`, content → location → steward), trackers, templates,
-routing/planning/worktree/maintenance docs, the linter wired, the `<content docs>` authored, the
-**gate / doc-linter / diagnostics surfaced in `AGENTS.md`** (so the skills' generic instructions resolve), the
-**composition's companion skills listed** (with by-hand fallbacks for the absent), and a **stamp**
-recording the runbook + skill versions built against, pointing at `/foreman check` as the drift
-validator.
+seed homes + the `.records/` tree, each home either **dispatched** to its own skill's `init` or, where
+that isn't landed yet, **legacy-scaffolded**, and the report says which), the **ownership index**
+written (`.agents/README` + `.records/README`, content → location → steward), routing/planning/
+worktree/maintenance docs, the linter wired, the `<content docs>` authored, the **gate / doc-linter /
+diagnostics surfaced in `AGENTS.md`** (so the skills' generic instructions resolve), the **composition's
+companion skills listed** (with by-hand fallbacks for the absent), the **seam annotations** derived and
+written between the registered skill blocks, and a **stamp** recording the runbook + skill versions +
+resolved skills-root built against, pointing at `/foreman check` as the drift validator.

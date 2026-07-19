@@ -72,10 +72,18 @@ branch):
    you acted on, record the resolution and clear it (or hand it to `/backlog curate` to drain from the list) — the
    goal is a live signal, never a graveyard. An entry that recurs across two passes unrouted is itself
    a finding.
-5. **Commit.** Commit the doctrine edits atomically with **explicit paths** via
-   `scripts/scoped-commit.sh <root> "<msg>" <paths…>` (never `git add -A` on the shared root — see
-   `.agents/foreman/docs/WORKTREES.md`). As a sweep, `calibrate` makes the single commit; capture verbs it touched only
-   write. Commits carry **no** `Co-Authored-By` trailer. Then run the host's gate / doc-linter.
+5. **Log the pass, then commit.** Append a dated entry to `.records/logs/foreman-calibrate.md` (created
+   on first use) summarizing this pass: which trackers were harvested, how many patterns became doctrine
+   edits, which source entries were cleared. This is a **record**, not a seed — unlike the doctrine
+   edits above (which agents read as live instruction and must stay curated/stable, hence living in the
+   `.agents/foreman/` seed unchanged), the pass log is append-only audit evidence, never re-read as
+   instruction (settles the seed-vs-record open question,
+   `docs/design/2026-07-19-phase4-foreman-rescope.md` §7 — the doctrine itself was never in question;
+   only its calibration *history* needed a home). Then commit the doctrine edits **and** the log entry
+   atomically with **explicit paths** via `scripts/scoped-commit.sh <root> "<msg>" <paths…>` (never
+   `git add -A` on the shared root — see `.agents/foreman/docs/WORKTREES.md`). As a sweep, `calibrate`
+   makes the single commit; capture verbs it touched only write. Commits carry **no** `Co-Authored-By`
+   trailer. Then run the host's gate / doc-linter.
 
 ## Relationship to neighboring verbs & skills
 
@@ -95,4 +103,5 @@ branch):
 The recurring dev-experience signal in `/backlog`'s trackers has been folded into concrete doctrine /
 workflow / `AGENTS.md` edits (and durable notes promoted into `.agents/foreman/MEMORY.md` /
 `.agents/foreman/GOTCHAS.md` / docs), or filed back to `/backlog` when too big; each acted-on source entry
-recorded and cleared, and the changes committed atomically with explicit paths. Gate green.
+recorded and cleared; the pass logged to `.records/logs/foreman-calibrate.md`; and the changes committed
+atomically with explicit paths. Gate green.

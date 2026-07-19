@@ -1,12 +1,13 @@
 # Skill Self-Initialization & Typed Edges — Roadmap
 
-**Status:** In progress (2026-07-19). **Phases 0–2 landed + Phase 3 done (unshipped)** — model doc +
+**Status:** In progress (2026-07-19). **Phases 0–2 landed + Phases 3–4 done (unshipped)** — model doc +
 maintainer backlog (Phase 0); `backlog` + `feature` self-init/edges/registration pilots (Phase 1); the
 typed-edge tenet promoted into `AGENTS.md` + `skills-lint.sh` check 8 edge backstop (Phase 2, the
 first-milestone slice); the **per-skill disposition audit**
-(`docs/design/2026-07-19-phase3-skill-dispositions.md`, Phase 3 — accumulating on the branch). **Phase 4
-(`/foreman` re-scope) is next.** (Grimoire is patient-zero: phases are tracked here + in git history, not
-in a `.records/` ledger — grimoire authors these skills, it does not self-run them.)
+(`docs/design/2026-07-19-phase3-skill-dispositions.md`, Phase 3); the **`/foreman` re-scope**
+(`docs/design/2026-07-19-phase4-foreman-rescope.md`, Phase 4 — accumulating on the branch). **Phase 5
+(roll out to the remaining skills) is next.** (Grimoire is patient-zero: phases are tracked here + in
+git history, not in a `.records/` ledger — grimoire authors these skills, it does not self-run them.)
 
 **Goal:** Make every skill **self-initializing** and **self-describing via typed edges**, so the
 constellation works **bare** — each skill registers its *own* route/workflow into `AGENTS.md` on init —
@@ -96,13 +97,19 @@ skills commit to the pattern:
   captured-items, `foreman` dual-role sequenced first, vocab holds) + pilot-edge confirmation and a
   lint-refinement candidate for the `handoff-doc` intra-skill single-use WARN (§5). Drives Phases 4–5.
 
-### Phase 4 — `/foreman` re-scope (its own design doc — the biggest change)
+### Phase 4 — `/foreman` re-scope (its own design doc — the biggest change) — ✅ DONE (2026-07-19, unshipped)
 - `/foreman`: **bootstrapper/stamper → composer/extractor/drain.** Introspect installed skills, wire
   their typed edges into seams, drain `AGENTS.md` accumulation into organized doctrine
   (`.records/docs/foreman/…`), validate drift. `init` stops *scaffolding others' homes* (they self-init)
   and becomes *compose + organize*.
-- **Deliverable:** re-scoped `/foreman` design + implementation. (Flagged as the highest-stakes verb
-  change; treat like `migrate`.)
+- **Deliverable:** `docs/design/2026-07-19-phase4-foreman-rescope.md` — skill discovery (a named gap,
+  now fixed), the per-skill `init` dispatch table (self-init vs. a marked, temporary legacy fallback),
+  the edge-matching seam-derivation algorithm + its `foreman-health.sh derive-seams`/`check-projection`
+  implementation, the seam-annotation on-disk format + section-ownership contract, and the seed-vs-record
+  settlement (doctrine stays a seed; a new `.records/logs/foreman-calibrate.md` records calibration
+  runs). Implemented in `skills/foreman/{BOOTSTRAP.md,SKILL.md,verbs/{init,check,calibrate}.md,
+  scripts/foreman-health.sh}`; `/foreman route` and `verbs/migrate.md` deliberately untouched (§5, §6 of
+  the design doc). Gate green (`fails=0 warns=13`, matching the pre-existing baseline).
 
 ### Phase 5 — Roll out to the remaining skills
 - Apply self-init + edges per the Phase 3 dispositions; wire `/foreman`-as-composer; **shrink
