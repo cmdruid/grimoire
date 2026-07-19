@@ -1,8 +1,8 @@
 # Skill Self-Initialization & Typed Edges — Roadmap
 
-**Status:** Complete (2026-07-19). **All 8 phases done** (0–2 shipped at milestone #1 `ad84452`; 3–4
-shipped at milestone #2 `1abad3c`; 5 shipped at milestone #3 `0db26cf`; 6–7 ship together at track
-end) — model doc + maintainer backlog (Phase 0); `backlog` + `feature` self-init/edges/registration
+**Status:** Complete and SHIPPED (2026-07-19). **All 8 phases done and landed to `main`** (0–2 at
+milestone #1 `ad84452`; 3–4 at milestone #2 `1abad3c`; 5 at milestone #3 `0db26cf`; 6–7 landed together
+at track end, the roadmap's final ship) — model doc + maintainer backlog (Phase 0); `backlog` + `feature` self-init/edges/registration
 pilots (Phase 1); the typed-edge tenet promoted into `AGENTS.md` + `skills-lint.sh` check 8 edge
 backstop (Phase 2); the **per-skill disposition audit**
 (`docs/design/2026-07-19-phase3-skill-dispositions.md`, Phase 3); the **`/foreman` re-scope**
@@ -97,7 +97,7 @@ skills commit to the pattern:
   names a sibling in its edges** (the co-mingling backstop, one level up).
 - **Deliverable:** live doctrine + mechanical gate.
 
-### Phase 3 — Evaluate *all* skills (the audit) — ✅ DONE (2026-07-19, unshipped)
+### Phase 3 — Evaluate *all* skills (the audit) — ✅ DONE + SHIPPED (2026-07-19, milestone #2 `1abad3c`)
 - Assess each of the 10 skills against the doctrine → a **per-skill disposition table**: current
   init-dependency, its typed edges (`produces`/`consumes`/`handoff`), what changes, migration notes.
   Some skills already self-contained (e.g. `handoff`, `chiropractor`) may need little; the point is a
@@ -107,7 +107,7 @@ skills commit to the pattern:
   captured-items, `foreman` dual-role sequenced first, vocab holds) + pilot-edge confirmation and a
   lint-refinement candidate for the `handoff-doc` intra-skill single-use WARN (§5). Drives Phases 4–5.
 
-### Phase 4 — `/foreman` re-scope (its own design doc — the biggest change) — ✅ DONE (2026-07-19, unshipped)
+### Phase 4 — `/foreman` re-scope (its own design doc — the biggest change) — ✅ DONE + SHIPPED (2026-07-19, milestone #2 `1abad3c`)
 - `/foreman`: **bootstrapper/stamper → composer/extractor/drain.** Introspect installed skills, wire
   their typed edges into seams, drain `AGENTS.md` accumulation into organized doctrine
   (`.records/docs/foreman/…`), validate drift. `init` stops *scaffolding others' homes* (they self-init)
@@ -121,7 +121,7 @@ skills commit to the pattern:
   scripts/foreman-health.sh}`; `/foreman route` and `verbs/migrate.md` deliberately untouched (§5, §6 of
   the design doc). Gate green (`fails=0 warns=13`, matching the pre-existing baseline).
 
-### Phase 5 — Roll out to the remaining skills — ✅ DONE (2026-07-19, unshipped)
+### Phase 5 — Roll out to the remaining skills — ✅ DONE + SHIPPED (2026-07-19, milestone #3 `0db26cf`)
 - Apply self-init + edges per the Phase 3 dispositions; wire `/foreman`-as-composer; **shrink
   `clankshop`** to the seams edge-matching can't derive (its stated "enrichment baseline can't derive").
 - **Deliverable:** all skills self-initializing; `/foreman` composing; runbook slimmed. Landed:
@@ -138,7 +138,7 @@ skills commit to the pattern:
   5×, keep the write-protocol in sync) and **BL-7** (`built-against: git rev-parse HEAD` collapses to
   one value across a monorepo skills-root — advisory, deferred).
 
-### Phase 6 — Reconcile docs & runbook — ✅ DONE (2026-07-19, unshipped)
+### Phase 6 — Reconcile docs & runbook — ✅ DONE + SHIPPED (2026-07-19, landed with Phase 7 at track end)
 - `clankshop`, `README`, the ownership index, and `AGENTS.md` reflect the new model; distill the
   accreted design docs (this roadmap + the two design docs) into clean present-tense doctrine.
 - **Deliverable:** coherent doctrine, no drift. **README/AGENTS.md were already accurate** (Phases 2/5
@@ -156,7 +156,7 @@ skills commit to the pattern:
   "Phase 2 deferred" status line is now partly stale). **No skill/script code changed** — pure doc
   reconciliation, so only the fast doc-linter path applied.
 
-### Phase 7 (capstone) — Distill the doctrine into a portable `skill-builder` steward — ✅ DONE (2026-07-19)
+### Phase 7 (capstone) — Distill the doctrine into a portable `skill-builder` steward — ✅ DONE + SHIPPED (2026-07-19, landed with Phase 6 at track end — closes the roadmap)
 The library stewards design (`architect`), workflow (`foreman`), docs (`chiropractor`), and code
 (`auditor`) — but **nothing stewards the skills themselves.** The boundary audit built this session is
 homeless by design (*"a toolmaker workflow, not a `/foreman` verb"*). `skill-builder` is that missing
