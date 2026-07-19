@@ -6,8 +6,10 @@ skills: architect auditor backlog chiropractor delegate feature foreman handoff 
 
 # clankshop — the disciplined development loop (a `/foreman init` runbook)
 
-This file is a **runbook**, not a brochure. To stand up this constellation in a project, run
-**`/foreman init`** — it consumes this file as the **composition** and instantiates the glue.
+This file is a **runbook**, not a brochure — the composition that configures `foreman` and the rest
+of the constellation into a coherent system, and prepares a project's codebase to use them together.
+Run **`/foreman init`** to apply it: `foreman` is the mechanism that reads this recipe and stamps the
+glue — the seams, the initial `AGENTS.md` wiring, each skill's own self-init dispatch.
 
 **Mechanism vs. composition.** `/foreman` is the **oven** (the mechanism: how to instantiate *any*
 composition — pack-agnostic, it never names a specific skill). This file is the **recipe** (the
@@ -191,5 +193,5 @@ From the clone root:
 ```
 
 Then, in a target project, run **`/foreman init`** (greenfield — nothing there yet) or **`/foreman
-migrate`** (brownfield — an existing `dev/`/ad-hoc setup) — either consumes this runbook as the
+migrate`** (brownfield — an existing `dev/`/ad-hoc setup) — either reads this runbook as the
 composition and stands the `.agents/foreman/` glue up to the same target state.
