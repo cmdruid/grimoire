@@ -14,6 +14,21 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-3 — block-splicing helpers must avoid multi-line `awk -v` (BSD/macOS portability)
+- **source:** Phase 1 pilot A4 (2026-07-18); `docs/design/2026-07-18-phase1-pilot-acceptance.md`;
+  commit `4b32a2b`.
+- **status:** open
+- **body:** `skills/backlog/scripts/register-route.sh` splices a skill's route block into a front-door
+  doc. The first cut passed the multi-line block via `awk -v blk=…`; **BSD/macOS awk rejects a newline
+  in a `-v` value** (`awk: newline in string`) and the script aborted before writing (fail-safe, but
+  the write silently didn't happen). Fixed by passing the block through the environment
+  (`ENVIRON["BLK"]`). **Follow-up (not a fix — a constraint to carry):** Phase 5 rolls this registration
+  mechanism out to the remaining 8 skills, and Phase 4's composer will *rebuild* the projection
+  wholesale — any new block-splicing/registration helper must use `ENVIRON[]` (or a temp file), never
+  multi-line `-v`. Candidate for a `bash -n`-adjacent lint note or a shared helper both skills call, so
+  the constraint isn't re-learned per skill. `register-route.sh` + `scaffold-records.sh` are the reusable
+  reference implementations.
+
 ### BL-1 — check-7 (skills-lint) has no body-level backstop for re-documentation
 - **source:** boundary body audit (2026-07-18); `docs/boundary-audit.md` §"Known limitation";
   `FEEDBACK.md` [foreman] entry; commit `4688039`.
