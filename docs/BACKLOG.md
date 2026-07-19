@@ -73,7 +73,14 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-6 — register-route.sh is now duplicated per-skill; keep the write-protocol in sync
 - **source:** Phase 5 rollout, `feature` landing (2026-07-19); commit `77c2a52`.
-- **status:** open
+- **status:** done (2026-07-19) — a literal shared file was rejected (would make every durable-home
+  skill silently depend on `skill-builder` being installed, breaking "self-init, no floor").
+  Resolution: `skill-builder` bundles the **reference** copy (`scripts/register-route.sh`) and a new
+  **drift check** (`scripts/register-route-drift.sh`, wired into `skill-builder check` Pass 2) that
+  diffs every deployed copy's functional body (comments stripped) against it — `checked=5 drift=0` as
+  of this fix. `skill-builder new` now stamps fresh copies from the reference for future skills. The
+  duplication itself is unchanged (correct, not a defect) — "keep in sync by convention" is now
+  "keep in sync, mechanically checked." See `docs/design/2026-07-19-skill-builder-followups-plan.md`.
 - **body:** `feature` landed its own front-door self-registration by bundling a **second copy** of
   backlog's `scripts/register-route.sh` (byte-identical mechanism, only the doc comment reworded) —
   deliberate, per the *self-contained skill directory* rule: a portable skill carries no cross-skill

@@ -53,9 +53,12 @@ verb's job).
      owns; never touch existing content) **plus** front-door self-registration, modeled on the
      `register-route.sh` mechanism (`docs/DOCTRINE.md` § Typed edges & registration) — content-vs-
      arrangement split, absent→append / present→replace-between-delimiters / malformed→report-and-stop.
-   - If the host library already has another durable-home skill's `register-route.sh`, treat it as the
-     reference implementation to copy and re-target (skill name, stamp source) rather than rewriting
-     the mechanism from scratch.
+   - Copy `skill-builder`'s own `scripts/register-route.sh` (the canonical reference — not another
+     skill's copy) into the new skill's `scripts/`, unmodified except its header comment (which may
+     name the new skill for orientation). Do **not** have the new skill call out to `skill-builder`'s
+     copy at runtime — each durable-home skill bundles its own, so it stays self-contained and works
+     installed alone (BL-6). `skill-builder check`'s drift pass verifies every deployed copy stays in
+     functional sync with the reference going forward.
    - State the **fixture caveat** explicitly in the new skill's `init` verb if this scaffold is being built
      *inside* the same library that authors the doctrine: never register against that library's own
      real front-door; exercise against a throwaway fixture.
