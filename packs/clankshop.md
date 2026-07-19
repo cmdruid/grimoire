@@ -28,8 +28,8 @@ produces/handoff against consumes (model §2.1, §5.1). This runbook is now the 
 edge-matching **can't** derive: an altitude/scope boundary (who owns *which layer*, not who reads
 whose typed output), a role split with no shared artifact type, or a framing metaphor a bare `X reads
 Y's T` fact doesn't carry. Where a row below restates a fact `derive-seams` already reports
-mechanically, it's marked **(derived)** — kept for the human-readable narrative, not because the
-wiring itself still needs hand-authoring here.
+mechanically, its *edge-matching* column carries a **dep** or **seam** tag — kept for the
+human-readable narrative, not because the wiring itself still needs hand-authoring here.
 
 ## The composition foreman instantiates
 
@@ -135,7 +135,16 @@ validates for drift. The load-bearing invariant: **no skill crosses another's se
 | `auditor` ↔ `chiropractor` | `auditor` scores **project code** against a quality rubric; `chiropractor` tunes the **doc spine's** ergonomics. Code vs. docs (see *"Which audit?"* below). | — (chiropractor's edges are all `—`; no shared type) |
 | `foreman` ↔ `auditor` | `auditor` scores; `foreman calibrate` **drains** the scored signal into doctrine, the same drain relationship it has with `backlog`. Scorer vs. curator. | **dep** — `foreman` reads `auditor`'s `audit-finding` |
 
-Four rows carry a **dep** or **seam** tag — those facts now come from `derive-seams`, not from hand-maintaining this table; the *contract* column's framing (why the wiring exists, which layer owns what) stays hand-authored regardless, since edge-matching reports only "`X` reads `Y`'s `T`," never the altitude/scope reasoning behind it. The remaining six rows are genuinely **not** derivable — a role/scope/altitude split with no shared typed artifact — and stay this runbook's to state. (Phase 6 re-ran `derive-seams` against the live tree and reshaped this table to match its full current output — `architect ↔ workstream` and `foreman ↔ auditor` were real deps the Phase 5 pass hadn't yet folded in.)
+Rows tagged **dep** or **seam** in the *edge-matching* column carry facts that now come from
+`derive-seams`, not from hand-maintaining this table; the *contract* column's framing (why the wiring
+exists, which layer owns what) stays hand-authored regardless, since edge-matching reports only "`X`
+reads `Y`'s `T`," never the altitude/scope reasoning behind it. An untagged (`—`) row is genuinely
+**not** derivable — a role/scope/altitude split with no shared typed artifact — and stays this
+runbook's to state. **Don't trust a remembered count of which is which — a row's own tag drifts
+independently of this sentence.** Re-run `scripts/foreman-health.sh derive-seams <skills-root>` to see
+which rows are current. (Phase 6 re-ran it against the live tree and reshaped this table to match its
+full output at the time — `architect ↔ workstream` and `foreman ↔ auditor` were real deps the Phase 5
+pass hadn't yet folded in.)
 
 ## Typed edge vocabulary (reference)
 
