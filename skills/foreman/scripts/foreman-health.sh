@@ -207,7 +207,10 @@ cmd_derive_seams() {
   # One pass: for each type, cross handoff x consumes (SEAM) and produces x
   # consumes (DEP, unless already a SEAM pair), excluding same-skill pairs
   # (model doc #2.1 + Phase 3 F2 intra-skill-chain rule), plus a single-skill
-  # ORPHAN note (mirrors skills-lint.sh check 8's orphan WARN). Tagged rows to
+  # ORPHAN note (mirrors skills-lint.sh check 8's orphan WARN, kept in sync
+  # per BL-4/BL-5: a type already EXCLuded as a same-skill produces/handoff x
+  # consumes pair is a stated intra-skill chain, not an orphan, even though
+  # only one skill's name appears -- suppress ORPH for it). Tagged rows to
   # $rows; the shell below prints them grouped, matching this script's existing
   # section style (a header + indented evidence + `(none)` fallback).
   awk -F'\t' '
@@ -224,17 +227,17 @@ cmd_derive_seams() {
         nh=split(H[t], hs, " "); nc=split(C[t], cs, " "); np=split(P[t], ps, " ")
         for (i=1;i<=nh;i++) for (j=1;j<=nc;j++) {
           a=hs[i]; b=cs[j]; if (a=="" || b=="") continue
-          if (a==b) { print "EXCL\t" t "\t" a "\thandoff-consumes-same-skill"; continue }
+          if (a==b) { print "EXCL\t" t "\t" a "\thandoff-consumes-same-skill"; excluded[t]=1; continue }
           print "SEAM\t" t "\t" a "\t" b
           seamed[t SUBSEP a SUBSEP b]=1
         }
         for (i=1;i<=np;i++) for (j=1;j<=nc;j++) {
           a=ps[i]; b=cs[j]; if (a=="" || b=="") continue
-          if (a==b) { print "EXCL\t" t "\t" a "\tproduces-consumes-same-skill"; continue }
+          if (a==b) { print "EXCL\t" t "\t" a "\tproduces-consumes-same-skill"; excluded[t]=1; continue }
           if ((t SUBSEP a SUBSEP b) in seamed) continue
           print "DEP\t" t "\t" a "\t" b
         }
-        if (cnt[t]==1) print "ORPH\t" t "\t" who[t]
+        if (cnt[t]==1 && !(t in excluded)) print "ORPH\t" t "\t" who[t]
       }
     }
   ' "$tuples" > "$rows"

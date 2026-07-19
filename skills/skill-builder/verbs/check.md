@@ -56,7 +56,7 @@ report.
 |---|---|---|
 | lint `FAIL:` | a hard defect (bad frontmatter, dangling ref, malformed edge block, script syntax) | fix before committing — never a judgment call |
 | lint `WARN: … names sibling` | check 7's boundary candidate | judge against the rubric; self-scope unless it's a documented router/fragment exception |
-| lint `WARN: edge type … declared by only one skill` | an orphan type or a consumer not yet wired | expected mid-rollout; judge whether it's a genuine orphan or a legitimate intra-skill chain (e.g. `handoff`'s save→resume) — the lint excludes the latter once BL-4 lands, so a lingering intra-skill WARN after that means the fix regressed |
+| lint `WARN: edge type … declared by only one skill` | a genuine orphan/typo, or a consumer not yet wired | the lint already excludes a same-skill produces/handoff↔consumes pair (BL-4) — a lingering WARN here is a real single-direction type, expected mid-rollout or worth fixing |
 | drift `drift: <skill>` | that skill's `register-route.sh` functionally diverged from the reference | sync it back, or update the reference first if the divergence is an intentional improvement |
 | routing-probe miss | independence claimed but not actually achieved | sharpen the losing skill's scope; do not restore a cross-reference to patch it |
 

@@ -186,7 +186,12 @@ rm -f /tmp/skills-lint-sib.$$
 # Parse the delimited `<!-- edges:<name> -->` block in each SKILL.md. An edge line
 # is `- <kind>: <type>[, <type>...] [<emdash> <note>]`; an empty edge is
 # `- <kind>: <emdash> (none...)`. We check delimiter well-formedness, the edge
-# kind, and the type-not-sibling invariant, and collect types for the orphan WARN.
+# kind, and the type-not-sibling invariant, and collect (type,skill,kind) triples
+# for the orphan WARN. BL-4: kind is recorded (not just type+skill) so a type
+# declared by exactly one skill that has BOTH a produces/handoff line AND a
+# consumes line for it (a stated intra-skill chain, e.g. handoff's save->resume,
+# feature's design->plan->build) is excluded -- only a true single-direction
+# single-skill type (no consumer, or no producer, anywhere) still WARNs.
 # BSD/macOS-safe: no multi-line `awk -v` (BL-3) -- single-line -v (the skill name)
 # only; the em-dash split is bash parameter expansion, not awk.
 emdash="—"
@@ -231,15 +236,38 @@ for sk in "$skills_dir"/*/; do
         fail "$name: edge \`$kind: $t\` names sibling skill \`$t\`, not a type (edges name types, not siblings -- model 1 corollary 3)"
         continue
       fi
-      printf '%s\t%s\n' "$t" "$name" >> "$edge_types"
+      printf '%s\t%s\t%s\n' "$t" "$name" "$kind" >> "$edge_types"
     done
   done < <(printf '%s\n' "$block")
 done
-# Orphan WARN: a type declared by exactly one skill across the suite.
+# Orphan WARN: a type declared by exactly one DISTINCT skill across the suite,
+# AND that skill does not itself pair a producer-side kind (produces/handoff)
+# with a consumer-side kind (consumes) for it (BL-4 -- an intra-skill chain is
+# not an orphan, even though only one skill's name appears).
 if [ -s "$edge_types" ]; then
   while IFS=$'\t' read -r t who; do
     warn "edge type \`$t\` is declared by only one skill (\`$who\`) -- orphan/typo, or a consumer not yet wired (expected during rollout)"
-  done < <(sort -u "$edge_types" | awk -F'\t' '{c[$1]++; who[$1]=$2} END{for(t in c) if(c[t]==1) print t"\t"who[t]}' | sort)
+  done < <(sort -u "$edge_types" | awk -F'\t' '
+    {
+      type=$1; skill=$2; kind=$3
+      pair = type SUBSEP skill
+      if (!(pair in seenpair)) { seenpair[pair]=1; skillcount[type]++ }
+      if (kind=="produces" || kind=="handoff") isprod[pair]=1
+      if (kind=="consumes") iscons[pair]=1
+      if (!(type in ordered)) { order[++n]=type; ordered[type]=1 }
+      lastskill[type]=skill
+    }
+    END {
+      for (i=1;i<=n;i++) {
+        type=order[i]
+        if (skillcount[type]==1) {
+          skill=lastskill[type]
+          pair = type SUBSEP skill
+          if ((pair in isprod) && (pair in iscons)) continue
+          print type"\t"skill
+        }
+      }
+    }' | sort)
 fi
 rm -f "$edge_types"
 

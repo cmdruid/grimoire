@@ -122,10 +122,18 @@ one-line resolution; delete only when the reason it existed is gone.
   sample `## Edges` block both scripts' tests run against) so a future edit that only updates one parser
   fails the other's test. Natural home: alongside Phase 5's rollout (which will exercise `derive-seams`
   against real multi-skill data for the first time) or Phase 7's `skill-builder`.
+  **2026-07-19 addendum:** BL-4's kind-aware orphan fix landed in both parsers together (by hand, not
+  via a shared fixture) — the standing process note above still applies to the *next* format change;
+  the shared-test-fixture candidate remains open, unclaimed.
 
 ### BL-4 — check-8 single-use WARN misfires on intra-skill produce↔consume pairs
 - **source:** Phase 3 disposition audit (2026-07-19); `docs/design/2026-07-19-phase3-skill-dispositions.md` §5.
-- **status:** open
+- **status:** done (2026-07-19) — both `skills-lint.sh` check 8 and `foreman-health.sh`'s
+  `derive-seams` orphan note now track edge **kind** alongside type+skill and suppress the
+  single-skill WARN when that lone skill pairs a producer-side kind (produces/handoff) with a
+  consumer-side kind (consumes) for the type. `handoff-doc`'s WARN is gone (`warns=12`→`11` on the
+  real tree); a fixture confirmed a genuine single-direction orphan still fires. Both parsers fixed
+  together, closing BL-5's sync concern for this specific rule too.
 - **body:** `scripts/skills-lint.sh` **check 8** WARNs on a type used by exactly one skill (orphan/typo
   signal). But a legitimate **intra-skill chain** — `handoff` `produces: handoff-doc` **and** `consumes:
   handoff-doc` (save→resume), `feature` `design→plan→build` — is a *single skill* on both ends and will
