@@ -14,6 +14,23 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-9 — `skill-builder` exists now: BL-5/BL-6/BL-7 have a concrete owner, still unresolved
+- **source:** Phase 7 capstone (2026-07-19), debrief on landing
+  `docs/design/2026-07-19-phase7-skill-builder.md`.
+- **status:** open
+- **body:** Phase 7 built the `skill-builder` skill (`new`/`check`/`distill`) that BL-5, BL-6, and BL-7
+  each named as their *future* natural home — that skill is real now, but Phase 7 deliberately did
+  **not** use it to fix any of the three (scope discipline: the capstone's deliverable was the skill +
+  the doc reconciliation, not a refactor pass). All three remain open with the same bodies; they're
+  candidate first tasks for `skill-builder new`/`check` rather than hand-authored fixes. **A genuine
+  implementation surprise worth recording:** moving `scripts/skills-lint.sh` into the skill bundle
+  (`skills/skill-builder/scripts/`) broke its own default `<agents-root>` resolution — it used to derive
+  the root from its own script path (`dirname "$0"/..`), which only worked because the script lived
+  exactly one level above `skills/`. Three levels deep inside a bundled skill, that trick resolves to
+  the wrong directory. Fixed by defaulting to `$(pwd)` instead (a maintainer naturally runs the gate
+  from the library root). **Lesson for any future "move a script into a skill bundle" migration:**
+  audit self-path-relative defaults before moving a script — they're an easy silent break.
+
 ### BL-8 — `2026-07-17-library-refactor.md`'s "Phase 2 deferred" status is now partly stale
 - **source:** Phase 6 doc-reconciliation pass (2026-07-19), incidental find while distilling the
   self-init roadmap's own accreted docs.
@@ -79,7 +96,8 @@ one-line resolution; delete only when the reason it existed is gone.
 - **source:** Phase 4 `/foreman` re-scope (2026-07-19);
   `docs/design/2026-07-19-phase4-foreman-rescope.md` §4.2, §9.
 - **status:** open
-- **body:** `scripts/skills-lint.sh` check 8 (grimoire's dev-time gate) and
+- **body:** `skills/skill-builder/scripts/skills-lint.sh` check 8 (grimoire's dev-time gate, moved into
+  `skill-builder`'s bundle at Phase 7) and
   `skills/foreman/scripts/foreman-health.sh derive-seams` (the shipped runtime composer) both parse the
   identical `## Edges` block format (delimiters, `- kind: type,type — note` lines, the
   produces/consumes/handoff vocabulary, `/`-prefixed values as sibling names not types) — deliberately

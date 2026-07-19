@@ -11,10 +11,26 @@ skills, not portable doctrine.
 
 ## Routing-probe run log
 
-**Last run: 2026-07-18** — 12 probes, **12/12** routed correctly against the thinned descriptions
-alone (fresh sub-agent, no runbook/reasoning in context). The auditor/chiropractor,
-foreman/backlog, architect/feature, and handoff/workstream pairs all disambiguated on self-scope
-without a cross-reference.
+**2026-07-19 (`skill-builder` added, Phase 7)** — 7 probes against `skill-builder` + its 5 closest
+neighbors (`auditor`, `chiropractor`, `architect`, `backlog`, `foreman`), **7/7** routed correctly
+(fresh sub-agent, descriptions only, no runbook/reasoning in context). The pairs that most needed
+checking — `skill-builder`/`auditor` (both "audit") and `skill-builder`/`architect`+`backlog` (both
+"scaffold/stand up") — all disambiguated on self-scope.
+
+| prompt | expects |
+|---|---|
+| "audit my repo for code quality problems" | `auditor` |
+| "my docs are a mess and hard to navigate" | `chiropractor` |
+| "add a new skill to this library — scaffold it" | `skill-builder` |
+| "check whether my skill descriptions are self-scoped" | `skill-builder` |
+| "set up the design seed for this project" | `architect` |
+| "file this as a task for later" | `backlog` |
+| "lint my skills directory before I commit" | `skill-builder` |
+
+**2026-07-18** — 12 probes, **12/12** routed correctly against the thinned descriptions alone (fresh
+sub-agent, no runbook/reasoning in context). The auditor/chiropractor, foreman/backlog,
+architect/feature, and handoff/workstream pairs all disambiguated on self-scope without a
+cross-reference.
 
 | prompt | expects |
 |---|---|
@@ -25,5 +41,4 @@ without a cross-reference.
 | "hand this grunt work to a cheaper model" | `delegate` |
 | "design the foundational architecture" | `architect` |
 
-Re-run (`/skill-builder check`, Pass 2) after any `description:` change, and whenever `skill-builder`
-itself is added to the probe set now that it's an eleventh skill in the library.
+Re-run (`/skill-builder check`, Pass 2) after any `description:` change.
