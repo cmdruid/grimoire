@@ -176,7 +176,11 @@ table is itself a **snapshot**: regenerate it from `scripts/foreman-health.sh de
 
 Project *code* → `auditor`. The repo's *doc spine* (links, entry door, navigability) →
 `chiropractor`. A deployed *`.agents/foreman/` docs system's* health (trackers, drains, staleness) →
-`/foreman calibrate` / `/foreman check`. Three domains, three tools — they don't overlap.
+`/foreman calibrate` / `/foreman check`. The *skill library's own skills* (boundary independence,
+`## Edges` well-formedness, the lint gate) → `skill-builder check` — a **toolmaker** concern, distinct
+from the other three (which audit a project this pack is deployed *onto*; `skill-builder` audits the
+skills doing the deploying, and stays outside this pack for that reason — see *Outside this pack:
+`skill-builder`* above). Four domains, four tools — they don't overlap.
 
 ## Install
 
