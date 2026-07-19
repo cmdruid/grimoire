@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# skills-lint.sh [<agents-root>]   (default: the repo this script lives in)
+# skills-lint.sh [<agents-root>]   (default: the current directory)
 #
-# The lint gate for the skills home itself -- the mechanical backstop for the
-# rot-prone parts of ~/.agents (the same class of check the skills deploy onto
-# other repos, applied to the toolmaker). Run it BEFORE committing here
-# (README -> Editing/adding a skill).
+# The lint gate for a skills library -- bundled with `skill-builder` so it
+# travels with the skill wherever installed, checked against whatever
+# <agents-root> (a directory containing a skills/ subdir) it's pointed at.
+# Run it from the library's own root BEFORE committing there (grimoire's own
+# copy: README -> Contributing).
 #
 # DOCTRINE: facts, not verdicts. Emits `FAIL:`/`WARN:` lines with evidence and a
 # summary count; exit 1 on any FAIL, 0 otherwise. It never fixes anything.
@@ -37,7 +38,7 @@
 #      expected to fire during rollout until Phase 5, model 2.2 "facts not verdicts").
 set -euo pipefail
 
-root="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
+root="${1:-$(pwd)}"
 skills_dir="$root/skills"
 claude_skills="$HOME/.claude/skills"
 fails=0 warns=0

@@ -78,6 +78,15 @@ lists these as the constellation the deployed doctrine resolves to.
   at the agent entry door) for agent ergonomics: scan → diagnose → adjust. Self-contained; runs
   in any repo.
 
+### Outside this pack: `skill-builder`
+
+One more skill lives in this library, deliberately **not** in the `skills:` manifest above:
+`skill-builder`, the toolmaker steward for the skill library itself (scaffold new skills, audit
+boundary health, distill the authoring doctrine — `docs/design/2026-07-19-phase7-skill-builder.md`).
+It's a maintainer tool for whoever *authors* skills, not a member of the development loop this pack
+composes for a consuming project — the same "toolmaker workflow, not a `/foreman` verb" line that
+put the boundary audit outside `/foreman` in the first place.
+
 ## The canonical layout foreman init instantiates
 
 `/foreman init` stands up **two roots**, then writes an **ownership index** (`.agents/README.md` +

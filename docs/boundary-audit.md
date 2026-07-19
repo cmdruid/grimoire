@@ -1,56 +1,20 @@
-# Boundary audit — keeping the skills independent
+# Boundary audit — grimoire's own record
 
-A maintainer workflow for **this library**. It checks that each skill's `description:` routes on its
-own and that cross-skill glue lives in the runbook, not scattered across leaves. It is deliberately a
-**toolmaker workflow**, not a `/foreman` verb: `/foreman` operates a *consuming* project's dev system;
-auditing grimoire's own authored skills is our concern, not a deployed project's.
+**Status:** Implemented (2026-07-19, Phase 7 of
+`docs/design/2026-07-18-skill-self-initialization-roadmap.md`). The workflow this file used to carry
+in full — the violation rubric, the audit steps, the routing-probe gate, the mechanical backstop —
+now lives in the portable **`skill-builder`** skill:
+`skills/skill-builder/docs/BOUNDARY-AUDIT.md` (the workflow) + `skills/skill-builder/verbs/check.md`
+(the verb that runs it, alias `/skill-builder audit`). Read those for *how* to run the audit; this
+file keeps only **grimoire's own results**, since those are a fact about this library's current
+skills, not portable doctrine.
 
-Doctrine: the *self-scoping descriptions*, *seams live in the runbook*, and *glue content vs.
-mechanism* tenets in `AGENTS.md`. The authoritative seam map is `packs/clankshop.md`.
+## Routing-probe run log
 
-## North star
-
-Agents must wield these skills with **high competence**. Independence (self-scoped descriptions, no
-cross-references) is the *means*; it is **gated on routing accuracy, never traded for it**. A
-description is the routing surface and must route **on its own** — a bare install (skills present, no
-pack deployed) has only the descriptions in context.
-
-## The violation rubric
-
-Flag a skill when:
-1. its `description:` names a sibling skill to **defer, disambiguate, or contrast** (*"for X use
-   /other"*, *"distinct from /other"*, *"peer to /other"*);
-2. its `description:` carries **decision- or domain-language that duplicates another skill's job**
-   (the pre-fix `mailbox`, which led with `delegate`'s "when to delegate / model routing");
-3. a **body** *re-documents* another skill's protocol/seam instead of pointing at it;
-4. a seam it **asserts** is **absent from `clankshop`'s seam table** (leaf ↔ runbook drift).
-
-**Legitimate exceptions (not violations):**
-- (a) a **router** naming the mechanisms it dispatches among (`delegate` → inline/mailbox/codex) —
-  it's describing its own function;
-- (b) a **fragment** carrying one orientation pointer to its parent (`mailbox` → `delegate`);
-- a **body** operational pointer a reader needs mid-task ("land the work next") — point, don't paste.
-
-## The workflow
-
-1. **Inventory** the skills (`ls skills/`).
-2. **Scan** each `description:` + body against the rubric.
-3. **Cross-check** every asserted seam against `clankshop`'s seam table.
-4. **Findings** — list each candidate with its rubric item; note allowed exceptions explicitly.
-5. **Fix** — self-scope the leaf; move any real seam into the runbook (never duplicate it down).
-6. **Routing-probe** (below) the thinned descriptions.
-7. **Re-run** `bash scripts/skills-lint.sh` (check 7 flags sibling refs in descriptions) and confirm
-   the residual WARNs are all documented exceptions.
-8. **Report.**
-
-## The routing-probe acceptance gate
-
-Independence is verified, not assumed. For each pair a fix thins, write 1–2 realistic **ambiguous**
-prompts + the expected target, and check routing against **only the thinned descriptions** — ideally
-via a **fresh sub-agent** that cannot see the audit's reasoning. A mis-route **fails the gate**; the
-fix is **sharper self-scope, never a restored cross-reference**.
-
-Worked probes (extend as the library grows):
+**Last run: 2026-07-18** — 12 probes, **12/12** routed correctly against the thinned descriptions
+alone (fresh sub-agent, no runbook/reasoning in context). The auditor/chiropractor,
+foreman/backlog, architect/feature, and handoff/workstream pairs all disambiguated on self-scope
+without a cross-reference.
 
 | prompt | expects |
 |---|---|
@@ -61,19 +25,5 @@ Worked probes (extend as the library grows):
 | "hand this grunt work to a cheaper model" | `delegate` |
 | "design the foundational architecture" | `architect` |
 
-**Last run: 2026-07-18** — 12 probes, **12/12** routed correctly against the thinned descriptions
-alone (fresh sub-agent, no runbook/reasoning in context). The auditor/chiropractor,
-foreman/backlog, architect/feature, and handoff/workstream pairs all disambiguated on self-scope
-without a cross-reference. Re-run after any description change.
-
-## The mechanical backstop
-
-`scripts/skills-lint.sh` **check 7** WARNs when a `description:` names a sibling skill via `/name`.
-Facts, not verdicts: it surfaces a **candidate**; you judge it against this rubric (the router/fragment
-exceptions are real, so it never FAILs). A new WARN that isn't a documented exception is a regression —
-self-scope it.
-
-**Known limitation.** Check 7 covers only *description*-level backticked `/name` refs. **Body-level
-re-documentation** (rubric V1 — a section restating a sibling's verbs/protocol/seam) has **no
-mechanical backstop**; it is caught only by the manual scan (step 2). Don't over-trust a green lint for
-bodies — the roster/scope-boundary rot lives there.
+Re-run (`/skill-builder check`, Pass 2) after any `description:` change, and whenever `skill-builder`
+itself is added to the probe set now that it's an eleventh skill in the library.

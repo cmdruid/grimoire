@@ -1,10 +1,10 @@
 # Skill Self-Initialization & Typed Edges — Roadmap
 
-**Status:** In progress (2026-07-19). **Phases 0–6 done** (0–2 shipped at milestone #1 `ad84452`; 3–4
-shipped at milestone #2 `1abad3c`; 5 shipped at milestone #3 `0db26cf`; Phase 6 landed on the branch,
-accumulating toward track end) — model doc + maintainer backlog (Phase 0); `backlog` + `feature`
-self-init/edges/registration pilots (Phase 1); the typed-edge tenet promoted into `AGENTS.md` +
-`skills-lint.sh` check 8 edge backstop (Phase 2); the **per-skill disposition audit**
+**Status:** Complete (2026-07-19). **All 8 phases done** (0–2 shipped at milestone #1 `ad84452`; 3–4
+shipped at milestone #2 `1abad3c`; 5 shipped at milestone #3 `0db26cf`; 6–7 ship together at track
+end) — model doc + maintainer backlog (Phase 0); `backlog` + `feature` self-init/edges/registration
+pilots (Phase 1); the typed-edge tenet promoted into `AGENTS.md` + `skills-lint.sh` check 8 edge
+backstop (Phase 2); the **per-skill disposition audit**
 (`docs/design/2026-07-19-phase3-skill-dispositions.md`, Phase 3); the **`/foreman` re-scope**
 (`docs/design/2026-07-19-phase4-foreman-rescope.md`, Phase 4); **rollout to all 9 remaining skills** —
 `feature`/`architect`/`auditor`/`foreman` landed self-init + registration, all 9 landed `## Edges`,
@@ -12,9 +12,12 @@ self-init/edges/registration pilots (Phase 1); the typed-edge tenet promoted int
 reconciled** — `derive-seams` re-run against the live tree surfaced two real deps the Phase 5 seam-table
 pass hadn't folded in (`architect ↔ workstream`, `foreman ↔ auditor`), the vocabulary table promised for
 "Phase 5/6" graduated into `packs/clankshop.md`, and the model/Phase 4 design docs' stale "Proposed"
-status lines now point at their shipped, living-doc homes (Phase 6). **Phase 7 (capstone: distill into
-`skill-builder`) is next and closes the track.** (Grimoire is patient-zero: phases are tracked here +
-in git history, not in a `.records/` ledger — grimoire authors these skills, it does not self-run them.)
+status lines now point at their shipped, living-doc homes (Phase 6); **the capstone**
+(`docs/design/2026-07-19-phase7-skill-builder.md`, Phase 7) — the `skill-builder` toolmaker skill now
+carries the portable doctrine (`docs/DOCTRINE.md`), the lint gate, and the boundary-audit workflow;
+grimoire's own `AGENTS.md` thinned to a pointer + local overrides. (Grimoire is patient-zero: phases
+are tracked here + in git history, not in a `.records/` ledger — grimoire authors these skills, it
+does not self-run them.)
 
 **Goal:** Make every skill **self-initializing** and **self-describing via typed edges**, so the
 constellation works **bare** — each skill registers its *own* route/workflow into `AGENTS.md` on init —
@@ -153,23 +156,30 @@ skills commit to the pattern:
   "Phase 2 deferred" status line is now partly stale). **No skill/script code changed** — pure doc
   reconciliation, so only the fast doc-linter path applied.
 
-### Phase 7 (capstone) — Distill the doctrine into a portable `skill-builder` steward
+### Phase 7 (capstone) — Distill the doctrine into a portable `skill-builder` steward — ✅ DONE (2026-07-19)
 The library stewards design (`architect`), workflow (`foreman`), docs (`chiropractor`), and code
 (`auditor`) — but **nothing stewards the skills themselves.** The boundary audit built this session is
 homeless by design (*"a toolmaker workflow, not a `/foreman` verb"*). `skill-builder` is that missing
 steward: it **consolidates** `scripts/skills-lint.sh` (the gate), `docs/boundary-audit.md` (the audit
 workflow), new-skill **scaffolding**, and the **authoring doctrine** (boundary tenets + the three
-layers + self-init/edges + *name-your-floor*). Verbs, roughly: `new` (scaffold), `audit`/`check`
+layers + self-init/edges + *name-your-floor*). Verbs: `new` (scaffold), `check`/alias `audit`
 (boundary + layers + edges + lint), `distill`.
-- **Portable, and the doctrine's new home.** The doctrine we're shaping is generalizable — it applies
-  to any agent-skill library — so `skill-builder` **carries** it, and grimoire's `AGENTS.md` thins to
-  local overrides that *import* it (the public-doctrine + private-override shape).
-- **Sequenced last on purpose.** The doctrine stabilizes through Phases 0–6; principles are captured in
-  the design docs (mutable) meanwhile. `skill-builder` **distills** the proven doctrine into a clean
-  portable steward — `architect`'s ADRs→distill→seed pattern, applied to skill-authoring. Building it
-  around still-moving doctrine would be premature.
-- **Deliverable:** a `skill-builder` skill; `AGENTS.md` / `README` / `boundary-audit` reconciled to
-  point at it as the doctrine home.
+- **Portable, and the doctrine's new home.** `skills/skill-builder/docs/DOCTRINE.md` carries the
+  generalizable design philosophy (moved from `AGENTS.md`, generalized to name no grimoire-specific
+  path); grimoire's `AGENTS.md` thins to a pointer + two local overrides (the feedback-channel choice,
+  the patient-zero caveat) — the public-doctrine + private-override shape.
+- **Disposition:** in-place-steward tier (Phase 3 F1) — no durable home, all-`—` `## Edges`,
+  registration optional/not implemented v1 — the same call `chiropractor` got, for the same reason (a
+  steward with nothing private to scaffold).
+- **Deliverable:** `docs/design/2026-07-19-phase7-skill-builder.md` (the disposition + build record);
+  `skills/skill-builder/` (`SKILL.md`, `docs/{DOCTRINE,BOUNDARY-AUDIT}.md`,
+  `scripts/skills-lint.sh` moved from the repo root, `verbs/{new,check,distill}.md`); `AGENTS.md` /
+  `README.md` / `docs/boundary-audit.md` (now a pointer + grimoire's own routing-probe run log) /
+  `packs/clankshop.md` (one orientation note — `skill-builder` stays outside the pack's manifest)
+  reconciled to point at it. **Not folded in:** collapsing the five skills' duplicated
+  `register-route.sh` copies (BL-6) and the `built-against` monorepo-collision fix (BL-7) — both real,
+  both now have a concrete future owner (`skill-builder new`/`check`), neither built this phase
+  (scope discipline, not an oversight).
 
 ---
 

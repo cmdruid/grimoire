@@ -30,9 +30,12 @@ Four skills are **concrete agent roles** — `architect`, `foreman`, `chiropract
 of those four are **stewards**: each stands up, evaluates, maintains, and drift-corrects one
 cross-cutting layer against the code (`architect` the design seed, `foreman` the workflow glue,
 `chiropractor` the doc spine) — even bootstrapping that layer on a repo that doesn't have it yet.
-`auditor` is the pure code-quality role: it owns no layer, only emits findings. The remaining six
-group as **operators** (`feature`, `backlog`, `workstream` — consume the stewards' seeds and act)
-and **plumbing** (`delegate`, `mailbox`, `handoff` — orchestration/transport used throughout).
+`auditor` is the pure code-quality role: it owns no layer, only emits findings. Six more group as
+**operators** (`feature`, `backlog`, `workstream` — consume the stewards' seeds and act) and
+**plumbing** (`delegate`, `mailbox`, `handoff` — orchestration/transport used throughout). The
+eleventh, `skill-builder`, is a category of one: the **toolmaker** — it stewards the skills in this
+library themselves (scaffold new ones, audit boundary health, distill authoring doctrine), not
+project code, and is deliberately outside the `clankshop` pack (see *The packs* below).
 
 | skill | what it does |
 |---|---|
@@ -45,6 +48,7 @@ and **plumbing** (`delegate`, `mailbox`, `handoff` — orchestration/transport u
 | `foreman` | the dev-workflow hub: route changes, deploy/operate a `.agents/foreman/` docs system — `init` (greenfield) or `migrate` (brownfield onramp) |
 | `handoff` | save/resume a session as a self-contained hand-off any agent can pick up |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
+| `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and distill the doctrine for building skills — bundles the portable authoring doctrine + gate |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
 `foreman` and `backlog` split what used to be one skill (`dev`): `foreman` kept the router +
@@ -111,8 +115,8 @@ Before submitting a change:
 1. **De-host it.** No project names, no host paths, no host tool commands — generic phrasing or
    `<project: …>` placeholders only.
 2. **Description = trigger, not summary** (≤ ~700 chars; quote it if it contains `: `).
-3. **Run the gate:** `scripts/skills-lint.sh` — frontmatter limits, bundled-ref resolution,
-   manifest checks, script syntax, cross-skill refs. Fix every FAIL.
+3. **Run the gate:** `skills/skill-builder/scripts/skills-lint.sh` — frontmatter limits,
+   bundled-ref resolution, manifest checks, script syntax, cross-skill refs. Fix every FAIL.
 
 ## License
 
