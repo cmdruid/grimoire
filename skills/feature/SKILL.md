@@ -265,6 +265,29 @@ synthesize. Read-only **only**: never an editing subagent (the `build` worktree 
 Consumes an existing artifact by path; produces a verdict in context. Terminal step: hand the verdict
 to whoever owns the artifact -- `review` changes nothing itself.
 
+## Acting on review feedback -- yours, a human's, or an external reviewer's
+
+`review`'s own terminal step hands a verdict to the artifact's owner and stops there -- what the owner
+does with it is a distinct discipline, and it applies the same way whether the feedback came from
+`/feature review`, a human, or an external tool (`/code-review`, a PR comment). No skill in this
+library owned that receiving side before now:
+
+1. **Verify before implementing -- feedback is a claim, not a decision.** Re-check it against the
+   actual code/doc the same way `plan`'s gate re-verifies against `HEAD` (see *plan*, above): a
+   reviewer's confident claim can still be wrong (a function that moved, a case that isn't actually
+   reachable). Confirm it first -- implementing an unverified claim just relocates the error.
+2. **No performative agreement.** Don't open with "you're absolutely right" or thank the reviewer
+   before actually checking. State findings and actions plainly -- the same facts-not-verdicts posture
+   this library takes toward its own claims, turned toward someone else's.
+3. **One unclear item holds up the whole batch.** If any single piece of feedback is ambiguous,
+   clarify **all** ambiguous items before implementing **any** of them -- don't half-implement a batch
+   while genuinely unsure what part of it means.
+4. **Grep before generalizing.** A "handle this more generally" / "make this configurable" suggestion
+   gets a usage check first. If nothing in the codebase actually needs the generality, implementing it
+   anyway is YAGNI regardless of how reasonable it sounds in isolation.
+5. **Push back with reasoning when the feedback is wrong.** Disagreement is a legitimate outcome, not
+   a failure to comply -- state the evidence, not just a refusal.
+
 ## init -- register feature's front-door route (self-init, no floor)
 
 Register feature's route into the project's always-loaded front-door doc -- **without depending on
