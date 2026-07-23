@@ -38,8 +38,9 @@ Flag a skill when:
 4. **Findings** — list each candidate with its rubric item; note allowed exceptions explicitly.
 5. **Fix** — self-scope the leaf; move any real seam into the runbook (never duplicate it down).
 6. **Routing-probe** (below) the thinned descriptions.
-7. **Re-run** `scripts/skills-lint.sh` (check 7 flags sibling refs in descriptions) and confirm the
-   residual WARNs are all documented exceptions.
+7. **Re-run** `scripts/skills-lint.sh` (check 7 flags sibling refs in descriptions, check 9 flags a
+   body enumerating a sibling's verb roster) and confirm the residual WARNs are all documented
+   exceptions.
 8. **Report.**
 
 ## The routing-probe acceptance gate
@@ -55,11 +56,16 @@ keeps its own maintainer notes — this doc states the method, not one library's
 ## The mechanical backstop
 
 `scripts/skills-lint.sh` **check 7** WARNs when a `description:` names a sibling skill via `/<sibling>`.
-Facts, not verdicts: it surfaces a **candidate**; you judge it against this rubric (the router/fragment
-exceptions are real, so it never FAILs). A new WARN that isn't a documented exception is a regression —
-self-scope it.
+**Check 9** WARNs when a **body** names 3+ distinct verbs of the same sibling within one paragraph —
+the enumerated-roster shape of rubric item 3 (the pattern that actually bit `foreman` once: a stale
+list of `architect`'s verbs, long after `architect` gained new ones). Facts, not verdicts: both surface
+a **candidate**; you judge it against this rubric (the router/fragment exceptions are real, so neither
+ever FAILs). A new WARN that isn't a documented exception is a regression — self-scope it (a
+description) or point instead of enumerate (a body).
 
-**Known limitation.** Check 7 covers only *description*-level backticked `/<sibling>` refs. **Body-level
-re-documentation** (rubric item 3 — a section restating a sibling's verbs/protocol/seam) has **no
-mechanical backstop**; it is caught only by the manual scan (step 2). Don't over-trust a green lint for
-bodies — the roster/scope-boundary rot lives there.
+**Known limitation.** Check 9 only catches the *backticked-`/<sibling> verb`-token* shape of body-level
+re-documentation, and only when 3+ distinct verbs cluster in one paragraph. A **prose-listed roster**
+("its verbs are init, brainstorm, plan…", no per-verb backticks) or a restated **protocol/seam**
+narrative (rubric item 3's broader case — describing *how* a sibling's mechanism works, not just
+naming its verbs) has **no mechanical backstop**; both are caught only by the manual scan (step 2).
+Don't over-trust a green lint for bodies — the check narrows the rot surface, it doesn't close it.

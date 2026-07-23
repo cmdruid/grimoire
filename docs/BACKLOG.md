@@ -179,7 +179,15 @@ one-line resolution; delete only when the reason it existed is gone.
 ### BL-1 — check-7 (skills-lint) has no body-level backstop for re-documentation
 - **source:** boundary body audit (2026-07-18); `docs/boundary-audit.md` §"Known limitation";
   `FEEDBACK.md` [foreman] entry; commit `4688039`.
-- **status:** open
+- **status:** partially done (2026-07-23) — `skill-builder check`'s `scripts/skills-lint.sh` gained
+  **check 9**: WARNs when a body names 3+ distinct verbs of the same sibling within one paragraph
+  (proximity-scoped to a blank-line-delimited block, so a wrapped multi-line roster still counts as
+  one unit but two unrelated pointers elsewhere in the file never merge — a real false positive the
+  check caught on its own first run against `workstream`'s body, fixed before landing). This closes
+  the **backticked-per-verb-token** shape of the rot exactly, including the historical `foreman`
+  example. **Not closed:** a prose-listed roster with no per-verb backticks, or a restated
+  protocol/seam narrative (rubric item 3's broader case) — both still need the manual scan. See
+  `skills/skill-builder/docs/BOUNDARY-AUDIT.md` § *The mechanical backstop*.
 - **body:** `scripts/skills-lint.sh` **check 7** WARNs only on *description*-level backticked `/name`
   refs to a sibling. **Body-level re-documentation** (rubric V1 — a body section restating a sibling's
   verb roster / protocol / seam, the *bigger* class) has **no mechanical backstop**; it is caught only by
@@ -200,7 +208,11 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-2 — the body-roster sweep was targeted, not exhaustive
 - **source:** boundary body audit (2026-07-18); commits `0380885`, `689309f`, `da76945`.
-- **status:** open
+- **status:** partially done (2026-07-23) — BL-1's check 9 landed and, run against the current
+  12-skill tree, reports **zero** enumerated-roster findings (`warns=11`, unchanged) — an exhaustive
+  sweep for the backticked-per-verb-token shape, for free, every gate run from now on. Still open for
+  the shape check 9 can't see: a prose-listed roster or a restated protocol/seam narrative (rubric
+  item 3's broader case) genuinely needs a one-time manual pass to rule out — not yet done.
 - **body:** the body audit fixed the roster-rot pattern where it was *found* — `foreman`, `backlog`,
   and `workstream`'s templates — but did not confirm an **exhaustive** scan of all 10 skills' bodies for
   the same pattern (a body restating a sibling's verbs/protocol that can rot when the sibling changes).

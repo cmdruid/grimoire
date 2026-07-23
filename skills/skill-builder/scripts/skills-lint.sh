@@ -27,7 +27,7 @@
 #   7. Sibling refs in descriptions: a `description:` naming another skill via a
 #      `/name` that resolves to a sibling skill dir (WARN -- boundary-audit
 #      candidate; the router/fragment exceptions are legitimate, so never FAIL.
-#      See docs/boundary-audit.md).
+#      See docs/BOUNDARY-AUDIT.md, this skill's own bundled copy).
 #   8. Typed-edge blocks: the delimited `<!-- edges:<name> -->` block in a SKILL.md
 #      (self-init model 2026-07-18-skill-self-init-model.md) is well-formed --
 #      matched open/close delimiters naming the skill itself, edge kind in
@@ -36,6 +36,16 @@
 #      siblings; model 1 corollary 3). A type declared by exactly one skill across
 #      the suite is a WARN (likely an orphan/typo -- or a consumer not yet wired;
 #      expected to fire during rollout until Phase 5, model 2.2 "facts not verdicts").
+#   9. Sibling verb-roster enumeration (BL-1): a skill's BODY (not its description --
+#      check 7 covers that) naming 3+ distinct verbs of the SAME sibling skill via
+#      backticked `/sibling verb` tokens looks like an enumerated roster of that
+#      sibling's verb set (WARN -- boundary-audit candidate; the exact rot pattern
+#      that once bit `foreman`, whose body listed `architect`'s verbs stale long
+#      after `architect` gained new ones). Self-references are excluded -- a skill
+#      enumerating its OWN verbs is normal. Known limitation: only the
+#      backticked-per-verb-token shape is caught; a prose-listed roster ("its verbs
+#      are init, brainstorm, plan...") needs the manual boundary-audit scan, the
+#      same class of gap check 7 already documents for description-level refs.
 set -euo pipefail
 
 root="${1:-$(pwd)}"
@@ -158,8 +168,8 @@ rm -f /tmp/skills-lint-xref.$$
 
 # ---- 7. sibling refs in descriptions (boundary-audit candidate) --------------
 # A `description:` naming another skill via `/name` is a candidate boundary
-# violation (co-mingling) -- WARN so the maintainer judges it against
-# docs/boundary-audit.md. Self-invocations (`/<own-name>`) are fine; the
+# violation (co-mingling) -- WARN so the maintainer judges it against this
+# skill's own bundled docs/BOUNDARY-AUDIT.md. Self-invocations (`/<own-name>`) are fine; the
 # router/fragment exceptions are legitimate, so this never FAILs. Keys on a
 # *backticked* `/name` (the convention for an invocation, per check 6) so bare
 # separators/paths (`bug/patch/feature`, `.agents/foreman/`) don't false-positive.
@@ -178,7 +188,7 @@ for sk in "$skills_dir"/*/; do
 done | sort -u > /tmp/skills-lint-sib.$$ || true
 while IFS= read -r line; do
   set -- $line
-  warn "$2: description names sibling \`/$3\` -- boundary candidate (self-scope it, or confirm a router/fragment exception per docs/boundary-audit.md)"
+  warn "$2: description names sibling \`/$3\` -- boundary candidate (self-scope it, or confirm a router/fragment exception per this skill's docs/BOUNDARY-AUDIT.md)"
 done < <(awk '$1=="SIB"{print}' /tmp/skills-lint-sib.$$)
 rm -f /tmp/skills-lint-sib.$$
 
@@ -270,6 +280,64 @@ if [ -s "$edge_types" ]; then
     }' | sort)
 fi
 rm -f "$edge_types"
+
+# ---- 9. sibling verb-roster enumeration in a body (BL-1) ---------------------
+# Body-only (frontmatter excluded -- check 7 covers descriptions). Extract every
+# backticked `/sibling verb` two-word token, drop self-references and anything
+# not naming a real sibling dir, tagged with a **paragraph index** (bumped on
+# every blank line) so a wrapped multi-line roster still counts as one unit but
+# two unrelated pointers elsewhere in the same file never merge -- a real false
+# positive this check hit on its first run against this very tree (workstream's
+# `/backlog bug`, `/backlog task`, and an unrelated `/backlog debrief` ~80 lines
+# away are three separate legitimate pointers, not a roster). WARN per (skill,
+# sibling) pair with 3+ DISTINCT verbs in the SAME paragraph.
+roster="$(mktemp "${TMPDIR:-/tmp}/skills-lint-roster.XXXXXX")"
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  f="$sk/SKILL.md"
+  [ -f "$f" ] || continue
+  awk -v self="$name" '
+    /^---$/ { c++; next }
+    c<2 { next }
+    /^[[:space:]]*$/ { p++; next }
+    {
+      line=$0
+      while (match(line, /`\/[a-z][a-z-]* [a-zA-Z][a-zA-Z-]*`/)) {
+        tok=substr(line, RSTART, RLENGTH)
+        line=substr(line, RSTART+RLENGTH)
+        gsub(/`/,"",tok)
+        split(tok, parts, " ")
+        sib=substr(parts[1],2)
+        verb=parts[2]
+        if (sib != self) print sib"\t"verb"\t"p
+      }
+    }
+  ' "$f" | while IFS=$'\t' read -r sib verb p; do
+      [ -d "$skills_dir/$sib" ] || continue    # not a real sibling dir
+      printf '%s\t%s\t%s\t%s\n' "$name" "$sib" "$verb" "$p"
+    done
+done > "$roster" || true
+if [ -s "$roster" ]; then
+  while IFS=$'\t' read -r name sib n; do
+    warn "$name: names $n distinct verbs of sibling \`/$sib\` in one paragraph -- looks like an enumerated roster (boundary-audit candidate, BL-1; a roster rots when \`$sib\` gains/loses verbs -- point at it, don't enumerate it. See this skill's docs/BOUNDARY-AUDIT.md)"
+  done < <(sort -u "$roster" | awk -F'\t' '
+    {
+      pk = $1 SUBSEP $2 SUBSEP $4
+      vk = pk SUBSEP $3
+      if (!(vk in seenverb)) { seenverb[vk]=1; pcount[pk]++ }
+      nk = $1 SUBSEP $2
+      if (pcount[pk] > best[nk]) best[nk] = pcount[pk]
+    }
+    END {
+      for (nk in best) {
+        if (best[nk] < 3) continue
+        split(nk, arr, SUBSEP)
+        print arr[1]"\t"arr[2]"\t"best[nk]
+      }
+    }
+  ' | sort)
+fi
+rm -f "$roster"
 
 # ---- summary -----------------------------------------------------------------
 echo "fails=$fails warns=$warns"

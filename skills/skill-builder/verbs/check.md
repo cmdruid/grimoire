@@ -55,7 +55,8 @@ report.
 | signal | means | judgment |
 |---|---|---|
 | lint `FAIL:` | a hard defect (bad frontmatter, dangling ref, malformed edge block, script syntax) | fix before committing — never a judgment call |
-| lint `WARN: … names sibling` | check 7's boundary candidate | judge against the rubric; self-scope unless it's a documented router/fragment exception |
+| lint `WARN: … names sibling` | check 7's boundary candidate (description-level) | judge against the rubric; self-scope unless it's a documented router/fragment exception |
+| lint `WARN: … names N distinct verbs of sibling … in one paragraph` | check 9's boundary candidate (body-level enumerated roster, BL-1) | judge against the rubric; point at the sibling instead of enumerating its verbs, unless it's a genuine documented exception |
 | lint `WARN: edge type … declared by only one skill` | a genuine orphan/typo, or a consumer not yet wired | the lint already excludes a same-skill produces/handoff↔consumes pair (BL-4) — a lingering WARN here is a real single-direction type, expected mid-rollout or worth fixing |
 | drift `drift: <skill>` | that skill's `register-route.sh` functionally diverged from the reference | sync it back, or update the reference first if the divergence is an intentional improvement |
 | routing-probe miss | independence claimed but not actually achieved | sharpen the losing skill's scope; do not restore a cross-reference to patch it |
