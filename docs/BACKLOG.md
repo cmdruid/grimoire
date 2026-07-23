@@ -197,6 +197,11 @@ one-line resolution; delete only when the reason it existed is gone.
   scored them for **self-init / typed edges / registration**, not for rubric-V1 **sibling-verb-roster
   rot**. The exhaustive roster sweep was **not** performed here; it remains a distinct pass (best done
   once BL-1's lint exists to ground it).
+- **2026-07-22 addendum:** the library has since grown an 11th skill (`skill-builder`, Phase 7,
+  2026-07-19) — the two "10" counts above are frozen facts about what the 2026-07-18 audit and Phase 3
+  actually covered, not live scope. The still-open Follow-up already names its target as every
+  `skills/*/SKILL.md` + `verbs/*` (a glob, not a count), so the eventual sweep covers `skill-builder`
+  too without needing this entry re-edited again the next time a skill is added.
 
 ---
 

@@ -85,8 +85,9 @@ the runbook's (`packs/clankshop.md`).
 
 ## The packs
 
-- **`clankshop`** (`packs/clankshop.md`) — all ten skills as one disciplined development loop:
-  the layer map, the seam contracts, and which skill owns what live in the manifest.
+- **`clankshop`** (`packs/clankshop.md`) — the skills above (minus `skill-builder`, its own
+  maintainer tool) as one disciplined development loop: the layer map, the seam contracts, and which
+  skill owns what live in the manifest.
 
 ## Authoring conventions
 
