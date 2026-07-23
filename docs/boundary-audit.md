@@ -11,6 +11,22 @@ skills, not portable doctrine.
 
 ## Routing-probe run log
 
+**2026-07-23 (`debugger` added)** — 8 probes against `debugger`, `auditor`, `chiropractor`, and
+`skill-builder`, **8/8** routed correctly (fresh sub-agent, descriptions only). The sharpest case —
+"I tried two fixes and neither worked, what now?" — correctly stayed with `debugger` rather than
+drifting to `auditor` on the word "quality."
+
+| prompt | expects |
+|---|---|
+| "this test just started failing and I don't know why" | `debugger` |
+| "audit my repo for code quality problems" | `auditor` |
+| "my docs are a mess and hard to navigate" | `chiropractor` |
+| "lint my skills directory before I commit" | `skill-builder` |
+| "the build is broken, can you fix it?" | `debugger` |
+| "score this codebase against our quality rubric" | `auditor` |
+| "I tried two fixes for this bug and neither worked, what now?" | `debugger` |
+| "scaffold a new skill for me" | `skill-builder` |
+
 **2026-07-19 (`skill-builder` added, Phase 7)** — 7 probes against `skill-builder` + its 5 closest
 neighbors (`auditor`, `chiropractor`, `architect`, `backlog`, `foreman`), **7/7** routed correctly
 (fresh sub-agent, descriptions only, no runbook/reasoning in context). The pairs that most needed

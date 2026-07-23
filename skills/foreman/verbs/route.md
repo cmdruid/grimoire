@@ -12,7 +12,9 @@ through it.
 1. **Classify** the change — bug / patch / feature / spike / **seed-altitude design** — by
    `.agents/foreman/docs/DEVELOPMENT.md`'s rules, plus the altitude discriminator below for the design case.
 2. **Route**, dispatching to the verb or skill that owns the lane:
-   - **bug** → `/backlog bug` — diagnose + file a report under the host's bug store.
+   - **bug** → `/backlog bug` files a report under the host's bug store (the repro survives even if
+     nobody drives it yet); `/debugger` drives the actual root-cause-and-fix work, from the filed
+     report or directly from a live symptom if nothing's been filed.
    - **patch** → land on the trunk (the inline lane; no skill).
    - **feature** → the host's `PLANNING.md` tier decision → `/feature` (the plan+build engine:
      `brainstorm | design | plan | build`), built in a `/workstream` when it needs isolation.
@@ -24,16 +26,16 @@ through it.
      problem/concern/limitation) · `/backlog note` (a durable project fact) · `/backlog feedback` (a
      dev-experience observation). A defect → `/backlog bug`.
    - **finished a body of work** → `/backlog debrief`; **calibrate the dev system** → `/foreman calibrate`;
-     **validate the setup** → `/foreman check`; **code-quality** → `/auditor`; **context snapshot** →
-     `/handoff`.
+     **validate the setup** → `/foreman check`; **code-quality** → `/auditor`; **root-cause a bug/test
+     failure/build break** → `/debugger`; **context snapshot** → `/handoff`.
 3. Where a lane's skill isn't installed, fall back to "do it by hand per the deployed doc." `/foreman`
    owns the routing *policy*; the verbs and companion skills own the *operations*.
 
 ## Relationship to neighboring lanes
 
 - `route` dispatches to `/backlog`'s capture verbs (`task`, `bug`, `issue`, `feedback`, `note`, `debrief`, `curate`)
-  and to the companion skills `/feature`, `/architect`, `/workstream`, `/auditor`, `/handoff` when the
-  host has them.
+  and to the companion skills `/feature`, `/architect`, `/workstream`, `/auditor`, `/debugger`,
+  `/handoff` when the host has them.
 - `/feature` is the feature-lane **plan+build engine** — it executes the host's `PLANNING.md` spine
   as verbs and stops at gate-green; landing + capture stay with `/workstream` + `/backlog debrief`.
 - `/architect` is the **seed-altitude design engine** — a peer to `/feature`, not a subset of it. The

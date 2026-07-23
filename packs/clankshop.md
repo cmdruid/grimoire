@@ -1,7 +1,7 @@
 ---
 name: clankshop
-description: "The full development loop as a skill pack: route a change, design at seed altitude, plan and build features gate-green, ship them from long-lived workstreams, delegate work without polluting context, keep sessions resumable, and audit both code quality and doc ergonomics."
-skills: architect auditor backlog chiropractor delegate feature foreman handoff mailbox workstream
+description: "The full development loop as a skill pack: route a change, design at seed altitude, plan and build features gate-green, ship them from long-lived workstreams, delegate work without polluting context, keep sessions resumable, root-cause bugs before patching them, and audit both code quality and doc ergonomics."
+skills: architect auditor backlog chiropractor debugger delegate feature foreman handoff mailbox workstream
 ---
 
 # clankshop — the disciplined development loop (a `/foreman init` runbook)
@@ -47,6 +47,7 @@ The skills below, grouped by layer. `/foreman init` deploys the `.agents/foreman
   session       handoff ─── save/resume disciplines (root sessions; workstream reuses them)
   auditors      auditor ─── project CODE quality (rubric + metrics + findings → trackers)
                 chiropractor ─ doc-SPINE ergonomics (scan → diagnose → adjust)
+  diagnosis     debugger ─── root-cause a bug/test-failure/build-break before proposing any fix
 ```
 
 ### The members
@@ -79,6 +80,10 @@ The skills below, grouped by layer. `/foreman init` deploys the `.agents/foreman
 - **`chiropractor`** — audit and tune a repository's documentation *spine* (the link tree rooted
   at the agent entry door) for agent ergonomics: scan → diagnose → adjust. Self-contained; runs
   in any repo.
+- **`debugger`** — root-cause a bug, test failure, or build break before proposing any fix: a
+  four-phase investigate discipline (root cause → pattern analysis → hypothesis/minimal test → fix),
+  read-only until the human confirms the fix. Symptom-triggered, not a scheduled sweep — the
+  investigate-role counterpart to `auditor`'s scoring sweep.
 
 ### Outside this pack: `skill-builder`
 
@@ -124,6 +129,7 @@ validates for drift. The load-bearing invariant: **no skill crosses another's se
 | seam | contract | edge-matching |
 |---|---|---|
 | `backlog` ↔ `foreman` | `backlog` **captures** (single front-door, uniform); `foreman calibrate` **drains** the system-relevant slice into doctrine. Inbox vs. curator. | **dep** — `foreman` reads `backlog`'s `tracker-entry` |
+| `backlog` ↔ `debugger` | A filed bug (`backlog bug`) is legitimate optional input to `debugger`'s investigation — never a required floor; a live symptom with nothing filed yet starts the same way. Capture vs. investigate. | **dep** — `debugger` reads `backlog`'s `tracker-entry` |
 | `foreman` ↔ `clankshop` (this pack) | `foreman` = mechanism (oven); this runbook = composition (recipe). The pack **calls** foreman; foreman never depends on the pack. | — (this pack's own relationship to the tool, not a skill-to-skill artifact flow) |
 | `foreman` ↔ `chiropractor` | `clankshop` **specifies** the `AGENTS.md` workflow-glue (content); `foreman` **stamps** it at `init` and **grows** it via `calibrate` (mechanism); `chiropractor` **audits** the front-door's ergonomics. Specify → stamp → audit — none authors another's part. | — (a maintenance-role split; neither skill declares a type the other consumes) |
 | `architect` ↔ `chiropractor` | `architect`'s GLOSSARY = **domain** terms (part of the seed); `chiropractor`'s concern = a **navigational** glossary/index exists and is linked. Domain vs. navigation. | — (chiropractor's edges are all `—`; no shared type) |
@@ -131,6 +137,7 @@ validates for drift. The load-bearing invariant: **no skill crosses another's se
 | `architect` ↔ `foreman` | `architect` owns the **design system** (the regenerable seed code builds from); `foreman` owns the **operational system** (how a change is routed, built, calibrated). Design vs. operation. | — (an altitude boundary; foreman doesn't consume `design`/`roadmap`) |
 | `architect` ↔ `workstream` | A stream's queue can source **directly** from architect's roadmap — bypassing `feature` — when the work is already plan-shaped at seed altitude. | **dep** — `workstream` reads `architect`'s `roadmap` |
 | `feature` ↔ `workstream` ↔ `backlog` | `feature` ends at gate-green; `workstream` lands; `backlog debrief` captures. Three seams, one rule: none crosses another's. | **seam** — `feature -> workstream (gate-green-code)` (a real control-flow arrow, `feature`'s `handoff` matched) **+ dep** — `workstream` reads `feature`'s `plan` (the other queue-source shape); the `backlog` leg stays hand-authored (no shared type — a debrief captures *about* the ship, it doesn't consume workstream's typed output) |
+| `debugger` ↔ `workstream` | A debugged, gate-green fix is the same class of artifact a build stage produces — `workstream` lands either the same way, standalone or via a `debug`-template stream instance. Second producer of an existing type, not a new one. | **seam** — `debugger -> workstream (gate-green-code)` (matched by type, same as `feature`'s) |
 | `delegate` ↔ `mailbox` | `delegate` **decides** (delegate-or-not, mechanism, route, return contract); `mailbox` **carries** (the worktree-safe slot transport `delegate` routes to). Decision vs. transport. | — (both are pure-mechanism, deliberately no typed artifacts — exactly the case edge-matching can't and shouldn't derive) |
 | `auditor` ↔ `chiropractor` | `auditor` scores **project code** against a quality rubric; `chiropractor` tunes the **doc spine's** ergonomics. Code vs. docs (see *"Which audit?"* below). | — (chiropractor's edges are all `—`; no shared type) |
 | `foreman` ↔ `auditor` | `auditor` scores; `foreman calibrate` **drains** the scored signal into doctrine, the same drain relationship it has with `backlog`. Scorer vs. curator. | **dep** — `foreman` reads `auditor`'s `audit-finding` |
@@ -155,13 +162,13 @@ table is itself a **snapshot**: regenerate it from `scripts/foreman-health.sh de
 
 | type | produced by | consumed by |
 |---|---|---|
-| `tracker-entry` | `backlog` | `foreman` (calibrate) |
+| `tracker-entry` | `backlog` | `foreman` (calibrate), `debugger` (investigate) |
 | `design` | `architect` (brainstorm/plan/distill), `feature` (design) | `feature` (its own plan stage), `architect` (its own distill/reconcile) — each also reads the *other's* `design`, the derived cross-skill dep above |
 | `plan` | `feature` (plan) | `feature` (its own build stage), `workstream` (queue source) |
-| `gate-green-code` | `feature` (build) — also declared as a `handoff` | `workstream` (ship) |
+| `gate-green-code` | `feature` (build), `debugger` (fix) — both also declared as a `handoff` | `workstream` (ship) |
 | `roadmap` | `architect` (plan) | `workstream` (queue source) |
 | `audit-finding` | `auditor` | `foreman` (calibrate) |
-| `handoff-doc` | `handoff` (save) | `handoff` (resume) — intra-skill only; no cross-skill consumer yet (the standing orphan WARN, BL-4) |
+| `handoff-doc` | `handoff` (save) | `handoff` (resume) — intra-skill only; no cross-skill consumer yet (a legitimate stated self-chain, not an orphan — check 8 excludes it since BL-4's kind-aware fix) |
 
 ## The glue-workflows (how the seams run in practice)
 
@@ -191,7 +198,9 @@ Project *code* → `auditor`. The repo's *doc spine* (links, entry door, navigab
 `## Edges` well-formedness, the lint gate) → `skill-builder check` — a **toolmaker** concern, distinct
 from the other three (which audit a project this pack is deployed *onto*; `skill-builder` audits the
 skills doing the deploying, and stays outside this pack for that reason — see *Outside this pack:
-`skill-builder`* above). They don't overlap.
+`skill-builder`* above). They don't overlap. **`debugger` isn't a fifth entry here** — every row above
+is a scheduled or on-request *sweep* that scores or surveys; `debugger` is symptom-triggered
+investigation of one specific reported failure, ending in a proposed fix rather than a finding.
 
 ## Install
 

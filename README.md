@@ -26,16 +26,18 @@ git clone https://github.com/cmdruid/grimoire && cd grimoire
 
 ## The skills
 
-Four skills are **concrete agent roles** — `architect`, `foreman`, `chiropractor`, `auditor`. Three
-of those four are **stewards**: each stands up, evaluates, maintains, and drift-corrects one
-cross-cutting layer against the code (`architect` the design seed, `foreman` the workflow glue,
-`chiropractor` the doc spine) — even bootstrapping that layer on a repo that doesn't have it yet.
-`auditor` is the pure code-quality role: it owns no layer, only emits findings. Six more group as
-**operators** (`feature`, `backlog`, `workstream` — consume the stewards' seeds and act) and
-**plumbing** (`delegate`, `mailbox`, `handoff` — orchestration/transport used throughout). The
-eleventh, `skill-builder`, is a category of one: the **toolmaker** — it stewards the skills in this
-library themselves (scaffold new ones, audit boundary health, calibrate authoring doctrine), not
-project code, and is deliberately outside the `clankshop` pack (see *The packs* below).
+Concrete agent roles: `architect`, `foreman`, `chiropractor`, `auditor`, `debugger`. Three of those
+are **stewards**: each stands up, evaluates, maintains, and drift-corrects one cross-cutting layer
+against the code (`architect` the design seed, `foreman` the workflow glue, `chiropractor` the doc
+spine) — even bootstrapping that layer on a repo that doesn't have it yet. `auditor` and `debugger`
+both investigate rather than steward a layer: `auditor` scores code against a quality rubric on a
+scheduled sweep and emits findings; `debugger` root-causes one specific reported failure, symptom-
+triggered, and proposes a fix rather than a finding. Six more group as **operators** (`feature`,
+`backlog`, `workstream` — consume the stewards' seeds and act) and **plumbing** (`delegate`,
+`mailbox`, `handoff` — orchestration/transport used throughout). `skill-builder` is a category of
+one: the **toolmaker** — it stewards the skills in this library themselves (scaffold new ones, audit
+boundary health, calibrate authoring doctrine), not project code, and is deliberately outside the
+`clankshop` pack (see *The packs* below).
 
 | skill | what it does |
 |---|---|
@@ -43,6 +45,7 @@ project code, and is deliberately outside the `clankshop` pack (see *The packs* 
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
 | `backlog` | the capture desk: file follow-ups by kind (task/bug/issue/feedback/note), sweep finished work (`debrief`), curate the lists (`curate`) |
 | `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |
+| `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `feature` | the planning spine: brainstorm → design → plan → build, plus independent review |
 | `foreman` | the dev-workflow hub: route changes, deploy/operate a `.agents/foreman/` docs system — `init` (greenfield) or `migrate` (brownfield onramp) |
