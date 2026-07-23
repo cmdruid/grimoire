@@ -14,6 +14,23 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-10 — port `writing-skills`' pressure-test methodology into `skill-builder`
+- **source:** `feature-debugger-refinements` workstream (2026-07-23), item 3's `superpowers`
+  comparison research; deliberately deferred by the human rather than built in that stream (scope —
+  it's `skill-builder`'s own tooling, not that stream's brief).
+- **status:** open
+- **body:** the `superpowers` plugin's `writing-skills` skill treats skill-authoring as TDD applied to
+  process documentation: write a pressure-test scenario, dispatch a fresh subagent *without* the skill
+  and watch it fail (baseline), write the skill, re-run the same scenario and watch it pass, then
+  refactor to close any rationalization loopholes the agent found. `skill-builder` already has one
+  instance of "test with a fresh agent" — the routing-probe in `docs/BOUNDARY-AUDIT.md` — but that only
+  checks whether a `description:` routes correctly, never whether a skill's *body* actually changes
+  behavior once invoked. **Follow-up:** add a pressure-test pass to `skill-builder new` (baseline a
+  fresh agent against the target scenario before the skill exists) and/or `skill-builder check`
+  (re-verify compliance after an edit) — scope the concrete verb/step shape when it's actually picked
+  up, this entry is a pointer, not a design. Natural home: alongside `skill-builder`'s existing
+  routing-probe discipline.
+
 ### BL-9 — `skill-builder` exists now: BL-5/BL-6/BL-7 have a concrete owner, still unresolved
 - **source:** Phase 7 capstone (2026-07-19), debrief on landing
   `docs/design/2026-07-19-phase7-skill-builder.md`.
