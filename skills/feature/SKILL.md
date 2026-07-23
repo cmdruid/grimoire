@@ -1,6 +1,6 @@
 ---
 name: feature
-description: "Execute the planning spine as verbs -- `/feature brainstorm | design | plan | build`, plus the cross-cutting `review` (an independent ground-truthed verdict on an existing design/plan/roadmap/ADR) and `/feature templates` (scaffold its project-overridable planning-templates seed + self-register its front-door route). Use when the user runs `/feature ...`, or asks to brainstorm / design / plan / build / review a feature or its design, plan, or roadmap. Turns an idea into a validated approach, an argued spec, a task-by-task plan, and tested code at gate-green, tuned to the host's gate and templates. The four stages are primitives an orchestrator sequences; `feature` ends at gate-green and never debriefs, ships, or lands. For a one-line patch, skip it (fix on the trunk)."
+description: "Execute the planning spine as verbs -- `/feature brainstorm | design | plan | build`, plus the cross-cutting `review` (an independent ground-truthed verdict on an existing design/plan/roadmap/ADR), `/feature init` (self-register its front-door route), and `/feature templates [<name>]` (customize one bundled planning-template shape, on demand). Use when the user runs `/feature ...`, or asks to brainstorm / design / plan / build / review a feature or its design, plan, or roadmap. Turns an idea into a validated approach, an argued spec, a task-by-task plan, and tested code at gate-green, tuned to the host's gate and templates. The four stages are primitives an orchestrator sequences; `feature` ends at gate-green and never debriefs, ships, or lands. For a one-line patch, skip it (fix on the trunk)."
 ---
 
 # feature -- the executable planning spine
@@ -39,10 +39,11 @@ settings change, no precedence question.
 | `review` | **cross-cutting:** independent ground-truthed critique of an existing artifact | any spine artifact -> a verdict (in context) | `<doc-file> [focus]` |
 
 The first four are the linear spine (stages 1-4); `review` is orthogonal -- it critiques any artifact
-the others produce, at any point, and is not part of the brainstorm->build sequence. A sixth verb,
-`templates`, is **infrastructure and self-init** -- it deploys the project-overridable templates seed the
-spine reads from, and self-registers feature's route into the project's front-door doc (see *templates*,
-below).
+the others produce, at any point, and is not part of the brainstorm->build sequence. Two more verbs
+are **infrastructure, not spine stages**: `init` self-registers feature's route into the project's
+front-door doc (see *init*, below) -- feature's whole self-init entry point, always safe to run; and
+`templates` deploys exactly one bundled template shape as an editable project override, on demand (see
+*templates*, below) -- an optional action most projects never need.
 
 **New here? Read `docs/ideal-use.md`** -- a self-contained worked arc (`brainstorm -> design -> plan ->
 build`) on one concrete feature, showing how the spine runs and where its output hands off.
@@ -264,37 +265,23 @@ synthesize. Read-only **only**: never an editing subagent (the `build` worktree 
 Consumes an existing artifact by path; produces a verdict in context. Terminal step: hand the verdict
 to whoever owns the artifact -- `review` changes nothing itself.
 
-## templates -- scaffold the templates seed + self-register the route
+## init -- register feature's front-door route (self-init, no floor)
 
-Deploy this skill's planning-artifact shapes as a **project-overridable seed** at
-`<root>/.agents/feature/templates/`, and register feature's route into the project's always-loaded
-front-door doc -- **without depending on `/foreman init` having run first**. This is feature's **whole
-self-init entry point** (not a spine stage): `design`/`plan` produce their docs from the seed's shapes,
-and this verb is both how a project takes ownership of them and how a bare install of `/feature` becomes
-*visible* with no composer present. Both halves are **idempotent** and never clobber a project's own
-edits or a sibling skill's front-door block.
+Register feature's route into the project's always-loaded front-door doc -- **without depending on
+`/foreman init` having run first**. This is feature's **whole self-init entry point** (not a spine
+stage) and its **only** job: it makes a bare install of `/feature` *visible* with no composer present.
+It does **not** touch templates -- customizing a template shape is a separate, optional, on-demand
+action (see *templates* below) that a project may never need. Registering is always safe to run and
+carries no dependency on whether templates are ever customized.
 
-This verb realizes two corollaries of the typed-edge tenet
-(`docs/design/2026-07-18-skill-self-init-model.md` §1): **self-init, no floor** (a skill creates its own
-home -- corollary 1) and **visibility by construction** (a skill registers its route where the harness
-already loads it -- corollary 2). Phase 1's pilot landed only the seed half (B3/B4); the route-projection
-half was deferred to Phase 5, and this is that landing.
-
-**Resolution order (baked default vs. project override).** When `design` or `plan` copies a shape, it
-**prefers the deployed seed** `<root>/.agents/feature/templates/<name>.md` **if present**, and falls
-back to this skill's **bundled** `templates/<name>.md` otherwise. The bundle is always the working
-default; the seed is an optional per-project override layer. A skill that ships customizable assets is
-**still not a steward** -- it owns no cross-cutting layer, it just deploys files a project may edit.
+This verb realizes one corollary of the typed-edge tenet
+(`docs/design/2026-07-18-skill-self-init-model.md` §1): **visibility by construction** (a skill
+registers its route where the harness already loads it -- corollary 2). Idempotent: re-running is a
+no-op beyond refreshing the `built-against` stamp; a sibling skill's own front-door block is never
+touched.
 
 Checklist:
-1. **Scaffold the seed** with `scripts/seed-templates.sh <root>` -- it copies the bundled `templates/*.md`
-   (plus a short README stating the override contract) into `.agents/feature/templates/`,
-   **create-if-absent**. A template a project has already edited is **never** overwritten; re-running
-   only backfills missing files (idempotent). It needs no other skill to have run first -- feature
-   stands up its own asset home (self-init, no floor).
-2. **Report** what was created vs. already present (the script's `created=`/`exists=` facts), and the
-   seed path.
-3. **Resolve the front-door doc + a `built-against` stamp.** The registration target is the project's
+1. **Resolve the front-door doc + a `built-against` stamp.** The registration target is the project's
    always-loaded front-door (`AGENTS.md`/`CLAUDE.md`, whichever the harness auto-loads); it must
    **exist** -- if the project has none, that's a project-setup gap, say so and stop before writing.
    `built-against` is the short sha of the last commit that touched **this skill's own directory**
@@ -303,20 +290,17 @@ Checklist:
    `v0-<date>`.
    **Grimoire caveat (patient-zero):** never register against grimoire's own authored `AGENTS.md` -- see
    *The fixture caveat* below.
-4. **Register the route.** Feed the block body on stdin to
+2. **Register the route.** Feed the block body on stdin to
    `scripts/register-route.sh <front-door> feature <built-against>`:
    ```markdown
    ### /feature -- planning spine
    Route: brainstorm -> design -> plan -> build a feature to gate-green-code; `review` independently
-   critiques any spine artifact. `/feature brainstorm|design|plan|build|review|templates`.
+   critiques any spine artifact. `/feature brainstorm|design|plan|build|review|init|templates`.
    Edges: produces `design, plan, gate-green-code`; handoff `gate-green-code`; consumes `design, plan`
    (own stage chain).
    ```
    Report `appended` / `replaced`. If it reports **malformed**, surface that -- a delimiter was
    hand-broken; the human or composer repairs it, then re-run. Do **not** force it.
-5. **Author/override the seed (optional).** To tailor a shape, edit the file in the deployed seed
-   directly -- the next `design`/`plan` picks it up by the resolution order above. v0 scope is just the
-   scaffold; richer template authoring can wait.
 
 **The fixture caveat (grimoire is patient-zero -- model §3.2).** Grimoire's own `AGENTS.md` is authored
 library doctrine, not a consuming project's scaffold -- self-registration blocks must never accrete in
@@ -324,9 +308,40 @@ it. In grimoire this verb is exercised only against a throwaway fixture front-do
 under the scratchpad, never the real one); in a consuming project the parameter resolves to that
 project's real front-door, which is the whole point.
 
-Produces the deployable templates seed + the project's `skill:feature` front-door block; consumes
-nothing. Terminal step: the seed is on disk, the spine verbs resolve against it, and a bare reader of
-the front-door doc sees feature's route with no composer having run.
+Produces the project's `skill:feature` front-door block; consumes nothing. Terminal step: a bare
+reader of the front-door doc sees feature's route with no composer having run.
+
+## templates `[<name>]` -- customize one planning-template shape, on demand
+
+Deploy **exactly one** of this skill's bundled planning-artifact shapes as an editable,
+project-specific override at `<root>/.agents/feature/templates/<name>.md`, **only when a project
+actually wants to customize it**. There is no bulk-seed step and no unconditional scaffold: a project
+that never customizes anything carries zero duplicated template files, and a project that customizes
+one shape doesn't silently freeze the other three against future improvements to this skill's bundled
+defaults (an earlier eager-seed-everything design did exactly that -- cut for violating YAGNI and for
+the staleness footgun of a never-touched copy permanently shadowing the bundle).
+
+**Resolution order (baked default vs. project override) is unchanged.** When `design` or `plan` copies
+a shape, it **prefers the deployed override** `<root>/.agents/feature/templates/<name>.md` **if
+present**, and falls back to this skill's **bundled** `templates/<name>.md` otherwise. The bundle is
+always the working default; an override is opt-in, per-file, and created only on request. A skill that
+ships customizable assets is **still not a steward** -- it owns no cross-cutting layer, it just deploys
+files a project may edit.
+
+Checklist:
+1. **No `<name>` given** -- list the four available shapes (`adr`, `plan-design`,
+   `plan-implementation`, `roadmap`) and ask which one to customize. Do not scaffold all four.
+2. **Create-if-absent, one file.** If `<root>/.agents/feature/templates/<name>.md` already exists,
+   report `exists=<name>` and stop -- **never** overwrite a project's edit. Otherwise:
+   `mkdir -p <root>/.agents/feature/templates && cp templates/<name>.md <root>/.agents/feature/templates/<name>.md`
+   (resolve the source `templates/<name>.md` from this skill's own base directory), then report
+   `created=<name>` and the path. No script is needed for a single idempotent copy.
+3. **Edit the override directly.** The file just created is a plain copy of the bundled default --
+   tailor it now. The next `design`/`plan` picks it up by the resolution order above; no further
+   action needed.
+
+Produces the one deployed template override named; consumes nothing. Terminal step: the named
+override is on disk (or already was), and the spine verbs resolve against it on their next run.
 
 ## State between verbs = the spine artifacts
 
