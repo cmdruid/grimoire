@@ -17,6 +17,19 @@
 # bash-3.2 safe (macOS default). Read-only; never mutates.
 set -euo pipefail
 
+# Front-door variable `records-root` (default `.records`) -- see the
+# front-door-variables doctrine. Prints the resolved repo-relative path.
+resolve_records_root() {
+  local root="$1" fd decl=""
+  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
+    if [ -z "$decl" ] && [ -f "$fd" ]; then
+      decl="$(sed -n 's/^records-root:[[:space:]]*//p' "$fd" | head -n 1 \
+              | sed 's/[[:space:]]*$//')"
+    fi
+  done
+  printf '%s\n' "${decl:-.records}"
+}
+
 usage() {
   cat >&2 <<'EOF'
 usage: backlog-health.sh <subcommand> <root> [args...]
@@ -29,10 +42,13 @@ EOF
 
 cmd_debrief_scan() {
   [ "$#" -ge 1 ] || { echo "usage: backlog-health.sh debrief-scan <root> [<trunk-ref>]" >&2; exit 2; }
-  local root="$1" trunk="${2:-}" dirty todos done_recent
+  local root="$1" trunk="${2:-}" dirty todos done_recent rec_rel rec_re
+  rec_rel="$(resolve_records_root "$root")"
+  rec_re="${rec_rel//./\\.}"
+  echo "records-root=$rec_rel"
 
   echo "dirty_backlog:"
-  dirty="$(git -C "$root" status --porcelain 2>/dev/null | grep -E '\.records/(tasks|issues|feedback|bugs|notes)' || true)"
+  dirty="$(git -C "$root" status --porcelain 2>/dev/null | grep -E "$rec_re/(tasks|issues|feedback|bugs|notes)" || true)"
   if [ -n "$dirty" ]; then printf '%s\n' "$dirty" | sed 's/^/  /'; else echo "  (none)"; fi
 
   # New TODO/FIXME/XXX/HACK markers added vs <trunk-ref> (or the working tree if omitted).
@@ -54,7 +70,7 @@ cmd_debrief_scan() {
   # verify a shipped-record's existence; that check was dropped).
   echo "recent_done:"
   # shellcheck disable=SC2012  # ls -t sorts by mtime (find can't portably on macOS); names are controlled dated slugs
-  done_recent="$(ls -t "$root"/.records/archive/*.md 2>/dev/null | head -3 || true)"
+  done_recent="$(ls -t "$root/$rec_rel"/archive/*.md 2>/dev/null | head -3 || true)"
   if [ -n "$done_recent" ]; then printf '%s\n' "$done_recent" | sed "s#^$root/#  #"; else echo "  (none)"; fi
 }
 

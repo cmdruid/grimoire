@@ -179,6 +179,55 @@ nothing** (safe-by-default — never clobber hand-edited content).
 doc. Exercise `init`/registration against a throwaway fixture instead. The library that teaches the
 mechanism is not thereby a self-registering deployment of it.
 
+## Front-door variables — one declaration, two readers
+
+Some values genuinely vary per host project. The canonical example is the **records root** — the
+directory typed records live under, default `.records/`: right for every fresh project, but a
+brownfield host may have years of history under another name. Hardcoding such a value everywhere
+turns the default into a constant; a **front-door variable** keeps it *a pointer with a safe
+default*.
+
+A front-door variable is **one line in the host project's front-door doc** (`AGENTS.md`, or
+`CLAUDE.md` where that is the front-door), at line start, kebab-case name:
+
+    records-root: dev
+
+One declaration mechanism serves both kinds of reader, with the same precedence rule (declared
+value if present, else the default):
+
+- **Agents** need no mechanism at all: the front-door is always loaded, and front-door
+  instructions outrank skill defaults. Skill prose therefore keeps naming the default literally
+  (`.records/plans/…`, never `$RECORDS_ROOT/plans/…`) — an agent substitutes the declared root
+  when its front-door carries one. Zero rewording, zero indirection for the common case.
+- **Scripts** resolve it mechanically: scan the front-door docs for the first `^<name>:` match;
+  absent → the default. Each consuming script **inlines** the canonical resolver below
+  (self-contained packages — never source it from a sibling skill) and prints the resolved value
+  as a fact (`records-root=…`), so the agent sees which root the run used.
+
+The canonical resolver (bash-3.2 safe; adapt the variable name):
+
+    # Front-door variable `records-root` (default `.records`) -- see the
+    # front-door-variables doctrine. Prints the resolved repo-relative path.
+    resolve_records_root() {
+      local root="$1" fd decl=""
+      for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
+        if [ -z "$decl" ] && [ -f "$fd" ]; then
+          decl="$(sed -n 's/^records-root:[[:space:]]*//p' "$fd" | head -n 1 \
+                  | sed 's/[[:space:]]*$//')"
+        fi
+      done
+      printf '%s\n' "${decl:-.records}"
+    }
+
+Rules of the road: **declare once** — first match wins; when *documenting* a variable (this doc,
+skill prose) keep the literal off line start or inside indented code, so documentation never
+parses as declaration; the value is a repo-relative path (or plain token), never absolute. And
+the **bar for adding one is high** — *prefer the simplest portable rule over a configurable one*
+still governs. A variable is justified only when the value truly varies per host (usually
+brownfield reality), the default is right for every fresh project (nobody *must* set it), and
+both readers consume it. A skills library that authors this doctrine never declares variables in
+its own front-door (patient-zero, as with registration above).
+
 ## Corollaries (four testable rules)
 
 1. **Self-init, no floor.** A durable-home skill can create its own home; it depends on no other

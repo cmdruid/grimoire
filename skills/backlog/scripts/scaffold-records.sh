@@ -16,9 +16,23 @@
 # A4's idempotency proof); the verb prose keeps the judgment.
 set -euo pipefail
 
+# Front-door variable `records-root` (default `.records`) -- see the
+# front-door-variables doctrine. Prints the resolved repo-relative path.
+resolve_records_root() {
+  local root="$1" fd decl=""
+  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
+    if [ -z "$decl" ] && [ -f "$fd" ]; then
+      decl="$(sed -n 's/^records-root:[[:space:]]*//p' "$fd" | head -n 1 \
+              | sed 's/[[:space:]]*$//')"
+    fi
+  done
+  printf '%s\n' "${decl:-.records}"
+}
+
 root="${1:?usage: scaffold-records.sh <root>}"
 [ -d "$root" ] || { echo "FAIL: root $root is not a directory" >&2; exit 2; }
-rec="$root/.records"
+rec_rel="$(resolve_records_root "$root")"
+rec="$root/$rec_rel"
 
 created=0 existed=0
 
@@ -94,4 +108,4 @@ reports move to `archive/`. This README and `archive/` carry no frontmatter.
 Schema: backlog's `docs/TAXONOMY.md`.
 EOF
 
-echo "records-home=$rec created=$created existed=$existed"
+echo "records-root=$rec_rel records-home=$rec created=$created existed=$existed"

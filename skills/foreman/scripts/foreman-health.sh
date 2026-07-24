@@ -17,6 +17,19 @@
 # bash-3.2 safe (macOS default). Read-only; never mutates.
 set -euo pipefail
 
+# Front-door variable `records-root` (default `.records`) -- see the
+# front-door-variables doctrine. Prints the resolved repo-relative path.
+resolve_records_root() {
+  local root="$1" fd decl=""
+  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
+    if [ -z "$decl" ] && [ -f "$fd" ]; then
+      decl="$(sed -n 's/^records-root:[[:space:]]*//p' "$fd" | head -n 1 \
+              | sed 's/[[:space:]]*$//')"
+    fi
+  done
+  printf '%s\n' "${decl:-.records}"
+}
+
 usage() {
   cat >&2 <<'EOF'
 usage: foreman-health.sh <subcommand> <root> [args...]
@@ -91,16 +104,18 @@ report_stale() {
 
 cmd_inventory() {
   [ "$#" -eq 1 ] || { echo "usage: foreman-health.sh inventory <root>" >&2; exit 2; }
-  local root="$1" porcelain t f b l mod
+  local root="$1" porcelain t f b l mod rec_rel
+  rec_rel="$(resolve_records_root "$root")"
+  echo "records-root=$rec_rel"
   porcelain="$(git -C "$root" status --porcelain 2>/dev/null || true)"
   echo "tree_quiet=$([ -z "$porcelain" ] && echo true || echo false)"
   echo "linked_worktrees=$(( $(git -C "$root" worktree list 2>/dev/null | wc -l | tr -d ' ') - 1 ))"
   for t in tasks issues feedback; do
-    f="$root/.records/$t.md"
+    f="$root/$rec_rel/$t.md"
     if [ -f "$f" ]; then
       b="$(grep -cE '^[-*] ' "$f" || true)"
       l="$(wc -l < "$f" | tr -d ' ')"
-      mod="$(git -C "$root" log -1 --format=%cr -- ".records/$t.md" 2>/dev/null || echo unknown)"
+      mod="$(git -C "$root" log -1 --format=%cr -- "$rec_rel/$t.md" 2>/dev/null || echo unknown)"
       echo "${t}_bullets=$b"
       echo "${t}_lines=$l"
       echo "${t}_last_change=$mod"
@@ -108,21 +123,22 @@ cmd_inventory() {
       echo "${t}=absent"
     fi
   done
-  echo "bugs_open=$(count_files "$root/.records/bugs")"
-  echo "bugs_archived=$(find "$root/.records/bugs/archive" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
-  echo "done_records=$(count_files "$root/.records/archive")"
+  echo "bugs_open=$(count_files "$root/$rec_rel/bugs")"
+  echo "bugs_archived=$(find "$root/$rec_rel/bugs/archive" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
+  echo "done_records=$(count_files "$root/$rec_rel/archive")"
 }
 
 cmd_stale_refs() {
   [ "$#" -ge 1 ] || { echo "usage: foreman-health.sh stale-refs <root> [<file>...]" >&2; exit 2; }
   local root="$1"; shift
-  local tlds; tlds="$(top_level_dirs "$root")"
+  local tlds rec_rel; tlds="$(top_level_dirs "$root")"
+  rec_rel="$(resolve_records_root "$root")"
   if [ "$#" -ge 1 ]; then
     report_stale "$root" "$tlds" "$@"
   else
     # default set: trackers + index + spine docs that exist
     local f docs=()
-    for f in .records/tasks.md .records/issues.md .records/feedback.md .agents/foreman/MEMORY.md .agents/foreman/README.md AGENTS.md README.md; do
+    for f in "$rec_rel/tasks.md" "$rec_rel/issues.md" "$rec_rel/feedback.md" .agents/foreman/MEMORY.md .agents/foreman/README.md AGENTS.md README.md; do
       [ -f "$root/$f" ] && docs+=("$root/$f")
     done
     if [ "${#docs[@]}" -gt 0 ]; then
