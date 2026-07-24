@@ -44,11 +44,17 @@ is **dropped**; the spike showed it unnecessary, see *Spike evidence*.)
 A short block registered **once per project** into the host's `AGENTS.md`/`CLAUDE.md` front-door
 (the same self-registration pattern every grimoire skill uses for its route):
 
-> **Workstream compaction recovery.** If `.workstreams/<stream>/WORKSTREAM.md` exists for the tree
-> you are working in, a workstream may be mid-flight in this session. If your context has just been
-> compacted or summarized (you see a compaction/continuation summary in place of the full
-> conversation), STOP before any further work: re-read that `WORKSTREAM.md` in full, reconcile it
-> against the durable progress records it names, and only then resume from its recorded queue state.
+> **Workstream compaction recovery.** Applies only when your context has just been compacted or
+> summarized (you see a compaction/continuation summary in place of the full conversation), and only
+> to the tree your working directory is inside (`git rev-parse --show-toplevel`):
+> - If `WORKSTREAM.md` exists at that tree's **top level**, you are the session driving that
+>   workstream — STOP before any further work: re-read it in full, reconcile it against the durable
+>   progress records it names, and only then resume from its recorded queue state.
+> - If instead a `.workstreams/<stream>/WORKSTREAM.md` under the top level records
+>   `isolation: in-place` **and** HEAD is on that stream's branch, the same applies — you are in the
+>   shared tree that stream holds.
+> - Hand-offs visible under `.workstreams/` from the root checkout otherwise belong to **other
+>   sessions'** worktrees: never read, load, or recover them.
 
 Properties that make this the right shape:
 
@@ -119,6 +125,10 @@ Load-bearing findings:
   cover.
 - **The anchor is behaviorally sufficient**: no hooks, no per-stream files, no harness-specific
   wiring needed in the skill core.
+- The spike ran the anchor's **pre-narrowing wording** (the scoping to the agent's own toplevel /
+  in-place custody was added in review, closing a root-checkout false-positive on *other* streams'
+  hand-offs). The narrowing changes the trigger's scope, not the mechanism; the *Verification*
+  re-run exercises the final text.
 
 ## Failure modes
 
