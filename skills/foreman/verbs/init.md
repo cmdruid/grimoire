@@ -130,7 +130,11 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    concrete commands. The skills carry **no** project-specific commands, by design; if `AGENTS.md`
    doesn't name the gate, "run the gate" has nothing to resolve to. **Also record the on-disk home
    root here** (the `.agents/foreman/` — and `.agents/architect/` — location) so the recorded pointer, not a
-   hardcoded path, is what agents resolve (§3.1). (`.agents/foreman/docs/` holds the longer-form detail;
+   hardcoded path, is what agents resolve (§3.1). For the records root the pointer has concrete
+   machine-readable syntax: when it differs from the default `.records`, declare it as a
+   **front-door variable** — one `records-root: <path>` line at line start (skill-builder's
+   DOCTRINE, *Front-door variables*; scripts grep it, agents resolve it by front-door precedence).
+   A host on the default declares nothing. (`.agents/foreman/docs/` holds the longer-form detail;
    `AGENTS.md` is the always-loaded surface.)
 7. **List the composition's companion skills in `AGENTS.md`** — the members from Step 0 (`/backlog`,
    `/feature`, `/workstream`, `/architect`, `/handoff`, `/auditor`, `/chiropractor` for the full

@@ -143,7 +143,8 @@ and its capture verbs also create a store if it's missing.
       PERFORMANCE.md      -- <content doc> how to benchmark
     (no templates/ dir)   -- templates are never deployed; each producing skill uses its own
                              bundled `templates/` directly (see §12)
-  .records/                -- the RECORDS root: every typed record
+  .records/                -- the RECORDS root: every typed record (the default; a host may point it
+                             elsewhere via the `records-root` front-door variable -- same tree inside)
     README.md             -- RECORDS-root ownership index (§4.1): what each record dir is + who writes it
     tasks.md               -- a thing to build / do ("build X") -- flat living list (was BACKLOG.md)
     issues.md              -- a project problem / concern / limitation
