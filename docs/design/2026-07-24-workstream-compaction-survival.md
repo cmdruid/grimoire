@@ -1,7 +1,8 @@
 # Workstream Compaction Survival — Design
 
-**Status:** Designed (2026-07-24), spike-validated on Claude Code 2.1.219 + Codex 0.144.5.
-Implementation pending (see *Changes* below).
+**Status:** Designed (2026-07-24), spike-validated on Claude Code 2.1.219 (Sonnet 5) + Codex
+0.144.5 (gpt-5.6-sol), with a small-context verification on gpt-5.3-codex-spark against the final
+(narrowed) anchor text. Implementation pending (see *Changes* below).
 
 ## Problem
 
@@ -92,6 +93,10 @@ is no longer *predictable*, so the justification becomes **imminent or unpredict
 - Mid-feature freshness is deliberately **not** solved by more saves: git commits + the on-disk plan
   already carry it, and Scenario C's reconcile step recovers it. (The spike's continuity leaned on
   exactly this durable-record reconcile.)
+- **For small-context models this layer is the load-bearing one.** The spark verification showed
+  compaction on small windows can terminally fail (see *Failure modes*) — when it does, the anchor
+  never gets a post-compaction turn to fire in, and only the durable records + a fresh session
+  carry the stream. The anchor covers the mid-size case; freshness covers the floor.
 - A harness context-pressure warning, when visible, is an explicit trigger to run Scenario B
   proactively — beat the compactor to a clean checkpoint.
 - Cheap insurance for the "hand-off read long ago" case: the loop's seam-status lines lead with a
@@ -127,16 +132,42 @@ Load-bearing findings:
   wiring needed in the skill core.
 - The spike ran the anchor's **pre-narrowing wording** (the scoping to the agent's own toplevel /
   in-place custody was added in review, closing a root-checkout false-positive on *other* streams'
-  hand-offs). The narrowing changes the trigger's scope, not the mechanism; the *Verification*
-  re-run exercises the final text.
+  hand-offs). The narrowing changes the trigger's scope, not the mechanism; the small-context
+  verification below already ran the **narrowed** text.
+
+### Small-context verification (gpt-5.3-codex-spark, medium effort)
+
+A second Codex pass on a deliberately small-window model, against the **narrowed** anchor text and
+a worktree-shaped fixture (hand-off at tree top). Three findings, each design-relevant:
+
+- **Small models dodge ingestion by instinct.** The first run "completed" the queue with zero
+  compactions: spark extracted every token via `rg` one-liners and `cat file >/dev/null` — content
+  never entered its context. Only explicit no-text-processing rules forced genuine reads. Upshot:
+  small-model sessions compact *less* than window size suggests (they shell out), but when they do
+  ingest, compaction density is high (~every 2 tasks here vs ~every 10 for gpt-5.6-sol).
+- **The anchor holds on a small model: 3/3.** After every successful auto-compaction, spark's
+  first mid-turn action was re-read `WORKSTREAM.md` + the durable log, announce it was resuming
+  from durable state, and continue — including resuming a half-read file at the correct chunk
+  offset. Anchor compliance is not a frontier-model luxury.
+- **Compaction terminally fails on small windows — recurrently.** Two threads each eventually hit
+  `Error running remote compact task: Codex ran out of room in the model's context window` and
+  hard-stalled (nudges re-error; the harness says start a new thread). One thread died on its
+  first compaction attempt, the other after three successful ones. The recovery that works is the
+  skill's classic session boundary: fresh thread + durable state — tested, it reconciled
+  `notes/log.txt`, skipped completed tasks, and resumed exactly (queue reached 8/14 across two
+  threads with no repeated or lost work before the spike was concluded).
 
 ## Failure modes
 
-- **Compaction refusal.** Discovered in the spike: content in the transcript can make the
-  summarizer *refuse* (deterministically — repeated attempts fail), pinning the session at the
-  context limit, unable to compact. Remedy is the existing ritual, triggered manually: save ->
-  reset -> `load` (a reset sheds the poisoned transcript; the hand-off + durable records carry
-  continuity). Scenario C's text names this exit.
+- **Compaction itself can fail — two observed modes, one remedy.** (a) *Content refusal* (Claude):
+  transcript content can make the summarizer refuse, deterministically — repeated attempts fail.
+  (b) *Window exhaustion* (Codex, small models): the compact operation runs out of room and the
+  session hard-stalls ("start a new thread"); observed recurrently on spark — sometimes on the
+  first compaction, sometimes after several successful ones. Either way the session is pinned and
+  cannot compact; the remedy is the existing ritual as a hard session boundary: save (if the
+  session can still act) -> reset/new thread -> `load` — the hand-off + durable records carry
+  continuity (spike-verified: a fresh thread reconciled the log, skipped completed work, resumed
+  exactly). Scenario C's text names this exit.
 - **Anchor not yet registered** (pre-existing streams, host never ran the new `create`): behavior
   degrades to today's status quo — summary-only continuity. The seam anchor line still raises the
   odds the summary carries the pointer.
