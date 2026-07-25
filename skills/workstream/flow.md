@@ -167,13 +167,18 @@ boundary (effectively `per-stage`). Record `per-stage` for a template stream and
 
 ### Reset ritual — saves are coupled to the reset
 
-**A save is justified only by imminent context loss.** The *only* saves are (1) a user manually
-invoking `save`, (2) the flow's single **pre-reset checkpoint**, and (3) `park`'s custody hand-over
-(in-place streams — a parked stream may next be resumed by a *different* session, so parking without
-saving would strand the loop's state; `verbs/park.md`). No other verb saves — `sync` rebases +
-gates and nothing else; `ship` lands + advances and nothing else. Two scenarios (Scenario A/B describe
-`delegate` mode; **`manual` mode adds a third, phase-boundary reset** at every PLAN/BUILD/SHIP seam —
-see *Manual mode: the phase loop*):
+**A save is justified by imminent — or unpredictable — context loss.** Harness auto-compaction
+means loss can strike unannounced, so the saves are (1) a user manually invoking `save`, (2) the
+flow's single **pre-reset checkpoint**, (3) `park`'s custody hand-over (in-place streams — a parked
+stream may next be resumed by a *different* session, so parking without saving would strand the
+loop's state; `verbs/park.md`), and (4) the **feature-completion checkpoint** — `save` fires at
+every feature-completion seam (alongside debrief #1) even when no reset follows, bounding the
+hand-off's staleness to one in-flight feature should a compaction strike. No other verb saves —
+`sync` rebases + gates and nothing else; `ship` lands + advances and nothing else. Mid-feature
+freshness is deliberately **not** solved by more saves: git commits + the on-disk plan carry it,
+and Scenario C's reconcile recovers it. Three scenarios (A/B are `delegate` mode's deliberate
+resets; C is the involuntary one; **`manual` mode adds a phase-boundary reset** at every
+PLAN/BUILD/SHIP seam — see *Manual mode: the phase loop*):
 
 **Scenario A — feature-boundary reset** (a feature completed; the heavyweight path). Whether it
 **lands** here is governed by the stream's *Ship cadence*:
@@ -182,8 +187,8 @@ see *Manual mode: the phase loop*):
 > `debrief` #1 -> `ship` -> *(if ship was eventful)* `debrief` #2 -> **save** -> reset -> `load`
 >
 > **between landing points** (`milestone`/`per-track`, not yet a milestone):
-> `debrief` #1 -> advance to the next feature *on the same branch* -> *(if context is heavy)* **save**
-> -> reset -> `load`   *(no ship)*
+> `debrief` #1 -> **save** (the feature-completion checkpoint) -> advance to the next feature *on
+> the same branch* -> *(if context is heavy)* reset -> `load`   *(no ship)*
 
 - **`debrief` #1** routes the *feature's* follow-ups; its tracker commits sit on the branch and
   **ride the eventual ship's ff-merge for free** — whether that ship is now or a later milestone.
@@ -204,6 +209,34 @@ see *Manual mode: the phase loop*):
 
 The post-`load` `sync` does **not** save (there is no verb-save anymore); the next save is the next
 pre-reset checkpoint. (Save-then-reset = checkpoint; reset-without-save = rollback to the last save.)
+
+**Scenario C — involuntary reset (auto-compaction).** The harness summarized your context mid-loop:
+no save preceded it and no session boundary fired `load`. You detect it by the
+compaction/continuation summary sitting where your conversation history should be (both Claude Code
+and Codex leave one), or by the host front-door's recovery anchor pointing you here. Ritual:
+
+> stop current work -> re-read `<worktree>/WORKSTREAM.md` in full -> re-read this `flow.md` -> run
+> the hand-off's START HERE guard -> reconcile: `git -C <worktree> log` and the durable records
+> (tracker files, the plan, `.records/`) are truth for everything committed; the compaction summary
+> is truth only for in-flight intent — merge them -> continue the current task **without a user
+> round-trip** if the next action is KNOWN.
+
+The pre-compaction session already held its launch confirm — re-confirming after a compaction is a
+nag, not a seam. Round-trip only if the reconcile surfaces genuine ambiguity (a real fork, or the
+summary contradicting disk). This is `load`-lite: `load`'s resume discipline run in place, minus
+the session-boundary mechanics and minus the launch-confirm seam.
+
+**When compaction itself fails, treat it as a hard session boundary.** Two observed modes
+(design doc, *Failure modes*): the summarizer **refuses** (content grounds; retries fail
+deterministically) or **runs out of room** (small context windows; the session hard-stalls with a
+"start a new thread" error, sometimes only after several successful compactions). Either way the
+session is pinned at the limit: **save if the session can still act**, then reset / start a fresh
+session and `load` — the hand-off + durable records carry the stream across. This is the classic
+reset ritual, nothing new.
+
+**Context-pressure warning = checkpoint cue.** If the harness surfaces a context-low warning,
+treat it as Scenario B arriving early: run **save** proactively and recommend a reset — beat the
+compactor to a clean checkpoint instead of gambling on the summary.
 
 ### Manual mode: the phase loop (only when Coordinates `mode: manual`)
 
