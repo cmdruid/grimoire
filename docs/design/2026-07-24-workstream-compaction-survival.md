@@ -192,6 +192,14 @@ the generic version is not designed until a second consumer exists.
 
 - Re-run the spike matrix against the *implemented* skill text (fixture front-door registered by
   `create` itself rather than hand-written) — S2/S3 in both harnesses are the acceptance tests.
+- **Acceptance re-run: 2026-07-24, both cells pass** (fixture anchor taken verbatim from the
+  implemented `templates/compaction-anchor.md`). Claude Code (Sonnet 5): manual compact
+  (~300k -> ~20k) -> bare "continue" -> correct-task resume, correct token; the session also
+  routed itself through the real installed skill and read the implemented `flow.md`, and the
+  harness restored the loaded skill post-compaction ("Skills restored (workstream)") alongside
+  recently-read files. Codex (gpt-5.3-codex-spark, medium): 3 compactions (1 manual + 2 auto),
+  correct resume in all 3, explicit hand-off + durable-log re-read in 2 of 3 (the third resumed
+  correctly from the summary + durable log).
 - `skill-builder check` on the touched skill files (lint gate + boundary audit).
 - The compaction-refusal path is exercised only by inspection (deliberately re-creating a refusing
   transcript is not worth automating); the Scenario C text just names the manual exit.
