@@ -115,8 +115,9 @@ encode ownership, so a cold agent needs the index to learn *what lives where, an
   audit/                  FINDINGS · metrics.csv · history/        (writer: /auditor)
 ```
 
-Session hand-offs are **gitignored scratch** (root `HANDOFF.md`; concurrent named sessions under
-`.sessions/`), stewarded by `handoff` — deliberately *not* a `.records/` store. The mechanics of the
+Session hand-offs are **gitignored scratch** (root `HANDOFF.md`; concurrent sessions are
+`/workstream` streams, not extra hand-off files), stewarded by `handoff` — deliberately *not* a
+`.records/` store. The mechanics of the
 tree live in `foreman`'s `BOOTSTRAP.md` (§4 + §4.1); this runbook supplies the steward map, which is
 the composition `init` records and `/foreman check` validates for drift.
 

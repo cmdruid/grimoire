@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Save the current conversation as a temporary, self-contained hand-off a future agent (any vendor) can resume from, or resume one. `/handoff save` writes the root HANDOFF.md (gitignored scratch, the single active root session); `/handoff resume` loads and consumes it (one-shot). `/handoff save <name>` / `/handoff load <name>` use `.sessions/<name>.md` for concurrent root-level (non-worktree) sessions that would collide on the one root file -- these are rolling and re-loadable, removed with `/handoff close <name>`; `/handoff list` shows what exists. Use when asked to save/snapshot context before a reset or pick up where you left off. Scoped to root, non-worktree sessions.
+description: Save the current conversation as a temporary, self-contained hand-off a future agent (any vendor) can resume from, or resume one. `/handoff save` writes the root HANDOFF.md (gitignored scratch, the single active root session); `/handoff resume` loads and consumes it (one-shot). An explicit path argument saves/resumes that file instead (unmanaged escape hatch). Use when asked to save/snapshot context before a reset or pick up where you left off. Scoped to the single root, non-worktree session.
 ---
 
 # Hand-off skill
@@ -9,37 +9,32 @@ Save work-in-progress as a **temporary** hand-off that a future agent — of any
 the entry point of a new session, and resume from it. A hand-off is **gitignored per-machine
 scratch, overwritten each save** — never merged, never a durable record.
 
-Three layers, by isolation — pick by where the session lives:
-- **Worktree** streams → `/workstream` (its own worktree-local `WORKSTREAM.md`). Not this skill.
-- **The single active root session** → vanilla `/handoff` → root `HANDOFF.md`.
-- **Concurrent root-level (non-worktree) sessions** → **named** `/handoff`s → `.sessions/<name>.md`,
-  one file per session, so they don't collide on the single root file.
+Two layers, by isolation — pick by where the session lives:
+- **Worktree streams** → `/workstream` (its own worktree-local `WORKSTREAM.md`). Not this skill.
+- **The single active root session** → `/handoff` → root `HANDOFF.md`.
+
+**There is no named-session layer.** The former `.sessions/<name>.md` feature (concurrent
+root-level hand-offs) is removed: concurrent or long-lived parallel sessions are `/workstream`'s
+job — worktree streams isolate properly, and in-place streams manage the shared tree with custody —
+whereas parallel root sessions sharing one tree and index are the hazard, not a workflow to make
+comfortable. The rare legitimate "second hand-off file" is still reachable via an **explicit path**
+(below), with no managed lifecycle around it.
 
 A *durable* record of *finished* work is a `.records/archive/` entry, not a hand-off. (The retired
-`.records/sessions/` layer is not revived: named hand-offs are gitignored scratch, not a tracked store.)
+`.records/sessions/` and `.sessions/` layers are not revived: a hand-off is gitignored scratch, not
+a tracked store.)
 
 Verbs:
-- **save** / **save `<name>`** — synthesize the current conversation into the hand-off file.
+- **save** — synthesize the current conversation into the hand-off file.
 - **resume** — load the root `HANDOFF.md` and continue; it is **consumed** (deleted) on load, so
   the file's presence is its state (present = unresumed context; absent = nothing pending).
-- **load `<name>`** / **resume `<name>`** — load a *named*, **rolling** hand-off and continue; it is
-  **kept** (re-loadable across resets). `resume <name>` is a lenient alias for `load <name>`.
-- **close `<name>`** — delete a named hand-off when its rolling work is done.
-- **list** — show the hand-offs that exist (named ones plus the root `HANDOFF.md`).
 
 ## When to use
 
 - **save:** "save this context", "create a handoff", "I want to come back to this later",
   "write this up for a future session", "/handoff save" — snapshot before a reset.
-- **save `<name>`:** same, but when a **second** root-level session is (or may be) live and would
-  collide on the root file — "/handoff save dev", "save this as a named hand-off".
 - **resume:** "resume our work", "read `HANDOFF.md` and let me know when you're ready", "pick up
   where we left off", "/handoff resume".
-- **load `<name>`:** "resume the `dev` hand-off", "/handoff load dev", "pick up `<name>` where we
-  left off".
-- **close `<name>`:** "I'm done with the `dev` hand-off", "/handoff close dev", "clean up that
-  named hand-off".
-- **list:** "what hand-offs are there?", "/handoff list".
 
 Do not invoke for routine status updates within the same session, or for memory entries. For a
 long-running feature in an isolated **worktree**, use `/workstream`, not this.
@@ -49,28 +44,17 @@ long-running feature in an isolated **worktree**, use `/workstream`, not this.
 First classify the trailing argument, then resolve the target:
 
 - **No argument** → the root `HANDOFF.md`.
-- **A bare slug** (`<name>` matching `[a-z0-9-]+` — no `/`, no `.md`) → a **named** hand-off at
-  `.sessions/<name>.md`. A bare word always means a named hand-off, never a relative path. (This
-  reinterprets the old "bare arg = relative path" behavior — intentional; a literal path is still
-  reachable via the path-like form below.)
-- **A path-like argument** (contains `/` or ends in `.md`) → that literal path, verbatim.
-
-Reject an invalid name (a path separator, `..`, or characters outside `[a-z0-9-]`): say so and
-suggest a valid slug — never silently sanitize. The slug rule keeps a name inside `.sessions/` (no
-traversal) and the directory tidy.
+- **A path-like argument** (contains `/` or ends in `.md`) → that literal path, verbatim — the
+  unmanaged escape hatch for a deliberate second hand-off file.
+- **A bare word** (`dev`, `research`, …) → **reject and explain**: named hand-offs no longer
+  exist. Suggest the caller pick one of: the root hand-off (no argument), an explicit path, or —
+  if the real need is a concurrent/parallel session — a `/workstream` stream. Never silently
+  reinterpret a bare word as a path.
 
 Resolving the **root** `HANDOFF.md` (the no-argument case), in order:
 1. If the conversation references an obvious project directory, write `<that-dir>/HANDOFF.md`.
 2. Else `./HANDOFF.md` in the current working directory.
 3. If still unsure, ask the user before generating.
-
-Named hand-offs always live in `.sessions/` under the repo/working root (already gitignored);
-create the directory if it is missing.
-
-Both kinds are **gitignored scratch** — never merged, overwritten in place each save. They differ
-only in isolation: root `HANDOFF.md` is the single active session; `.sessions/<name>.md` lets
-concurrent **root-level** sessions each keep their own. (Worktree streams are `/workstream`'s
-worktree-local `WORKSTREAM.md`; a durable record of finished work is a `.records/archive/` entry.)
 
 ## Save procedure
 
@@ -83,9 +67,8 @@ it. Steps 1, 5-6 are this skill's default flow.
 
 1. **Sanity-check the request, and resolve the target.** If the conversation has been short,
    contains no concrete work to hand off, or is purely Q&A with nothing to resume, push back. Ask
-   what specifically to preserve. Then resolve the target per *Where it writes* — root
-   `HANDOFF.md`, a named `.sessions/<name>.md` (validate the slug first; create `.sessions/` if
-   missing), or a literal path.
+   what specifically to preserve. Then resolve the target per *Where it writes* — the root
+   `HANDOFF.md`, or a literal path.
 
 2. **Scan for sensitive material.** Look for secrets, credentials, API tokens, private keys, or PII.
    Do NOT include them; in your reply, mention what you elided so the user can re-supply it securely.
@@ -101,51 +84,27 @@ it. Steps 1, 5-6 are this skill's default flow.
 
 6. **Confirm to the user.** Report the path written. For the **root** hand-off, offer to also save
    a memory pointer (if the harness supports persistent memory) so future sessions in this
-   directory surface it. For a **named** hand-off, do **not** auto-offer a memory pointer — named
-   hand-offs are concurrent, ephemeral scratch; point the user at `/handoff list` instead.
+   directory surface it.
 
 ## Resume procedure
 
-`resume` (root) and `load <name>` (named) both load a hand-off so you can continue the work —
-`resume <name>` is a lenient alias for `load <name>`. The file is already a synthesized summary —
+`resume` loads a hand-off so you can continue the work. The file is already a synthesized summary —
 **do not re-summarize it.** Steps 2-3 are the **Resume discipline** — read in full + load as
 context, echo the single next action, and **rewrite nothing** — reusable by any skill resuming a
 hand-off (e.g. `/workstream load`, which adds its own worktree guard and never consumes its file).
-The discipline is non-destructive; step 4's consume is a vanilla-root-only post-step layered on top.
+The discipline is non-destructive; step 4's consume is a root-only post-step layered on top.
 
-1. **Locate the file** (per *Where it writes*): root `HANDOFF.md` for `resume` with no name;
-   `.sessions/<name>.md` for `load <name>` / `resume <name>` (validate the slug). If it doesn't
-   exist, say so — and for a missing named file, suggest `/handoff list`.
+1. **Locate the file** (per *Where it writes*): the root `HANDOFF.md` for a bare `resume`; the
+   literal path for `resume <path>`. If it doesn't exist, say so.
 2. **Read it in full** and load it as the working context for the session.
 3. **Confirm ready — briefly.** Reply that you've read it and are ready. Do NOT summarize its
    contents; at most echo the one-line *Suggested first action* verbatim. Then wait for direction.
-4. **Consume — root only.** A root `HANDOFF.md` is a **one-shot baton**: once the load has
+4. **Consume — root only.** The root `HANDOFF.md` is a **one-shot baton**: once the load has
    succeeded (step 2 done, content in context), **delete it** and say so ("consumed `HANDOFF.md`").
-   Its presence then means "unresumed context exists"; its absence, "nothing pending". A **named**
-   hand-off is **rolling** — do **not** delete it; it stays re-loadable until `/handoff close
-   <name>`. (The Resume discipline itself never deletes; only this root flow does, which is why
+   Its presence then means "unresumed context exists"; its absence, "nothing pending". An
+   **explicit-path** hand-off has no managed lifecycle — leave it in place; its owner deletes it.
+   (The Resume discipline itself never deletes; only the root flow does, which is why
    `/workstream load` is unaffected.)
-
-## List procedure
-
-`list` reports the hand-offs that exist; it writes nothing.
-
-1. **Collect** the root `HANDOFF.md` (if present) and every `.sessions/*.md`.
-2. **Read the title + "last updated" line** from each (the first heading and the date line near the
-   top — the default structure puts both there).
-3. **Print a short table:** name (`HANDOFF` for the root, the slug for named ones) and its
-   last-updated date. If nothing exists, say there are no hand-offs.
-4. **Touch no files.**
-
-## Close procedure
-
-`close <name>` ends a named hand-off's life — delete `.sessions/<name>.md` when its rolling work is
-done. It is **named-only**: there is no bare `close` (a root `HANDOFF.md` is consumed by `resume`,
-not closed).
-
-1. **Validate the name** and resolve `.sessions/<name>.md`.
-2. **If it doesn't exist,** say so (suggest `/handoff list`) and stop.
-3. **Delete it** and confirm ("closed `<name>`").
 
 ## Document structure
 
@@ -186,29 +145,25 @@ only if it would be empty.
 
 ## Done when
 
-- **save / save `<name>`:** the written file alone (root `HANDOFF.md` or `.sessions/<name>.md`)
-  lets a fresh agent of any vendor resume the work — current state, next action, and repo baseline
-  all present — with no recourse to the original conversation.
-- **resume:** the root `HANDOFF.md` is loaded into context, you've confirmed ready, and the file
-  has been **consumed** (deleted).
-- **load / resume `<name>`:** the named hand-off is loaded into context, you've confirmed ready,
-  and the file is **left in place** (rolling).
-- **close `<name>`:** the named file is deleted and confirmed.
-- **list:** the existing hand-offs (named + root) are reported, nothing written.
+- **save:** the written file alone (root `HANDOFF.md`, or the explicit path) lets a fresh agent of
+  any vendor resume the work — current state, next action, and repo baseline all present — with no
+  recourse to the original conversation.
+- **resume:** the hand-off is loaded into context, you've confirmed ready, and — root only — the
+  file has been **consumed** (deleted); an explicit-path file is left in place.
 
 ## Edges
 
 Handoff's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
 names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A real
-**self-chain**: `save` produces the doc, `resume`/`load` consume it back -- the second intra-skill
+**self-chain**: `save` produces the doc, `resume` consumes it back -- the second intra-skill
 produces↔consumes pair after feature's `design -> plan -> build` (a composer must exclude this pair
-from seam derivation, same F2 rule). No durable home (`.sessions/`/root `HANDOFF.md` are gitignored
-scratch, lazily created) -- registration is optional and not implemented in v0.
+from seam derivation, same F2 rule). No durable home (the root `HANDOFF.md` is gitignored scratch,
+lazily created) -- registration is optional and not implemented in v0.
 
 <!-- edges:handoff -->
-- produces: handoff-doc — the written save file (root `HANDOFF.md` or `.sessions/<name>.md`)
-- handoff: — (none; the doc is picked up by *resume*/*load*, not handed to another skill)
-- consumes: handoff-doc — resume/load read the doc back (intra-skill: same skill on both ends)
+- produces: handoff-doc — the written save file (root `HANDOFF.md`, or an explicit-path file)
+- handoff: — (none; the doc is picked up by *resume*, not handed to another skill)
+- consumes: handoff-doc — resume reads the doc back (intra-skill: same skill on both ends)
 <!-- /edges:handoff -->
 
 **`handoff-doc` is used by exactly one skill**, so `skills-lint.sh` check 8 legitimately WARNs

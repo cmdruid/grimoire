@@ -82,7 +82,7 @@ paths no longer encode ownership, `foreman init` writes an **ownership index** (
 | seed↔code drift reports | `.records/reports/` | `architect reconcile` (writer) |
 | audit deliverables: `FINDINGS` · `metrics.csv` · `history/` | `.records/audit/` | `auditor` |
 
-Session hand-offs stay **gitignored scratch** (root `HANDOFF.md` · `.sessions/`, steward `handoff`) —
+Session hand-offs stay **gitignored scratch** (root `HANDOFF.md`, steward `handoff`) —
 not a `.records/` store. The full tree lives in `foreman`'s `BOOTSTRAP.md` (§4); the steward map is
 the runbook's (`packs/clankshop.md`).
 

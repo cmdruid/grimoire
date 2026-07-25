@@ -158,8 +158,8 @@ and its capture verbs also create a store if it's missing.
     logs/                  -- captured run/measurement artifacts
     audit/                 -- audit deliverables: FINDINGS.md, metrics.csv, history/ (writer: /auditor)
   (each of .records/{plans,reports,bugs} also has an archive/ subdir)
-  (no .records/sessions/)  -- hand-offs are gitignored scratch (root HANDOFF.md; concurrent named
-                             sessions under .sessions/), not a tracked record (steward: /handoff; see §8)
+  (no .records/sessions/)  -- hand-offs are gitignored scratch (root HANDOFF.md; concurrent
+                             sessions are /workstream streams), not a tracked record (steward: /handoff; see §8)
 ```
 
 ### 4.1 The ownership index (load-bearing -- paths don't encode ownership)
@@ -184,7 +184,7 @@ actually installed; where a steward is absent, the row's work falls to by-hand p
 | research reports · run logs | `.records/reports/`, `.records/logs/` | foreman / various |
 | seed↔code drift reports (`reconcile-<date>.md`) | `.records/reports/` | `/architect reconcile` (writer) |
 | audit deliverables: FINDINGS · metrics.csv · history/ | `.records/audit/` | `/auditor` (writer) |
-| session hand-offs (gitignored scratch) | root `HANDOFF.md` · `.sessions/` | `/handoff` |
+| session hand-offs (gitignored scratch) | root `HANDOFF.md` | `/handoff` |
 | calibration pass log (append-only history of `/foreman calibrate` runs) | `.records/logs/foreman-calibrate.md` | `/foreman` (calibrate) |
 
 ### 4.2 Self-init dispatch & section ownership
