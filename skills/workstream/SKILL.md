@@ -133,6 +133,12 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
   commits change*, never on *what a sync pulled in* — the full four-branch matrix is
   `verbs/sync.md` step 3 (Landing applies the same one); an **unchanged tree** (a no-op sync) still
   carries the loop's last green gate. `workstream-git.sh gate-facts` computes both axes for you.
+- **Auto-compaction is an involuntary reset (Scenario C).** If your context has just been
+  compacted/summarized mid-loop, stop and run `flow.md` -> *Scenario C*: re-read the hand-off +
+  `flow.md`, reconcile against git and the durable records, then continue without a user
+  round-trip if the next action is KNOWN. (`create` registers the host front-door anchor that
+  points a compacted session here; a *failed* compaction is a hard session boundary — save if
+  possible, reset, `load`.)
 
 ### Helper scripts (token-free state analysis — facts, not verdicts)
 
