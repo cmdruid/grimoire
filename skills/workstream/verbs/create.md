@@ -101,6 +101,20 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
      would accrete a duplicate per create, ISSUES W12).
      (Without the line `WORKSTREAM.md` shows as untracked inside the worktree and blocks a clean
      `git worktree remove`.)
+   - **Ensure the front-door recovery anchor — idempotently.** Check the host's always-loaded
+     front-door doc (`AGENTS.md`, or `CLAUDE.md` where that is the host's front-door):
+     `grep -q '^## Workstream compaction recovery' <root>/AGENTS.md` → present, no-op (the normal
+     case after the first stream). Absent → **propose** appending this skill's bundled
+     `templates/compaction-anchor.md` (resolve from the skill's own base directory, never a host
+     path) to the front-door and, on the human's OK, commit it under the root-contention rules
+     (stage + commit in one call, explicit pathspec): `git -C <root> add AGENTS.md && git -C <root>
+     commit -m "Register workstream compaction-recovery anchor" -- AGENTS.md`. The block is generic
+     convention text — one registration serves every stream forever (worktrees inherit it from the
+     branch; in-place streams read it from the root). **Unattended or `--seed-only` create** → do
+     not commit to the root: skip, and record `anchor: unregistered` in the hand-off's *Pointers /
+     open questions* so the next attended session proposes it. (Why it matters: the front-door is
+     re-injected every request in both harnesses, so this block survives compaction by construction
+     — it is what points a compacted session back to the hand-off; `flow.md` -> *Scenario C*.)
    - **Build the Cheat sheet** (the template's `## Cheat sheet` section) — a durable orientation map so
      a resuming or small-context agent navigates this domain without re-exploring (the exploration
      `/feature brainstorm`/`plan` would otherwise re-derive into context that each reset destroys).
