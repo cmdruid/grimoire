@@ -14,6 +14,49 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-12 — harness-compaction spike methodology + doctrine candidates from the survival work
+- **source:** compaction-survival spike + implementation (2026-07-24,
+  `docs/design/2026-07-24-workstream-compaction-survival.md`); debrief sweep 2026-07-25.
+- **status:** open
+- **body:** two durable byproducts of the spike, parked here so they outlive the design doc's
+  evidence section. **(1) Reusable methodology:** the spike validated skill-text behavior under a
+  *context event* (compaction) with a planted-token fixture — a throwaway repo with a queue of
+  ~40k-token files each hiding a verifiable token, driven by REAL interactive harness sessions
+  (tmux-scripted Claude Code + Codex), with the harness's own transcript/rollout JSONL as pass/fail
+  evidence (compaction boundary → subsequent tool calls). This is the event-driven sibling of
+  BL-10's pressure-test methodology (baseline/pass scenarios for *invocation*; this tests
+  *survival*), and its natural home is the same: `skill-builder`'s testing discipline. Two
+  fixture gotchas worth carrying: random word-salad filler makes Claude's summarizer refuse
+  deterministically (use benign fake telemetry), and small/fast models shell-script around
+  ingestion (`cat >/dev/null` + `rg`) unless the fixture forbids text-processing shortcuts — which
+  is also a real-world observation: small models compact less than window size suggests, then
+  compact densely once genuinely ingesting. **(2) Doctrine candidates for the next
+  `/skill-builder calibrate`:** "state that must survive context loss lives in a
+  front-door-registered anchor + on-disk artifact, never in the transcript" (front-door files are
+  re-injected every request in both harnesses — compaction-proof by construction; spike-verified);
+  and the gotcha that compaction itself can *fail* two ways (content refusal; window exhaustion —
+  recurrent on small models), so a durable-record + fresh-session path must always exist beneath it.
+
+### BL-11 — extract the compaction-survival machinery into `/handoff` (on a second consumer)
+- **source:** `docs/design/2026-07-24-workstream-compaction-survival.md` (*Changes* → boundary
+  call: "workstream-first, shaped for extraction"); handoff simplification (2026-07-25, commit
+  `2755d80`).
+- **status:** open
+- **body:** the involuntary-reset problem is not workstream-specific — any session keeping its
+  state in a hand-off artifact (e.g. a root `HANDOFF.md` marathon) faces the same
+  compaction-with-no-resume-trigger gap. The generic halves that would lift into `/handoff`:
+  the "compaction = involuntary reset" re-entry ritual (stop → re-read the artifact in full →
+  reconcile durable records against the summary → continue) as Resume-discipline doctrine; a
+  generalized anchor clause (today's `templates/compaction-anchor.md` keys on `WORKSTREAM.md` /
+  `.workstreams/` custody — a generic contract would let an artifact declare its location
+  convention + durable records + re-entry ritual); and the freshness principle ("a save is
+  justified by imminent or unpredictable loss"). Workstream would keep only its specifics
+  (START HERE, Coordinates, `flow.md`, seams). **Deliberately deferred** until a second real
+  consumer feels the pain (e.g. a root-`HANDOFF.md` session observed limping through a
+  compaction) — one data point is not a generic interface; two lets the contract fall out of
+  their differences. The 2026-07-25 root-only simplification of `/handoff` (one artifact, one
+  lifecycle) already shrank the target contract.
+
 ### BL-10 — port `writing-skills`' pressure-test methodology into `skill-builder`
 - **source:** `feature-debugger-refinements` workstream (2026-07-23), item 3's `superpowers`
   comparison research; deliberately deferred by the human rather than built in that stream (scope —
