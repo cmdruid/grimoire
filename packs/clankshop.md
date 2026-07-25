@@ -44,7 +44,7 @@ The skills below, grouped by layer. `/foreman init` deploys the `.agents/foreman
                 workstream ─ the loop orchestrator: one worktree, one stream, ship after ship
   delegation    delegate ── the front-door: delegate-or-not, mechanism, route confirmation
                 mailbox ─── the transport: out-of-band slot handoff, worktree-safe
-  session       handoff ─── save/resume disciplines (root sessions; workstream reuses them)
+  session       handoff ─── save/resume disciplines (the single root session; workstream reuses them)
   auditors      auditor ─── project CODE quality (rubric + metrics + findings → trackers)
                 chiropractor ─ doc-SPINE ergonomics (scan → diagnose → adjust)
   diagnosis     debugger ─── root-cause a bug/test-failure/build-break before proposing any fix
@@ -74,8 +74,9 @@ The skills below, grouped by layer. `/foreman init` deploys the `.agents/foreman
 - **`mailbox`** — out-of-band sub-agent handoff: the delegate writes its result to a git-excluded
   `.mailbox/` slot and returns a handle; the parent applies a patch (tokenless) or consumes a doc.
   The worktree-safe transport `delegate` routes to; canonical home of the single-writer rule.
-- **`handoff`** — save/resume a session snapshot; provides the Save/Resume disciplines the other
-  skills reuse.
+- **`handoff`** — save/resume the single root session's snapshot (root `HANDOFF.md`, one-shot);
+  provides the Save/Resume disciplines the other skills reuse. Concurrent sessions are
+  `workstream` streams, not extra hand-off files.
 - **`auditor`** — code-quality audit framework (per-dimension rubric, metrics, findings → trackers).
 - **`chiropractor`** — audit and tune a repository's documentation *spine* (the link tree rooted
   at the agent entry door) for agent ergonomics: scan → diagnose → adjust. Self-contained; runs
@@ -185,8 +186,12 @@ table is itself a **snapshot**: regenerate it from `scripts/foreman-health.sh de
 - **Delegate without polluting context.** `/delegate` decides delegate-or-not and picks the route;
   `mailbox` is the worktree-safe transport for the out-of-band result. Grunt work goes to a cheap
   model; the orchestrator keeps its context lean.
-- **Survive a reset.** `/handoff save` snapshots the root session; `/handoff resume` picks it up.
-  `/workstream save`/`load` reuse the same discipline for worktree streams.
+- **Survive a reset — deliberate or involuntary.** `/handoff save` snapshots the root session;
+  `/handoff resume` picks it up. `/workstream save`/`load` reuse the same discipline for worktree
+  streams. Harness **auto-compaction** is the involuntary case: `workstream`'s Scenario C
+  (`flow.md`) re-orients from the on-disk hand-off + durable records, and `create` registers a
+  front-door recovery anchor that survives compaction by construction and points a compacted
+  session back to its hand-off.
 - **Calibrate the system from its own signal.** `/backlog` captures friction; `/foreman calibrate` drains the
   system-relevant slice back into the deployed doctrine + `AGENTS.md` — the self-growing curation
   loop. `/foreman check` is the cheap drift validator between ships.
