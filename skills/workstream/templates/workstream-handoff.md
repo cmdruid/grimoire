@@ -126,6 +126,9 @@ feature with its delegation tally (debrief #1), e.g. `- <feature> — delegation
 Build the current feature to **completion** (autonomy rule): run all its tasks, committing as you go;
 round-trip **only at a seam** — launch / blocker / genuine fork / feature-completion. **Saves are
 coupled to the reset**, not to each task or verb (`sync` and `ship` do not save).
+**Every seam-status message leads with the anchor line** `WORKSTREAM <stream> — hand-off: <abs
+path to this file>` — repeated, salient state a compaction summarizer reliably keeps, covering the
+case where this file was last read long before the compaction.
 
 **Reset ritual** (whether Scenario A *lands* depends on *Ship cadence* above):
 - **Feature complete, at a landing point (`per-stage` / a milestone / track end):** `/backlog debrief`
@@ -135,14 +138,21 @@ coupled to the reset**, not to each task or verb (`sync` and `ship` do not save)
   *(if the ship was eventful — conflicts, contention retries, multiple syncs)* `/backlog debrief` #2 ->
   **`/workstream save`** (the single pre-reset checkpoint) -> reset -> `/workstream load <stream>`.
 - **Feature complete, between landing points (`milestone`/`per-track`, not yet a milestone):**
-  `/backlog debrief` #1 -> advance to the next feature *on the same branch* (**no ship**; under `milestone`
-  first *propose* a land if this looks like a natural milestone) -> *(if context heavy)*
-  **`/workstream save`** -> reset -> `load`. Unshipped features stay on the branch for the next milestone.
+  `/backlog debrief` #1 -> **`/workstream save`** (the feature-completion checkpoint — fires at
+  every feature seam, reset or not) -> advance to the next feature *on the same branch* (**no
+  ship**; under `milestone` first *propose* a land if this looks like a natural milestone) ->
+  *(if context heavy)* reset -> `load`. Unshipped features stay on the branch for the next milestone.
 - **Context heavy, mid-feature (Scenario B):** `/workstream save` -> reset -> `load` ->
   *(if `<target>` moved)* `/workstream sync` (which does **not** save).
 - **Context polluted:** reset **without** save (rollback to the last save) -> `load` ->
   *(if `<target>` moved)* `sync`. (Rollback returns context to the last save; it does NOT undo
   commits — bad commits need `git reset`.)
+- **Context auto-compacted (involuntary reset — Scenario C):** a compaction/continuation summary
+  sits where your conversation should be -> STOP -> re-read this WORKSTREAM.md in full -> re-read
+  the skill's `flow.md` -> run START HERE -> reconcile against `git log` + the durable records
+  (they outrank the summary for anything committed) -> continue **without a user round-trip** if
+  the next action is KNOWN. If compaction itself **failed** (refusal or out-of-room — the session
+  is pinned at the limit): save if still possible, then reset / new session -> `load`.
 
 **Between resets (autonomous):**
 - Check if `<target>` moved (Coordinates integration-target): `git -C <worktree> log <branch>..<target>
