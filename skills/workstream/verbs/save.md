@@ -1,9 +1,11 @@
 # `save`  · runs in the worktree
 
-**A save is justified only by an imminent reset** (`flow.md` -> *Reset ritual* — read it if not
-already in context): it exists to
-survive a context reset, so the only saves are a user invoking `save` directly and the flow's single
-pre-reset checkpoint. No other verb calls it.
+**A save is justified by imminent — or unpredictable — context loss** (`flow.md` -> *Reset ritual*
+— read it if not already in context): it exists to survive a context reset, and harness
+auto-compaction (`flow.md` -> *Scenario C*) means loss can strike unannounced. The saves are: a
+user invoking `save` directly, the flow's single pre-reset checkpoint, and the flow's
+**feature-completion checkpoint** (fires at every feature-completion seam alongside debrief #1,
+reset or not — bounding the hand-off's staleness to one in-flight feature). No other verb calls it.
 
 1. Apply `/handoff`'s **Save discipline** to regenerate `<worktree>/WORKSTREAM.md` in place from its
    own template (the workstream hand-off shape: Coordinates + START HERE + Queue state + Loop
