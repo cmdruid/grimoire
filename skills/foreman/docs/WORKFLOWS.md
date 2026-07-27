@@ -15,7 +15,7 @@ Use a git worktree for anything that earns a feature branch (patches + small wor
 are all in `.agents/foreman/docs/WORKTREES.md`.
 
 ## Develop a feature
-Routed by `.agents/foreman/docs/DEVELOPMENT.md` (*Features*): **plan it** -> `.agents/foreman/docs/PLANNING.md` (pick a
+Routed by `.agents/foreman/docs/ROUTING.md` (*Features*): **plan it** -> `.agents/foreman/docs/PLANNING.md` (pick a
 tier), **build it** -> `.agents/foreman/docs/WORKTREES.md` (worktree rules; tracks keep one worktree across
 phases). If available, **`/workstream`** automates the seed -> drive -> land loop in a worktree,
 run continuously per stream (create / save / load / sync / ship / close); see your `/workstream`
@@ -35,7 +35,7 @@ and where to record perf logs.>`
 
 ## Diagnose a bug
 Full playbook (observe -> reproduce -> isolate -> file): `.agents/foreman/docs/DIAGNOSTICS.md` (if present).
-Classifying and filing the defect into `.records/bugs/`: `.agents/foreman/docs/DEVELOPMENT.md` (*When it's a bug*).
+Classifying and filing the defect into `.records/bugs/`: `.agents/foreman/docs/ROUTING.md` (*When it's a bug*).
 If available, **`/backlog bug`** runs the diagnose -> file-from-template -> link-from-tracker flow.
 
 ## Audit code quality
@@ -44,7 +44,7 @@ docs-system health sweep.>` If available, **`/auditor`** drives a pass.
 
 ## Capture follow-ups
 The capture taxonomy (the five kinds, what goes where + each store's shape) is `/backlog`'s
-`docs/TAXONOMY.md`; `.agents/foreman/docs/DEVELOPMENT.md` -> *Capture follow-ups* points there. Quick: a
+`docs/TAXONOMY.md`; `.agents/foreman/docs/ROUTING.md` -> *Capture follow-ups* points there. Quick: a
 thing to build -> `.records/tasks.md`; a project problem/concern -> `.records/issues.md`;
 a dev-experience observation -> `.records/feedback.md`; a durable project fact -> `.records/notes/`.
 When an entry needs more than a line, spill the long form to a linked `.records/notes/<slug>.md`. At the

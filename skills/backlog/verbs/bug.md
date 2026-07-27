@@ -1,7 +1,7 @@
 # `/backlog bug` — file an observed defect
 
 File an observed **defect** the right way, the moment it surfaces — so the repro survives even if
-you move on (or can't reproduce it later). Encodes `.agents/foreman/docs/DEVELOPMENT.md` → *When it's a bug* and
+you move on (or can't reproduce it later). Encodes `.agents/foreman/docs/ROUTING.md` → *When it's a bug* and
 the `.agents/foreman/docs/DIAGNOSTICS.md` playbook into one pass.
 
 A **bug** is an observed, reproducible defect: a crash, wrong render/output, dropped state, or flaky

@@ -57,7 +57,7 @@ branch):
    doctrine miscalibration.
 3. **Turn each pattern into a concrete doctrine edit — the calibration.** A gauge reading is only
    useful once it moves a knob; turn the signal into a real change:
-   - a routing gap → sharpen `.agents/foreman/docs/DEVELOPMENT.md` (the change-router walk);
+   - a routing gap → sharpen `.agents/foreman/docs/ROUTING.md` (the change-router walk);
    - a recurring how-to question → add/repoint it in `.agents/foreman/docs/WORKFLOWS.md`;
    - a planning-weight mismatch → adjust the tiers in `.agents/foreman/docs/PLANNING.md`;
    - a load-bearing invariant that changed → update `.agents/foreman/MEMORY.md` (highest stakes — a wrong "fact"

@@ -89,7 +89,7 @@ and depends on Core. The **capture trackers** are `/backlog`'s home under the to
 | **Core: entry + index** | front-door `AGENTS`/`README`, the **ownership index** (`.agents/README` + `.records/README`, §4.1), `.agents/foreman/README` (index), `.agents/foreman/MEMORY` | -- | always |
 | **Capture trackers** (`/backlog`) | `.records/{tasks,issues,feedback}.md`, `.records/bugs/`, `.records/notes/` -- owned/scoped by `/backlog`, schema in its `docs/TAXONOMY.md` | Core | you want bounded follow-up capture |
 | **Templates** | each producing skill's own bundled `templates/` (`/feature`, `foreman`, `/backlog` -- no host copy) | Core | always (consistency) |
-| **Change router** | `docs/DEVELOPMENT` | Core | >1 kind of change (bug/patch/feature) |
+| **Change router** | `docs/ROUTING` | Core | >1 kind of change (bug/patch/feature) |
 | **Planning** | `docs/PLANNING` | Change router, Templates | features need design before build |
 | **Worktree pipeline** | `docs/WORKTREES` | Planning, git | parallel agents / isolated feature work |
 | **Workflow index** | `docs/WORKFLOWS` | Core | enough how-tos to need an index |
@@ -120,7 +120,7 @@ and its capture verbs also create a store if it's missing.
 ```
 <repo root>/
   <front door>            -- bootstrap entry: "read first" order, build/test/run, repo map,
-                             conventions, a "making a change? -> .agents/foreman/docs/DEVELOPMENT"
+                             conventions, a "making a change? -> .agents/foreman/docs/ROUTING"
                              pointer, and a pointer to the ownership index (§4.1)
   .agents/README.md        -- SEEDS-root ownership index (§4.1): what each seed home is + who stewards it
   .agents/architect/       -- the design seed (steward: /architect) -- stood up by /architect
@@ -131,7 +131,7 @@ and its capture verbs also create a store if it's missing.
     MEMORY.md             -- the tiny set of load-bearing invariants agents internalize. <keystone>
                              lives here. Kept deliberately small.
     docs/
-      DEVELOPMENT.md      -- the change router: classify (bug/patch/feature/spike), then route
+      ROUTING.md          -- the change router: classify (bug/patch/feature/spike), then route
       PLANNING.md         -- how much to plan + how to write each planning artifact
       WORKTREES.md        -- the build pipeline + git-worktree mechanics
       WORKFLOWS.md        -- index of common how-tos (pointers, not restatements)
@@ -213,8 +213,8 @@ check` re-derives the seams and flags where the written section has drifted from
 The spine an agent follows. Each arrow is a pointer in a doc, never a duplicated explanation.
 
 ```
-<front door>  ("making a change? start at DEVELOPMENT")
-   -> .agents/foreman/docs/DEVELOPMENT  (classify the change)
+<front door>  ("making a change? start at ROUTING")
+   -> .agents/foreman/docs/ROUTING  (classify the change)
         bug    -> DIAGNOSTICS (diagnose) + GOTCHAS (known trap?) -> file a report in .records/bugs/
         patch  -> land directly on the main branch, committed promptly (no plan)
         feature-> PLANNING (plan it) -> WORKTREES (build it)
@@ -223,7 +223,7 @@ The spine an agent follows. Each arrow is a pointer in a doc, never a duplicated
    .agents/foreman/MEMORY   holds the invariants to internalize first
 ```
 
-Keep the three navigation docs non-overlapping: **README** = *where things live*, **DEVELOPMENT**
+Keep the three navigation docs non-overlapping: **README** = *where things live*, **ROUTING**
 = *making a change*, **WORKFLOWS** = *how to do task Y*. If two of them describe the same thing,
 one is wrong.
 

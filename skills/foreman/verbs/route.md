@@ -1,7 +1,7 @@
 # `/foreman` (route) — classify a change and dispatch it
 
 The default verb: with no argument (or a change description), `/foreman` is the **change router**. It
-reads the host's deployed `.agents/foreman/docs/DEVELOPMENT.md` as the source of truth (it does **not** restate
+reads the host's deployed `.agents/foreman/docs/ROUTING.md` as the source of truth (it does **not** restate
 the decision-walk) and dispatches the change to the lane that owns it.
 
 If the host project has **no `.agents/foreman/` system yet**, run `init` first (`verbs/init.md`), then route
@@ -10,7 +10,7 @@ through it.
 ## Procedure
 
 1. **Classify** the change — bug / patch / feature / spike / **seed-altitude design** — by
-   `.agents/foreman/docs/DEVELOPMENT.md`'s rules, plus the altitude discriminator below for the design case.
+   `.agents/foreman/docs/ROUTING.md`'s rules, plus the altitude discriminator below for the design case.
 2. **Route**, dispatching to the verb or skill that owns the lane:
    - **bug** → `/backlog bug` files a report under the host's bug store (the repro survives even if
      nobody drives it yet); `/debugger` drives the actual root-cause-and-fix work, from the filed
@@ -53,4 +53,4 @@ through it.
 ## Done when
 
 The change is classified and dispatched to the right lane/skill (or the by-hand fallback named) per
-the host's `DEVELOPMENT.md`.
+the host's `ROUTING.md`.

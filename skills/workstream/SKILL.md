@@ -5,7 +5,7 @@ description: "Drive a long-lived development stream as a continuous loop, shippi
 
 # workstream
 
-Encodes a development pipeline (the host's `DEVELOPMENT -> PLANNING -> WORKTREES` docs, where
+Encodes a development pipeline (the host's `ROUTING -> PLANNING -> WORKTREES` docs, where
 present) as an explicit, re-entrant loop. A workstream = one isolated slot — its own worktree
 (default) or the main checkout held in place — bound to one stream of work for its whole life,
 shipping features off the stream's queue. **The queue's source is pluggable** —

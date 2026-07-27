@@ -35,14 +35,14 @@ harness touches it. The contract keeps it honest as `.agents/foreman/` grows.
   stops. One source of truth per fact; duplication is what rots.
 - **Change `.agents/foreman/` -> reflect it in `AGENTS.md` in the same commit.** A tracker, a how-to, a tool, or
   a top-level dir -- its pointer lands *then*, not "later."
-- **Tier the pointers.** Name directly only what an agent reaches for first (`DEVELOPMENT.md`,
+- **Tier the pointers.** Name directly only what an agent reaches for first (`ROUTING.md`,
   `.agents/foreman/MEMORY.md`, the bug docs, the trackers, the core commands); everything else hangs off an
   index (`WORKFLOWS.md` for how-tos, `.agents/foreman/README.md` for the rest). When unsure, default to the
   index -- keeping `AGENTS.md` lean matters more than saving a hop.
 
 | You... | ...in the same commit |
 |---|---|
-| add a **tracker** | name it in `AGENTS.md`'s capture section (the taxonomy lives in `DEVELOPMENT.md` -> *Capture follow-ups*) |
+| add a **tracker** | name it in `AGENTS.md`'s capture section (the taxonomy lives in `ROUTING.md` -> *Capture follow-ups*) |
 | add a **how-to / process doc** | add it to `WORKFLOWS.md`; name it directly in `AGENTS.md` only if it's first-reach |
 | add a **tool / command** | add it to *Build / test / run* |
 | add a **top-level dir** | add a one-line *Repo map* entry |
@@ -116,7 +116,7 @@ is the source of truth; `.records/archive/` is the human-readable index into it.
   Never drained on its own -- it's a store, reached only via its link (but `/foreman calibrate` may promote a
   durable note into `MEMORY.md`/`GOTCHAS.md` before clearing it).
 - **The capture trackers** (the five capture kinds -- `task`/`bug`/`issue`/`feedback`/`note`) drain
-  per their taxonomy (`DEVELOPMENT.md` -> *Capture follow-ups*): `TASKS`/`ISSUES` items to a dated
+  per their taxonomy (`ROUTING.md` -> *Capture follow-ups*): `TASKS`/`ISSUES` items to a dated
   `.records/archive/<YYYY-MM-DD>-<slug>.md`, `bugs/` to its archive. `/backlog` itself never drains --
   `/backlog curate` only keeps the lists tidy (dedupe/rank/sharpen/weed); `/foreman calibrate` is what
   drains and promotes durable signal into doctrine. (No checkbox/prune step -- an item is removed

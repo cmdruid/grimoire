@@ -57,7 +57,7 @@ The four **spine** verbs never change; each verb's *output* scales by the `PLANN
 (`review` is tier-agnostic -- it critiques whatever artifact exists, at whatever weight).
 `brainstorm` makes the tier call **up front** and states which verbs collapse:
 
-- **Patch** -> `/feature` is **not used**; land the fix directly on the trunk (`DEVELOPMENT.md` ->
+- **Patch** -> `/feature` is **not used**; land the fix directly on the trunk (`ROUTING.md` ->
   *Fixes & patches*).
 - **Small feature** -> `brainstorm` is light (a few sentences); `design` emits a **brief that doubles
   as the plan**, so `plan` folds into it; `build` runs once.

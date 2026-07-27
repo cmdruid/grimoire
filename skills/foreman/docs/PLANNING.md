@@ -1,8 +1,8 @@
 # Planning -- how to plan a change, and how much
 
-Reached from `DEVELOPMENT.md` once you know you're building something. This doc decides *how
+Reached from `ROUTING.md` once you know you're building something. This doc decides *how
 much* planning a change needs, sets the rules for each planning artifact, and keeps you friendly
-to whatever planning skills you have active. The walk is `DEVELOPMENT.md` -> here -> a template in
+to whatever planning skills you have active. The walk is `ROUTING.md` -> here -> a template in
 the owning skill's bundle (design/plan/roadmap/ADR ship with `/feature`; see *The artifacts*).
 
 ## Pick a tier
@@ -12,7 +12,7 @@ under-planning a large one.
 
 | Tier | When | Artifact(s) |
 |---|---|---|
-| **Patch** | a fix, a tweak, one self-contained change | none -- land on `main` (`DEVELOPMENT.md` -> *Fixes & patches*) |
+| **Patch** | a fix, a tweak, one self-contained change | none -- land on `main` (`ROUTING.md` -> *Fixes & patches*) |
 | **Small feature** | one coherent feature, a single worktree's worth | one **feature brief** (prose: problem + task list + done-when) |
 | **Track** | multi-phase, or a cross-cutting architecture call | a **roadmap** (`/feature`'s `feature/templates/roadmap.md`) + per-phase **implementation plans**, plus one **ADR** if it makes an architecture decision |
 

@@ -85,7 +85,7 @@ Project-code quality is `/auditor`. Curating the trackers as lists is `/backlog 
 
 `check` is **necessary but not sufficient**. It catches *structural* rot — an uncovered dir, a dead
 ref, a named skill that vanished — because those are mechanically checkable. It **cannot** tell you
-whether doctrine that passes every check still *describes the system correctly*: a `DEVELOPMENT.md`
+whether doctrine that passes every check still *describes the system correctly*: a `ROUTING.md`
 routing rule can resolve every pointer and still send the wrong change down the wrong lane. That
 semantic judgment is `/foreman calibrate`'s (and, for a deep read, the fresh-agent test: hand an agent only
 the deployed docs and confirm they can route a real change without guessing). `check` is the floor you

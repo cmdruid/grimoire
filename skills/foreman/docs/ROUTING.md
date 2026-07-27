@@ -1,4 +1,4 @@
-# Development -- what kind of change, and where to go
+# Routing -- what kind of change, and where to go
 
 The **router** for making any change in this project. The lightweight lanes (bug, patch, spike) are
 right here; planning and building a feature live behind their gates in `PLANNING.md` and
