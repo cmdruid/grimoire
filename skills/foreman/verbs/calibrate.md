@@ -59,6 +59,10 @@ branch):
    useful once it moves a knob; turn the signal into a real change:
    - a routing gap → sharpen `.agents/foreman/docs/ROUTING.md` (the change-router walk), then
      **recompile the front door's routing table** so the projection matches the source;
+   - a host still on pre-rollout shapes (a `docs/DEVELOPMENT.md` name, a deployed `docs/WORKFLOWS.md`
+     menu, an unstamped front door) → apply the upgrade as this pass's calibration: `git mv` the
+     rename, dissolve the menu into the door + owning content docs, stamp the routing table
+     (`verbs/migrate.md` → *legacy deployed shapes* has the full walk);
    - a recurring how-to question → answer it in the content doc that owns the topic
      (ARCHITECTURE / GOTCHAS / DIAGNOSTICS / PERFORMANCE) and, if it is a *where-does-work-start*
      question, add the missing row to the front door's routing table — never a menu doc;

@@ -54,7 +54,16 @@ relocate** front half; the back half *is* `setup`.
   staged/dirty changes, ask the user to stash or commit them first.
 - **Already migrated?** If the project *already* has a current grimoire layout (`.agents/foreman/` +
   `.records/` present with a valid ownership index), say so and point the user at `/foreman check`
-  (drift validation) instead — there is nothing to migrate.
+  (drift validation) instead — there is nothing to migrate. **Exception — legacy deployed shapes.**
+  A layout stood up before the front-door rollout (design:
+  `docs/design/2026-07-26-front-door-architecture.md` in the skills library) needs a small upgrade
+  pass, run under the same preview-first gate as a full migration: a `docs/DEVELOPMENT.md` under
+  `.agents/foreman/` → propose `git mv` to `docs/ROUTING.md` plus a sweep of the host's own doc
+  references to the old name; a deployed `docs/WORKFLOWS.md` → propose dissolving it (lane rows fold
+  into the front door's routing table, real how-to payloads into the owning content doc); a front
+  door with no routing table → propose stamping one (see `verbs/setup.md`'s stamp step). Show the
+  whole upgrade as one mapping, confirm, apply with `git mv` + scoped commits, and finish by
+  pointing at `/foreman check`.
 
 ### 2. Locate the existing dev-meta
 
