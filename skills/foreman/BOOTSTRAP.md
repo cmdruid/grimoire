@@ -327,7 +327,8 @@ concern as the periodic spine audit, so a small system folds the two together. T
   each thing; it never duplicates content. Tier it: name directly only what an agent reaches for
   first; let everything else hang off an index.
 - **Trigger -> action:** added a tracker -> name it in the front door's capture section; added a
-  how-to -> add it to the workflow index; added a tool/command -> add it to build/test/run; added
+  how-to -> route it to the owning content doc (or add a front-door routing-table row if it is a
+  where-does-work-start question); added a tool/command -> add it to build/test/run; added
   a top-level dir -> add a repo-map line; renamed/removed something -> repoint or drop every
   reference.
 
