@@ -28,7 +28,7 @@ diffs), `/foreman route` is the slow path, chiropractor audits form only.
   or grimoire deployment concepts. `foreman` files must stay pack-agnostic: they never name
   `clankshop` as a dependency (mentioning it as an example runbook is existing practice; keep as-is).
 - The verb rename keeps `init` and `deploy` as accepted aliases of `setup` (spec §7.2).
-- After each task: run `bash scripts/skills-lint.sh` from the repo root; expected `fails=0` before committing.
+- After each task: run `bash skills/skill-builder/scripts/skills-lint.sh .` from the repo root; expected `fails=0` before committing.
 - Cited line numbers are snapshots from before this plan ran; earlier tasks shift them. Locate every
   edit by the quoted content, and treat the line number as a hint only.
 
@@ -89,7 +89,7 @@ Expected: no output.
 - [ ] **Step 5: Lint, then commit**
 
 ```bash
-bash scripts/skills-lint.sh
+bash skills/skill-builder/scripts/skills-lint.sh .
 git add -- skills/ && git commit -m "foreman: rename docs/DEVELOPMENT.md -> docs/ROUTING.md (front-door design 2026-07-26 §7)" -- skills/
 ```
 
@@ -174,7 +174,7 @@ Expected: no output.
 - [ ] **Step 5: Lint, then commit**
 
 ```bash
-bash scripts/skills-lint.sh
+bash skills/skill-builder/scripts/skills-lint.sh .
 git add -- skills/ && git commit -m "foreman: dissolve docs/WORKFLOWS.md -- menus live in the door, payloads in owning docs" -- skills/
 ```
 
@@ -242,7 +242,7 @@ Expected: no output.
 - [ ] **Step 5: Lint, then commit**
 
 ```bash
-bash scripts/skills-lint.sh
+bash skills/skill-builder/scripts/skills-lint.sh .
 git add -- skills/ packs/ README.md AGENTS.md && git commit -m "foreman: rename stand-up verb init -> setup (aliases init/deploy kept)" -- skills/ packs/ README.md AGENTS.md
 ```
 
@@ -310,7 +310,7 @@ the table (`/foreman calibrate`), and `/foreman check` diffs the two for drift.
 - [ ] **Step 5: Lint, then commit**
 
 ```bash
-bash scripts/skills-lint.sh
+bash skills/skill-builder/scripts/skills-lint.sh .
 git add -- skills/foreman/ && git commit -m "foreman: door profile + compiled routing table (setup stamps, ROUTING is source)" -- skills/foreman/
 ```
 
@@ -381,7 +381,7 @@ In `skills/foreman/verbs/check.md`, append a row to the Pass 1 fact table (after
 - [ ] **Step 6: Lint, then commit**
 
 ```bash
-bash scripts/skills-lint.sh
+bash skills/skill-builder/scripts/skills-lint.sh .
 git add -- skills/foreman/ && git commit -m "foreman: route is the slow path; calibrate recompiles the table; check emits routing-targets" -- skills/foreman/
 ```
 
@@ -445,7 +445,7 @@ bullet unchanged).
 - [ ] **Step 4: Lint, then commit**
 
 ```bash
-bash scripts/skills-lint.sh
+bash skills/skill-builder/scripts/skills-lint.sh .
 git add -- packs/clankshop.md && git commit -m "clankshop: specify the tier-0 door profile; sharpen foreman<->chiropractor to affordance-vs-fidelity" -- packs/clankshop.md
 ```
 
@@ -548,7 +548,7 @@ grep -n 'foreman\|ROUTING\|grimoire\|clankshop\|/backlog\|/feature\|/architect' 
 Expected: no output (chiropractor names no sibling and no deployment vocabulary).
 
 ```bash
-bash scripts/skills-lint.sh
+bash skills/skill-builder/scripts/skills-lint.sh .
 git add -- skills/chiropractor/ && git commit -m "chiropractor: entry-door Check 5 (routing affordance) + read-depth/payload rules in rubric" -- skills/chiropractor/
 ```
 
@@ -578,7 +578,7 @@ is `docs/design/2026-07-26-front-door-architecture.md`.
 - [ ] **Step 2: Full-repo verification sweep**
 
 ```bash
-bash scripts/skills-lint.sh
+bash skills/skill-builder/scripts/skills-lint.sh .
 grep -rn 'DEVELOPMENT\|WORKFLOWS\|foreman init' skills/ packs/ AGENTS.md README.md | grep -v docs/design
 ```
 
