@@ -100,15 +100,15 @@ Ordered tier-0 content — the shape `clankshop.md` specifies and `setup` stamps
 Reference table shape (illustrative, not a template a project must copy verbatim):
 
 ```
-| you're about to…            | go                                    |
-|-----------------------------|---------------------------------------|
-| fix a reproducible bug      | `/debugger` (file it: `/backlog bug`) |
-| land a one-line patch       | trunk, no ceremony                    |
+| you're about to…            | go                                       |
+|-----------------------------|------------------------------------------|
+| fix a reproducible bug      | `/debugger` (file it: `/backlog bug`)    |
+| land a one-line patch       | trunk, no ceremony                       |
 | run a timeboxed spike       | trunk, timeboxed — the walk's spike lane |
-| build a feature             | `/feature`                            |
-| change a tenet/contract/seam| `/architect`                          |
-| capture a follow-up         | `/backlog`                            |
-| unsure / mixed altitude     | `/foreman`                            |
+| build a feature             | `/feature`                               |
+| change a tenet/contract/seam| `/architect`                             |
+| capture a follow-up         | `/backlog`                               |
+| unsure / mixed altitude     | `/foreman`                               |
 ```
 
 ## 5. The audit seam — affordance vs. fidelity

@@ -80,7 +80,7 @@ trunk). So the coordinator NEVER does iterative, scratch-generating work on the 
 ## Durable orientation pointers
 - **Front door:** `<project: AGENTS.md location>`; **dev index:** `<project: dev index location>`;
   **build order / cross-stream map:** `<project: roadmap location>`.
-- **Workflow:** `<project: change router doc, worktree pipeline doc, planning doc, workflow index --
+- **Workflow:** `<project: change router doc, worktree pipeline doc, planning doc --
   see host AGENTS.md>`
 - **Session templates:** debug, design, and coordinator templates live in the workstream skill's
   `templates/` directory. Load debug/design with `/workstream create <name>`; read coordinator

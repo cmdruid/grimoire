@@ -122,7 +122,7 @@ and its capture verbs also create a store if it's missing.
                              (2) build/run/gate commands; (3) the ROUTING TABLE -- trigger -> lane
                              entry, ~10-15 lines, compiled from .agents/foreman/docs/ROUTING, with
                              one fallback line: "no skill runner? follow
-                             .agents/foreman/docs/ROUTING by hand"; (4) repo map, one hop;
+                             .agents/foreman/docs/ROUTING.md by hand"; (4) repo map, one hop;
                              (5) pointers (conventions, gotchas, ownership index §4.1)
   .agents/README.md        -- SEEDS-root ownership index (§4.1): what each seed home is + who stewards it
   .agents/architect/       -- the design seed (steward: /architect) -- stood up by /architect
