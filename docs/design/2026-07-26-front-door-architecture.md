@@ -72,7 +72,7 @@ The routing knowledge exists in exactly one authoritative place and is *projecte
 
 | role | artifact | owning verb |
 |---|---|---|
-| **Source** | `.agents/foreman/docs/DEVELOPMENT.md` decision-walk — project policy, tunable | `/foreman calibrate` edits it |
+| **Source** | `.agents/foreman/docs/ROUTING.md` decision-walk — project policy, tunable. (Renamed from `DEVELOPMENT.md` as part of this rollout: the old name said nothing; the new one names the content — classification rules + where each class goes — and pairs with the compiled table and `/foreman route`.) | `/foreman calibrate` edits it |
 | **Compiled projection** | the `AGENTS.md` routing table — trigger → lane entry, ~10–15 lines | `init` stamps; `calibrate` regrows |
 | **Interpreter (slow path)** | `/foreman route` — classification for inputs the table doesn't decide | `route` |
 | **Drift gate** | projection ↔ source ↔ installed-skills consistency | `/foreman check` (via `foreman-health.sh check-projection`) |
@@ -93,7 +93,7 @@ Ordered tier-0 content — the shape `clankshop.md` specifies and `init` stamps 
 1. **what-this-is** — 1–2 lines.
 2. **build / run / gate commands.**
 3. **routing table + fallback line** — verb-first rows; one shared line beneath: *"no skill runner?
-   follow `.agents/foreman/docs/DEVELOPMENT.md` by hand."*
+   follow `.agents/foreman/docs/ROUTING.md` by hand."*
 4. **repo map** — links, one hop.
 5. **pointers** — conventions, gotchas, ownership index.
 
@@ -143,7 +143,13 @@ dispatching the slices) is **future work**, deliberately outside this doc.
 2. **`foreman`** — `verbs/init.md` stamps the §4 profile; `verbs/calibrate.md` regrows the table
    when policy or installed skills change; `verbs/check.md` / `foreman-health.sh check-projection`
    confirmed (or extended) to compare table ↔ decision-walk ↔ installed skills; `verbs/route.md`
-   gains one line naming route the slow path behind the door's table.
+   gains one line naming route the slow path behind the door's table. Two doc-tree changes ride
+   along: **rename `docs/DEVELOPMENT.md` → `docs/ROUTING.md`** (blast radius: `BOOTSTRAP.md`, the
+   verb files, `foreman-health.sh` if it greps the name, `packs/clankshop.md`; deployed projects
+   pick the rename up via `migrate`/`calibrate`), and **dissolve `docs/WORKFLOWS.md`** — the
+   deployed tree's own "index of common how-tos (pointers, not restatements)" is a menu-only
+   tier-1 doc that rule 3 forbids; its lane-entry rows fold into the door's routing table, the
+   rest into the ownership-index pointers.
 3. **`chiropractor`** — rubric only; the scanner already emits the needed facts. Entry-Door Audit
    gains **Check 5: Routing Affordance** (a routing affordance exists, rows dispatch directly, a
    no-runner fallback is present — form only, never route correctness). The Read-Path dimension
@@ -164,7 +170,9 @@ still land on foreman, not chiropractor).
   Rejected: 2–3 reads (SKILL.md + verb file + decision-walk) per classification, paid on every
   change — the exact waste being optimized. Route survives as the slow path.
 - **B. `WORKFLOWS.md` hub doc** — a tier-1 doc listing the workflows. Rejected: a menu-only read
-  (rule 3); either its table is small enough for the door or its categories are wrong.
+  (rule 3); either its table is small enough for the door or its categories are wrong. (Foreman's
+  deployed tree already ships exactly this doc — `docs/WORKFLOWS.md` — so rejecting the shape
+  dissolves that file too; see §7.)
 - **C. Dual-dispatch rows** — every table row carries both a skill verb and a doc anchor. Rejected:
   roughly doubles the table's byte cost and gives every row two things to rot; the single shared
   fallback line serves the bare-agent case at one hop.
