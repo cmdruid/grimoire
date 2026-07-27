@@ -15,7 +15,7 @@ glue — the seams, the initial `AGENTS.md` wiring, each skill's own self-init d
 composition — pack-agnostic, it never names a specific skill). This file is the **recipe** (the
 composition: which skills, and the seams that bind them). The pack **calls** the tool; the tool
 never depends on the pack. **The recipe owns the glue content and *births* the constellation; the
-oven *stamps* that glue at `init` and *grows* it afterward via `calibrate` — it never authors the
+oven *stamps* that glue at `setup` and *grows* it afterward via `calibrate` — it never authors the
 pack-specific glue.** On a bare install with no pack, `/foreman setup` **baselines** —
 introspects the installed skills, wires the ones it recognizes, and names by-hand fallbacks for the
 rest.
@@ -54,7 +54,7 @@ The skills below, grouped by layer. `/foreman setup` deploys the `.agents/forema
 
 - **`foreman`** — the dev-workflow hub. A thin router + verbs (`route` default, `setup`, `migrate`,
   `calibrate`, `check`). Deploys and operates a project's `.agents/foreman/` development-docs system —
-  `init` on a greenfield project (nothing there yet), `migrate` as the brownfield onramp (locate an
+  `setup` on a greenfield project (nothing there yet), `migrate` as the brownfield onramp (locate an
   existing `dev/`/ad-hoc setup, propose a relocation mapping, confirm, `git mv`, scaffold the gaps).
 - **`backlog`** — the capture desk. Files each follow-up by kind (`task`, `bug`, `issue`,
   `feedback`, `note`), sweeps finished work (`debrief`), and curates the trackers (`curate`).
@@ -120,7 +120,29 @@ Session hand-offs are **gitignored scratch** (root `HANDOFF.md`; concurrent sess
 `/workstream` streams, not extra hand-off files), stewarded by `handoff` — deliberately *not* a
 `.records/` store. The mechanics of the
 tree live in `foreman`'s `BOOTSTRAP.md` (§4 + §4.1); this runbook supplies the steward map, which is
-the composition `init` records and `/foreman check` validates for drift.
+the composition `setup` records and `/foreman check` validates for drift.
+
+## The front door this pack specifies (tier-0 contract)
+
+The recipe owns the glue *content*, so the door's shape is specified here and stamped by
+`/foreman setup` (design: `docs/design/2026-07-26-front-door-architecture.md`). Five ordered
+sections: **what-this-is** (1–2 lines) → **build/run/gate commands** → **routing table** →
+**repo map** (one hop) → **pointers** (conventions, gotchas, ownership index). The routing table
+is a **compiled projection** of `.agents/foreman/docs/ROUTING.md` — trigger → lane entry, verb-first,
+~10–15 lines, one by-hand fallback line beneath, last row *unsure / mixed altitude → `/foreman`*:
+
+| you're about to… | go |
+|---|---|
+| fix a reproducible bug | `/debugger` (file it: `/backlog bug`) |
+| land a one-line patch | trunk, no ceremony |
+| build a feature | `/feature` |
+| change a tenet/contract/seam | `/architect` |
+| capture a follow-up | `/backlog` |
+| unsure / mixed altitude | `/foreman` |
+
+The tier rules behind the shape (decisions at tier 0; procedure ≤ 2 actions away; no menu-only
+reads; one job per payload) live in the design doc — this section is the stampable composition,
+not a restatement of the doctrine.
 
 ## The seam contracts (the architecture is in the seams)
 
@@ -133,7 +155,7 @@ validates for drift. The load-bearing invariant: **no skill crosses another's se
 | `backlog` ↔ `foreman` | `backlog` **captures** (single front-door, uniform); `foreman calibrate` **drains** the system-relevant slice into doctrine. Inbox vs. curator. | **dep** — `foreman` reads `backlog`'s `tracker-entry` |
 | `backlog` ↔ `debugger` | A filed bug (`backlog bug`) is legitimate optional input to `debugger`'s investigation — never a required floor; a live symptom with nothing filed yet starts the same way. Capture vs. investigate. | **dep** — `debugger` reads `backlog`'s `tracker-entry` |
 | `foreman` ↔ `clankshop` (this pack) | `foreman` = mechanism (oven); this runbook = composition (recipe). The pack **calls** foreman; foreman never depends on the pack. | — (this pack's own relationship to the tool, not a skill-to-skill artifact flow) |
-| `foreman` ↔ `chiropractor` | `clankshop` **specifies** the `AGENTS.md` workflow-glue (content); `foreman` **stamps** it at `init` and **grows** it via `calibrate` (mechanism); `chiropractor` **audits** the front-door's ergonomics. Specify → stamp → audit — none authors another's part. | — (a maintenance-role split; neither skill declares a type the other consumes) |
+| `foreman` ↔ `chiropractor` | `clankshop` **specifies** the `AGENTS.md` workflow-glue (content); `foreman` **stamps** it at `setup` and **grows** it via `calibrate` (mechanism); `chiropractor` **audits** the front-door's ergonomics — routing *affordance*, read-depth, payload — never route *fidelity*, which is `/foreman check`'s. Specify → stamp → audit — none authors another's part. | — (a maintenance-role split; neither skill declares a type the other consumes) |
 | `architect` ↔ `chiropractor` | `architect`'s GLOSSARY = **domain** terms (part of the seed); `chiropractor`'s concern = a **navigational** glossary/index exists and is linked. Domain vs. navigation. | — (chiropractor's edges are all `—`; no shared type) |
 | `architect` ↔ `feature` | `architect` authors the seed (seed altitude); `feature` builds a change against it (feature scope). The altitude seam. | **dep** — `feature` reads `architect`'s `design`, `architect` reads `feature`'s `design` (coarse-shared type, model §2.2) |
 | `architect` ↔ `foreman` | `architect` owns the **design system** (the regenerable seed code builds from); `foreman` owns the **operational system** (how a change is routed, built, calibrated). Design vs. operation. | — (an altitude boundary; foreman doesn't consume `design`/`roadmap`) |
@@ -174,8 +196,10 @@ table is itself a **snapshot**: regenerate it from `scripts/foreman-health.sh de
 
 ## The glue-workflows (how the seams run in practice)
 
-- **Make a change.** `/foreman` (route) classifies it — bug / patch / feature / spike — and
-  dispatches to the lane. A feature routes through `/feature` (plan → build to gate-green), then
+- **Make a change.** The stamped routing table dispatches the common cases at tier 0; `/foreman`
+  (route) is the slow path for the *unsure / mixed altitude* row. `/foreman` (route) classifies it —
+  bug / patch / feature / spike — and dispatches to the lane. A feature routes through `/feature`
+  (plan → build to gate-green), then
   `/workstream` lands it, then `/backlog debrief` captures the follow-ups. No hand re-does another's
   step.
 - **Ship continuously.** `/workstream create` opens a stream in its own worktree and loops:
