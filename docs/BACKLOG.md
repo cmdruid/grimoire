@@ -17,11 +17,24 @@ one-line resolution; delete only when the reason it existed is gone.
 ### BL-13 — `routing-targets` emitter only matches bare backticked `/name` tokens in column-0 rows
 - **source:** front-door architecture final review (2026-07-27,
   `docs/design/2026-07-26-front-door-architecture.md`).
-- **status:** open
+- **status:** open — first real-world run (atelier migration, 2026-07-27) passed: all 7 targets in
+  the stamped door were bare backticked tokens, extracted correctly. The verbed/indented gap
+  remains latent.
 - **body:** the `routing-targets` emitter in `skills/foreman/scripts/foreman-health.sh` only
   matches bare backticked `` /name `` tokens in column-0 table rows — verbed targets
   (`` `/backlog bug` ``) and indented tables are missed. Revisit when the emitter meets a real
   deployed front door.
+
+### BL-14 — spine-scan resolves backtick code-span refs root-relative only
+- **source:** chiropractor rubric shakedown on a migrated host (2026-07-27).
+- **status:** open
+- **body:** `skills/chiropractor/scripts/spine-scan.sh` resolves backtick code-span path refs
+  against the repo root only, so a doc inside a nested home (e.g. an audit rubric's README
+  referencing its sibling `prompts/01-security.md`) reads as a stale ref even though the sibling
+  resolves doc-relative. On repos with populated `.agents/<home>/` trees this inflates
+  `stale_refs_count` with false positives (~250 of 298 on the shakedown host) and forces manual
+  triage. Consider doc-relative fallback resolution (try root-relative, then doc-relative) before
+  classifying a code-span ref stale.
 
 ### BL-12 — harness-compaction spike methodology + doctrine candidates from the survival work
 - **source:** compaction-survival spike + implementation (2026-07-24,
