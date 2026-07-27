@@ -100,7 +100,7 @@ evolves — it is **not** a frozen old→new table. Default heuristics (all user
 | `FEEDBACK.md` | `.records/feedback.md` | feedback |
 | `bugs/` (defect reports) | `.records/bugs/` | bugs |
 | `notes/` (durable facts) | `.records/notes/` | notes |
-| dev-process docs (how-we-work — ROUTING/PLANNING/WORKFLOWS…) | `.agents/foreman/docs/` | doctrine |
+| dev-process docs (how-we-work — ROUTING/PLANNING…) | `.agents/foreman/docs/` | doctrine |
 | `MEMORY.md` / invariants, `GOTCHAS.md` | `.agents/foreman/` | doctrine |
 | design docs (vision/philosophy/product architecture) | `.agents/architect/` | design seed |
 | `plans/` (design/impl plans, roadmaps) | `.records/plans/` | plans |

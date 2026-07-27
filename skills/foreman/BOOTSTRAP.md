@@ -92,7 +92,6 @@ and depends on Core. The **capture trackers** are `/backlog`'s home under the to
 | **Change router** | `docs/ROUTING` | Core | >1 kind of change (bug/patch/feature) |
 | **Planning** | `docs/PLANNING` | Change router, Templates | features need design before build |
 | **Worktree pipeline** | `docs/WORKTREES` | Planning, git | parallel agents / isolated feature work |
-| **Workflow index** | `docs/WORKFLOWS` | Core | enough how-tos to need an index |
 | **Maintenance** | `docs/MAINTENANCE` | Trackers, Memory | the system is big enough to drift |
 | **Sync contract** | `docs/SYNC` (or a section of `docs/MAINTENANCE`) | Entry + index | the front door is volatile / multi-agent |
 | **Linter** | `<linter>` in `<gate>` | Core | links + indexes are worth guarding |
@@ -134,12 +133,12 @@ and its capture verbs also create a store if it's missing.
       ROUTING.md          -- the change router: classify (bug/patch/feature/spike), then route
       PLANNING.md         -- how much to plan + how to write each planning artifact
       WORKTREES.md        -- the build pipeline + git-worktree mechanics
-      WORKFLOWS.md        -- index of common how-tos (pointers, not restatements)
       MAINTENANCE.md      -- audits (catch drift) + prune/archive (keep lean)
       SYNC.md             -- contract keeping the front door in step with .agents/foreman/
       ARCHITECTURE.md     -- <content doc> one-page system map
       GOTCHAS.md          -- <content doc> running list of traps that cost time
-      DIAGNOSTICS.md      -- <content doc> the debugging playbook
+      DIAGNOSTICS.md      -- <content doc> the debugging playbook + E2E/integration harness +
+                             visual/integration fast-path tooling
       PERFORMANCE.md      -- <content doc> how to benchmark
     (no templates/ dir)   -- templates are never deployed; each producing skill uses its own
                              bundled `templates/` directly (see §12)
@@ -223,9 +222,10 @@ The spine an agent follows. Each arrow is a pointer in a doc, never a duplicated
    .agents/foreman/MEMORY   holds the invariants to internalize first
 ```
 
-Keep the three navigation docs non-overlapping: **README** = *where things live*, **ROUTING**
-= *making a change*, **WORKFLOWS** = *how to do task Y*. If two of them describe the same thing,
-one is wrong.
+Keep the two navigation docs non-overlapping: **README** = *where things live*, **ROUTING**
+= *making a change*. There is deliberately no workflow-index doc: an index is a menu, and menus
+live in the front door's routing table (free at tier 0) -- a how-to's payload lives in the one
+content doc that owns its topic.
 
 ---
 

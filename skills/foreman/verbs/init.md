@@ -61,7 +61,7 @@ introspection can.
   manifest, the decision walk, the capture taxonomy, planning tiers, the worktree pipeline,
   maintenance, the sync contract, the template contract, the deployment playbook). Canonical here.
 - **`docs/`** — a generic, language-neutral process-doc set (`ROUTING`, `PLANNING`, `WORKTREES`,
-  `WORKFLOWS`, `MAINTENANCE`) with host specifics as `<slots>`. The deployable rubric: copy and fill.
+  `MAINTENANCE`) with host specifics as `<slots>`. The deployable rubric: copy and fill.
   The capture taxonomy (the `TAXONOMY` doc + the trackers) is `/backlog`'s to deploy — install it alongside.
 - **`templates/`** — this skill's own operational-record shapes (`report`, `done-record`); a skill
   uses its bundled template directly, it is never deployed into a host path. The **planning**

@@ -36,14 +36,14 @@ harness touches it. The contract keeps it honest as `.agents/foreman/` grows.
 - **Change `.agents/foreman/` -> reflect it in `AGENTS.md` in the same commit.** A tracker, a how-to, a tool, or
   a top-level dir -- its pointer lands *then*, not "later."
 - **Tier the pointers.** Name directly only what an agent reaches for first (`ROUTING.md`,
-  `.agents/foreman/MEMORY.md`, the bug docs, the trackers, the core commands); everything else hangs off an
-  index (`WORKFLOWS.md` for how-tos, `.agents/foreman/README.md` for the rest). When unsure, default to the
+  `.agents/foreman/MEMORY.md`, the bug docs, the trackers, the core commands); everything else hangs off
+  `.agents/foreman/README.md` (the one index). When unsure, default to the
   index -- keeping `AGENTS.md` lean matters more than saving a hop.
 
 | You... | ...in the same commit |
 |---|---|
 | add a **tracker** | name it in `AGENTS.md`'s capture section (the taxonomy lives in `ROUTING.md` -> *Capture follow-ups*) |
-| add a **how-to / process doc** | add it to `WORKFLOWS.md`; name it directly in `AGENTS.md` only if it's first-reach |
+| add a **how-to / process doc** | give the payload one owning doc; add a front-door routing-table row (or `AGENTS.md` pointer) only if it's first-reach |
 | add a **tool / command** | add it to *Build / test / run* |
 | add a **top-level dir** | add a one-line *Repo map* entry |
 | **rename / move / remove** an artifact | repoint (or drop) every `AGENTS.md` pointer, and fix `.agents/foreman/README.md` too |

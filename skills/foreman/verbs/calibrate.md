@@ -58,7 +58,9 @@ branch):
 3. **Turn each pattern into a concrete doctrine edit — the calibration.** A gauge reading is only
    useful once it moves a knob; turn the signal into a real change:
    - a routing gap → sharpen `.agents/foreman/docs/ROUTING.md` (the change-router walk);
-   - a recurring how-to question → add/repoint it in `.agents/foreman/docs/WORKFLOWS.md`;
+   - a recurring how-to question → answer it in the content doc that owns the topic
+     (ARCHITECTURE / GOTCHAS / DIAGNOSTICS / PERFORMANCE) and, if it is a *where-does-work-start*
+     question, add the missing row to the front door's routing table — never a menu doc;
    - a planning-weight mismatch → adjust the tiers in `.agents/foreman/docs/PLANNING.md`;
    - a load-bearing invariant that changed → update `.agents/foreman/MEMORY.md` (highest stakes — a wrong "fact"
      agents internalize is actively harmful; hand-edit, never bulk);
