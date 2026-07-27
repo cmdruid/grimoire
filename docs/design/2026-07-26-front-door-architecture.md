@@ -140,7 +140,10 @@ dispatching the slices) is **future work**, deliberately outside this doc.
 1. **`packs/clankshop.md`** — the recipe owns glue content: add the door profile spec (§4) and the
    routing-table shape; sharpen the `foreman ↔ chiropractor` seam row with §5's wording; name the
    routing table as a compiled projection in the layout narrative.
-2. **`foreman`** — `verbs/init.md` stamps the §4 profile; `verbs/calibrate.md` regrows the table
+2. **`foreman`** — the stand-up verb is **renamed `init` → `setup`** (`init`/`deploy` remain
+   accepted aliases; `setup` says "stand up the whole factory," distinct from the other skills'
+   self-init `init` convention, which stands up only a skill's own home); `verbs/setup.md`
+   (renamed from `verbs/init.md`) stamps the §4 profile; `verbs/calibrate.md` regrows the table
    when policy or installed skills change; `verbs/check.md` / `foreman-health.sh check-projection`
    confirmed (or extended) to compare table ↔ decision-walk ↔ installed skills; `verbs/route.md`
    gains one line naming route the slow path behind the door's table. Two doc-tree changes ride
