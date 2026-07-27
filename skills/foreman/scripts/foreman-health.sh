@@ -13,7 +13,7 @@
 # frontmatter; this surfaces what the linter can't see -- tracker inventory,
 # code `file:line` references in tracker prose, and spine coverage.
 #
-# Portable over the standardized .agents/foreman/ + .records/ layout (`/foreman init` creates it) and
+# Portable over the standardized .agents/foreman/ + .records/ layout (`/foreman setup` creates it) and
 # bash-3.2 safe (macOS default). Read-only; never mutates.
 set -euo pipefail
 

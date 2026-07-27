@@ -4,7 +4,7 @@ The default verb: with no argument (or a change description), `/foreman` is the 
 reads the host's deployed `.agents/foreman/docs/ROUTING.md` as the source of truth (it does **not** restate
 the decision-walk) and dispatches the change to the lane that owns it.
 
-If the host project has **no `.agents/foreman/` system yet**, run `init` first (`verbs/init.md`), then route
+If the host project has **no `.agents/foreman/` system yet**, run `setup` first (`verbs/setup.md`), then route
 through it.
 
 ## Procedure

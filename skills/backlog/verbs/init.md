@@ -1,7 +1,7 @@
 # `/backlog init` — stand up backlog's own home + register its route (self-init, no floor)
 
 Create the `.records/` trackers `/backlog` owns and register backlog's route into the project's
-always-loaded front-door doc — **without depending on `/foreman init` having scaffolded anything
+always-loaded front-door doc — **without depending on `/foreman setup` having scaffolded anything
 first**. This is the "capture bureau that can build its own drawer": a bare install of `/backlog`
 alone can stand up a working, visible capture home. Both halves are **idempotent** and **never clobber
 filed entries** — re-running `init` converges to the same state.
@@ -14,7 +14,7 @@ harness already loads it, so it surfaces with no composer present — corollary 
 ## When to use
 
 - A project has `/backlog` installed but **no `.records/` capture home yet** — a fresh repo, or one
-  where `/foreman init` hasn't run (and may never; backlog needs no floor).
+  where `/foreman setup` hasn't run (and may never; backlog needs no floor).
 - The user runs `/backlog init`, or says "stand up the trackers", "set up the backlog", "make the
   capture home".
 - **Re-running is safe and expected** — to refresh the front-door registration stamp after the skill
@@ -23,7 +23,7 @@ harness already loads it, so it surfaces with no composer present — corollary 
 
 **Do NOT use** to file an item (that's the capture verbs — `/backlog task|bug|issue|note|feedback`) or
 to scaffold the *wider* `.records/` tree (`plans/`, `archive/`, `adr/`, `reports/`, `logs/`, `audit/`)
-— those homes belong to other skills' init / `/foreman init`. `/backlog init` makes **only backlog's
+— those homes belong to other skills' init / `/foreman setup`. `/backlog init` makes **only backlog's
 own drawers**, not the whole cabinet.
 
 ## What `init` creates
@@ -93,7 +93,7 @@ judgment (which front-door, what the route says):
 rule as the capture verbs (see `SKILL.md` → *Shared discipline*): standalone, scoped-commit the created
 `.records/` paths **and** the front-door doc in one step via
 `scripts/scoped-commit.sh <root> "backlog: init capture home + register route" <paths…>`, then run the
-host doc-linter. (Inside a larger `/foreman init` or a sweep, only write; the caller commits.)
+host doc-linter. (Inside a larger `/foreman setup` or a sweep, only write; the caller commits.)
 
 ## Idempotency + the write protocol (why re-running is safe)
 

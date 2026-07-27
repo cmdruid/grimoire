@@ -17,7 +17,7 @@ for the refactor that produced this shape.
 
 These skills deploy to **two roots**: hand-curated **seeds** under `.agents/` (one home per steward —
 `architect`/`foreman`/`auditor`) and typed **records** under `.records/` (trackers + durable
-history). Because the paths no longer encode ownership, `foreman init` writes an **ownership index**
+history). Because the paths no longer encode ownership, `foreman setup` writes an **ownership index**
 (`.agents/README.md` + `.records/README.md`) mapping content → location → steward — a stamped
 snapshot, per the *snapshot must never pose as authoritative* rule below. The full layout + steward
 map live in `README.md` (*Storage convention*) and `packs/clankshop.md`.

@@ -7,21 +7,21 @@ into any project and an agent can **reconstruct the whole system**, or **borrow 
 It is deliberately project-agnostic: anything specific to a host project (its tech stack, its
 quality gate, its sacred invariants) appears here as a **slot you fill**, marked `<like this>`.
 
-**How `/foreman init` uses this file (mechanism vs. composition).** This blueprint is the
+**How `/foreman setup` uses this file (mechanism vs. composition).** This blueprint is the
 **mechanism** — *how* to instantiate the glue, pack-agnostic; it never names a specific companion
 skill or pack. *Which* skills to wire, and the **cross-skill seams** that bind them, are the
 **composition**, and they come from **outside** this file: from a **pack runbook** (e.g.
-`packs/clankshop.md`) when one drives `init`, or, on a bare install, from **baseline** introspection
-of the installed skills. `/foreman init` reads the composition, then instantiates the system below.
+`packs/clankshop.md`) when one drives `setup`, or, on a bare install, from **baseline** introspection
+of the installed skills. `/foreman setup` reads the composition, then instantiates the system below.
 The seams live *between* skills, in no single skill's frontmatter — so only a runbook can supply
-them; baseline wires the members but not the seams. (See `verbs/init.md` Step 0.)
+them; baseline wires the members but not the seams. (See `verbs/setup.md` Step 0.)
 
-**`init` (greenfield) vs. `migrate` (brownfield).** This blueprint describes standing the system up
-**from nothing** — that's `/foreman init`. A project that already has an existing `dev/`/ad-hoc setup
+**`setup` (greenfield) vs. `migrate` (brownfield).** This blueprint describes standing the system up
+**from nothing** — that's `/foreman setup`. A project that already has an existing `dev/`/ad-hoc setup
 (a prior convention, a pre-grimoire layout) doesn't start from nothing: `/foreman migrate` locates it,
 proposes a complete relocation mapping against this file's manifest (§4) and the ownership index
 (§4.1), lets the user confirm/edit it, relocates with `git mv` (history preserved, no clobber), then
-scaffolds whatever's missing — the same target state `init` produces. See `verbs/migrate.md` for the
+scaffolds whatever's missing — the same target state `setup` produces. See `verbs/migrate.md` for the
 procedure; this file stays the structure both onramps converge on.
 
 _A distillation of the bundled `docs/` + `templates/` -- those files are the source of truth for
@@ -81,7 +81,7 @@ The system is generic; these make it yours. Decide them before reconstructing.
 
 **Core (always):** the front door, the index, the memory, the templates. Everything else is optional
 and depends on Core. The **capture trackers** are `/backlog`'s home under the top-level `.records/` --
-`/foreman init` scaffolds them alongside `.agents/foreman/`, but `/backlog` owns and scopes them and its
+`/foreman setup` scaffolds them alongside `.agents/foreman/`, but `/backlog` owns and scopes them and its
 `docs/TAXONOMY.md` is the capture schema (this file never restates it).
 
 | Module | Files | Depends on | Borrow when |
@@ -110,7 +110,7 @@ The generic tree. Adjust names to your host's conventions (e.g. the front door i
 (the audit rubric). Typed **records** live under `.records/` -- the capture trackers (owned and
 scoped by `/backlog`; the one-line kinds below are a signpost, the schema is `/backlog`'s
 `docs/TAXONOMY.md`) plus every durable record (plans, ADRs, archive, reports, logs, audit
-deliverables). `/foreman init` scaffolds **both roots** -- the `.agents/` seed homes and the full
+deliverables). `/foreman setup` scaffolds **both roots** -- the `.agents/` seed homes and the full
 `.records/` tree -- and writes the **ownership index** (§4.1), because the paths no longer encode
 ownership. Each steward populates its own seed home (`/architect`, `/auditor` via their own deploy
 verbs; foreman fills `.agents/foreman/`); `/backlog` owns the trackers and has no init of its own,
@@ -163,7 +163,7 @@ and its capture verbs also create a store if it's missing.
 
 ### 4.1 The ownership index (load-bearing -- paths don't encode ownership)
 
-A location like `.records/plans/` no longer says *who* stewards it, so `/foreman init` writes a
+A location like `.records/plans/` no longer says *who* stewards it, so `/foreman setup` writes a
 small **content -> location -> steward** index a cold agent reads to learn "what lives where, and who
 tends it." Keep it **pointer-heavy** (paths + steward names, never pasted content) so it rots
 gracefully. It lives as two directory READMEs -- `.agents/README.md` and `.records/README.md` -- with
@@ -189,19 +189,19 @@ actually installed; where a steward is absent, the row's work falls to by-hand p
 ### 4.2 Self-init dispatch & section ownership
 
 A skill that **self-initializes** stands up its own home and registers its own route into the front
-door with no dependency on `/foreman init` having run first (a skill's own `init`/`deploy` verb, where
-it has one). `/foreman init` therefore **dispatches** rather than scaffolds directly: for each installed
+door with no dependency on `/foreman setup` having run first (a skill's own `init`/`deploy` verb, where
+it has one). `/foreman setup` therefore **dispatches** rather than scaffolds directly: for each installed
 skill capable of self-init, it invokes (or instructs the user to run) that skill's own init verb; it
 scaffolds a home itself only as a **fallback**, for a skill that has no self-init verb yet, so the
-project still reaches a complete state either way. `init`'s report always names which skills it
+project still reaches a complete state either way. `setup`'s report always names which skills it
 dispatched to vs. scaffolded itself — a mixed fleet stays visible, never silently uniform. See
-`verbs/init.md` Step -1 (resolving which skills are installed) and Step 2 (the dispatch table).
+`verbs/setup.md` Step -1 (resolving which skills are installed) and Step 2 (the dispatch table).
 
 The registered `## Skill routes (self-registered)` section in the front door splits ownership the same
 way: **each skill owns only the bytes inside its own `skill:<name>` delimiters** (written by that
 skill's own `init`); `/foreman` owns everything **around** them — the section header, block ordering,
 and any composer-derived **seam annotations** between blocks (`<!-- seam: A -> B (T) -->`, matched by
-`/foreman check`/`init` from the skills' own `## Edges` declarations — never hand-authored, so a full
+`/foreman check`/`setup` from the skills' own `## Edges` declarations — never hand-authored, so a full
 regenerate each pass is correct, not destructive). Neither party edits the other's region. `/foreman
 check` re-derives the seams and flags where the written section has drifted from what's installed.
 

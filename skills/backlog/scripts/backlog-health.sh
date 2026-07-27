@@ -13,7 +13,7 @@
 # frontmatter; this surfaces what the linter can't see -- the working-tree
 # byproduct signals a sweep consumes.
 #
-# Portable over the standardized .records/ layout (`/foreman init` creates it) and
+# Portable over the standardized .records/ layout (`/foreman setup` creates it) and
 # bash-3.2 safe (macOS default). Read-only; never mutates.
 set -euo pipefail
 

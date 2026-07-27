@@ -1,6 +1,6 @@
 # `/foreman check` — validate the deployed dev system
 
-The **cheap validator**. It flags **drift** between the glue `/foreman init` generated — the deployed
+The **cheap validator**. It flags **drift** between the glue `/foreman setup` generated — the deployed
 `.agents/foreman/docs/` doctrine plus the `AGENTS.md` wiring — and the current reality: the runbook that system
 was generated from, and the skills actually installed. Run it **often and cheaply**; it finds the
 mechanical rot so `/foreman calibrate` can spend its turns on the semantic fixes.
@@ -14,7 +14,7 @@ variables and the prose decides.
 **Pass 1 — the projection (primary since Phase 4).** Validates the front door's `## Skill routes
 (self-registered)` section against the installed skills' own `## Edges` blocks
 (`docs/design/2026-07-19-phase4-foreman-rescope.md` §5.2) — resolve `<skills-root>` first (skill
-discovery, `verbs/init.md` step -1; reuse the stamp if `init` already ran).
+discovery, `verbs/setup.md` step -1; reuse the stamp if `setup` already ran).
 
 ```bash
 bash <skill-dir>/scripts/foreman-health.sh derive-seams     <skills-root>
@@ -39,7 +39,7 @@ bash <skill-dir>/scripts/foreman-health.sh stale-refs <root>
 - Both are **read-only** and emit no recommendation — they surface what the host doc-linter can't see
   (spine reachability, rooted `file:line` currency), *complementing* the gate's link/index/frontmatter
   checks, not re-implementing them. Run the host gate for the mechanical half first.
-- **Section ownership** (both passes write only what `init` writes — model §3.4): fixing `seam-drift`
+- **Section ownership** (both passes write only what `setup` writes — model §3.4): fixing `seam-drift`
   may reorder/rewrite the composer-owned region between skill blocks; it must never touch a byte inside
   another skill's own `skill:<name>` delimiters — that repair belongs to the skill's own re-`init`.
 
@@ -55,9 +55,9 @@ bash <skill-dir>/scripts/foreman-health.sh stale-refs <root>
 Then check the two things the script can't compute, by reading:
 
 - **Glue ↔ composition drift.** Does the deployed `.agents/foreman/docs/` doctrine still match the
-  composition `/foreman init` recorded — the pack runbook if one drove init, else the baseline
+  composition `/foreman setup` recorded — the pack runbook if one drove setup, else the baseline
   introspection? A section the composition dropped or reworded, but the deployed docs still carry,
-  is drift — flag it for a re-`init` or a `calibrate` pass.
+  is drift — flag it for a re-`setup` or a `calibrate` pass.
 - **Glue ↔ installed-skills drift.** The doctrine names companion skills generically (`/architect`,
   `/workstream`, `/backlog`, `/auditor`, `/handoff`) and resolves host entrypoints (the gate, the
   fast doc-linter, the diagnostics tooling) **through `AGENTS.md`**. Confirm each named skill is still

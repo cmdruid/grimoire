@@ -291,7 +291,7 @@ library owned that receiving side before now:
 ## init -- register feature's front-door route (self-init, no floor)
 
 Register feature's route into the project's always-loaded front-door doc -- **without depending on
-`/foreman init` having run first**. This is feature's **whole self-init entry point** (not a spine
+`/foreman setup` having run first**. This is feature's **whole self-init entry point** (not a spine
 stage) and its **only** job: it makes a bare install of `/feature` *visible* with no composer present.
 It does **not** touch templates -- customizing a template shape is a separate, optional, on-demand
 action (see *templates* below) that a project may never need. Registering is always safe to run and

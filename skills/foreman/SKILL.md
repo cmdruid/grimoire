@@ -1,6 +1,6 @@
 ---
 name: foreman
-description: "Stand up, run, and calibrate the project's development factory. `/foreman` (no arg, or a change description) is the change ROUTER: classify a bug/patch/feature/spike and dispatch it. `/foreman init` stands up the `.agents/foreman/` system on a greenfield project; `/foreman migrate` is the brownfield onramp — bring an existing (pre-grimoire / ad-hoc) project into the layout (locate, propose a mapping, confirm, git-mv, scaffold gaps); `/foreman calibrate` drains the captured dev-experience signal into doctrine/workflow/AGENTS.md improvements (the self-growing curation loop); `/foreman check` validates the deployed glue against the runbook + installed skills. No-arg = `route`. Owns the change-router + curation loop. Use when the user runs `/foreman ...`, asks where a change starts, or asks to set up / route / calibrate a dev workflow."
+description: "Stand up, run, and calibrate the project's development factory. `/foreman` (no arg, or a change description) is the change ROUTER: classify a bug/patch/feature/spike and dispatch it. `/foreman setup` (aliases `init`, `deploy`) stands up the `.agents/foreman/` system on a greenfield project; `/foreman migrate` is the brownfield onramp — bring an existing (pre-grimoire / ad-hoc) project into the layout (locate, propose a mapping, confirm, git-mv, scaffold gaps); `/foreman calibrate` drains the captured dev-experience signal into doctrine/workflow/AGENTS.md improvements (the self-growing curation loop); `/foreman check` validates the deployed glue against the runbook + installed skills. No-arg = `route`. Owns the change-router + curation loop. Use when the user runs `/foreman ...`, asks where a change starts, or asks to set up / route / calibrate a dev workflow."
 ---
 
 # foreman — the dev-system integration layer
@@ -20,15 +20,15 @@ umbrella adds no always-on context beyond this file. When a verb is selected, **
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
 | `/foreman` *(no arg, or a change description)* | `verbs/route.md` | **Router** — classify a change + dispatch it to its lane | "where do I start?", "I'm about to change X" |
-| `/foreman init` *(alias `deploy`)* | `verbs/init.md` | **Greenfield** — stand up the whole `.agents/foreman/` system on a project that lacks one | "set up a dev workflow / docs system" |
+| `/foreman setup` *(aliases `init`, `deploy`)* | `verbs/setup.md` | **Greenfield** — stand up the whole `.agents/foreman/` system on a project that lacks one | "set up a dev workflow / docs system" |
 | `/foreman migrate` | `verbs/migrate.md` | **Brownfield onramp** — bring an existing (pre-grimoire / ad-hoc) project into the layout (locate → propose mapping → confirm → git-mv + scaffold gaps) | "migrate our `dev/` setup", "onboard this old project" |
 | `/foreman calibrate` | `verbs/calibrate.md` | Drain `/backlog`'s dev-experience signal into doctrine / workflow / `AGENTS.md` improvements — tune the doctrine to its correct settings (the curation loop) | "calibrate the dev system", "fold this friction back into the docs" |
 | `/foreman check` | `verbs/check.md` | Cheap validator — flag drift between the deployed glue and the runbook / installed skills | "is the dev system still consistent?", "validate the setup" |
 
 **Default (no recognized verb):** treat the argument as a change description and run `verbs/route.md`.
 
-The verb set is **`route` / `init` / `migrate` / `calibrate` / `check`**. `init` and `migrate` are the
-two onramps and share a seam: **`init` = greenfield** (scaffold fresh onto a blank project) while
+The verb set is **`route` / `setup` / `migrate` / `calibrate` / `check`**. `setup` and `migrate` are the
+two onramps and share a seam: **`setup` = greenfield** (scaffold fresh onto a blank project) while
 **`migrate` = brownfield** (locate an existing `dev/` / ad-hoc setup, relocate it into the layout, then
 scaffold the gaps). A project with no `.agents/foreman/` yet goes to one of them; both leave it
 `check`-valid.
@@ -41,7 +41,7 @@ scaffold the gaps). A project with no `.agents/foreman/` yet goes to one of them
   *judgment* — how to classify a change, whether drift is real, which signal earns a doctrine edit.
   The bundled scripts do only the deterministic, mechanical work: the **read-only** fact script
   `scripts/foreman-health.sh` (state analysis — `inventory`, `stale-refs`, `coverage`, `derive-seams`,
-  `check-projection` — for `calibrate`/`check`/`init`, emitting compact `key=value` facts + evidence)
+  `check-projection` — for `calibrate`/`check`/`setup`, emitting compact `key=value` facts + evidence)
   and the **mutating mechanical helper**
   `scripts/scoped-commit.sh` (the atomic pathspec-scoped commit — it mutates by design, but only ever
   the paths it is handed). **Never push a decision into a script:** a script is stateless and can't see
@@ -49,7 +49,7 @@ scaffold the gaps). A project with no `.agents/foreman/` yet goes to one of them
   *fact* the prose reasons over is not. `foreman-health.sh` **complements** the host doc-linter (which owns
   link resolution, indexing, frontmatter); it never re-implements it.
 - **Commit on the integration trunk, never a work branch.** A `foreman` write (a `calibrate` doctrine edit,
-  an `init` scaffold) creates *shared* `.agents/foreman/` content, so it can't ride a feature ref — it lands on the
+  a `setup` scaffold) creates *shared* `.agents/foreman/` content, so it can't ride a feature ref — it lands on the
   **root checkout's current branch**, which must be the integration **trunk** (`main` today, `dev`
   later; never hardcode `main`). **Guard:** check `git -C <root> branch --show-current`; if it is empty
   (detached HEAD) or a work branch (`stream/*`, `feature/*`), STOP and tell the user to switch the root
@@ -75,7 +75,7 @@ the seed, and doing the development itself each belong to a **lane** `route` dis
 
 `route` dispatches to whichever companion skills the host has installed. The **composition and the
 seams between them** live in `packs/clankshop.md` (the runbook) and, once deployed, in the **ownership
-index** `init` writes (`.agents/README.md` / `.records/README.md`) — the authoritative map of
+index** `setup` writes (`.agents/README.md` / `.records/README.md`) — the authoritative map of
 content → location → steward. This file deliberately does **not** restate each companion's verbs: that
 list rots (it is each skill's own `description:` to state). Where a recognized companion is absent, the
 by-hand fallback is always the deployed `.agents/foreman/docs/`.
@@ -85,7 +85,7 @@ by-hand fallback is always the deployed `.agents/foreman/docs/`.
 Foreman's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
 names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). Foreman is the
 **special case** (Phase 3 disposition doc §3, F4): it is **also the composer** — `route` dispatches a
-change to a lane, and `init`/`check` **derive** cross-skill seams and **write/validate the projection**
+change to a lane, and `setup`/`check` **derive** cross-skill seams and **write/validate the projection**
 (`docs/design/2026-07-19-phase4-foreman-rescope.md` §4-§5). That dispatch/derive behavior is
 **composer mechanism**, not an ordinary typed edge, so foreman's **leaf** edges below are just its two
 `consumes` — `produces: —` and `handoff: —` at the leaf level.

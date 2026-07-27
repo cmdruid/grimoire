@@ -204,7 +204,7 @@ Once `check` reports `spine_complete=true`, register architect's route into the 
 always-loaded front-door doc — the same "self-init, no floor" + "visibility by construction"
 corollaries `/backlog init` established (`docs/design/2026-07-18-skill-self-init-model.md` §1, §3).
 This makes a bare install of `/architect` visible with **no composer** present, same as the seed itself
-needed no `/foreman init` to stand up.
+needed no `/foreman setup` to stand up.
 
 1. **Resolve the front-door doc + a `built-against` stamp.** The registration target is the project's
    always-loaded front-door (`AGENTS.md`/`CLAUDE.md`, whichever the harness auto-loads); it must

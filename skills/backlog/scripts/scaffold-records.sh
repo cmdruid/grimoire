@@ -7,7 +7,7 @@
 # five capture homes backlog owns (tasks/issues/feedback + the notes/ and bugs/
 # store dirs); the wider `.records/` tree (plans/, archive/, adr/, reports/,
 # logs/, audit/) belongs to other skills' init -- backlog makes its own drawers,
-# not the whole cabinet, and depends on no `/foreman init` having run first.
+# not the whole cabinet, and depends on no `/foreman setup` having run first.
 #
 # DOCTRINE: a mutating mechanical helper (sibling of scoped-commit.sh). It
 # mutates only the paths it owns, and only to CREATE them when missing -- an

@@ -4,9 +4,9 @@ Bring an **existing** project — one with a pre-grimoire or ad-hoc dev-meta set
 a scattered pile of `BACKLOG.md` / `PLANNING.md` / `bugs/` / `plans/`) — into the current grimoire
 layout: the `.agents/{architect,foreman,auditor}/` seeds plus the `.records/` tree, with the
 ownership index that maps content → location → steward. `migrate` is the **brownfield** counterpart to
-`init` (greenfield): `init` scaffolds fresh onto a blank project; `migrate` **transforms what is
+`setup` (greenfield): `setup` scaffolds fresh onto a blank project; `migrate` **transforms what is
 already there**, then scaffolds whatever the project was missing — so the project ends in the same
-complete, `check`-valid state as a post-`init` one, having absorbed its existing content.
+complete, `check`-valid state as a post-`setup` one, having absorbed its existing content.
 
 `migrate` does the **whole job**: locate the existing dev-meta → choose the records destination
 (relocate to `.records/`, or keep the found root and **declare** it via the `records-root`
@@ -29,15 +29,15 @@ Read these three rules as non-negotiable; every step below serves them:
 These sit on top of the shared discipline (trunk guard, pathspec-atomic scoped commit, no
 `Co-Authored-By`) that every `foreman` verb carries — see `SKILL.md`.
 
-## What this reuses from `init`
+## What this reuses from `setup`
 
 `migrate` is not a second scaffolder. For the **gap-fill** — every home that has *no* migrated content
-to land in it — it **reuses `init`'s scaffold verbatim**: the `.agents/{architect,foreman,auditor}/`
+to land in it — it **reuses `setup`'s scaffold verbatim**: the `.agents/{architect,foreman,auditor}/`
 seed homes + the full `.records/` tree, the copied `docs/`, and the **ownership-index write**
 (`.agents/README.md` + `.records/README.md`, content → location → steward) plus the version stamp.
-Do not re-specify that here — read `verbs/init.md` (its *Procedure* steps 2–3 and 8) and apply it to
+Do not re-specify that here — read `verbs/setup.md` (its *Procedure* steps 2–3 and 8) and apply it to
 the homes migrate did not fill. `migrate`'s own contribution is the **locate → classify → confirm →
-relocate** front half; the back half *is* `init`.
+relocate** front half; the back half *is* `setup`.
 
 ## Procedure
 
@@ -64,7 +64,7 @@ relocate** front half; the back half *is* `init`.
   an old `.agents/dev/` from an earlier grimoire version, a `docs/dev/`, or anywhere else — the same
   classify-what-you-find logic handles all of them).
 - If there is **no** existing dev-meta at all, this is a greenfield project: direct the user to
-  `/foreman init` and **stop**.
+  `/foreman setup` and **stop**.
 
 ### 3. Choose the records destination — relocate, or declare in place
 
@@ -139,18 +139,18 @@ with this step's scoped commit. Then, for each approved row:
   the root index is contended): `scripts/scoped-commit.sh <root> "<msg>" <paths…>`. Never `git add -A`.
   **No `Co-Authored-By` trailer.**
 
-### 7. Scaffold the gaps + write the index (this is `init`'s back half)
+### 7. Scaffold the gaps + write the index (this is `setup`'s back half)
 
-- For every home that received **no** migrated content, **scaffold it by reusing `init`** (read
-  `verbs/init.md`): the `.agents/{architect,foreman,auditor}/` seed homes + the full records tree,
+- For every home that received **no** migrated content, **scaffold it by reusing `setup`** (read
+  `verbs/setup.md`): the `.agents/{architect,foreman,auditor}/` seed homes + the full records tree,
   the generic `docs/` copied into `.agents/foreman/docs/` with slots filled, and the trackers. Under
   a declared records root no extra wiring is needed — the scaffolding scripts resolve the
   `records-root` variable from the front-door (which step 6 wrote first) and land the records homes
   under the declared root automatically.
 - **Write/update the ownership index** — `.agents/README.md` + `<records-root>/README.md` (default
   `.records/README.md`) mapping content → location → steward — over the combined result (migrated +
-  scaffolded), and add the front-door pointer, exactly as `init` does.
-- **Stamp the version** (init's snapshot doctrine): record what this run built against and point at
+  scaffolded), and add the front-door pointer, exactly as `setup` does.
+- **Stamp the version** (setup's snapshot doctrine): record what this run built against and point at
   `/foreman check` as the drift validator, so the project ends `check`-valid.
 - Commit the scaffold + index scoped to their paths via the pathspec-atomic helper (may be the same
   commit as step 6, or a follow-on — either way, scoped, no `Co-Authored-By`).
@@ -170,5 +170,5 @@ Chat summary (not a written file unless asked):
 The existing dev-meta has been located, the records destination **chosen** (relocate to `.records/`,
 or kept in place with `records-root` declared in the front-door), the **complete** mapping proposed
 and **user-approved**, relocated with `git mv` (history preserved, no target clobbered), the gaps
-scaffolded via `init`'s scaffold, and the **ownership index written + version stamped** — so the
+scaffolded via `setup`'s scaffold, and the **ownership index written + version stamped** — so the
 project is fully set up and passes `/foreman check`, having absorbed its prior content.

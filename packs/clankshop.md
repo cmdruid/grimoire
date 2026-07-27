@@ -4,11 +4,11 @@ description: "The full development loop as a skill pack: route a change, design 
 skills: architect auditor backlog chiropractor debugger delegate feature foreman handoff mailbox workstream
 ---
 
-# clankshop — the disciplined development loop (a `/foreman init` runbook)
+# clankshop — the disciplined development loop (a `/foreman setup` runbook)
 
 This file is a **runbook**, not a brochure — the composition that configures `foreman` and the rest
 of the constellation into a coherent system, and prepares a project's codebase to use them together.
-Run **`/foreman init`** to apply it: `foreman` is the mechanism that reads this recipe and stamps the
+Run **`/foreman setup`** to apply it: `foreman` is the mechanism that reads this recipe and stamps the
 glue — the seams, the initial `AGENTS.md` wiring, each skill's own self-init dispatch.
 
 **Mechanism vs. composition.** `/foreman` is the **oven** (the mechanism: how to instantiate *any*
@@ -16,7 +16,7 @@ composition — pack-agnostic, it never names a specific skill). This file is th
 composition: which skills, and the seams that bind them). The pack **calls** the tool; the tool
 never depends on the pack. **The recipe owns the glue content and *births* the constellation; the
 oven *stamps* that glue at `init` and *grows* it afterward via `calibrate` — it never authors the
-pack-specific glue.** On a bare install with no pack, `/foreman init` **baselines** —
+pack-specific glue.** On a bare install with no pack, `/foreman setup` **baselines** —
 introspects the installed skills, wires the ones it recognizes, and names by-hand fallbacks for the
 rest.
 
@@ -33,7 +33,7 @@ human-readable narrative, not because the wiring itself still needs hand-authori
 
 ## The composition foreman instantiates
 
-The skills below, grouped by layer. `/foreman init` deploys the `.agents/foreman/` glue, wires
+The skills below, grouped by layer. `/foreman setup` deploys the `.agents/foreman/` glue, wires
 `AGENTS.md`, and lists these as the constellation the deployed doctrine resolves to.
 
 ```
@@ -52,7 +52,7 @@ The skills below, grouped by layer. `/foreman init` deploys the `.agents/foreman
 
 ### The members
 
-- **`foreman`** — the dev-workflow hub. A thin router + verbs (`route` default, `init`, `migrate`,
+- **`foreman`** — the dev-workflow hub. A thin router + verbs (`route` default, `setup`, `migrate`,
   `calibrate`, `check`). Deploys and operates a project's `.agents/foreman/` development-docs system —
   `init` on a greenfield project (nothing there yet), `migrate` as the brownfield onramp (locate an
   existing `dev/`/ad-hoc setup, propose a relocation mapping, confirm, `git mv`, scaffold the gaps).
@@ -95,9 +95,9 @@ It's a maintainer tool for whoever *authors* skills, not a member of the develop
 composes for a consuming project — the same "toolmaker workflow, not a `/foreman` verb" line that
 put the boundary audit outside `/foreman` in the first place.
 
-## The canonical layout foreman init instantiates
+## The canonical layout foreman setup instantiates
 
-`/foreman init` stands up **two roots**, then writes an **ownership index** (`.agents/README.md` +
+`/foreman setup` stands up **two roots**, then writes an **ownership index** (`.agents/README.md` +
 `.records/README.md`, plus a front-door pointer) — load-bearing here because the paths no longer
 encode ownership, so a cold agent needs the index to learn *what lives where, and who stewards it*.
 
@@ -125,7 +125,7 @@ the composition `init` records and `/foreman check` validates for drift.
 ## The seam contracts (the architecture is in the seams)
 
 The layers describe *what each skill is*; the **seams** describe *how they compose without
-overlapping*. These are what `/foreman init` records as the composition, and what `/foreman check`
+overlapping*. These are what `/foreman setup` records as the composition, and what `/foreman check`
 validates for drift. The load-bearing invariant: **no skill crosses another's seam.**
 
 | seam | contract | edge-matching |
@@ -216,6 +216,6 @@ From the clone root:
 ./install.sh --pack clankshop
 ```
 
-Then, in a target project, run **`/foreman init`** (greenfield — nothing there yet) or **`/foreman
+Then, in a target project, run **`/foreman setup`** (greenfield — nothing there yet) or **`/foreman
 migrate`** (brownfield — an existing `dev/`/ad-hoc setup) — either reads this runbook as the
 composition and stands the `.agents/foreman/` glue up to the same target state.

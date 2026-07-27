@@ -48,7 +48,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `feature` | the planning spine: brainstorm → design → plan → build, plus independent review |
-| `foreman` | the dev-workflow hub: route changes, deploy/operate a `.agents/foreman/` docs system — `init` (greenfield) or `migrate` (brownfield onramp) |
+| `foreman` | the dev-workflow hub: route changes, deploy/operate a `.agents/foreman/` docs system — `setup` (greenfield) or `migrate` (brownfield onramp) |
 | `handoff` | save/resume a session as a self-contained hand-off any agent can pick up |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
@@ -65,7 +65,7 @@ full rationale).
 Committed, agent-tooling-managed project artifacts split by *kind*, filtered from a direct code read
 the way `.github/` is. **`.agents/`** holds hand-curated **seeds** (source of truth, one home per
 steward); **`.records/`** holds every typed **record** (trackers + durable history). Because the
-paths no longer encode ownership, `foreman init` writes an **ownership index** (`.agents/README.md` +
+paths no longer encode ownership, `foreman setup` writes an **ownership index** (`.agents/README.md` +
 `.records/README.md`) mapping content → location → steward:
 
 | content | location | steward |

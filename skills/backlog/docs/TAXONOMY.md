@@ -120,7 +120,7 @@ Most captures are obvious. Three boundaries carry real judgment; the model makes
 
 ## Store-dir frontmatter (`bugs/` and `notes/` only)
 
-The two **file-per-item** stores are gated: the host's doc-linter (wired at `/foreman init`, surfaced
+The two **file-per-item** stores are gated: the host's doc-linter (wired at `/foreman setup`, surfaced
 in its `AGENTS.md`) walks each store dir and **fails the gate** on a file with missing or invalid
 frontmatter. So every file in `bugs/` and `notes/` must start with its template's block — copy the
 shape from `templates/bug-report.md` / `templates/note.md`.

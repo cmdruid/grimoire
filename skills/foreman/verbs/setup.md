@@ -1,4 +1,4 @@
-# `/foreman init` — instantiate a composition's glue on a fresh project
+# `/foreman setup` — instantiate a composition's glue on a fresh project
 
 Stand up a project's `.agents/foreman/` development system where none exists, wired to the **composition**
 of skills the host actually has. This verb is the **oven, not the recipe**: it knows *how* to
@@ -10,13 +10,13 @@ host's own `.agents/foreman/docs/` (the source of truth). The verb orchestrates;
 
 **Mechanism vs. composition (do not fuse them).** `foreman` is pack-agnostic — it must never
 hardcode a specific skill or pack. It reads a composition and wires it. The pack **calls** this verb;
-this verb never depends on any pack. That separation is what lets `init` serve a full pack, a
+this verb never depends on any pack. That separation is what lets `setup` serve a full pack, a
 partial install, or a bare one skill deep.
 
 **On-disk home root (spec §3.1).** Two roots: the **seeds** under `.agents/` (one home per steward —
 `.agents/architect/`, `.agents/foreman/`, `.agents/auditor/`) and the typed **records** under
-`.records/`. `init` scaffolds both roots; the sibling stewards (`/architect`, `/auditor`) populate
-their own seed homes. Because the paths no longer encode ownership, `init` also writes the
+`.records/`. `setup` scaffolds both roots; the sibling stewards (`/architect`, `/auditor`) populate
+their own seed homes. Because the paths no longer encode ownership, `setup` also writes the
 **ownership index** (BOOTSTRAP §4.1) that maps content → location → steward. **Record the chosen root
 in the glue you write** (the host's `AGENTS.md`, step 6, and the ownership index) so every companion
 skill and agent **reads the recorded location** rather than assuming a hardcoded path — the root is a
@@ -24,7 +24,7 @@ pointer, not a constant.
 
 ## Step -1 — Resolve the skills root (skill discovery)
 
-Before anything else, `init` (and `check`, `calibrate`) must answer "what skills are installed?" —
+Before anything else, `setup` (and `check`, `calibrate`) must answer "what skills are installed?" —
 resolved, never guessed, same discipline as every other path this verb touches
 (`docs/design/2026-07-19-phase4-foreman-rescope.md` §2): (1) an explicit `<skills-root>` the user names;
 (2) `~/.claude/skills/` if it exists (the Claude Code install target); (3) a dir-scanning harness's own
@@ -82,7 +82,7 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    pipeline / maintenance / sync / etc. opt-in.
 2. **Dispatch each skill's home-scaffolding — do not scaffold it directly.** Per the self-init tenet
    (`docs/design/2026-07-18-skill-self-init-model.md` §1) and the per-skill dispatch table
-   (`docs/design/2026-07-19-phase4-foreman-rescope.md` §3.1), `init` **stands up the `.agents/` root
+   (`docs/design/2026-07-19-phase4-foreman-rescope.md` §3.1), `setup` **stands up the `.agents/` root
    directory itself** (so self-initializing seed skills have a place to land) but does **not** write a
    self-initializing skill's own home:
    - **Durable-home skill, its own `init`/`deploy` verb landed** (e.g. `/backlog init`) → **dispatch**:
@@ -99,7 +99,7 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    > landed its own `init`).** For a durable-home skill still on the fallback path, scaffold its home
    > directly exactly as before Phase 4: the relevant slice of the `.records/` tree and/or its
    > `.agents/<skill>/` seed, from this skill's bundled `docs/`/templates. This is the *same* code path
-   > `migrate`'s gap-fill already reuses (`verbs/migrate.md` §"What this reuses from init") — Phase 4
+   > `migrate`'s gap-fill already reuses (`verbs/migrate.md` §"What this reuses from setup") — Phase 4
    > adds a second reason to enter it (not-yet-self-initializing), it does not add a second
    > implementation. Copy the generic `docs/` into the host's `.agents/foreman/docs/`, filling the
    > slots, as part of this path. Templates are **not** copied anywhere in either path — planning docs,
@@ -138,7 +138,7 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    `AGENTS.md` is the always-loaded surface.)
 7. **List the composition's companion skills in `AGENTS.md`** — the members from Step 0 (`/backlog`,
    `/feature`, `/workstream`, `/architect`, `/handoff`, `/auditor`, `/chiropractor` for the full
-   pack; a subset for a baseline install), and where a runbook drove `init`, a one-line note on the
+   pack; a subset for a baseline install), and where a runbook drove `setup`, a one-line note on the
    **seams** that bind them (feature ends at gate-green → workstream lands → backlog debriefs). Note
    that `/foreman`'s own verbs (`route`, `calibrate`, `check`) cover route/calibrate/validate and `/backlog`
    covers capture/debrief/curate; for any *absent* recognized companion, state the by-hand fallback.
@@ -155,7 +155,7 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    ```markdown
    ### /foreman -- the dev-system integration layer
    Route: stand up, run, and calibrate the project's development factory; route a change to its lane.
-   `/foreman|init|migrate|calibrate|check`.
+   `/foreman|setup|migrate|calibrate|check`.
    Edges: consumes `tracker-entry, audit-finding`.
    ```
    Report `appended`/`replaced`; if **malformed**, surface it and stop, same as any other skill's
@@ -166,14 +166,14 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    `scripts/foreman-health.sh derive-seams <skills-root>` (step -1's resolved root) and write the
    `<!-- seam: A -> B (T) -->` annotations it reports into the `## Skill routes (self-registered)`
    section, between the two skills' own blocks — format + rationale in
-   `docs/design/2026-07-19-phase4-foreman-rescope.md` §5.1. **Section ownership**: `init`/`check` may
+   `docs/design/2026-07-19-phase4-foreman-rescope.md` §5.1. **Section ownership**: `setup`/`check` may
    reorder skill blocks, regroup them, and rewrite seam annotations wholesale (they carry no
    hand-authored content, so a full delete-and-rewrite each pass is correct, not destructive); they must
    **never** edit a byte inside another skill's own `skill:<name>` delimiters — that region is the
    skill's own to write via its own `init` (model §3.4).
 10. **Stamp what you built against (snapshot doctrine).** The generated glue is a snapshot of a moving
    target — record, in the deployed glue (a stamp line in `.agents/foreman/README.md`, or an `AGENTS.md`
-   footer), **which composition and skill versions this `init` ran against**: the runbook source
+   footer), **which composition and skill versions this `setup` ran against**: the runbook source
    (pack name + its file, or "baseline / introspection" when none) and the set of companion skills
    wired, with the date (`date +%Y-%m-%d`, never guessed). Say *verify before trusting* — the stamp is
    a pointer to what was true at deploy time, not a guarantee it still is. **`/foreman check` is the
