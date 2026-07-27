@@ -6,6 +6,10 @@ right here; planning and building a feature live behind their gates in `PLANNING
 driving with planning skills. Neither exempts you from the router, and the steps below run in
 order.**
 
+The front door carries a **routing table compiled from this walk** -- the common cases at zero
+extra reads. This doc is the source of truth the table projects; when the walk changes, recompile
+the table (`/foreman calibrate`), and `/foreman check` diffs the two for drift.
+
 ## What kind of change is this?
 
 - **A bug** -- something's broken, wrong, or flaky -> **diagnose first** (if the project has a

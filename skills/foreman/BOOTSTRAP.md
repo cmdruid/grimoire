@@ -118,9 +118,12 @@ and its capture verbs also create a store if it's missing.
 
 ```
 <repo root>/
-  <front door>            -- bootstrap entry: "read first" order, build/test/run, repo map,
-                             conventions, a "making a change? -> .agents/foreman/docs/ROUTING"
-                             pointer, and a pointer to the ownership index (§4.1)
+  <front door>            -- bootstrap entry, five ordered sections: (1) what-this-is, 1-2 lines;
+                             (2) build/run/gate commands; (3) the ROUTING TABLE -- trigger -> lane
+                             entry, ~10-15 lines, compiled from .agents/foreman/docs/ROUTING, with
+                             one fallback line: "no skill runner? follow
+                             .agents/foreman/docs/ROUTING by hand"; (4) repo map, one hop;
+                             (5) pointers (conventions, gotchas, ownership index §4.1)
   .agents/README.md        -- SEEDS-root ownership index (§4.1): what each seed home is + who stewards it
   .agents/architect/       -- the design seed (steward: /architect) -- stood up by /architect
   .agents/auditor/         -- the audit rubric: GUIDE, rules/, metrics.sh (steward: /auditor) -- by /auditor
@@ -212,8 +215,9 @@ check` re-derives the seams and flags where the written section has drifted from
 The spine an agent follows. Each arrow is a pointer in a doc, never a duplicated explanation.
 
 ```
-<front door>  ("making a change? start at ROUTING")
-   -> .agents/foreman/docs/ROUTING  (classify the change)
+<front door>  (the routing table decides the common cases at zero extra reads)
+   -> the lane's own entry point (skill verb, or the by-hand doc fallback)
+   -> unsure / mixed altitude -> /foreman (route) -> .agents/foreman/docs/ROUTING  (classify the change)
         bug    -> DIAGNOSTICS (diagnose) + GOTCHAS (known trap?) -> file a report in .records/bugs/
         patch  -> land directly on the main branch, committed promptly (no plan)
         feature-> PLANNING (plan it) -> WORKTREES (build it)

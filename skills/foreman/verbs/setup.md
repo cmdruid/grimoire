@@ -136,6 +136,16 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    DOCTRINE, *Front-door variables*; scripts grep it, agents resolve it by front-door precedence).
    A host on the default declares nothing. (`.agents/foreman/docs/` holds the longer-form detail;
    `AGENTS.md` is the always-loaded surface.)
+
+   **Stamp the routing table** — the tier-0 projection of `.agents/foreman/docs/ROUTING.md`'s
+   decision-walk: one row per change class (bug / patch / feature / seed-altitude design / capture /
+   unsure), each row dispatching directly to the lane's entry point from the Step 0 composition
+   (or naming the by-hand fallback where the lane's skill is absent), ~10–15 lines, with the single
+   fallback line beneath: *"no skill runner? follow `.agents/foreman/docs/ROUTING.md` by hand."*
+   The last row is always *unsure / mixed altitude → `/foreman`* — `route` is the slow path behind
+   the table, never a mandatory hop in front of it. The table is a **compiled projection**: this
+   verb stamps it, `calibrate` regrows it when the walk or the installed skills change, and
+   `/foreman check` diffs it against both.
 7. **List the composition's companion skills in `AGENTS.md`** — the members from Step 0 (`/backlog`,
    `/feature`, `/workstream`, `/architect`, `/handoff`, `/auditor`, `/chiropractor` for the full
    pack; a subset for a baseline install), and where a runbook drove `setup`, a one-line note on the
