@@ -29,6 +29,25 @@ Read these three rules as non-negotiable; every step below serves them:
 These sit on top of the shared discipline (trunk guard, pathspec-atomic scoped commit, no
 `Co-Authored-By`) that every `foreman` verb carries — see `SKILL.md`.
 
+## Absorb, don't parallel — live process doctrine
+
+The located project may carry **live process doctrine in a nonstandard form** — project-local
+playbooks/skills, a workflow doc, a CONTRIBUTING discipline. That is not a gap to fill: it is the
+**incumbent operational system**, and taking ownership means the scaffolded doctrine must
+**describe it** — its lanes, its capture conventions, its record shapes — not stand a generic
+second system up beside it. Concretely:
+
+- Classify incumbent process doctrine as **doctrine-to-absorb** in step 4, alongside the files.
+- Copy a generic bundled doc only for a process area the host **genuinely lacks**; where the host
+  has a convention, the deployed doc's matching section is **rewritten to state the host's
+  convention** (naming the host's own lanes/playbooks) before it lands.
+- **A scaffold that contradicts an incumbent convention is a defect, not a gap-fill** — e.g. a
+  routing walk whose capture lane names a store or template the host's own capture mechanism will
+  never use. Reconcile before committing, or leave the area unscaffolded and flag it.
+- Where a host mechanism and a scaffolded mechanism genuinely compete (two capture systems, a
+  shadowed skill name), that is a **user decision** — surface it in the step-5 preview, never
+  resolve it silently in either direction.
+
 ## What this reuses from `setup`
 
 `migrate` is not a second scaffolder. For the **gap-fill** — every home that has *no* migrated content

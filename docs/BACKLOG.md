@@ -25,6 +25,17 @@ one-line resolution; delete only when the reason it existed is gone.
   (`` `/backlog bug` ``) and indented tables are missed. Revisit when the emitter meets a real
   deployed front door.
 
+### BL-15 — migrate scaffolded a parallel doctrine beside a live incumbent system (fixed; watch for recurrence)
+- **source:** atelier dogfood migration (2026-07-27).
+- **status:** verb fixed (migrate.md *Absorb, don't parallel* section, 2026-07-27); entry kept for
+  the pattern — re-audit after the next brownfield migration of a host with its own playbooks.
+- **body:** on a host with live process doctrine in nonstandard form (project-local playbooks),
+  `migrate`'s gap-fill copied grimoire's generic ROUTING/PLANNING docs in beside the incumbent
+  conventions — producing a routing walk whose capture lane contradicted the host's own (shadowing)
+  `/backlog` playbook, plus tracker stubs the incumbent never used. The procedure had no
+  doctrine-absorption step; the executing agent surfaced the collision instead of reconciling it.
+  Fix = the new migrate.md section + the atelier reconciliation pass.
+
 ### BL-14 — spine-scan resolves backtick code-span refs root-relative only
 - **source:** chiropractor rubric shakedown on a migrated host (2026-07-27).
 - **status:** open
