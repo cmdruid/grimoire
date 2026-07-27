@@ -1,7 +1,7 @@
 # Front-door architecture — read-cost tiers + the compiled routing table
 
-**Status:** Designed (2026-07-26); not yet implemented. Rollout surfaces are listed in §7; none have
-been touched.
+**Status:** Implemented (2026-07-27); routing probe 4/4 (round 2, after sharpening foreman's check
+clause; round 1 was 3/4). Rollout surfaces are listed in §7.
 
 **Goal:** Bound what a session pays to discover its instructions. An agent's path from "I need to do
 X" to "the chunk of instructions for X" is a sequence of reads; this doc fixes the architecture that
