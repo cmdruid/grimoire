@@ -153,14 +153,14 @@ are dead on a standalone clone and strand the agent. This is a hard rule, and en
 After scanning, run a focused pass on the project's entry-door files before proceeding to the full
 12-dimension diagnosis. Consume the five entry-door facts (`agents_md`, `claude_md`,
 `front_door_link`, `entry_outline` / `entry_outline_count`, `entry_hub_links`), then read the
-relevant files directly to judge the four checks in RUBRIC.md's "Entry-Door Audit" section.
+relevant files directly to judge the five checks in RUBRIC.md's "Entry-Door Audit" section.
 
 **Content-door rule.** The file you examine for ordering and presentation (checks 3 and 4) is
 `AGENTS.md` if it is present at the root; otherwise use the entry door itself. A CLAUDE.md that is
 a thin pointer importing AGENTS.md via `@` carries no substantive outline of its own -- read the
 imported source, not the pointer.
 
-Read the content door and any `@`-imported source it references; also read BOTH front-door files (AGENTS.md and CLAUDE.md) when both exist, since check 1 (coherence) compares them for duplication and pointer direction. Score each of the four checks
+Read the content door and any `@`-imported source it references; also read BOTH front-door files (AGENTS.md and CLAUDE.md) when both exist, since check 1 (coherence) compares them for duplication and pointer direction. Score each of the five checks
 (`solid | drift | gap`) per the criteria in RUBRIC.md. Record a one-line rationale and any
 specific adjustment for each check. Feed these findings into Section 0 of the report (below) and
 let them inform the full diagnosis where the 12 dimensions overlap (e.g., hub connectedness informs
@@ -210,13 +210,14 @@ any drift or gap here multiplies across every run.
 **Section 0 -- Entry-Door**
 
 State which front-door files were found (`agents_md` / `claude_md`) and which one is the entry
-door. Give the `front_door_link` verdict in one line. Then score each of the four checks:
+door. Give the `front_door_link` verdict in one line. Then score each of the five checks:
 
 ```
 check 1. Front-Door Coherence -- solid | drift | gap -- <one-line rationale>
 check 2. Hub Connectedness    -- solid | drift | gap -- <one-line rationale>
 check 3. Information Ordering -- solid | drift | gap -- <one-line rationale>
 check 4. Presentation         -- solid | drift | gap -- <one-line rationale>
+check 5. Routing Affordance   -- solid | drift | gap -- <one-line rationale>
 ```
 
 Follow with a short list of specific entry-door adjustments (if any checks are drift or gap).

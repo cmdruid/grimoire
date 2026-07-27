@@ -124,12 +124,18 @@ door to any useful working doc is short and logically ordered.
 **Facts that inform it:** `max_depth` (the scanner's BFS hop distance from
 `entry_door` to the farthest reached doc) + judgment on the path's clarity
 
-- **solid** -- `max_depth` <= 3; the critical path is obvious from the entry
-  doc's own prose.
+- **solid** -- `max_depth` <= 3; working docs an agent must act on are
+  reachable in <= 2 actions from the entry door; the critical path is obvious
+  from the entry doc's own prose.
 - **drift** -- `max_depth` 4-5, or the critical path requires following more
   than one ambiguous branch before reaching actionable content.
 - **gap** -- `max_depth` >= 6, or the entry door requires reading several large
   files before the agent can locate the right one; the read-path is a maze.
+
+**A menu-only intermediary is a Read-Path defect.** A doc whose sole content is
+pointers to other docs adds a hop with no payload; fold its table into the
+entry door (menus are free where context is already loaded) or into its
+parent, and let each leaf carry real procedure.
 
 **Example adjustments:**
 - Promote the most-visited working docs to a direct link in the entry door.
@@ -176,6 +182,13 @@ compact; large docs are leaf docs that are only read when needed.
   close to the entry door and pulled in on most sessions even when unnecessary.
 - **gap** -- `always_loaded_bytes` exceeds 50 KB, or a single doc in
   `doc_sizes` is so large that loading it dominates agent context on every run.
+
+**Triage `doc_sizes` outliers by job count, not size alone.** A large doc that
+is one coherent job (a reference read end-to-end) is healthy; a large doc
+bundling many independent how-tos makes every reader pay for the jobs they are
+not doing -- a split candidate. The converse also holds: two small docs that
+are only ever read together are one job paying two read overheads -- a merge
+candidate.
 
 **Example adjustments:**
 - Move boilerplate (changelogs, full schemas) out of always-loaded docs into
@@ -345,7 +358,7 @@ steps or locate implicit prerequisites.
 
 # Entry-Door Audit (focused pass)
 
-The four checks below examine the project entry door (CLAUDE.md, AGENTS.md, or
+The five checks below examine the project entry door (CLAUDE.md, AGENTS.md, or
 equivalent) as a standalone artifact. They are a focused pass, not additional
 dimensions -- the `## ` dimension count stays at 12.
 
@@ -452,3 +465,35 @@ dense prose monolith that requires linear reading.
 **Example adjustments:**
 - Break a wall of prose into a bulleted or numbered list with a clear header.
 - Add a "See also" or "Next steps" signpost at the end of a major section.
+
+---
+
+### Check 5. Routing Affordance
+
+**What it checks:** Whether the content door tells a cold agent where work
+starts -- a compact task-routing affordance (a "making a change?" table or
+section) whose rows dispatch directly to a lane's entry point (a doc or a
+runnable command), with a stated fallback for readers who cannot use the
+primary dispatch mechanism.
+
+**Facts that inform it:** `entry_outline`, `entry_hub_links`, plus judgment
+
+- **solid** -- The door carries a routing affordance: an agent can classify
+  "I'm about to do X" and reach the owning instruction chunk in one action,
+  without reading any intermediary; rows point at entry points, not at menu
+  documents; a fallback is stated.
+- **drift** -- An affordance exists but is incomplete (a common change class
+  is missing), displaced below long prose, or a row targets an intermediary
+  menu rather than an entry point.
+- **gap** -- No routing affordance: a cold agent must already know the layout,
+  read several documents, or guess where a change starts.
+
+**Form only, never fidelity.** This check judges that a routing affordance
+exists and dispatches cleanly. Whether the routes are the *right* routes is
+the owning workflow system's own validation concern -- out of scope for a
+doc-ergonomics audit.
+
+**Example adjustments:**
+- Add a "where a change starts" table to the content door: one row per change
+  class, each pointing at the owning entry point.
+- Replace a row that targets an index/menu doc with the leaf it meant.
