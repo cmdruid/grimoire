@@ -6,7 +6,7 @@ clause; round 1 was 3/4). Rollout surfaces are listed in §7.
 **Goal:** Bound what a session pays to discover its instructions. An agent's path from "I need to do
 X" to "the chunk of instructions for X" is a sequence of reads; this doc fixes the architecture that
 makes that path short (few actions) and cheap (few irrelevant tokens per action), and names the
-machinery that keeps it that way. It governs what `foreman init` stamps into every consuming
+machinery that keeps it that way. It governs what `foreman setup` stamps into every consuming
 project's front door, so it is library doctrine, not one project's layout note.
 
 **References:**
@@ -73,7 +73,7 @@ The routing knowledge exists in exactly one authoritative place and is *projecte
 | role | artifact | owning verb |
 |---|---|---|
 | **Source** | `.agents/foreman/docs/ROUTING.md` decision-walk — project policy, tunable. (Renamed from `DEVELOPMENT.md` as part of this rollout: the old name said nothing; the new one names the content — classification rules + where each class goes — and pairs with the compiled table and `/foreman route`.) | `/foreman calibrate` edits it |
-| **Compiled projection** | the `AGENTS.md` routing table — trigger → lane entry, ~10–15 lines | `init` stamps; `calibrate` regrows |
+| **Compiled projection** | the `AGENTS.md` routing table — trigger → lane entry, ~10–15 lines | `setup` stamps; `calibrate` regrows |
 | **Interpreter (slow path)** | `/foreman route` — classification for inputs the table doesn't decide | `route` |
 | **Drift gate** | projection ↔ source ↔ installed-skills consistency | `/foreman check` (via `foreman-health.sh check-projection`) |
 
@@ -86,9 +86,9 @@ gate, which would cost 2–3 reads per classification (§8, alternative A).
 is a self-describing skill (its own `description:` takes over). Verb rosters or lane protocol in the
 table is the enumerated-roster rot the boundary doctrine already forbids in skill bodies.
 
-## 4. The door profile (what `foreman init` stamps)
+## 4. The door profile (what `foreman setup` stamps)
 
-Ordered tier-0 content — the shape `clankshop.md` specifies and `init` stamps on greenfield:
+Ordered tier-0 content — the shape `clankshop.md` specifies and `setup` stamps on greenfield:
 
 1. **what-this-is** — 1–2 lines.
 2. **build / run / gate commands.**
@@ -104,6 +104,7 @@ Reference table shape (illustrative, not a template a project must copy verbatim
 |-----------------------------|---------------------------------------|
 | fix a reproducible bug      | `/debugger` (file it: `/backlog bug`) |
 | land a one-line patch       | trunk, no ceremony                    |
+| run a timeboxed spike       | trunk, timeboxed — the walk's spike lane |
 | build a feature             | `/feature`                            |
 | change a tenet/contract/seam| `/architect`                          |
 | capture a follow-up         | `/backlog`                            |

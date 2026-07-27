@@ -14,6 +14,15 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-13 — `routing-targets` emitter only matches bare backticked `/name` tokens in column-0 rows
+- **source:** front-door architecture final review (2026-07-27,
+  `docs/design/2026-07-26-front-door-architecture.md`).
+- **status:** open
+- **body:** the `routing-targets` emitter in `skills/foreman/scripts/foreman-health.sh` only
+  matches bare backticked `` /name `` tokens in column-0 table rows — verbed targets
+  (`` `/backlog bug` ``) and indented tables are missed. Revisit when the emitter meets a real
+  deployed front door.
+
 ### BL-12 — harness-compaction spike methodology + doctrine candidates from the survival work
 - **source:** compaction-survival spike + implementation (2026-07-24,
   `docs/design/2026-07-24-workstream-compaction-survival.md`); debrief sweep 2026-07-25.

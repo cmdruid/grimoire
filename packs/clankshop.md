@@ -135,6 +135,7 @@ is a **compiled projection** of `.agents/foreman/docs/ROUTING.md` — trigger �
 |---|---|
 | fix a reproducible bug | `/debugger` (file it: `/backlog bug`) |
 | land a one-line patch | trunk, no ceremony |
+| run a timeboxed spike | trunk, timeboxed — the walk's spike lane |
 | build a feature | `/feature` |
 | change a tenet/contract/seam | `/architect` |
 | capture a follow-up | `/backlog` |
@@ -197,8 +198,8 @@ table is itself a **snapshot**: regenerate it from `scripts/foreman-health.sh de
 ## The glue-workflows (how the seams run in practice)
 
 - **Make a change.** The stamped routing table dispatches the common cases at tier 0; `/foreman`
-  (route) is the slow path for the *unsure / mixed altitude* row. `/foreman` (route) classifies it —
-  bug / patch / feature / spike — and dispatches to the lane. A feature routes through `/feature`
+  (route) is the slow path for the *unsure / mixed altitude* row. From that row, `route` classifies
+  it — bug / patch / feature / spike — and dispatches to the lane. A feature routes through `/feature`
   (plan → build to gate-green), then
   `/workstream` lands it, then `/backlog debrief` captures the follow-ups. No hand re-does another's
   step.

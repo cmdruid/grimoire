@@ -138,8 +138,8 @@ Follow the bundled `BOOTSTRAP.md` deployment playbook (§13), wiring the composi
    `AGENTS.md` is the always-loaded surface.)
 
    **Stamp the routing table** — the tier-0 projection of `.agents/foreman/docs/ROUTING.md`'s
-   decision-walk: one row per change class (bug / patch / feature / seed-altitude design / capture /
-   unsure), each row dispatching directly to the lane's entry point from the Step 0 composition
+   decision-walk: one row per change class (bug / patch / feature / spike / seed-altitude design /
+   capture / unsure), each row dispatching directly to the lane's entry point from the Step 0 composition
    (or naming the by-hand fallback where the lane's skill is absent), ~10–15 lines, with the single
    fallback line beneath: *"no skill runner? follow `.agents/foreman/docs/ROUTING.md` by hand."*
    The last row is always *unsure / mixed altitude → `/foreman`* — `route` is the slow path behind
