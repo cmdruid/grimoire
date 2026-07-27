@@ -4,6 +4,11 @@ The default verb: with no argument (or a change description), `/foreman` is the 
 reads the host's deployed `.agents/foreman/docs/ROUTING.md` as the source of truth (it does **not** restate
 the decision-walk) and dispatches the change to the lane that owns it.
 
+The deployed front door carries a **routing table compiled from that walk** — it decides the
+common cases at zero extra reads, dispatching straight to a lane. `route` is the **slow path
+behind the table**: invoked from its *unsure / mixed altitude* row (or when no table is stamped
+yet), never a mandatory hop in front of it.
+
 If the host project has **no `.agents/foreman/` system yet**, run `setup` first (`verbs/setup.md`), then route
 through it.
 

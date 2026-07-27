@@ -335,6 +335,14 @@ cmd_check_projection() {
     echo "  $name built-against=$ba now=$iba"; n=$((n+1))
   done < "$reg"
   [ "$n" -eq 0 ] && echo "  (none)"
+
+  # routing-targets: distinct `/skill` tokens in the front door's table rows (facts, not verdicts)
+  echo "routing-targets:"
+  n=0
+  for t in $(grep -E '^\|' "$front" | grep -oE '\`/[a-z][a-z-]*\`' | tr -d '\`' | sort -u); do
+    echo "  $t"; n=$((n+1))
+  done
+  [ "$n" -eq 0 ] && echo "  (none)"
   rm -f "$reg" "$inst"
 }
 

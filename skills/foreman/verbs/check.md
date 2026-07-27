@@ -27,6 +27,7 @@ bash <skill-dir>/scripts/foreman-health.sh check-projection <front-door> <skills
 | `orphaned: <name>` | a block exists but the skill isn't installed at the resolved root | flag, don't auto-prune — a temporarily-uninstalled skill may return (safe-by-default) |
 | `stale-stamp: <name> built-against=<old> now=<new>` | the skill changed since it last registered | the skill should re-run its own `init` to refresh the stamp |
 | `seam-drift: missing/stale <A> -> <B> (<T>)` | `derive-seams`'s current output disagrees with the written `<!-- seam: ... -->` annotations | **mechanical** — this half you may fix directly (delete-and-rewrite all seam annotations, §5.1 — they carry no hand-authored content, so a wholesale regenerate is correct, not destructive) |
+| `routing-targets: /<name>` | a lane target named in the front door's routing-table rows | judge two ways: each target resolves (the skill is installed at the resolved root, or the row/fallback names the by-hand doc), and the table's rows still match `.agents/foreman/docs/ROUTING.md`'s change classes — a class the walk gained but the table lacks (or vice versa) is projection drift; hand the recompile to `calibrate` |
 
 **Pass 2 — the docs (unchanged).**
 
