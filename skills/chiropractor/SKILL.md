@@ -327,8 +327,8 @@ Chiropractor's **typed edges** -- its place in a workflow declared as artifact *
 sibling names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A
 **steward with no private home**: it maintains the repo's *own* doc spine in place (read-only by
 default; its output is a conversational report + in-place doc fixes, not a typed artifact another
-skill drains). Produces and handoff are a *stated* empty (model §2.3), not an omission; `calibrate` adds the one
-optional consumes.
+skill drains). Produces and handoff are a *stated* empty (model §2.3), not an omission;
+`calibrate` adds the one optional consumes.
 
 <!-- edges:chiropractor -->
 - produces: — (in-place doc fixes + a conversational report, not a typed artifact)
