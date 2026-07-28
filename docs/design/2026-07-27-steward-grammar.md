@@ -1,6 +1,6 @@
 # Steward grammar — per-layer calibrate verbs
 
-**Status:** Designed (2026-07-27); not yet implemented. Successor to the front-door architecture's
+**Status:** Implemented (2026-07-28); routing probe 4/4. Successor to the front-door architecture's
 §6 future-work note (`docs/design/2026-07-26-front-door-architecture.md`); rollout surfaces in §6
 below.
 
@@ -73,8 +73,7 @@ then a normal adjust with the usual confirmation gate.
   nothing.
 - **Self-containment holds.** Chiropractor still names no other skill and assumes no deployment.
   Its verb prose speaks of "a feedback tracker the repo's front door names," never a specific
-  skill's store. It consumes the **type** `tracker-entry` (its `## Edges` block gains
-  `consumes: tracker-entry (optional)`), and edge-matching derives the dep mechanically.
+  skill's store. It consumes the **type** `tracker-entry` (its `## Edges` block gains a `tracker-entry` consumes (optionality stated in the prose after the type token — an annotation inside the token would break mechanical seam derivation)), and edge-matching derives the dep mechanically.
 - **Structural change:** chiropractor gains a thin verb dispatch for the first time (`audit`
   default = today's flow; `calibrate` = the drain). The SKILL.md stays one file; calibrate's
   procedure is a section, not a separate verb file, until the skill earns more verbs.
