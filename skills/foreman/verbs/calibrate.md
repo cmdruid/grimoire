@@ -55,6 +55,15 @@ branch):
    items stay in `.records/tasks.md` — those are `/backlog curate`'s, not signal for the
    doctrine.) Look for **patterns**: one complaint is a note; the same friction three times is a
    doctrine miscalibration.
+
+   **Classify each entry by the layer its fix would edit** — this verb wears foreman's composer
+   hat here, same as `route`: **operational** (a routing rule, workflow doctrine, the front
+   door's wiring/table, MEMORY/GOTCHAS) → this pass acts on it in step 3; **doc-form**
+   (front-door bloat, navigation, a spine that loses agents) → dispatch to the installed
+   doc-spine steward's own drain verb, else the by-hand fallback (fix per the deployed docs);
+   **design-seed** (a spec/contract/tenet that misleads) → dispatch to the installed design
+   steward's drain verb, else the fallback. Mixed entries split; unclassifiable entries stay
+   here (the default owner).
 3. **Turn each pattern into a concrete doctrine edit — the calibration.** A gauge reading is only
    useful once it moves a knob; turn the signal into a real change:
    - a routing gap → sharpen `.agents/foreman/docs/ROUTING.md` (the change-router walk), then
@@ -100,9 +109,10 @@ branch):
   consumes their signal and promotes durable notes; it does not curate the lists.
 - **`/backlog feedback`** and the other capture verbs *feed* the trackers `calibrate` drains — capture is
   their job, folding-into-doctrine is this one's.
-- **`/chiropractor`** owns general doc-spine *ergonomics* for any repo (front-door bloat, navigation,
-  glossaries). `calibrate` stays scoped to *this system's* doctrine; hand broad doc-tuning to
-  `/chiropractor`.
+- **`/chiropractor`** owns doc-spine *ergonomics*; **`/architect`** owns the design seed.
+  `calibrate` classifies the harvested signal by layer (step 2) and **dispatches** the doc-form
+  and design-seed slices to those stewards' own drain verbs — it acts only on the operational
+  slice itself.
 - **`/auditor`** is the project-code analogue: same surface-then-drain shape, different domain.
 
 ## Done when
