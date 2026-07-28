@@ -333,5 +333,5 @@ skill drains). Produces and handoff are a *stated* empty (model §2.3), not an o
 <!-- edges:chiropractor -->
 - produces: — (in-place doc fixes + a conversational report, not a typed artifact)
 - handoff: — (no baton; the fixes land directly, the report ends the pass)
-- consumes: tracker-entry (optional) — `calibrate` drains captured doc-flavored signal when a tracker exists; the audit flow consumes nothing
+- consumes: tracker-entry — optional: `calibrate` drains captured doc-flavored signal when a tracker exists; the audit flow consumes nothing
 <!-- /edges:chiropractor -->
