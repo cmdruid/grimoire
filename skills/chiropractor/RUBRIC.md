@@ -190,6 +190,16 @@ not doing -- a split candidate. The converse also holds: two small docs that
 are only ever read together are one job paying two read overheads -- a merge
 candidate.
 
+**The door diet (the adjust technique for an over-heavy entry door).** When the
+always-loaded set is over budget because the entry door *restates* its leaf
+docs -- a per-subsystem index whose sections carry the mechanism -- compress
+each section to its **tripwires**: the fact that would surprise an agent, and
+the constraint they must not break (keep every "never do X" clause verbatim),
+plus the leaf link. Shed the mechanism -- paths, symbol names, rationale --
+which lives one read away in the leaf and is then paid only by agents who
+actually need it. The test for a surviving line: it tells the reader *when to
+open the leaf*, never *what the leaf says*.
+
 **Example adjustments:**
 - Move boilerplate (changelogs, full schemas) out of always-loaded docs into
   dedicated leaf docs linked by reference.
