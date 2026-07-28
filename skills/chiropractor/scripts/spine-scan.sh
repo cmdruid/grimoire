@@ -343,8 +343,10 @@ REFS=$({ files=$(find_md); [ -n "$files" ] && printf '%s\n' "$files" | tr '\n' '
       t = substr(s, RSTART, RLENGTH); s = substr(s, RSTART + RLENGTH)
       gsub(/`/, "", t); sub(/:[0-9]+$/, "", t)
       if (!index(t, "/")) continue                    # only slash-bearing tokens look like repo paths
-      if (normpath(dir, t) == "") print "ESC\t" FILENAME "\t" t   # climbs above root -> escape (raw token)
-      else print "CAND\t" FILENAME "\t" t             # raw token -> unchanged downstream logic
+      if (substr(t, 1, 1) == "/") continue            # absolute tokens are runtime/OS paths, never repo-relative (BL-14)
+      dr = normpath(dir, t)
+      if (dr == "") print "ESC\t" FILENAME "\t" t     # climbs above root -> escape (raw token)
+      else print "CAND\t" FILENAME "\t" t "\t" dr     # raw token + doc-relative resolution (BL-14)
     }
   }
 '; } | sort -u)
@@ -354,16 +356,18 @@ CODESPAN_ESCAPES=$(printf '%s\n' "$REFS" | awk -F'\t' '$1=="ESC"{print $2"->"$3}
 printf '%s\n%s\n' "$EDGE_ESCAPES" "$CODESPAN_ESCAPES" | awk 'NF' | sort -u | emit_capped escaping_refs 20
 
 # CAND tokens (non-escaping) flow into the existence / cross-root / staleness classification.
-printf '%s\n' "$REFS" | awk -F'\t' '$1=="CAND"{print $2"\t"$3}' | {
+printf '%s\n' "$REFS" | awk -F'\t' '$1=="CAND"{print $2"\t"$3"\t"$4}' | {
   # Classify each unresolved candidate. A token that resolves INSIDE a nested repo root
   # (as "<sub_root>/<token>", or "<sub_root parent>/<token>" for tokens that name the
   # sub-repo by its directory name) is a CROSS-ROOT CITATION -- a doc deliberately citing
   # another repo's file, context-relative -- not staleness. Only tokens that resolve
   # nowhere are stale_refs. Both lists are facts; the agent judges either.
   SUB_PARENTS=$(printf '%s\n' "$SUB_PATHS" | awk 'NF { n=split($0,p,"/"); if (n>1) { o=p[1]; for(i=2;i<n;i++) o=o"/"p[i]; print o } }' | sort -u)
-  while IFS="$(printf '\t')" read -r f p; do
+  while IFS="$(printf '\t')" read -r f p dr; do
     [ -n "$p" ] || continue
     [ -e "$p" ] && continue
+    # BL-14: a token that resolves doc-relative is a legitimate sibling ref, not stale.
+    [ -n "$dr" ] && [ "$dr" != "$p" ] && [ -e "$dr" ] && continue
     hit=0
     for sr in $SUB_PATHS; do
       [ -e "$sr/$p" ] && { hit=1; break; }

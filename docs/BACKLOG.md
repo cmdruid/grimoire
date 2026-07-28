@@ -38,14 +38,32 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-14 — spine-scan resolves backtick code-span refs root-relative only
 - **source:** chiropractor rubric shakedown on a migrated host (2026-07-27).
-- **status:** open
-- **body:** `skills/chiropractor/scripts/spine-scan.sh` resolves backtick code-span path refs
+- **status:** fixed (2026-07-28) — two changes in `spine-scan.sh`: a doc-relative fallback in the
+  stale-candidate existence check, and absolute-path tokens (leading `/` — runtime/OS paths, e.g.
+  a vault path like `/atelier/theme.json`) excluded from candidacy entirely (they were being
+  checked against the real filesystem root). Field result on the shakedown host: 298 → 244. The
+  original "~250 false positives" estimate was wrong — the residual is a legitimately mixed set
+  (genuine rot: deleted source files cited in rubric content; plus deliberate deleted-path
+  citations in narrative docs), which stays the judge's triage per facts-not-verdicts.
+- **body:** `skills/chiropractor/scripts/spine-scan.sh` resolved backtick code-span path refs
   against the repo root only, so a doc inside a nested home (e.g. an audit rubric's README
-  referencing its sibling `prompts/01-security.md`) reads as a stale ref even though the sibling
-  resolves doc-relative. On repos with populated `.agents/<home>/` trees this inflates
-  `stale_refs_count` with false positives (~250 of 298 on the shakedown host) and forces manual
-  triage. Consider doc-relative fallback resolution (try root-relative, then doc-relative) before
-  classifying a code-span ref stale.
+  referencing its sibling `prompts/01-security.md`) read as a stale ref even though the sibling
+  resolves doc-relative.
+
+### BL-16 — `built-against` stamps go permanently stale against a live skills library
+- **source:** atelier dogfood (2026-07-27) — the host's `skill:foreman` stamp went stale within
+  hours because grimoire itself advanced; refreshed once mid-session, stale again by the next
+  grimoire commit touching the skill dir.
+- **status:** open. Lean: the **judgment-table fix** — teach `verbs/check.md`'s `stale-stamp` row
+  that on a fast-moving skills-root (a library clone under active development) a stale stamp is
+  informational unless the skill's *contract* (its `description:` or `## Edges`) changed since the
+  stamped sha; only a contract change warrants a re-register. Alternative (heavier): stamp against
+  a tagged version instead of the skill dir's last commit — a mechanism change touching every
+  skill's self-registration.
+- **body:** `built-against` records the skill directory's last commit sha; every commit to a skill
+  in the library re-flags every deployed host's block for that skill. On an actively developed
+  library this turns `/foreman check`'s `stale-stamp` fact from drift signal into a permanent nag,
+  training agents to ignore it.
 
 ### BL-12 — harness-compaction spike methodology + doctrine candidates from the survival work
 - **source:** compaction-survival spike + implementation (2026-07-24,

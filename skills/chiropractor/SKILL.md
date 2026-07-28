@@ -83,7 +83,7 @@ The scanner is read-only and emits `key=value` facts to stdout. Facts you will r
 | `unreachable_dirs` / `unreachable_dirs_count` | Top-level dirs with no reachable docs (capped sample + count) |
 | `broken_links` / `broken_links_count` | Link edges in **live** docs whose target file does not exist (capped sample + count) -- the actionable rot |
 | `broken_links_archived` / `broken_links_archived_count` | Broken link edges in **historical-record** docs (changelog, archive/history/logs/done store, or dated file); the target existed when the record was written -- records, not rot |
-| `stale_refs` / `stale_refs_count` | Inline code-span path refs in **live** docs that resolve nowhere -- not in this repo and not inside any nested repo root (capped sample + count) |
+| `stale_refs` / `stale_refs_count` | Inline code-span path refs in **live** docs that resolve nowhere -- neither root-relative nor doc-relative in this repo, and not inside any nested repo root (capped sample + count) |
 | `stale_refs_archived` / `stale_refs_archived_count` | Same, but in **historical-record** docs -- a past state cited by design; weigh lightly |
 | `sub_roots` / `sub_roots_count` | Nested git repos (submodules / embedded repos) under the scanned root, each annotated `path:front-door` (door empty if none). Their docs are excluded from this scan -- each nested root is its own spine (see Multi-Root Repos) |
 | `xroot_refs` / `xroot_refs_count` | Code-span path refs that do not resolve in this repo but DO resolve inside a nested repo root -- **superproject -> submodule** citations (the orchestrator's job), not staleness. The benign direction |
