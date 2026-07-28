@@ -120,5 +120,6 @@ branch):
 The recurring dev-experience signal in `/backlog`'s trackers has been folded into concrete doctrine /
 workflow / `AGENTS.md` edits (and durable notes promoted into `.agents/foreman/MEMORY.md` /
 `.agents/foreman/GOTCHAS.md` / docs), or filed back to `/backlog` when too big; each acted-on source entry
-recorded and cleared; the pass logged to `.records/logs/foreman-calibrate.md`; and the changes committed
-atomically with explicit paths. Gate green.
+recorded and cleared; each dispatched entry (doc-form / design-seed) recorded in the pass log with the
+steward it went to — the receiving steward's own pass owns its resolution; the pass logged to
+`.records/logs/foreman-calibrate.md`; and the changes committed atomically with explicit paths. Gate green.
