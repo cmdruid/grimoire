@@ -1,6 +1,6 @@
 ---
 name: architect
-description: "The design-system engine — verbs over a project's `.agents/architect/` seed: the present-tense, regenerable design that code is a build output of. `/architect init` stands up `.agents/architect/` (compiles a PROJECT.md brief, or migrates existing docs). `/architect extract` is the brownfield onramp — recover a provisional design draft from code into `.records/design-draft/`. `/architect brainstorm` and `/architect plan` do seed-altitude (foundational, not feature-scope) design work. `/architect distill` collapses accreted ADRs/plans into clean present-tense specs. `/architect check` validates seed health (spine, drift, distill-debt); `/architect reconcile` reports deep semantic seed↔code drift to `.records/reports/`. `/architect prep` (Plan B) plans clearing retired code so a fresh rebuild can follow. Use when the user runs `/architect ...`, sets up a design-doc system, or makes a foundational (not feature-scope) design change."
+description: "The design-system engine — verbs over a project's `.agents/architect/` seed: the present-tense, regenerable design code is built from. `/architect init` stands up `.agents/architect/` (a PROJECT.md brief, or migrated docs). `/architect extract` is the brownfield onramp — a design draft from code into `.records/design-draft/`. `/architect brainstorm` and `/architect plan` do seed-altitude (foundational, not feature-scope) design work. `/architect distill` collapses accreted ADRs/plans into clean present-tense specs. `/architect calibrate` drains captured design-flavored dev-experience signal into targeted seed edits (external signal in; `distill` compacts internal accretion). `/architect check` validates seed health; `/architect reconcile` reports deep seed↔code drift to `.records/reports/`. `/architect prep` (Plan B) plans clearing retired code so a rebuild can follow. Use when the user runs `/architect ...`, sets up a design-doc system, or makes a foundational (not feature-scope) design change."
 ---
 
 # architect — the design-system engine
@@ -23,6 +23,7 @@ lives in `verbs/<verb>.md`; the portable doctrine lives in `docs/DOCTRINE.md`.
 | `brainstorm` | `verbs/brainstorm.md` | foundation-altitude ideation on the seed (radical, alpha-licensed) |
 | `plan` | `verbs/plan.md` | sequence a design-evolution campaign |
 | `distill` | `verbs/distill.md` | collapse accreted change-records into clean present-tense specs |
+| `calibrate` | `verbs/calibrate.md` | drain captured design-flavored signal (tracker entries about the seed) into targeted seed edits |
 | `check` | `verbs/check.md` | validate seed health (runs `scripts/architect-check.sh`) |
 | `reconcile` | `verbs/reconcile.md` | deep semantic seed↔code drift check; writes a report to `.records/reports/` (recommends, never applies) |
 | `prep` | *(verb file pending — method in `docs/DOCTRINE.md`)* | *(Plan B)* plan the clearing of retired code so `/feature` can rebuild |
@@ -42,7 +43,7 @@ cross-skill seams by matching these types against other skills' edges; architect
 <!-- edges:architect -->
 - produces: design, roadmap — design specs (`brainstorm`/`plan`/`distill`) and roadmaps (`plan`)
 - handoff: — (none in the core loop; the seed is a standing source others drain, not a baton architect passes)
-- consumes: design — `distill`/`reconcile` read architect's own accreted specs (intra-skill: same skill on both ends)
+- consumes: design, tracker-entry — `distill`/`reconcile` read architect's own accreted specs (intra-skill: same skill on both ends); `calibrate` drains captured design-flavored signal
 <!-- /edges:architect -->
 
 **The `consumes: design` pair is intra-skill, not a seam.** `distill`/`reconcile` read specs *this

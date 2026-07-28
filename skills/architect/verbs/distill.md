@@ -4,7 +4,8 @@ Folds accreted change-records (ADRs, plans, roadmap deltas) back into the standi
 describe, so the seed stays a clean present-tense source of truth as the project churns. See
 `docs/DOCTRINE.md` § Two temporal kinds of doc for the failure mode this verb cures, and § The
 durability gradient for what `distill` is allowed to touch (it writes `.agents/architect/src/<system>.md`
-and, on promotion, `PHILOSOPHY.md`; never code).
+and, on promotion, `PHILOSOPHY.md`; never code). *(Seam: `distill` compacts the seed's own accretion;
+external tracker signal is `calibrate`'s to absorb.)*
 
 ## Cadence B — manual, milestone-triggered
 
