@@ -1,6 +1,9 @@
 # Steward grammar — per-layer calibrate verbs
 
-**Status:** Implemented (2026-07-28); routing probe 4/4. Successor to the front-door architecture's
+**Status:** Implemented (2026-07-28); routing probe 4/4. **Superseded (2026-08-06)** by the
+clankshop pack design (`docs/design/2026-08-06-clankshop-pack.md` §4.7/§7): the per-layer
+calibrate verb family is dissolved into the single `calibrator` role's improvement loop.
+Historical record; not retroactively edited. Successor to the front-door architecture's
 §6 future-work note (`docs/design/2026-07-26-front-door-architecture.md`); rollout surfaces in §6
 below.
 
