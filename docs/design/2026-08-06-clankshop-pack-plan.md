@@ -365,7 +365,7 @@ SKILL.md row live.
 **Files:** Create `skills/clankshop/verbs/check.md`, `skills/clankshop/scripts/check-facts.sh`;
 SKILL.md row live.
 
-- [ ] Script emits the **assembly facts** (pack §3.3, exactly the clankshop side of the §4.6
+- [x] Script emits the **assembly facts** (pack §3.3, exactly the clankshop side of the §4.6
   partition): installation-block validity; every stamped projection vs its named input (door
   table ↔ `rules/ROUTING.md`, stewardship-map blocks, submodule index vs `.gitmodules` +
   gitlinks, `RECORDS.md` ↔ doctrine schema version); **chapter presence** vs the registry;
@@ -387,9 +387,9 @@ SKILL.md row live.
   `check-projection`'s complete fact set, `routing-targets` included; a bad-target corruption
   fixture asserts the red fact); **missing-base facts** (a provenance stamp citing an `origin@version` with no
   retrievable base in the doctrine or `BASES.md`).
-- [ ] Document-shape facts (entry conformance, citation resolution, budgets) are **not** here —
+- [x] Document-shape facts (entry conformance, citation resolution, budgets) are **not** here —
   they are chiropractor's (§4.6); the verb prose states the partition.
-- [ ] Verify: fixture in Task 1.8 asserts check-green on a fresh setup and specific red facts on
+- [x] Verify: fixture in Task 1.8 asserts check-green on a fresh setup and specific red facts on
   seeded corruptions (a dangling ticket origin, a stale stewardship stamp). Lint. Commit.
 
 ### Task 1.6: The doctrine three-way differ
