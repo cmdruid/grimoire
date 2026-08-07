@@ -431,17 +431,17 @@ SKILL.md row live.
 **Files:** Create `skills/clankshop/scripts/tests/run.sh` (+ fixture builders under
 `scripts/tests/`).
 
-- [ ] **Greenfield fixture:** temp git repo → walk `setup`'s projection mechanically (the
+- [x] **Greenfield fixture:** temp git repo → walk `setup`'s projection mechanically (the
   scriptable core: doctrine → handbook copy with stamps + block writes) → assert: `check-facts.sh`
   green; every seeded entry carries its provenance marker; `AGENTS.md` table rows resolve; every
   installed member has its door registration block (the `unregistered` fact is empty);
   cold-clone readable (no skill path referenced from `.handbook/`).
-- [ ] **Migrate fixture:** temp repo with ad-hoc content (a stray TODO list, a rules file, an old
+- [x] **Migrate fixture:** temp repo with ad-hoc content (a stray TODO list, a rules file, an old
   decisions doc) → classification produces a complete mapping table → post-execution
   nothing-dropped + check-green + aliases preserved.
-- [ ] **Unstamped-refusal fixture:** framework scripts on an unstamped root emit `unstamped` and
+- [x] **Unstamped-refusal fixture:** framework scripts on an unstamped root emit `unstamped` and
   stop.
-- [ ] Verify: `bash skills/clankshop/scripts/tests/run.sh` → all green. Commit.
+- [x] Verify: `bash skills/clankshop/scripts/tests/run.sh` → all green. Commit.
 
 ### Task 1.9: Phase 1 gate
 
