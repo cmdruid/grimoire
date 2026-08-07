@@ -75,7 +75,10 @@ tasks) and, from Phase 1 on, the committed **fixture harnesses** under
   frontmatter key** — pack §8's "untouched" means no re-framing and no independence-machinery
   changes, not frozen bytes. (3) The doctrine diff's base store is the **versioned base archive**
   (Appendix J). (4) Lock semantics: **implicit core pinning by `pack-version:` + helper
-  `version:` ranges** (Appendix I, superpowers precedent).
+  `version:` ranges** (Appendix I, superpowers precedent). (5) **Phase-0 gate freezes ratified
+  as written (owner, 2026-08-07):** Appendix K's improvement-item + claim-marker encodings,
+  Appendix J's path-qualified whole-file origin IDs, Appendix L's collision + finding-key
+  grammar — no amendments.
 - **The vocabulary table (pack §2) is binding** for every line of prose written: the mirror is
   never "the tracker"; ticket promotion is never "upstream contribution"; backlog is the skill,
   the trackers are the files.
@@ -272,12 +275,14 @@ The search-derived, item-checked inventory of every live surface this restructur
   four understood deltas, all `clankshop: references /X which is not a skill in this suite`
   forward references to scheduled members: `/guardian` (Task 2.6), `/calibrator` (Task 2.11),
   `/bug` and `/task` (Task 2.4) — each must clear by the Phase 2 gate.**
-- [ ] **Human ratification gate** — the complete pending-freeze list, kept in sync with the
+- [x] **Human ratification gate** — the complete pending-freeze list, kept in sync with the
   appendices' flags: Appendix K's `T-`/`improve:`/`source:` improvement-item encoding **and its
   tracker claim-marker encoding** (`[⇢ dispatched <date>]` / `dispatched:`), Appendix J's
   path-qualified whole-file origin IDs, Appendix L's report-ID collision suffix rule **and its
   keyed-heading / `processed:`-list grammar**. Phase 1 does not begin until each is ratified or
   amended; on amendment, re-run the conformance pass below.
+  **RATIFIED (owner, 2026-08-07): all three bundles ratified as written — no amendments; the
+  conformance pass below stands. Phase 1 is unblocked.**
 - [x] Doctrine-vs-Appendix conformance pass: each frozen format cited by a doctrine file matches
   the Appendix byte-for-byte where the Appendix states exact syntax.
 - [x] Working tree clean; every Phase 0 commit scoped.
