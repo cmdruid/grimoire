@@ -192,13 +192,13 @@ projection protocol stamps at seeding.
 
 **Files:** Create `skills/clankshop/docs/RUNBOOK.md`.
 
-- [ ] The methodology narrative (pack §3.2), superpowers-style: the flow of a change end to end
+- [x] The methodology narrative (pack §3.2), superpowers-style: the flow of a change end to end
   (capture → route → lane → gate → land → done-log), **when to assume which role**, how doctrine /
   handbook / runbook relate (three altitudes), the escalation story (promotion bar → ticket →
   answer/resume), and the improvement loop (calibrator intake → routed items → drained). Seed
   narrative from `packs/clankshop.md`'s prose where it survives — copy now; the old file retires
   in Phase 4 (Task 4.4), not here.
-- [ ] Verify: no seam tables (those retire with the independence machinery — the runbook narrates,
+- [x] Verify: no seam tables (those retire with the independence machinery — the runbook narrates,
   the door routes); vocabulary-table conformance grep (`grep -n 'the tracker' …` finds no mirror
   references). Commit.
 
