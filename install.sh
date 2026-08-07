@@ -17,6 +17,8 @@ root="$(cd "$(dirname "$0")" && pwd)"
 target="$HOME/.claude/skills"
 mode="install"
 names=()
+pack_name=""
+pack_manifest=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -27,6 +29,8 @@ while [ $# -gt 0 ]; do
       pack_skills="$(sed -n 's/^skills:[[:space:]]*//p' "$manifest" | head -1)"
       [ -n "$pack_skills" ] || { echo "error: packs/$2.md has no skills: line" >&2; exit 2; }
       for s in $pack_skills; do names+=("$s"); done
+      pack_name="$2"
+      pack_manifest="$manifest"
       shift ;;
     --remove) mode="remove" ;;
     --list)   mode="list" ;;
@@ -57,6 +61,73 @@ if [ "$mode" = "list" ]; then
 fi
 
 [ ${#names[@]} -gt 0 ] || { echo "error: no skills named (try --list)" >&2; exit 2; }
+
+# ---- transactional pack install (the lock preflights; never a partial pack) ----
+# Preflight the whole member set against the lock (packs/<name>.md frontmatter): every
+# member present on disk, no destination collision, helper version checks (a bare-listed
+# helper is a presence check; a range-declared helper `name>=N` must carry frontmatter
+# `version: <int>` within range -- missing/malformed aborts, never a silent pass). Any
+# failure aborts with the fact before a single link is made; a mid-flight link error
+# rolls back what this run created. Bare single-skill install (below) is untouched.
+if [ "$mode" = "install" ] && [ -n "$pack_name" ]; then
+  helpers_line="$(sed -n 's/^helpers:[[:space:]]*//p' "$pack_manifest" | head -1)"
+  fail=0
+  for name in "${names[@]}"; do
+    src="$root/skills/$name"
+    link="$target/$name"
+    if [ ! -f "$src/SKILL.md" ]; then
+      echo "preflight: missing-member $name (no skills/$name/SKILL.md)" >&2; fail=1
+    fi
+    if [ -L "$link" ]; then
+      if [ "$(readlink "$link")" != "$src" ]; then
+        echo "preflight: collision $name ($link -> $(readlink "$link"))" >&2; fail=1
+      fi
+    elif [ -e "$link" ]; then
+      echo "preflight: collision $name ($link exists and is not a symlink)" >&2; fail=1
+    fi
+  done
+  for h in $helpers_line; do
+    case "$h" in
+      *'>='*)
+        hn="${h%%>=*}"; hmin="${h##*>=}"
+        hv="$(awk '
+          NR == 1 && $0 != "---" { exit }
+          NR > 1 && /^---$/ { exit }
+          sub(/^version:[[:space:]]*/, "") { print; exit }
+        ' "$root/skills/$hn/SKILL.md" 2>/dev/null || true)"
+        if ! printf '%s' "$hv" | grep -qE '^[0-9]+$'; then
+          echo "preflight: helper-version $hn requires >=$hmin but version: key is missing or malformed" >&2; fail=1
+        elif [ "$hv" -lt "$hmin" ]; then
+          echo "preflight: helper-version $hn version $hv < required $hmin" >&2; fail=1
+        fi ;;
+      *)
+        echo "preflight: helper $h bare-listed (presence check only)" ;;
+    esac
+  done
+  if [ "$fail" != 0 ]; then
+    echo "abort: pack $pack_name preflight failed -- no partial install" >&2
+    exit 1
+  fi
+  mkdir -p "$target"
+  created=()
+  for name in "${names[@]}"; do
+    src="$root/skills/$name"
+    link="$target/$name"
+    if [ -L "$link" ]; then echo "ok       $name (already installed)"; continue; fi
+    if ln -s "$src" "$link" 2>/dev/null; then
+      created+=("$link")
+      echo "installed $name -> $link"
+    else
+      echo "error: link failed for $name -- rolling back this run's links" >&2
+      if [ ${#created[@]} -gt 0 ]; then
+        for c in "${created[@]}"; do rm -f "$c"; done
+      fi
+      exit 1
+    fi
+  done
+  echo "pack $pack_name: ${#names[@]} members installed or already present"
+  exit 0
+fi
 
 mkdir -p "$target"
 for name in "${names[@]}"; do

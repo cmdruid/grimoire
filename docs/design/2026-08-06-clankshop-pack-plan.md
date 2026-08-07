@@ -415,13 +415,13 @@ SKILL.md row live.
 
 **Files:** Modify `install.sh`.
 
-- [ ] `--pack` preflights the member set against the lock: every member on the `skills:` line
+- [x] `--pack` preflights the member set against the lock: every member on the `skills:` line
   present on disk; no destination collision; helper checks per Appendix I — a bare-listed helper
   is a presence check, a range-declared helper must have a `version:` key within range (missing
   or malformed → **abort**, never a silent pass); any failure → abort with
   the fact, **no partial install**; on mid-flight error, roll back what this run linked. Bare
   single-skill install is untouched.
-- [ ] Verify: temp-destination runs — full pack installs; a seeded collision aborts cleanly
+- [x] Verify: temp-destination runs — full pack installs; a seeded collision aborts cleanly
   leaving the destination unchanged; an out-of-range range-declared helper aborts; a version-less
   **range-declared** helper aborts; a version-less **bare-listed** helper installs with the
   presence-check fact. Commit.
