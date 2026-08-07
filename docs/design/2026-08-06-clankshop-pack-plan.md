@@ -301,13 +301,13 @@ Tasks 1.3/1.4 land verb prose whose executable verification is deliberately the 
 **Files:** Create `skills/clankshop/scripts/spine-parse.sh`,
 `skills/clankshop/scripts/interrogate.sh`.
 
-- [ ] `spine-parse.sh` — parse a declaration block / spine-index per Appendix A (emit
+- [x] `spine-parse.sh` — parse a declaration block / spine-index per Appendix A (emit
   `key=value` facts; `malformed=…` / `unknown-version=…` as facts, never guesses). This is the
   **shared parser** pack §4.6 allows: chiropractor consumes it from Task 2.8 on.
-- [ ] `interrogate.sh` — facts by script (mechanics §8 setup): gate commands (from package
+- [x] `interrogate.sh` — facts by script (mechanics §8 setup): gate commands (from package
   manifests), trunk name, remote + issue-system presence, `.gitmodules` inventory, doc landmarks.
   Facts only; every decision stays in the verb interview.
-- [ ] Verify: shellcheck-clean at the lint gate's severity; unit exercise against a temp fixture
+- [x] Verify: shellcheck-clean at the lint gate's severity; unit exercise against a temp fixture
   dir (a minimal declaration block round-trips). Commit.
 
 ### Task 1.2: Installation-block library and the resolver walk
