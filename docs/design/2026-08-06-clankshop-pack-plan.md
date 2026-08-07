@@ -132,20 +132,20 @@ in the declared shape. The doctrine's source ID is `clankshop`, version `v1`; **
 entry carries an origin ID** (`clankshop:INV-n` etc.) per Appendix J — the provenance the
 projection protocol stamps at seeding.
 
-- [ ] `INVARIANTS.md` — only universal load-bearing rules, parameterized (slots for gate command,
+- [x] `INVARIANTS.md` — only universal load-bearing rules, parameterized (slots for gate command,
   trunk name), each one line per Appendix A's entry shape. Seed source: the durable rules currently
   in `skills/foreman/BOOTSTRAP.md` and foreman's doc set — copy judgment, not prose.
-- [ ] `GOTCHAS.md` — format header + declaration, no seed entries (traps are project-specific).
-- [ ] `POLICY.md` — declaration + empty (judgments accrue per project).
-- [ ] `ROUTING.md` — the skeleton classification walk (≈25-line budget, Appendix A): patch-vs-
+- [x] `GOTCHAS.md` — format header + declaration, no seed entries (traps are project-specific).
+- [x] `POLICY.md` — declaration + empty (judgments accrue per project).
+- [x] `ROUTING.md` — the skeleton classification walk (≈25-line budget, Appendix A): patch-vs-
   feature line, spike handling, bug-vs-known-gotcha check, the promotion bar at dispatch
   (Appendix D), dispatch rows with parameter slots.
-- [ ] `RECORDS.md` — **complete** (formats are not project-variable): the canonical record schema
+- [x] `RECORDS.md` — **complete** (formats are not project-variable): the canonical record schema
   absorbed from `skills/backlog/docs/TAXONOMY.md` — the five capture kinds and classifiers, the
   typed-ID namespace and per-store wire formats (Appendix B), the done-log line (Appendix C), the
   ticket schema + escalation layer (Appendix D), the report wire contract (Appendix L). The
   note-kind classifier is written against the **INVARIANTS bar** (mechanics §9), not MEMORY.md.
-- [ ] Verify: each file's declaration block parses per Appendix A syntax (first HTML comment,
+- [x] Verify: each file's declaration block parses per Appendix A syntax (first HTML comment,
   `spine-doc v1`, required keys); grep each frozen format against the Appendix text — no
   divergence. Commit.
 
