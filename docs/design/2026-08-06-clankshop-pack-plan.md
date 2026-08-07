@@ -445,13 +445,14 @@ SKILL.md row live.
 
 ### Task 1.9: Phase 1 gate
 
-- [ ] Lint `fails=0`; tests green; SKILL.md verb table fully live (no "lands in Phase 1" rows
-  remain).
-- [ ] **Routing probe** (descriptions-only fixture of every `skills/*/SKILL.md` + fresh subagent,
+- [x] Lint `fails=0`; tests green; SKILL.md verb table fully live (no "lands in Phase 1" rows
+  remain). *(Gate run 2026-08-07: `fails=0 warns=15` — the recorded Phase-0 baseline, 4 forward
+  references included; `scripts/tests/run.sh` all green.)*
+- [x] **Routing probe** (descriptions-only fixture of every `skills/*/SKILL.md` + fresh subagent,
   one pick each): "set up the project on the framework" → `clankshop`; "migrate this repo onto the
   framework" → `clankshop`; "check the whole system" → `clankshop`; "where do I start a change" →
   `foreman`. A mis-route fails the gate; fix is sharper self-scoping in the offending description,
-  then re-probe.
+  then re-probe. *(Probed 2026-08-07: 4/4 correct on the first pass.)*
 
 ---
 
