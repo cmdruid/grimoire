@@ -328,7 +328,7 @@ Tasks 1.3/1.4 land verb prose whose executable verification is deliberately the 
 **Files:** Create `skills/clankshop/verbs/setup.md`; modify `skills/clankshop/SKILL.md` (verb
 table row goes live).
 
-- [ ] The verb: interrogate (script) → interview (only genuine decisions: lanes, submodule
+- [x] The verb: interrogate (script) → interview (only genuine decisions: lanes, submodule
   opt-ins, mirror on/off) → **project the doctrine through the facts** into `AGENTS.md` +
   `.handbook/` + `.records/` — minimal-seed filtering (universal invariants deploy; the rest stays
   upstream), parameter slots filled, **every seeded entry provenance-stamped** (Appendix J
@@ -337,7 +337,7 @@ table row goes live).
   member's `skill:*` door registration block** (created-or-adopted, stamped per Appendix G —
   without this, Task 1.5's `unregistered` fact can never be empty on a fresh setup), and the
   submodule index when `.gitmodules` exists.
-- [ ] Verify: deferred to Task 1.8's fixture (the verb is prose; the fixture proves it). Lint.
+- [x] Verify: deferred to Task 1.8's fixture (the verb is prose; the fixture proves it). Lint.
   Commit.
 
 ### Task 1.4: `migrate` — the brownfield onramp
