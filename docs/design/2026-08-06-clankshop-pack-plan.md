@@ -170,7 +170,7 @@ projection protocol stamps at seeding.
 
 **Files:** Create `skills/clankshop/doctrine/README.md`, `skills/clankshop/doctrine/BASES.md`.
 
-- [ ] The doctrine's own index: a `spine-index v1` block (Appendix A) listing member docs; the
+- [x] The doctrine's own index: a `spine-index v1` block (Appendix A) listing member docs; the
   **chapter registry** (`rules/`, `workflows/`, `design/`, `testing/` — plus the protocol for a
   role adding a chapter: a stewardship-map row + registry row, per Appendix G); the **team
   roster** (pack §2's table verbatim); and the **door profile** — the compiled tier-0 table's row
@@ -178,14 +178,14 @@ projection protocol stamps at seeding.
   `rules/ROUTING.md` (mechanics §2's fallback contract), and the **frozen per-member
   registration block bodies** (Appendix G's door-block protocol — what setup and every domain
   self-init write from).
-- [ ] Create `doctrine/BASES.md` — the ratified base archive (Appendix J): the frozen entry
+- [x] Create `doctrine/BASES.md` — the ratified base archive (Appendix J): the frozen entry
   grammar in its header, **empty of bases at v1** (v1 bodies are the live doctrine). The header
   and `doctrine/README.md` state the bump procedure: before any doctrine version bump, every
   changed or retired entry's prior body is appended here **plus the bump record naming those
   origins** (Appendix J's coverage metadata) — a bump-record origin with no body block, or a
   provenance stamp citing an `origin@version` with no retrievable base, is a `check` fact
   (Task 1.5).
-- [ ] Verify: registry names exactly the four chapters; door rows dispatch only to pack-member
+- [x] Verify: registry names exactly the four chapters; door rows dispatch only to pack-member
   entry points. Commit.
 
 ### Task 0.5: Author the runbook
