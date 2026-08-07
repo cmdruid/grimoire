@@ -314,13 +314,13 @@ Tasks 1.3/1.4 land verb prose whose executable verification is deliberately the 
 
 **Files:** Create `skills/clankshop/scripts/install-block.sh`.
 
-- [ ] Read/write/validate the installation block per Appendix F (deterministic content; idempotent
+- [x] Read/write/validate the installation block per Appendix F (deterministic content; idempotent
   create-or-adopt; malformed/duplicate = fact + treat root as unstamped).
-- [ ] The **resolver walk** (mechanics §7): filesystem walk up from the session path; at each
+- [x] The **resolver walk** (mechanics §7): filesystem walk up from the session path; at each
   unstamped repo root, `git rev-parse --show-superproject-working-tree` continues across the repo
   boundary; nearest stamped door wins; none found → `unmanaged` fact. Emits the chosen root; all
   other machinery takes it as an explicit parameter.
-- [ ] Verify: temp-fixture cases — stamped root, unstamped root, nested submodule, worktree
+- [x] Verify: temp-fixture cases — stamped root, unstamped root, nested submodule, worktree
   (terminates at its own root). Commit.
 
 ### Task 1.3: `setup` — greenfield bootstrap
