@@ -264,19 +264,23 @@ The search-derived, item-checked inventory of every live surface this restructur
 
 ### Task 0.8: Phase 0 gate
 
-- [ ] `bash skills/skill-builder/scripts/skills-lint.sh .` → `fails=0`; record the new warn count
+- [x] `bash skills/skill-builder/scripts/skills-lint.sh .` → `fails=0`; record the new warn count
   and attribute every delta to an understood cause (README inventory satisfied in 0.1, so the
   expected deltas are only forward references to `/guardian`/`/calibrator` in doctrine prose —
   recorded here, cleared by the Phase 2 gate).
+  **Recorded (2026-08-07, gate run at `366a5d6`): `fails=0 warns=15` — baseline 11 plus exactly
+  four understood deltas, all `clankshop: references /X which is not a skill in this suite`
+  forward references to scheduled members: `/guardian` (Task 2.6), `/calibrator` (Task 2.11),
+  `/bug` and `/task` (Task 2.4) — each must clear by the Phase 2 gate.**
 - [ ] **Human ratification gate** — the complete pending-freeze list, kept in sync with the
   appendices' flags: Appendix K's `T-`/`improve:`/`source:` improvement-item encoding **and its
   tracker claim-marker encoding** (`[⇢ dispatched <date>]` / `dispatched:`), Appendix J's
   path-qualified whole-file origin IDs, Appendix L's report-ID collision suffix rule **and its
   keyed-heading / `processed:`-list grammar**. Phase 1 does not begin until each is ratified or
   amended; on amendment, re-run the conformance pass below.
-- [ ] Doctrine-vs-Appendix conformance pass: each frozen format cited by a doctrine file matches
+- [x] Doctrine-vs-Appendix conformance pass: each frozen format cited by a doctrine file matches
   the Appendix byte-for-byte where the Appendix states exact syntax.
-- [ ] Working tree clean; every Phase 0 commit scoped.
+- [x] Working tree clean; every Phase 0 commit scoped.
 
 ---
 
