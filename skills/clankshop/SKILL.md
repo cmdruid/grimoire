@@ -57,7 +57,7 @@ projection protocol — provenance-stamped, base-recorded, mechanically diffable
 | verb | does | status |
 |---|---|---|
 | `setup` | greenfield bootstrap: facts by script, decisions by interview, project the doctrine through the facts into `AGENTS.md` + `.handbook/` + `.records/`; write the installation block, the compiled tier-0 table, the stewardship maps, each member's door registration | `verbs/setup.md` |
-| `migrate` | brownfield onramp: preconditions → generic inventory → content classification → one confirmed mapping table → worktree execution with rollback → aliases preserved → nothing-dropped check → stamp | lands in Phase 1 of the rollout plan |
+| `migrate` | brownfield onramp: preconditions → generic inventory → content classification → one confirmed mapping table → worktree execution with rollback → aliases preserved → nothing-dropped check → stamp | `verbs/migrate.md` |
 | `check` | whole-system assembly validation: installation block, every stamped projection vs its named input, chapter presence, cross-store foreign-key integrity, mirror drift, seats, lock vs installed set — facts only | lands in Phase 1 of the rollout plan |
 
 The fact partition: `check` owns **assembly** facts; document-shape facts (entry conformance,

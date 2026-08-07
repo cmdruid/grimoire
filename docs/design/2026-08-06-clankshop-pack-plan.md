@@ -346,7 +346,7 @@ table row goes live).
 `skills/clankshop/scripts/migrate-preflight.sh` (the precondition-facts producer named below);
 SKILL.md row live.
 
-- [ ] Format-agnostic per mechanics §8: preconditions (clean tree; **no active workstreams —
+- [x] Format-agnostic per mechanics §8: preconditions (clean tree; **no active workstreams —
   worktree or in-place**, a linked-worktree check alone being insufficient since workstream
   supports in-place streams; whole-installation duplicate-ID scan; unclassifiable-artifact
   triage). The migrate **preflight script emits these precondition facts itself**: clean-tree and
@@ -358,7 +358,7 @@ SKILL.md row live.
   (`(alias <old>)`, citations rewritten, alias map in the migration's done-record) → nothing-
   dropped check → stamp. A declared `records-root` is respected in place — same walk, no bulk
   `git-mv`.
-- [ ] Verify: fixture in Task 1.8. Lint. Commit.
+- [x] Verify: fixture in Task 1.8. Lint. Commit.
 
 ### Task 1.5: `check` — whole-system assembly validation
 
