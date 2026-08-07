@@ -206,14 +206,14 @@ projection protocol stamps at seeding.
 
 **Files:** Modify `packs/clankshop.md` (frontmatter only).
 
-- [ ] Extend the frontmatter per Appendix I: add `pack-version: 1`, `layout: 1`, `core:` (the core
+- [x] Extend the frontmatter per Appendix I: add `pack-version: 1`, `layout: 1`, `core:` (the core
   members **existing at this commit**: `clankshop architect auditor backlog chiropractor debugger
   feature foreman workstream`), `helpers:` (`delegate mailbox handoff` — **bare-listed, presence
   semantics**; the `>=1` ranges land together with the helpers' `version:` keys in Task 3.3, per
   Appendix I's rule that a declared range requires the key), `optional:` (empty for now — alias
   proxies join in Task 2.4). Add `clankshop` to
   the `skills:` install line. `guardian` and `calibrator` join `skills:`/`core:` in Tasks 2.6/2.11.
-- [ ] Verify — **non-mutating** (`install.sh` has no dry-run mode and creates real links when
+- [x] Verify — **non-mutating** (`install.sh` has no dry-run mode and creates real links when
   invoked): loop the frontmatter's `skills:` line and `test -d skills/<name>` for each member;
   never run the installer as a check before Task 1.7 lands the transactional preflight. Body
   prose untouched (Phase 4's job). Commit.
