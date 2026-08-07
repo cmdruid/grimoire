@@ -106,20 +106,20 @@ extension, one new companion doc. No existing skill's behavior changes.
 
 **Files:** Create `skills/clankshop/SKILL.md`; modify `README.md` (inventory line).
 
-- [ ] Write the frontmatter: `name: clankshop`; a self-scoping `description:` (≤750 chars to stay
+- [x] Write the frontmatter: `name: clankshop`; a self-scoping `description:` (≤750 chars to stay
   under the lint WARN) covering the pack face — the pack's doctrine + runbook home, and the three
   system verbs (`setup` greenfield bootstrap, `migrate` brownfield onramp, `check` whole-system
   assembly validation), trigger phrases "set up the project", "migrate this repo onto the
   framework", "check the system".
-- [ ] Body: the pack-face overview (pack §3), the four-tier roster table (pack §2), the asset map
+- [x] Body: the pack-face overview (pack §3), the four-tier roster table (pack §2), the asset map
   (doctrine at `doctrine/`, runbook at `docs/RUNBOOK.md`, lock at `packs/clankshop.md`), and a
   verb table whose rows note **"lands in Phase 1 of the rollout plan"** until they do — an honest
   status, updated by Task 1.3–1.5.
   (`packs/clankshop.md`'s `skills:`/`core:` lines are NOT touched here — Task 0.6 is the lock's
   single writer.)
-- [ ] Add `clankshop` to `README.md`'s skill inventory (backticked name) in the same commit — the
+- [x] Add `clankshop` to `README.md`'s skill inventory (backticked name) in the same commit — the
   lint warns on any skill dir absent from it.
-- [ ] Verify: `bash skills/skill-builder/scripts/skills-lint.sh .` → `fails=0` (the new dir now
+- [x] Verify: `bash skills/skill-builder/scripts/skills-lint.sh .` → `fails=0` (the new dir now
   has a SKILL.md; description-length within bounds). Commit scoped to `skills/clankshop/` +
   `README.md`.
 

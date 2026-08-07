@@ -45,6 +45,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
 | `backlog` | the capture desk: file follow-ups by kind (task/bug/issue/feedback/note), sweep finished work (`debrief`), curate the lists (`curate`) |
 | `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |
+| `clankshop` | the clankshop pack's executable face: the pack's doctrine + runbook home and the system verbs — `setup` (greenfield bootstrap), `migrate` (brownfield onramp), `check` (whole-system assembly validation) |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `feature` | the planning spine: brainstorm → design → plan → build, plus independent review |
