@@ -396,13 +396,13 @@ SKILL.md row live.
 
 **Files:** Create `skills/clankshop/scripts/doctrine-diff.sh`.
 
-- [ ] Per Appendix J: for every provenance-stamped handbook entry, retrieve the base per the
+- [x] Per Appendix J: for every provenance-stamped handbook entry, retrieve the base per the
   ratified retrieval rule (the oldest qualifying `BASES.md` block, else the live entry —
   Appendix J states it exactly; this task implements, never restates), three-way classify into
   the
   six states (*unchanged / locally edited / upstream updated / conflict / locally deleted /
   upstream retired*), emit facts only. The calibrator (Task 2.11) owns the offer/apply judgment.
-- [ ] Verify: six micro-fixtures, one per state, in `scripts/tests/`; a prior-version retrieval
+- [x] Verify: six micro-fixtures, one per state, in `scripts/tests/`; a prior-version retrieval
   case (the base comes from `BASES.md`, not the live doctrine); and a fresh-seed *unchanged*
   case per entry shape — INV line, heading entry, lane file, testing file — proving the
   normalization (Appendix J's canonical comparison input); the unrelated-bump case — an
