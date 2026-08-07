@@ -154,15 +154,15 @@ projection protocol stamps at seeding.
 **Files:** Create `skills/clankshop/doctrine/workflows/{patch,bug,feature,spike}.md`,
 `skills/clankshop/doctrine/testing/{GATE,PIPELINE,DIAGNOSTICS}.md`.
 
-- [ ] Each lane file per mechanics §2's lane shape: purpose line, *enter-from*, project-policy ID
+- [x] Each lane file per mechanics §2's lane shape: purpose line, *enter-from*, project-policy ID
   citations (parameter slots), seam glue naming the pack's skills **directly** (pack §4 makes this
   legal: "defect → `/debugger`", "human call → `/backlog promote`"), and the co-equal **by-hand
   walk** with a done-when block. ≤60 lines each.
-- [ ] `testing/` seeds for guardian's chapter — all three docs pack §4.4 names: `GATE.md` (gate
+- [x] `testing/` seeds for guardian's chapter — all three docs pack §4.4 names: `GATE.md` (gate
   definition skeleton with command slots), `PIPELINE.md` (the CI/CD pipeline doc skeleton),
   `DIAGNOSTICS.md` (playbook skeleton: symptom → first moves, seeded from debugger's discipline
   headings).
-- [ ] Verify: lane files within budget; every skill named in seam glue exists or is scheduled
+- [x] Verify: lane files within budget; every skill named in seam glue exists or is scheduled
   (guardian/calibrator references acceptable — recorded as phase-baseline warns per the Gate;
   the ratified mid-rollout window covers any pre-release deploy). Commit.
 
