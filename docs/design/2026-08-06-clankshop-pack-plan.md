@@ -225,7 +225,7 @@ projection protocol stamps at seeding.
 The search-derived, item-checked inventory of every live surface this restructure touches
 (pack §8 Phase 0). Build it **from grep evidence, not recall**:
 
-- [ ] Sweep the library for each term-family and record every hit as a manifest row
+- [x] Sweep the library for each term-family and record every hit as a manifest row
   (`surface → disposition → receiving task → [ ]`): `\.agents/foreman`, `MEMORY\.md`, `BOOTSTRAP`,
   `TAXONOMY`, `derive-seams`, `check-projection`, `packs/clankshop`, `calibrate`, `done-record`,
   `design-draft`, `\.records/archive`, `foreman (setup|init|migrate|check)`, `tracker-entry`,
@@ -233,7 +233,7 @@ The search-derived, item-checked inventory of every live surface this restructur
   independence-era writers emit), `PLANNING\.md`, `ROUTING\.md`, `records-root`, `doc-linter`
   (mechanics §11 names its store list + `id:` schema as a conforming edit — locate the linter by
   this sweep).
-- [ ] Seed rows known today (verify each by grep, then keep): the `install.sh` ↔ `packs/clankshop.md`
+- [x] Seed rows known today (verify each by grep, then keep): the `install.sh` ↔ `packs/clankshop.md`
   manifest seam (lock format landed in 0.6; transactional install Task 1.7; body absorption Task
   4.4); the live backlog surface — **re-framing edits only, no rename** (route blocks, templates,
   docs describing "the capture bureau"); foreman's setup/migrate/check verb files + `foreman-
@@ -256,11 +256,11 @@ The search-derived, item-checked inventory of every live surface this restructur
   deployed check chain (Task 2.4); workstream's old-layout hits across `SKILL.md`,
   `verbs/close.md`, `flow.md`, and templates, not just `ship.md` (Task 3.2); handoff's two stale
   paths, ratified in scope (Task 3.3).
-- [ ] Every row names exactly one disposition and one **receiving task** — the manifest is the
+- [x] Every row names exactly one disposition and one **receiving task** — the manifest is the
   authoritative enumeration (later tasks execute *their* manifest rows, so a surface with no task
   is a plan bug surfaced here); anything unclassifiable is listed under a *triage* heading for
   the human, never guessed.
-- [ ] Verify: re-run each sweep grep — every hit appears in exactly one row. Commit.
+- [x] Verify: re-run each sweep grep — every hit appears in exactly one row. Commit.
 
 ### Task 0.8: Phase 0 gate
 
