@@ -937,18 +937,33 @@ the backlog and skill-builder copies are clean).
 inventory framing), `AGENTS.md` (the steward-inventory paragraph — authored library doctrine;
 patient-zero forbids registration blocks and deployed-layout content, not doctrine prose).
 
-- [ ] Reduce to: the frontmatter (manifest + lock — the machine surface `install.sh` and the lint
+- [x] Reduce to: the frontmatter (manifest + lock — the machine surface `install.sh` and the lint
   gate read) + a short body pointing at `skills/clankshop/` (SKILL.md, doctrine, runbook). Before
   deleting body content, diff it against the doctrine + runbook: any judgment not yet absorbed
-  gets absorbed first (additive before subtractive).
-- [ ] `README.md` + `AGENTS.md`: rewrite the independence-era framing (steward inventory,
-  typed-edge references, seam language) to the pack model, per their manifest rows.
-- [ ] With the body absorbed, execute the deferred deletions (Tasks 2.5/3.4's pointers):
+  gets absorbed first (additive before subtractive). *(Diff outcome: the only unabsorbed judgment
+  was the "skill-builder deliberately outside the pack" rationale — absorbed into the reduced
+  body. Everything else verified absorbed (roster/layout/door/seams/workflows/which-audit/install
+  → doctrine + RUNBOOK; roadmap-as-queue-source → workstream SKILL.md; debugger-fix-lands → bug
+  lane) or superseded (oven/recipe foreman framing, derive-seams enrichment, typed-edge
+  vocabulary, five-section door restatement — mechanics §10's reconciliation governs).
+  Frontmatter byte-preserved.)*
+- [x] `README.md` + `AGENTS.md`: rewrite the independence-era framing (steward inventory,
+  typed-edge references, seam language) to the pack model, per their manifest rows. *(Roster
+  tiers replace the steward inventory; Storage convention rewritten to `.handbook`/`.records`/
+  `.agents/roles` with the old-layout table dropped in favor of the doctrine pointers;
+  patient-zero caveat retargeted to fixtures-in-`scripts/tests/`; `BOOTSTRAP.md` and
+  `doc-linter` prose cleared.)*
+- [x] With the body absorbed, execute the deferred deletions (Tasks 2.5/3.4's pointers):
   `skills/foreman/docs/{ROUTING,PLANNING,WORKTREES,MAINTENANCE}.md` and
   `skills/foreman/templates/report.md`; then grep-verify zero references across active surfaces
-  (`skills/**`, `packs/`, `README.md`, `AGENTS.md`).
-- [ ] Verify: `./install.sh --pack clankshop` green; no unique content lost (the diff is the
-  check); manifest rows. Commit.
+  (`skills/**`, `packs/`, `README.md`, `AGENTS.md`). *(Deleted; sweep CLEAN — `packs/` glob
+  dropped per the Migration note.)*
+- [x] Verify: `./install.sh --pack clankshop` green; no unique content lost (the diff is the
+  check); manifest rows. Commit. *(Green after one surfaced defect was fixed: the migrated
+  preflight's collision check compared one `readlink` level, false-positiving on links that
+  resolve to the same source through an intermediate symlink chain — now a physical-path compare,
+  the same rule skills-lint.sh's wiring check applies. Suite 189 green; lint `fails=0
+  warns=10`.)*
 
 ### Task 4.5: Superseded design docs — status lines
 

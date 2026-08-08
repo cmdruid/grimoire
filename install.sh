@@ -196,7 +196,12 @@ if [ "$mode" = "install" ] && [ -n "$pack_name" ]; then
       echo "preflight: missing-member $name (no skills/$name/SKILL.md)" >&2; fail=1
     fi
     if [ -L "$link" ]; then
-      if [ "$(readlink "$link")" != "$src" ]; then
+      # Physical-path compare: a link that resolves to the same source through an
+      # intermediate symlink chain is the same install, not a collision (the same
+      # rule skills-lint.sh's wiring check applies).
+      want="$(cd -P "$src" 2>/dev/null && pwd)"
+      got="$(cd -P "$link" 2>/dev/null && pwd || true)"
+      if [ -z "$got" ] || [ "$got" != "$want" ]; then
         echo "preflight: collision $name ($link -> $(readlink "$link"))" >&2; fail=1
       fi
     elif [ -e "$link" ]; then

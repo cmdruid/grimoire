@@ -8,21 +8,24 @@ This file captures the **design philosophy** for the tools, scripts, and skills 
 it whenever you add or revise one. It is distilled from practice; the `workstream` skill (its
 `scripts/workstream-git.sh` + *Helper scripts* section) is the worked reference.
 
-Four skills are concrete agent **roles** rather than plumbing: `architect`, `foreman`, and
-`chiropractor` are **stewards** — each stands up, evaluates, maintains, and drift-corrects one
-cross-cutting layer against the code; `auditor` owns no layer and only emits findings. The rest
-group as operators (`feature`, `backlog`, `workstream`) and plumbing (`delegate`, `mailbox`,
-`handoff`). See `README.md` for the full inventory and `docs/design/2026-07-17-library-refactor.md`
-for the refactor that produced this shape.
+Most of these skills are members of the **`clankshop` pack**, tiered by the pack doctrine's roster
+(`skills/clankshop/doctrine/README.md`): **roles** — expertise an agent assumes (`architect` design,
+`foreman` operations, `guardian` verification, `auditor` code quality, `chiropractor` docs quality,
+`calibrator` the improvement loop); **instruments** — procedures anyone operates (`backlog` the
+records instrument, `debugger` the diagnostic instrument); **pipelines** (`feature`, `workstream`);
+and portable **helpers** (`delegate`, `mailbox`, `handoff`). The pack face (`skills/clankshop/`)
+carries the doctrine and runbook; `skill-builder` is the library's own toolmaker and stays outside
+the pack. See `README.md` for the full inventory.
 
-These skills deploy to **two roots**: hand-curated **seeds** under `.agents/` (one home per steward —
-`architect`/`foreman`/`auditor`) and typed **records** under `.records/` (trackers + durable
-history). Because the paths no longer encode ownership, `foreman setup` writes an **ownership index**
-(`.agents/README.md` + `.records/README.md`) mapping content → location → steward — a stamped
-snapshot, per the *snapshot must never pose as authoritative* rule below. The full layout + steward
-map live in `README.md` (*Storage convention*) and `skills/clankshop/PACK.md`. The front-door architecture
-that layout serves — read-cost tiers, the compiled routing table — is
-`docs/design/2026-07-26-front-door-architecture.md`.
+A consuming project gets the pack **deployed**, not copied: `/clankshop setup` (or `migrate`)
+projects the doctrine through the project's facts into **`.handbook/`** (the projected,
+locally-grown chapters — that project's source of truth), stands up **`.records/`** (typed records:
+trackers, tickets, plans, the done log, reports, audit) and lazy machinery-only seats under
+**`.agents/roles/`**, writes the two-region **stewardship maps** (`.handbook/README.md` +
+`.records/README.md`) — stamped snapshots, per the *snapshot must never pose as authoritative* rule
+below — and stamps the installation block. The full layout is the doctrine's record schema
+(`skills/clankshop/doctrine/rules/RECORDS.md`); `README.md` (*Storage convention*) has the short
+version.
 
 ## Design philosophy
 
@@ -39,8 +42,9 @@ this library was.)
 - **Feedback channel.** `docs/DOCTRINE.md`'s "skills are living artifacts" bullet says route friction
   to the skills' home feedback channel. For grimoire that channel is **GitHub issues**, tagged by
   skill — an installation may override it with its own collection file (see `README.md`).
-- **Patient-zero caveat.** The self-init/typed-edge mechanism (`docs/DOCTRINE.md` § Typed edges &
-  registration) is **built and tested here**, but grimoire's own `AGENTS.md` is authored library
-  doctrine, not a consuming project's scaffold — **never let self-registration blocks accrete in it**.
-  Every skill that self-registers exercises the mechanism against a throwaway fixture front-door
-  instead (`docs/design/2026-07-18-skill-self-init-model.md` §3.2).
+- **Patient-zero caveat.** The deployed mechanisms — door registration, projections, self-init
+  (`docs/DOCTRINE.md` covers the helpers' portable regime) — are **built and tested here**, but
+  grimoire's own `AGENTS.md` is authored library doctrine, not a consuming project's scaffold —
+  **never let registration blocks or deployed-layout content accrete in it**. Every deployed
+  mechanism is exercised against throwaway fixtures instead (committed harnesses in
+  `skills/clankshop/scripts/tests/`; fixture instances in temp dirs).

@@ -93,7 +93,7 @@ legitimately retain every retired term (verified: 8 files hit `derive-seams` alo
   `route.md:4`, `feature/SKILL.md`, `workstream/flow.md:69`, `packs/clankshop.md:131`) →
   Task 2.5
 - [x] `skills/foreman/scripts/scoped-commit.sh` — doc-linter comment re-pointed → Task 2.5
-- [ ] `skills/foreman/templates/report.md` — no absorption needed; successors are the bundled
+- [x] `skills/foreman/templates/report.md` — no absorption needed; successors are the bundled
   templates of Tasks 2.7/2.8; deleted in Task 4.4 → Task 4.4
 
 ## Phase 2 — the new roles and the instruments
@@ -196,13 +196,13 @@ drain owner):
 - [ ] `skills/{foreman,architect,auditor,feature}/scripts/register-route.sh` — the
   `derive-seams` comparison comments (line 29 at HEAD; comments only — backlog and
   skill-builder copies verified clean) rewritten → Task 4.3
-- [ ] `packs/clankshop.md` body — reduced to frontmatter (manifest + lock) + a short pointer at
+- [x] `packs/clankshop.md` body — reduced to frontmatter (manifest + lock) + a short pointer at
   `skills/clankshop/`; body judgment diffed against doctrine + runbook and absorbed first
   (additive before subtractive) → Task 4.4
-- [ ] `README.md` — *Storage convention* section, steward-inventory framing, skill-table rows
+- [x] `README.md` — *Storage convention* section, steward-inventory framing, skill-table rows
   naming the old layout (`.agents/foreman`, `.records/archive`, BOOTSTRAP, design-draft,
   doc-linter, calibrate language) → the pack model → Task 4.4
-- [ ] `AGENTS.md` — the steward-inventory paragraph + typed-edge references (authored library
+- [x] `AGENTS.md` — the steward-inventory paragraph + typed-edge references (authored library
   doctrine; patient-zero forbids registration blocks, not doctrine prose) → Task 4.4
 - [ ] `docs/design/2026-07-18-skill-self-init-model.md`,
   `2026-07-18-skill-boundaries-and-glue-ownership.md` (pack-member provisions superseded;

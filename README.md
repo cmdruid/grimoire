@@ -26,22 +26,22 @@ git clone https://github.com/cmdruid/grimoire && cd grimoire
 
 ## The skills
 
-Concrete agent roles: `architect`, `foreman`, `chiropractor`, `auditor`, `debugger`. Three of those
-are **stewards**: each stands up, evaluates, maintains, and drift-corrects one cross-cutting layer
-against the code (`architect` the design seed, `foreman` the workflow glue, `chiropractor` the doc
-spine) — even bootstrapping that layer on a repo that doesn't have it yet. `auditor` and `debugger`
-both investigate rather than steward a layer: `auditor` scores code against a quality rubric on a
-scheduled sweep and emits findings; `debugger` root-causes one specific reported failure, symptom-
-triggered, and proposes a fix rather than a finding. Six more group as **operators** (`feature`,
-`backlog`, `workstream` — consume the stewards' seeds and act) and **plumbing** (`delegate`,
-`mailbox`, `handoff` — orchestration/transport used throughout). `skill-builder` is a category of
-one: the **toolmaker** — it stewards the skills in this library themselves (scaffold new ones, audit
-boundary health, calibrate authoring doctrine), not project code, and is deliberately outside the
-`clankshop` pack (see *The packs* below).
+The `clankshop` pack binds most of them into one development loop, tiered by the pack doctrine's
+roster (`skills/clankshop/doctrine/README.md`): **roles** — expertise an agent assumes when the
+moment calls for it (`architect` design, `foreman` operations and routing, `guardian` verification,
+`auditor` code quality, `chiropractor` docs quality, `calibrator` the improvement loop);
+**instruments** — procedures anyone operates (`backlog` the records instrument, `debugger` the
+diagnostic instrument); **pipelines** — the work processes (`feature` turns an idea into gate-green
+code, `workstream` encapsulates continuous shipping); **helpers** — portable plumbing useful on any
+repo (`delegate`, `mailbox`, `handoff`); plus the pack **face** (`clankshop`) and the optional
+capture aliases (`bug`, `task`). `skill-builder` is a category of one: the **toolmaker** — it
+stewards the skills in this library themselves (scaffold new ones, audit boundary health, calibrate
+authoring doctrine), not project code, and is deliberately outside the `clankshop` pack (see *The
+packs* below).
 
 | skill | what it does |
 |---|---|
-| `architect` | the design-system engine: a project's regenerable `.agents/architect/` seed — stand up (`init`/`extract`), evaluate (`check`), drift-correct (`reconcile`), evolve (`distill`/`plan`/`brainstorm`), plus `prep` |
+| `architect` | the design-system engine: a project's regenerable `.handbook/design/` seed — stand up (`init`/`extract`), evaluate (`check`), drift-correct (`reconcile`), evolve (`distill`/`plan`/`brainstorm`), plus `prep` |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
 | `backlog` | the records instrument: capture by kind, complete (`done` + the done log), escalate via tickets (+ mirror), curate, debrief |
 | `bug` | capture alias: `/bug` proxies the records instrument's bug capture (optional pack member) |
@@ -65,32 +65,22 @@ of a shared one. `architect` is a rename of `design` (verbs unchanged); `auditor
 `audit` (see *Storage convention* below and `docs/design/2026-07-17-library-refactor.md` for the
 full rationale).
 
-### Storage convention: two roots (`.agents/` + `.records/`)
+### Storage convention: what a deployed project carries
 
-Committed, agent-tooling-managed project artifacts split by *kind*, filtered from a direct code read
-the way `.github/` is. **`.agents/`** holds hand-curated **seeds** (source of truth, one home per
-steward); **`.records/`** holds every typed **record** (trackers + durable history). Because the
-paths no longer encode ownership, `foreman setup` writes an **ownership index** (`.agents/README.md` +
-`.records/README.md`) mapping content → location → steward:
-
-| content | location | steward |
-|---|---|---|
-| design seed | `.agents/architect/` | `architect` |
-| provisional design draft (brownfield onramp) | `.records/design-draft/` | `architect extract` (writer) |
-| dev doctrine: `docs/` + `MEMORY`/`GOTCHAS`/`README` glue | `.agents/foreman/` | `foreman` |
-| audit rubric: `GUIDE`, `rules/`, `metrics.sh` | `.agents/auditor/` | `auditor` |
-| tasks · issues · feedback · bugs/ · notes/ | `.records/` | `backlog` |
-| plans / roadmaps | `.records/plans/` | `feature` |
-| shipped / done records | `.records/archive/` | `workstream` |
-| architecture decision records | `.records/adr/` | `feature` (writer); distilled by `architect` |
-| research reports · run logs | `.records/reports/`, `.records/logs/` | foreman / various |
-| seed↔code drift reports | `.records/reports/` | `architect reconcile` (writer) |
-| audit deliverables: `FINDINGS` · `metrics.csv` · `history/` | `.records/audit/` | `auditor` |
+A project the pack is deployed onto carries three agent-tooling roots, filtered from a direct code
+read the way `.github/` is. **`.handbook/`** holds the projected, locally-grown chapters — that
+project's source of truth (`rules/` and `workflows/` tended by the operations role, `design/` by
+the design role, `testing/` by the verification role, plus the records instrument's stamped
+projection `rules/RECORDS.md`). **`.records/`** holds every typed record (trackers, tickets, the
+done log, plans/ADRs, design drafts, reports, audit deliverables). **`.agents/roles/`** holds lazy
+machinery-only seats (e.g. the auditor's rubric). Because paths don't encode ownership,
+`/clankshop setup` writes the two-region **stewardship maps** (`.handbook/README.md` +
+`.records/README.md`) mapping content → location → steward, each block stamped against its input.
 
 Session hand-offs stay **gitignored scratch** (root `HANDOFF.md`, steward `handoff`) —
 not a `.records/` store. The full store tree lives in the pack doctrine's record schema
-(`skills/clankshop/doctrine/rules/RECORDS.md`); the steward map is the pack manifest's
-(`skills/clankshop/PACK.md`).
+(`skills/clankshop/doctrine/rules/RECORDS.md`); the roster and door profile live in the doctrine
+index (`skills/clankshop/doctrine/README.md`).
 
 ## The packs
 
@@ -99,16 +89,17 @@ the face installs like any skill, `install.sh --pack` resolves the manifest, ins
 transactionally, and records the install in the sidecar `grimoire.lock` beside the target dir.
 
 - **`clankshop`** (`skills/clankshop/PACK.md`) — the skills above (minus `skill-builder`, its own
-  maintainer tool) as one disciplined development loop: the layer map, the seam contracts, and which
-  skill owns what live in the manifest.
+  maintainer tool) as one disciplined development loop: the composition lives with the face — the
+  doctrine (chapter registry, roster, door profile) in `skills/clankshop/doctrine/` and the
+  methodology in `skills/clankshop/docs/RUNBOOK.md`.
 
 ## Authoring conventions
 
 - **Self-contained + location-agnostic.** A skill references its own bundled resources
-  (`scripts/`, `templates/`, `docs/`, `verbs/`, `BOOTSTRAP.md`) **relative to its own base
+  (`scripts/`, `templates/`, `docs/`, `verbs/`) **relative to its own base
   directory** — never a host-project path — so it works wherever installed.
 - **Instruct generically; let the project resolve specifics.** Skills say "run the host's gate /
-  fast doc-linter / diagnostics" and rely on the consuming project's `AGENTS.md` to resolve them
+  checks / diagnostics" and rely on the consuming project's `AGENTS.md` to resolve them
   to concrete commands. They carry **no** project-specific commands.
 - **`SKILL.md` frontmatter must be strict-YAML valid** (some harnesses enforce this):
   - **Quote** any `description:` whose value contains `: `.
