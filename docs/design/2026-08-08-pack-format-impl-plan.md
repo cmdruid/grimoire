@@ -861,6 +861,14 @@ git commit -m "pack-format(crate): manifest model -- spec 2 grammar, format opti
   -- crates/grimoire-pack/src/manifest.rs crates/grimoire-pack/src/lib.rs
 ```
 
+> **Executed deviation (2026-08-08, review-ratified):** `is_supported()` and its test
+> assertion were dropped after review showed the method is unreachable-false (`parse`
+> refuses unsupported formats before constructing, so any held `Manifest` is supported).
+> The strict stance is documented on `parse`'s doc comment: a foreign format revision's
+> grammar is unknown here, so no validated `Manifest` is constructed for it; spec §2's
+> "MAY still enumerate and display" is served by callers reading raw `frontmatter` pairs.
+> A within-single-list duplicate test was added. Landed as `f781e7a` on top of `35aa4a5`.
+
 ### Task 7: Appendix A member hash
 
 **Files:**
