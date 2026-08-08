@@ -822,11 +822,17 @@ across all of these, not just `ship.md`); delete `skills/foreman/templates/done-
 
 ### Task 3.4: Phase 3 gate
 
-- [ ] Confirm the Phase-3 consumers (`feature`, `workstream`) no longer reference the retired
+- [x] Confirm the Phase-3 consumers (`feature`, `workstream`) no longer reference the retired
   foreman doc set — its deletion lands in Task 4.4, after the pack body's own references are
   absorbed (the last consumer standing).
-- [ ] Lint; fixtures still green (`skills/clankshop/scripts/tests/run.sh`); manifest Phase-3 rows
-  checked.
+- [x] Lint; fixtures still green (`skills/clankshop/scripts/tests/run.sh`); manifest Phase-3 rows
+  checked. *(Gate run 2026-08-08: grep confirms zero `foreman/docs` / `foreman/templates`
+  references left in `skills/feature/` + `skills/workstream/` (the doc set itself persists until
+  Task 4.4). Lint `fails=0 warns=11` — unchanged baseline, the one recorded delta
+  (`audit-finding` single-declarer) still clears at the Phase 4 gate. Fixture suite all green —
+  180 asserts across six harnesses. Manifest Phase-3 rows all checked (the helper version-keys
+  row resolved as superseded — Task 3.3's supersession note). No routing probe this gate: no
+  skill description changed in Phase 3, so the probe surface is identical to the 2.12 run.)*
 
 ---
 
