@@ -1,7 +1,8 @@
 #!/bin/sh
-# onramp-test.sh -- the three onramp fixtures (plan Task 1.8): greenfield projection,
-# brownfield migration, unstamped refusal. Fixture instances live in a temp dir and are
-# destroyed on exit; the real doctrine and pack lock are the inputs under test.
+# onramp-test.sh -- the onramp fixtures (plan Tasks 1.8, 5.3): greenfield projection,
+# brownfield migration, unstamped refusal, transactional pack install, registration
+# stability. Fixture instances live in a temp dir and are destroyed on exit; the real
+# doctrine and pack lock are the inputs under test.
 set -eu
 DIR=$(CDPATH='' cd "$(dirname "$0")" && pwd -P)
 CLANKSHOP_SCRIPTS=$(CDPATH='' cd "$DIR/.." && pwd -P)
@@ -151,6 +152,38 @@ expect "install: setup declared"     "\"declared\": \"/clankshop setup\"" "$IT/g
 "$REPO_ROOT/install.sh" --pack clankshop --target "$IT/skills" > "$TMP/inst2" 2>&1
 expect "install: idempotent rerun"   "already installed" "$TMP/inst2"
 expect "install: rerun re-locks"     "locked    clankshop@$PV" "$TMP/inst2"
+
+# ============ fixture 5: registration stability (plan Task 5.3, pulled forward) ============
+# setup writes each member's pack-style door block once; the four self-registering
+# members (backlog init, architect init, auditor deploy, feature init) re-register
+# lazily during normal use, through their own register-route.sh copies. The contract:
+# an existing pack-style block is ADOPTED -- re-registration converges byte-identically,
+# never rewrites the real front door -- and a hand-broken delimiter leaves the file
+# untouched (malformed = report + exit; the human repairs, then re-runs).
+SKILLS_SRC=$(CDPATH='' cd "$CLANKSHOP_SCRIPTS/../.." && pwd -P)
+R=$TMP/regstab
+mkdir -p "$R" && git -C "$R" init -qb main . 2>/dev/null
+project_doctrine "$R" "$DOCTRINE" "$SKILLS" "make test" main "$PV"
+cp "$R/AGENTS.md" "$TMP/door.before"
+for m in backlog architect auditor feature; do
+  extract_door_body "$DOCTRINE/README.md" "$m" > "$TMP/body.$m"
+  bash "$SKILLS_SRC/$m/scripts/register-route.sh" "$R/AGENTS.md" "$m" "clankshop@$PV" \
+    < "$TMP/body.$m" > "$TMP/reg.$m" 2>&1
+  expect "regstab: $m re-registers over its block" "result=replaced" "$TMP/reg.$m"
+  expect_eq "regstab: $m adopts byte-identically" "identical" \
+    "$(cmp -s "$TMP/door.before" "$R/AGENTS.md" && echo identical || echo diverged)"
+done
+
+# hand-broken delimiter: drop one member's END line -> register must touch NOTHING
+grep -vF '<!-- skill:feature END -->' "$R/AGENTS.md" > "$TMP/door.broken.tmp"
+cat "$TMP/door.broken.tmp" > "$R/AGENTS.md"
+cp "$R/AGENTS.md" "$TMP/door.broken"
+bash "$SKILLS_SRC/feature/scripts/register-route.sh" "$R/AGENTS.md" feature "clankshop@$PV" \
+  < "$TMP/body.feature" > "$TMP/reg.mal" 2>&1 || echo "exit=$?" >> "$TMP/reg.mal"
+expect "regstab: malformed reported"      "malformed" "$TMP/reg.mal"
+expect "regstab: malformed refuses (rc 3)" "exit=3" "$TMP/reg.mal"
+expect_eq "regstab: broken door left untouched" "identical" \
+  "$(cmp -s "$TMP/door.broken" "$R/AGENTS.md" && echo identical || echo diverged)"
 
 echo "onramp: pass=$pass fail=$fail"
 [ "$fail" -eq 0 ]
