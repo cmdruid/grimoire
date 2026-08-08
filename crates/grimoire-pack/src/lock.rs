@@ -76,10 +76,13 @@ pub fn read(path: &Path) -> Result<Option<Lock>> {
         )));
     }
     let lock: Lock = serde_json::from_value(value)
-        .map_err(|e| PackError::Lock(format!("malformed lock: {e}")))?;
+        .map_err(|e| PackError::LockReadOnly(format!("malformed: {e}")))?;
     Ok(Some(lock))
 }
 
+/// Serialize and write the lock. No gating happens here: read-only
+/// enforcement (§3) is entirely the caller's job — refuse to write a lock
+/// whose `read` returned `LockReadOnly`, and never hand-bump `version`.
 pub fn write(lock: &Lock, path: &Path) -> Result<()> {
     let mut text = serde_json::to_string_pretty(lock)
         .map_err(|e| PackError::Lock(format!("serialize: {e}")))?;
@@ -163,6 +166,23 @@ mod tests {
         std::fs::write(&path, r#"{"version": 2, "packs": {}}"#).unwrap();
         assert!(matches!(read(&path), Err(crate::PackError::LockReadOnly(_))));
         std::fs::write(&path, "not json").unwrap();
+        assert!(matches!(read(&path), Err(crate::PackError::LockReadOnly(_))));
+    }
+
+    #[test]
+    fn schema_mismatch_at_current_version_is_read_only() {
+        let t = tempfile::tempdir().unwrap();
+        let path = t.path().join("grimoire.lock");
+        // valid JSON, current version, but a skill entry missing `required`
+        std::fs::write(
+            &path,
+            r#"{"version": 1, "packs": {"p": {"version": "1.0.0", "source": "s",
+                "installedAt": "t", "skills": {"a": {"hash": "sha256:aa"}}}}}"#,
+        )
+        .unwrap();
+        assert!(matches!(read(&path), Err(crate::PackError::LockReadOnly(_))));
+        // absent top-level version: also unparseable-as-v1 -> read-only
+        std::fs::write(&path, r#"{"packs": {}}"#).unwrap();
         assert!(matches!(read(&path), Err(crate::PackError::LockReadOnly(_))));
     }
 }
