@@ -51,12 +51,29 @@ impl Manifest {
     /// grammar claims).
     pub fn parse(text: &str) -> Result<Manifest> {
         let pairs = frontmatter::parse(text)?;
+        // The format gate runs before everything else: a foreign revision's
+        // grammar is unknown, so no other key is validated until the revision
+        // is known to be ours (doc comment above; spec 2).
+        let mut format = None;
+        for (k, v) in &pairs {
+            if k == "format" {
+                let n: u64 = v
+                    .parse()
+                    .map_err(|_| PackError::Manifest(format!("format: not an integer: {v}")))?;
+                if n == 0 {
+                    return Err(PackError::Manifest("format: must be positive".into()));
+                }
+                if n != FORMAT {
+                    return Err(PackError::UnsupportedFormat(n));
+                }
+                format = Some(n);
+            }
+        }
         let mut name = None;
         let mut version = None;
         let mut description = None;
         let mut required = None;
         let mut optional = Vec::new();
-        let mut format = None;
         let mut unknown = Vec::new();
         for (k, v) in pairs {
             match k.as_str() {
@@ -65,21 +82,8 @@ impl Manifest {
                 "description" => description = Some(v),
                 "required" => required = Some(split_list("required", &v)?),
                 "optional" => optional = split_list("optional", &v)?,
-                "format" => {
-                    let n: u64 = v
-                        .parse()
-                        .map_err(|_| PackError::Manifest(format!("format: not an integer: {v}")))?;
-                    if n == 0 {
-                        return Err(PackError::Manifest("format: must be positive".into()));
-                    }
-                    format = Some(n);
-                }
+                "format" => {}
                 _ => unknown.push((k, v)),
-            }
-        }
-        if let Some(n) = format {
-            if n != FORMAT {
-                return Err(PackError::UnsupportedFormat(n));
             }
         }
         let name = name.ok_or_else(|| PackError::Manifest("name: missing".into()))?;
@@ -148,6 +152,15 @@ mod tests {
     #[test]
     fn unsupported_format_is_a_typed_error() {
         let e = Manifest::parse(&OK.replace("core: clank, alpha", "format: 2")).unwrap_err();
+        assert!(matches!(e, crate::PackError::UnsupportedFormat(2)));
+    }
+
+    #[test]
+    fn unsupported_format_gates_before_grammar() {
+        let bad_grammar = OK
+            .replace("core: clank, alpha", "format: 2")
+            .replace("alpha, beta", "Alpha!");
+        let e = Manifest::parse(&bad_grammar).unwrap_err();
         assert!(matches!(e, crate::PackError::UnsupportedFormat(2)));
     }
 
