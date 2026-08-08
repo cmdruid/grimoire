@@ -25,6 +25,22 @@ encodings, Appendix J's path-qualified whole-file origin IDs, Appendix L's colli
 finding-key grammar. The review trail lives in
 `.scratch/agent-framework/codex-review-plan*.md` (machine-local, git-excluded).
 
+**Status (close-out, 2026-08-08): Phases 0–4 built and gated; Phase 5 superseded by real-world
+deployment.** The owner judged the fixture-proof phase over-engineered relative to real usage and
+chose a live deployment test instead — greenfield `/clankshop setup` on a real consuming project,
+then `/clankshop migrate` on a legacy host; usage decides what further hardening is worth
+building. Tasks 5.1–5.8 stay unchecked by design; the sole pulled-forward piece is Task 5.3's
+registration-stability fixture (`c4c1be6` — the four self-registering members adopt the pack-style
+door block byte-identically; a hand-broken delimiter refuses untouched). Close-out baseline: commit
+`7640557`, lint `fails=0 warns=10` (the recorded Phase-4 set), suite 200 asserts green across the
+six committed harnesses. **Ratified divergence from Appendix H (owner, 2026-08-08):** `workstream`
+is standalone — no workstream verb refuses on an unstamped root; Task 3.2's blanket-refusal
+conduct (Appendix H's catch-all row) is replaced by `skills/workstream/SKILL.md` § *Host layout*
+(`7640557`): clankshop hosts get the framework homes and seams, any other host gets the project's
+own conventions, framework-only seams skipped. Appendix H's table text is unchanged per the
+historical-record rule; this status line is the record of the divergence, which so far applies to
+workstream only.
+
 **Goal:** Implement the clankshop pack per `docs/design/2026-08-06-clankshop-pack.md` §8, over the
 mechanics of `docs/design/2026-08-04-agent-framework.md`. Where the two docs differ, **pack §7 is
 authoritative**. The frozen contracts both docs name are consolidated in this plan's **Appendix**
@@ -1004,6 +1020,10 @@ mechanics §10). `2026-07-27-steward-grammar.md` is already marked.
 ---
 
 ## Phase 5 — fixture proof
+
+> **Status (2026-08-08): superseded by real-world deployment** — see the close-out status block at
+> the top of this plan. Tasks below stay unchecked by design; only Task 5.3's
+> registration-stability fixture was pulled forward (`c4c1be6`).
 
 All fixtures run from `skills/clankshop/scripts/tests/run.sh` against temp dirs; each task adds
 cases to the committed harness. Mechanics §11 Phase 3's matrix + pack §8 Phase 5's additions.
