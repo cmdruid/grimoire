@@ -5,6 +5,7 @@
 use std::path::PathBuf;
 
 pub mod frontmatter;
+pub mod hash;
 pub mod manifest;
 
 #[derive(Debug, thiserror::Error)]
