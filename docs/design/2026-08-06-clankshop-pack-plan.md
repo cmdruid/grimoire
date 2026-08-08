@@ -519,17 +519,17 @@ chiropractor → architect/auditor → **calibrator last** (it consumes every ot
 fixture additions under `skills/clankshop/scripts/tests/` (the failure matrix runs where the
 integrated fixtures live).
 
-- [ ] Per Appendix E: canonical-projection hash (mirror block + `updated:` excluded), push on
+- [x] Per Appendix E: canonical-projection hash (mirror block + `updated:` excluded), push on
   hash-change only, **full-inventory pull** keyed by immutable remote comment ID,
   edited/deleted-comment drift facts (file wins), idempotent creation via label scan +
   lowest-issue-number adoption, the `mkdir` lock (10-minute staleness, takeover logged),
   trunk-only sync, verb-time-only trigger, no-remote degradation (no `mirror:` block, no behavior
   change).
-- [ ] Failure-matrix fixtures (mechanics §6): duplicate retry; crash between create and commit;
+- [x] Failure-matrix fixtures (mechanics §6): duplicate retry; crash between create and commit;
   worktree-sync refusal; mid-sync comment; edited + deleted comment drift; concurrent-sync lock
   contention; duplicate stamped-issue adoption. Mock the provider with a local fixture script —
   no live GitHub in the gate.
-- [ ] Verify: matrix green; lint. Commit.
+- [x] Verify: matrix green; lint. Commit.
 
 ### Task 2.4: Backlog — re-framing, `RECORDS.md` projection, aliases
 

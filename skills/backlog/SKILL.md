@@ -41,7 +41,7 @@ and follow it**; do not reconstruct a procedure from memory.
 | `/backlog ticket` | `verbs/ticket.md` | **Direct ticket** — capture-plus-escalation in one motion (no origin) | "escalate this to me", "needs my sign-off, not filed" |
 | `/backlog promote <id>` | `verbs/promote.md` | Graduate an entry into a ticket — `origin:` stamped, entry **paused** (trunk-side commit) | "escalate that issue", "make I-017 a ticket" |
 | `/backlog close <TK-id>` | `verbs/close.md` | Resolve / wontfix / demote a ticket — writebacks + the due done-log line | "apply my answer", "wontfix that ticket" |
-| `/backlog sync` | *(lands in Task 2.3 of the rollout plan)* | Mirror open tickets to the remote issue system | "sync the tickets" |
+| `/backlog sync` | `verbs/sync.md` | Reconcile the ticket mirror — push on hash change, pull comments, drift facts | "sync the tickets", "check the mirror" |
 
 **No default lane.** `/backlog` with no recognized verb is ambiguous — ask which tracker the item
 belongs to (or run `/backlog debrief` if the intent is "capture everything that surfaced").
