@@ -40,6 +40,15 @@ fn split_list(key: &str, raw: &str) -> Result<Vec<String>> {
 }
 
 impl Manifest {
+    /// Parse and validate a `PACK.md`'s machine surface per §2.
+    ///
+    /// A manifest declaring a `format:` this library does not implement fails
+    /// with [`PackError::UnsupportedFormat`] *before* grammar validation — a
+    /// foreign revision's grammar is unknown here, so no validated `Manifest`
+    /// can honestly be constructed from it. Spec §2 permits tools to still
+    /// enumerate/display such packs; a tool wanting that reads the raw
+    /// [`crate::frontmatter`] pairs itself (name/version at face value, no
+    /// grammar claims).
     pub fn parse(text: &str) -> Result<Manifest> {
         let pairs = frontmatter::parse(text)?;
         let mut name = None;
@@ -101,10 +110,6 @@ impl Manifest {
         })
     }
 
-    pub fn is_supported(&self) -> bool {
-        self.format.unwrap_or(FORMAT) == FORMAT
-    }
-
     /// All declared members, required first (the face is NOT in this list — it
     /// is implicit, spec §2).
     pub fn members(&self) -> impl Iterator<Item = &str> {
@@ -130,7 +135,6 @@ mod tests {
         assert_eq!(m.optional, vec!["gamma"]);
         assert_eq!(m.format, None);
         assert_eq!(m.unknown, vec![("core".to_string(), "clank, alpha".to_string())]);
-        assert!(m.is_supported());
     }
 
     #[test]
@@ -159,5 +163,10 @@ mod tests {
         assert!(Manifest::parse(&OK.replace("required: alpha, beta\n", "")).is_err());
         // bad semver
         assert!(Manifest::parse(&OK.replace("1.2.3", "1.2")).is_err());
+    }
+
+    #[test]
+    fn duplicate_within_one_list_is_an_error() {
+        assert!(Manifest::parse(&OK.replace("alpha, beta", "alpha, alpha")).is_err());
     }
 }
