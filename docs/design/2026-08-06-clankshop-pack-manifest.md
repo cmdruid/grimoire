@@ -178,13 +178,13 @@ drain owner):
 
 ## Phase 4 — retire the independence machinery (core members only)
 
-- [ ] `skills/skill-builder/scripts/skills-lint.sh` — reads the lock's `core:` line as the
+- [x] `skills/skill-builder/scripts/skills-lint.sh` — reads the lock's `core:` line as the
   machine-readable exemption for the independence checks that exist (sibling-name/boundary
   description warns; edge-block validation + orphan-type pairing; sibling verb-roster checks);
   helpers + skill-builder keep the full discipline; gate re-baselined → Task 4.1
-- [ ] `skills/skill-builder/docs/DOCTRINE.md` — the pack-vs-portable split (portable rules for
+- [x] `skills/skill-builder/docs/DOCTRINE.md` — the pack-vs-portable split (portable rules for
   standalone skills + helpers; pack core follows authored composition) → Task 4.1
-- [ ] `skills/skill-builder/{SKILL.md,verbs/new.md}` + `docs/BOUNDARY-AUDIT.md` — typed-edge /
+- [x] `skills/skill-builder/{SKILL.md,verbs/new.md}` + `docs/BOUNDARY-AUDIT.md` — typed-edge /
   boundary teaching for **portable** skills — **no change** beyond DOCTRINE's split framing
   (verified in 4.1's pass) → Task 4.1
 - [x] core members' `<!-- edges: -->` blocks + edge-referencing prose —

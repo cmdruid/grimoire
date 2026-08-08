@@ -986,8 +986,20 @@ mechanics §10). `2026-07-27-steward-grammar.md` is already marked.
 
 ### Task 4.6: Phase 4 gate
 
-- [ ] Lint at the new baseline; routing probe re-run (descriptions changed in 4.2); fixtures
-  green; manifest Phase-4 rows checked.
+- [x] Lint at the new baseline; routing probe re-run (descriptions changed in 4.2); fixtures
+  green; manifest Phase-4 rows checked. *(Gate run 2026-08-08: lint `fails=0 warns=10` — the
+  Task-4.1 re-stated baseline, no further delta from 4.2–4.5 as predicted. **No routing probe
+  this gate:** `git diff` over the phase confirms zero `description:` changes — 4.2's
+  indirection rewrites all landed at body level, so the probe surface is identical to the 2.12
+  run (the same justification as the 3.4 gate). Fixture suite all green — 189 asserts across
+  six harnesses (doctrine-diff 16, onramp 81, backlog 35, escalation 13, mirror 28, calibrator
+  16). Manifest Phase-4 rows all checked. Phase landed as `93a1388` (plan must-fixes),
+  `ef1444e` (4.1), `a41d042` (4.2), `9f8743e`+`70b450f` (4.4), `8585617` (4.3), `16095ed`
+  (4.5). One surfaced defect fixed in 4.4's verify: install.sh preflight collision false-
+  positive on symlink chains. **Post-phase note:** the pack-format spec moved to draft 4
+  (`64ca07c`, concurrent owner review — `name:`/`required:` keys, comma-separated lists,
+  `setup:` key deleted); the implemented manifest/installer follow ratified draft 3 — draft-4
+  conformance is follow-on work outside this plan, pending ratification.)*
 
 ---
 
