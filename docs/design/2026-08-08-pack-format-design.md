@@ -27,7 +27,8 @@
    prose.
 5. **Lifecycle is pack-scoped; `setup:` only, rest reserved.** No per-skill setup exists at
    the spec level; the pack's entrypoint orchestrates member wiring. Tools offer, never
-   auto-run.
+   auto-run. *(Superseded in draft 4 — see Owner review below: format 1 declares no lifecycle
+   keys at all; setup lives in the face.)*
 6. **No bare-usefulness requirement for members.** Deliberately rejected: forcing pack-based
    skills to work standalone reintroduces the generic seams and boilerplate the clankshop
    redesign removed (members are framework-committed by design). The overlay guarantee is
@@ -47,9 +48,10 @@
 - Absorb `packs/clankshop.md` into `skills/clankshop/PACK.md` (pack-as-skill; the skill dir
   does not move); retire the `packs/` shelf; `install.sh --pack` reads the new location and
   writes the sidecar lock.
-- Frontmatter migrates: `name:`→`pack:`, `pack-version: 1`→`version: 1.0.0`, `layout:`→
-  `format: 1`, `core:`+`helpers:` fold into `skills:` (minus `clankshop` itself — the face is
-  implicit, spec §2), `optional:` stays, gains `setup:`.
+- Frontmatter migrates: `name:` stays `name:`, `pack-version: 1`→`version: 1.0.0`, `layout:`→
+  `format: 1`, `core:`+`helpers:` fold into `required:` (minus `clankshop` itself — the face is
+  implicit, spec §2), `optional:` stays (both lists comma-separated). No `setup:` key exists —
+  setup lives in the face (spec §6), which clankshop's face already does.
 - Task 3.3 (bare→ranged helpers + SKILL.md `version:` keys) is **cancelled by this design**;
   the Appendix I pinning-semantics paragraph re-ratifies against spec §4/§5. The lint gate's
   `core:`-as-exemption-rule input (plan Task 4.1) needs a replacement source — flagged for the
@@ -120,6 +122,28 @@ detail); remaining highs are implementation-owned (acquisition procedure, crash 
 JSON-schema, check's exhaustive case list) or accepted §8 limits (cross-ownership visibility,
 placement-vs-lock shadowing). `grimoire-pack`'s implementation + conformance fixtures are the
 next truth-finder; prose iterates only when implementation contradicts it.
+
+## Owner review (2026-08-08, draft 3 → draft 4)
+
+The spec owner's read of draft 3 produced five directives, all applied in draft 4:
+
+1. **Appendix B slimmed:** `skills/.curated`, `skills/.experimental`, `skills/.system` dropped
+   from the priority-directory list (the reference-implementations-govern clause absorbs any
+   divergence; the summary keeps only the paths that matter here).
+2. **`pack:` → `name:`** as the manifest identity key — parallel to `SKILL.md` frontmatter.
+3. **Member lists are comma-separated** (trimmed tokens), not whitespace-split.
+4. **`setup:` deleted; `skills:` → `required:`.** Format 1 now declares **no lifecycle keys**:
+   setup is the face `SKILL.md`'s job — pack-scoped, atomic (complete system or clean refusal),
+   delivered by every install path including plain-CLI. This supersedes the umbrella's
+   "setup-only lifecycle" decision and decision 5 above. Tools point at the face after install
+   instead of offering an entrypoint; the removal warning (9ce24cf) survives but is now
+   unconditional, since setup is no longer machine-declared.
+5. **Lock `setup` object deleted; member `optional` flag flipped to `required`.** With it go
+   `setup.ran` (user-attested tracking) and check's *setup pending* fact — draft 3's
+   convergence fix on that row is moot, the tracked state no longer exists. Lock state is
+   explicitly one bit per pack: entry present = fully installed (transaction-guaranteed), no
+   entry = not installed; no pending sub-states. System-setup state stays where §7 always put
+   the real gate: the pack-defined marker.
 
 ## Open questions deliberately deferred (format 2 candidates)
 

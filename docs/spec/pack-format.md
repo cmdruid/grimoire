@@ -1,7 +1,8 @@
 # Pack Format Specification
 
-**Format revision:** 1 · **Status:** draft 3 for review (2026-08-08; drafts 1–2 revised against
-two independent implementer reviews — see `docs/design/2026-08-08-pack-format-design.md`) ·
+**Format revision:** 1 · **Status:** draft 4 for review (2026-08-08; drafts 1–2 revised against
+two independent implementer reviews, draft 4 against owner review — see
+`docs/design/2026-08-08-pack-format-design.md`) ·
 **Design record:** `docs/design/2026-08-08-pack-format-design.md`
 
 A **pack** binds agent skills into an installable, versioned system. This spec defines the pack
@@ -35,10 +36,10 @@ Two pack shapes exist:
 
 Rules common to both shapes:
 
-- `pack:` in `PACK.md` frontmatter is **authoritative** for pack identity. A face `SKILL.md`'s
-  `name:` MUST equal it (validators MUST error otherwise).
-- Two manifests in one repository declaring the same `pack:` are invalid. A faceless pack MUST
-  NOT list a member whose name equals its `pack:` value.
+- `name:` in `PACK.md` frontmatter is **authoritative** for pack identity. A face `SKILL.md`'s
+  `name:` MUST equal the manifest's (validators MUST error otherwise).
+- Two manifests in one repository declaring the same `name:` are invalid. A faceless pack MUST
+  NOT list a member whose name equals its own `name:` value.
 - **Pack enumeration is a full-depth operation:** tools enumerate packs by scanning the
   repository's skill directories at full depth (Appendix B) for `PACK.md` siblings, plus the
   repository root. Ordinary (non-full-depth) discovery governs only what plain CLIs see.
@@ -52,21 +53,20 @@ preservation; formatting of the frontmatter block MAY normalize).
 
 ```yaml
 ---
-pack: clankshop                 # required. Pack identity. [a-z0-9-]+
+name: clankshop                 # required. Pack identity. [a-z0-9-]+
 version: 1.0.0                  # required. Semver 2.0.0 of this pack release.
 description: "One-line summary" # required.
 format: 1                       # required. Pack-format revision this manifest targets.
-skills: architect auditor ...   # required members — bare skill names, space-separated.
-optional: bug task              # optional members — default-installed, removable without trace.
-setup: /foreman setup           # optional. Lifecycle entrypoint (see §6).
+required: architect, auditor    # required members — bare skill names, comma-separated.
+optional: bug, task             # optional members — default-installed, removable without trace.
 ---
 ```
 
-**Grammar.** `skills:` and `optional:` are single YAML string scalars. After YAML decoding,
-the scalar is trimmed and split on runs of ASCII whitespace; each token is a skill name
-matching `[a-z0-9-]+`. `skills:` MUST name at least one member. A name appearing twice anywhere
-across the two lists is invalid. `version:` MUST parse as semver 2.0.0. Duplicate YAML keys are
-invalid.
+**Grammar.** `required:` and `optional:` are single YAML string scalars. After YAML decoding,
+the scalar is split on commas; each token is trimmed of ASCII whitespace and MUST be a skill
+name matching `[a-z0-9-]+` (empty tokens are invalid). `required:` MUST name at least one
+member. A name appearing twice anywhere across the two lists is invalid. `version:` MUST parse
+as semver 2.0.0. Duplicate YAML keys are invalid.
 
 - **Member references** are bare skill names resolving against the **same repository's**
   discovered skills (Appendix B). Cross-repo references are not part of format 1. A manifest
@@ -108,11 +108,10 @@ pack-based skills' reads, project shadows global per pack name.
       "source": "github:cmdruid/grimoire",
       "ref": "a1b2c3d",
       "installedAt": "2026-08-08T00:00:00Z",
-      "setup": { "declared": "/foreman setup", "ran": false },
       "members": {
-        "clankshop": { "hash": "sha256:…", "optional": false },
-        "architect": { "hash": "sha256:…", "optional": false },
-        "task":      { "hash": "sha256:…", "optional": true }
+        "clankshop": { "hash": "sha256:…", "required": true },
+        "architect": { "hash": "sha256:…", "required": true },
+        "task":      { "hash": "sha256:…", "required": false }
       }
     }
   }
@@ -129,9 +128,13 @@ pack-based skills' reads, project shadows global per pack name.
   cache the manifest's machine surface into the lock entry (a `manifest` object holding the
   decoded frontmatter) so `check` never depends on the remote source.
 - `hash` is the member's content hash at install time (Appendix A).
-- The member `optional` flag records the member's classification **at install time** and is
+- The member `required` flag records the member's classification **at install time** and is
   authoritative for installed state; a later manifest edit reclassifies nothing until the pack
   is upgraded (§5).
+- **A pack's lock state is one bit: entry present, or no entry.** The install transaction (§5)
+  guarantees an entry is written only for a fully installed pack; there are no partial or
+  pending sub-states in the lock. Whether the pack's *system* has been set up is not lock
+  state — setup is the face's business (§6) and its marker is pack-defined (§7).
 - The lock records **content facts only**. Per-agent placement (which agent directories a
   skill was linked into) is the ecosystem locks' domain, not this file's.
 - Tools are the lock's only writers. **Pack-based skills read it, never write it** (§7).
@@ -139,10 +142,6 @@ pack-based skills' reads, project shadows global per pack name.
 - A tool encountering a lock `"version"` greater than it implements, or a lock it cannot
   parse, MUST treat the file as read-only, surface the fact, and refuse operations that would
   rewrite it.
-- `setup.ran` flips true only when the user confirms to the tool that the declared entrypoint
-  was run (user-attested — tools cannot observe agent-side execution). It is best-effort — not
-  proof the setup succeeded. It is NOT the skill-side gate — packs installed without a tool
-  have no lock entry at all (§7).
 
 ## 4. Versioning
 
@@ -175,7 +174,9 @@ pack-based skills' reads, project shadows global per pack name.
    locks per skill, as it would for any install). Replaced content is staged, not destroyed.
 3. **Write the lock entry** (§3). The transaction commits here; staged content may now be
    discarded.
-4. **Offer `setup:`** if declared (§6). Never auto-run.
+4. **Surface the face** (faced packs): after commit, the tool SHOULD point the user at the
+   pack's face — the front door, and where any system setup lives (§6). Tools MUST NOT execute
+   anything on the pack's behalf.
 
 Any failure before step 3 completes → rollback: newly installed members are removed, staged
 (replaced) content is restored, and both lock families return to their pre-transaction
@@ -197,11 +198,11 @@ individual **optional** members leaves no trace: drop the member entry from the 
 the skill if unreferenced (an uninstalled optional member MAY be reinstalled later from the
 pack's source). A missing optional member is never drift. Removing a **required** member of an
 installed pack (by hand or plain CLI) is not a tool operation this spec defines — it is a
-state `check` reports as *broken*. When removing a pack whose lock entry declares `setup:`,
-the tool MUST surface — **before** deleting anything — that setup artifacts may persist in the
-project, and SHOULD relay the face's teardown guidance while the face still exists (markers
-are pack-defined — no tool can find them once the pack is gone; a `teardown:` lifecycle key is
-reserved for a future revision).
+state `check` reports as *broken*. When removing a pack, the tool MUST surface — **before**
+deleting anything — that pack setup artifacts may persist in the project (setup is pack-side
+and not machine-declared — §6), and SHOULD relay the face's teardown guidance while the face
+still exists (markers are pack-defined — no tool can find them once the pack is gone; a
+`teardown:` lifecycle key is reserved for a future revision).
 
 **Shared members.** Two packs MAY both reference an installed skill; the refcount governs
 removal. If their locks record different hashes for it, `check` reports the mismatch against
@@ -217,7 +218,6 @@ faceless: the manifest cached in the lock — §3). It reports facts, not verdic
 | member hash ≠ locked hash | *moved since install* — offer re-pin or reinstall (§4) |
 | optional member absent | *fine* |
 | faced pack's installed manifest missing (pack dir gone/mangled) | *orphaned* — offer removal or reinstall |
-| `setup:` declared, `setup.ran` false | *setup pending* — re-offer setup |
 
 `check` needs neither network access nor the pack's source; every input above is local.
 Deeper system validation (are the pack's own setup artifacts coherent?) is the pack's
@@ -226,17 +226,18 @@ not attempt it (markers are pack-defined and not machine-declared).
 
 ## 6. Lifecycle
 
-- `setup:` is the **only** lifecycle key in format 1. Its value is an agent command string
-  (e.g. `/foreman setup`) that tools **offer** to the user after install — tools MUST NOT
-  execute it unprompted. The string is harness-facing text: this spec does not define command
-  dispatch, and tools present it for the user's agent environment to run.
-- Authors SHOULD make the entrypoint runnable from the face alone (the face is what a plain-CLI
-  user has), or document its dependencies in the face.
-- Further lifecycle keys (teardown, check, …) are **reserved** for future revisions; authors
-  MUST NOT repurpose them.
-- **Lifecycle is pack-scoped.** The spec defines no per-skill setup, and `SKILL.md` frontmatter
-  is not this spec's surface to extend. A pack's setup entrypoint orchestrates whatever member
-  wiring the composition needs; how is the pack author's business.
+- **Format 1 declares no lifecycle keys.** System setup is the pack's own business, carried by
+  the **face**: a pack that needs setup puts it in its face `SKILL.md` — the front door every
+  install path delivers, including a plain-CLI install of the face alone. Tools never run or
+  track setup; they point at the face (§5) and nothing more.
+- **Setup is pack-scoped and atomic.** The face's setup orchestrates whatever member wiring the
+  composition needs — for **all** members, as one all-or-nothing act: a complete system or a
+  clean refusal, never a partial projection. The spec defines no per-skill setup, and
+  `SKILL.md` frontmatter is not this spec's surface to extend; how the face does it is the pack
+  author's business.
+- A **faceless** pack has no setup vehicle in format 1: it is a manifest-only skill bundle.
+- Lifecycle keys in `PACK.md` (`setup:`, `teardown:`, `check:`, …) are **reserved** for future
+  revisions; authors MUST NOT repurpose them.
 
 ## 7. Pack-based skills
 
@@ -248,9 +249,9 @@ heuristically (e.g. guard-clause presence).
 
 - **Guard clause (the tripwire) — MUST.** A pack-based skill opens by cheaply detecting whether
   its pack's system is present in the current context, and on absence fails gracefully in one
-  breath: state that it is part of pack `<name>` and point at the declared `setup:` entrypoint,
-  or at the pack's face when none is declared. No partial execution against a system that isn't
-  there.
+  breath: state that it is part of pack `<name>` and point at the pack's face, where setup
+  lives (§6) — or, for a faceless pack, name the pack. No partial execution against a system
+  that isn't there.
 - **The marker is pack-defined.** The guard checks the artifact the pack's own setup creates
   (e.g. a stamped installation block). It MUST NOT gate on `grimoire.lock` — the stamp survives
   every install path (including plain-CLI installs + hand-run setup); the lock only exists
@@ -260,9 +261,9 @@ heuristically (e.g. guard-clause presence).
   repairing or scaffolding sub-artifacts the marker's system implies. A skill MUST NOT
   self-heal its way past an absent marker.
 - **Lock-aware — SHOULD.** When `grimoire.lock` is present (project scope shadowing global,
-  §3), a pack-based skill SHOULD read it for pack facts — its pack's version, member set,
-  `setup.ran` — rather than rediscovering them. It MUST tolerate the lock's absence, and MUST
-  NOT write it.
+  §3), a pack-based skill SHOULD read it for pack facts — its pack's version and member
+  set — rather than rediscovering them. It MUST tolerate the lock's absence, and MUST NOT
+  write it.
 - **No install-time self-setup — MUST.** Members do not bootstrap at install (§6).
 - **Face exception.** The face skill MUST NOT carry the tripwire: "pack not installed" is its
   welcome case — it explains the pack and points at setup.
@@ -330,10 +331,9 @@ A skill directory is a directory containing `SKILL.md`. Discovery over a reposit
 1. If the repository root is itself a skill directory, it is the sole discovered skill —
    unless a full-depth scan is requested.
 2. Otherwise scan the fixed priority directories one level deep — the root itself, `skills/`,
-   `skills/.curated`, `skills/.experimental`, `skills/.system`, and the per-agent skill
-   directories recognized by the ecosystem's reference implementations (`.agents/skills`,
-   `.claude/skills`, `.codex/skills`, `.cursor/…`, and peers) — collecting each child skill
-   directory.
+   and the per-agent skill directories recognized by the ecosystem's reference implementations
+   (`.agents/skills`, `.claude/skills`, `.codex/skills`, `.cursor/…`, and peers) — collecting
+   each child skill directory.
 3. If nothing was found, or a full-depth scan is requested, fall back to a recursive scan
    (bounded as the reference implementations bound it).
 
