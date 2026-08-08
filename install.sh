@@ -127,20 +127,20 @@ write_lock() {
   lock_file="$lock_dir/grimoire.lock"
   ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   ref="$(git -C "$root" rev-parse --short HEAD 2>/dev/null || true)"
-  members_json=""
+  skills_json=""
   for name in "${names[@]}"; do
-    opt=false
-    case " $pack_optional " in *" $name "*) opt=true ;; esac
+    req=true
+    case " $pack_optional " in *" $name "*) req=false ;; esac
     h="$(member_hash "$root/skills/$name")"
-    members_json="${members_json}${members_json:+,}
-      \"$name\": { \"hash\": \"$h\", \"optional\": $opt }"
+    skills_json="${skills_json}${skills_json:+,}
+      \"$name\": { \"hash\": \"$h\", \"required\": $req }"
   done
   entry_json="{
     \"version\": \"$pack_version\",
     \"source\": \"$root\",
     \"ref\": \"$ref\",
     \"installedAt\": \"$ts\",
-    \"members\": {$members_json
+    \"skills\": {$skills_json
     }
   }"
   if command -v python3 >/dev/null 2>&1; then
