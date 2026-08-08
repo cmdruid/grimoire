@@ -25,7 +25,6 @@ names=()
 pack_name=""
 pack_manifest=""
 pack_optional=""
-pack_setup=""
 pack_version=""
 
 # frontmatter_key <file> <key> -- first frontmatter value for key (never reads the body)
@@ -37,11 +36,11 @@ frontmatter_key() {
   ' "$1"
 }
 
-# resolve_pack <name> -- echo the PACK.md whose pack: matches; fail when none does
+# resolve_pack <name> -- echo the PACK.md whose name: matches; fail when none does
 resolve_pack() {
   for m in "$root/PACK.md" "$root"/skills/*/PACK.md; do
     [ -f "$m" ] || continue
-    if [ "$(frontmatter_key "$m" pack)" = "$1" ]; then echo "$m"; return 0; fi
+    if [ "$(frontmatter_key "$m" name)" = "$1" ]; then echo "$m"; return 0; fi
   done
   return 1
 }
@@ -75,8 +74,8 @@ if [ "$mode" = "list" ]; then
   echo "packs (PACK.md manifests):"
   for m in "$root/PACK.md" "$root"/skills/*/PACK.md; do
     [ -f "$m" ] || continue
-    printf '  %-14s v%-8s %s\n' "$(frontmatter_key "$m" pack)" \
-      "$(frontmatter_key "$m" version)" "$(frontmatter_key "$m" skills)"
+    printf '  %-14s v%-8s %s\n' "$(frontmatter_key "$m" name)" \
+      "$(frontmatter_key "$m" version)" "$(frontmatter_key "$m" required)"
   done
   exit 0
 fi
@@ -84,24 +83,23 @@ fi
 # ---- pack resolution (spec format 1): face implicit, optional default-installed ----
 if [ -n "$pack_name" ]; then
   pack_manifest="$(resolve_pack "$pack_name")" \
-    || { echo "error: no PACK.md declares pack: $pack_name (try --list)" >&2; exit 2; }
+    || { echo "error: no PACK.md declares name: $pack_name (try --list)" >&2; exit 2; }
   fmt="$(frontmatter_key "$pack_manifest" format)"
-  [ "$fmt" = "1" ] \
-    || { echo "error: pack $pack_name declares format: ${fmt:-<absent>} -- this tool implements format 1" >&2; exit 2; }
+  [ -z "$fmt" ] || [ "$fmt" = "1" ] \
+    || { echo "error: pack $pack_name declares format: $fmt -- this tool implements format 1" >&2; exit 2; }
   pack_version="$(frontmatter_key "$pack_manifest" version)"
-  pack_skills="$(frontmatter_key "$pack_manifest" skills)"
-  pack_optional="$(frontmatter_key "$pack_manifest" optional)"
-  pack_setup="$(frontmatter_key "$pack_manifest" setup)"
-  [ -n "$pack_skills" ] || { echo "error: $pack_manifest has no skills: line" >&2; exit 2; }
+  pack_required="$(frontmatter_key "$pack_manifest" required | tr ',' ' ')"
+  pack_optional="$(frontmatter_key "$pack_manifest" optional | tr ',' ' ')"
+  [ -n "$pack_required" ] || { echo "error: $pack_manifest has no required: line" >&2; exit 2; }
   pack_dir="$(dirname "$pack_manifest")"
   if [ -f "$pack_dir/SKILL.md" ]; then
     face="$(frontmatter_key "$pack_dir/SKILL.md" name)"
     [ -n "$face" ] || face="$(basename "$pack_dir")"
     [ "$face" = "$pack_name" ] \
-      || { echo "error: face name $face != pack: $pack_name (spec: they MUST match)" >&2; exit 2; }
+      || { echo "error: face name $face != pack name: $pack_name (spec: they MUST match)" >&2; exit 2; }
     names+=("$face")
   fi
-  for s in $pack_skills $pack_optional; do names+=("$s"); done
+  for s in $pack_required $pack_optional; do names+=("$s"); done
 fi
 
 [ ${#names[@]} -gt 0 ] || { echo "error: no skills named (try --list)" >&2; exit 2; }
@@ -121,9 +119,9 @@ member_hash() {
 }
 
 # write_lock -- record the installed pack in the sidecar grimoire.lock (spec §3).
-# python3 merges into an existing lock (preserving other packs, unknown keys, and a
-# prior setup.ran); without python3 a fresh lock is written when none exists, else
-# the stale lock is surfaced as a fact and left untouched.
+# python3 merges into an existing lock (preserving other packs and unknown keys);
+# without python3 a fresh lock is written when none exists, else the stale lock is
+# surfaced as a fact and left untouched.
 write_lock() {
   lock_dir="$(CDPATH='' cd "$(dirname "$target")" && pwd)"
   lock_file="$lock_dir/grimoire.lock"
@@ -137,14 +135,11 @@ write_lock() {
     members_json="${members_json}${members_json:+,}
       \"$name\": { \"hash\": \"$h\", \"optional\": $opt }"
   done
-  setup_json=""
-  [ -n "$pack_setup" ] && setup_json="
-    \"setup\": { \"declared\": \"$pack_setup\", \"ran\": false },"
   entry_json="{
     \"version\": \"$pack_version\",
     \"source\": \"$root\",
     \"ref\": \"$ref\",
-    \"installedAt\": \"$ts\",$setup_json
+    \"installedAt\": \"$ts\",
     \"members\": {$members_json
     }
   }"
@@ -164,10 +159,7 @@ if os.path.exists(path):
     if lock.get("version", 1) > 1:
         print(f"lock-version {lock.get('version')} > 1 -- left untouched (spec: read-only)", file=sys.stderr)
         sys.exit(0)
-prior = lock.setdefault("packs", {}).get(pack)
-if prior and "setup" in prior and "setup" in entry:
-    entry["setup"]["ran"] = prior["setup"].get("ran", False)
-lock["packs"][pack] = entry
+lock.setdefault("packs", {})[pack] = entry
 with open(path, "w") as f:
     json.dump(lock, f, indent=2)
     f.write("\n")

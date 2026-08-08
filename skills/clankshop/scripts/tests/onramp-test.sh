@@ -17,12 +17,12 @@ pass=0; fail=0   # re-assigned by lib.sh's helpers (shellcheck cannot follow the
 PV=$(sed -n 's/^version:[[:space:]]*//p' "$LOCK" | head -1)
 DV=$(awk '/^doctrine-version: /{print $2; exit}' "$DOCTRINE/README.md")
 
-# The installed set = the manifest's members (spec format 1: the pack: face is an
+# The installed set = the manifest's members (spec format 1: the name: face is an
 # implicit member; optional: members are default-installed). Stubs keep fixture and
 # manifest in sync.
-MEMBERS="$(sed -n 's/^pack:[[:space:]]*//p' "$LOCK" | head -1) \
-$(sed -n 's/^skills:[[:space:]]*//p' "$LOCK" | head -1) \
-$(sed -n 's/^optional:[[:space:]]*//p' "$LOCK" | head -1)"
+MEMBERS="$(sed -n 's/^name:[[:space:]]*//p' "$LOCK" | head -1) \
+$(sed -n 's/^required:[[:space:]]*//p' "$LOCK" | head -1 | tr ',' ' ') \
+$(sed -n 's/^optional:[[:space:]]*//p' "$LOCK" | head -1 | tr ',' ' ')"
 SKILLS=$TMP/skills
 mkdir -p "$SKILLS"
 for m in $MEMBERS; do
@@ -148,7 +148,8 @@ expect_eq "install: face symlink"    "link" "$([ -L "$IT/skills/clankshop" ] && 
 expect "install: lock entry"         "\"clankshop\": {" "$IT/grimoire.lock"
 expect "install: optional flagged"   "\"optional\": true" "$IT/grimoire.lock"
 expect "install: member hash"        "sha256:" "$IT/grimoire.lock"
-expect "install: setup declared"     "\"declared\": \"/clankshop setup\"" "$IT/grimoire.lock"
+expect_eq "install: no setup object" "absent" \
+  "$(grep -q '"setup"' "$IT/grimoire.lock" && echo present || echo absent)"
 "$REPO_ROOT/install.sh" --pack clankshop --target "$IT/skills" > "$TMP/inst2" 2>&1
 expect "install: idempotent rerun"   "already installed" "$TMP/inst2"
 expect "install: rerun re-locks"     "locked    clankshop@$PV" "$TMP/inst2"

@@ -71,7 +71,7 @@ core_members=" "
 for pm in "$root/PACK.md" "$root"/skills/*/PACK.md; do
   [ -f "$pm" ] || continue
   pfm="$(awk '/^---$/{n++; next} n==1{print} n>=2{exit}' "$pm")"
-  pcore="$(printf '%s\n' "$pfm" | sed -n 's/^core:[[:space:]]*//p' | head -1)"
+  pcore="$(printf '%s\n' "$pfm" | sed -n 's/^core:[[:space:]]*//p' | head -1 | tr ',' ' ')"
   [ -n "$pcore" ] && core_members="$core_members$pcore "
 done
 is_core() { case "$core_members" in *" $1 "*) return 0 ;; *) return 1 ;; esac; }

@@ -1,14 +1,12 @@
 ---
-pack: clankshop
+name: clankshop
 version: 1.0.0
 description: "The full development loop as a skill pack: route a change, design at seed altitude, plan and build features gate-green, ship them from long-lived workstreams, delegate work without polluting context, keep sessions resumable, root-cause bugs before patching them, and audit both code quality and doc ergonomics."
-format: 1
-skills: architect auditor backlog calibrator chiropractor debugger delegate feature foreman guardian handoff mailbox workstream
-optional: bug task
-setup: /clankshop setup
+required: architect, auditor, backlog, calibrator, chiropractor, debugger, delegate, feature, foreman, guardian, handoff, mailbox, workstream
+optional: bug, task
 # core: is a grimoire author extension (spec §2 unknown key, ignored by tools) -- the
 # lint gate's core-member exemption rule; helpers = the members not listed here.
-core: clankshop architect auditor backlog calibrator chiropractor debugger feature foreman guardian workstream
+core: clankshop, architect, auditor, backlog, calibrator, chiropractor, debugger, feature, foreman, guardian, workstream
 ---
 
 # clankshop — the disciplined development loop

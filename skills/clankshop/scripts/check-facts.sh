@@ -346,14 +346,14 @@ for s in .agents/roles/*/; do
 done 2>/dev/null | emit_capped seats 20
 
 # ---------- pack manifest vs installed set ----------
-# PACK.md (spec format 1, beside the pack face): required = pack: (the implicit face)
-# + skills:; optional: members absent from the install are a green fact, never drift.
+# PACK.md (spec format 1, beside the pack face): required = name: (the implicit face)
+# + required:; optional: members absent from the install are a green fact, never drift.
 LOCK=$DIR/../PACK.md
 if [ -f "$LOCK" ]; then
   echo "lock_found=1"
-  lock_face=$(sed -n 's/^pack:[[:space:]]*//p' "$LOCK" | head -1)
-  lock_skills=$(sed -n 's/^skills:[[:space:]]*//p' "$LOCK" | head -1)
-  lock_optional=$(sed -n 's/^optional:[[:space:]]*//p' "$LOCK" | head -1)
+  lock_face=$(sed -n 's/^name:[[:space:]]*//p' "$LOCK" | head -1)
+  lock_skills=$(sed -n 's/^required:[[:space:]]*//p' "$LOCK" | head -1 | tr ',' ' ')
+  lock_optional=$(sed -n 's/^optional:[[:space:]]*//p' "$LOCK" | head -1 | tr ',' ' ')
   lock_members="$lock_face $lock_skills"
   echo "lock_members=$(printf '%s' "$lock_members" | tr ' ' ',')"
   echo "lock_optional=$(printf '%s' "$lock_optional" | tr ' ' ',')"
