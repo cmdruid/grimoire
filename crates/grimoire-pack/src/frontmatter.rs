@@ -3,6 +3,8 @@
 //! deliberately a strict subset of YAML: `#` comment lines and blanks are
 //! skipped, values may be double-quoted (protecting `#` and `:`), an unquoted
 //! trailing ` #...` is stripped, and duplicate keys are an error (spec §2).
+//! Quoted values must terminate and may be followed only by a comment; a
+//! comment-only value is an empty scalar.
 
 use crate::{PackError, Result};
 
@@ -36,14 +38,34 @@ pub fn parse(text: &str) -> Result<Vec<(String, String)>> {
         if pairs.iter().any(|(k, _)| k == key) {
             return Err(PackError::Frontmatter(format!("duplicate key: {key}")));
         }
-        let mut value = rest.trim().to_string();
-        if value.len() >= 2 && value.starts_with('"') && value.ends_with('"') {
-            value = value[1..value.len() - 1].to_string();
-        } else if let Some(i) = value.find(" #") {
-            value.truncate(i);
-            let trimmed = value.trim_end().len();
-            value.truncate(trimmed);
-        }
+        let raw = rest.trim();
+        let value = if let Some(stripped) = raw.strip_prefix('"') {
+            // Quoted scalar: must terminate; after it, only whitespace or a comment.
+            match stripped.find('"') {
+                Some(end) => {
+                    let after = stripped[end + 1..].trim_start();
+                    if !after.is_empty() && !after.starts_with('#') {
+                        return Err(PackError::Frontmatter(format!(
+                            "trailing content after quoted value: {line}"
+                        )));
+                    }
+                    stripped[..end].to_string()
+                }
+                None => {
+                    return Err(PackError::Frontmatter(format!(
+                        "unterminated quoted value: {line}"
+                    )))
+                }
+            }
+        } else if raw.starts_with('#') {
+            // Comment-only: an empty scalar (manifest-level validation decides emptiness).
+            String::new()
+        } else {
+            match raw.find(" #") {
+                Some(i) => raw[..i].trim_end().to_string(),
+                None => raw.to_string(),
+            }
+        };
         pairs.push((key.to_string(), value));
     }
     if !closed {
@@ -87,5 +109,29 @@ mod tests {
     fn unfenced_input_is_an_error() {
         assert!(parse("name: a\n").is_err());
         assert!(parse("---\nname: a\n").is_err()); // no closing fence
+    }
+
+    #[test]
+    fn comment_only_value_is_an_empty_scalar() {
+        let pairs = parse("---\noptional: # none yet\n---\n").unwrap();
+        assert_eq!(pairs[0], ("optional".to_string(), String::new()));
+    }
+
+    #[test]
+    fn quoted_value_with_trailing_comment_dequotes() {
+        let pairs = parse("---\ndescription: \"text\" # trailing\n---\n").unwrap();
+        assert_eq!(pairs[0].1, "text");
+    }
+
+    #[test]
+    fn unterminated_or_dirty_quotes_are_errors() {
+        assert!(parse("---\nk: \"\n---\n").is_err()); // lone quote
+        assert!(parse("---\nk: \"a\" b\n---\n").is_err()); // garbage after quote
+    }
+
+    #[test]
+    fn bad_keys_and_missing_colons_are_errors() {
+        assert!(parse("---\nbad.key: x\n---\n").is_err());
+        assert!(parse("---\njust some text\n---\n").is_err());
     }
 }
