@@ -1,8 +1,9 @@
 #!/bin/sh
 # spine-scan.sh <repo-root> -- read-only doc-spine fact scanner. Facts only; never a verdict.
 set -eu
+SELF=$(CDPATH='' cd "$(dirname "$0")" && pwd -P)
 ROOT=${1:-.}
-ROOT=$(CDPATH= cd "$ROOT" && pwd)
+ROOT=$(CDPATH='' cd "$ROOT" && pwd)
 cd "$ROOT"
 
 # emit_capped <key> <cap>: read a newline-delimited item list on stdin and emit two
@@ -152,7 +153,7 @@ emit_edges() {
       # without this the reference graph misses almost everything. ONLY .md targets become
       # reachability edges (a backtick `src/foo.rs` is a code ref, handled by stale_refs). The
       # path char class ([A-Za-z0-9_./-], like @import/stale_refs) naturally excludes glob and
-      # template tokens (`*.md`, `.records/archive/<YYYY-MM-DD>-<slug>.md`) -- the bracket chars break
+      # template tokens (`*.md`, `.records/done/<YYYY-MM-DD>-<slug>.md`) -- the bracket chars break
       # the run. These edges are typed "code" so they grow reachability without inflating
       # broken_links: a backtick ref that does not resolve surfaces under stale_refs instead.
       s = $0
@@ -341,12 +342,14 @@ REFS=$({ files=$(find_md); [ -n "$files" ] && printf '%s\n' "$files" | tr '\n' '
     s = $0
     while (match(s, "`[A-Za-z0-9_./-]+\\.[A-Za-z]+(:[0-9]+)?`")) {
       t = substr(s, RSTART, RLENGTH); s = substr(s, RSTART + RLENGTH)
-      gsub(/`/, "", t); sub(/:[0-9]+$/, "", t)
+      gsub(/`/, "", t)
+      ln = ""                                          # a `path:line` ref keeps its line for the overrun check
+      if (match(t, /:[0-9]+$/)) { ln = substr(t, RSTART + 1); t = substr(t, 1, RSTART - 1) }
       if (!index(t, "/")) continue                    # only slash-bearing tokens look like repo paths
       if (substr(t, 1, 1) == "/") continue            # absolute tokens are runtime/OS paths, never repo-relative (BL-14)
       dr = normpath(dir, t)
       if (dr == "") print "ESC\t" FILENAME "\t" t     # climbs above root -> escape (raw token)
-      else print "CAND\t" FILENAME "\t" t "\t" dr     # raw token + doc-relative resolution (BL-14)
+      else print "CAND\t" FILENAME "\t" t "\t" dr "\t" ln   # raw token + doc-relative resolution (BL-14) + line
     }
   }
 '; } | sort -u)
@@ -356,16 +359,24 @@ CODESPAN_ESCAPES=$(printf '%s\n' "$REFS" | awk -F'\t' '$1=="ESC"{print $2"->"$3}
 printf '%s\n%s\n' "$EDGE_ESCAPES" "$CODESPAN_ESCAPES" | awk 'NF' | sort -u | emit_capped escaping_refs 20
 
 # CAND tokens (non-escaping) flow into the existence / cross-root / staleness classification.
-printf '%s\n' "$REFS" | awk -F'\t' '$1=="CAND"{print $2"\t"$3"\t"$4}' | {
+printf '%s\n' "$REFS" | awk -F'\t' '$1=="CAND"{print $2"\t"$3"\t"$4"\t"$5}' | {
   # Classify each unresolved candidate. A token that resolves INSIDE a nested repo root
   # (as "<sub_root>/<token>", or "<sub_root parent>/<token>" for tokens that name the
   # sub-repo by its directory name) is a CROSS-ROOT CITATION -- a doc deliberately citing
   # another repo's file, context-relative -- not staleness. Only tokens that resolve
   # nowhere are stale_refs. Both lists are facts; the agent judges either.
   SUB_PARENTS=$(printf '%s\n' "$SUB_PATHS" | awk 'NF { n=split($0,p,"/"); if (n>1) { o=p[1]; for(i=2;i<n;i++) o=o"/"p[i]; print o } }' | sort -u)
-  while IFS="$(printf '\t')" read -r f p dr; do
+  while IFS="$(printf '\t')" read -r f p dr ln; do
     [ -n "$p" ] || continue
-    [ -e "$p" ] && continue
+    if [ -e "$p" ]; then
+      # absorbed fact (was foreman-health stale-refs): a `path:line` ref whose path
+      # exists but whose line number runs past EOF -- the code moved under the citation.
+      if [ -n "$ln" ] && [ -f "$p" ]; then
+        flen=$(wc -l < "$p" | tr -d ' ')
+        [ "$ln" -gt "$flen" ] && echo "O	$f:$p:$ln (file has $flen lines)"
+      fi
+      continue
+    fi
     # BL-14: a token that resolves doc-relative is a legitimate sibling ref, not stale.
     [ -n "$dr" ] && [ "$dr" != "$p" ] && [ -e "$dr" ] && continue
     hit=0
@@ -394,6 +405,12 @@ printf '%s\n' "$REFS" | awk -F'\t' '$1=="CAND"{print $2"\t"$3"\t"$4}' | {
   printf '%s\n' "$STALE_SPLIT" | awk -F'\t' '$1=="L"{print $2}' | emit_capped stale_refs 20
   printf '%s\n' "$STALE_SPLIT" | awk -F'\t' '$1=="H"{print $2}' | emit_capped stale_refs_archived 20
   printf '%s\n' "$CLASSIFIED" | awk -F'\t' '$1=="X"{print $2}' | emit_capped xroot_refs 20
+  # Live-doc line overruns only -- a historical record citing an old line is a record.
+  printf '%s\n' "$CLASSIFIED" | awk -F'\t' '$1=="O"{print $2}' | while IFS= read -r item; do
+    [ -n "$item" ] || continue
+    src=${item%%:*}
+    is_historical "$src" || echo "$item"
+  done | emit_capped fileline_overruns 20
 }
 
 # ----- Task 5: token economy + affordance flags -----
@@ -423,11 +440,33 @@ printf '%s\n' "$ALL" | tr '\n' '\0' | xargs -0 wc -c 2>/dev/null | awk '
     print "doc_sizes=" s
   }'
 
-# Affordance flags.
-gl=0; for g in GLOSSARY.md docs/GLOSSARY.md dev/GLOSSARY.md .agents/foreman/GLOSSARY.md; do [ -f "$g" ] && gl=1; done
+# Affordance flags (framework-aware -- the deployed layout is known directly).
+fd=0; for f in AGENTS.md CLAUDE.md; do [ -f "$f" ] && fd=1; done
+echo "has_front_door=$fd"
+# The stewardship map is .handbook/README.md carrying a spine-index declaration plus
+# per-producer steward blocks -- a MAP (ownership regions), never an index/TOC.
+sm=0
+if [ -f .handbook/README.md ] \
+   && grep -q '<!-- spine-index v' .handbook/README.md \
+   && grep -q '<!-- steward:' .handbook/README.md; then sm=1; fi
+echo "has_stewardship_map=$sm"
+gl=0; for g in GLOSSARY.md docs/GLOSSARY.md; do [ -f "$g" ] && gl=1; done
 echo "has_glossary=$gl"
-ix=0; for i in INDEX.md docs/INDEX.md dev/README.md docs/README.md .agents/foreman/README.md .agents/foreman/INDEX.md; do [ -f "$i" ] && ix=1; done
-echo "has_index=$ix"
+
+# Uncovered top-level dirs (absorbed from foreman-health coverage): a non-hidden top-level
+# dir mentioned nowhere in the door docs -- dir-shaped fixed-string match ("name/" or a
+# backticked name; an unanchored regex would false-cover short names and break on metachars).
+tick='`'
+{ for d in */; do
+    [ -d "$d" ] || continue
+    name="${d%/}"
+    case "$name" in .*) continue ;; esac
+    found=0
+    for s in AGENTS.md .handbook/README.md README.md; do
+      [ -f "$s" ] && { grep -qF "$name/" "$s" || grep -qF "${tick}${name}${tick}" "$s"; } && { found=1; break; }
+    done
+    [ "$found" -eq 0 ] && echo "$name/"
+  done; } | emit_capped uncovered_dirs 20
 
 # Frontmatter coverage over reached docs.
 # Drive with awk: for each reached doc, open it and check if the first line is exactly "---".
@@ -445,3 +484,93 @@ frontmatter_coverage=$(printf '%s\n' "$REACH" | awk '
   END { print fm+0 "/" tot+0 }
 ')
 echo "frontmatter_coverage=$frontmatter_coverage"
+
+# ----- Declaration-driven checks (the document side of the fact partition) -----
+# Spine docs self-describe via declaration blocks; the shared parser is the pack face's
+# spine-parse.sh (a shared pack asset). Three checks, facts only: entry-shape conformance
+# (malformed declarations), budgets (declared cap vs measured usage), and within-scope
+# citation resolution (typed-ID citations in the declared refs scope with no definition
+# in the declaring store). Assembly facts (stamps, projections, foreign keys) are NOT
+# here -- they are the pack face's check; this pass reads only what documents declare.
+SPINE_PARSE="$SELF/../../clankshop/scripts/spine-parse.sh"
+if [ -f "$SPINE_PARSE" ]; then
+  DTMP=$(mktemp -d "${TMPDIR:-/tmp}/spine-decl.XXXXXX")
+  trap 'rm -rf "$DTMP"' EXIT
+  : > "$DTMP/docs"; : > "$DTMP/malformed"; : > "$DTMP/budget"; : > "$DTMP/stores"
+  files=$(find_md)
+  [ -n "$files" ] && printf '%s\n' "$files" | while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    grep -q '<!-- spine-doc v' "$f" || continue
+    pf=$(sh "$SPINE_PARSE" "$f" 2>/dev/null || true)
+    printf '%s\n' "$pf" | grep -q '^block=none' && continue
+    kind=$(printf '%s\n' "$pf" | sed -n 's/^kind=//p' | head -1)
+    echo "$f:${kind:--}" >> "$DTMP/docs"
+    mal=$(printf '%s\n' "$pf" | sed -n 's/^malformed=//p' | head -1)
+    [ -n "$mal" ] && { echo "$f ($mal)" >> "$DTMP/malformed"; continue; }
+    entry=$(printf '%s\n' "$pf" | sed -n 's/^entry=//p' | head -1)
+    ids=$(printf '%s\n' "$pf" | sed -n 's/^ids=//p' | head -1)
+    budget=$(printf '%s\n' "$pf" | sed -n 's/^budget=//p' | head -1)
+    refs=$(printf '%s\n' "$pf" | sed -n 's/^refs=//p' | head -1)
+    exclude=$(printf '%s\n' "$pf" | sed -n 's/^exclude=//p' | head -1)
+    # budgets: "N entries|lines|bytes" -- measure the declared unit.
+    if [ -n "$budget" ]; then
+      bn=$(printf '%s' "$budget" | awk '{print $1+0}')
+      bu=$(printf '%s' "$budget" | awk '{print $2}')
+      case "$bu" in
+        entries) [ -n "$entry" ] && use=$(grep -cE "$entry" "$f" || true) || use="" ;;
+        lines)   use=$(wc -l < "$f" | tr -d ' ') ;;
+        bytes)   use=$(wc -c < "$f" | tr -d ' ') ;;
+        *)       use="" ;;
+      esac
+      if [ -n "$use" ] && [ "$bn" -gt 0 ] && [ "$use" -gt "$bn" ]; then
+        echo "$f ($use/$bn $bu)" >> "$DTMP/budget"
+      fi
+    fi
+    # record the ID store for the citation pass (defs = entry-line IDs in this doc).
+    if [ -n "$ids" ] && [ -n "$entry" ]; then
+      grep -E "$entry" "$f" 2>/dev/null \
+        | awk -v p="$ids" 'match($0, p "-[A-Za-z0-9-]+") { print substr($0, RSTART, RLENGTH) }' \
+        >> "$DTMP/defs.$ids" || true
+      printf '%s\t%s\t%s\t%s\n' "$ids" "$f" "${refs:-}" "${exclude:-}" >> "$DTMP/stores"
+    fi
+  done
+  sort -u -o "$DTMP/docs" "$DTMP/docs" 2>/dev/null || true
+  emit_capped decl_docs 30 < "$DTMP/docs"
+  emit_capped decl_malformed 20 < "$DTMP/malformed"
+  emit_capped decl_budget_over 20 < "$DTMP/budget"
+  # citation resolution, per declared store: matcher hits in the refs scope (git-pathspec
+  # globs when git is available, else every scanned doc) minus this store's definitions.
+  : > "$DTMP/unres"
+  # shellcheck disable=SC2034  # sf (the store file) is positional; defs are keyed by prefix
+  while IFS="$(printf '\t')" read -r pfx sf srefs sexcl; do
+    [ -n "$pfx" ] || continue
+    if [ -e .git ] && [ -n "$srefs" ]; then
+      # shellcheck disable=SC2086  # refs is a space-separated pathspec list by contract
+      scope=$(git ls-files --cached --others --exclude-standard -- $srefs 2>/dev/null | grep '\.md$' || true)
+    else
+      scope=$files
+    fi
+    [ -n "$scope" ] || continue
+    printf '%s\n' "$scope" | while IFS= read -r sd; do
+      [ -f "$sd" ] || continue
+      skip=0
+      # shellcheck disable=SC2254  # exclude patterns are globs by contract -- matching, not literal
+      for ex in $sexcl; do case "$sd" in $ex|*/${ex%/**}/*) skip=1 ;; esac; done
+      [ "$skip" = 1 ] && continue
+      awk -v p="$pfx" '{ s=$0
+        while (match(s, p "-[A-Za-z0-9-]+")) {
+          pre = (RSTART > 1) ? substr(s, RSTART-1, 1) : " "
+          tok = substr(s, RSTART, RLENGTH); s = substr(s, RSTART+RLENGTH)
+          if (pre ~ /[A-Za-z0-9-]/) continue
+          print tok
+        } }' "$sd" | sed "s|^|$sd	|"
+    done | sort -u | while IFS="$(printf '\t')" read -r sd tok; do
+      [ -n "$tok" ] || continue
+      grep -qxF "$tok" "$DTMP/defs.$pfx" 2>/dev/null || echo "$sd:$tok"
+    done >> "$DTMP/unres"
+  done < "$DTMP/stores"
+  sort -u "$DTMP/unres" | emit_capped decl_unresolved_citations 20
+else
+  echo "decl_docs_count=0"
+  echo "decl_docs= (spine-parse.sh unavailable -- declaration checks skipped)"
+fi

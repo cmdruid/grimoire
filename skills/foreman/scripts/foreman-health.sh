@@ -15,26 +15,10 @@
 # the independence machinery retires. Bash-3.2 safe; read-only; never mutates.
 set -euo pipefail
 
-# Front-door variable `records-root` (default `.records`) -- see the
-# front-door-variables doctrine. Prints the resolved repo-relative path.
-resolve_records_root() {
-  local root="$1" fd decl=""
-  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-    if [ -z "$decl" ] && [ -f "$fd" ]; then
-      decl="$(sed -n 's/^records-root:[[:space:]]*//p' "$fd" | head -n 1 \
-              | sed 's/[[:space:]]*$//')"
-    fi
-  done
-  printf '%s\n' "${decl:-.records}"
-}
-
 usage() {
   cat >&2 <<'EOF'
 usage: foreman-health.sh <subcommand> <root> [args...]
 
-  stale-refs       <root> [<file>...]             path / file:line refs that no longer resolve
-                                                  (default: trackers + spine + index docs)
-  coverage         <root>                         top-level dirs not reachable from the spine docs
   derive-seams     <skills-root>                  match installed skills' `## Edges` blocks into
                                                   seams (handoff<->consumes) / deps (produces<->consumes)
 
@@ -42,98 +26,8 @@ Each prints `key=value` facts then evidence. Read-only; emits no recommendation.
 EOF
 }
 
-
-# top_level_dirs <root> -- space-padded list of top-level dir names (dotless),
-# e.g. " src dev docs tests ". Used to gate refs to genuine repo-root paths.
-top_level_dirs() {
-  local d name out=" "
-  for d in "$1"/*/; do
-    name="$(basename "$d")"; case "$name" in .*) continue;; esac
-    out="$out$name "
-  done
-  printf '%s' "$out"
-}
-
-# extract_refs <file...> -- backticked, unambiguous repo-ROOT path tokens only:
-# multi-segment (has `/`), path chars + optional `:line`, no spaces/globs/URLs.
-# This deliberately drops the prose noise (bare filenames, frontmatter examples,
-# globs, doc-relative mentions) that makes a path-resolution fact unreliable.
-extract_refs() {
-  # shellcheck disable=SC2016  # literal backticks are intentional (markdown code spans)
-  grep -hoE '`[^`]+`' "$@" 2>/dev/null \
-    | tr -d '`' \
-    | sed -E 's/[),.;]+$//' \
-    | grep -E '^[A-Za-z0-9._/-]+(:[0-9]+)?$' \
-    | grep -E '/' \
-    | sort -u || true
-}
-
-# report_stale <root> <tlds> <file...> -- emit `stale_refs:` evidence + counts.
-# Only a ref whose first segment is a real top-level dir is checked (so it is
-# unambiguously root-relative); others are skipped, not guessed.
-report_stale() {
-  local root="$1" tlds="$2"; shift 2
-  local refs r path line first n total=0 stale=0
-  refs="$(extract_refs "$@")"
-  echo "stale_refs:"
-  while IFS= read -r r; do
-    [ -z "$r" ] && continue
-    path="${r%%:*}"; line=""
-    case "$r" in *:[0-9]*) line="${r##*:}";; esac
-    first="${path%%/*}"
-    case "$tlds" in *" $first "*) ;; *) continue;; esac
-    total=$((total + 1))
-    if [ ! -e "$root/$path" ]; then
-      stale=$((stale + 1)); echo "  $r  (missing)"
-    elif [ -n "$line" ] && [ -f "$root/$path" ]; then
-      n="$(wc -l < "$root/$path" | tr -d ' ')"
-      if [ "$line" -gt "$n" ]; then stale=$((stale + 1)); echo "  $r  (file has $n lines)"; fi
-    fi
-  done <<< "$refs"
-  [ "$stale" -eq 0 ] && echo "  (none)"
-  echo "checked=$total"
-  echo "stale=$stale"
-}
-
-cmd_stale_refs() {
-  [ "$#" -ge 1 ] || { echo "usage: foreman-health.sh stale-refs <root> [<file>...]" >&2; exit 2; }
-  local root="$1"; shift
-  local tlds rec_rel; tlds="$(top_level_dirs "$root")"
-  rec_rel="$(resolve_records_root "$root")"
-  if [ "$#" -ge 1 ]; then
-    report_stale "$root" "$tlds" "$@"
-  else
-    # default set: trackers + index + spine docs that exist
-    local f docs=()
-    for f in "$rec_rel/tasks.md" "$rec_rel/issues.md" "$rec_rel/feedback.md" .agents/foreman/MEMORY.md .agents/foreman/README.md AGENTS.md README.md; do
-      [ -f "$root/$f" ] && docs+=("$root/$f")
-    done
-    if [ "${#docs[@]}" -gt 0 ]; then
-      report_stale "$root" "$tlds" "${docs[@]}"
-    else
-      echo "stale_refs:"; echo "  (no tracker/spine docs found)"; echo "checked=0"; echo "stale=0"
-    fi
-  fi
-}
-
-cmd_coverage() {
-  [ "$#" -eq 1 ] || { echo "usage: foreman-health.sh coverage <root>" >&2; exit 2; }
-  local root="$1" d name s found any=0 tick='`'
-  echo "spine_uncovered:"
-  for d in "$root"/*/; do
-    name="$(basename "$d")"
-    case "$name" in .*) continue;; esac
-    found=0
-    for s in "$root/AGENTS.md" "$root/.agents/foreman/README.md" "$root/README.md"; do
-      # Fixed-string, dir-shaped match ("name/" or a backticked mention): an
-      # unanchored regex match on the bare name false-covers short names
-      # (substring hits) and breaks on regex metachars.
-      [ -f "$s" ] && { grep -qF "$name/" "$s" || grep -qF "${tick}${name}${tick}" "$s"; } && { found=1; break; }
-    done
-    [ "$found" -eq 0 ] && { echo "  $name/"; any=1; }
-  done
-  [ "$any" -eq 0 ] && echo "  (none)"
-}
+# `stale-refs` + `coverage` were absorbed into the docs-quality scanner
+# (chiropractor's spine-scan.sh: fileline_overruns + uncovered_dirs facts).
 
 # parse_edges <skills-root> <out-tuples-file> -- extract every skill's `## Edges`
 # block into `<kind>\t<type>\t<skill>` tuples (one row per declared type). Same
@@ -251,8 +145,6 @@ main() {
   local sub="$1"; shift
   case "$sub" in
     -h|--help|help) usage ;;
-    stale-refs)        cmd_stale_refs "$@" ;;
-    coverage)          cmd_coverage "$@" ;;
     derive-seams)      cmd_derive_seams "$@" ;;
     *) echo "unknown subcommand: $sub" >&2; usage; exit 2 ;;
   esac

@@ -35,7 +35,7 @@ memory.
 - **Scripts compute facts; the verb prose decides.** The verb files (and this router) carry the
   *judgment* — how to classify a change, whether drift is real, which signal earns a chapter edit.
   The bundled scripts do only the deterministic, mechanical work: the **read-only** fact script
-  `scripts/foreman-health.sh` (`stale-refs`, `coverage`, `derive-seams`) and the **mutating
+  `scripts/foreman-health.sh` (`derive-seams`) and the **mutating
   mechanical helper** `scripts/scoped-commit.sh` (the atomic pathspec-scoped commit — it mutates
   by design, but only ever the paths it is handed). **Never push a decision into a script:** a
   script is stateless and can't see session context, so a *verdict* it emits is sometimes

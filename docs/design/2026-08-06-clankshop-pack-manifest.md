@@ -104,10 +104,10 @@ legitimately retain every retired term (verified: 8 files hit `derive-seams` alo
 - [x] `skills/debugger/SKILL.md` — conform as the diagnostic instrument: findings per the
   report wire contract, bundled `templates/investigation.md` (a `report.md` successor), pause
   refusal, playbook pointer, unstamped read-only; discipline verbatim → Task 2.7
-- [ ] `skills/chiropractor/SKILL.md` — drop the any-repo genericity mandate; framework-aware
+- [x] `skills/chiropractor/SKILL.md` — drop the any-repo genericity mandate; framework-aware
   document-fact set (the §4.6 partition); reports per the wire contract with bundled
   `templates/doc-drift.md` (the other `report.md` successor); unstamped read-only → Task 2.8
-- [ ] `skills/chiropractor/scripts/spine-scan.sh` — hardcoded `GLOSSARY.md`/`INDEX.md`
+- [x] `skills/chiropractor/scripts/spine-scan.sh` — hardcoded `GLOSSARY.md`/`INDEX.md`
   candidate lists (the "Affordance flags" section — locate by content; old `:427,429` drifted)
   replaced by the frozen facts (`has_front_door`/`has_stewardship_map`/`has_glossary`); consumes
   `spine-parse.sh`; its `.records/archive` + typed-edge comment references updated; fixtures

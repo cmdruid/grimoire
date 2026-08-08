@@ -1,14 +1,24 @@
 ---
 name: chiropractor
-description: Use when a repo's agent-facing docs have drifted or were never tuned for agents -- broken links/stale paths in READMEs, a bloated AGENTS.md/CLAUDE.md front-door, duplicated or contradictory docs, no GLOSSARY/INDEX, hard-to-navigate onboarding. Use when asked to audit/align/prune/tune docs, fix doc drift, or make docs more agent-friendly, in any repo. Also `/chiropractor calibrate` drains captured doc-flavored dev-experience signal (tracker entries about the docs, or entries handed inline) into targeted spine fixes.
+description: The docs-quality role. Use when a project's agent-facing docs have drifted or were never tuned for agents -- broken links/stale paths, a bloated AGENTS.md/CLAUDE.md front door, duplicated or contradictory docs, hard-to-navigate onboarding. Framework-aware -- it knows `.handbook/`, `.records/`, and the front door directly -- and owns the document side of the quality fact partition (entry conformance, citation resolution, budgets, link/path health, navigability, read-cost, affordance), with findings written to the report store. Use when asked to audit/align/prune/tune docs, fix doc drift, or make docs more agent-friendly. Also `/chiropractor calibrate` drains captured doc-flavored dev-experience signal (tracker entries about the docs, or entries handed inline) into targeted spine fixes.
 ---
 
 # chiropractor
 
 ## Overview
 Audit and tune a repository's documentation **spine** -- the tree of links/references rooted at the
-agent entry door -- for agent performance. Self-contained and portable: runs in any repo, depends on
-nothing. Adaptive `scan -> diagnose -> adjust` flow; read-only by default.
+agent entry door -- for agent performance. The **docs-quality role** of the pack: framework-aware
+(it knows the deployed layout -- `.handbook/`, `.records/`, the front door -- directly), while the
+spine machinery still runs on any markdown tree. Adaptive `scan -> diagnose -> adjust` flow;
+read-only by default. **On an unstamped root** (no installation block) it stays read-only
+end-to-end: audit and report freely, but Adjust refuses -- emit `unstamped` and point at the
+clankshop onramps.
+
+**The fact partition (who checks what).** Chiropractor owns the **document side**: entry-shape
+conformance, within-scope citation resolution, budgets (the declaration-driven checks), link/path
+health, navigability, read-cost, and affordance -- what documents *declare and say*. **Assembly
+facts** -- installation stamps, projections vs their inputs, cross-store foreign keys, door
+registration -- are the pack face's `check`, never duplicated here. One validator per fact.
 
 **Verbs.** Bare `/chiropractor` (or `audit`) runs the adaptive flow below — the default.
 `/chiropractor calibrate` is the drain verb (see *Calibrate*, below): captured doc-flavored
@@ -94,8 +104,15 @@ The scanner is read-only and emits `key=value` facts to stdout. Facts you will r
 | `escaping_refs` / `escaping_refs_count` | Refs (markdown links, `@`-imports, OR backtick code-span paths to any file) whose target climbs above the scanned root via `..` (reported raw, never clamped). Inside a nested repo these break on a standalone clone -- the **submodule -> outward** self-containment violation |
 | `always_loaded_bytes` | Byte total of the entry door + import chain (token-cost proxy) |
 | `doc_sizes` / `doc_sizes_count` | Top-15-largest docs by bytes (capped sample); count is total doc count |
-| `has_glossary` | `1` if a GLOSSARY.md exists at a standard location, else `0` |
-| `has_index` | `1` if an INDEX.md or equivalent exists, else `0` |
+| `has_glossary` | `1` if a GLOSSARY.md exists at the root or `docs/`, else `0` |
+| `has_front_door` | `1` if an `AGENTS.md`/`CLAUDE.md` front door exists at the root, else `0` |
+| `has_stewardship_map` | `1` if `.handbook/README.md` carries a spine-index declaration plus steward blocks -- a **map** (ownership regions), never an index/TOC |
+| `fileline_overruns` / `fileline_overruns_count` | Live-doc `path:line` refs whose path exists but whose line number runs past EOF -- the code moved under the citation (capped sample + count) |
+| `uncovered_dirs` / `uncovered_dirs_count` | Non-hidden top-level dirs mentioned nowhere in the door docs (`AGENTS.md`, `.handbook/README.md`, `README.md`) |
+| `decl_docs` / `decl_docs_count` | Spine docs carrying a declaration block (`path:kind`), parsed via the pack face's shared parser |
+| `decl_malformed` / `decl_malformed_count` | Declaration blocks that do not parse (duplicate keys, unclosed, bad line) -- facts, never guessed through |
+| `decl_budget_over` / `decl_budget_over_count` | Declared budgets exceeded (`file (usage/cap unit)`) -- budgets are curation triggers, not split triggers; the steward judges |
+| `decl_unresolved_citations` / `decl_unresolved_citations_count` | Typed-ID citations found in a store's declared refs scope with no definition in the declaring store (`src:ID`) |
 | `frontmatter_coverage` | Fraction of reached docs that have a frontmatter block (`fm/total`) |
 | `agents_md` | `1` if an `AGENTS.md` exists at the repo root, else `0` |
 | `claude_md` | `1` if a `CLAUDE.md` exists at the repo root, else `0` |
@@ -105,12 +122,14 @@ The scanner is read-only and emits `key=value` facts to stdout. Facts you will r
 
 **List facts are capped samples with a true count.** Each list fact (`edges`, `orphan_docs`,
 `unreachable_dirs`, `broken_links`, `broken_links_archived`, `stale_refs`, `stale_refs_archived`,
-`sub_roots`, `xroot_refs`, `escaping_refs`, `doc_sizes`, `entry_outline`) emits two keys: a `<key>_count=<N>`
+`sub_roots`, `xroot_refs`, `escaping_refs`, `doc_sizes`, `entry_outline`, `fileline_overruns`,
+`uncovered_dirs`, `decl_docs`, `decl_malformed`, `decl_budget_over`, `decl_unresolved_citations`) emits two keys: a `<key>_count=<N>`
 line carrying the true total, and a `<key>=` line carrying only the first N entries (the top 15
 largest for `doc_sizes`), suffixed with a ` ...(+M more)` marker when truncated. This keeps the
 scanner output small on large repos. Read the `_count` for magnitude, the sample for examples --
 do not assume the sample is the whole list. The scalar facts (`entry_door`, `import_chain`, `max_depth`,
-`always_loaded_bytes`, `has_glossary`, `has_index`, `frontmatter_coverage`, `agents_md`, `claude_md`, `front_door_link`, `entry_hub_links`) are reported in full.
+`always_loaded_bytes`, `has_glossary`, `has_front_door`, `has_stewardship_map`,
+`frontmatter_coverage`, `agents_md`, `claude_md`, `front_door_link`, `entry_hub_links`) are reported in full.
 
 **Facts, not verdicts -- you judge.** The scanner reports what it measured; interpreting whether a
 count is healthy or problematic is your job, not the scanner's.
@@ -181,7 +200,7 @@ absent, structural repair needed).
 
 **Archive/store orphans are not a coverage gap.** When `orphan_docs_count` is high, check where the
 orphans concentrate before scoring. A large **dated archive or store** -- a directory of
-date-prefixed files (e.g. `.records/archive/<YYYY-MM-DD>-*.md`), or any directory the index references as a
+date-prefixed files (e.g. `.records/done/<YYYY-MM-DD>-*.md`, a store's `archive/`), or any directory the map references as a
 glob/store rather than per-file (logs, completed-work archives, per-record notes) -- is reached by
 convention or glob, not by navigation, so it is *legitimately* not link-reachable. That is
 intentional, not drift. Score reachability/coverage on the orphans **outside** such stores; report
@@ -205,8 +224,18 @@ Produce the report (see Report Format below) after all dimensions are scored.
 
 ## Report Format
 
-Print the report to the conversation. Writing it to a file is optional and off by default; only
-do so if the user explicitly requests a file.
+Print the report to the conversation. **On a framework installation, also write the durable
+record**: `.records/reports/doc-drift-<YYYY-MM-DD>-<slug>.md` from this skill's
+`templates/doc-drift.md` -- frontmatter floor (`type: doc-drift`, `id` = the filename stem
+verbatim, `date`, `source`, optional `processed:`) and one keyed `#### <key> -- <title>` heading
+per finding (keys match `[a-z0-9-]+`, unique within the report -- the stable handles the
+improvement loop drains). On a filename collision, suffix the slug deterministically (`-2`, `-3`,
+...) before first publication; never rename after. Outside a framework installation the
+conversational report alone is the output, as before.
+
+**Declaration-led pause.** Where a store declares a pause encoding, a paused entry is the
+human's: audit it, count it, but never propose an Adjust that mutates it -- and when a pass
+cannot *prove* an entry unpaused (missing/malformed declaration), skip it and say so.
 
 The entry door is the highest-leverage node in the spine -- every agent session starts there, so
 any drift or gap here multiplies across every run.
@@ -312,9 +341,11 @@ entries (this skill does not curate another store). Re-scan to verify, as Adjust
 
 ## Boundaries
 
-- **Self-contained.** This skill names no other skill. It references only its own
-  `scripts/spine-scan.sh` and `RUBRIC.md`. Generic concepts ("fan out parallel subagents",
-  "a workflow engine if the harness offers one") are used in place of any named tool or skill.
+- **A role of the pack, still spine-generic.** The scanner consumes the pack face's shared
+  declaration parser and knows the deployed layout directly; everything else references only this
+  skill's own `scripts/spine-scan.sh`, `RUBRIC.md`, and `templates/doc-drift.md`. Generic
+  concepts ("fan out parallel subagents", "a workflow engine if the harness offers one") are used
+  in place of any named tool.
 - **Docs only.** Source code, test files, build configs, and binary assets are out of scope.
   The spine is markdown; the audit is ergonomics and navigability, not correctness of code or
   comments.

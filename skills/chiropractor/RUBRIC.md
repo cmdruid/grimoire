@@ -289,24 +289,25 @@ body text -- via **either** an index that lists docs with their kind/purpose
 **or** frontmatter on the docs themselves. Both are valid mechanisms; the
 dimension scores the outcome (enumerability), not one specific mechanism.
 
-**Facts that inform it:** `has_index`, `frontmatter_coverage`
+**Facts that inform it:** `has_stewardship_map`, `decl_docs`, `frontmatter_coverage`
 
 Frontmatter is one mechanism, not the goal. A repo that deliberately enumerates via
 current, complete index files is fully machine-legible with `frontmatter_coverage=0` --
 score that solid, not drift. `frontmatter_coverage` only pulls a score down when the
-repo has *no* working index to enumerate from. Confirm the index is current (covers the
-live docs) rather than assuming `has_index=1` means healthy.
+repo has *no* working enumeration to lean on. On a framework installation the stewardship
+map + declaration blocks are that mechanism (`has_stewardship_map`, `decl_docs`); confirm
+the map is current rather than assuming its presence means healthy.
 
-- **solid** -- The spine is enumerable without body-text parsing: a current index
-  covers the live docs (`has_index` true, indexes not stale), **or**
-  `frontmatter_coverage` is ~100%. A well-maintained index convention with no
-  frontmatter is solid.
+- **solid** -- The spine is enumerable without body-text parsing: a current
+  stewardship map + declaration blocks cover the live stores, a current index does,
+  **or** `frontmatter_coverage` is ~100%. A well-maintained enumeration convention
+  with no frontmatter is solid.
 - **drift** -- The primary mechanism has gaps: the index exists but omits a live
   area, or frontmatter is the intended convention yet coverage is partial (70-99%).
   Enumeration mostly works but misses a corner.
-- **gap** -- Neither mechanism works: `has_index` is false (or the index is stale
-  and misleading) **and** `frontmatter_coverage` is low; automated tools must parse
-  body text to identify docs.
+- **gap** -- No mechanism works: no current map/index (or a stale, misleading one)
+  **and** `frontmatter_coverage` is low; automated tools must parse body text to
+  identify docs.
 
 **Example adjustments:**
 - Add a minimal frontmatter block (`---\ntitle: X\nkind: Y\n---`) to each doc

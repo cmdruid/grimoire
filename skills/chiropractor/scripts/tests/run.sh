@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-DIR=$(CDPATH= cd "$(dirname "$0")" && pwd)
+DIR=$(CDPATH='' cd "$(dirname "$0")" && pwd)
 SCAN="$DIR/../spine-scan.sh"
 out=$(sh "$SCAN" "$DIR/fixtures/basic")
 fail=0
@@ -34,7 +34,16 @@ check "doc_sizes_count=7"
 # Task 5: token economy + affordance flags
 echo "$out" | grep -Eq '^always_loaded_bytes=[0-9]+$' || { echo "no always_loaded_bytes"; fail=1; }
 check "has_glossary=0"
+check "has_front_door=1"
+check "has_stewardship_map=0"
+# Absorbed foreman-health facts: line-overrun refs + door-uncovered top-level dirs.
+check "fileline_overruns_count=1"
+echo "$out" | grep -q '^fileline_overruns=AGENTS.md:src/real.rs:99' || { echo "no fileline_overruns"; fail=1; }
+check "uncovered_dirs=notes/"
 echo "$out" | grep -Eq '^frontmatter_coverage=[0-9]+/[0-9]+$' || { echo "no frontmatter_coverage"; fail=1; }
+# --- stewardship fixture: a .handbook/README.md with spine-index + steward blocks is a map ---
+outS=$(sh "$SCAN" "$DIR/fixtures/stewardship")
+echo "$outS" | grep -qx "has_stewardship_map=1" || { echo "MISSING(stewardship): has_stewardship_map=1"; fail=1; }
 # --- entry-door fixture (CLAUDE.md imports AGENTS.md -> claude->agents) ---
 outE=$(sh "$SCAN" "$DIR/fixtures/entrydoor")
 checkE() { echo "$outE" | grep -qx "$1" || { echo "MISSING(entrydoor): $1"; fail=1; }; }
@@ -136,4 +145,10 @@ echo "$outH" | grep '^stale_refs=' | grep -q 'hist-' && { echo "REGRESSION(histo
 # Basic fixture's live counts are unchanged AND its archived buckets are emitted-but-empty.
 check "broken_links_archived_count=0"
 check "stale_refs_archived_count=0"
+# --- declaration fixture: the three declaration-driven checks (shared parser) ---
+outD=$(sh "$SCAN" "$DIR/fixtures/decl")
+checkD() { echo "$outD" | grep -qx "$1" || { echo "MISSING(decl): $1"; fail=1; }; }
+checkD "decl_docs=.handbook/rules/GOTCHAS.md:gotchas"
+checkD "decl_budget_over=.handbook/rules/GOTCHAS.md (2/1 entries)"
+checkD "decl_unresolved_citations=.handbook/rules/GOTCHAS.md:G-9"
 [ "$fail" = 0 ] && echo "PASS" || { echo "FAIL"; exit 1; }

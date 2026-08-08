@@ -10,3 +10,5 @@ See [fenced examples](fenced.md) for code-block handling.
 See `src/nope.rs:10` for the impl. Also `dev/README.md` is valid (exists). And `nodot` has no extension.
 
 The sub-doc `sub/viabacktick.md` is referenced ONLY as a backtick inline-code path (no markdown link).
+
+Overrun ref: `src/real.rs:99` (absorbed foreman stale-refs case).

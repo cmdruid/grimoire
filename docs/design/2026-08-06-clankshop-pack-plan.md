@@ -645,29 +645,29 @@ decomposition; renaming them during build is a task-local call, adding a third i
 `skills/foreman/scripts/foreman-health.sh` (delete `stale-refs`/`coverage` as they move here)
 (+ rubric/reference files per manifest rows).
 
-- [ ] Drop the any-repo genericity mandate: chiropractor knows `.handbook/`, `.records/`, and the
+- [x] Drop the any-repo genericity mandate: chiropractor knows `.handbook/`, `.records/`, and the
   front door **directly**. Keeps: the three declaration-driven checks (now consuming
   `spine-parse.sh` from Task 1.1), the Entry-Door Audit (framework-aware), the declaration-led
   pause. Its fact set is exactly the *document* side of the §4.6 partition (entry conformance,
   within-scope citation resolution, budgets, link/path health, navigability, read-cost,
   affordance) — the verb prose states the partition against clankshop check.
-- [ ] `spine-scan.sh`: replace the hardcoded `GLOSSARY.md`/`INDEX.md` candidate lists (the
+- [x] `spine-scan.sh`: replace the hardcoded `GLOSSARY.md`/`INDEX.md` candidate lists (the
   "Affordance flags" section — locate by content, the old `:427,429` has drifted) — an ordinary
   path update now, not a doctrine violation. The frozen replacement facts: `has_front_door`
   (`AGENTS.md`/`CLAUDE.md` present), `has_stewardship_map` (`.handbook/README.md` carrying a
   spine-index + steward blocks — reported as a *map*, never labeled an index/TOC), `has_glossary`
   (root or `docs/` `GLOSSARY.md`). Its fixtures update to match.
-- [ ] Absorb `stale-refs` + `coverage` from `foreman-health.sh` (Task 2.5's disposition) into
+- [x] Absorb `stale-refs` + `coverage` from `foreman-health.sh` (Task 2.5's disposition) into
   chiropractor's scripts, consuming `spine-parse.sh` — destination tests first, then delete both
   subcommands from `foreman-health.sh` in this same task (no duplicate implementations survive).
-- [ ] Findings land as `.records/reports/doc-drift-<date>-<slug>.md` per Appendix L. On an
+- [x] Findings land as `.records/reports/doc-drift-<date>-<slug>.md` per Appendix L. On an
   unstamped root: read-only — emit `unstamped`, point at the onramps (Appendix H). Bundles
   `skills/chiropractor/templates/doc-drift.md` (the Appendix L shape — the other successor of
   `foreman/templates/report.md`).
 - [ ] The `## Calibrate` section, its description sentence, and the `tracker-entry (optional)`
   consumes line (steward-grammar surfaces; manifest rows) are removed **in Task 2.11's commit**,
   when the calibrator exists — never before (no window with no drain owner).
-- [ ] Verify: lint; probe spot-check "audit the docs" → chiropractor; manifest rows. Commit.
+- [x] Verify: lint; probe spot-check "audit the docs" → chiropractor; manifest rows. Commit.
 
 ### Task 2.9: Architect — conforming edits
 
