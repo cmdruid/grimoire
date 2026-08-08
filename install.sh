@@ -32,7 +32,12 @@ frontmatter_key() {
   awk -v k="$2" '
     NR == 1 { if ($0 != "---") exit; next }
     /^---$/ { exit }
-    index($0, k ":") == 1 { sub("^" k ":[[:space:]]*", ""); print; exit }
+    index($0, k ":") == 1 {
+      sub("^" k ":[[:space:]]*", "")
+      if (substr($0, 1, 1) != "\"") sub(/[[:space:]]#.*$/, "")
+      sub(/[[:space:]]+$/, "")
+      print; exit
+    }
   ' "$1"
 }
 
@@ -98,6 +103,9 @@ if [ -n "$pack_name" ]; then
     [ "$face" = "$pack_name" ] \
       || { echo "error: face name $face != pack name: $pack_name (spec: they MUST match)" >&2; exit 2; }
     names+=("$face")
+  else
+    echo "error: pack $pack_name is faceless (no SKILL.md beside its PACK.md) -- this installer supports faced packs only; spec 3 requires caching the manifest into the lock for faceless installs, which pack-aware tooling owns" >&2
+    exit 2
   fi
   for s in $pack_required $pack_optional; do names+=("$s"); done
 fi
@@ -123,7 +131,17 @@ member_hash() {
 # without python3 a fresh lock is written when none exists, else the stale lock is
 # surfaced as a fact and left untouched.
 write_lock() {
-  lock_dir="$(CDPATH='' cd "$(dirname "$target")" && pwd)"
+  # Spec 3 scopes: installs into per-agent dirs under $HOME are the GLOBAL
+  # scope -- the lock lives at ~/.agents/grimoire.lock regardless of which
+  # agent dir was targeted. Anything else is a project scope: the lock sits
+  # at the project root (the target's parent).
+  case "$target" in
+    "$HOME"/.claude/*|"$HOME"/.agents/*|"$HOME"/.codex/*|"$HOME"/.cursor/*)
+      lock_dir="$HOME/.agents"
+      mkdir -p "$lock_dir" ;;
+    *)
+      lock_dir="$(CDPATH='' cd "$(dirname "$target")" && pwd)" ;;
+  esac
   lock_file="$lock_dir/grimoire.lock"
   ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   ref="$(git -C "$root" rev-parse --short HEAD 2>/dev/null || true)"
@@ -135,10 +153,12 @@ write_lock() {
     skills_json="${skills_json}${skills_json:+,}
       \"$name\": { \"hash\": \"$h\", \"required\": $req }"
   done
+  ref_json=""
+  [ -n "$ref" ] && ref_json="
+    \"ref\": \"$ref\","
   entry_json="{
     \"version\": \"$pack_version\",
-    \"source\": \"$root\",
-    \"ref\": \"$ref\",
+    \"source\": \"$root\",$ref_json
     \"installedAt\": \"$ts\",
     \"skills\": {$skills_json
     }
