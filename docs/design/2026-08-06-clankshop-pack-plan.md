@@ -694,15 +694,15 @@ per manifest. (`verbs/calibrate.md` is deleted in Task 2.11's commit, when its s
 
 **Files:** Modify `skills/auditor/SKILL.md`, `skills/auditor/BOOTSTRAP.md` (+ files per manifest).
 
-- [ ] Seat path → `.agents/roles/auditor/` (the one seat that exists); records `.records/audit/`
+- [x] Seat path → `.agents/roles/auditor/` (the one seat that exists); records `.records/audit/`
   (internal `logs/`/`history/` stay store-internal); `deploy` keeps its pre-stamp right (Appendix
   H) and creates-or-adopts the installation block; findings that pass the **system-improvement
   bar** feed the calibrator's intake — ordinary code findings go back to `route` (the verb prose
   states the bar). Non-`deploy` verbs are read-only on an unstamped root (Appendix H).
-- [ ] The deployed finding shape (BOOTSTRAP/template contract) gains the optional `processed:`
+- [x] The deployed finding shape (BOOTSTRAP/template contract) gains the optional `processed:`
   field — Appendix K's terminal-writeback target for calibrator-accepted findings. `deploy`'s
   door registration rewrites to the pack-style block (Appendix G's door-block protocol).
-- [ ] Verify: lint; manifest rows. Commit.
+- [x] Verify: lint; manifest rows. Commit.
 
 ### Task 2.11: Calibrator — the improvement loop (new build)
 

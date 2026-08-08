@@ -123,11 +123,11 @@ legitimately retain every retired term (verified: 8 files hit `derive-seams` alo
 - [x] `skills/architect/verbs/reconcile.md` — report writing conformed to the wire contract:
   `reconcile-<date>-<slug>.md` (today slug-less, line 107), frontmatter floor, collision rule →
   Task 2.9
-- [ ] `skills/auditor/{SKILL.md,BOOTSTRAP.md}` — seat path → `.agents/roles/auditor/`;
+- [x] `skills/auditor/{SKILL.md,BOOTSTRAP.md}` — seat path → `.agents/roles/auditor/`;
   `.agents/foreman` + doc-linter references; finding shape gains optional `processed:`;
   `deploy`'s door registration → pack-style block; system-improvement-bar framing (findings past
   the bar feed the calibrator; code findings → route) → Task 2.10
-- [ ] `skills/auditor/rules/technical-debt.md` — "calibrate" as ordinary rubric English — **no
+- [x] `skills/auditor/rules/technical-debt.md` — "calibrate" as ordinary rubric English — **no
   change** (verified in Task 2.10's pass)
 
 ## Phase 2 — the steward-grammar surfaces (built 2026-07-28; dissolved into the calibrator)
