@@ -20,7 +20,7 @@ whereas parallel root sessions sharing one tree and index are the hazard, not a 
 comfortable. The rare legitimate "second hand-off file" is still reachable via an **explicit path**
 (below), with no managed lifecycle around it.
 
-A *durable* record of *finished* work is a `.records/archive/` entry, not a hand-off. (The retired
+A *durable* record of *finished* work is a `.records/done/` entry, not a hand-off. (The retired
 `.records/sessions/` and `.sessions/` layers are not revived: a hand-off is gitignored scratch, not
 a tracked store.)
 
@@ -128,7 +128,7 @@ only if it would be empty.
    host's gate, not a snapshot).
 8. **What's pending.** Numbered list of next steps in priority order.
 9. **Critical considerations.** Constraints, gotchas, easy-to-miss context — always with the WHY.
-10. **Pointers.** Links to the project's other entry docs — `AGENTS.md`, `README`, `.agents/foreman/README.md`,
+10. **Pointers.** Links to the project's other entry docs — `AGENTS.md`, `README`, `.handbook/README.md`,
     relevant plans/roadmaps — so the next agent finds the wider doc set.
 11. **Suggested first action.** A concrete first move, specific enough to act on immediately.
     (Resume echoes this line, so keep it sharp and self-contained.)

@@ -799,18 +799,25 @@ across all of these, not just `ship.md`); delete `skills/foreman/templates/done-
 
 ### Task 3.3: Helpers — verify untouched
 
-- [ ] **Ratified scope:** pack §8's "untouched" means no re-framing and no independence-machinery
+- [x] **Ratified scope:** pack §8's "untouched" means no re-framing and no independence-machinery
   changes; stale-path fixes and the lock's `version:` key are in scope (Global Constraints,
   decision 2).
-- [ ] `skills/handoff/SKILL.md`, two path edits (locate by content): the durable-record pointer
+- [x] `skills/handoff/SKILL.md`, two path edits (locate by content): the durable-record pointer
   `.records/archive/` → `.records/done/` (the "A *durable* record of *finished* work" line), and
   the Pointers row `.agents/foreman/README.md` → `.handbook/README.md`.
-- [ ] All three helpers gain `version: 1` in SKILL.md frontmatter — the lock's comparison target
+- [x] All three helpers gain `version: 1` in SKILL.md frontmatter — the lock's comparison target
   (Appendix I) — and **in the same commit** `packs/clankshop.md`'s `helpers:` line upgrades from
   bare to ranged (`delegate>=1 mailbox>=1 handoff>=1`): the bare→ranged transition Appendix I
   stages, landed atomically so a declared range never exists without its keys. Grep-verify no
   other reference broke, per their manifest rows; nothing else changes.
-- [ ] Verify: lint; helpers' edges blocks intact (they keep the full independence discipline).
+  **→ Superseded, not landed (2026-08-08, owner-ratified):** the pack-format spec
+  (`docs/spec/pack-format.md`, format 1, landed `3877eef`..`06b684c`) eliminates member version
+  ranges — members pin by **content hash** in `grimoire.lock` — so the `version:` keys and the
+  ranged `helpers:` line would contradict the ratified format. The lock surface migrates
+  wholesale to `PACK.md` + `grimoire.lock` as that spec's own implementation work; Appendix I's
+  range grammar is superseded with it (bare listing without keys stays the valid state until the
+  migration). Helpers stay untouched beyond the two handoff path edits above.
+- [x] Verify: lint; helpers' edges blocks intact (they keep the full independence discipline).
   Commit.
 
 ### Task 3.4: Phase 3 gate

@@ -167,13 +167,14 @@ drain owner):
   `ship.md`'s reference re-pointed to backlog's copy in the same commit) → Task 3.2
 - [x] `skills/workstream/scripts/workstream-git.sh` — reads `records-root` (the variable keeps
   its exact contract) — **no change** beyond path verification in 3.2's sweep → Task 3.2
-- [ ] `skills/handoff/SKILL.md` — two ratified path edits (locate by content): durable-record
+- [x] `skills/handoff/SKILL.md` — two ratified path edits (locate by content): durable-record
   pointer `.records/archive/` → `.records/done/`; Pointers row `.agents/foreman/README.md` →
   `.handbook/README.md` → Task 3.3
-- [ ] `skills/{delegate,mailbox,handoff}/SKILL.md` — frontmatter gains `version: 1`; same
+- [x] `skills/{delegate,mailbox,handoff}/SKILL.md` — frontmatter gains `version: 1`; same
   commit upgrades the lock's `helpers:` line bare → ranged (`delegate>=1 mailbox>=1
   handoff>=1`); **everything else in the helpers untouched** (edges blocks and independence
-  discipline stay) → Task 3.3
+  discipline stay) → Task 3.3 — **superseded, not landed** (pack-format spec, format 1: no
+  member version ranges; see the plan's Task 3.3 supersession note)
 
 ## Phase 4 — retire the independence machinery (core members only)
 
