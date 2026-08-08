@@ -9,7 +9,22 @@ description: "Root-cause a bug, test failure, build break, or unexpected behavio
 
 Investigate a reported or observed failure to its **root cause** before touching any code. Read-only
 by default; propose the smallest fix that tests the hypothesis, and land it only after the human
-confirms. Self-contained: runs in any repo, depends on nothing.
+confirms. An **instrument**: the procedure is tool-like and the operator owns the judgment — what
+to investigate, whether the verdict warrants a fix, when to stop. The discipline runs anywhere;
+on a framework installation it additionally writes its findings to the report store and follows
+the deployed playbook (below).
+
+**Inputs and refusals.** It accepts a **routed report or a live symptom** — a filed bug report is
+welcome input when one exists, never a required floor; it **never enumerates the `bugs/` store**
+looking for work (a store is not a queue). A routed report whose linked tracker entry is
+**paused** is refused with the pause fact — a ticket owns that item until it resolves. On an
+**unstamped root** (no installation block) the fix-landing and report-writing halves are
+unavailable: emit `unstamped`, point at the clankshop onramps, and investigate read-only at most.
+
+**The playbook.** Where the installation carries `.handbook/testing/DIAGNOSTICS.md`, consult it
+first — symptom → first moves; it frequently short-circuits Phase 1. An investigation that
+navigates a symptom the playbook doesn't cover is a playbook gap worth flagging (the verification
+steward tends that chapter).
 
 ## When to Use
 
@@ -90,16 +105,26 @@ State plainly: the reproduction, the root cause (not the symptom), the evidence 
 just the fix that happened to work), the fix, and how it was verified. If Phase 4 hit the three-fix
 threshold, say so explicitly and name the architectural question instead of a fix.
 
+**On a framework installation, the durable record is a report file:**
+`.records/reports/investigation-<YYYY-MM-DD>-<slug>.md` from this skill's
+`templates/investigation.md` — frontmatter floor (`type: investigation`, `id` = the filename stem
+verbatim, `date`, `source`, optional `processed:`), the report body above, and a keyed
+`#### <key> — <title>` heading per actionable finding (the lessons slice the improvement loop
+drains; keys match `[a-z0-9-]+`, unique within the report). If the target filename already exists,
+suffix the slug deterministically (`-2`, `-3`, …) **before first publication**; never rename
+after. Commit it trunk-side, scoped, alongside the linked entry's completion where one applies.
+
 ## Boundaries
 
-- **Self-contained.** This skill names no other skill. It references only its own content. A filed bug
-  report is welcome input when one exists, but is never required -- a live symptom with nothing filed
-  yet starts at Phase 1 exactly the same way.
+- **An instrument, not a role.** The four-phase procedure is the tool; the operator (whoever the
+  bug lane dispatched — often driven by a human or a routing walk) owns the judgment around it.
+  It stewards no chapter and keeps no seat.
 - **Not a scheduled code-quality or doc-ergonomics pass.** Symptom-triggered investigation of one
   reported problem, not a broad scoring sweep across a codebase or a doc spine.
 - **No private home.** Nothing is scaffolded or stored between sessions -- each investigation is
-  independent; a durable finding worth keeping belongs wherever the host project already captures
-  follow-ups.
+  independent. The durable outputs are the report file (above) and any tracker captures the
+  installation's record schema names; a verification-depth or flake *judgment* question belongs
+  to the verification role, not here.
 
 ## Edges
 

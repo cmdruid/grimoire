@@ -628,7 +628,7 @@ decomposition; renaming them during build is a task-local call, adding a third i
 
 **Files:** Modify `skills/debugger/SKILL.md` (+ its verb/reference files per manifest rows).
 
-- [ ] Keep the discipline verbatim (reproduce → trace → hypothesize → verify → fix;
+- [x] Keep the discipline verbatim (reproduce → trace → hypothesize → verify → fix;
   human-confirm-before-edit). Add: findings write `.records/reports/investigation-<date>-<slug>.md`
   per Appendix L; guided by guardian's playbook when present (`.handbook/testing/`); accepts a
   routed report or live symptom, **never enumerates `bugs/`**; a routed report whose linked entry
@@ -636,7 +636,7 @@ decomposition; renaming them during build is a task-local call, adding a third i
   read-only — emit `unstamped`, point at the onramps (Appendix H). Bundles its report template,
   `skills/debugger/templates/investigation.md` (the Appendix L shape — one of
   `foreman/templates/report.md`'s two successors).
-- [ ] Verify: lint; instrument-contract framing (operator owns the judgment); manifest rows.
+- [x] Verify: lint; instrument-contract framing (operator owns the judgment); manifest rows.
   Commit.
 
 ### Task 2.8: Chiropractor — repurpose as the docs-quality role

@@ -101,7 +101,7 @@ legitimately retain every retired term (verified: 8 files hit `derive-seams` alo
 - [x] `skills/guardian/` — new build (SKILL.md + tend/judge verbs; `testing/` chapter seeded
   from doctrine Task 0.3); joins lock `skills:`/`core:` + README inventory in the same commit →
   Task 2.6
-- [ ] `skills/debugger/SKILL.md` — conform as the diagnostic instrument: findings per the
+- [x] `skills/debugger/SKILL.md` — conform as the diagnostic instrument: findings per the
   report wire contract, bundled `templates/investigation.md` (a `report.md` successor), pause
   refusal, playbook pointer, unstamped read-only; discipline verbatim → Task 2.7
 - [ ] `skills/chiropractor/SKILL.md` — drop the any-repo genericity mandate; framework-aware
