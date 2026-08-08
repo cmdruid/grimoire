@@ -773,16 +773,16 @@ remove chiropractor's `## Calibrate` surfaces (per Tasks 2.5/2.8/2.9).
 
 **Files:** Modify `skills/feature/SKILL.md` + templates per manifest rows.
 
-- [ ] Update every reference to the retired layout (`.agents/foreman/docs/PLANNING.md`,
+- [x] Update every reference to the retired layout (`.agents/foreman/docs/PLANNING.md`,
   `MEMORY.md`, GOTCHAS paths, TAXONOMY as frontmatter authority) to the new homes (handbook
   chapters; the doctrine schema via `rules/RECORDS.md`); planning artifacts still land in
   `.records/plans/` + `.records/adr/` (unchanged). Verbs gain the stamped-only guard (unstamped
   root → onramps, emit the fact, stop).
-- [ ] Conform feature's `init` verb — the **fourth surviving core route writer** (its SKILL.md
+- [x] Conform feature's `init` verb — the **fourth surviving core route writer** (its SKILL.md
   init section writes a path-SHA `built-against` stamp + an `Edges:` block body today) — to
   Appendix G's door-block protocol: pack-style body from the doctrine's door profile, the stamp
   converted path-SHA → `clankshop@<pack-version>`, no `Edges:` lines.
-- [ ] Verify: manifest rows; lint. Commit.
+- [x] Verify: manifest rows; lint. Commit.
 
 ### Task 3.2: Workstream — ship seam and archiving
 

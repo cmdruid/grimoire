@@ -150,13 +150,13 @@ drain owner):
 
 ## Phase 3 — pipelines and helpers
 
-- [ ] `skills/feature/SKILL.md` — retired-layout references (`.agents/foreman/docs/PLANNING.md`,
+- [x] `skills/feature/SKILL.md` — retired-layout references (`.agents/foreman/docs/PLANNING.md`,
   `MEMORY.md`, GOTCHAS paths, TAXONOMY as frontmatter authority) → handbook chapters + the
   doctrine schema; stamped-only guard; `init` conformed to the pack-style door block (the fourth
   surviving core route writer — today a path-SHA stamp + `Edges:` body) → Task 3.1
-- [ ] `skills/feature/templates/{plan-implementation,roadmap}.md` — `.agents/foreman/MEMORY.md`
+- [x] `skills/feature/templates/{plan-implementation,roadmap}.md` — `.agents/foreman/MEMORY.md`
   / GOTCHAS / `PLANNING.md` references → new homes → Task 3.1
-- [ ] `skills/feature/docs/ideal-use.md` — teaches typed-edge continuation at HEAD — rewritten
+- [x] `skills/feature/docs/ideal-use.md` — teaches typed-edge continuation at HEAD — rewritten
   to the pack seam (also swept by 4.2's assert) → Task 3.1
 - [ ] `skills/workstream/SKILL.md`, `verbs/{ship,close,create,sync}.md`, `flow.md`,
   `templates/{coordinator,debug,design,workstream-handoff}.md` — old-layout hits

@@ -5,13 +5,15 @@ description: "Execute the planning spine as verbs -- `/feature brainstorm | desi
 
 # feature -- the executable planning spine
 
-`/feature <verb> [args]` makes the host's `.agents/foreman/docs/PLANNING.md` spine **executable**. Its four core verbs ARE
-the spine's plan-and-build stages (1-4); stage 5 (debrief) stays the separate `/backlog debrief` skill. A
+`/feature <verb> [args]` makes the host's **feature lane** (the installation's
+`.handbook/workflows/feature.md`) executable. Its four core verbs ARE the lane's plan-and-build
+walk (validate -> design -> plan -> build); landing and the debrief sweep stay with the
+orchestrator (`/backlog debrief`). A
 fifth verb, `review`, is **cross-cutting** -- an independent ground-truthed critique of an artifact any
 stage produced, callable at any point. Each verb
 distills the planning discipline it needs into a compact checklist, pointed at the host's gate
-(named in its `AGENTS.md`), templates (this skill's own bundled `templates/`), frontmatter (the capture taxonomy
-`/backlog` owns, `docs/TAXONOMY.md`), and
+(the installation's `.handbook/testing/GATE.md`), templates (this skill's own bundled `templates/`),
+frontmatter (the record schema -- the installation's `.handbook/rules/RECORDS.md`), and
 home (planning artifacts always land in `.records/plans/`; ADRs in `.records/adr/`).
 
 This skill is **self-contained and uniquely named**: it depends on no other skill and collides with
@@ -28,6 +30,13 @@ settings change, no precedence question.
   `/foreman` router, or a `/workstream` loop. **`/feature` itself never lands or debriefs** (see
   *Composition*).
 
+## Unstamped conduct
+
+Every feature verb -- `init` included -- is **read-only on an unstamped root**: emit `unstamped`,
+point at the clankshop onramps (the pack face's `setup` / `migrate`), and stop. Feature is not a
+pre-stamp writer: its verbs execute the lane of a stamped system, and `init` registers a route
+into a door the onramps compose.
+
 ## The verbs (the spine, executable)
 
 | Verb | Does | Consumes -> Produces | Args |
@@ -41,7 +50,8 @@ settings change, no precedence question.
 The first four are the linear spine (stages 1-4); `review` is orthogonal -- it critiques any artifact
 the others produce, at any point, and is not part of the brainstorm->build sequence. Two more verbs
 are **infrastructure, not spine stages**: `init` self-registers feature's route into the project's
-front-door doc (see *init*, below) -- feature's whole self-init entry point, always safe to run; and
+front-door doc (see *init*, below) -- feature's whole self-init entry point, idempotent (and
+refusing on an unstamped root, per *Unstamped conduct*); and
 `templates` deploys exactly one bundled template shape as an editable project override, on demand (see
 *templates*, below) -- an optional action most projects never need.
 
@@ -53,12 +63,13 @@ State flows between verbs through the **spine artifacts themselves** -- there is
 
 ## Tier-aware output (the verb set is constant; the output scales)
 
-The four **spine** verbs never change; each verb's *output* scales by the `PLANNING.md` **tier dial**
-(`review` is tier-agnostic -- it critiques whatever artifact exists, at whatever weight).
+The four **spine** verbs never change; each verb's *output* scales by the lane's **tier dial**
+(INV-11: planning weight scales with the work; `review` is tier-agnostic -- it critiques whatever
+artifact exists, at whatever weight).
 `brainstorm` makes the tier call **up front** and states which verbs collapse:
 
-- **Patch** -> `/feature` is **not used**; land the fix directly on the trunk (`ROUTING.md` ->
-  *Fixes & patches*).
+- **Patch** -> `/feature` is **not used**; land the fix directly on the trunk (the patch lane,
+  `.handbook/workflows/patch.md`).
 - **Small feature** -> `brainstorm` is light (a few sentences); `design` emits a **brief that doubles
   as the plan**, so `plan` folds into it; `build` runs once.
 - **Track** (more than one phase, or a decision worth an ADR) -> `brainstorm`+`design` produce a
@@ -66,7 +77,7 @@ The four **spine** verbs never change; each verb's *output* scales by the `PLANN
   phase**.
 
 When unsure, start as a small feature and **promote** the moment a second phase or a cross-cutting
-decision appears (PLANNING.md -> *The tier dial*).
+decision appears (the lane's tier rule, INV-11).
 
 ## brainstorm `<prompt>` -- idea into a validated approach
 
@@ -74,8 +85,9 @@ Turn an idea into an approach a human has approved, and **classify the tier** so
 know how much to produce. No file is written; the output is an agreed approach held in context.
 
 Checklist:
-1. **Explore context first** -- read the relevant code/docs/recent commits and `PROJECT.md` /
-   `DESIGN.md` / `.agents/foreman/MEMORY.md` invariants before asking anything. Don't brainstorm blind.
+1. **Explore context first** -- read the relevant code/docs/recent commits, the design chapter
+   (`.handbook/design/`), and the installation's invariants (`.handbook/rules/INVARIANTS.md`)
+   before asking anything. Don't brainstorm blind.
 2. **Scope check** -- if the idea spans several independent subsystems, say so and decompose into
    separate features before refining details; brainstorm the first one.
 3. **Ask one question at a time** -- multiple-choice when you can, open-ended when you must. One
@@ -86,8 +98,8 @@ Checklist:
    section before moving on. YAGNI ruthlessly -- cut features that aren't needed.
 6. **Classify the tier up front** (patch / small feature / track, per *Tier-aware output*) and state
    which downstream verbs collapse, so `design`/`plan` produce the right weight.
-7. **Approach gate** (PLANNING.md gate 1): the human **approves the chosen approach before any spec
-   or code**. Do not let momentum write a spec off an unapproved approach.
+7. **Approach gate** (the lane's walk step 1): the human **approves the chosen approach before any
+   spec or code**. Do not let momentum write a spec off an unapproved approach.
 
 Output: an approved approach (in context) + the tier call. Terminal step: proceed to `design` (or,
 for a patch, stop -- `/feature` isn't used).
@@ -108,14 +120,14 @@ Checklist:
    to implement from), **Verification** (how we'll know it works).
 2. **Land it in `.records/plans/`** as `.records/plans/<YYYY-MM-DD>-<slug>-design.md`, with frontmatter
    `type: design`, `status: draft`, `updated: <today>`, `related: [...]` -- the `type`/`status`
-   vocabulary the capture taxonomy `/backlog` owns (`docs/TAXONOMY.md`) defines and the doc-linter
-   enforces (`design` moves
+   vocabulary the record schema (the installation's `.handbook/rules/RECORDS.md`) defines and the
+   doc-linter enforces (`design` moves
    `draft -> active -> shipped` as the feature advances).
-3. **Spec self-review** (PLANNING.md gate 2, part 1) -- scan the written spec for: placeholders
+3. **Spec self-review** (the lane's design-review gate, first half) -- scan the written spec for: placeholders
    (TBD/TODO/vague), internal contradictions, scope (focused enough for one plan?), ambiguity (any
    requirement readable two ways -> pick one, make it explicit). Fix inline.
-4. **User-review gate** (PLANNING.md gate 2, part 2) -- ask the human to **review the written spec
-   file** before planning. Make requested changes and re-run the self-review until approved.
+4. **User-review gate** (the design-review gate's second half) -- ask the human to **review the written
+   spec file** before planning. Make requested changes and re-run the self-review until approved.
 
 Consumes `brainstorm`'s approach; produces the design doc. Terminal step: proceed to `plan` (passing
 the design file).
@@ -134,7 +146,7 @@ Checklist:
    step** (no "add error handling", no "similar to Task N"); DRY, YAGNI, TDD, frequent commits. Map
    the file structure first (one responsibility per file; right-size tasks so a reviewer could reject
    one without the others).
-2. **Plan gate -- re-verify against `HEAD`** (PLANNING.md gate 3; the design ages well, the *literal
+2. **Plan gate -- re-verify against `HEAD`** (the lane's walk step 3; the design ages well, the *literal
    code/data* ages fast):
    - Re-read every load-bearing signature / path / count against the worktree's `HEAD` before sizing
      or coding -- the trunk moves (a dependency's API churns between versions; a renamed type, a moved
@@ -153,8 +165,8 @@ Checklist:
      member of an existing set, a new caller of a proven system): a wiring/membership **unit test
      suffices** -- a live visual spike there adds fiddly cost for low marginal assurance. Classify
      which case you are in before defaulting to the visual spike.
-   - Name the load-bearing live-API traps from `.agents/foreman/docs/GOTCHAS.md` in the plan's **Global
-     Constraints** so each task re-verifies them.
+   - Name the load-bearing live-API traps from the installation's `.handbook/rules/GOTCHAS.md` in the
+     plan's **Global Constraints** so each task re-verifies them.
 3. **Plan self-review** -- spec coverage (every spec requirement maps to a task -- list gaps), a
    placeholder scan, and type/name consistency across tasks. Fix inline; add a task for any
    uncovered requirement.
@@ -215,7 +227,8 @@ separate failing-test dispatch (then a second impl dispatch) only when red-first
 an **isolated worktree** when the delegate must run the loop itself. The gate always runs at the
 orchestrator (single build location), whichever mode authored the change.
 
-**Green gate** (PLANNING.md gate 4): the host's full gate green **plus a relevant end-to-end / scenario
+**Green gate** (the lane's walk step 4): the host's full gate (the installation's
+`.handbook/testing/GATE.md`) green **plus a relevant end-to-end / scenario
 check** before each commit; build in the worktree, never inline on the trunk. Optionally request a
 **read-only** code-review subagent before finishing.
 
@@ -243,15 +256,17 @@ Checklist:
 3. **Apply the rubric for the doc's type:**
    - **design** -- Problem is the *root need*, not a surface knob; Approach justified with alternatives
      rejected; Mechanism implementable; **grounded** (refs resolve, claims match code); aligned with
-     `DESIGN.md`/`.agents/foreman/MEMORY.md` invariants, ADRs, `GOTCHAS`; scope = one plan; ambiguity resolved; YAGNI.
+     the design chapter (`.handbook/design/`), the installation's `.handbook/rules/INVARIANTS.md`,
+     ADRs, and `.handbook/rules/GOTCHAS.md`; scope = one plan; ambiguity resolved; YAGNI.
    - **implementation** -- **spec->plan coverage** (every design requirement maps to a task -- list
      gaps); bite-sized testable tasks, exact paths, complete code (no "similar to Task N"); plan-gate
-     grounding; riskiest piece spiked first; load-bearing `GOTCHAS` in Global Constraints; per-task verify.
+     grounding; riskiest piece spiked first; load-bearing `.handbook/rules/GOTCHAS.md` traps in
+     Global Constraints; per-task verify.
    - **roadmap** -- phase decomposition + build order/dependencies explicit; each phase shippable;
      cross-cutting decisions surfaced as ADRs.
    - **adr** -- decision + alternatives + consequences honest; supersession recorded.
    - **any type** -- internal consistency (no section contradicts another); frontmatter valid per
-     `TAXONOMY.md`; right altitude.
+     the record schema (the installation's `.handbook/rules/RECORDS.md`); right altitude.
 4. **Report the verdict, in context** (the output IS this shape, in order):
    - **Verdict:** one of `approve` / `approve-with-changes` / `needs-rework`.
    - **Findings ranked by severity**, each as: location (`file:line` or section) -> what's wrong ->
@@ -288,14 +303,15 @@ library owned that receiving side before now:
 5. **Push back with reasoning when the feedback is wrong.** Disagreement is a legitimate outcome, not
    a failure to comply -- state the evidence, not just a refusal.
 
-## init -- register feature's front-door route (self-init, no floor)
+## init -- register feature's front-door route (self-init on a stamped root)
 
-Register feature's route into the project's always-loaded front-door doc -- **without depending on
-`/foreman setup` having run first**. This is feature's **whole self-init entry point** (not a spine
-stage) and its **only** job: it makes a bare install of `/feature` *visible* with no composer present.
-It does **not** touch templates -- customizing a template shape is a separate, optional, on-demand
-action (see *templates* below) that a project may never need. Registering is always safe to run and
-carries no dependency on whether templates are ever customized.
+Register feature's route into the project's always-loaded front-door doc. This is feature's
+**whole self-init entry point** (not a spine stage) and its **only** job: it makes a bare install
+of `/feature` on an already-stamped root *visible* -- the fourth core route writer, alongside the
+roles' own domain self-inits. It does **not** touch templates -- customizing a template shape is a
+separate, optional, on-demand action (see *templates* below) that a project may never need.
+Feature is not a pre-stamp writer: on an unstamped root `init` refuses like every other verb
+(*Unstamped conduct*), pointing at the onramps.
 
 This verb realizes one corollary of the typed-edge tenet
 (`docs/design/2026-07-18-skill-self-init-model.md` §1): **visibility by construction** (a skill
@@ -304,26 +320,29 @@ no-op beyond refreshing the `built-against` stamp; a sibling skill's own front-d
 touched.
 
 Checklist:
-1. **Resolve the front-door doc + a `built-against` stamp.** The registration target is the project's
+1. **Resolve the front-door doc + the stamp.** The registration target is the project's
    always-loaded front-door (`AGENTS.md`/`CLAUDE.md`, whichever the harness auto-loads); it must
    **exist** -- if the project has none, that's a project-setup gap, say so and stop before writing.
-   `built-against` is the short sha of the last commit that touched **this skill's own directory**
-   (`git -C <skill-dir> log -1 --format=%h -- .` -- path-scoped, not the whole repo's `HEAD`, so the
-   stamp tracks this skill even on a monorepo skills-root, BL-7), else a version string, else
-   `v0-<date>`.
+   The stamp is the **pack version** -- `clankshop@<pack-version>`, read from the root's
+   installation block (the unstamped-conduct guard already verified the root is stamped); core
+   members carry no individual version.
    **Grimoire caveat (patient-zero):** never register against grimoire's own authored `AGENTS.md` -- see
    *The fixture caveat* below.
-2. **Register the route.** Feed the block body on stdin to
-   `scripts/register-route.sh <front-door> feature <built-against>`:
+2. **Register the route -- the pack-style block.** The body is feature's entry in the pack
+   doctrine's **door profile** (the fenced `### /feature` block in
+   `skills/clankshop/doctrine/README.md` -- the single source every route writer copies, never
+   authored here), stamped `built-against:clankshop@<pack-version>`, carrying **no `Edges:`
+   lines**. Feed it on stdin to
+   `scripts/register-route.sh <front-door> feature clankshop@<pack-version>`:
    ```markdown
-   ### /feature -- planning spine
-   Route: brainstorm -> design -> plan -> build a feature to gate-green-code; `review` independently
-   critiques any spine artifact. `/feature brainstorm|design|plan|build|review|init|templates`.
-   Edges: produces `design, plan, gate-green-code`; handoff `gate-green-code`; consumes `design, plan`
-   (own stage chain).
+   ### /feature — the planning pipeline
+   Route: brainstorm → design → plan → build a feature to gate-green; planning artifacts to
+   `.records/plans/` and `.records/adr/`.
    ```
-   Report `appended` / `replaced`. If it reports **malformed**, surface that -- a delimiter was
-   hand-broken; the human or composer repairs it, then re-run. Do **not** force it.
+   An existing pack-style block written by setup is **adopted** (re-running converges
+   byte-identically), never overwritten with a different body. Report `appended` / `replaced`. If
+   it reports **malformed**, surface that -- a delimiter was hand-broken; the human repairs it,
+   then re-run. Do **not** force it.
 
 **The fixture caveat (grimoire is patient-zero -- model §3.2).** Grimoire's own `AGENTS.md` is authored
 library doctrine, not a consuming project's scaffold -- self-registration blocks must never accrete in
@@ -371,8 +390,8 @@ override is on disk (or already was), and the spine verbs resolve against it on 
 There is no separate `/feature` state file. Each verb consumes the previous verb's artifact by path:
 `brainstorm`'s approach lives in context -> `design` writes the design doc -> `plan` reads it and
 writes the implementation plan -> `build` reads the plan and checks off its tasks. Those artifacts are
-the `.records/plans/` docs the frontmatter/taxonomy system already catalogs; `/feature` is the engine that
-*produces what the taxonomy indexes*, and each doc's frontmatter `status` tracks its lifecycle.
+the `.records/plans/` docs the record schema already catalogs; `/feature` is the engine that
+*produces what the schema indexes*, and each doc's frontmatter `status` tracks its lifecycle.
 `review` is the exception: it **consumes** any of these artifacts by path and produces only an
 in-context verdict, adding nothing to the chain (artifact-free, like `brainstorm`).
 
@@ -382,7 +401,7 @@ in-context verdict, adding nothing to the chain (artifact-free, like `brainstorm
 them. **`/feature` never debriefs, ships, or lands.**
 
 - **Standalone** (a one-off feature) -> the user runs `brainstorm -> design -> plan -> build`, then
-  lands the work and runs **`/backlog debrief`** at the done-when (PLANNING.md -> *When a plan completes*).
+  lands the work and runs **`/backlog debrief`** at the done-when (the lane's close-the-books step).
 - **Inside `/workstream`** -> the stream calls `/feature` per queue item; `build` stops at gate-green
   and **hands back**. Landing, capture, and the reset ritual around the hand-back are `/workstream`'s to
   run and document — `/feature` initiates none of it.

@@ -20,4 +20,4 @@ related: [<.records/adr/NNNN-...>]
 - **Risks / dependencies:** <...>
 
 _When a phase meets its Definition of done, run `/backlog debrief` before recording/advancing
-(PLANNING.md -> When a plan completes)._
+(the feature lane's close-the-books step)._

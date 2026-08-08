@@ -1,11 +1,10 @@
 # Ideal use — a worked arc through the spine
 
 A *"how to use me"* example, read on demand. It shows the four spine verbs as **feature's own arc** on
-one concrete feature. It deliberately **names no other skill** — where control would continue past the
-last verb, that continuation is expressed as a **typed edge** (`handoff: gate-green-code`), not as a
-successor's name. A composer derives the actual cross-skill workflow by matching that edge type against
-whatever consumes `gate-green-code`; the example itself stays self-contained (the *route-vs-seam* rule,
-applied to examples — see `docs/design/2026-07-18-skill-self-init-model.md` §5.2).
+one concrete feature. The arc ends where the feature lane's plan-and-build walk ends — at
+**gate-green** — and hands back to whoever orchestrates the lane (the installation's
+`.handbook/workflows/feature.md` owns the steps around it: landing, the done-log line, the debrief
+sweep).
 
 ---
 
@@ -46,11 +45,11 @@ minimal implementation → green → commit. Runs the host's full gate plus a re
 ## Where the arc ends — and what continues it
 
 `build` ends at gate-green and **hands back**. It does not land the branch and does not sweep up
-follow-ups — those are *outside* the spine. In edge terms, this arc **`produces: gate-green-code`** and
-**`handoff: gate-green-code`**: it terminates in a state that expects a successor, and the baton it
-passes is *code at gate-green*. Whatever **`consumes: gate-green-code`** (a landing step) picks the
-baton up; the spine names no such successor, and the composer supplies it by matching the type.
+follow-ups — those are *outside* the spine, owned by the feature lane's remaining steps (the
+installation's `.handbook/workflows/feature.md`): land on the trunk (rebase, re-verify the gate,
+merge), write the item's done-log line, and run the debrief sweep (`/backlog debrief`) so every
+follow-up the build surfaced reaches the trackers.
 
-That is the whole point of typing the edge instead of writing "then run the land step": the example
-reads correctly on a **bare install** with nothing downstream deployed, and reads correctly again once
-a composer wires a real consumer — because the example never hard-coded who that consumer is.
+Who runs those steps is the orchestrator's call, not this skill's: a `/workstream` loop runs them as
+its landing ritual per queue item; standalone, the human walks the lane by hand. Either way the seam
+is the same — `/feature` produces code at gate-green, and the lane's close-out consumes it.
