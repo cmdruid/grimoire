@@ -5,8 +5,8 @@ projection by doctrine** — then stamp. Greenfield only: a root already carryin
 shape (docs, trackers, prior agent scaffolding) belongs to the brownfield onramp (`migrate`, which
 classifies what exists instead of assuming nothing does), and a stamped root is already an
 installation (`check` validates it; the improvement loop edits it). Whole-system assembly is this
-verb and `migrate` alone — roles never bootstrap the system (the pre-stamp dispatch table,
-`doctrine/README.md`).
+verb and `migrate` alone — roles never bootstrap the system (the pre-stamp dispatch table: the
+pack design, §3.4).
 
 Patient-zero note: in the grimoire library itself this verb is exercised only against throwaway
 temp-dir fixtures — never against the library's own front door.
@@ -46,15 +46,22 @@ One question at a time; never ask what a fact already answered. The genuine deci
 ## Step 3 — project the doctrine through the facts
 
 Source: this skill's `doctrine/` at its current `doctrine-version` (declaration blocks carry it).
-**Minimal-seed filtering** — universal content deploys, everything else stays upstream: INVARIANTS
-seeds only its universal parameterized rules; GOTCHAS and POLICY deploy as declared-empty formats;
-RECORDS deploys complete (formats are not project-variable) — **via the records instrument's
-projection writer**, `skills/backlog/scripts/records-projection.sh <root> <doctrine-dir>
-gate=… trunk=…`, which stamps it `built-against: clankshop-doctrine@<doctrine-version>` (the
-authority chain: the doctrine states the schema, backlog executes it, the stamped projection is
-its writing — setup never writes the file by hand); ROUTING deploys whole; the opted-in
-lane files and the three testing skeletons deploy with their parameter slots (`<gate>`, `<trunk>`)
-filled from steps 1–2. No generic prose ships.
+**Minimal-seed filtering** — universal content deploys, everything else stays upstream:
+
+- INVARIANTS seeds only its universal parameterized rules;
+- GOTCHAS and POLICY deploy as declared-empty formats;
+- RECORDS deploys complete (formats are not project-variable);
+- ROUTING deploys whole;
+- the opted-in lane files and the three testing skeletons deploy with their parameter slots
+  (`<gate>`, `<trunk>`) filled from steps 1–2.
+
+No generic prose ships.
+
+**RECORDS deploys via the records instrument's projection writer** —
+`skills/backlog/scripts/records-projection.sh <root> <doctrine-dir> gate=… trunk=…` — which
+stamps it `built-against: clankshop-doctrine@<doctrine-version>`. The authority chain: the
+doctrine states the schema, backlog executes it, the stamped projection is its writing — setup
+never writes the file by hand.
 
 **Every seeded entry is provenance-stamped** (the projection protocol — frozen as Appendix J of
 the rollout plan; grammar and retrieval in `doctrine/BASES.md`):
@@ -104,9 +111,8 @@ members on first use — setup seeds only what the doctrine and the records sche
 Last, after everything above is on disk:
 `scripts/install-block.sh write <root> 1 clankshop <pack-version>` — `layout: 1`, the pack
 version read from the manifest (this pack's `PACK.md` frontmatter `version:`). The stamp is the
-commit point: an
-unstamped root is unmigrated, and framework verbs refuse until the block exists — stamping first
-would license every verb against a half-built installation.
+commit point: framework verbs refuse an unstamped root, and stamping first would license every
+verb against a half-built installation.
 
 ## Verify
 
