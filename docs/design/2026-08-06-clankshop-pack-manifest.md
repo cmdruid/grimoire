@@ -72,27 +72,27 @@ legitimately retain every retired term (verified: 8 files hit `derive-seams` alo
 
 ## Phase 2 — foreman (slim to routing + rulebook)
 
-- [ ] `skills/foreman/verbs/{setup,migrate,check}.md` — deleted (successors: clankshop Tasks
+- [x] `skills/foreman/verbs/{setup,migrate,check}.md` — deleted (successors: clankshop Tasks
   1.3–1.5); the `init` alias surface in SKILL.md removed (`/foreman init` ceases to exist) →
   Task 2.5
-- [ ] `skills/foreman/BOOTSTRAP.md` — retired (durable judgment absorbed by the Phase-0
+- [x] `skills/foreman/BOOTSTRAP.md` — retired (durable judgment absorbed by the Phase-0
   doctrine); the skills-lint BOOTSTRAP-manifest check (check 3) loses its subject and is
   adjusted in the same commit → Task 2.5
-- [ ] `skills/foreman/SKILL.md` — slimmed to `route` + rulebook stewardship; description
+- [x] `skills/foreman/SKILL.md` — slimmed to `route` + rulebook stewardship; description
   rewritten (no setup language; probe re-runs at the phase gate) → Task 2.5
-- [ ] `skills/foreman/verbs/route.md` — live consumer of the old deployed layout
+- [x] `skills/foreman/verbs/route.md` — live consumer of the old deployed layout
   (`.agents/foreman/docs/ROUTING.md` at lines 4/18) re-pointed to `.handbook/rules/ROUTING.md`;
   promotion-bar hand-off to `/backlog promote` stated → Task 2.5
-- [ ] `skills/foreman/scripts/foreman-health.sh` — the five-subcommand transfer table:
+- [x] `skills/foreman/scripts/foreman-health.sh` — the five-subcommand transfer table:
   `check-projection` (incl. `routing-targets`, line 339) → clankshop `check-facts.sh` (landed
   1.5), removed here; `inventory` (`tree_quiet`/`linked_worktrees` → migrate preflight + check;
   tracker sizes → `backlog-health.sh`) removed here; `stale-refs` + `coverage` stay until Task
   2.8 moves them; `derive-seams` stays until Task 4.3 → Task 2.5
-- [ ] `skills/foreman/docs/{ROUTING,PLANNING,WORKTREES,MAINTENANCE}.md` — judgment diffed
+- [x] `skills/foreman/docs/{ROUTING,PLANNING,WORKTREES,MAINTENANCE}.md` — judgment diffed
   against the Phase-0 doctrine and absorbed here; files deleted in Task 4.4 (live consumers:
   `route.md:4`, `feature/SKILL.md`, `workstream/flow.md:69`, `packs/clankshop.md:131`) →
   Task 2.5
-- [ ] `skills/foreman/scripts/scoped-commit.sh` — doc-linter comment re-pointed → Task 2.5
+- [x] `skills/foreman/scripts/scoped-commit.sh` — doc-linter comment re-pointed → Task 2.5
 - [ ] `skills/foreman/templates/report.md` — no absorption needed; successors are the bundled
   templates of Tasks 2.7/2.8; deleted in Task 4.4 → Task 4.4
 

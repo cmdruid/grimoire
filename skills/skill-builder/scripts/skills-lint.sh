@@ -98,16 +98,10 @@ while IFS= read -r line; do
 done < <(awk '$1=="MISS"{print}' /tmp/skills-lint-refs.$$)
 rm -f /tmp/skills-lint-refs.$$
 
-# ---- 3. foreman BOOTSTRAP manifest vs bundle ---------------------------------
-bs="$skills_dir/foreman/BOOTSTRAP.md"
-if [ -f "$bs" ]; then
-  # docs/ manifest rows look like: "      NAME.md    -- ..."; generic <content doc>
-  # rows and host-authored slots are skipped (they ship no bundled file).
-  while IFS= read -r doc; do
-    case "$doc" in ARCHITECTURE.md|GOTCHAS.md|DIAGNOSTICS.md|PERFORMANCE.md|SYNC.md) continue ;; esac
-    [ -f "$skills_dir/foreman/docs/$doc" ] || fail "foreman: BOOTSTRAP manifest names docs/$doc but the bundle lacks it"
-  done < <(sed -n 's/^      \([A-Z]*\.md\).*/\1/p' "$bs")
-fi
+# ---- 3. (retired) ------------------------------------------------------------
+# The foreman BOOTSTRAP manifest check lost its subject when the pack doctrine
+# absorbed BOOTSTRAP.md (clankshop rollout, Task 2.5). Numbering retained so the
+# header comment's check list stays stable.
 
 # ---- 4. consumption wiring (advisory: installation state, not repo content) --
 # WARN-only: a public clone isn't necessarily wired into any harness. Physical-

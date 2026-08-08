@@ -11,7 +11,7 @@
 # calls -- an implicit-cwd commit can silently land in the wrong checkout/worktree.
 #
 # This script does the deterministic mechanic only. All judgment -- which paths, what
-# message, whether to commit at all, and running the host's gate/doc-linter afterward --
+# message, whether to commit at all, and running the host's gate afterward --
 # stays in the calling verb's prose. It never changes branches and never touches
 # anything outside <path...>.
 set -euo pipefail

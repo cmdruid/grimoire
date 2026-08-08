@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
 # foreman-health.sh <subcommand> <root> [args...]
 #
-# Read-only state analysis for a project's .agents/foreman/ docs-system, for the
-# /foreman verbs (calibrate, check). Each subcommand emits compact `key=value` facts +
-# evidence so the agent spends turns DECIDING (is this entry really done? is
-# this drift real?), not scanning ten files to find the candidates.
+# Read-only state analysis for the foreman verbs. Each subcommand emits compact
+# `key=value` facts + evidence so the agent spends turns DECIDING (is this
+# drift real?), not scanning ten files to find the candidates.
 #
 # DOCTRINE: facts, not verdicts. Nothing here decides to remove, archive, or
-# route anything -- it reports the variables the verb prose consumes. It also
-# COMPLEMENTS the host doc-linter rather than duplicating it: the linter owns
-# markdown-link resolution, enumerable-series indexing, and store-dir
-# frontmatter; this surfaces what the linter can't see -- tracker inventory,
-# code `file:line` references in tracker prose, and spine coverage.
+# route anything -- it reports the variables the verb prose consumes.
 #
-# Portable over the standardized .agents/foreman/ + .records/ layout (`/foreman setup` creates it) and
-# bash-3.2 safe (macOS default). Read-only; never mutates.
+# Transferred out during the clankshop rollout (fact-by-fact, destinations
+# landed first): `check-projection` (registration + routing-target facts) ->
+# clankshop's check-facts.sh; `inventory` (tree/worktree facts -> the migrate
+# preflight; tracker sizes -> backlog-health.sh). `derive-seams` remains until
+# the independence machinery retires. Bash-3.2 safe; read-only; never mutates.
 set -euo pipefail
 
 # Front-door variable `records-root` (default `.records`) -- see the
@@ -34,21 +32,16 @@ usage() {
   cat >&2 <<'EOF'
 usage: foreman-health.sh <subcommand> <root> [args...]
 
-  inventory        <root>                        tracker sizes + bug/done/archive counts + quiet
   stale-refs       <root> [<file>...]             path / file:line refs that no longer resolve
                                                   (default: trackers + spine + index docs)
   coverage         <root>                         top-level dirs not reachable from the spine docs
   derive-seams     <skills-root>                  match installed skills' `## Edges` blocks into
                                                   seams (handoff<->consumes) / deps (produces<->consumes)
-  check-projection <front-door> <skills-root>     diff the front door's registered `skill:*` blocks
-                                                  against what's installed (drift facts only)
 
 Each prints `key=value` facts then evidence. Read-only; emits no recommendation.
 EOF
 }
 
-# count_files <dir> -- *.md directly under <dir> (0 if absent), whitespace-trimmed.
-count_files() { find "$1" -maxdepth 1 -name '*.md' 2>/dev/null | wc -l | tr -d ' '; }
 
 # top_level_dirs <root> -- space-padded list of top-level dir names (dotless),
 # e.g. " src dev docs tests ". Used to gate refs to genuine repo-root paths.
@@ -100,32 +93,6 @@ report_stale() {
   [ "$stale" -eq 0 ] && echo "  (none)"
   echo "checked=$total"
   echo "stale=$stale"
-}
-
-cmd_inventory() {
-  [ "$#" -eq 1 ] || { echo "usage: foreman-health.sh inventory <root>" >&2; exit 2; }
-  local root="$1" porcelain t f b l mod rec_rel
-  rec_rel="$(resolve_records_root "$root")"
-  echo "records-root=$rec_rel"
-  porcelain="$(git -C "$root" status --porcelain 2>/dev/null || true)"
-  echo "tree_quiet=$([ -z "$porcelain" ] && echo true || echo false)"
-  echo "linked_worktrees=$(( $(git -C "$root" worktree list 2>/dev/null | wc -l | tr -d ' ') - 1 ))"
-  for t in tasks issues feedback; do
-    f="$root/$rec_rel/$t.md"
-    if [ -f "$f" ]; then
-      b="$(grep -cE '^[-*] ' "$f" || true)"
-      l="$(wc -l < "$f" | tr -d ' ')"
-      mod="$(git -C "$root" log -1 --format=%cr -- "$rec_rel/$t.md" 2>/dev/null || echo unknown)"
-      echo "${t}_bullets=$b"
-      echo "${t}_lines=$l"
-      echo "${t}_last_change=$mod"
-    else
-      echo "${t}=absent"
-    fi
-  done
-  echo "bugs_open=$(count_files "$root/$rec_rel/bugs")"
-  echo "bugs_archived=$(find "$root/$rec_rel/bugs/archive" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
-  echo "done_records=$(count_files "$root/$rec_rel/archive")"
 }
 
 cmd_stale_refs() {
@@ -279,83 +246,14 @@ cmd_derive_seams() {
   rm -f "$tuples" "$rows"
 }
 
-cmd_check_projection() {
-  [ "$#" -eq 2 ] || { echo "usage: foreman-health.sh check-projection <front-door> <skills-root>" >&2; exit 2; }
-  local front="$1" skills_root="$2"
-  [ -f "$front" ] || { echo "FAIL: front-door $front does not exist" >&2; exit 2; }
-  [ -d "$skills_root" ] || { echo "FAIL: skills-root $skills_root is not a directory" >&2; exit 2; }
-
-  local reg inst sk name ba
-  reg="$(mktemp "${TMPDIR:-/tmp}/foreman-health-reg.XXXXXX")"
-  inst="$(mktemp "${TMPDIR:-/tmp}/foreman-health-inst.XXXXXX")"
-
-  grep -oE '^<!-- skill:[a-z][a-z-]* BEGIN built-against:[^ ]* -->$' "$front" \
-    | sed -E 's/^<!-- skill:([a-z-]+) BEGIN built-against:(.*) -->$/\1\t\2/' > "$reg" || true
-
-  for sk in "$skills_root"/*/; do
-    name="$(basename "$sk")"
-    [ -f "$sk/SKILL.md" ] || continue
-    # Path-scoped (log -1 -- .), not rev-parse HEAD: the whole-repo tip collapses
-    # every skill to one value on a monorepo skills-root (BL-7); this tracks the
-    # last commit that actually touched THIS skill's own directory.
-    ba="$(git -C "$sk" log -1 --format=%h -- . 2>/dev/null || echo unknown)"
-    printf '%s\t%s\n' "$name" "$ba" >> "$inst"
-  done
-
-  echo "registered:"
-  local n=0
-  while IFS=$'\t' read -r name ba; do [ -n "$name" ] || continue; echo "  $name (built-against:$ba)"; n=$((n+1)); done < "$reg"
-  [ "$n" -eq 0 ] && echo "  (none)"
-
-  echo "unregistered:"
-  n=0
-  while IFS=$'\t' read -r name ba; do
-    [ -n "$name" ] || continue
-    grep -qF "$(printf '%s\t' "$name")" "$reg" && continue
-    echo "  $name"; n=$((n+1))
-  done < "$inst"
-  [ "$n" -eq 0 ] && echo "  (none)"
-
-  echo "orphaned:"
-  n=0
-  while IFS=$'\t' read -r name ba; do
-    [ -n "$name" ] || continue
-    grep -qF "$(printf '%s\t' "$name")" "$inst" && continue
-    echo "  $name"; n=$((n+1))
-  done < "$reg"
-  [ "$n" -eq 0 ] && echo "  (none)"
-
-  echo "stale-stamp:"
-  n=0
-  while IFS=$'\t' read -r name ba; do
-    [ -n "$name" ] || continue
-    iba="$(awk -F'\t' -v nm="$name" '$1==nm{print $2}' "$inst")"
-    [ -n "$iba" ] || continue
-    [ "$iba" = "$ba" ] && continue
-    echo "  $name built-against=$ba now=$iba"; n=$((n+1))
-  done < "$reg"
-  [ "$n" -eq 0 ] && echo "  (none)"
-
-  # routing-targets: distinct `/skill` tokens in the front door's table rows (facts, not verdicts)
-  echo "routing-targets:"
-  n=0
-  for t in $(grep -E '^\|' "$front" | grep -oE '\`/[a-z][a-z-]*\`' | tr -d '\`' | sort -u); do
-    echo "  $t"; n=$((n+1))
-  done
-  [ "$n" -eq 0 ] && echo "  (none)"
-  rm -f "$reg" "$inst"
-}
-
 main() {
   [ "$#" -ge 1 ] || { usage; exit 2; }
   local sub="$1"; shift
   case "$sub" in
     -h|--help|help) usage ;;
-    inventory)         cmd_inventory "$@" ;;
     stale-refs)        cmd_stale_refs "$@" ;;
     coverage)          cmd_coverage "$@" ;;
     derive-seams)      cmd_derive_seams "$@" ;;
-    check-projection)  cmd_check_projection "$@" ;;
     *) echo "unknown subcommand: $sub" >&2; usage; exit 2 ;;
   esac
 }

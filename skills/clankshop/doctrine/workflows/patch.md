@@ -11,8 +11,9 @@ budget: 60 lines
 Land a single self-contained fix or tweak directly on `<trunk>` — no plan, no worktree, no
 planning artifact. The lane exists so small work stays small.
 
-**Enter from:** the routing walk's self-contained-fix row (`.handbook/rules/ROUTING.md`). If the
-change turns out to touch a design decision or grows past one coherent edit, stop and re-route to
+**Enter from:** the routing walk's self-contained-fix row (`.handbook/rules/ROUTING.md`). The
+line: **if it earns its own branch, it's a feature; otherwise it's a patch.** If the change turns
+out to touch a design decision or grows past one coherent edit, stop and re-route to
 the feature lane — promotion is cheap, unwinding ceremony is not (INV-11).
 
 **Project policy:** the gate before the commit (INV-1); commit scoped to exactly the paths you

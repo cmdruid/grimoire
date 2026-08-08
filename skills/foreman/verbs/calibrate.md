@@ -22,7 +22,7 @@ routine, it does not restate the per-audit checklists.
   archiving to `.records/archive/` — is **`/backlog curate`**, not `calibrate`. `calibrate` *consumes* the trackers'
   signal to adjust doctrine and promote durable notes; it does not curate the lists themselves.
 - **Mechanically validating that the deployed glue still resolves** — spine coverage, stale
-  `file:line` refs, runbook-vs-installed-skills drift — is **`/foreman check`** (the cheap
+  `file:line` refs, runbook-vs-installed-skills drift — is the pack face's **`check`** (the cheap
   validator). Run `check` first to *find* drift; `calibrate` is where you *act* on the semantic half.
 - **Project-code quality** is **`/auditor`**. Different domain, different files.
 
@@ -43,7 +43,7 @@ files are concurrently edited, so a sweep mid-churn fights other agents. Confirm
 Go **item by item**, **when the tree is quiet**, and **worktree it if the pass is big** (it earns a
 branch):
 
-1. **Confirm quiet + take the inventory.** `scripts/foreman-health.sh inventory <root>` emits
+1. **Confirm quiet + take the inventory.** `backlog-health.sh inventory <root>` (the records instrument's fact script) emits
    `tree_quiet`, `linked_worktrees`, and per-tracker sizes/last-change in one read — a sweep during
    churn (`tree_quiet=false` or live worktrees) fights concurrent edits, so confirm quiet first. The
    tracker sizes tell you which trackers carry accumulating system-facing signal and earn a deep read.
@@ -71,7 +71,7 @@ branch):
    - a host still on pre-rollout shapes (a `docs/DEVELOPMENT.md` name, a deployed `docs/WORKFLOWS.md`
      menu, an unstamped front door) → apply the upgrade as this pass's calibration: `git mv` the
      rename, dissolve the menu into the door + owning content docs, stamp the routing table
-     (`verbs/migrate.md` → *legacy deployed shapes* has the full walk);
+     (the pack face's `migrate` verb owns the full legacy-shape walk);
    - a recurring how-to question → answer it in the content doc that owns the topic
      (ARCHITECTURE / GOTCHAS / DIAGNOSTICS / PERFORMANCE) and, if it is a *where-does-work-start*
      question, add the missing row to the front door's routing table — never a menu doc;
@@ -103,7 +103,7 @@ branch):
 
 ## Relationship to neighboring verbs & skills
 
-- **`/foreman check`** finds the *mechanical* drift (missing pointer, stale ref, glue-vs-runbook gap);
+- The pack face's **`check`** finds the *mechanical* drift (missing pointer, stale ref, assembly gap);
   `calibrate` acts on the *semantic* drift it can't see and folds accumulated friction into the doctrine.
 - **`/backlog curate`** owns the tracker lists (sharpen, reorder, remove shipped, archive). `calibrate`
   consumes their signal and promotes durable notes; it does not curate the lists.

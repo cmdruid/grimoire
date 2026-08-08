@@ -572,11 +572,11 @@ doc layout — `.agents/foreman/docs/ROUTING.md` at lines 4/18 — re-pointed to
 `.handbook/rules/ROUTING.md`), `skills/foreman/scripts/foreman-health.sh`,
 `skills/foreman/BOOTSTRAP.md` (retire — content absorbed by doctrine in Phase 0).
 
-- [ ] Foreman keeps **`route` only** + rulebook stewardship: `rules/` + `workflows/` chapters,
+- [x] Foreman keeps **`route` only** + rulebook stewardship: `rules/` + `workflows/` chapters,
   `.records/logs/` run log, ROUTING.md maintenance + table recompile on change, the promotion bar
   at dispatch (hand-off to `/backlog promote`). `/foreman init` removed (pack §3.4); on an
   unstamped root, foreman is read-only: emit `unstamped`, point at the clankshop onramps.
-- [ ] `foreman-health.sh` — **all five subcommands dispositioned** (verified inventory:
+- [x] `foreman-health.sh` — **all five subcommands dispositioned** (verified inventory:
   `inventory`, `stale-refs`, `coverage`, `derive-seams`, `check-projection`):
   the **fact-by-fact transfer table** (destination lands and is tested before the source
   subcommand is removed, same task): `check-projection`'s facts — unregistered installed skills,
@@ -588,7 +588,7 @@ doc layout — `.agents/foreman/docs/ROUTING.md` at lines 4/18 — re-pointed to
   document-side facts, moved to chiropractor in Task 2.8 (they **stay in foreman-health until
   2.8 deletes them there**); `derive-seams` → stays until Phase 4's retirement task (Task 4.3,
   which runs after 4.4 per that phase's execution order; helpers still carry edges).
-- [ ] `skills/foreman/docs/{ROUTING,PLANNING,WORKTREES,MAINTENANCE}.md` — the workflow-stage doc
+- [x] `skills/foreman/docs/{ROUTING,PLANNING,WORKTREES,MAINTENANCE}.md` — the workflow-stage doc
   set the spine replaces: **absorption here, deletion in Phase 4 (Task 4.4).** Diff each against
   the Phase-0
   doctrine chapters and absorb any judgment not yet captured; the files themselves are deleted
@@ -598,9 +598,9 @@ doc layout — `.agents/foreman/docs/ROUTING.md` at lines 4/18 — re-pointed to
   `templates/report.md` follows the same split (absorption none needed — its successors are
   Tasks 2.7/2.8's templates; deleted at Task 4.4); `templates/done-record.md` stays until Task
   3.2 (per Task 2.1).
-- [ ] `BOOTSTRAP.md` deleted; SKILL.md description rewritten (router + rulebook; no setup
+- [x] `BOOTSTRAP.md` deleted; SKILL.md description rewritten (router + rulebook; no setup
   language) — routing probe re-runs at the phase gate.
-- [ ] Verify: no framework verb regression — "set up" intents now route to clankshop (probe at
+- [x] Verify: no framework verb regression — "set up" intents now route to clankshop (probe at
   gate); lint; manifest rows checked. Commit.
 
 ### Task 2.6: Guardian — the verification role (new build)
