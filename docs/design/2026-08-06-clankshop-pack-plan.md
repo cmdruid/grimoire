@@ -762,7 +762,7 @@ remove chiropractor's `## Calibrate` surfaces (per Tasks 2.5/2.8/2.9).
   declared by only one skill — foreman's `consumes` dissolved with its calibrate verb in Task
   2.11; clears at the Phase 4 gate when Task 4.2 strips the core edges blocks. Routing probe
   7/7: bug · foreman · backlog · chiropractor · auditor · calibrator · clankshop. Vocabulary
-  sweep clean. Fixture suite `scripts/tests/run.sh` all green — 173 asserts across six
+  sweep clean. Fixture suite `scripts/tests/run.sh` all green — 180 asserts across six
   harnesses.)*
 
 ---
