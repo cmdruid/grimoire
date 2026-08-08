@@ -4,7 +4,7 @@
 `docs/design/2026-08-08-pack-format-design.md`
 
 A **pack** binds agent skills into an installable, versioned system. This spec defines the pack
-manifest (`PACK.md`), the pack lock (`packs-lock.json`), install/remove/check semantics, and the
+manifest (`PACK.md`), the pack lock (`grimoire.lock`), install/remove/check semantics, and the
 conduct requirements for pack-based skills. It is an **overlay** on the open agent-skills
 ecosystem (the Vercel `skills` CLI format): every pack repo is a plain skills repo first, and
 every mechanism here degrades gracefully for tools that have never heard of packs.
@@ -51,14 +51,17 @@ setup: /foreman setup           # optional. Lifecycle entrypoint (see §6).
 - **Unknown frontmatter keys** MUST be ignored and, where a tool rewrites a manifest, preserved.
   Future format revisions claim them; `format:` bumps only on breaking change.
 
-## 3. The lock: `packs-lock.json`
+## 3. The lock: `grimoire.lock`
 
 Pack state lives in a **sidecar lock owned by this spec** — never inside the ecosystem's
 per-skill lock files (`skills-lock.json`, `~/.agents/.skill-lock.json`), which remain the
-untouched per-skill authority. Scopes mirror the ecosystem's:
+untouched per-skill authority (their schemas are closed: foreign keys are dropped on rewrite).
+The lock is named for the format, not the payload — any spec-conforming tool writes the same
+file (the `Cargo.lock`/`flake.lock` convention). Content is JSON. Scopes mirror the
+ecosystem's:
 
-- **Project:** `<project>/packs-lock.json`
-- **Global:** `~/.agents/packs-lock.json`
+- **Project:** `<project>/grimoire.lock`
+- **Global:** `~/.agents/grimoire.lock`
 
 ```json
 {
@@ -140,10 +143,10 @@ of usefulness. What it does require:
   breath: state that it is part of pack `<name>` and point at the declared setup entrypoint.
   No partial execution against a system that isn't there.
 - **The marker is pack-defined.** The guard checks the artifact the pack's own `setup:` creates
-  (e.g. a stamped installation block). It MUST NOT gate on `packs-lock.json` — the stamp
+  (e.g. a stamped installation block). It MUST NOT gate on `grimoire.lock` — the stamp
   survives every install path (including plain-CLI installs + hand-run setup); the lock only
   exists where a pack-aware tool acted.
-- **Lock-aware — SHOULD.** When `packs-lock.json` is present, a pack-based skill SHOULD read it
+- **Lock-aware — SHOULD.** When `grimoire.lock` is present, a pack-based skill SHOULD read it
   (project scope, then global) for pack facts — its pack's version, member set, `setup.ran` —
   rather than rediscovering them. It MUST tolerate the lock's absence, and MUST NOT write it.
 - **No install-time self-setup — MUST.** Members do not bootstrap at install (§6). Lazy

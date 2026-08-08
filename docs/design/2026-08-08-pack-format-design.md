@@ -14,7 +14,7 @@
    Member `version:` keys and `name>=N` ranges are **dead** — including clankshop Task 3.3's
    planned `version:`-in-SKILL.md keys (also rejected on principle: `SKILL.md` frontmatter is a
    foreign format's surface — same argument as the locks).
-3. **Sidecar lock (`packs-lock.json`, project + global twin).** The "extend the Vercel locks"
+3. **Sidecar lock (`grimoire.lock`, project + global twin).** The "extend the Vercel locks"
    option was eliminated by verified mechanics: both qntx's and the TS reference's lock schemas
    are closed — unknown keys are dropped on every read→write cycle, so an embedded `packs`
    section would be silently deleted by the first foreign `skills add`. Lock overlays lock,
@@ -35,7 +35,7 @@
    usefulness.
 7. **Pack-based skill conduct requirements (spec §7):** guard clause (tripwire) MUST — fail
    gracefully when the pack system is absent, gating on the pack-defined setup-stamped marker,
-   never on the lock; lock-**aware** SHOULD (read `packs-lock.json` for pack facts, tolerate
+   never on the lock; lock-**aware** SHOULD (read `grimoire.lock` for pack facts, tolerate
    absence, never write); no install-time self-setup MUST; face skill carries no tripwire (its
    welcome case is "not installed yet").
 8. **Check reports facts, not verdicts** (generalized from Appendix I): missing-required =
