@@ -50,10 +50,10 @@ not `resolved`, a `TK-` line whose ticket isn't resolved. `dup_ids` (archives in
 collision is corruption; resolve before anything cites either claimant.
 
 **Coverage and health:** `ticket_open_age` (unanswered escalations aging out — surface to the
-human); `seats` (each role's seat present for installed roles that need one); `lock_missing_
-installed` — pack members the lock names that are not installed (a partial install is a fact; the
-human decides whether it is intentional); `design_draft` — surviving draft content that should
-have been distilled or retired.
+human); `seats` (each role's seat present for installed roles that need one);
+`lock_missing_installed` — pack members the lock names that are not installed (a partial install
+is a fact; the human decides whether it is intentional); `design_draft` — surviving draft
+content that should have been distilled or retired.
 
 **Provenance:** `missing_base` — a deployed stamp citing an `origin@version` with **no
 retrievable base** (not in the archive per the retrieval rule, not in the live doctrine) means
