@@ -839,9 +839,10 @@ across all of these, not just `ship.md`); delete `skills/foreman/templates/done-
 ## Phase 4 — retire the independence machinery (core members only)
 
 Execution order within this phase: **4.1 → 4.2 → 4.4 → 4.3 → 4.5** — the pack-body absorption
-(4.4) removes the last active `derive-seams` prose references (`packs/clankshop.md:30,173` at
-HEAD; outside it, only the four `register-route.sh` comments Task 4.3 itself rewrites —
-verified), so it must precede 4.3's sweep.
+(4.4) removes the last active `derive-seams` prose references (five body hits in
+`skills/clankshop/PACK.md` at post-migration HEAD; outside it, the four `register-route.sh`
+comments and the `skills/foreman/SKILL.md` fact-script bullet, all Task 4.3's to rewrite —
+re-verified 2026-08-08), so it must precede 4.3's sweep.
 
 > **Migration note (2026-08-08, owner-ratified — re-ground against this before building):** the
 > pack manifest migrated to the ratified pack-format spec (`docs/spec/pack-format.md`, format 1)
@@ -886,19 +887,25 @@ manifest rows.
   manifest flagged them. Helpers untouched.
 - [ ] Assert: no core **active surface** (SKILL.mds, verb files, bundled docs, script output)
   still teaches edge derivation — the manifest's widened sweep terms are the check.
+  **Exclusion (2026-08-08, post-migration):** `skills/clankshop/PACK.md`'s body — moved inside
+  `skills/**` by the migration — still carries the pre-absorption pack body; it is Task 4.4's
+  target and is excluded from this assert, mirroring 4.3's historical-records exclusion.
 - [ ] Verify: lint (post-4.1 gate) `fails=0`; no core SKILL.md contains `<!-- edges:`; manifest
   rows. Commit.
 
 ### Task 4.3: Retire `derive-seams`
 
-**Files:** Modify `skills/foreman/scripts/foreman-health.sh` (its remaining home — after Task
-2.5's split only `derive-seams` and any route-relevant checks are left in it), and the four
-`register-route.sh` copies whose comments mention `derive-seams` (foreman, architect, auditor,
-feature — line 29 at HEAD; comments only, verified; the backlog and skill-builder copies are
-clean).
+**Files:** Delete `skills/foreman/scripts/foreman-health.sh` (`derive-seams` is its only
+remaining subcommand — re-verified 2026-08-08; removing the command would leave an empty shell,
+so the file goes with it); modify `skills/foreman/SKILL.md` (the *Scripts compute facts* bullet
+names the script and command), and the four `register-route.sh` copies whose comments mention
+`derive-seams` (foreman, architect, auditor, feature — line 29 at HEAD; comments only, verified;
+the backlog and skill-builder copies are clean).
 
-- [ ] Remove the `derive-seams` command (composition is authored — doctrine + runbook; helpers'
-  edges remain as *declarations* validated by the lint gate, but no seam derivation runs).
+- [ ] Remove `derive-seams` by deleting `foreman-health.sh` outright and rewriting the
+  `skills/foreman/SKILL.md` bullet that names it (composition is authored — doctrine + runbook;
+  helpers' edges remain as *declarations* validated by the lint gate, but no seam derivation
+  runs).
 - [ ] Rewrite the stale comparison comments in the four `register-route.sh` copies (the Files
   list) so the active-surface sweep below can pass.
 - [ ] Verify, scoped to **active** surfaces only — `skills/**`, `packs/`, `README.md`,
