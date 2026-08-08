@@ -1597,6 +1597,24 @@ git commit -m "pack-format(crate): pack shapes + enumeration -- spec 1 rules, me
      crates/grimoire-pack/tests/conformance.rs crates/grimoire-pack/tests/fixtures
 ```
 
+> **Executed deviations (2026-08-08, review-ratified; landed as `dd570bd` + revision
+> `c636fe7`):** (1) The root `PACK.md` is pushed into validation *unconditionally* — a
+> root-faced pack (root has both `SKILL.md` and `PACK.md`, always §1-invalid) errors with a
+> direct "root cannot be a faced pack" message instead of silently vanishing (full-depth
+> discovery excludes the root, so it arrives via no other path); a ninth fixture
+> `invalid-root-faced/` pins it. (2) `enumerate` returns `Enumeration { packs, issues }` —
+> per-manifest outcomes instead of all-or-nothing: one broken/foreign/future-format manifest
+> becomes an `Issue`, never hiding valid packs (dup-name: first-seen wins, the later manifest
+> is the issue). (3) Both walkers are `file_type()`-based — symlinks are never followed
+> (adversarial review showed `mirror -> skills` symlinks minting false dup-name errors and
+> foreign-repo symlinks importing foreign manifests); a unix-gated symlink regression test
+> pins it. `find_stray_manifests` sorts entries and shares the now-`pub`
+> `discovery::MAX_DEPTH`. (4) Conformance tests assert right-reason message substrings, not
+> bare `Err(Shape(_))`. Recorded looseness (accepted for format 1): a `PACK.md` beside a
+> physically-present but undiscoverable `SKILL.md` (nested below another skill dir) validates
+> as a faced pack per §1's literal text, though Appendix-B discovery can never surface its
+> face — a format-2 tightening candidate.
+
 ### Task 10: `grimoire.lock` model and I/O
 
 **Files:**
@@ -1824,8 +1842,9 @@ fn repo_root() -> PathBuf {
 
 #[test]
 fn clankshop_is_a_valid_faced_pack() {
-    let packs = enumerate(&repo_root()).unwrap();
-    let clank = packs
+    let e = enumerate(&repo_root()).unwrap();
+    let clank = e
+        .packs
         .iter()
         .find(|p| p.manifest.name == "clankshop")
         .expect("clankshop pack found");
@@ -1835,6 +1854,24 @@ fn clankshop_is_a_valid_faced_pack() {
     assert_eq!(clank.manifest.optional, vec!["bug", "task"]);
     // the author-extension key rides in unknown, preserved
     assert!(clank.manifest.unknown.iter().any(|(k, _)| k == "core"));
+    // clankshop is the only pack source outside the crate's own conformance
+    // fixtures (which are real trees in this repository and enumerate as such
+    // under repo-global member resolution — spec-truthful, pinned here).
+    let fixtures = repo_root().join("crates/grimoire-pack/tests/fixtures");
+    for p in e.packs.iter().filter(|p| p.manifest.name != "clankshop") {
+        assert!(
+            p.manifest_path.starts_with(&fixtures),
+            "unexpected pack outside fixtures: {:?}",
+            p.manifest_path
+        );
+    }
+    for i in &e.issues {
+        assert!(
+            i.manifest_path.starts_with(&fixtures),
+            "unexpected issue outside fixtures: {:?}",
+            i.manifest_path
+        );
+    }
 }
 
 #[test]
