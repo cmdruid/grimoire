@@ -297,7 +297,9 @@ if [ -f "$LOG" ]; then
   while IFS= read -r id; do
     case "$id" in
       TK-*)
+        # curation may age a resolved ticket into tickets/archive/ -- probe both homes
         tf=".records/tickets/${id#TK-}.md"
+        [ -f "$tf" ] || tf=".records/tickets/archive/${id#TK-}.md"
         if [ ! -f "$tf" ]; then echo "$id:ticket-missing"
         elif [ "$(frontmatter "$tf" status)" != resolved ]; then echo "$id:ticket-unresolved"; fi ;;
       T-*|I-*|F-*)

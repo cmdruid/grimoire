@@ -54,7 +54,7 @@ legitimately retain every retired term (verified: 8 files hit `derive-seams` alo
 - [x] `skills/foreman/templates/done-record.md` — **copied** to
   `skills/backlog/templates/done-record.md` (backlog is the `done/` steward); the foreman copy
   stays until Task 3.2 (live `workstream/verbs/ship.md:107` still references it) → Task 2.1
-- [ ] `skills/backlog/verbs/curate.md` — ID stamping, duplicate-ID repair with aliases, ticket
+- [x] `skills/backlog/verbs/curate.md` — ID stamping, duplicate-ID repair with aliases, ticket
   hygiene, aging resolved tickets → Task 2.2
 - [ ] `skills/backlog/SKILL.md` + verb prose — capture-bureau framing → the instrument contract
   (pack §4.3); unstamped conduct verb-by-verb (capture verbs lazily init; all others refuse) →

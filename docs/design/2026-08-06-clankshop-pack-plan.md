@@ -500,14 +500,14 @@ chiropractor → architect/auditor → **calibrator last** (it consumes every ot
 **Files:** Create `skills/backlog/verbs/{ticket,promote,close}.md`,
 `skills/backlog/templates/ticket.md`; modify `curate` verb file.
 
-- [ ] `ticket` (direct capture-plus-escalation; `origin:` absent by rule), `promote` (entry →
+- [x] `ticket` (direct capture-plus-escalation; `origin:` absent by rule), `promote` (entry →
   ticket: `origin:` stamped, pause marker written — **a trunk-side scoped commit**, Appendix D),
   `close` (resolve / wontfix / demote per the transition table, with writebacks and done-log
   lines). Ticket file + ID per Appendix D; pause encodings per store shape; the promotion bar
   (Appendix D) cited, not restated.
-- [ ] `curate` extensions: ID stamping, duplicate-ID repair with aliases, stale-`open`/unanswered
+- [x] `curate` extensions: ID stamping, duplicate-ID repair with aliases, stale-`open`/unanswered
   ages, aging resolved tickets → `tickets/archive/`.
-- [ ] Verify: temp-fixture walk of promote → pause visible → close → un-pause + done-log line;
+- [x] Verify: temp-fixture walk of promote → pause visible → close → un-pause + done-log line;
   a same-day re-promotion mints the suffixed ticket (Appendix B's collision rule); the
   lifecycle-aware origin facts stay green through resolution — a resolved **promoted** ticket
   (flat origin and store-dir origin) and a resolved **direct** ticket each validate per Task

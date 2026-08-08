@@ -38,7 +38,9 @@ and follow it**; do not reconstruct a procedure from memory.
 | `/backlog debrief` | `verbs/debrief.md` | **Sweep** a finished body of work; route every byproduct to its tracker | "wrap up before I reset", "capture what surfaced" |
 | `/backlog curate` | `verbs/curate.md` | Tidy the lists — dedupe, re-rank, sharpen, weed (hygiene, never draining) | "tidy the backlog", "reprioritize what's left" |
 | `/backlog done <id>` | `verbs/done.md` | **Complete** an entry per the schema's completion table + append its one done-log line | "mark T-041 done", "close out that task" |
-| `/backlog ticket` / `promote` / `close` | *(lands in Task 2.2 of the rollout plan)* | The escalation family — direct tickets, entry promotion (with pause), resolution | "escalate to the human" |
+| `/backlog ticket` | `verbs/ticket.md` | **Direct ticket** — capture-plus-escalation in one motion (no origin) | "escalate this to me", "needs my sign-off, not filed" |
+| `/backlog promote <id>` | `verbs/promote.md` | Graduate an entry into a ticket — `origin:` stamped, entry **paused** (trunk-side commit) | "escalate that issue", "make I-017 a ticket" |
+| `/backlog close <TK-id>` | `verbs/close.md` | Resolve / wontfix / demote a ticket — writebacks + the due done-log line | "apply my answer", "wontfix that ticket" |
 | `/backlog sync` | *(lands in Task 2.3 of the rollout plan)* | Mirror open tickets to the remote issue system | "sync the tickets" |
 
 **No default lane.** `/backlog` with no recognized verb is ambiguous — ask which tracker the item
