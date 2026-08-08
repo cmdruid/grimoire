@@ -5,8 +5,8 @@ description: "Drive a long-lived development stream as a continuous loop, shippi
 
 # workstream
 
-Encodes a development pipeline (the host's `ROUTING -> PLANNING -> WORKTREES` docs, where
-present) as an explicit, re-entrant loop. A workstream = one isolated slot — its own worktree
+Encodes a development pipeline (the host's routing/planning/worktree conventions, where
+documented) as an explicit, re-entrant loop. A workstream = one isolated slot — its own worktree
 (default) or the main checkout held in place — bound to one stream of work for its whole life,
 shipping features off the stream's queue. **The queue's source is pluggable** —
 a standalone plan, a section of an ongoing roadmap, an inline brief, or defined ad hoc in the first
@@ -35,7 +35,8 @@ is the harm this rule exists to prevent. Two consequences follow, keyed on *what
 
 - **You never spawn a stream for your own work.** When in-stream work surfaces something that *would
   be* its own stream — a tangent, a debug bug, the next roadmap track — you **capture or surface it;
-  you never stand it up to drive**: a **defect** → `/backlog bug`; **feature work** → `/backlog task` (`.records/tasks.md`);
+  you never stand it up to drive**: a **defect** → `/backlog bug`; **feature work** → `/backlog task`
+  (`.records/tasks.md`) — on a non-framework host, the project's own tracker instead (*Host layout*);
   the **next track / a new stream** → name it at a seam and hand it to the human/coordinator. Plain
   `create` *enters the loop*, so standing up a stream to drive is a **coordinator-only**,
   trunk-resident action — never yours. Needing isolation for a sub-task of your *own* feature is a
@@ -83,11 +84,23 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 | `close` | `verbs/close.md` | `verbs/ship.md` (if WIP ships) | tear the stream down | root |
 | `status` | `verbs/status.md` | — | list active workstreams (read-only) | anywhere |
 
-## Unstamped conduct
+## Host layout — standalone by default, framework-aware when present
 
-Every workstream verb is **read-only on an unstamped root**: emit `unstamped`, point at the
-clankshop onramps (the pack face's `setup` / `migrate`), and stop. A stream drives the lanes and
-records of a stamped system; workstream is not a pre-stamp writer.
+Workstream is **self-contained**: its own state is `.workstreams/<stream>/` (hand-offs, registry)
+plus ordinary git branches and worktrees, and **every verb works on any repo** — no framework
+install is a precondition, and no verb ever refuses or stalls for lack of one. Only where the
+durable records land varies by host:
+
+- **Clankshop host** (the front door carries the installation block; `.handbook/` + `.records/`
+  exist): use the framework homes exactly as the verbs write them — done-records and the done log
+  to `.records/done/`, plans to `.records/plans/`, the `/backlog done` seam, the record schema
+  (`.handbook/rules/RECORDS.md`).
+- **Any other host**: use the project's **own** conventions for the same artifacts — its declared
+  `records-root` or existing records/docs layout — and **skip the framework-only seams**
+  (`/backlog done`, the schema's frontmatter floor) instead of stalling on them. Do not create
+  `.handbook/` or `.records/` on a host that doesn't have them, and never emit `unstamped` or
+  route to the clankshop onramps: standing the framework up is the human's separate decision,
+  not a stream's precondition.
 
 ## Discipline (applies to EVERY verb — non-negotiable)
 

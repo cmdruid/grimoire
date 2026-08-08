@@ -102,17 +102,23 @@ independent of what the root has checked out. Never hand-commit these records to
      subject line, NOT by sha:** Landing (step 2) rebases this branch *after* this record is written,
      which rewrites every sha but **preserves subjects** — a sha-cited record would strand dead refs and
      need a correction commit (worse under deferred cadence: many records, and contention can force
-     *several* rebases per ship; subject-refs survived two contention rebases with zero fixups). **Open
-     each with the `type: done-record` frontmatter block** (`type`/`status: shipped`/`updated`), from
-     the done-record template the records instrument bundles, `backlog/templates/done-record.md` -- the
-     doc-linter gate rejects a `.records/done/` file without it (a done-record is a feature-lane /
-     workstream artifact, not a capture kind; its shape is the record schema's, the installation's
-     `.handbook/rules/RECORDS.md`). Then `git -C <worktree> add .records/done/<f> && git -C <worktree> commit -m "Record <slug> shipped" -- .records/done/<f>`.
-   - **A done-log line per shipped item** (the record schema's writer map): for each shipped feature
-     that traces to a live tracker entry (`T-…` / `I-…` / a `B-…` file), run `/backlog done <id>`
-     **in the worktree** — the entry mutation and the `.records/done/log.md` line commit on the
-     branch and land atomically with the ship. A queue item with no tracker entry (a roadmap row) is
-     completed by its ledger-row advance below instead — never invent an ID to log.
+     *several* rebases per ship; subject-refs survived two contention rebases with zero fixups). On a
+     **clankshop host**, **open each with the `type: done-record` frontmatter block**
+     (`type`/`status: shipped`/`updated`), from the done-record template the records instrument
+     bundles, `backlog/templates/done-record.md` -- the doc-linter gate rejects a `.records/done/`
+     file without it (a done-record is a feature-lane / workstream artifact, not a capture kind; its
+     shape is the record schema's, the installation's `.handbook/rules/RECORDS.md`). On any **other
+     host** (SKILL.md *Host layout*), write the record wherever the project keeps its records
+     (its `records-root` / existing layout) in the project's own shape — the record is the
+     requirement, the schema is the framework's. Then `git -C <worktree> add <record> &&
+     git -C <worktree> commit -m "Record <slug> shipped" -- <record>`.
+   - **A done-log line per shipped item** (clankshop hosts — the record schema's writer map): for
+     each shipped feature that traces to a live tracker entry (`T-…` / `I-…` / a `B-…` file), run
+     `/backlog done <id>` **in the worktree** — the entry mutation and the `.records/done/log.md`
+     line commit on the branch and land atomically with the ship. A queue item with no tracker
+     entry (a roadmap row) is completed by its ledger-row advance below instead — never invent an
+     ID to log. On a non-framework host this seam is **skipped**: mark the item done in the
+     project's own tracker, in that tracker's format.
    - If the feature had its own implementation plan, archive it in one atomic commit:
      `git -C <worktree> mv .records/plans/<feature-plan> .records/plans/archive/ && git -C <worktree> commit -m "Archive <feature-plan>" -- .records/plans/<feature-plan> .records/plans/archive/<feature-plan>`.
    - If the queue is tracked in a roadmap doc, update its ledger/queue row for this stream and commit
