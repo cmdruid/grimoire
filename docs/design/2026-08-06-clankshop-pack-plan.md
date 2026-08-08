@@ -890,19 +890,26 @@ re-verified 2026-08-08), so it must precede 4.3's sweep.
 **Files:** Modify every core member's `SKILL.md` (edges blocks + edge-referencing prose), per
 manifest rows.
 
-- [ ] Remove `<!-- edges:… -->` blocks and open-vocabulary matching language from the face, roles,
+- [x] Remove `<!-- edges:… -->` blocks and open-vocabulary matching language from the face, roles,
   instruments, and pipelines — **including core bundled docs and route-writer output**, not just
   SKILL.mds (live examples: `skills/feature/docs/ideal-use.md` teaches typed-edge continuation
   at HEAD; any `Edges:` route-block content a Phase-2 conformance missed); rewrite sibling-blind
   indirections ("the tracker the host's front door names") into direct pack references where the
-  manifest flagged them. Helpers untouched.
-- [ ] Assert: no core **active surface** (SKILL.mds, verb files, bundled docs, script output)
+  manifest flagged them. Helpers untouched. *(Landed: the 8 core SKILL.md `## Edges` sections
+  deleted whole — intro prose, block, and trailing edge-teaching paragraphs; the two
+  typed-edge-tenet citations in `backlog/verbs/init.md` + `feature/SKILL.md` (init) rewritten as
+  plain principles. `ideal-use.md` was already conformed by Task 3.1 — zero hits at HEAD. The
+  door-block format's "no `Edges:` lines" prohibitions stay: pinned format language.)*
+- [x] Assert: no core **active surface** (SKILL.mds, verb files, bundled docs, script output)
   still teaches edge derivation — the manifest's widened sweep terms are the check.
   **Exclusion (2026-08-08, post-migration):** `skills/clankshop/PACK.md`'s body — moved inside
   `skills/**` by the migration — still carries the pre-absorption pack body; it is Task 4.4's
   target and is excluded from this assert, mirroring 4.3's historical-records exclusion.
-- [ ] Verify: lint (post-4.1 gate) `fails=0`; no core SKILL.md contains `<!-- edges:`; manifest
-  rows. Commit.
+  *(Sweep run with two further recorded exclusions: `foreman-health.sh` — 4.3 deletes it — and
+  `chiropractor/scripts/spine-scan.sh`, whose "escape-typed edge" is its own link-graph
+  terminology, not skill edges. Result: CLEAN.)*
+- [x] Verify: lint (post-4.1 gate) `fails=0`; no core SKILL.md contains `<!-- edges:`; manifest
+  rows. Commit. *(`fails=0 warns=10`, unchanged from the 4.1 baseline as predicted.)*
 
 ### Task 4.3: Retire `derive-seams`
 

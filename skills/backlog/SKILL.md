@@ -115,24 +115,6 @@ exactly its pre-stamp write license, touching no `.handbook/` chapter); **every 
 `ticket`, `promote`, `sync`, `close`, `done`, `curate`, `debrief` — **refuses**: emit `unstamped`
 and point at the clankshop onramps (`setup` / `migrate`).
 
-## Edges
-
-Backlog's **typed edges** — its place in a workflow declared as artifact/capability *types*, never as
-sibling names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A composer
-(`/foreman`/runbook) **derives** cross-skill seams by matching these types against other skills' edges;
-backlog names no successor of its own. The delimited block is machine-findable and idempotently
-rewritten by `init`'s registration.
-
-<!-- edges:backlog -->
-- produces: tracker-entry — task/bug/issue/note/feedback rows under `.records/`
-- handoff: — (none; a filed item sits until a composer drains it — backlog hands off no baton)
-- consumes: — (none; capture is a front-door — inputs come from the human/the work, not another skill)
-<!-- /edges:backlog -->
-
-`produces: tracker-entry` is a **data source**: something (a drainer/curator) *may* pick the entry up,
-but backlog does not itself hand control onward — hence `handoff: —`. That is the deliberate distinction
-between a weak `produces` edge and a strong `handoff` edge (model §2.1).
-
 ## Companion skills (separate, not absorbed)
 
 `backlog`'s verbs defer to companion skills where the host has them (its system-relevant signal is

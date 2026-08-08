@@ -187,7 +187,7 @@ drain owner):
 - [ ] `skills/skill-builder/{SKILL.md,verbs/new.md}` + `docs/BOUNDARY-AUDIT.md` — typed-edge /
   boundary teaching for **portable** skills — **no change** beyond DOCTRINE's split framing
   (verified in 4.1's pass) → Task 4.1
-- [ ] core members' `<!-- edges: -->` blocks + edge-referencing prose —
+- [x] core members' `<!-- edges: -->` blocks + edge-referencing prose —
   `skills/{architect,auditor,backlog,chiropractor,debugger,feature,foreman,workstream}/SKILL.md`
   (+ any `Edges:` route-block content a Phase-2 conformance missed) — removed; sibling-blind
   indirections rewritten to direct pack references; helpers untouched → Task 4.2

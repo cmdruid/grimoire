@@ -326,17 +326,3 @@ empty). Report any findings that did not resolve.
   comments.
 - **Not a code-quality audit.** Logic errors, test coverage, and API design are out of scope.
   If you encounter a code quality concern while reading a doc, note it as out of scope and move on.
-
-## Edges
-
-Chiropractor's **typed edges** -- its place in a workflow declared as artifact *types*, never as
-sibling names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A
-**steward with no private home**: it maintains the repo's *own* doc spine in place (read-only by
-default; its output is a conversational report + in-place doc fixes, not a typed artifact another
-skill drains). Produces and handoff are a *stated* empty (model §2.3), not an omission.
-
-<!-- edges:chiropractor -->
-- produces: — (in-place doc fixes + a conversational report, not a typed artifact)
-- handoff: — (no baton; the fixes land directly, the report ends the pass)
-- consumes: — (none; the audit flow consumes nothing — routed improvement items arrive as ordinary work, not a typed edge)
-<!-- /edges:chiropractor -->

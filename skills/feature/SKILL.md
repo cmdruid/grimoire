@@ -313,9 +313,8 @@ separate, optional, on-demand action (see *templates* below) that a project may 
 Feature is not a pre-stamp writer: on an unstamped root `init` refuses like every other verb
 (*Unstamped conduct*), pointing at the onramps.
 
-This verb realizes one corollary of the typed-edge tenet
-(`docs/design/2026-07-18-skill-self-init-model.md` §1): **visibility by construction** (a skill
-registers its route where the harness already loads it -- corollary 2). Idempotent: re-running is a
+The principle here is **visibility by construction**: a skill registers its route where the harness
+already loads it, so it surfaces with no composer present. Idempotent: re-running is a
 no-op beyond refreshing the `built-against` stamp; a sibling skill's own front-door block is never
 touched.
 
@@ -413,25 +412,6 @@ them. **`/feature` never debriefs, ships, or lands.**
   plan between `plan` and `build` is recommended by default**, not only on request -- an independent
   ground-truthed pass there has repeatedly caught must-fix bugs before any code was written. It is artifact-free and changes nothing -- the verdict
   goes back to whoever owns the artifact, who decides what to revise.
-
-## Edges
-
-Feature's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
-names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A composer derives
-cross-skill seams by matching these types against other skills' edges; feature names no successor.
-
-<!-- edges:feature -->
-- produces: design, plan, gate-green-code — the design spec, the implementation plan, and code at gate-green
-- handoff: gate-green-code — build terminates expecting a landing step; the baton it passes is code at gate-green
-- consumes: design, plan — plan reads the design; build reads the plan (feature's own internal stage chain)
-<!-- /edges:feature -->
-
-**The internal chain is not a seam.** `design -> plan -> build` shows up as feature *producing* `design`
-and `plan` and *consuming* them again -- but both ends are the **same skill**, so a composer must
-**exclude same-skill produces↔consumes pairs** from seam derivation (else it would draw a spurious
-"feature → feature" arrow). The only *external* control edge feature asserts is `handoff: gate-green-code`,
-which pairs with whatever `consumes: gate-green-code` (a landing step) -- matched by **type**, so feature
-never names that consumer. The `docs/ideal-use.md` example ends exactly on this edge.
 
 ## Structure, plugin posture, portability
 

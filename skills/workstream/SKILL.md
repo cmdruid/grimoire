@@ -178,17 +178,3 @@ The skill also bundles `scripts/worktree-exclude.sh` (idempotent hand-off exclus
 the seam rule, confident launch, ship cadence, the reset ritual, the manual-mode phase loop, and
 event-driven debrief. Read it at every loop entry (`create`/`load`/`recycle`); mid-loop verbs assume
 it is already in context.
-
-## Edges
-
-Workstream's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
-names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A composer derives
-cross-skill seams by matching these types against other skills' edges; workstream names no successor.
-No durable home (`.workstreams/<stream>/WORKSTREAM.md` is gitignored per-stream scratch, lazily
-created by `create`) -- registration is optional and not implemented in v0.
-
-<!-- edges:workstream -->
-- produces: — (workstream is the outer loop; `ship` is the terminal land, not a baton onward)
-- handoff: — (none; the same reason as produces)
-- consumes: plan, roadmap, gate-green-code — a stream's queue source (`plan`/`roadmap`) and what `ship` lands (`build`'s `gate-green-code` output)
-<!-- /edges:workstream -->

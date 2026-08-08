@@ -148,19 +148,3 @@ findings recorded with permanent IDs, and **every** actionable finding drained w
 passes the host's gate,
 a baseline `FINDINGS.md`, pinned exemplars, a wired doc-index pointer, and a front-door
 `skill:auditor` route block (Deploy mode step 6).
-
-## Edges
-
-Auditor's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
-names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A composer derives
-cross-skill seams by matching these types against other skills' edges; auditor names no successor.
-
-<!-- edges:auditor -->
-- produces: audit-finding — a scored, evidence-backed `FINDINGS.md` entry
-- handoff: — (none; a finding sits in `.records/audit/FINDINGS.md` until drained, same shape as backlog)
-- consumes: — (none; a pass reads the host's own `.agents/roles/auditor/GUIDE.md` rubric, not another skill's typed output)
-<!-- /edges:auditor -->
-
-`produces: audit-finding` is a **data source**, same distinction backlog's `tracker-entry` draws
-(model §2.1): a drainer (`/foreman calibrate`, a `/backlog` drain) *may* pick a finding up, but auditor
-does not itself hand control onward -- hence `handoff: —`.

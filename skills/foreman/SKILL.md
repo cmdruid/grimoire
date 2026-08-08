@@ -60,14 +60,3 @@ follow-ups, auditing code, designing the seed, verifying, and the development it
 to a **lane** `route` dispatches to — not to foreman. Standing up and validating the whole system
 belongs to the pack face. *Which* member owns *what* is the pack's doctrine and runbook, not this
 file.
-
-## Edges
-
-Foreman's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
-names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2).
-
-<!-- edges:foreman -->
-- produces: — (none; the routing dispatch is mechanism, not a typed edge)
-- handoff: — (none; `route`'s dispatch is mechanism, not a control-flow baton)
-- consumes: — (none; routed improvement items arrive as ordinary work, not a typed edge)
-<!-- /edges:foreman -->

@@ -6,10 +6,9 @@ first**. This is the records instrument building its own drawer: a bare install 
 alone can stand up a working, visible capture home. Both halves are **idempotent** and **never clobber
 filed entries** — re-running `init` converges to the same state.
 
-This verb realizes two corollaries of the typed-edge tenet
-(`docs/design/2026-07-18-skill-self-init-model.md` §1): **self-init, no floor** (a skill creates its
-own home — corollary 1) and **visibility by construction** (a skill registers its route where the
-harness already loads it, so it surfaces with no composer present — corollary 2).
+Two principles hold here: **self-init, no floor** (the instrument creates its own home, depending
+on no other skill having run first) and **visibility by construction** (it registers its route where
+the harness already loads it, so it surfaces with no composer present).
 
 ## When to use
 

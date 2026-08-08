@@ -44,26 +44,3 @@ and stop.
 2. Respect the durability gradient (`docs/DOCTRINE.md`): the spine is law; reference-arch is
    disposable and pointer-heavy.
 3. Portable methodology stays in this package; project content stays in the project's `.handbook/design/`.
-
-## Edges
-
-Architect's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
-names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A composer derives
-cross-skill seams by matching these types against other skills' edges; architect names no successor.
-
-<!-- edges:architect -->
-- produces: design, roadmap — design specs (`brainstorm`/`plan`/`distill`) and roadmaps (`plan`)
-- handoff: — (none in the core loop; the seed is a standing source others drain, not a baton architect passes)
-- consumes: design — `distill`/`reconcile` read architect's own accreted specs (intra-skill: same skill on both ends)
-<!-- /edges:architect -->
-
-**The `consumes: design` pair is intra-skill, not a seam.** `distill`/`reconcile` read specs *this
-skill* produced (`brainstorm`/`plan`) — a composer must **exclude** this produces↔consumes pair from
-seam derivation, the same rule `feature`'s `design -> plan -> build` chain established (F2).
-
-**Two candidate handoffs stay deferred, by design.** `/architect prep` (verb file still pending) would
-terminate expecting a rebuild — a `handoff: plan`/`roadmap` to settle once `prep` is actually authored,
-not before. `/architect reconcile` writes a drift report to `.records/reports/` — a candidate
-`produces: audit-finding` (coarse-shared with `auditor`) *if* a drain seam is later wanted, but no
-consumer has asked for one yet. Both stay out of `v0` (lightweight over configurable, per F5 -- the
-starter vocabulary holds, no new types); a future consumer surfacing is what would settle either.

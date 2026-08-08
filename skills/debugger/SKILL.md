@@ -125,15 +125,3 @@ after. Commit it trunk-side, scoped, alongside the linked entry's completion whe
   independent. The durable outputs are the report file (above) and any tracker captures the
   installation's record schema names; a verification-depth or flake *judgment* question belongs
   to the verification role, not here.
-
-## Edges
-
-Debugger's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
-names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A composer derives
-cross-skill seams by matching these types against other skills' edges; debugger names no successor.
-
-<!-- edges:debugger -->
-- produces: gate-green-code — a debugged, tested fix ready to land (the same class of artifact a build stage produces)
-- handoff: gate-green-code — a fix at gate-green expects a landing step; the baton is matched by type, not named
-- consumes: tracker-entry — a filed bug report is legitimate optional input, never a required floor
-<!-- /edges:debugger -->
