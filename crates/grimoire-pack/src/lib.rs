@@ -7,6 +7,7 @@ use std::path::PathBuf;
 pub mod discovery;
 pub mod frontmatter;
 pub mod hash;
+pub mod lock;
 pub mod manifest;
 pub mod pack;
 

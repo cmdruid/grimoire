@@ -32,6 +32,11 @@ pub struct Issue {
 }
 
 /// Everything `enumerate` learned about the repository's packs.
+///
+/// Dup-name note: the FIRST manifest to validate wins its name; a later
+/// same-named manifest becomes an issue — so while a "two manifests declare
+/// the pack name" issue is present, the surviving pack should not be treated
+/// as install-ready.
 #[derive(Debug, Default)]
 pub struct Enumeration {
     pub packs: Vec<Pack>,
