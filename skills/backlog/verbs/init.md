@@ -84,8 +84,8 @@ judgment (which front-door, what the route says):
    references, else cwd, else ask. The stamp is the **pack version**:
    `clankshop@<pack-version>`, where `<pack-version>` comes from the root's installation block
    (`install-block.sh read <root>` → `pack-version=`) when the root is pack-stamped, else from the
-   pack lock's `pack-version:` line (`packs/clankshop.md` frontmatter, beside the installed skills)
-   — core members carry no individual version; the pack pins them. The stamp is what the check
+   pack manifest's `version:` line (the pack face's `PACK.md` frontmatter, beside the installed
+   skills) — core members carry no individual version; the pack pins them. The stamp is what the check
    validator compares — a pointer to what was projected, not a guarantee.
 2. **Scaffold the home + the installation block.** Run `scripts/scaffold-records.sh <root>`, then
    `install-block.sh write <root> 1` (create-or-adopt; see the helpers above). Report the
@@ -131,7 +131,7 @@ Grimoire's own `AGENTS.md` is **authored library doctrine**, not a consuming pro
 registration blocks must **never** accrete in it. Grimoire is where this mechanism is *built and
 tested*, not a self-registering deployment. So the front-door path is a **parameter**, and in grimoire
 the verb is exercised only against a **throwaway fixture front-door** (a temp `AGENTS.md` under the
-scratchpad, or a `packs/` sample) — never the real one. In a genuine consuming project the parameter
+scratchpad) — never the real one. In a genuine consuming project the parameter
 resolves to that project's real front-door, which is the whole point. The pilot's A4 acceptance
 transcript (`docs/design/2026-07-18-phase1-pilot-acceptance.md`) runs the full mechanism against such a
 fixture.

@@ -843,6 +843,18 @@ Execution order within this phase: **4.1 → 4.2 → 4.4 → 4.3 → 4.5** — t
 HEAD; outside it, only the four `register-route.sh` comments Task 4.3 itself rewrites —
 verified), so it must precede 4.3's sweep.
 
+> **Migration note (2026-08-08, owner-ratified — re-ground against this before building):** the
+> pack manifest migrated to the ratified pack-format spec (`docs/spec/pack-format.md`, format 1)
+> ahead of this phase: `packs/clankshop.md` is now **`skills/clankshop/PACK.md`** (frontmatter
+> `pack:`/`version: 1.0.0`/`format: 1`/`skills:` (core+helpers folded, face implicit)/`optional:`/
+> `setup:`; the body rode along verbatim), the `packs/` shelf is retired, and `install.sh --pack`
+> resolves `PACK.md` + writes the sidecar `grimoire.lock`. **`core:` survives in `PACK.md`
+> frontmatter as a grimoire author extension key** (spec §2: unknown keys ignored + preserved) —
+> Task 4.1 reads it from `skills/clankshop/PACK.md`, not `packs/clankshop.md`. Task 4.4's file
+> target is likewise `skills/clankshop/PACK.md`; its "frontmatter (manifest + lock)" phrase now
+> means the spec manifest surface (the install lock is the separate `grimoire.lock` sidecar).
+> Task 4.3's/4.4's active-surface sweeps drop the `packs/` glob (the dir no longer exists).
+
 ### Task 4.1: Skill-builder — the core-member exemption and the doctrine split
 
 **Files:** Modify `skills/skill-builder/scripts/skills-lint.sh`,

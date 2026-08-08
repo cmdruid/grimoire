@@ -46,7 +46,7 @@ other and the deployed layout directly — atomic versioning is what makes that 
 |---|---|---|
 | doctrine | `doctrine/` | the pack's seed content: `rules/`, `workflows/`, `testing/` chapters; index + registry + roster + door profile (`doctrine/README.md`); the base archive (`doctrine/BASES.md`) |
 | runbook | `docs/RUNBOOK.md` | the methodology narrative — the flow of a change, when to assume which role, the three altitudes, escalation, the improvement loop |
-| pack lock | `packs/clankshop.md` frontmatter (repo-level) | the release manifest: `pack-version:` / `layout:` / `core:` / `helpers:` / `optional:` — what `install.sh --pack` preflights against |
+| pack manifest | `PACK.md` beside this SKILL.md (pack-as-skill, `docs/spec/pack-format.md` format 1) | the release manifest: `version:` (semver) / `format:` / `skills:` / `optional:` / `setup:` + the `core:` lint-exemption extension key — what `install.sh --pack` resolves and preflights; installs are recorded in the sidecar `grimoire.lock` |
 
 The doctrine's declaration blocks carry `doctrine: clankshop` + `doctrine-version:`; every
 seedable entry has a stable origin ID (`clankshop:INV-4`), so seeding is copying entries under the

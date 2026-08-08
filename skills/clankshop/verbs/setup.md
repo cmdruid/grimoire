@@ -102,8 +102,9 @@ members on first use — setup seeds only what the doctrine and the records sche
 ## Step 5 — stamp
 
 Last, after everything above is on disk:
-`scripts/install-block.sh write <root> 1 clankshop <pack-version>` — `layout: 1`, `pack-version`
-read from the pack lock (`packs/clankshop.md` frontmatter). The stamp is the commit point: an
+`scripts/install-block.sh write <root> 1 clankshop <pack-version>` — `layout: 1`, the pack
+version read from the manifest (this pack's `PACK.md` frontmatter `version:`). The stamp is the
+commit point: an
 unstamped root is unmigrated, and framework verbs refuse until the block exists — stamping first
 would license every verb against a half-built installation.
 

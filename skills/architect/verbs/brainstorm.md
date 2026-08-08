@@ -13,7 +13,7 @@ durability gradient this verb edits along.
 risk in the whole system. The invocation-time resolver: **this verb mutates the seed itself (the
 foundation you later regenerate code from); the same-named `/feature` verb mutates code built against
 it.** Changing the foundation → here; building on it → `/feature`. (The altitude seam itself is the
-runbook's — `packs/clankshop.md` + `docs/DOCTRINE.md`.)
+runbook's — `skills/clankshop/PACK.md` + `docs/DOCTRINE.md`.)
 
 If the question in front of you is "how should we build feature X" — even a gnarly, cross-cutting
 X — that's `/feature brainstorm`. If the question is "is the tenet/contract/seam X *builds on*

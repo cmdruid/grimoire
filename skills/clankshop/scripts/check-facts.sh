@@ -345,12 +345,18 @@ for s in .agents/roles/*/; do
   [ -d "$s" ] && basename "$s"
 done 2>/dev/null | emit_capped seats 20
 
-# ---------- pack lock vs installed set ----------
-LOCK=$DIR/../../../packs/clankshop.md
+# ---------- pack manifest vs installed set ----------
+# PACK.md (spec format 1, beside the pack face): required = pack: (the implicit face)
+# + skills:; optional: members absent from the install are a green fact, never drift.
+LOCK=$DIR/../PACK.md
 if [ -f "$LOCK" ]; then
   echo "lock_found=1"
-  lock_members=$(sed -n 's/^skills:[[:space:]]*//p' "$LOCK" | head -1)
+  lock_face=$(sed -n 's/^pack:[[:space:]]*//p' "$LOCK" | head -1)
+  lock_skills=$(sed -n 's/^skills:[[:space:]]*//p' "$LOCK" | head -1)
+  lock_optional=$(sed -n 's/^optional:[[:space:]]*//p' "$LOCK" | head -1)
+  lock_members="$lock_face $lock_skills"
   echo "lock_members=$(printf '%s' "$lock_members" | tr ' ' ',')"
+  echo "lock_optional=$(printf '%s' "$lock_optional" | tr ' ' ',')"
   printf '%s\n' "$lock_members" | tr ' ' '\n' | while IFS= read -r m; do
     [ -n "$m" ] || continue
     if [ -s "$TMP/inst" ]; then
@@ -360,6 +366,7 @@ if [ -f "$LOCK" ]; then
 else
   echo "lock_found=0"
   echo "lock_members="
+  echo "lock_optional="
   echo "lock_missing_installed_count=0"; echo "lock_missing_installed="
 fi
 

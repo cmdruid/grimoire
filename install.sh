@@ -3,11 +3,16 @@
 #
 # Usage:
 #   ./install.sh <skill> [<skill>...]      install named skills
-#   ./install.sh --pack <name>             install every skill in packs/<name>.md
+#   ./install.sh --pack <name>             install a pack (its PACK.md manifest, spec format 1)
 #   ./install.sh --remove <skill>...       remove installed symlinks (only ones owned by this clone)
 #   ./install.sh --list                    show skills, packs, and install state
 #   ./install.sh --target <dir> ...        override target dir (default: ~/.claude/skills)
 #
+# Packs follow docs/spec/pack-format.md (format 1): a pack is a skill dir with a
+# PACK.md (the face is an implicit member; optional members are default-installed).
+# A pack install is transactional -- preflight the whole member set, link, then
+# record the install in the sidecar lock `grimoire.lock` beside the target dir
+# (e.g. target ~/.agents/skills -> lock ~/.agents/grimoire.lock, the global scope).
 # Symlinks only: the clone stays canonical, edits here are live immediately.
 # Codex (and other dir-scanning harnesses): point the harness at <clone>/skills
 # directly (e.g. ln -s <clone>/skills ~/.agents/skills) -- no per-skill wiring.
@@ -19,25 +24,40 @@ mode="install"
 names=()
 pack_name=""
 pack_manifest=""
+pack_optional=""
+pack_setup=""
+pack_version=""
+
+# frontmatter_key <file> <key> -- first frontmatter value for key (never reads the body)
+frontmatter_key() {
+  awk -v k="$2" '
+    NR == 1 { if ($0 != "---") exit; next }
+    /^---$/ { exit }
+    index($0, k ":") == 1 { sub("^" k ":[[:space:]]*", ""); print; exit }
+  ' "$1"
+}
+
+# resolve_pack <name> -- echo the PACK.md whose pack: matches; fail when none does
+resolve_pack() {
+  for m in "$root/PACK.md" "$root"/skills/*/PACK.md; do
+    [ -f "$m" ] || continue
+    if [ "$(frontmatter_key "$m" pack)" = "$1" ]; then echo "$m"; return 0; fi
+  done
+  return 1
+}
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --pack)
       [ $# -ge 2 ] || { echo "error: --pack needs a name" >&2; exit 2; }
-      manifest="$root/packs/$2.md"
-      [ -f "$manifest" ] || { echo "error: no pack manifest at packs/$2.md" >&2; exit 2; }
-      pack_skills="$(sed -n 's/^skills:[[:space:]]*//p' "$manifest" | head -1)"
-      [ -n "$pack_skills" ] || { echo "error: packs/$2.md has no skills: line" >&2; exit 2; }
-      for s in $pack_skills; do names+=("$s"); done
       pack_name="$2"
-      pack_manifest="$manifest"
       shift ;;
     --remove) mode="remove" ;;
     --list)   mode="list" ;;
     --target)
       [ $# -ge 2 ] || { echo "error: --target needs a directory" >&2; exit 2; }
       target="$2"; shift ;;
-    -h|--help) sed -n 's/^# \{0,1\}//p;13q' "$0"; exit 0 ;;
+    -h|--help) sed -n 's/^# \{0,1\}//p;18q' "$0"; exit 0 ;;
     -*) echo "error: unknown flag: $1 (try --help)" >&2; exit 2 ;;
     *) names+=("$1") ;;
   esac
@@ -52,25 +72,122 @@ if [ "$mode" = "list" ]; then
     [ -L "$target/$name" ] && state="installed -> $(readlink "$target/$name")"
     printf '  %-14s %s\n' "$name" "$state"
   done
-  echo "packs:"
-  for p in "$root"/packs/*.md; do
-    [ -e "$p" ] || continue
-    printf '  %-14s %s\n' "$(basename "${p%.md}")" "$(sed -n 's/^skills:[[:space:]]*//p' "$p" | head -1)"
+  echo "packs (PACK.md manifests):"
+  for m in "$root/PACK.md" "$root"/skills/*/PACK.md; do
+    [ -f "$m" ] || continue
+    printf '  %-14s v%-8s %s\n' "$(frontmatter_key "$m" pack)" \
+      "$(frontmatter_key "$m" version)" "$(frontmatter_key "$m" skills)"
   done
   exit 0
 fi
 
+# ---- pack resolution (spec format 1): face implicit, optional default-installed ----
+if [ -n "$pack_name" ]; then
+  pack_manifest="$(resolve_pack "$pack_name")" \
+    || { echo "error: no PACK.md declares pack: $pack_name (try --list)" >&2; exit 2; }
+  fmt="$(frontmatter_key "$pack_manifest" format)"
+  [ "$fmt" = "1" ] \
+    || { echo "error: pack $pack_name declares format: ${fmt:-<absent>} -- this tool implements format 1" >&2; exit 2; }
+  pack_version="$(frontmatter_key "$pack_manifest" version)"
+  pack_skills="$(frontmatter_key "$pack_manifest" skills)"
+  pack_optional="$(frontmatter_key "$pack_manifest" optional)"
+  pack_setup="$(frontmatter_key "$pack_manifest" setup)"
+  [ -n "$pack_skills" ] || { echo "error: $pack_manifest has no skills: line" >&2; exit 2; }
+  pack_dir="$(dirname "$pack_manifest")"
+  if [ -f "$pack_dir/SKILL.md" ]; then
+    face="$(frontmatter_key "$pack_dir/SKILL.md" name)"
+    [ -n "$face" ] || face="$(basename "$pack_dir")"
+    [ "$face" = "$pack_name" ] \
+      || { echo "error: face name $face != pack: $pack_name (spec: they MUST match)" >&2; exit 2; }
+    names+=("$face")
+  fi
+  for s in $pack_skills $pack_optional; do names+=("$s"); done
+fi
+
 [ ${#names[@]} -gt 0 ] || { echo "error: no skills named (try --list)" >&2; exit 2; }
 
-# ---- transactional pack install (the lock preflights; never a partial pack) ----
-# Preflight the whole member set against the lock (packs/<name>.md frontmatter): every
-# member present on disk, no destination collision, helper version checks (a bare-listed
-# helper is a presence check; a range-declared helper `name>=N` must carry frontmatter
-# `version: <int>` within range -- missing/malformed aborts, never a silent pass). Any
-# failure aborts with the fact before a single link is made; a mid-flight link error
-# rolls back what this run created. Bare single-skill install (below) is untouched.
+# member_hash <skill-dir> -- the ecosystem skill-folder hash (spec Appendix A):
+# regular files only, .git/node_modules pruned, sorted relative paths, sha256 over
+# path-bytes + file-bytes per pair, no delimiters.
+member_hash() {
+  (
+    CDPATH='' cd "$1" || exit 1
+    find . \( -name .git -o -name node_modules \) -prune -o -type f -print \
+      | sed 's|^\./||' | LC_ALL=C sort \
+      | while IFS= read -r f; do printf '%s' "$f"; cat "./$f"; done \
+      | if command -v shasum >/dev/null 2>&1; then shasum -a 256; else sha256sum; fi \
+      | awk '{print "sha256:" $1}'
+  )
+}
+
+# write_lock -- record the installed pack in the sidecar grimoire.lock (spec §3).
+# python3 merges into an existing lock (preserving other packs, unknown keys, and a
+# prior setup.ran); without python3 a fresh lock is written when none exists, else
+# the stale lock is surfaced as a fact and left untouched.
+write_lock() {
+  lock_dir="$(CDPATH='' cd "$(dirname "$target")" && pwd)"
+  lock_file="$lock_dir/grimoire.lock"
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  ref="$(git -C "$root" rev-parse --short HEAD 2>/dev/null || true)"
+  members_json=""
+  for name in "${names[@]}"; do
+    opt=false
+    case " $pack_optional " in *" $name "*) opt=true ;; esac
+    h="$(member_hash "$root/skills/$name")"
+    members_json="${members_json}${members_json:+,}
+      \"$name\": { \"hash\": \"$h\", \"optional\": $opt }"
+  done
+  setup_json=""
+  [ -n "$pack_setup" ] && setup_json="
+    \"setup\": { \"declared\": \"$pack_setup\", \"ran\": false },"
+  entry_json="{
+    \"version\": \"$pack_version\",
+    \"source\": \"$root\",
+    \"ref\": \"$ref\",
+    \"installedAt\": \"$ts\",$setup_json
+    \"members\": {$members_json
+    }
+  }"
+  if command -v python3 >/dev/null 2>&1; then
+    LOCK_FILE="$lock_file" PACK_NAME="$pack_name" ENTRY_JSON="$entry_json" python3 - <<'PY'
+import json, os, sys
+path, pack = os.environ["LOCK_FILE"], os.environ["PACK_NAME"]
+entry = json.loads(os.environ["ENTRY_JSON"])
+lock = {"version": 1, "packs": {}}
+if os.path.exists(path):
+    try:
+        with open(path) as f:
+            lock = json.load(f)
+    except ValueError:
+        print(f"lock-unparseable {path} -- left untouched (spec: read-only)", file=sys.stderr)
+        sys.exit(0)
+    if lock.get("version", 1) > 1:
+        print(f"lock-version {lock.get('version')} > 1 -- left untouched (spec: read-only)", file=sys.stderr)
+        sys.exit(0)
+prior = lock.setdefault("packs", {}).get(pack)
+if prior and "setup" in prior and "setup" in entry:
+    entry["setup"]["ran"] = prior["setup"].get("ran", False)
+lock["packs"][pack] = entry
+with open(path, "w") as f:
+    json.dump(lock, f, indent=2)
+    f.write("\n")
+print(f"locked    {pack}@{entry['version']} -> {path}")
+PY
+  elif [ ! -e "$lock_file" ]; then
+    printf '{\n  "version": 1,\n  "packs": {\n    "%s": %s\n  }\n}\n' \
+      "$pack_name" "$entry_json" > "$lock_file"
+    echo "locked    $pack_name@$pack_version -> $lock_file"
+  else
+    echo "lock-unmerged: $lock_file exists and python3 is unavailable -- lock not updated" >&2
+  fi
+}
+
+# ---- transactional pack install (spec §5: preflight, link, then commit the lock) ----
+# Preflight the whole member set: every member present on disk, no destination
+# collision (an existing symlink to the same source is no collision). Any failure
+# aborts with the fact before a single link is made; a mid-flight link error rolls
+# back what this run created. Bare single-skill install (below) is untouched.
 if [ "$mode" = "install" ] && [ -n "$pack_name" ]; then
-  helpers_line="$(sed -n 's/^helpers:[[:space:]]*//p' "$pack_manifest" | head -1)"
   fail=0
   for name in "${names[@]}"; do
     src="$root/skills/$name"
@@ -85,24 +202,6 @@ if [ "$mode" = "install" ] && [ -n "$pack_name" ]; then
     elif [ -e "$link" ]; then
       echo "preflight: collision $name ($link exists and is not a symlink)" >&2; fail=1
     fi
-  done
-  for h in $helpers_line; do
-    case "$h" in
-      *'>='*)
-        hn="${h%%>=*}"; hmin="${h##*>=}"
-        hv="$(awk '
-          NR == 1 && $0 != "---" { exit }
-          NR > 1 && /^---$/ { exit }
-          sub(/^version:[[:space:]]*/, "") { print; exit }
-        ' "$root/skills/$hn/SKILL.md" 2>/dev/null || true)"
-        if ! printf '%s' "$hv" | grep -qE '^[0-9]+$'; then
-          echo "preflight: helper-version $hn requires >=$hmin but version: key is missing or malformed" >&2; fail=1
-        elif [ "$hv" -lt "$hmin" ]; then
-          echo "preflight: helper-version $hn version $hv < required $hmin" >&2; fail=1
-        fi ;;
-      *)
-        echo "preflight: helper $h bare-listed (presence check only)" ;;
-    esac
   done
   if [ "$fail" != 0 ]; then
     echo "abort: pack $pack_name preflight failed -- no partial install" >&2
@@ -125,6 +224,7 @@ if [ "$mode" = "install" ] && [ -n "$pack_name" ]; then
       exit 1
     fi
   done
+  write_lock
   echo "pack $pack_name: ${#names[@]} members installed or already present"
   exit 0
 fi

@@ -76,7 +76,7 @@ When the host has no `.agents/roles/auditor/` or `.records/audit/`, follow the b
    body is auditor's entry in the pack doctrine's **door profile** (the fenced `### /auditor`
    block in `skills/clankshop/doctrine/README.md` — copied verbatim, never authored here),
    stamped `clankshop@<pack-version>` (from the installation block when pack-stamped, else the
-   pack lock's `pack-version:`), carrying **no `Edges:` lines**. The front door must **exist**;
+   pack manifest's `version:` — the pack face's `PACK.md`), carrying **no `Edges:` lines**. The front door must **exist**;
    a missing front door is a project-setup gap, say so and stop before writing. Feed the body on
    stdin to `scripts/register-route.sh <front-door> auditor clankshop@<pack-version>`:
    ```markdown

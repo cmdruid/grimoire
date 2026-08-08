@@ -6,20 +6,25 @@ set -eu
 DIR=$(CDPATH='' cd "$(dirname "$0")" && pwd -P)
 CLANKSHOP_SCRIPTS=$(CDPATH='' cd "$DIR/.." && pwd -P)
 DOCTRINE=$CLANKSHOP_SCRIPTS/../doctrine
-LOCK=$CLANKSHOP_SCRIPTS/../../../packs/clankshop.md
+LOCK=$CLANKSHOP_SCRIPTS/../PACK.md
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/clankshop-onramp.XXXXXX")
 trap 'rm -rf "$TMP"' EXIT
 pass=0; fail=0   # re-assigned by lib.sh's helpers (shellcheck cannot follow the source)
 # shellcheck source=lib.sh
 . "$DIR/lib.sh"
 
-PV=$(sed -n 's/^pack-version:[[:space:]]*//p' "$LOCK" | head -1)
+PV=$(sed -n 's/^version:[[:space:]]*//p' "$LOCK" | head -1)
 DV=$(awk '/^doctrine-version: /{print $2; exit}' "$DOCTRINE/README.md")
 
-# The installed set = the lock's own skills: line (stubs; keeps fixture and lock in sync).
+# The installed set = the manifest's members (spec format 1: the pack: face is an
+# implicit member; optional: members are default-installed). Stubs keep fixture and
+# manifest in sync.
+MEMBERS="$(sed -n 's/^pack:[[:space:]]*//p' "$LOCK" | head -1) \
+$(sed -n 's/^skills:[[:space:]]*//p' "$LOCK" | head -1) \
+$(sed -n 's/^optional:[[:space:]]*//p' "$LOCK" | head -1)"
 SKILLS=$TMP/skills
 mkdir -p "$SKILLS"
-for m in $(sed -n 's/^skills:[[:space:]]*//p' "$LOCK" | head -1); do
+for m in $MEMBERS; do
   mkdir -p "$SKILLS/$m"
   printf -- '---\nname: %s\n---\n' "$m" > "$SKILLS/$m/SKILL.md"
 done
@@ -55,7 +60,7 @@ for sub in workflows testing; do
 done
 
 # every installed member has its door registration block
-for m in $(sed -n 's/^skills:[[:space:]]*//p' "$LOCK" | head -1); do
+for m in $MEMBERS; do
   expect "green: $m registered" "<!-- skill:$m BEGIN built-against:" "$R/AGENTS.md"
 done
 
@@ -106,8 +111,8 @@ git -C "$R" merge -q --ff-only migrate/clankshop 2>/dev/null || git -C "$R" merg
 git -C "$R" worktree remove "$WT"
 
 # nothing dropped: every source row accounted for at its destination
-test ! -f "$R/TODO.md";            expect_eq "migrate: TODO.md consumed" "0" "$?"
-test ! -f "$R/docs/RULES.md";      expect_eq "migrate: RULES.md consumed" "0" "$?"
+expect_eq "migrate: TODO.md consumed"  "absent" "$([ -f "$R/TODO.md" ] && echo present || echo absent)"
+expect_eq "migrate: RULES.md consumed" "absent" "$([ -f "$R/docs/RULES.md" ] && echo present || echo absent)"
 expect "migrate: adr moved"        "sqlite over postgres" "$R/.records/adr/2020-01-01-use-sqlite.md"
 expect "migrate: alias preserved"  "(alias TODO-7)" "$R/.records/trackers/tasks.md"
 expect "migrate: second alias"     "(alias TODO-9)" "$R/.records/trackers/tasks.md"
@@ -130,6 +135,22 @@ bash "$CLANKSHOP_SCRIPTS/install-block.sh" resolve "$R" > "$TMP/res" 2>&1
 expect "refusal: resolver unmanaged"      "unmanaged=1" "$TMP/res"
 bash "$CLANKSHOP_SCRIPTS/migrate-preflight.sh" "$R" > "$TMP/pre3" 2>&1
 expect "refusal: preflight unstamped"     "stamped=0" "$TMP/pre3"
+
+# ============ fixture 4: transactional pack install (spec format 1) ============
+REPO_ROOT=$(CDPATH='' cd "$CLANKSHOP_SCRIPTS/../../.." && pwd -P)
+IT=$TMP/inst-scope
+mkdir -p "$IT"
+"$REPO_ROOT/install.sh" --pack clankshop --target "$IT/skills" > "$TMP/inst" 2>&1
+expect "install: face linked"        "installed clankshop" "$TMP/inst"
+expect "install: lock committed"     "locked    clankshop@$PV" "$TMP/inst"
+expect_eq "install: face symlink"    "link" "$([ -L "$IT/skills/clankshop" ] && echo link || echo missing)"
+expect "install: lock entry"         "\"clankshop\": {" "$IT/grimoire.lock"
+expect "install: optional flagged"   "\"optional\": true" "$IT/grimoire.lock"
+expect "install: member hash"        "sha256:" "$IT/grimoire.lock"
+expect "install: setup declared"     "\"declared\": \"/clankshop setup\"" "$IT/grimoire.lock"
+"$REPO_ROOT/install.sh" --pack clankshop --target "$IT/skills" > "$TMP/inst2" 2>&1
+expect "install: idempotent rerun"   "already installed" "$TMP/inst2"
+expect "install: rerun re-locks"     "locked    clankshop@$PV" "$TMP/inst2"
 
 echo "onramp: pass=$pass fail=$fail"
 [ "$fail" -eq 0 ]

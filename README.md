@@ -88,12 +88,17 @@ paths no longer encode ownership, `foreman setup` writes an **ownership index** 
 | audit deliverables: `FINDINGS` · `metrics.csv` · `history/` | `.records/audit/` | `auditor` |
 
 Session hand-offs stay **gitignored scratch** (root `HANDOFF.md`, steward `handoff`) —
-not a `.records/` store. The full tree lives in `foreman`'s `BOOTSTRAP.md` (§4); the steward map is
-the runbook's (`packs/clankshop.md`).
+not a `.records/` store. The full store tree lives in the pack doctrine's record schema
+(`skills/clankshop/doctrine/rules/RECORDS.md`); the steward map is the pack manifest's
+(`skills/clankshop/PACK.md`).
 
 ## The packs
 
-- **`clankshop`** (`packs/clankshop.md`) — the skills above (minus `skill-builder`, its own
+A pack is a **skill directory with a `PACK.md` manifest** (`docs/spec/pack-format.md`, format 1):
+the face installs like any skill, `install.sh --pack` resolves the manifest, installs the members
+transactionally, and records the install in the sidecar `grimoire.lock` beside the target dir.
+
+- **`clankshop`** (`skills/clankshop/PACK.md`) — the skills above (minus `skill-builder`, its own
   maintainer tool) as one disciplined development loop: the layer map, the seam contracts, and which
   skill owns what live in the manifest.
 

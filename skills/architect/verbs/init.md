@@ -212,8 +212,9 @@ needed no `/foreman setup` to stand up.
    always-loaded front-door (`AGENTS.md`/`CLAUDE.md`, whichever the harness auto-loads); it must
    **exist** — if the project has none, that's a project-setup gap, say so and stop before writing.
    The stamp is the **pack version** — `clankshop@<pack-version>`, read from the root's
-   installation block when the root is pack-stamped, else from the pack lock's `pack-version:`
-   line beside the installed skills; core members carry no individual version.
+   installation block when the root is pack-stamped, else from the pack manifest's `version:`
+   line (the pack face's `PACK.md`, beside the installed skills); core members carry no
+   individual version.
    **Grimoire caveat (patient-zero):** never register against grimoire's own authored `AGENTS.md` — this
    verb is exercised only against a throwaway fixture front-door (a temp `AGENTS.md` under the
    scratchpad, never the real one); in a consuming project the parameter resolves to that project's real
@@ -222,7 +223,7 @@ needed no `/foreman setup` to stand up.
    doctrine's **door profile** (the fenced `### /architect` block in
    `skills/clankshop/doctrine/README.md` — the single source every route writer copies, never
    authored here), stamped `clankshop@<pack-version>` (from the root's installation block when
-   pack-stamped, else the pack lock's `pack-version:`), carrying **no `Edges:` lines**. Feed it
+   pack-stamped, else the pack manifest's `version:`), carrying **no `Edges:` lines**. Feed it
    on stdin to `scripts/register-route.sh <front-door> architect clankshop@<pack-version>`:
    ```markdown
    ### /architect — design expertise
