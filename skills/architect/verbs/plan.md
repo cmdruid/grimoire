@@ -21,7 +21,7 @@ A design-evolution campaign spans work at two different altitudes, and `plan` on
 the top one:
 
 - **Seed-altitude work** (`plan` performs this itself, or hands directly to `brainstorm`): which
-  `.agents/architect/` files get revised, and in what order — e.g. "retire the `combat.md` contract's old
+  `.handbook/design/` files get revised, and in what order — e.g. "retire the `combat.md` contract's old
   hit-resolution invariant before touching `inventory.md`'s drop-table seam, since the latter
   depends on the former."
 - **Per-system readiness + build work** (`plan` only *references* this — it is Plan B's job, not
@@ -39,21 +39,21 @@ code yet), say so in the sequence rather than inserting a no-op prep step.
 ## Procedure
 
 1. **Establish the input.** Usually a freshly-edited standing spec from `/architect brainstorm` (the
-   tenet/contract/seam/vision change already landed in `.agents/architect/`) whose blast radius needs
+   tenet/contract/seam/vision change already landed in `.handbook/design/`) whose blast radius needs
    sequencing. It can also be a seed change the human made by hand, or a set of several related
    `brainstorm` edits landed separately that now need reconciling into one campaign. Read the
    edited file(s) directly — don't work from a description of the change.
 
 2. **Compute the blast radius from `MAP.md`.** Walk the seam graph from the changed tenet,
    contract, or system outward: which systems' contracts cite the changed invariant, which seams
-   connect to the changed boundary, which systems' `.agents/architect/src/<system>.md` reference-architecture
+   connect to the changed boundary, which systems' `.handbook/design/src/<system>.md` reference-architecture
    pointers assume the old shape. A tenet change in `PHILOSOPHY.md` can touch every system; a
    single seam redraw in `MAP.md` touches only the two systems on either end. Don't rely on the
    brainstorm session's own blast-radius guess (§4 of `verbs/brainstorm.md`) without re-deriving
    it from `MAP.md` — that guess was made mid-dialogue and may be incomplete.
 
 3. **Sequence the spec revisions.** For each affected system, decide whether its
-   `.agents/architect/src/<system>.md` needs a direct edit (a small contract update `plan` can make inline,
+   `.handbook/design/src/<system>.md` needs a direct edit (a small contract update `plan` can make inline,
    the same document-edit discipline `brainstorm` uses) or a full `brainstorm` pass of its own
    (the change there is itself foundational enough to need dialogue, not just propagation). Order
    these by dependency, not by convenience — a system's contract can't be correctly revised before
@@ -71,9 +71,9 @@ code yet), say so in the sequence rather than inserting a no-op prep step.
    itself: the ordered list of spec revisions (Step 3) and referenced prep/build work (Step 4),
    with the dependency reasoning that produced the order. It is **not** a standing spec — it's a
    snapshot of a plan of action, temporally scoped to this one campaign, closer in kind to the
-   change-records `docs/DOCTRINE.md` keeps out of `.agents/architect/` than to the present-tense specs that
+   change-records `docs/DOCTRINE.md` keeps out of `.handbook/design/` than to the present-tense specs that
    belong there. Two candidate homes, and the choice isn't free:
-   - **`.agents/architect/` (e.g. `.agents/architect/plans/<slug>.md`)** — only if the project has no existing
+   - **`.handbook/design/` (e.g. `.handbook/design/plans/<slug>.md`)** — only if the project has no existing
      roadmap/plan convention of its own. Simple, portable default for a fixture or a
      brand-new project.
    - **The project's own roadmap location** (`<project: .records/plans/<date>-<slug>.md, indexed

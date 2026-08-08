@@ -5,7 +5,7 @@
 **expensive, occasional, semantic** read: it holds the seed's binding contracts against the
 **actual code** and finds where the two have *diverged in meaning* — not just where a pointer rotted.
 See `docs/DOCTRINE.md` § Cheap `check`, deep `reconcile` for the split, and § Deliverables in
-`.records/`, seed in `.agents/architect/` for the write-boundary this verb obeys.
+`.records/`, seed in `.handbook/design/` for the write-boundary this verb obeys.
 
 ## Read this framing before you write anything
 
@@ -16,7 +16,7 @@ See `docs/DOCTRINE.md` § Cheap `check`, deep `reconcile` for the split, and § 
    the caller's. `reconcile` states which side is authoritative and what should change; enacting it is
    someone else's turn.
 2. **It writes ONLY to `.records/`.** Its whole output is one drift report under `.records/reports/`.
-   It **never** writes into `.agents/architect/`. The report is a *deliverable* — analysis about the
+   It **never** writes into `.handbook/design/`. The report is a *deliverable* — analysis about the
    design — not the design itself; a write-path from an analysis verb into the seed would relaunder
    the code's current shape back over curated design, the exact inversion the seed exists to prevent
    (`docs/DOCTRINE.md` § Deliverables in `.records/`). `reconcile` also **never writes executable
@@ -31,7 +31,7 @@ run the fresh-agent read-test — not on every commit the way you run `check`.
 - Resolve the repo root (where `src/…:NN` reference-arch pointers resolve) and today's date
   (`YYYY-MM-DD`, `date +%F`) — the report's filename and header carry this date so the drift it
   records is legible against a known point in time.
-- Confirm `.agents/architect/` exists. **No seed → this is not reconcile's job.** If the codebase has
+- Confirm `.handbook/design/` exists. **No seed → this is not reconcile's job.** If the codebase has
   no design layer at all, point the user to `/architect extract` (recover a first draft from code)
   instead — there is nothing to reconcile the code *against* yet.
 - Confirm the report home: `.records/reports/` under the repo root. Create it if absent.
@@ -41,7 +41,7 @@ run the fresh-agent read-test — not on every commit the way you run `check`.
 Run (or read a recent run of) `check`'s fact script and let it aim the expensive read:
 
 ```bash
-bash <skill-dir>/scripts/architect-check.sh <project>/.agents/architect [<repo-root>]
+bash <skill-dir>/scripts/architect-check.sh <project>/.handbook/design [<repo-root>]
 ```
 
 `reconcile` **builds on** these facts rather than re-computing them — the script already establishes
@@ -104,8 +104,14 @@ is worse than an honest "you decide."
 
 ## 5. Write the report to `.records/` — never the seed
 
-Write one report: `.records/reports/reconcile-<YYYY-MM-DD>.md` (today's date from Step 1). If one
-already exists for today (a re-run), supersede it in place and say so, rather than layering a second.
+Write one report per the report wire contract:
+`.records/reports/reconcile-<YYYY-MM-DD>-<slug>.md` (today's date from Step 1; a short kebab slug
+naming the pass's scope). Open it with the frontmatter floor — `type: reconcile`, `id:` = the
+filename stem verbatim, `date:`, `source:` (what triggered the pass) — and give each divergence a
+stable keyed heading `#### <key> — <title>` (`[a-z0-9-]+`, unique in the report) so a consumer
+can cite `<report-id>#<key>`. **Collision rule:** if the target filename already exists (a re-run
+the same day), suffix the slug deterministically (`-2`, `-3`, …) **before first publication** —
+never rename or overwrite a published report; the newer report supersedes by date, and says so.
 Structure it so the human can act on it and the next reader can trust its provenance:
 
 - **Header** — the date, the repo HEAD short SHA reconciled against, and the `check` baseline it
@@ -116,7 +122,7 @@ Structure it so the human can act on it and the next reader can trust its proven
   disagreement), its Step 4 adjudication (seed-stale vs code-drifted), and the concrete recommendation
   (seed update / `/architect distill` / code defect to fix / human decides).
 
-**Never write `.agents/architect/`.** The seed edits the report *recommends* are made later, by the
+**Never write `.handbook/design/`.** The seed edits the report *recommends* are made later, by the
 human or `distill` — not by `reconcile`.
 
 ## 6. Report + commit

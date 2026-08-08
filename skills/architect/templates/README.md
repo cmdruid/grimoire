@@ -1,6 +1,6 @@
 # Design system
 
-This is `.agents/architect/` — the regenerable **seed**. It is the present-tense, standing source of truth
+This is `.handbook/design/` — the regenerable **seed**. It is the present-tense, standing source of truth
 for what this project *is* and how it works; the project's code is the disposable **build
 output** compiled from it. When code and seed disagree, the seed is not automatically right — but
 the seed is what a rebuild reads, so drift here is drift that propagates.
@@ -8,7 +8,7 @@ the seed is what a rebuild reads, so drift here is drift that propagates.
 ## Layout
 
 ```
-.agents/architect/
+.handbook/design/
   README.md        — you are here: entry point, layout, pointers
   VISION.md         — north star + design pillars (durable what/why)
   PHILOSOPHY.md      — core ideals ("tenets") that govern every system
@@ -18,7 +18,7 @@ the seed is what a rebuild reads, so drift here is drift that propagates.
 ```
 
 The four root files (`VISION`, `PHILOSOPHY`, `GLOSSARY`, `MAP`) are the **required spine** —
-`/architect check` fails if any is missing. `.agents/architect/src/` holds the compilable per-system specs,
+`/architect check` fails if any is missing. `.handbook/design/src/` holds the compilable per-system specs,
 roughly 1:1 with code units, organized by the same durability gradient: the spine is the
 constitution; `src/` is the source code of the design.
 

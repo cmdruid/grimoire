@@ -1,25 +1,37 @@
 ---
 name: architect
-description: "The design-system engine — a project's `.agents/architect/` seed: present-tense, regenerable design code builds from. `/architect init` stands up `.agents/architect/` (compiles a PROJECT.md brief, or migrates existing docs). `/architect extract` is the brownfield onramp — recover a provisional design draft from code into `.records/design-draft/`. `/architect brainstorm` and `/architect plan` do seed-altitude (foundational, not feature-scope) design work. `/architect distill` collapses accreted ADRs/plans into clean present-tense specs. `/architect calibrate` drains captured design-flavored dev-experience signal into targeted seed edits (external signal in; `distill` compacts internal accretion). `/architect check` validates seed health; `/architect reconcile` reports deep semantic seed↔code drift to `.records/reports/`. `/architect prep` (Plan B) plans clearing retired code for a fresh rebuild. Use when the user runs `/architect ...`, sets up a design-doc system, or makes a foundational design change."
+description: "The design-system engine — a project's `.handbook/design/` seed: present-tense, regenerable design code builds from. `/architect init` stands up `.handbook/design/` (compiles a PROJECT.md brief, or migrates existing docs). `/architect extract` is the brownfield onramp — recover a provisional design draft from code into `.records/design/draft/`. `/architect brainstorm` and `/architect plan` do seed-altitude (foundational, not feature-scope) design work. `/architect distill` collapses accreted ADRs/plans into clean present-tense specs. `/architect calibrate` drains captured design-flavored dev-experience signal into targeted seed edits (external signal in; `distill` compacts internal accretion). `/architect check` validates seed health; `/architect reconcile` reports deep semantic seed↔code drift to `.records/reports/`. `/architect prep` (Plan B) plans clearing retired code for a fresh rebuild. Use when the user runs `/architect ...`, sets up a design-doc system, or makes a foundational design change."
 ---
 
 # architect — the design-system engine
 
-A skill over a project's `.agents/architect/` **seed**: the clean, present-tense, regenerable source of
+A skill over a project's `.handbook/design/` **seed**: the clean, present-tense, regenerable source of
 truth that code is the disposable build output of. This `SKILL.md` is a thin **router**; each verb
 lives in `verbs/<verb>.md`; the portable doctrine lives in `docs/DOCTRINE.md`.
 
 ## Altitude — what this skill owns
-- `/architect` owns the **seed-altitude standing design**: it *authors* the seed and never writes
-  executable code (it may *read* `src/` for `prep`). Feature-scope change and execution live elsewhere.
-- The altitude seam (who owns which) is in the runbook (`packs/clankshop.md`); the seed is the shared
-  contract (`docs/DOCTRINE.md`).
+- `/architect` is the **design role** of the pack: it owns the **seed-altitude standing design** —
+  it *authors* the seed and never writes executable code (it may *read* `src/` for `prep`).
+  Feature-scope change and execution live elsewhere.
+- **Tend, don't own:** the design chapter (`.handbook/design/`) and design records
+  (`.records/design/`) are the project's — written to stand alone, readable on a cold clone with
+  no skill installed; removing the role loses the tending, not the chapters. Direct references to
+  sibling pack members are legal within the pack's authored composition.
+- The altitude seam (who owns which) is the pack doctrine's; the seed contract is
+  `docs/DOCTRINE.md`.
+
+## Unstamped conduct
+`init` and `extract` are **writers** on an unstamped root — exactly their pre-stamp license: the
+design chapter, design records, skeleton stewardship maps, and the installation block
+(created-or-adopted, so a bare single-role install yields a resolvable installation). **Every
+other verb is read-only on an unstamped root**: emit `unstamped`, point at the clankshop onramps,
+and stop.
 
 ## Verbs
 | verb | file | one-liner |
 |---|---|---|
-| `init` | `verbs/init.md` | compile a PROJECT.md brief (or migrate existing docs) into `.agents/architect/` |
-| `extract` | `verbs/extract.md` | brownfield onramp: recover a descriptive, provisional design draft from code into `.records/design-draft/` |
+| `init` | `verbs/init.md` | compile a PROJECT.md brief (or migrate existing docs) into `.handbook/design/` |
+| `extract` | `verbs/extract.md` | brownfield onramp: recover a descriptive, provisional design draft from code into `.records/design/draft/` |
 | `brainstorm` | `verbs/brainstorm.md` | foundation-altitude ideation on the seed (radical, alpha-licensed) |
 | `plan` | `verbs/plan.md` | sequence a design-evolution campaign |
 | `distill` | `verbs/distill.md` | collapse accreted change-records into clean present-tense specs |
@@ -32,7 +44,7 @@ lives in `verbs/<verb>.md`; the portable doctrine lives in `docs/DOCTRINE.md`.
 1. Author plans; never write executable code (you may read `src/` for `prep`).
 2. Respect the durability gradient (`docs/DOCTRINE.md`): the spine is law; reference-arch is
    disposable and pointer-heavy.
-3. Portable methodology stays in this package; project content stays in the project's `.agents/architect/`.
+3. Portable methodology stays in this package; project content stays in the project's `.handbook/design/`.
 
 ## Edges
 

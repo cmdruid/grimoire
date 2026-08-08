@@ -3,7 +3,7 @@
 Folds accreted change-records (ADRs, plans, roadmap deltas) back into the standing spec they
 describe, so the seed stays a clean present-tense source of truth as the project churns. See
 `docs/DOCTRINE.md` § Two temporal kinds of doc for the failure mode this verb cures, and § The
-durability gradient for what `distill` is allowed to touch (it writes `.agents/architect/src/<system>.md`
+durability gradient for what `distill` is allowed to touch (it writes `.handbook/design/src/<system>.md`
 and, on promotion, `PHILOSOPHY.md`; never code). *(Seam: `distill` compacts the seed's own accretion;
 external tracker signal is `calibrate`'s to absorb.)*
 
@@ -30,7 +30,7 @@ read, not an auto-commit.
 ## Procedure
 
 1. **Gather.** Collect every change-record touching the target system since its last
-   `distilled_through_*` stamp (`.agents/architect/src/<system>.md` frontmatter — `none` means everything
+   `distilled_through_*` stamp (`.handbook/design/src/<system>.md` frontmatter — `none` means everything
    ever recorded for it): ADRs, plans, roadmap deltas, and any notes they link. Read the stamp
    first — this is what makes `distill` incremental instead of re-reading a system's entire
    history every time. Order what you gather chronologically; you'll need the sequence, not just
@@ -63,7 +63,7 @@ read, not an auto-commit.
    or deletes an ADR.
 
 3. **Fold into the standing spec, present-tense.** Rewrite the affected sections of
-   `.agents/architect/src/<system>.md` as though the reconciled result were designed whole, today — using
+   `.handbook/design/src/<system>.md` as though the reconciled result were designed whole, today — using
    `templates/system-spec.md`'s two-tier shape. The reconciled behavior, invariants, and seams go
    in **Contract**; the current implementation shape (pointer-heavy, per `docs/DOCTRINE.md`) goes
    in **Reference Architecture**. No "used to," "previously," "supersedes," or version-numbered
@@ -87,7 +87,7 @@ read, not an auto-commit.
    warrant it — but check for it explicitly rather than only ever touching the one `src/<system>.md`
    file in front of you.
 
-6. **Re-stamp.** Update `.agents/architect/src/<system>.md`'s frontmatter to the new baseline:
+6. **Re-stamp.** Update `.handbook/design/src/<system>.md`'s frontmatter to the new baseline:
    `distilled_through_adr` (the newest change-record's id folded in), `distilled_through_commit`
    (the repo's current HEAD short SHA), `distilled_through_date` (today, `YYYY-MM-DD`). This is
    what makes the next `distill` pass on this system incremental (Step 1) and lets `/architect check`

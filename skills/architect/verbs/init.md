@@ -1,6 +1,6 @@
-# `/architect init` — bootstrap or migrate the `.agents/architect/` seed
+# `/architect init` — bootstrap or migrate the `.handbook/design/` seed
 
-Stands up a project's `.agents/architect/` seed (see `docs/DOCTRINE.md` for the durability gradient and the
+Stands up a project's `.handbook/design/` seed (see `docs/DOCTRINE.md` for the durability gradient and the
 two-tier system-spec this verb populates). Two modes, one procedure with a fork at Step 3:
 
 - **Greenfield** — compile a loose `PROJECT.md` vision brief into the seed. There is little or no
@@ -21,7 +21,7 @@ Look for existing design material in the project root:
 |---|---|---|
 | `DESIGN.md` (or an equivalently-named principles doc) | → **migrate** | — |
 | a per-subsystem docs directory (e.g. `docs/design/`) with more than a couple of files | → **migrate** | — |
-| `.records/design-draft/` (an `/architect extract` handoff — see `verbs/extract.md`) | → **migrate**, seed-shaped source (Step 3) | — |
+| `.records/design/draft/` (an `/architect extract` handoff — see `verbs/extract.md`) | → **migrate**, seed-shaped source (Step 3) | — |
 | only a `PROJECT.md` (or similarly-named vision brief), nothing above | → **greenfield**, using it as the compile input | — |
 | nothing at all | → **greenfield**, but stop and ask the human for a short vision brief first — `VISION.md` cannot be stamped from nothing | |
 
@@ -31,9 +31,9 @@ the greenfield case — it is exactly the "loose vision brief" `init` is meant t
 `DESIGN.md` or a real subsystem-docs directory as the actual migrate signal; `PROJECT.md`'s role
 differs by what else is present, not by its own existence.
 
-**`.records/design-draft/` is a distinct migrate source, not a subsystem-docs directory.** It is the
+**`.records/design/draft/` is a distinct migrate source, not a subsystem-docs directory.** It is the
 deliverable `/architect extract` writes when hardening a brownfield onramp — already **seed-shaped**
-(the same spine + `src/<system>.md` layout `.agents/architect/` uses) rather than prose to reshape from
+(the same spine + `src/<system>.md` layout `.handbook/design/` uses) rather than prose to reshape from
 scratch, but every file in it is stamped `status: extracted — sufficiency-unproven` and its
 `SUFFICIENCY-GAPS.md` lists what a hardening pass must still resolve. Fold it per Step 3's "seed-shaped
 source" case, not the generic subsystem-docs reshape.
@@ -68,7 +68,7 @@ modes — greenfield just has thinner sources.
 
 **Migrate mode.** For each doc in the existing subsystem-docs directory:
 
-1. Copy the template `templates/system-spec.md` to `.agents/architect/src/<system>.md`.
+1. Copy the template `templates/system-spec.md` to `.handbook/design/src/<system>.md`.
 2. Reshape the doc's content into the two tiers — this is a **reshape, not a paste**:
    - **Contract (BINDING):** purpose, invariants (cite `PHILOSOPHY.md` tenets where the doc
      already implies one), **interfaces/seams**, behavior, the *why* behind hard constraints.
@@ -98,33 +98,35 @@ modes — greenfield just has thinner sources.
    with a contract that's honest about its non-committal status — don't silently launder a
    "maybe someday" doc into a binding contract.
 
-**Migrate mode — seed-shaped source (`.records/design-draft/`, an `extract` handoff).** This source
+**Migrate mode — seed-shaped source (`.records/design/draft/`, an `extract` handoff).** This source
 folds like subsystem docs (same Step 3 procedure — copy the template, reshape into the two tiers,
 stamp the three-key `distilled_through_*` frontmatter, consume the source when spent) with one
 difference: instead of reshaping loose prose, you are **hardening an already seed-shaped draft**.
 
-1. Map `.records/design-draft/src/<system>.md` → `.agents/architect/src/<system>.md` one-to-one (the
-   draft already used `templates/system-spec.md`'s two-tier shape) and `.records/design-draft/{VISION,
+1. Map `.records/design/draft/src/<system>.md` → `.handbook/design/src/<system>.md` one-to-one (the
+   draft already used `templates/system-spec.md`'s two-tier shape) and `.records/design/draft/{VISION,
    PHILOSOPHY,GLOSSARY,MAP}.md` onto the four root files, same as any other source feeds Step 2.
 2. **Resolve every entry in `SUFFICIENCY-GAPS.md` — do not fold the draft silently.** Per
    `docs/DOCTRINE.md` § Sufficiency, a draft traced off code is circular until a human decides what the
    design *should* guarantee; folding it unresolved just relaunders that circularity into
-   `.agents/architect/`. For each gap: turn an "apparent"/"appears to" observation into decided intent,
+   `.handbook/design/`. For each gap: turn an "apparent"/"appears to" observation into decided intent,
    fill or knowingly accept each placeholder acceptance, and state the resolution in the init report.
 3. Drop the `status: extracted — sufficiency-unproven` stamp once resolved — a folded system carries the
    normal `distilled_through_*: none` stamp (Step 3, point 3 above), not the draft's provisional one.
-4. `.records/design-draft/` itself is a **deliverable**, not a source-of-truth doc — after folding, treat
-   it as spent per Step 4 (a pointer or removal, per that step's rule), same as a consumed subsystem doc.
+4. `.records/design/draft/` is **transient by contract** — born at `extract`, consumed exactly
+   here. After folding, **archive the consumed draft** to `.records/design/draft/archive/`
+   (`git mv`; never a silent delete — the draft records what extraction saw), so the live
+   `draft/` is empty again; stale live `draft/` content is a check fact.
 
 **Greenfield mode.** If there's a live codebase but no prior design docs, build the same
-`.agents/architect/src/<system>.md` files directly from code inspection + the vision brief instead of from a
+`.handbook/design/src/<system>.md` files directly from code inspection + the vision brief instead of from a
 source doc: partition the codebase into systems (informed by its actual module boundaries), draft
 each contract from what the code visibly does, and skip straight to pointer-heavy reference-arch
 since there's no prose to reshape. If there's no code either, `src/` starts empty — `MAP.md`
 records the intended systems from the brief, and their specs are the first thing a `/architect plan`
 pass writes.
 
-**What never gets migrated into `.agents/architect/`:** change-records — ADRs, plans, roadmap deltas — stay
+**What never gets migrated into `.handbook/design/`:** change-records — ADRs, plans, roadmap deltas — stay
 in the project's own operational history (`.records/adr/`, `.records/plans/`, etc.). Per `docs/DOCTRINE.md`,
 change-records and standing specs are temporally distinct; folding an ADR chain's *history* into
 the seed reintroduces exactly the scar-smear the seed exists to avoid. `distill` is the verb that
@@ -135,13 +137,13 @@ later mines those change-records to refresh a spec — `init` only establishes t
 
 Once their content lives in the seed, the source material is **spent** — in migrate mode this is
 `PROJECT.md`/`DESIGN.md` **and** every per-subsystem doc actually migrated in Step 3 (e.g.
-`docs/design/<system>.md` for each system now living at `.agents/architect/src/<system>.md`); in greenfield
+`docs/design/<system>.md` for each system now living at `.handbook/design/src/<system>.md`); in greenfield
 mode it's just `PROJECT.md`. Leaving a migrated subsystem doc in place, unlinked, recreates the
 two-source-of-truth problem `init` exists to close — don't stop at the root files. This is a
 document edit — `init` performs it directly:
 
-- Default: replace each with a one-line pointer to `.agents/architect/` (e.g. "Superseded by `.agents/architect/` — see
-  `.agents/architect/README.md`." for the root files, or "Superseded by `.agents/architect/src/<system>.md`." for a
+- Default: replace each with a one-line pointer to `.handbook/design/` (e.g. "Superseded by `.handbook/design/` — see
+  `.handbook/design/README.md`." for the root files, or "Superseded by `.handbook/design/src/<system>.md`." for a
   migrated subsystem doc). This is the safer default; deleting a root file a human may still link
   to is more disruptive than leaving a pointer.
 - Delete outright only if the project's own conventions call for it (e.g. an "alpha, no dead
@@ -153,10 +155,10 @@ document edit — `init` performs it directly:
 
 This step is the one place `init` must actively watch the altitude seam (`docs/DOCTRINE.md` § The
 seam — altitude, not medium). "Update project wiring" covers three kinds of reference that can go
-stale once `.agents/architect/` exists and the old docs are gone/moved:
+stale once `.handbook/design/` exists and the old docs are gone/moved:
 
 1. **Repo-map docs** (e.g. `AGENTS.md`) that describe where design docs live.
-2. **A doc-linter or indexer** that enumerates the old design-doc directory.
+2. **A doc checker or indexer** that enumerates the old design-doc directory.
 3. **`related:`-style links** elsewhere that point at the moved files.
 
 For each, ask: *is the thing I'd edit a document, or executable code?*
@@ -164,7 +166,7 @@ For each, ask: *is the thing I'd edit a document, or executable code?*
 - **Document** (markdown, a `.ron`/`.yaml` config the linter reads declaratively, a repo-map file
   like `AGENTS.md`) → `init` edits it directly, in the same pass. This is authoring the seed's
   surroundings, not writing code.
-- **Executable code** (a doc-linter's source, a build script, a compiled indexer) → `init`
+- **Executable code** (a doc checker's source, a build script, a compiled indexer) → `init`
   does **not** edit it. Emit a short handoff note instead: what
   moved, what the code currently assumes, and what change would make it correct again. Hand that
   note to `/foreman` or `/feature` to execute — do not guess at the project's tracker; if the project
@@ -178,7 +180,7 @@ fix the one-liner" is exactly the boundary this step exists to hold.
 ## 6. Run `check` — the completion gate
 
 ```bash
-bash <skill-dir>/scripts/architect-check.sh <project>/.agents/architect [<repo-root>]
+bash <skill-dir>/scripts/architect-check.sh <project>/.handbook/design [<repo-root>]
 ```
 
 `init` is not done until:
@@ -206,29 +208,35 @@ corollaries `/backlog init` established (`docs/design/2026-07-18-skill-self-init
 This makes a bare install of `/architect` visible with **no composer** present, same as the seed itself
 needed no `/foreman setup` to stand up.
 
-1. **Resolve the front-door doc + a `built-against` stamp.** The registration target is the project's
+1. **Resolve the front-door doc + the stamp.** The registration target is the project's
    always-loaded front-door (`AGENTS.md`/`CLAUDE.md`, whichever the harness auto-loads); it must
    **exist** — if the project has none, that's a project-setup gap, say so and stop before writing.
-   `built-against` is the short sha of the last commit that touched **this skill's own directory**
-   (`git -C <skill-dir> log -1 --format=%h -- .`) — path-scoped, not the whole repo's `HEAD`, so the
-   stamp actually reflects when *this skill* last changed even on a monorepo skills-root where other
-   directories commit more often (BL-7) — else a version string, else `v0-<date>`.
+   The stamp is the **pack version** — `clankshop@<pack-version>`, read from the root's
+   installation block when the root is pack-stamped, else from the pack lock's `pack-version:`
+   line beside the installed skills; core members carry no individual version.
    **Grimoire caveat (patient-zero):** never register against grimoire's own authored `AGENTS.md` — this
    verb is exercised only against a throwaway fixture front-door (a temp `AGENTS.md` under the
    scratchpad, never the real one); in a consuming project the parameter resolves to that project's real
    front-door, which is the whole point (model §3.2).
-2. **Register the route.** Feed the block body on stdin to
-   `scripts/register-route.sh <front-door> architect <built-against>`:
+2. **Register the route — the pack-style block.** The body is architect's entry in the pack
+   doctrine's **door profile** (the fenced `### /architect` block in
+   `skills/clankshop/doctrine/README.md` — the single source every route writer copies, never
+   authored here), stamped `clankshop@<pack-version>` (from the root's installation block when
+   pack-stamped, else the pack lock's `pack-version:`), carrying **no `Edges:` lines**. Feed it
+   on stdin to `scripts/register-route.sh <front-door> architect clankshop@<pack-version>`:
    ```markdown
-   ### /architect -- the design-system engine
-   Route: stand up + maintain a project's `.agents/architect/` seed (present-tense design source).
-   `/architect init|extract|brainstorm|plan|distill|check|reconcile`.
-   Edges: produces `design, roadmap`.
+   ### /architect — design expertise
+   Route: foundational design work at seed altitude; tends `.handbook/design/` and
+   `.records/design/`.
    ```
-   Report `appended` / `replaced`. If it reports **malformed**, surface that — a delimiter was
-   hand-broken; the human or composer repairs it, then re-run. Do **not** force it. The write is
-   **idempotent**: re-running `init` (e.g. after a migration adds a new system) rewrites only
-   architect's own `skill:architect` block, never a sibling's.
+   An existing pack-style block written by setup is **adopted** (re-running converges
+   byte-identically), never overwritten with a different body. Report `appended` / `replaced`. If
+   it reports **malformed**, surface that — a delimiter was hand-broken; the human repairs it,
+   then re-run. Do **not** force it. The write is **idempotent**: re-running `init` rewrites only
+   architect's own `skill:architect` block, never a sibling's. `init` also **creates-or-adopts
+   the installation block** (its pre-stamp write license alongside the design chapter, records,
+   and skeleton maps — via the pack face's `install-block.sh write <root> 1`), so a bare
+   single-role install yields a resolvable installation.
 
 ## Report
 

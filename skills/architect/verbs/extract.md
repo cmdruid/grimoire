@@ -19,10 +19,10 @@ Three hard rules follow, and they govern every step below:
 1. **The draft is provisional.** Every file `extract` writes is stamped
    `status: extracted — sufficiency-unproven`. Nothing it emits is binding until a human editorial
    pass and the fresh-agent read-test have hardened it (Step 6).
-2. **`extract` writes ONLY to `.records/design-draft/`.** It **never** writes into
-   `.agents/architect/`. The seed home stays pure — mutated only by the curated path
+2. **`extract` writes ONLY to `.records/design/draft/`.** It **never** writes into
+   `.handbook/design/`. The seed home stays pure — mutated only by the curated path
    (`init`/`distill`/human editorial). `extract` produces a *deliverable*, not a seed; see
-   `docs/DOCTRINE.md` § Deliverables in `.records/`, seed in `.agents/architect/`.
+   `docs/DOCTRINE.md` § Deliverables in `.records/`, seed in `.handbook/design/`.
 3. **`extract` never writes executable code.** Standing architect discipline: it reads `src/` to
    inventory and infer, and authors design prose only.
 
@@ -31,19 +31,19 @@ Three hard rules follow, and they govern every step below:
 - Resolve the repo root (the directory the code lives under) and today's date (`YYYY-MM-DD`,
   `date +%F`) — the draft's provisional stamps carry this date so drift against the code is legible
   later.
-- Confirm the draft home: `.records/design-draft/` under the repo root. Create it if absent. If a
+- Confirm the draft home: `.records/design/draft/` under the repo root. Create it if absent. If a
   previous `extract` draft already sits there, treat this as a re-run — supersede it in place and say
   so in the report rather than silently layering a second draft on top.
 
 ## 2. When to use — and when not to
 
-`extract` is for a codebase with **no design layer**: no `.agents/architect/` seed, and nothing for
+`extract` is for a codebase with **no design layer**: no `.handbook/design/` seed, and nothing for
 `init` migrate-mode to fold (no `DESIGN.md`, no per-subsystem docs directory). It is the step
 *before* a seed exists — it manufactures the raw material a human then hardens into one.
 
 Redirect in two cases:
 
-- **A seed already exists** (`.agents/architect/` is present) → this is not an onramp; it is a
+- **A seed already exists** (`.handbook/design/` is present) → this is not an onramp; it is a
   drift question. Point the user to `/architect reconcile` (compare the code against the standing
   seed) instead. Re-extracting over a live seed would just relaunder the code's current shape back
   over curated design.
@@ -60,12 +60,12 @@ system per identifiable code unit — and build the seam graph from **cross-refe
 system: the code unit(s) it covers, and the neighbors it touches. This inventory is what Step 4
 drafts against and what the gap report (Step 5) reasons over.
 
-## 4. Draft the seed shape (descriptive) — under `.records/design-draft/`
+## 4. Draft the seed shape (descriptive) — under `.records/design/draft/`
 
 Mirror the seed's shape so the draft is *foldable* later, but write it all under
-`.records/design-draft/`, **never** `.agents/architect/`. Every file carries the provisional stamp.
+`.records/design/draft/`, **never** `.handbook/design/`. Every file carries the provisional stamp.
 
-- **Per system**, draft `.records/design-draft/src/<system>.md` on the two-tier
+- **Per system**, draft `.records/design/draft/src/<system>.md` on the two-tier
   `templates/system-spec.md` shape, but read the tiers *descriptively*:
   - **Contract (apparent, not binding):** the purpose, invariants, seams, and behavior the code
     *appears* to guarantee — phrased as observation ("the code enforces…", "callers appear to rely
@@ -79,7 +79,7 @@ Mirror the seed's shape so the draft is *foldable* later, but write it all under
     inferable gate (an existing test suite, a determinism check). Do **not** invent acceptance
     criteria from the implementation — fabricated acceptance is worse than an honest gap, and an
     un-inferable gate is a Step 5 finding.
-- **The spine**, inferred from code into `.records/design-draft/`:
+- **The spine**, inferred from code into `.records/design/draft/`:
   - `VISION.md` — the product's apparent north star, inferred from what the code as a whole does.
     This is the weakest inference (code shows *what*, rarely *why*) — flag it loudly as provisional.
   - `PHILOSOPHY.md` — cross-cutting patterns that recur across **≥2 systems** in the inventory (the
@@ -93,7 +93,7 @@ Mirror the seed's shape so the draft is *foldable* later, but write it all under
 
 ## 5. Sufficiency-gap report — the honest deliverable
 
-Alongside the draft, write `.records/design-draft/SUFFICIENCY-GAPS.md`: the record of *what
+Alongside the draft, write `.records/design/draft/SUFFICIENCY-GAPS.md`: the record of *what
 hardening must resolve* before this draft can become a seed. This is the part that keeps `extract`
 honest — the draft says "here is what exists"; the gap report says "here is what a rebuild would have
 to guess." For each system, list:
@@ -112,9 +112,9 @@ Frame this list as the sufficiency-failure ledger, not a to-do afterthought: per
 ## 6. Hand off to hardening — extract stops here
 
 `extract` produces the draft and the gap report; it does **not** produce a seed. The path from draft
-to real `.agents/architect/` seed runs through two steps `extract` explicitly hands off:
+to real `.handbook/design/` seed runs through two steps `extract` explicitly hands off:
 
-1. **Human editorial pass** over `.records/design-draft/` — resolving the gap report's findings,
+1. **Human editorial pass** over `.records/design/draft/` — resolving the gap report's findings,
    replacing "appears to" observations with decided intent, filling or accepting each placeholder
    acceptance. This is the step that breaks the circularity: a human deciding what the design *should*
    guarantee, not the code dictating what it *happens* to do.
@@ -123,7 +123,7 @@ to real `.agents/architect/` seed runs through two steps `extract` explicitly ha
    semantic sufficiency proof no script can substitute for.
 
 Only after both does the hardened draft fold into the seed — via `/architect init` in **migrate
-mode**, with `.records/design-draft/` as the source material `init` reshapes into `.agents/architect/`.
+mode**, with `.records/design/draft/` as the source material `init` reshapes into `.handbook/design/`.
 State this path in the report; do not run it — `extract` stops at the draft + gap report.
 
 ## 7. Report + commit
@@ -133,7 +133,7 @@ stamped (with `VISION`'s inference flagged as weakest), the headline entries of 
 the explicit next step (human editorial → read-test → `/architect init` migrate-mode). Make the
 provisional nature unmissable: this is a draft to harden, not a seed to build against.
 
-Commit the draft outputs scoped and pathspec-atomic (only the `.records/design-draft/` paths written
+Commit the draft outputs scoped and pathspec-atomic (only the `.records/design/draft/` paths written
 this run), no `Co-Authored-By` trailer.
 
 ## Discipline this verb carries

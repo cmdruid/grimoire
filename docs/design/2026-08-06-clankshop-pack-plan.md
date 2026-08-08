@@ -674,21 +674,21 @@ decomposition; renaming them during build is a task-local call, adding a third i
 **Files:** Modify `skills/architect/SKILL.md`, `skills/architect/verbs/reconcile.md`, verb files
 per manifest. (`verbs/calibrate.md` is deleted in Task 2.11's commit, when its successor exists.)
 
-- [ ] Paths: tends `.handbook/design/` + `.records/design/` (with `design/draft/` transient:
+- [x] Paths: tends `.handbook/design/` + `.records/design/` (with `design/draft/` transient:
   born at `extract`, consumed by `init` migrate-mode, **archived on consumption** to
   `design/draft/archive/`); role-contract re-framing (direct references legal; tend-don't-own).
 - [ ] `calibrate`'s dissolution — the verb file, its Verbs-table row, description sentence, edges
   consumes clause, and `distill`'s seam-line revert ("external signal arrives as
   calibrator-routed improvement items") — executes **in Task 2.11's commit**: the calibrator
   must exist first.
-- [ ] Conform `reconcile`'s report writing (a live third writer into `.records/reports/`,
+- [x] Conform `reconcile`'s report writing (a live third writer into `.records/reports/`,
   `verbs/reconcile.md:107`) to Appendix L: namespace `reconcile-<date>-<slug>.md`, the
   frontmatter floor (`type: reconcile`, `id`, `date`, `source`), the collision rule.
-- [ ] Unstamped conduct: `init`/`extract` keep their Appendix H writer rows; every other
+- [x] Unstamped conduct: `init`/`extract` keep their Appendix H writer rows; every other
   architect verb is read-only on an unstamped root — emit `unstamped`, point at the onramps.
   `init`'s door registration rewrites to the pack-style block (Appendix G's door-block
   protocol — no path-SHA stamp, no `Edges:`).
-- [ ] Verify: lint; manifest rows. Commit.
+- [x] Verify: lint; manifest rows. Commit.
 
 ### Task 2.10: Auditor — conforming edits
 

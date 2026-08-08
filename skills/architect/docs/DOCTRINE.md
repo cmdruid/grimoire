@@ -1,8 +1,8 @@
-# The `/architect` doctrine — the `.agents/architect/` seed methodology
+# The `/architect` doctrine — the `.handbook/design/` seed methodology
 
 This is the portable methodology every verb links to. It encodes the founding
 design spec as durable doctrine;
-project-specific content (a project's actual `.agents/architect/` folder) never lives here.
+project-specific content (a project's actual `.handbook/design/` folder) never lives here.
 
 ## Two temporal kinds of doc
 
@@ -14,7 +14,7 @@ this system exists to cure:
 | Tense | past ("we decided to change X→Y") | present ("this is how it **is**") |
 | Good for | building *forward*, incrementally | *regenerating* from a clean seed |
 | Failure mode | superseding-chains → scar debt | — |
-| Home | `.records/` (ADRs, plans) — operational | `.agents/architect/` — the seed |
+| Home | `.records/` (ADRs, plans) — operational | `.handbook/design/` — the seed |
 
 **The ADR-smear disease:** a project's authoritative present-tense truth ends up smeared across a
 stack of past-tense decisions — to know how a system works *today*, an agent has to read ADR N
@@ -31,22 +31,22 @@ The seed is organized along a durability gradient, encoded in directory depth: s
 deep is disposable.
 
 ```
-MOST DURABLE   .agents/architect/VISION.md        — what the product IS (north star)
-   ▲           .agents/architect/PHILOSOPHY.md    — core ideals ("seeds are sacred")     required spine
-   │           .agents/architect/GLOSSARY.md      — shared vocabulary                    (presence-checked
-   │           .agents/architect/MAP.md           — system index + seam graph             by /architect check)
-   │           .agents/architect/src/<system>.md  · CONTRACT tier    — binding invariants, behavior, seams
+MOST DURABLE   .handbook/design/VISION.md        — what the product IS (north star)
+   ▲           .handbook/design/PHILOSOPHY.md    — core ideals ("seeds are sacred")     required spine
+   │           .handbook/design/GLOSSARY.md      — shared vocabulary                    (presence-checked
+   │           .handbook/design/MAP.md           — system index + seam graph             by /architect check)
+   │           .handbook/design/src/<system>.md  · CONTRACT tier    — binding invariants, behavior, seams
    ▼                                    · REFERENCE-ARCH  — current shape, DISPOSABLE (a snapshot)
 LEAST DURABLE
 ```
 
-- **Spine at `.agents/architect/` root** is the "constitution" that *governs* the compile (like a repo's
+- **Spine at `.handbook/design/` root** is the "constitution" that *governs* the compile (like a repo's
   README/LICENSE/config). It is not itself compiled to code, and it is **required, not
   optional** — `/architect check` fails if `VISION`, `PHILOSOPHY`, `GLOSSARY`, or `MAP` is missing.
   The spine is what makes radical change *safe*: you can rewrite everything about one system
   without renegotiating a durable tenet like "seeds are sacred."
-- **`.agents/architect/src/`** holds the compilable source specs, roughly 1:1 with code units. The compile
-  metaphor is exact: `.agents/architect/src/<system>.md` is to `src/<code>` as a source file is to its build
+- **`.handbook/design/src/`** holds the compilable source specs, roughly 1:1 with code units. The compile
+  metaphor is exact: `.handbook/design/src/<system>.md` is to `src/<code>` as a source file is to its build
   artifact — the spec is the durable input, the code is the disposable output regenerated from it.
 - Depth tracks durability because it tracks *how much a single revision can invalidate*. A change
   to `VISION.md` reshapes everything below it; a change to one `src/<system>.md` reference-arch
@@ -54,7 +54,7 @@ LEAST DURABLE
 
 ## The two-tier system spec
 
-Each `.agents/architect/src/<system>.md` carries two tiers with different authority:
+Each `.handbook/design/src/<system>.md` carries two tiers with different authority:
 
 - **CONTRACT (binding).** Purpose, invariants, interfaces/seams, behavior, acceptance criteria,
   and the *why* behind hard constraints. This is law: a rebuild reads the contract — including its
@@ -79,7 +79,7 @@ seams included — in the contract tier, where a rebuild cannot accidentally ski
 > You do not need a special "rebuild mode" or a fresh-context discipline to escape rotten code's
 > incremental bias — if the rotten code is *gone*, there is nothing to inherit. The magic is not
 > in the build; it is in the *prep that precedes it*. Code is the disposable **build output** of
-> `.agents/architect/`.
+> `.handbook/design/`.
 
 This is made **structural**, not a rule to police, by running the clear and the build as **two
 independent `/feature` executions**:
@@ -119,7 +119,7 @@ define it by the altitude it operates at.
 > `/architect brainstorm|plan` mutate **the seed itself** (the foundation you later regenerate code
 > from). *Changing the foundation → `/architect`. Building on it → `/feature`.*
 
-`/architect`'s own non-seed wiring (for example, updating a host's doc-linter when a folder moves) is
+`/architect`'s own non-seed wiring (for example, updating a host's doc tooling when a folder moves) is
 a **handoff to `/foreman` or `/feature`**, not done by `/architect` itself — that is code/operational
 work, not seed authoring.
 
@@ -173,7 +173,7 @@ the intended design → a defect for the caller to fix) — and *recommends*, hu
 **never patches the seed and never touches code**: a seed edit is the human's or `distill`'s to make
 on the recommendation, a code fix is the caller's. And it **writes only `.records/`** — the drift
 report is a deliverable *about* the design, never the design itself (§ Deliverables in `.records/`,
-seed in `.agents/architect/`). This is distinct from `/auditor`, which judges code *quality*;
+seed in `.handbook/design/`). This is distinct from `/auditor`, which judges code *quality*;
 `reconcile` judges design *conformance* — whether code and seed still agree.
 
 ## Extraction — the brownfield onramp
@@ -186,7 +186,7 @@ is **descriptive, never prescriptive**, and keeping that distinction sharp is th
 - **Descriptive** — a *map of what the code appears to do*. Contracts phrased as observation ("the
   code enforces X", "callers appear to rely on Y"), not as law.
 - **Prescriptive** — a binding seed that *dictates* what a rebuild must guarantee. This is what
-  `.agents/architect/` holds, and `extract` **cannot** produce it directly.
+  `.handbook/design/` holds, and `extract` **cannot** produce it directly.
 
 The reason is the **circularity trap** (§ Sufficiency, and its circularity): a seed reverse-engineered
 from code and then used to regenerate that code proves only reverse-engineering skill — never that
@@ -201,23 +201,23 @@ sufficiency discipline exists to break. So `extract`'s output is honest about it
 
 A draft becomes a seed only through a **hardening** step `extract` hands off and does not perform: a
 human editorial pass (deciding intended design, resolving the gap report) **then** the fresh-agent
-read-test (§ Sufficiency) — and only then a fold into `.agents/architect/` via `/architect init`
+read-test (§ Sufficiency) — and only then a fold into `.handbook/design/` via `/architect init`
 migrate-mode. The human deciding what the design *should* guarantee is what breaks the circle; the
 code deciding what it *happens* to do is what keeps a raw extraction circular.
 
-## Deliverables in `.records/`, seed in `.agents/architect/`
+## Deliverables in `.records/`, seed in `.handbook/design/`
 
 There are two homes, and the write-boundary between them is a hard rule, not a convention:
 
 | | **The seed** | **Deliverables** |
 |---|---|---|
-| Home | `.agents/architect/` | `.records/` (e.g. `.records/design-draft/`) |
+| Home | `.handbook/design/` | `.records/` (e.g. `.records/design/draft/`) |
 | Status | curated, present-tense, binding | provisional analysis / working artifacts |
 | Mutated by | `init`, `distill`, human editorial **only** | `extract`, `reconcile` (and other analysis verbs) |
 
 **`extract` and `reconcile` write only `.records/`.** They produce analysis *about* the design — a
 recovered draft, a drift report — which is a deliverable, not the design itself. Letting an analysis
-verb write into `.agents/architect/` would relaunder the code's current shape back over curated
+verb write into `.handbook/design/` would relaunder the code's current shape back over curated
 design, reintroducing exactly the "code is the source of truth" inversion the seed exists to invert
 (§ Two temporal kinds of doc; the durability gradient). The seed is mutated only by the curated path:
 `init` (compile/migrate), `distill` (collapse change-records), and direct human editorial. This is

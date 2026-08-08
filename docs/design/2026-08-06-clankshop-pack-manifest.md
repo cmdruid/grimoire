@@ -115,12 +115,12 @@ legitimately retain every retired term (verified: 8 files hit `derive-seams` alo
 - [ ] `skills/foreman/scripts/foreman-health.sh` — `stale-refs` + `coverage` absorbed into
   chiropractor's scripts (destination tested first, then both subcommands deleted here) →
   Task 2.8
-- [ ] `skills/architect/SKILL.md` + `verbs/{extract,init,brainstorm,plan}.md` +
+- [x] `skills/architect/SKILL.md` + `verbs/{extract,init,brainstorm,plan}.md` +
   `docs/DOCTRINE.md` — paths (`.records/design-draft/` → `.records/design/draft/`, archived on
   consumption; seat/role-contract re-framing; `packs/clankshop` references; doc-linter
   re-point); `init`'s door registration → pack-style block (today `verbs/init.md:226` writes an
   `Edges:` body) → Task 2.9
-- [ ] `skills/architect/verbs/reconcile.md` — report writing conformed to the wire contract:
+- [x] `skills/architect/verbs/reconcile.md` — report writing conformed to the wire contract:
   `reconcile-<date>-<slug>.md` (today slug-less, line 107), frontmatter floor, collision rule →
   Task 2.9
 - [ ] `skills/auditor/{SKILL.md,BOOTSTRAP.md}` — seat path → `.agents/roles/auditor/`;

@@ -18,7 +18,7 @@ runbook's — `packs/clankshop.md` + `docs/DOCTRINE.md`.)
 If the question in front of you is "how should we build feature X" — even a gnarly, cross-cutting
 X — that's `/feature brainstorm`. If the question is "is the tenet/contract/seam X *builds on*
 still correct" — that's here. When in doubt, ask: *does the answer to this question change what
-`.agents/architect/` says is durably true, or does it only change what gets built on top of what's already
+`.handbook/design/` says is durably true, or does it only change what gets built on top of what's already
 durably true?* The former is this verb; the latter is `/feature`'s.
 
 ## Explicitly licensed: alpha, hard-cut
@@ -42,14 +42,14 @@ the candidate change against counter-examples, and pressure-tests whether it's a
 rather than a one-off preference. What it must not borrow is that skill's terminal artifact: a
 generic brainstorming session ends in a feature idea or a design write-up handed off for planning.
 `/architect brainstorm` ends in an **edited standing spec** — a diff to a file already living under
-`.agents/architect/` (or a new `.agents/architect/src/<system>.md` if the session concludes a system needs to exist that
+`.handbook/design/` (or a new `.handbook/design/src/<system>.md` if the session concludes a system needs to exist that
 doesn't yet). If a session's conclusion is "here's a feature to build," that conclusion belongs to
 `/feature brainstorm`, not here — don't let this verb's report stand in for that one.
 
 ## Procedure
 
 1. **Name the altitude target before opening the dialogue.** One of: a `PHILOSOPHY.md` tenet
-   (add, revise, or retire one), a system's `CONTRACT` tier in `.agents/architect/src/<system>.md`, a seam
+   (add, revise, or retire one), a system's `CONTRACT` tier in `.handbook/design/src/<system>.md`, a seam
    recorded in `MAP.md`'s seam graph, or `VISION.md`'s north star / pillars / non-goals. Read the
    current text of that target and its immediate neighbors (a tenet's sibling tenets; a contract's
    `MAP.md` row and the systems it depends on) before proposing a change to it — you cannot judge
@@ -65,7 +65,7 @@ doesn't yet). If a session's conclusion is "here's a feature to build," that con
 
 3. **Land the terminal artifact as a seed edit.** Write the change directly into the target file:
    a revised tenet line in `PHILOSOPHY.md`, a revised `## Contract (BINDING)` section in
-   `.agents/architect/src/<system>.md`, an updated seam-graph entry in `MAP.md`, or a revised section of
+   `.handbook/design/src/<system>.md`, an updated seam-graph entry in `MAP.md`, or a revised section of
    `VISION.md`. This is a document edit, performed directly, same as `init`'s Step 5 — not a
    proposal handed elsewhere for someone else to make. If the target file doesn't exist yet (a
    brand-new system the brainstorm concluded should exist), create it from
