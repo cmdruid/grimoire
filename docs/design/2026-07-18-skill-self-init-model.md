@@ -1,6 +1,10 @@
 # Skill Self-Init & Typed Edges — Model & Pilot Plan
 
-**Status:** Implemented (2026-07-19, as of Phase 5/`0db26cf`). Companion to
+**Status:** Implemented (2026-07-19, as of Phase 5/`0db26cf`). **Superseded in part (2026-08-08)**
+by the clankshop pack design (`docs/design/2026-08-06-clankshop-pack.md`): pack **core members**
+no longer carry typed edges or edge-derived seams — the pack's authored doctrine + runbook
+compose them; the model's provisions **stand for standalone skills and helpers** (the portable
+regime, `skills/skill-builder/docs/DOCTRINE.md` § Two regimes). Companion to
 `docs/design/2026-07-18-skill-self-initialization-roadmap.md` (this doc was that roadmap's **Phase 0**
 deliverable — the model the phases built). The tenet lives in `AGENTS.md` (last design-philosophy
 bullet); the vocabulary + seam table live in `packs/clankshop.md`; every skill's own `## Edges` block

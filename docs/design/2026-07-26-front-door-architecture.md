@@ -1,7 +1,11 @@
 # Front-door architecture — read-cost tiers + the compiled routing table
 
 **Status:** Implemented (2026-07-27); routing probe 4/4 (round 2, after sharpening foreman's check
-clause; round 1 was 3/4). Rollout surfaces are listed in §7.
+clause; round 1 was 3/4). Rollout surfaces are listed in §7. **Superseded in part (2026-08-08)** by
+the clankshop pack design per the agent-framework mechanics' reconciliation
+(`docs/design/2026-08-04-agent-framework.md` §10): the deployed doc-set composition it assumed is
+replaced by the pack's `.handbook/` projection; the read-cost tier rules and the compiled
+routing-table model are **preserved by construction** and live on in the pack's door profile.
 
 **Goal:** Bound what a session pays to discover its instructions. An agent's path from "I need to do
 X" to "the chunk of instructions for X" is a sequence of reads; this doc fixes the architecture that

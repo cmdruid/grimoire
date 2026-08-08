@@ -2,7 +2,10 @@
 
 **Status:** Implemented (2026-07-18) on branch `skill-boundaries-glue-ownership`. Routing-probe gate
 passed 12/12 against the thinned descriptions alone (fresh sub-agent); `skills-lint.sh` `fails=0` with
-the only check-7 WARN being the documented `mailbox → /delegate` fragment exception.
+the only check-7 WARN being the documented `mailbox → /delegate` fragment exception. **Superseded in
+part (2026-08-08)** by the clankshop pack design (`docs/design/2026-08-06-clankshop-pack.md`): pack
+**core members** follow the pack's authored composition and are exempt from the independence checks;
+the boundary/glue provisions **stand for standalone skills and helpers**.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to
 > implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.

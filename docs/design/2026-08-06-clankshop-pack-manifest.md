@@ -204,7 +204,7 @@ drain owner):
   doc-linter, calibrate language) → the pack model → Task 4.4
 - [x] `AGENTS.md` — the steward-inventory paragraph + typed-edge references (authored library
   doctrine; patient-zero forbids registration blocks, not doctrine prose) → Task 4.4
-- [ ] `docs/design/2026-07-18-skill-self-init-model.md`,
+- [x] `docs/design/2026-07-18-skill-self-init-model.md`,
   `2026-07-18-skill-boundaries-and-glue-ownership.md` (pack-member provisions superseded;
   helper provisions stand), `2026-07-26-front-door-architecture.md` (partial supersession per
   mechanics §10) — one status-line sentence each; `2026-07-27-steward-grammar.md` already

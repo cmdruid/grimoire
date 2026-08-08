@@ -977,8 +977,12 @@ and `2026-07-18-skill-boundaries-and-glue-ownership.md` (pack-member provisions 
 provisions stand), `2026-07-26-front-door-architecture.md` (partial supersession note per
 mechanics §10). `2026-07-27-steward-grammar.md` is already marked.
 
-- [ ] One status-line sentence each, citing the pack design. No other edits.
-- [ ] Verify: `git diff` shows status lines only. Commit.
+- [x] One status-line sentence each, citing the pack design. No other edits. *(Self-init model +
+  boundaries doc: pack-member provisions superseded, helper provisions stand (§ Two regimes
+  cited); front-door architecture: partial supersession per mechanics §10, with the read-cost
+  tier rules + compiled-table model noted as preserved by construction.)*
+- [x] Verify: `git diff` shows status lines only. Commit. *(Diffstat: three files, status-block
+  lines only.)*
 
 ### Task 4.6: Phase 4 gate
 
