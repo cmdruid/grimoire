@@ -158,14 +158,14 @@ drain owner):
   / GOTCHAS / `PLANNING.md` references → new homes → Task 3.1
 - [x] `skills/feature/docs/ideal-use.md` — teaches typed-edge continuation at HEAD — rewritten
   to the pack seam (also swept by 4.2's assert) → Task 3.1
-- [ ] `skills/workstream/SKILL.md`, `verbs/{ship,close,create,sync}.md`, `flow.md`,
+- [x] `skills/workstream/SKILL.md`, `verbs/{ship,close,create,sync}.md`, `flow.md`,
   `templates/{coordinator,debug,design,workstream-handoff}.md` — old-layout hits
   (`.agents/foreman`, `MEMORY.md`, `.records/archive` → per-store archiving + `.records/done/`,
   doc-linter prose, PLANNING/ROUTING references); `ship` calls `backlog done` per shipped item
   + writes its own done-record; stamped-only guard → Task 3.2
-- [ ] `skills/foreman/templates/done-record.md` — **deleted** (deferred from Task 2.1;
+- [x] `skills/foreman/templates/done-record.md` — **deleted** (deferred from Task 2.1;
   `ship.md`'s reference re-pointed to backlog's copy in the same commit) → Task 3.2
-- [ ] `skills/workstream/scripts/workstream-git.sh` — reads `records-root` (the variable keeps
+- [x] `skills/workstream/scripts/workstream-git.sh` — reads `records-root` (the variable keeps
   its exact contract) — **no change** beyond path verification in 3.2's sweep → Task 3.2
 - [ ] `skills/handoff/SKILL.md` — two ratified path edits (locate by content): durable-record
   pointer `.records/archive/` → `.records/done/`; Pointers row `.agents/foreman/README.md` →

@@ -790,12 +790,12 @@ remove chiropractor's `## Calibrate` surfaces (per Tasks 2.5/2.8/2.9).
 the workstream templates + scripts named by their manifest rows (the sweep found old-layout hits
 across all of these, not just `ship.md`); delete `skills/foreman/templates/done-record.md`.
 
-- [ ] `ship` calls **`backlog done` per shipped item** *and* writes its own full done-record file
+- [x] `ship` calls **`backlog done` per shipped item** *and* writes its own full done-record file
   → `.records/done/` (Appendix C writer map); per-store archiving (`<store>/archive/`, no
   top-level archive); path updates; stamped-only guard.
-- [ ] Update `ship.md`'s done-record template reference to backlog's copy and **delete
+- [x] Update `ship.md`'s done-record template reference to backlog's copy and **delete
   `skills/foreman/templates/done-record.md`** (the deletion Task 2.1 deferred here).
-- [ ] Verify: manifest rows; lint. Commit.
+- [x] Verify: manifest rows; lint. Commit.
 
 ### Task 3.3: Helpers — verify untouched
 

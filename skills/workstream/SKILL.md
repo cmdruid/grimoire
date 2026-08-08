@@ -83,6 +83,12 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 | `close` | `verbs/close.md` | `verbs/ship.md` (if WIP ships) | tear the stream down | root |
 | `status` | `verbs/status.md` | — | list active workstreams (read-only) | anywhere |
 
+## Unstamped conduct
+
+Every workstream verb is **read-only on an unstamped root**: emit `unstamped`, point at the
+clankshop onramps (the pack face's `setup` / `migrate`), and stop. A stream drives the lanes and
+records of a stamped system; workstream is not a pre-stamp writer.
+
 ## Discipline (applies to EVERY verb — non-negotiable)
 
 - **cwd-independent.** Every git command uses `git -C <path>`; every file op uses an **absolute**
@@ -105,7 +111,7 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 - **The live hand-off never merges.** It lives at `.workstreams/<stream>/WORKSTREAM.md`. The
   `.workstreams/` .gitignore hides it from the **main** checkout; `create` ALSO adds it to the
   worktree's own `info/exclude` so it's ignored from **inside** the worktree too. Durable records
-  (the feature's `.records/archive/` entry, plan-archive, roadmap-ledger row, ADR) are committed **on the
+  (the feature's `.records/done/` record, plan-archive, roadmap-ledger row, ADR) are committed **on the
   branch** and reach the trunk through the ff-merge — not hand-committed to the root.
 - **No remote.** Integrate locally against the workstream's `<target>` (Coordinates
   `integration-target`): `git -C <worktree> rebase <target>` + a by-ref advance of `<target>`
@@ -114,7 +120,7 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
   passes through the *one* root index, and `git commit` records the **entire** index — not just what
   you `git add`'d this turn — so a sibling staging concurrently gets swept into your commit (ISSUES
   W1). Two rules: **(1) Don't hand-commit a stream's own records to the root at all** — the feature's
-  `.records/archive` entry, plan-archive, and roadmap-ledger row commit **on the branch** and reach the trunk
+  `.records/done/` record, plan-archive, and roadmap-ledger row commit **on the branch** and reach the trunk
   via the **ff-merge**, the single root mutation (and `--ff-only` fails safe: rejected → re-`sync` +
   retry). **(2) For the few commits that must touch the root** (`/backlog debrief`'s captures — `create`
   seeds its plan **on the branch**, and `close` writes nothing), stage **and** commit in **one** tool call scoped with an

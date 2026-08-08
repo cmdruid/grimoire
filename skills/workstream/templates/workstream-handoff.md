@@ -99,7 +99,7 @@ at HEAD. Pointer-heavy by design (paths/IDs rot gracefully; pasted code rots sil
 - **Files / module map:** `<src/path>` — <one-line role>; key entry points + where systems register.
 - **ADRs / design docs:** `<.records/adr/...>`, `<project: design docs>` — the decisions governing this domain.
 - **Tests / scenarios:** `<unit-test modules>`, `<project: E2E/scenario files>` — what exercises this domain.
-- **Gotchas / invariants:** the `.agents/foreman/docs/GOTCHAS.md` traps + `.agents/foreman/MEMORY.md` invariants that bite here.
+- **Gotchas / invariants:** the `.handbook/rules/GOTCHAS.md` traps + `.handbook/rules/INVARIANTS.md` invariants that bite here.
 
 ## Queue state
 <Current feature; features shipped; **features completed-but-unshipped** (accumulated on the branch
