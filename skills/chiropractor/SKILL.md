@@ -1,6 +1,6 @@
 ---
 name: chiropractor
-description: The docs-quality role. Use when a project's agent-facing docs have drifted or were never tuned for agents -- broken links/stale paths, a bloated AGENTS.md/CLAUDE.md front door, duplicated or contradictory docs, hard-to-navigate onboarding. Framework-aware -- it knows `.handbook/`, `.records/`, and the front door directly -- and owns the document side of the quality fact partition (entry conformance, citation resolution, budgets, link/path health, navigability, read-cost, affordance), with findings written to the report store. Use when asked to audit/align/prune/tune docs, fix doc drift, or make docs more agent-friendly. Also `/chiropractor calibrate` drains captured doc-flavored dev-experience signal (tracker entries about the docs, or entries handed inline) into targeted spine fixes.
+description: The docs-quality role. Use when a project's agent-facing docs have drifted or were never tuned for agents -- broken links/stale paths, a bloated AGENTS.md/CLAUDE.md front door, duplicated or contradictory docs, hard-to-navigate onboarding. Framework-aware -- it knows `.handbook/`, `.records/`, and the front door directly -- and owns the document side of the quality fact partition (entry conformance, citation resolution, budgets, link/path health, navigability, read-cost, affordance), with findings written to the report store. Use when asked to audit/align/prune/tune docs, fix doc drift, or make docs more agent-friendly.
 ---
 
 # chiropractor
@@ -21,8 +21,9 @@ facts** -- installation stamps, projections vs their inputs, cross-store foreign
 registration -- are the pack face's `check`, never duplicated here. One validator per fact.
 
 **Verbs.** Bare `/chiropractor` (or `audit`) runs the adaptive flow below — the default.
-`/chiropractor calibrate` is the drain verb (see *Calibrate*, below): captured doc-flavored
-signal in, targeted fixes out, reusing the same diagnose → adjust machinery.
+Captured doc-flavored dev-experience signal reaches this role as **calibrator-routed improvement
+items** (accepted doc-drift findings, doc-flavored tracker entries the loop dispatches); each is
+applied as a focused diagnosis + a normal Adjust with the usual confirmation gate.
 
 ## When to Use
 - Auditing docs for drift (broken links, stale paths, contradictions) or agent-friendliness.
@@ -313,32 +314,6 @@ empty). Report any findings that did not resolve.
 
 ---
 
-## Calibrate — drain doc-flavored signal
-
-`calibrate` turns captured dev-experience signal *about the docs* — "the front door is bloated,"
-"I couldn't find X," "doc Y contradicts doc Z" — into targeted spine fixes, reusing the audit
-machinery: each signal entry becomes a focused diagnosis (which rubric dimension does it
-indict?), then a normal Adjust with the usual confirmation gate.
-
-**Signal source — an optional ladder, portability preserved:**
-
-1. A **tracker the repo's own front door names** (a feedback/issues store): read it and take the
-   slice that is about the docs. Entries are consumed by content; this skill assumes no
-   particular tracker shape or owner.
-2. **Entries handed inline** in the invocation ("calibrate: the onboarding path loses agents at
-   the third hop").
-3. **Neither present:** report "no captured signal found" and offer the plain audit instead. A
-   repo with no trackers loses nothing.
-
-**The pass:** (1) collect the doc-flavored slice; (2) for each entry, map it to the dimension(s)
-it indicts and confirm against the current spine (scan facts or a targeted read) — a complaint
-may already be fixed, or may indict doctrine content rather than doc form (out of scope; hand it
-back to the caller); (3) batch the confirmed items into Adjust (mechanical vs. structural, same
-gates); (4) record, per entry acted on, what changed — the caller clears or updates the source
-entries (this skill does not curate another store). Re-scan to verify, as Adjust always does.
-
----
-
 ## Boundaries
 
 - **A role of the pack, still spine-generic.** The scanner consumes the pack face's shared
@@ -358,11 +333,10 @@ Chiropractor's **typed edges** -- its place in a workflow declared as artifact *
 sibling names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A
 **steward with no private home**: it maintains the repo's *own* doc spine in place (read-only by
 default; its output is a conversational report + in-place doc fixes, not a typed artifact another
-skill drains). Produces and handoff are a *stated* empty (model §2.3), not an omission;
-`calibrate` adds the one optional consumes.
+skill drains). Produces and handoff are a *stated* empty (model §2.3), not an omission.
 
 <!-- edges:chiropractor -->
 - produces: — (in-place doc fixes + a conversational report, not a typed artifact)
 - handoff: — (no baton; the fixes land directly, the report ends the pass)
-- consumes: tracker-entry — optional: `calibrate` drains captured doc-flavored signal when a tracker exists; the audit flow consumes nothing
+- consumes: — (none; the audit flow consumes nothing — routed improvement items arrive as ordinary work, not a typed edge)
 <!-- /edges:chiropractor -->

@@ -135,12 +135,12 @@ legitimately retain every retired term (verified: 8 files hit `derive-seams` alo
 All four execute **in Task 2.11's commit** (the calibrator must exist first — no window with no
 drain owner):
 
-- [ ] `skills/foreman/verbs/calibrate.md` — deleted → Task 2.11
-- [ ] `skills/architect/verbs/calibrate.md` + its SKILL.md Verbs-table row, description
+- [x] `skills/foreman/verbs/calibrate.md` — deleted → Task 2.11
+- [x] `skills/architect/verbs/calibrate.md` + its SKILL.md Verbs-table row, description
   sentence, edges consumes clause, and `distill`'s seam-line revert → Task 2.11
-- [ ] `skills/chiropractor/SKILL.md` — the `## Calibrate` section, its description sentence, the
+- [x] `skills/chiropractor/SKILL.md` — the `## Calibrate` section, its description sentence, the
   `tracker-entry (optional)` consumes line → Task 2.11
-- [ ] `skills/skill-builder/verbs/calibrate.md` + SKILL.md references — the toolmaker's own
+- [x] `skills/skill-builder/verbs/calibrate.md` + SKILL.md references — the toolmaker's own
   doctrine-distillation verb, **outside the pack** — **no change** (verified when 2.11 lands:
   the calibrate-grammar supersession covers pack members only)
 - [ ] `packs/clankshop.md` — the four 2026-07-28 drain seam rows (`backlog ↔ chiropractor`,

@@ -1,6 +1,6 @@
 ---
 name: foreman
-description: "The change ROUTER and rulebook steward. `/foreman` (no arg, or a change description) classifies a bug/patch/feature/spike — or a seed-altitude design change — and dispatches it to the lane that owns it; the deployed routing chapter (`.handbook/rules/ROUTING.md`) is the source of truth, and foreman tends it: the rules/ and workflows/ chapters, the compiled routing table (recompiled on change), the run log, and the promotion bar at dispatch (escalation hands off to the records instrument). `/foreman calibrate` drains the operational slice of captured dev-experience signal into the rulebook. Read-only on an unstamped root — the pack onramps stand systems up. Use when the user runs `/foreman ...` or asks where a change starts."
+description: "The change ROUTER and rulebook steward. `/foreman` (no arg, or a change description) classifies a bug/patch/feature/spike — or a seed-altitude design change — and dispatches it to the lane that owns it; the deployed routing chapter (`.handbook/rules/ROUTING.md`) is the source of truth, and foreman tends it: the rules/ and workflows/ chapters, the compiled routing table (recompiled on change), the run log, and the promotion bar at dispatch (escalation hands off to the records instrument). Operational improvement items arrive calibrator-routed and are applied here as ordinary rulebook work. Read-only on an unstamped root — the pack onramps stand systems up. Use when the user runs `/foreman ...` or asks where a change starts."
 ---
 
 # foreman — the operations role: route the change, tend the rulebook
@@ -22,18 +22,19 @@ memory.
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
 | `/foreman` *(no arg, or a change description)* | `verbs/route.md` | **Router** — classify a change, apply the promotion bar, dispatch to its lane; tend the walk + recompile the table on change | "where do I start?", "I'm about to change X" |
-| `/foreman calibrate` | `verbs/calibrate.md` | Drain the operational slice of captured dev-experience signal into the rulebook chapters (the curation loop) | "calibrate the dev system", "the workflow keeps tripping me" |
 
 **Default (no recognized verb):** treat the argument as a change description and run
 `verbs/route.md`. `/foreman init` does **not** exist; on an unstamped root every foreman verb is
-**read-only** — emit `unstamped` and point at the clankshop onramps.
+**read-only** — emit `unstamped` and point at the clankshop onramps. Captured signal about the
+rulebook reaches foreman as **calibrator-routed improvement items**, applied here as ordinary
+chapter work — there is no separate drain verb.
 
 ## Shared discipline (every verb relies on this — stated here once)
 
 - **Resolve root + real date.** Project-relative paths; resolve the root from a project dir the
   conversation references, else cwd, else ask. Get the date with `date +%Y-%m-%d` — never guess it.
 - **Scripts compute facts; the verb prose decides.** The verb files (and this router) carry the
-  *judgment* — how to classify a change, whether drift is real, which signal earns a chapter edit.
+  *judgment* — how to classify a change, whether drift is real, how a routed improvement lands.
   The bundled scripts do only the deterministic, mechanical work: the **read-only** fact script
   `scripts/foreman-health.sh` (`derive-seams`) and the **mutating
   mechanical helper** `scripts/scoped-commit.sh` (the atomic pathspec-scoped commit — it mutates
@@ -68,5 +69,5 @@ names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` �
 <!-- edges:foreman -->
 - produces: — (none; the routing dispatch is mechanism, not a typed edge)
 - handoff: — (none; `route`'s dispatch is mechanism, not a control-flow baton)
-- consumes: tracker-entry, audit-finding — `calibrate` drains captured signal and audit findings
+- consumes: — (none; routed improvement items arrive as ordinary work, not a typed edge)
 <!-- /edges:foreman -->

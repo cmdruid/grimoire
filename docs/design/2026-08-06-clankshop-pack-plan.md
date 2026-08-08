@@ -664,7 +664,7 @@ decomposition; renaming them during build is a task-local call, adding a third i
   unstamped root: read-only — emit `unstamped`, point at the onramps (Appendix H). Bundles
   `skills/chiropractor/templates/doc-drift.md` (the Appendix L shape — the other successor of
   `foreman/templates/report.md`).
-- [ ] The `## Calibrate` section, its description sentence, and the `tracker-entry (optional)`
+- [x] The `## Calibrate` section, its description sentence, and the `tracker-entry (optional)`
   consumes line (steward-grammar surfaces; manifest rows) are removed **in Task 2.11's commit**,
   when the calibrator exists — never before (no window with no drain owner).
 - [x] Verify: lint; probe spot-check "audit the docs" → chiropractor; manifest rows. Commit.
@@ -677,7 +677,7 @@ per manifest. (`verbs/calibrate.md` is deleted in Task 2.11's commit, when its s
 - [x] Paths: tends `.handbook/design/` + `.records/design/` (with `design/draft/` transient:
   born at `extract`, consumed by `init` migrate-mode, **archived on consumption** to
   `design/draft/archive/`); role-contract re-framing (direct references legal; tend-don't-own).
-- [ ] `calibrate`'s dissolution — the verb file, its Verbs-table row, description sentence, edges
+- [x] `calibrate`'s dissolution — the verb file, its Verbs-table row, description sentence, edges
   consumes clause, and `distill`'s seam-line revert ("external signal arrives as
   calibrator-routed improvement items") — executes **in Task 2.11's commit**: the calibrator
   must exist first.
@@ -712,29 +712,29 @@ contribution pass); modify `packs/clankshop.md` frontmatter (`skills:` + `core:`
 and `skills/architect/verbs/calibrate.md`, edit architect's SKILL.md rows + `distill` seam line,
 remove chiropractor's `## Calibrate` surfaces (per Tasks 2.5/2.8/2.9).
 
-- [ ] **Intake:** one pass over the frozen intake table (Appendix K) — the only scanner of those
+- [x] **Intake:** one pass over the frozen intake table (Appendix K) — the only scanner of those
   sources; paused entries always skipped. Non-tracker findings **materialized** as ID'd
   improvement items (Appendix K's artifact rule) before dispatch.
-- [ ] **Dispatch:** each item routes to the owning role as ordinary work, applied by that role's
+- [x] **Dispatch:** each item routes to the owning role as ordinary work, applied by that role's
   own expertise; the per-role calibrate verbs no longer exist (2.5/2.8/2.9 removed them).
-- [ ] **Uptake + closure:** verify the edit landed (chapter changed, check-green), then
+- [x] **Uptake + closure:** verify the edit landed (chapter changed, check-green), then
   `backlog done <id> --outcome drained`; source stamped (`processed:` for reports **and audit
   findings** — Task 2.10 adds the field to the finding shape); run log →
   `.records/logs/` (typed, beside foreman's).
-- [ ] **Downstream offer/apply:** for `upstream updated` / `upstream retired` facts from
+- [x] **Downstream offer/apply:** for `upstream updated` / `upstream retired` facts from
   `doctrine-diff.sh`, run Appendix J's offer gate; an **accepted** update is dispatched as an
   improvement item to the owning role, which applies it to its own chapter and re-stamps
   provenance (`@vN`) — the calibrator edits no chapter (tend-don't-own, pack §4.7); it verifies
   uptake and closes. This is the receiving half of the loop every *other* project runs when
   doctrine vNext ships (Task 5.4's round-trip fixture exercises it).
-- [ ] **Dissolve the per-role calibrate family in this commit** (the deferred steps of Tasks
+- [x] **Dissolve the per-role calibrate family in this commit** (the deferred steps of Tasks
   2.5/2.8/2.9) — the improvement loop has exactly one owner from this commit on, and never zero.
-- [ ] **Upstream contribution:** consume `doctrine-diff.sh` facts (Task 1.6); assemble evidence
+- [x] **Upstream contribution:** consume `doctrine-diff.sh` facts (Task 1.6); assemble evidence
   for a locally-proven rule; prepare the doctrine patch — **a human lands it**; the verb never
   writes the upstream library.
-- [ ] No seat, no chapters; boundary with backlog `curate` stated (list hygiene is the
+- [x] No seat, no chapters; boundary with backlog `curate` stated (list hygiene is the
   instrument's; signal *meaning* is the calibrator's).
-- [ ] Verify: lint (`README.md` inventory line in the same commit); lock updated; on an unstamped
+- [x] Verify: lint (`README.md` inventory line in the same commit); lock updated; on an unstamped
   root the calibrator is read-only (Appendix H's final row); a **repeated intake pass dispatches
   nothing already claimed**, and a **concurrent second pass** started mid-claim also dispatches
   nothing (the trunk-side claim commit is the serialization point — Appendix K's claim markers); a **two-finding report** with
