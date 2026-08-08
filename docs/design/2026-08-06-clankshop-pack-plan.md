@@ -539,28 +539,28 @@ integrated fixtures live).
 (frontmatter `optional:` + `skills:`), `README.md` (inventory lines for `bug`/`task`),
 `skills/clankshop/verbs/setup.md` (route its `RECORDS.md` step through the projection writer).
 
-- [ ] Re-frame prose to the **instrument contract** (pack §4.3): tool-like capture/books-keeping;
+- [x] Re-frame prose to the **instrument contract** (pack §4.3): tool-like capture/books-keeping;
   judgment about signal meaning belongs to the calibrator. No rename anywhere.
-- [ ] `rules/RECORDS.md` **projection writer**: backlog writes the deployed projection of the
+- [x] `rules/RECORDS.md` **projection writer**: backlog writes the deployed projection of the
   doctrine schema, stamped `built-against: clankshop-doctrine@<doctrine-version>` (Appendix A's
   `doctrine-version:` key is the input); drift is a clankshop-check fact (already in Task 1.5).
   **Wire the authority chain:** `skills/clankshop/verbs/setup.md` (Task 1.3) is amended to invoke
   `records-projection.sh` for its `RECORDS.md` step — backlog stays the sole schema-facing writer
   (pack §7.6), and a fixture asserts it (no other writer produces the file's stamp).
-- [ ] `TAXONOMY.md` reduced to a pointer at the doctrine's canonical schema (§7.6's authority
+- [x] `TAXONOMY.md` reduced to a pointer at the doctrine's canonical schema (§7.6's authority
   chain: doctrine → backlog executes → RECORDS.md projects; nothing else states the schema).
   `note`/`debrief` classifier retargeted to the INVARIANTS bar.
-- [ ] **Proxy alias skills** `bug` and `task`: one-line SKILL.md each, invoking `/backlog bug` /
+- [x] **Proxy alias skills** `bug` and `task`: one-line SKILL.md each, invoking `/backlog bug` /
   `/backlog task`; join the lock's `optional:` + `skills:` lines and `README.md`'s skill
   inventory in the same commit.
-- [ ] Re-point prose references to "the doc-linter" (TAXONOMY, verb files, ship-adjacent docs) at
+- [x] Re-point prose references to "the doc-linter" (TAXONOMY, verb files, ship-adjacent docs) at
   the deployed check chain (clankshop check / chiropractor facts) — no doc-linter implementation
   exists in this library (verified at review); the schema authority is the doctrine.
-- [ ] **Unstamped conduct, verb-by-verb** (the backlog matrix Appendix H's catch-all implies):
+- [x] **Unstamped conduct, verb-by-verb** (the backlog matrix Appendix H's catch-all implies):
   the five capture verbs lazily `init` (Appendix H's writer row); every other backlog verb —
   `ticket`, `promote`, `sync`, `close`, `done`, `curate`, `debrief` — refuses on an unstamped
   root: emit `unstamped`, point at the onramps. Task 5.3 exercises each of these by name.
-- [ ] Verify: routing probe spot-check — "file a bug" routes to `bug`/`backlog` cleanly; lint
+- [x] Verify: routing probe spot-check — "file a bug" routes to `bug`/`backlog` cleanly; lint
   (two new skill dirs pass); manifest rows checked. Commit.
 
 ### Task 2.5: Foreman — slim to routing + rulebook

@@ -56,18 +56,18 @@ legitimately retain every retired term (verified: 8 files hit `derive-seams` alo
   stays until Task 3.2 (live `workstream/verbs/ship.md:107` still references it) → Task 2.1
 - [x] `skills/backlog/verbs/curate.md` — ID stamping, duplicate-ID repair with aliases, ticket
   hygiene, aging resolved tickets → Task 2.2
-- [ ] `skills/backlog/SKILL.md` + verb prose — capture-bureau framing → the instrument contract
+- [x] `skills/backlog/SKILL.md` + verb prose — capture-bureau framing → the instrument contract
   (pack §4.3); unstamped conduct verb-by-verb (capture verbs lazily init; all others refuse) →
   Task 2.4
-- [ ] `skills/backlog/docs/TAXONOMY.md` — reduced to a pointer at the doctrine's canonical
+- [x] `skills/backlog/docs/TAXONOMY.md` — reduced to a pointer at the doctrine's canonical
   schema (doctrine is canonical from Task 0.2); escalation/wire content lives in the doctrine →
   Task 2.4
-- [ ] `skills/backlog/verbs/{note,debrief}.md` — the note-vs-`MEMORY.md` classifier retargeted
+- [x] `skills/backlog/verbs/{note,debrief}.md` — the note-vs-`MEMORY.md` classifier retargeted
   to the INVARIANTS bar → Task 2.4
-- [ ] `skills/backlog/*` prose references to "the doc-linter" (SKILL.md, TAXONOMY.md, verbs,
+- [x] `skills/backlog/*` prose references to "the doc-linter" (SKILL.md, TAXONOMY.md, verbs,
   `scripts/scoped-commit.sh` comment) — re-pointed at the deployed check chain (no linter
   implementation exists in this library) → Task 2.4
-- [ ] proxy alias skills `bug` / `task` — new one-line SKILL.mds; join the lock's `optional:` +
+- [x] proxy alias skills `bug` / `task` — new one-line SKILL.mds; join the lock's `optional:` +
   `skills:` lines and README's inventory in the same commit → Task 2.4
 
 ## Phase 2 — foreman (slim to routing + rulebook)

@@ -10,9 +10,10 @@ line on a tracker entry. Anything *to do* goes to its real home (a build item �
 problem → `/backlog issue`, a defect → `/backlog bug`), and anything about the **dev experience**
 (skills / tooling / workflow) goes to `/backlog feedback`.
 
-A note is **lower-bar than a `MEMORY.md` invariant.** `MEMORY.md` holds only the sacred, load-bearing
-rules the code doesn't already make obvious — a very high bar, and `/foreman` is what *promotes* a
-note into one. `/backlog note` just captures the fact; it never promotes.
+A note is **lower-bar than an INVARIANTS entry.** The deployed rules chapter
+(`.handbook/rules/INVARIANTS.md`) holds only universal load-bearing rules — a very high bar.
+Capture never promotes: landing a proven note there is improvement-loop work, dispatched to the
+rules steward. `/backlog note` just captures the fact.
 
 ## When to use
 
@@ -48,14 +49,14 @@ Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't g
 Each `notes/<slug>.md` follows `templates/note.md`: the frontmatter block, a `# <Title> — note`
 heading, a `_backs:_` line naming the tracker entry it backs, then the long-form context. A note is
 **subordinate** — it is linked from the entry it backs (a `tasks.md` line, an `issues.md` entry, a bug
-report, a `MEMORY.md` line), never left orphaned.
+report), never left orphaned.
 
 ## Procedure
 
 1. **Sanity check.** If there's nothing durable to capture — or it's actually actionable, or it's
    really about the dev experience — write no note (route it to its home) and say so.
 2. **Confirm the kind.** It's a project *fact*, not a follow-up and not dev-experience feedback; it's
-   worth remembering but below the `MEMORY.md` invariant bar.
+   worth remembering but below the INVARIANTS bar.
 3. **Slug** the note (short kebab). **Write** it to `.records/trackers/notes/<slug>.md` from
    `templates/note.md` — frontmatter block first, then the `_backs:_` line and the long-form context.
 4. **Link it** from the tracker entry it backs (fill the `related:` frontmatter and the entry's
@@ -64,7 +65,7 @@ report, a `MEMORY.md` line), never left orphaned.
    adding a near-duplicate.
 6. **Commit (standalone only).** Invoked **standalone**, scoped-commit the note + any linking entry in
    one step via `scripts/scoped-commit.sh <root> "Note: <short title>" <paths…>`, then run the host
-   doc-linter. Invoked **inside `/backlog debrief` or a `/foreman calibrate` sweep**, do **not** commit —
+   cheap doc gate if it has one. Invoked **inside `/backlog debrief` or a drain sweep**, do **not** commit —
    only write; the sweep makes the single atomic commit.
 7. **Report** the note title and the path.
 
@@ -72,8 +73,8 @@ report, a `MEMORY.md` line), never left orphaned.
 
 - **`/backlog debrief`** — the completion sweep across *all* trackers; it writes a `notes/` spillover
   file when an entry needs more than a line. `note` is the anytime, direct path to the same store.
-- **`/foreman`** promotes a durable fact into a `MEMORY.md` invariant when it earns that bar. Capture
-  is this verb's job; promotion is `/foreman`'s.
+- **The improvement loop** lands a proven fact in the rules chapters when it earns that bar.
+  Capture is this verb's job; promotion is the loop's.
 - **`/backlog task`**, **`/backlog issue`**, **`/backlog bug`**, **`/backlog feedback`** — the actionable and
   dev-experience homes; this verb is the durable project *fact* only.
 

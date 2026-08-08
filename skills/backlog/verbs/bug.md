@@ -1,8 +1,8 @@
 # `/backlog bug` — file an observed defect
 
 File an observed **defect** the right way, the moment it surfaces — so the repro survives even if
-you move on (or can't reproduce it later). Encodes `.agents/foreman/docs/ROUTING.md` → *When it's a bug* and
-the `.agents/foreman/docs/DIAGNOSTICS.md` playbook into one pass.
+you move on (or can't reproduce it later). Encodes the deployed routing chapter (`.handbook/rules/ROUTING.md`) → *when it’s a bug* and
+the `.handbook/testing/DIAGNOSTICS.md` playbook into one pass.
 
 A **bug** is an observed, reproducible defect: a crash, wrong render/output, dropped state, or flaky
 behavior. Anything that is *not* a reproducible defect goes to its own tracker — the five-kind
@@ -24,8 +24,8 @@ never left with nothing pointing at it.
 **Do NOT use** for a thing to build (`/backlog task`), a project problem/concern/limitation
 (`/backlog issue`), a durable fact (`/backlog note`), or a dev-experience observation
 (`/backlog feedback`). And if it turns out to be **working-as-coded but surprising**, it's not a
-bug — capture it as a `/backlog note` (`/foreman` promotes it to `.agents/foreman/docs/GOTCHAS.md` during
-`calibrate`) and file no report. For the end-of-work *sweep* that routes
+bug — capture it as a `/backlog note` (the improvement loop lands proven traps in
+`.handbook/rules/GOTCHAS.md`) and file no report. For the end-of-work *sweep* that routes
 many surfaced items at once (including any defects), that's `/backlog debrief`; this verb is the
 single-defect, right-now path to the same destination.
 
@@ -51,11 +51,11 @@ discipline) — don't guess.
 ## Procedure
 
 1. **Confirm it's a bug.** It's an observed, reproducible defect, not a task/issue/note/feedback item
-   (route those to their home and stop). **Check `.agents/foreman/docs/GOTCHAS.md` first** (and
+   (route those to their home and stop). **Check `.handbook/rules/GOTCHAS.md` first** (and
    `.records/trackers/notes/` for a trap not yet promoted) — it may be a known trap (working-as-coded).
-   If so, it's not a bug: capture it as a `/backlog note` if it isn't one already (`/foreman` promotes
-   it to `GOTCHAS.md` during `calibrate`), and stop.
-2. **Diagnose enough to capture a repro** (per the host's `.agents/foreman/docs/DIAGNOSTICS.md`: observe →
+   If so, it's not a bug: capture it as a `/backlog note` if it isn't one already (the
+   improvement loop lands proven traps in the gotchas chapter), and stop.
+2. **Diagnose enough to capture a repro** (per the host's `.handbook/testing/DIAGNOSTICS.md`: observe →
    reproduce → isolate). Cheapest first — logs, the host's diagnostic overlays / state dumps; pin any
    seed/state and capture it in the host's scripted scenario/test harness (a scripted repro the
    harness replays *is* the repro); for a render/visual bug, the host's isolated-render tool surfaces
@@ -77,11 +77,11 @@ discipline) — don't guess.
      broader project problem) that **links** the report path. Never leave a report unlinked.
 6. **Commit (standalone only).** Invoked **standalone**, scoped-commit the report + its linking item
    in one step via `scripts/scoped-commit.sh <root> "File <slug> bug + tracker link" <paths…>`, then run
-   the host's doc-linter. Invoked **inside `/backlog debrief`**, do **not**
+   the host's cheap doc gate if it has one. Invoked **inside `/backlog debrief`**, do **not**
    commit — only write; the sweep makes the single atomic commit.
 7. **Report in chat** — the report path and either the linking item or the fix commit. If a durable
-   trap surfaced during diagnosis, note that it was captured as a `/backlog note` (for `/foreman` to
-   promote to `GOTCHAS.md`).
+   trap surfaced during diagnosis, note that it was captured as a `/backlog note` (for the
+   improvement loop to land in the gotchas chapter).
 
 ## Relationship to neighboring verbs
 
@@ -97,5 +97,5 @@ discipline) — don't guess.
 
 The defect has a report in `.records/trackers/bugs/` with a real repro + evidence, that report is **linked from an
 actionable item** (or already fixed-and-archived with its commit), no working-as-coded "bug" was
-filed (captured as a `/backlog note` instead, for `/foreman` to promote to `GOTCHAS.md`), and the chat
+filed (captured as a `/backlog note` instead, for the improvement loop to land in the gotchas chapter), and the chat
 names where the report and its tracker live.

@@ -7,10 +7,11 @@ context is richest; a follow-up, a friction point, or a directional idea not cap
 lost.
 
 `debrief` is an **orchestrator**, not a new tracker. It fans out across the five-kind capture
-taxonomy (canonical in `docs/TAXONOMY.md`) and defers item-format to the capture verbs:
+taxonomy (the record schema — the installation's `.handbook/rules/RECORDS.md`) and defers item-format to the capture verbs:
 `/backlog task` for `tasks.md`, `/backlog issue` for `issues.md`, `/backlog bug` for a `bugs/`
 report, `/backlog note` for a `notes/` fact, `/backlog feedback` for `feedback.md`. It **writes only
-backlog's five stores** — nothing under `.agents/foreman/`.
+backlog's five stores** — never a `.handbook/` chapter. On an **unstamped root** it refuses:
+report `unstamped` and point at the clankshop onramps (the sweep presumes the stores exist).
 
 ## When to use
 
@@ -25,15 +26,16 @@ backlog's five stores** — nothing under `.agents/foreman/`.
 
 **Do NOT invoke** at session start, in the middle of an active task, or for a trivial / pure-Q&A
 exchange where nothing surfaced. And it is **not** the "what shipped" record — recording what shipped
-is `/workstream`'s land step / `/foreman`'s job, not this verb's; `debrief` captures the *byproducts*
+is the shipping lane's (`/backlog done` per item + the stream's own done-record), not this verb's; `debrief` captures the *byproducts*
 of the work, never the shipped-record.
 
 ## What it routes — the five-kind taxonomy
 
 Every surfaced thing has **exactly one home**, and every home is a backlog store. Pick the most
 actionable. The **five-kind taxonomy** (task / bug / issue / note / feedback — what counts as each,
-its store, its format, and the store-dir frontmatter rules) is canonical in `docs/TAXONOMY.md` —
-apply it as written; each home's format authority is its capture verb.
+its store, its format, and the store-dir frontmatter rules) is the record schema — canonical in
+the doctrine, deployed as `.handbook/rules/RECORDS.md` — apply it as written; each home's format
+authority is its capture verb.
 
 | Surfaced thing | Home | Capture verb |
 |---|---|---|
@@ -43,15 +45,16 @@ apply it as written; each home's format authority is its capture verb.
 | a durable project fact / knowledge — including a would-be **invariant or gotcha** | `.records/trackers/notes/<slug>.md` | `/backlog note` |
 | a dev-experience observation (skills / tooling / env / workflow) | `.records/trackers/feedback.md` | `/backlog feedback` |
 
-**Would-be invariant or gotcha → a `note`.** A load-bearing invariant or a working-as-coded trap that
-surfaces is captured as a `/backlog note` (a durable project fact) — `debrief` never writes
-`MEMORY.md` or `GOTCHAS.md`, and never anything under `.agents/foreman/`. Promoting a note into a
-`MEMORY.md` invariant or a `GOTCHAS.md` entry is `/foreman`'s job (during `calibrate`), not this sweep's.
+**Would-be invariant or gotcha → a `note`.** A load-bearing invariant or a working-as-coded trap
+that surfaces is captured as a `/backlog note` (a durable project fact) — `debrief` never writes
+the `.handbook/` rules chapters. The note-vs-INVARIANTS classifier is the schema's: capture never
+promotes; landing a proven note in `INVARIANTS.md`/`GOTCHAS.md` is improvement-loop work,
+dispatched to the rules steward — not this sweep's.
 
 **Frontmatter is mandatory on any store-dir file you create here** (`.records/trackers/bugs/`,
 `.records/trackers/notes/`): start it with that type's frontmatter block — copying from the named
-template gives it to you. The doc-linter gate rejects a store-dir file without it. Schema:
-`docs/TAXONOMY.md`.
+template gives it to you. The store-dir frontmatter is mandatory — the deployed check chain
+flags a store-dir file without it. Schema: the installation's `.handbook/rules/RECORDS.md`.
 
 ## The rules that keep it honest
 
@@ -66,8 +69,8 @@ template gives it to you. The doc-linter gate rejects a store-dir file without i
   report is the evidence; the linked item is what gets worked. Never leave a report with nothing
   pointing at it.
 - **`note` is lower-bar than an invariant.** A `note` just captures a durable fact worth remembering;
-  it never promotes. A would-be invariant or gotcha lands here as a note and `/foreman` promotes it —
-  don't try to reach `MEMORY.md`/`GOTCHAS.md` from the sweep.
+  it never promotes. A would-be invariant or gotcha lands here as a note for the improvement loop —
+  don't try to reach the `.handbook/` rules chapters from the sweep.
 - **Don't double-log.** Dedupe against entries already in each file — including anything you captured
   along the way during the work. `debrief` reconciles; it doesn't re-append.
 
@@ -120,8 +123,8 @@ ignored hand-off is not a debrief target.
      suggested direction), the `I-` wire format, trunk-side ID allocation.
    - **notes** → the `/backlog note` convention: a durable project fact in
      `.records/trackers/notes/<slug>.md` (frontmatter block + `_backs:_` line), linked from the tracker
-     entry it backs. A would-be **invariant or gotcha** is captured here as a note — `/foreman`
-     promotes it to `MEMORY.md`/`GOTCHAS.md` during `calibrate`.
+     entry it backs. A would-be **invariant or gotcha** is captured here as a note for the
+     improvement loop to land in the rules chapters.
    - **FEEDBACK** → the `/backlog feedback` convention: a dated entry (`templates/feedback.md`), noting
      whether it's praise, a concern, a friction, or a directional idea, and where it might lead. This
      is the **single dev-experience channel** — a reaction to a *workflow skill you used* (`/foreman`,
@@ -137,9 +140,9 @@ ignored hand-off is not a debrief target.
   **`/backlog note`**, and **`/backlog feedback`** own `bugs/`, `issues.md`, `notes/`, and
   `feedback.md`. `debrief` routes each share through that verb's convention; for a single-tracker add,
   use the verb directly.
-- **`/foreman`** drains this bureau's captured signal into doctrine (`calibrate`) — it is what promotes a
-  durable `note` into a `MEMORY.md` invariant or a `GOTCHAS.md` entry, and it (with `/workstream`'s
-  land step) owns the shipped-record. `debrief` captures; `/foreman` drains.
+- **The improvement loop** drains the captured signal into the handbook — it is what lands a
+  proven `note` in the rules chapters. The shipping lane owns the shipped-record. `debrief`
+  captures; the loop drains.
 - **`/handoff`** saves the session as a resumable narrative doc. `debrief` is complementary: at a
   checkpoint, `handoff` writes the story, `debrief` drains the byproducts to the trackers. Do both.
 - **`/workstream`** drives a stream in a worktree. Run `/backlog debrief` when a feature — or a phase of
@@ -159,5 +162,5 @@ ignored hand-off is not a debrief target.
 
 Every byproduct the work surfaced sits in exactly one durable backlog home — with a
 `.records/trackers/notes/` fact linked where an entry needed depth (or a would-be invariant/gotcha
-parked as a note for `/foreman` to promote) — nothing is double-logged, nothing was written under
-`.agents/foreman/`, and the chat report names what went where.
+parked as a note for the improvement loop) — nothing is double-logged, no `.handbook/` chapter
+was written, and the chat report names what went where.

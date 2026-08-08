@@ -133,5 +133,16 @@ sh "$BACKLOG_SCRIPTS/scaffold-records.sh" "$S" > "$TMP/sc2"
 expect "scaffold idempotent" "exists=trackers/tasks.md" "$TMP/sc2"
 expect_absent "no re-create on second run" "created=trackers/" "$TMP/sc2"
 
+# ---- RECORDS projection: backlog is the sole schema-facing writer ----
+P="$TMP/proj2"; mkdir -p "$P"
+DOCTRINE=$(CDPATH='' cd "$DIR/../../doctrine" && pwd -P)
+sh "$BACKLOG_SCRIPTS/records-projection.sh" "$P" "$DOCTRINE" "gate=make test" "trunk=main" > "$TMP/rp"
+expect "projection reports its stamp" "stamp=clankshop-doctrine@" "$TMP/rp"
+expect "deployed RECORDS carries the doctrine stamp" "built-against: clankshop-doctrine@" "$P/.handbook/rules/RECORDS.md"
+expect_absent "doctrine-side keys dropped from the projection" "doctrine-version:" "$P/.handbook/rules/RECORDS.md"
+SKILLS_ROOT=$(CDPATH='' cd "$DIR/../../.." && pwd -P)
+writers=$(grep -rl 'clankshop-doctrine@' "$SKILLS_ROOT" --include='*.sh' | grep -v '/tests/' || true)
+expect_eq "no other writer produces the schema stamp" "$SKILLS_ROOT/backlog/scripts/records-projection.sh" "$writers"
+
 echo "backlog: pass=$pass fail=$fail"
 [ "$fail" -eq 0 ]

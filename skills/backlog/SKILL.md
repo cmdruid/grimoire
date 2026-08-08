@@ -1,24 +1,25 @@
 ---
 name: backlog
-description: "The capture bureau — the single collection front-door for a project's `.records/` trackers. Owns the trackers, their formats, and the capture schema (`docs/TAXONOMY.md`). Self-initializing: `/backlog init` stands up its own `.records/` home and registers its route into the project front-door with no external setup step. Five capture verbs take one follow-up by subject/kind — `/backlog task` (a thing to build), `/backlog bug` (a reproducible defect), `/backlog issue` (a project problem/concern/limitation), `/backlog note` (a durable project fact), `/backlog feedback` (a dev-experience observation) — plus `/backlog debrief` (sweep a finished body of work to every tracker) and `/backlog curate` (keep the lists tidy: dedupe/rank/sharpen/weed). Captures uniformly; never drains. Use when the user runs `/backlog ...`, or asks to set up the trackers, file/capture/sweep/curate a follow-up."
+description: "The records instrument — the single collection front-door for a project's `.records/` stores. Owns the trackers and their wire formats, typed counter IDs, completion (`done` + the done log), the ticket escalation layer with its optional remote mirror, curation, and the deployed record-schema projection. Capture by kind — `/backlog task|bug|issue|note|feedback` — plus `debrief` (sweep finished work), `curate` (store hygiene), `ticket`/`promote`/`close` (escalate to the human and resolve), `sync` (the mirror). Tool-like books-keeping: it captures and completes; what a captured signal means for the system is the improvement loop's judgment, not made at capture time. Use when the user runs `/backlog ...`, files/sweeps/curates a follow-up, marks work done, or escalates to the human."
 ---
 
-# backlog — the capture bureau
+# backlog — the records instrument
 
 One skill: the **single collection front-door** for a project's `.records/` stores. It owns the tracker
 artifacts under `.records/trackers/` (`tasks.md`, `issues.md`, `feedback.md`, `notes/`, `bugs/`),
-the completion log (`.records/done/log.md`, via `done`), their **formats**, the capture
-**schema** (`docs/TAXONOMY.md`), the end-of-work **sweep**, and tracker **hygiene**. Everything that
-*captures a follow-up* lives here; standing up, routing, and tuning the dev system is a separate
-skill, `/foreman`.
+the escalation store (`.records/tickets/`), the completion log (`.records/done/log.md`, via
+`done`), their **wire formats**, the deployed **record schema** projection
+(`.handbook/rules/RECORDS.md`), the end-of-work **sweep**, and store **hygiene**. Everything that
+*captures, completes, or escalates a follow-up* lives here; it is an **instrument** — tool-like
+books-keeping a role or the human picks up, owning no judgment beyond its own formats.
 
 Capture is **uniform** — every byproduct lands in exactly one durable home by its *kind*, cut by
 **subject**: a thing to build (`task`), a reproducible defect (`bug`), a project
 problem/concern/limitation (`issue`), a durable project fact (`note`), or a dev-experience observation
 (`feedback`). The judgment about what a captured item *means for the system* — whether it should
-reshape doctrine, whether the change is a bug-lane or feature-lane job — is made **downstream by
-`/foreman`**, not at capture time. `/backlog` **captures, never drains**; `/foreman` drains. Capture
-broadly and honestly; let `/foreman` sift.
+reshape a handbook chapter, whether the change is a bug-lane or feature-lane job — is made
+**downstream** (the router routes; the improvement loop drains), never at capture time. `/backlog`
+**captures, never drains**. Capture broadly and honestly; let the loop sift.
 
 This `SKILL.md` is a **thin router**: it dispatches and states the discipline every verb shares
 **once**. Each verb's procedure lives in its own `verbs/<verb>.md`, **read on demand** — so the
@@ -46,13 +47,14 @@ and follow it**; do not reconstruct a procedure from memory.
 **No default lane.** `/backlog` with no recognized verb is ambiguous — ask which tracker the item
 belongs to (or run `/backlog debrief` if the intent is "capture everything that surfaced").
 
-## The capture schema (backlog owns it)
+## The record schema (the authority chain)
 
-The **five-kind taxonomy** — what counts as a task vs. bug vs. issue vs. note vs. feedback, each
-tracker's format, plus the store-dir frontmatter rules — is canonical here in
-`docs/TAXONOMY.md`. Every verb defers to it, and other skills reference it rather than restating it.
-`/backlog` is the authority on capture format; `/foreman` is the authority on what the captured signal
-*means for the system* (and it, not `/backlog`, drains it).
+The record schema — the five kinds and their classifiers, typed IDs, wire formats, the done log,
+tickets, reports — is stated **once in the pack doctrine** and deployed to every installation as
+`.handbook/rules/RECORDS.md`, the stamped projection `scripts/records-projection.sh` writes
+(backlog is the **sole schema-facing writer**; the pack onramps route their RECORDS step through
+it). Every verb defers to the deployed schema; nothing restates it. Backlog is the authority on
+capture format and books-keeping; what the captured signal *means* is judged downstream.
 
 ## Shared discipline (every verb relies on this — stated here once)
 
@@ -74,8 +76,8 @@ tracker's format, plus the store-dir frontmatter rules — is canonical here in
   mechanical helper** `scripts/scoped-commit.sh` (the atomic pathspec-scoped commit — it mutates by
   design, but only ever the paths it is handed). **Never push a decision into a script:** a script is
   stateless and can't see session context, so a *verdict* it emits is sometimes confidently wrong
-  (worse than none), while a *fact* the prose reasons over is not. `backlog-health.sh` **complements** the
-  host doc-linter (which owns link resolution, indexing, frontmatter); it never re-implements it.
+  (worse than none), while a *fact* the prose reasons over is not. Deeper document validation
+  (citation resolution, budgets, conformance) belongs to the deployed check chain, never here.
 - **Commit on the integration trunk, never a work branch.** A capture commit writes *new* shared
   `.records/` content, so it can't ride a feature ref — it lands on the **root checkout's current branch**,
   which must be the integration **trunk** (`main` today, `dev` later; never hardcode `main`).
@@ -93,19 +95,25 @@ tracker's format, plus the store-dir frontmatter rules — is canonical here in
   `Co-Authored-By` trailer.
 - **Capture-commit policy (unified across the capture verbs).** A capture verb invoked **standalone**
   (`/backlog task|bug|issue|feedback|note`) makes its **own** doc-only scoped commit (via
-  `scripts/scoped-commit.sh`), then runs the host's doc-linter (or its gate) — so a single capture
+  `scripts/scoped-commit.sh`), then runs the host's cheap doc gate if it has one — so a single capture
   lands on its own rather than waiting for an unrelated commit. A capture verb invoked **inside a
   sweep** (`/backlog debrief`) only **writes** — the sweep makes the single atomic multi-file commit
   over every file it touched. `/backlog curate` follows the same rule (standalone self-commits; inside a
-  `/foreman calibrate` sweep it is write-only). Each verb file states which path applies.
+  larger sweep it is write-only). Each verb file states which path applies.
 
-## Scope boundary
+## Scope boundary + unstamped conduct
 
-`/backlog` is the **capture bureau** — it files, sweeps, and keeps the trackers tidy, and owns their
-formats and schema. It **captures; it never drains.** Draining the captured signal into doctrine,
-standing up and routing the dev system, auditing code, and doing the development itself each belong to
-another skill — *which* owns *what* is the runbook's seam map (`packs/clankshop.md`) and the deployed
-**ownership index**, not this file.
+`/backlog` is the **records instrument** — it files, completes, escalates, sweeps, and keeps the
+stores tidy, and owns their formats and the schema projection. It **captures; it never drains.**
+Draining the captured signal into the handbook, routing the dev system, auditing code, and the
+development itself each belong to another pack member — the pack's doctrine and runbook own that
+composition.
+
+**On an unstamped root** (no installation block), verb by verb: the **five capture verbs** call
+`init` lazily (it creates the trackers skeleton and creates-or-adopts the installation block —
+exactly its pre-stamp write license, touching no `.handbook/` chapter); **every other verb** —
+`ticket`, `promote`, `sync`, `close`, `done`, `curate`, `debrief` — **refuses**: emit `unstamped`
+and point at the clankshop onramps (`setup` / `migrate`).
 
 ## Edges
 
@@ -128,7 +136,8 @@ between a weak `produces` edge and a strong `handoff` edge (model §2.1).
 ## Companion skills (separate, not absorbed)
 
 `backlog`'s verbs defer to companion skills where the host has them (its system-relevant signal is
-drained into doctrine downstream). The composition and the seams between them live in
-`packs/clankshop.md` and the deployed **ownership index** (`.agents/README.md` / `.records/README.md`);
-this file does **not** restate each companion's verbs — that list rots. Where a companion is absent,
-the by-hand fallback is the deployed `.agents/foreman/docs/`.
+drained into the handbook downstream). The composition and the seams between them live in the
+pack's doctrine and runbook and the deployed **stewardship maps** (`.handbook/README.md` /
+`.records/README.md`); this file does **not** restate each companion's verbs — that list rots.
+Where a companion is absent, the by-hand fallback is the deployed `.handbook/rules/ROUTING.md`
+walk.

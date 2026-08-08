@@ -6,7 +6,7 @@ way to add a well-formed item.
 
 It **only adds to** `tasks.md`. Tidying the list — dedupe / rank / weed — is the sibling
 `/backlog curate`; turning a task into shipped work is `/feature` / `/workstream`; draining
-system-relevant signal back into doctrine is `/foreman calibrate`; the end-of-work sweep that routes
+system-relevant signal back into the handbook is the improvement loop’s; the end-of-work sweep that routes
 byproducts across *all* trackers is `/backlog debrief`.
 
 ## When to use
@@ -78,7 +78,7 @@ Procedure:
    **Dedupe** against existing items — skip a near-duplicate rather than add it. Never edit or
    remove existing items in capture; you only add. (To *reshape* the list, that's `/backlog curate`.)
 5. **Commit (standalone only).** Invoked **standalone**, scoped-commit the tasks change via
-   `scripts/scoped-commit.sh <root> "Tasks: <short what>" .records/trackers/tasks.md`, then run the host doc-linter.
+   `scripts/scoped-commit.sh <root> "Tasks: <short what>" .records/trackers/tasks.md`, then run the host's cheap doc gate if it has one.
    Invoked **inside `/backlog debrief`**, do **not** commit — only write; the sweep makes the
    single atomic commit. (This standalone self-commit is a deliberate refinement: a `/backlog task`
    add now lands on its own rather than waiting for an unrelated commit.)
@@ -97,7 +97,7 @@ never writes the done log.**
   verb only adds; `curate` reshapes.
 - **`/backlog debrief`** — the completion sweep across *all* trackers; it defers TASKS item-format
   to this verb. `task` is the anytime, TASKS-only, direct add.
-- **`/foreman calibrate`** — drains system-relevant signal into doctrine (the curation loop). `task` itself
+- **The improvement loop** — drains system-relevant signal into the handbook. `task` itself
   never drains; it only captures.
 - **`/backlog bug`**, **`/backlog issue`**, **`/backlog feedback`**, **`/backlog note`** — the other capture
   homes; this verb is `tasks.md` only.

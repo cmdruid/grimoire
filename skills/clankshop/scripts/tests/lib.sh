@@ -85,14 +85,10 @@ project_doctrine() {
     ' "$pr_doc/rules/$f.md" | fill_slots "$pr_gate" "$pr_trunk" \
       > "$pr_root/.handbook/rules/$f.md"
   done
-  awk -v pv="$pr_pv" '
-    /^<!-- spine-doc v[0-9]+$/ { decl = 1 }
-    decl && /^doctrine: / { next }
-    decl && /^doctrine-version: / { next }
-    decl && /^-->$/ { decl = 0; print "built-against: clankshop@" pv; print; next }
-    { print }
-  ' "$pr_doc/rules/RECORDS.md" | fill_slots "$pr_gate" "$pr_trunk" \
-    > "$pr_root/.handbook/rules/RECORDS.md"
+  # RECORDS is the records instrument's stamped projection -- the ONLY writer is
+  # backlog's records-projection.sh; setup routes its RECORDS step through it.
+  sh "$CLANKSHOP_SCRIPTS/../../backlog/scripts/records-projection.sh" \
+    "$pr_root" "$pr_doc" "gate=$pr_gate" "trunk=$pr_trunk" > /dev/null
 
   # --- whole-file assets: lanes + testing, origin keys replace doctrine keys.
   for sub in workflows testing; do

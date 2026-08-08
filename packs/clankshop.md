@@ -1,12 +1,12 @@
 ---
 name: clankshop
 description: "The full development loop as a skill pack: route a change, design at seed altitude, plan and build features gate-green, ship them from long-lived workstreams, delegate work without polluting context, keep sessions resumable, root-cause bugs before patching them, and audit both code quality and doc ergonomics."
-skills: architect auditor backlog chiropractor clankshop debugger delegate feature foreman handoff mailbox workstream
+skills: architect auditor backlog bug chiropractor clankshop debugger delegate feature foreman handoff mailbox task workstream
 pack-version: 1
 layout: 1
 core: clankshop architect auditor backlog chiropractor debugger feature foreman workstream
 helpers: delegate mailbox handoff
-optional:
+optional: bug task
 ---
 
 # clankshop — the disciplined development loop (a `/foreman setup` runbook)

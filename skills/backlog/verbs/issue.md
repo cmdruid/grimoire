@@ -27,7 +27,7 @@ The model owns that **bug-vs-issue call** and the **impact ranking** (HIGH / MED
 **Do NOT use** for a reproducible code defect (`/backlog bug`), a thing to build (`/backlog task`), a
 durable project fact (`/backlog note`), or a dev-experience observation about skills / tooling /
 workflow (`/backlog feedback`). A durable *gotcha* discovered here should **also** be captured as a
-`/backlog note` — `/foreman` promotes it to `.agents/foreman/docs/GOTCHAS.md` during `calibrate` so the next
+`/backlog note` — the improvement loop lands proven traps in `.handbook/rules/GOTCHAS.md` so the next
 agent avoids the trap.
 
 ## File location
@@ -55,8 +55,8 @@ one that fits; add a section only when nothing fits.
 1. **Confirm it's an issue.** A project problem/concern/limitation — not a reproducible defect (that's
    `/backlog bug`), a build item (`/backlog task`), a fact (`/backlog note`), or a dev-experience
    observation (`/backlog feedback`); route those to their home and stop. If it's a working-as-coded
-   trap, capture it as a `/backlog note` (`/foreman` promotes it to `.agents/foreman/docs/GOTCHAS.md`
-   during `calibrate`).
+   trap, capture it as a `/backlog note` (the improvement loop lands proven traps in
+   `.handbook/rules/GOTCHAS.md`).
 2. **Form the entry.** Pick the category section and allocate the next free `I-` number (or the
    pending placeholder off-trunk). Write:
    - `### I-<n> — <short title> (<HIGH|MEDIUM|LOW>)`
@@ -67,11 +67,11 @@ one that fits; add a section only when nothing fits.
 3. **Dedupe** against existing entries — if the problem is already logged, sharpen that entry
    rather than adding a near-duplicate.
 4. **Append** under the right category section. Never edit unrelated entries.
-5. **Capture a durable trap as a `/backlog note`** if one surfaced — `/foreman` promotes it to
-   `.agents/foreman/docs/GOTCHAS.md` during `calibrate`.
+5. **Capture a durable trap as a `/backlog note`** if one surfaced — the improvement loop lands
+   it in `.handbook/rules/GOTCHAS.md`.
 6. **Commit (standalone only).** Invoked **standalone**, scoped-commit via
    `scripts/scoped-commit.sh <root> "Issue I-<n>: <short what>" .records/trackers/issues.md` (+ the
-   note file under `.records/trackers/notes/` if you captured a trap), then run the host doc-linter. Invoked **inside `/backlog debrief` or a `/foreman calibrate`
+   note file under `.records/trackers/notes/` if you captured a trap), then run the host's cheap doc gate if it has one. Invoked **inside `/backlog debrief` or a drain
    sweep**, do **not** commit — only write; the sweep makes the single atomic commit.
 7. **Report** the entry id (`I-n`) and the path.
 
@@ -79,8 +79,8 @@ one that fits; add a section only when nothing fits.
 
 - **`/backlog debrief`** routes *all* byproducts of a finished body of work, project problems included,
   in one sweep. `issue` is the in-the-moment, single-problem path to the same `issues.md` log.
-- **`/foreman calibrate`** drains system-relevant signal from the trackers into doctrine. Capture is this
-  verb's job; draining is `/foreman`'s.
+- **The improvement loop** drains system-relevant signal from the stores into the handbook. Capture is this
+  verb's job; draining is the loop's.
 - **`/backlog bug`** is the reproducible-defect sibling; **`/backlog feedback`** is the dev-experience
   channel; **`/auditor`** may surface problems it routes here.
 
@@ -88,5 +88,5 @@ one that fits; add a section only when nothing fits.
 
 The problem is an impact-ranked `issues.md` entry (what's wrong · impact · suggested direction) under
 the right category, continuing the numbering, deduped against what's there — any durable trap
-captured as a `/backlog note` (for `/foreman` to promote to `GOTCHAS.md`) — and the chat names the
+captured as a `/backlog note` (for the improvement loop to land in the gotchas chapter) — and the chat names the
 entry id and path.

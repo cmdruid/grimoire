@@ -112,7 +112,7 @@ judgment (which front-door, what the route says):
 rule as the capture verbs (see `SKILL.md` → *Shared discipline*): standalone, scoped-commit the created
 `.records/` paths **and** the front-door doc in one step via
 `scripts/scoped-commit.sh <root> "backlog: init capture home + register route" <paths…>`, then run the
-host doc-linter. (Inside a larger pack `setup`/`migrate` or a sweep, only write; the caller commits.)
+host's cheap doc gate if it has one. (Inside a larger pack `setup`/`migrate` or a sweep, only write; the caller commits.)
 
 ## Idempotency + the write protocol (why re-running is safe)
 

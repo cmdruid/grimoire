@@ -48,7 +48,11 @@ One question at a time; never ask what a fact already answered. The genuine deci
 Source: this skill's `doctrine/` at its current `doctrine-version` (declaration blocks carry it).
 **Minimal-seed filtering** — universal content deploys, everything else stays upstream: INVARIANTS
 seeds only its universal parameterized rules; GOTCHAS and POLICY deploy as declared-empty formats;
-RECORDS deploys complete (formats are not project-variable); ROUTING deploys whole; the opted-in
+RECORDS deploys complete (formats are not project-variable) — **via the records instrument's
+projection writer**, `skills/backlog/scripts/records-projection.sh <root> <doctrine-dir>
+gate=… trunk=…`, which stamps it `built-against: clankshop-doctrine@<doctrine-version>` (the
+authority chain: the doctrine states the schema, backlog executes it, the stamped projection is
+its writing — setup never writes the file by hand); ROUTING deploys whole; the opted-in
 lane files and the three testing skeletons deploy with their parameter slots (`<gate>`, `<trunk>`)
 filled from steps 1–2. No generic prose ships.
 

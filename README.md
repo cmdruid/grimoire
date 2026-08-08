@@ -44,6 +44,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `architect` | the design-system engine: a project's regenerable `.agents/architect/` seed — stand up (`init`/`extract`), evaluate (`check`), drift-correct (`reconcile`), evolve (`distill`/`plan`/`brainstorm`), plus `prep` |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
 | `backlog` | the capture desk: file follow-ups by kind (task/bug/issue/feedback/note), sweep finished work (`debrief`), curate the lists (`curate`) |
+| `bug` | capture alias: `/bug` proxies the records instrument's bug capture (optional pack member) |
 | `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |
 | `clankshop` | the clankshop pack's executable face: the pack's doctrine + runbook home and the system verbs — `setup` (greenfield bootstrap), `migrate` (brownfield onramp), `check` (whole-system assembly validation) |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
@@ -53,6 +54,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `handoff` | save/resume a session as a self-contained hand-off any agent can pick up |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
+| `task` | capture alias: `/task` proxies the records instrument's task capture (optional pack member) |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
 `foreman` and `backlog` split what used to be one skill (`dev`): `foreman` kept the router +
