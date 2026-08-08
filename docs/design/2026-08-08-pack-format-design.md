@@ -156,6 +156,13 @@ A second owner pass the same day (draft 5) added two more:
    rejected: without it, old tools would ignore an unknown `format:` key and misread a
    breaking-revision manifest.
 
+**Implementation (2026-08-08):** shell surfaces conformed to draft 5 and the `grimoire-pack`
+crate built per `docs/design/2026-08-08-pack-format-impl-plan.md` (with review-ratified
+deviations recorded there: per-manifest `Enumeration{packs, issues}`, symlink-safe walks,
+strict unsupported-format stance, schema-level lock failures read-only). The crate's
+`tests/fixtures/` conformance trees are the format's executable examples and the spec's next
+truth-finder; `tests/clankshop.rs` pins the live flagship pack against the library.
+
 ## Open questions deliberately deferred (format 2 candidates)
 
 - Cross-repo member references.
