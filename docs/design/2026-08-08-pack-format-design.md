@@ -97,6 +97,30 @@ Verdict on draft 1: not implementable standalone — 37 findings. Dispositions i
   concurrency) — spec requires stage-then-commit + never-silently-plausible outcomes;
   `grimoire-pack` decides the how.
 
+**Convergence run (draft 2 → draft 3, same brief, fresh context; verbatim:
+`reviews/2026-08-08-pack-format-codex-review-2.md`).** Verdict still "needs rework" (~39
+findings) — but the finding *character* shifted from foundational to precision/depth. Five
+genuine contradictions draft 2 had introduced were fixed in draft 3: faceless-root packs are
+now an explicit manifest-only shape (no skill-dir/no-nesting conflict); replace stages content
+so rollback truly restores it (the data-loss permit is gone); check's unimplementable
+marker-drift row became *setup pending* (`setup.ran` false), with system-level validation
+explicitly the pack's own business; faceless installs cache the manifest into the lock (no
+born-orphaned remote packs); §4 now states hashes are authoritative over version for installed
+content (adopt/re-pin honesty). Precision fixes: collision predicate = hash inequality
+(source-irrelevant), source normalization (`github:<owner>/<repo>`), upgrades preserve
+optional selections, lock `optional` flag authoritative at install time, `setup.ran` =
+user-attested, removal warning ordered before deletion + relays face teardown guidance, adopt
+never applies to the face, re-pin touches only the target pack's entry, pack enumeration
+declared full-depth, duplicate `pack:` names invalid, whitespace grammar post-YAML-decode,
+unknown-format inaction scoped (removal stays lock-governed), Appendix A documents the
+inherited non-collision-resistance + symlink caveats, Appendix B defers to reference
+implementations where the summary diverges. **Review loop closed by decision:** a maximal-rigor
+reviewer keeps producing ~40 findings per pass at increasing depth (npm-grade schema/protocol
+detail); remaining highs are implementation-owned (acquisition procedure, crash protocol, lock
+JSON-schema, check's exhaustive case list) or accepted §8 limits (cross-ownership visibility,
+placement-vs-lock shadowing). `grimoire-pack`'s implementation + conformance fixtures are the
+next truth-finder; prose iterates only when implementation contradicts it.
+
 ## Open questions deliberately deferred (format 2 candidates)
 
 - Cross-repo member references.

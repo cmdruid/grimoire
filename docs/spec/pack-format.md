@@ -1,7 +1,7 @@
 # Pack Format Specification
 
-**Format revision:** 1 · **Status:** draft 2 for review (2026-08-08; draft 1 revised against an
-independent implementer review — see `docs/design/2026-08-08-pack-format-design.md`) ·
+**Format revision:** 1 · **Status:** draft 3 for review (2026-08-08; drafts 1–2 revised against
+two independent implementer reviews — see `docs/design/2026-08-08-pack-format-design.md`) ·
 **Design record:** `docs/design/2026-08-08-pack-format-design.md`
 
 A **pack** binds agent skills into an installable, versioned system. This spec defines the pack
@@ -18,19 +18,30 @@ skill-discovery procedure, summarized normatively in Appendix B.
 
 ## 1. Identity & layout
 
-- **A pack is a skill directory that also contains a `PACK.md`.** The directory's `SKILL.md` is
-  the pack's **face**: its agent-facing front door, discovered and installable by plain CLIs as
-  an ordinary skill. The face and the pack directory are one artifact — one install unit, one
-  lock entry (§3).
-- **Non-root packs MUST have a face.** A faceless pack (`PACK.md` with no sibling `SKILL.md`)
-  is legal **only at a repository root** (**pack-as-repo**: the whole repository is one pack).
-  Anywhere else it would be undiscoverable and is invalid.
+Two pack shapes exist:
+
+- **Faced pack (the normal shape): a skill directory that also contains a `PACK.md`.** The
+  directory's `SKILL.md` is the pack's **face**: its agent-facing front door, discovered and
+  installable by plain CLIs as an ordinary skill. The face and the pack directory are one
+  artifact — one install unit, one lock entry (§3). A faced pack directory MUST NOT contain
+  further `SKILL.md` or `PACK.md` files below it (packs do not nest), and its members live
+  *outside* it, elsewhere in the repository.
+- **Faceless pack (pack-as-repo only): a `PACK.md` at a repository root with no sibling
+  `SKILL.md`.** This is a **manifest-only** pack: the repository root is *not* a skill
+  directory, no pack-directory artifact installs, and the pack's members are the repository's
+  discovered skills named in the manifest (which necessarily live beneath the root — the
+  no-nesting rule applies to faced pack directories, not to a manifest-only root). A faceless
+  `PACK.md` anywhere other than a repository root is invalid (it would be undiscoverable).
+
+Rules common to both shapes:
+
 - `pack:` in `PACK.md` frontmatter is **authoritative** for pack identity. A face `SKILL.md`'s
   `name:` MUST equal it (validators MUST error otherwise).
-- Pack enumeration for tools = every discovered skill directory containing a `PACK.md` sibling,
-  plus the repository root when it carries a `PACK.md`.
-- Packs do not nest: a pack directory MUST NOT contain further `SKILL.md` or `PACK.md` files
-  below it.
+- Two manifests in one repository declaring the same `pack:` are invalid. A faceless pack MUST
+  NOT list a member whose name equals its `pack:` value.
+- **Pack enumeration is a full-depth operation:** tools enumerate packs by scanning the
+  repository's skill directories at full depth (Appendix B) for `PACK.md` siblings, plus the
+  repository root. Ordinary (non-full-depth) discovery governs only what plain CLIs see.
 
 ## 2. The manifest: `PACK.md`
 
@@ -51,10 +62,11 @@ setup: /foreman setup           # optional. Lifecycle entrypoint (see §6).
 ---
 ```
 
-**Grammar.** `skills:` and `optional:` are single YAML string scalars: skill names separated by
-runs of spaces (format 1 accepts no YAML sequences). Names match `[a-z0-9-]+`. `skills:` MUST
-name at least one member. A name appearing twice anywhere across the two lists is invalid.
-`version:` MUST parse as semver 2.0.0. Duplicate YAML keys are invalid.
+**Grammar.** `skills:` and `optional:` are single YAML string scalars. After YAML decoding,
+the scalar is trimmed and split on runs of ASCII whitespace; each token is a skill name
+matching `[a-z0-9-]+`. `skills:` MUST name at least one member. A name appearing twice anywhere
+across the two lists is invalid. `version:` MUST parse as semver 2.0.0. Duplicate YAML keys are
+invalid.
 
 - **Member references** are bare skill names resolving against the **same repository's**
   discovered skills (Appendix B). Cross-repo references are not part of format 1. A manifest
@@ -62,8 +74,9 @@ name at least one member. A name appearing twice anywhere across the two lists i
 - The face skill is implicitly a member and MUST NOT be listed.
 - **Unknown frontmatter keys** MUST be ignored (and preserved per above). Future format
   revisions claim them; `format:` bumps only on breaking change.
-- A tool encountering a `format:` value it does not implement MUST NOT install or write; it MAY
-  still enumerate and display the pack.
+- A tool encountering a `format:` value it does not implement MUST NOT install, upgrade, or
+  otherwise act on that manifest; it MAY still enumerate and display the pack. (Removing an
+  *already-installed* pack is governed by the lock, not the manifest, and remains permitted.)
 
 ## 3. The lock: `grimoire.lock`
 
@@ -79,10 +92,12 @@ file (the `Cargo.lock`/`flake.lock` convention). Content is JSON.
   is operating on (the same root the ecosystem's `skills-lock.json` would live in).
 - **Global:** `~/.agents/grimoire.lock`.
 
-Every pack operation (install/remove/check) targets **exactly one scope**, chosen by the user.
-Reads that answer "is pack X present?" consult the target scope first and MAY fall through
-per pack name to the other scope for display purposes; reference counting (§5) never crosses
-scopes. For pack-based skills' reads, project shadows global per pack name.
+Every pack operation (install/remove/check) targets **exactly one scope**: the operation's
+member installs, collision checks, reference counting, and lock writes all happen within that
+scope's skill locations (project-scope skill dirs, or the global/user ones — the same split the
+ecosystem's tooling uses). Reads that answer "is pack X present?" consult the target scope
+first and MAY fall through per pack name to the other scope for display purposes. For
+pack-based skills' reads, project shadows global per pack name.
 
 ```json
 {
@@ -104,93 +119,110 @@ scopes. For pack-based skills' reads, project shadows global per pack name.
 }
 ```
 
-- `source` is the canonical origin: `github:<owner>/<repo>`, a full git URL, or an absolute
-  local path. `ref` (optional) records the commit or tag actually installed, when known. The
-  pair is what update flows resolve against; local-path sources update from disk.
+- `source` is the canonical origin. GitHub origins (shorthand, HTTPS, SSH) normalize to
+  `github:<owner>/<repo>`; other git URLs and absolute local paths are recorded verbatim.
+  `ref` (optional) records the commit or tag actually installed, when known. The pair is what
+  update flows resolve against; local-path sources update from disk.
 - `members` records **what is installed**, one entry per installed member, keyed by skill name.
-  The pack directory (face + `PACK.md` + support files) appears under the pack's own name.
-  For a faceless pack-as-repo there is no pack-directory entry — only the listed members
-  install.
-- `hash` is the member's content hash at install time (Appendix A — byte-identical to the
-  ecosystem's skill-folder hash).
-- Removing an optional member removes its `members` entry (§5); the manifest, not the lock,
-  is what identifies it as an optional member that could be reinstalled.
+  For a faced pack, the pack directory (face + `PACK.md` + support files) appears under the
+  pack's own name. For a faceless pack there is no pack-directory entry — and the tool MUST
+  cache the manifest's machine surface into the lock entry (a `manifest` object holding the
+  decoded frontmatter) so `check` never depends on the remote source.
+- `hash` is the member's content hash at install time (Appendix A).
+- The member `optional` flag records the member's classification **at install time** and is
+  authoritative for installed state; a later manifest edit reclassifies nothing until the pack
+  is upgraded (§5).
 - The lock records **content facts only**. Per-agent placement (which agent directories a
   skill was linked into) is the ecosystem locks' domain, not this file's.
 - Tools are the lock's only writers. **Pack-based skills read it, never write it** (§7).
 - Unknown keys: ignored and preserved, as §2.
-- A tool encountering a lock `"version"` greater than it implements MUST treat the file as
-  read-only and refuse operations that would rewrite it.
-- `setup.ran` records only that the tool dispatched the declared entrypoint after the user
-  accepted the offer (§6). It is best-effort — not proof the setup succeeded or its artifacts
-  exist. `check` reconciles it against reality. It is NOT the skill-side gate — packs installed
-  without a tool have no lock entry at all (§7).
+- A tool encountering a lock `"version"` greater than it implements, or a lock it cannot
+  parse, MUST treat the file as read-only, surface the fact, and refuse operations that would
+  rewrite it.
+- `setup.ran` flips true only when the user confirms to the tool that the declared entrypoint
+  was run (user-attested — tools cannot observe agent-side execution). It is best-effort — not
+  proof the setup succeeded. It is NOT the skill-side gate — packs installed without a tool
+  have no lock entry at all (§7).
 
 ## 4. Versioning
 
-- **Packs** version by **semver** (`version:`). One release = one content state of all members
-  shipping in the repo.
+- **Packs** version by **semver** (`version:`). One release = one *published* content state of
+  all members shipping in the repo.
 - **Members are not individually versioned.** A pack pins members by **content hash** in the
-  lock at install time. There are no member version ranges in format 1.
+  lock at install time.
+- **Hashes are authoritative over version for installed content.** Adoption (§5) and re-pin
+  can legitimately record bytes that differ from the published release; the lock's hashes are
+  the truth about what is installed, and the `version` is the release the install *derives
+  from*. There are no member version ranges in format 1.
 - A hash mismatch against the lock means *moved since install* — a fact for `check`, not an
-  error. **Re-pin** = accept the bytes currently on disk and update the lock hash (the normal
-  outcome after a deliberate `git pull` of a symlinked library). Restoring the recorded release
-  instead is a reinstall against `source`+`ref`.
+  error. **Re-pin** = accept the bytes currently on disk and update the target pack's lock
+  entry (only that entry; other packs sharing the member keep their own expectations — §5).
+  Restoring the recorded release instead is a reinstall against `source`+`ref`.
 
 ## 5. Install, remove, check
 
 **Install is transactional** — a pack never half-installs:
 
-1. **Preflight:** the manifest is valid (§2); every required member resolves; no member name
-   collides with an already-installed skill of different content from a different source.
-   Preflight failure aborts by default. A tool MAY resolve a collision interactively —
-   **adopt** (accept the existing on-disk skill as this member; its current bytes are hashed
-   into the lock) or **replace** (remove the existing skill via ordinary skill-level machinery,
-   then install the pack's member; the prior content is not preserved) — but resolution MUST
-   NOT be silent.
+1. **Preflight:** the manifest is valid (§2); every required member resolves. **Collision
+   predicate:** an incoming member's name is already installed in the target scope with
+   different content (hash inequality) — the prior source is irrelevant; byte-identical
+   content is no collision. Preflight failure aborts by default. A tool MAY resolve a
+   collision interactively — **adopt** (accept the existing on-disk skill as this member; its
+   current bytes are hashed into the lock) or **replace** (swap in the pack's member) — but
+   resolution MUST NOT be silent. The pack-directory member (face) is never adoptable: it MUST
+   come from the pack's source.
 2. **Install members** via ordinary skill-level machinery (which maintains the ecosystem's own
-   locks per skill, as it would for any install).
-3. **Write the lock entry** (§3).
+   locks per skill, as it would for any install). Replaced content is staged, not destroyed.
+3. **Write the lock entry** (§3). The transaction commits here; staged content may now be
+   discarded.
 4. **Offer `setup:`** if declared (§6). Never auto-run.
 
-Any failure before step 3 completes → rollback: newly installed members are removed and both
-lock families restored to their pre-transaction observable state; adopted/replaced content is
-not resurrected. Tools SHOULD stage work so that a crash mid-transaction leaves either the
-prior state or a state `check` reports as *broken* — never a silently plausible partial pack.
+Any failure before step 3 completes → rollback: newly installed members are removed, staged
+(replaced) content is restored, and both lock families return to their pre-transaction
+observable state. After commit, replaced content is gone — a later removal does not resurrect
+it. Tools SHOULD stage work so that a crash mid-transaction leaves either the prior state or a
+state `check` reports as *broken* — never a silently plausible partial pack.
 
 **Reinstall / upgrade.** Installing a pack whose name already has a lock entry in the target
-scope is a transactional replace (any version direction, any source). When the version moves
-backward or the source changes, the tool MUST surface that fact — never silent.
+scope is a transactional replace of the whole pack: members added by the new release install,
+members no longer listed are removed (subject to the reference count below), and the user's
+recorded optional selections carry over — an optional member absent from the lock stays
+uninstalled. When the version moves backward or the source changes, the tool MUST surface that
+fact — never silent.
 
 **Remove:** delete members not referenced by another installed pack's lock entry **in the same
 scope** (reference counting at pack altitude), then drop the lock entry. A member that was
 `adopt`ed at install is owned by the pack thereafter and removes like any other. Removing
 individual **optional** members leaves no trace: drop the member entry from the lock, remove
-the skill if unreferenced; a missing optional member is never drift. Removing a **required**
-member of an installed pack (by hand or plain CLI) is not a tool operation this spec defines —
-it is a state `check` reports as *broken*. When removing a pack whose lock entry declares
-`setup:`, the tool MUST surface that setup artifacts may persist in the project and point at
-the pack's face for manual teardown (markers are pack-defined — no tool can find them once the
-lock entry is gone; a `teardown:` lifecycle key is reserved for a future revision).
+the skill if unreferenced (an uninstalled optional member MAY be reinstalled later from the
+pack's source). A missing optional member is never drift. Removing a **required** member of an
+installed pack (by hand or plain CLI) is not a tool operation this spec defines — it is a
+state `check` reports as *broken*. When removing a pack whose lock entry declares `setup:`,
+the tool MUST surface — **before** deleting anything — that setup artifacts may persist in the
+project, and SHOULD relay the face's teardown guidance while the face still exists (markers
+are pack-defined — no tool can find them once the pack is gone; a `teardown:` lifecycle key is
+reserved for a future revision).
 
 **Shared members.** Two packs MAY both reference an installed skill; the refcount governs
 removal. If their locks record different hashes for it, `check` reports the mismatch against
 each lock's expectation; format 1 defines no resolution (last install won the bytes on disk).
 
-**Check** compares the target scope's lock against disk, consulting each pack's *installed*
-manifest (the `PACK.md` in the installed pack directory; for pack-as-repo, the manifest at
-`source` when locally resolvable). It reports facts, not verdicts:
+**Check** compares the target scope's lock against that scope's installed skills, consulting
+each pack's installed manifest (faced: the `PACK.md` in the installed pack directory;
+faceless: the manifest cached in the lock — §3). It reports facts, not verdicts:
 
 | Fact | Meaning |
 |---|---|
 | required member missing | *broken* — offer reinstall |
 | member hash ≠ locked hash | *moved since install* — offer re-pin or reinstall (§4) |
 | optional member absent | *fine* |
-| lock entry, but pack manifest no longer locally resolvable | *orphaned* — offer removal or re-source |
-| `setup.ran` true but the pack's marker absent (where the manifest declares `setup:`) | *setup drift* — re-offer setup |
+| faced pack's installed manifest missing (pack dir gone/mangled) | *orphaned* — offer removal or reinstall |
+| `setup:` declared, `setup.ran` false | *setup pending* — re-offer setup |
 
-Network unavailability never turns a fact into an error: facts that need the remote source
-(nothing above does) are reported as *unknown*.
+`check` needs neither network access nor the pack's source; every input above is local.
+Deeper system validation (are the pack's own setup artifacts coherent?) is the pack's
+business — packs MAY expose their own check verbs through the face; this spec's `check` does
+not attempt it (markers are pack-defined and not machine-declared).
 
 ## 6. Lifecycle
 
@@ -252,9 +284,9 @@ Behavior of pack-unaware tooling:
 | Read `PACK.md` | Ignores it (not a `SKILL.md`) |
 
 The payload guarantee assumes the plain CLI installs skill directories whole (the de facto
-behavior verified against the reference implementations); a CLI that filtered unrecognized
-files would deliver a face without its manifest — degraded but not broken (the face still
-speaks).
+behavior verified against the reference implementations). A CLI that filtered unrecognized
+files would deliver a face without its manifest — the face still speaks, but that install is
+degraded to a plain skill: pack-aware tools cannot enumerate or check it as a pack.
 
 **Limits (format 1) — stated, not solved.** The sidecar being *untouched* is not the same as
 *still true*: a plain CLI can add, update, or remove individual members underneath an installed
@@ -263,9 +295,11 @@ an integrity system — a stale or surviving marker (e.g. after removing members
 format 1 has no teardown key) can let pack-based skills run against a partial system. `check`
 (§5) is the integrity instrument: it exists precisely to surface these states as facts. Skill
 names are flat in the ecosystem; two sources can overwrite each other's same-named skills, and
-the lock records that only as a hash mismatch. Pack-aware tools MAY hint pack membership when
-a member is installed or removed solo (membership is declared in the manifest); this is a
-courtesy, not a mandate.
+the lock records that only as a hash mismatch — reference counting likewise cannot see
+installs made outside any pack, so removal MAY delete a skill a plain-CLI user considered
+theirs (adopt records no prior owner). Pack-aware tools MAY hint pack membership when a member
+is installed or removed solo (membership is declared in the manifest); this is a courtesy, not
+a mandate.
 
 ## Appendix A — member content hash (normative)
 
@@ -275,11 +309,19 @@ reference implementations):
 1. Walk the skill directory recursively. Skip directories named `.git` or `node_modules`.
    Include regular files only (symlinks and other entry types are skipped, not followed).
 2. For each file, form its path relative to the skill directory root, with `/` as separator on
-   all platforms; pair it with the file's raw bytes.
+   all platforms; pair it with the file's raw bytes. Path bytes are used as the platform
+   provides them (no Unicode normalization).
 3. Sort pairs by relative path (lexicographic byte order).
 4. SHA-256 over the concatenation, per pair in order, of the path's UTF-8 bytes followed by the
    file's bytes. No delimiters, lengths, or terminators are added.
 5. Render lowercase hex. The lock stores it prefixed `sha256:`.
+
+Properties inherited from the ecosystem algorithm, accepted for compatibility: the encoding is
+not collision-resistant against adversarial layouts (path/content boundaries are unframed) —
+the hash is a drift detector, not a security boundary; and because symlinks are skipped, two
+installs that materialize the same content differently (copied vs. linked) can hash alike
+while a CLI that dereferences symlinks into real files changes nothing — but content delivered
+*only* via symlinks is invisible to the hash.
 
 ## Appendix B — discovery (normative summary of the de facto ecosystem procedure)
 
@@ -289,11 +331,15 @@ A skill directory is a directory containing `SKILL.md`. Discovery over a reposit
    unless a full-depth scan is requested.
 2. Otherwise scan the fixed priority directories one level deep — the root itself, `skills/`,
    `skills/.curated`, `skills/.experimental`, `skills/.system`, and the per-agent skill
-   directories (`.agents/skills`, `.claude/skills`, …) — collecting each child skill
+   directories recognized by the ecosystem's reference implementations (`.agents/skills`,
+   `.claude/skills`, `.codex/skills`, `.cursor/…`, and peers) — collecting each child skill
    directory.
-3. If nothing was found, fall back to a bounded recursive scan.
+3. If nothing was found, or a full-depth scan is requested, fall back to a recursive scan
+   (bounded as the reference implementations bound it).
 
-A skill's identity is the `name:` in its `SKILL.md` frontmatter (directory name as fallback).
-First-seen wins on duplicate names. Pack member resolution (§2) resolves bare names against
-this procedure's results for the pack's own repository; nested `SKILL.md`s below a pack
-directory are invalid (§1) and not resolvable members.
+Conforming tools MUST match the reference implementations' discovery behavior; where this
+summary and their behavior diverge, the reference implementations govern. A skill's identity is
+the `name:` in its `SKILL.md` frontmatter (directory name as fallback). First-seen wins on
+duplicate names within one discovery pass. Pack member resolution (§2) resolves bare names
+against a **full-depth** pass over the pack's own repository (§1); nested `SKILL.md`s below a
+faced pack directory are invalid (§1) and not resolvable members.
