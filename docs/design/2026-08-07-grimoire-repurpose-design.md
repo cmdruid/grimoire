@@ -42,6 +42,15 @@ decisions those cycles build on and must not relitigate.
    help text; spec vocabulary strictly conventional (`pack`, `skills`, `setup`); no character
    names or show assets in the public identity (inspired-by + easter eggs only — active
    commercial IP).
+7. **Pack-as-skill (layout):** a pack **is a skill directory that also contains a `PACK.md`**.
+   The face `SKILL.md` is the pack's agent-facing front door; `PACK.md` frontmatter is the
+   machine manifest; members are **ordinary sibling skills** in the repo's `skills/` tree,
+   referenced by name. No nested `skills/` inside packs, no top-level `packs/` shelf. Grounded
+   in verified discovery mechanics: plain-CLI root scans walk `skills/` one level deep and never
+   see a `packs/` dir (recursive fallback only fires when the priority scan finds nothing), so
+   pack-as-skill is the only layout where the pack's front door degrades gracefully with zero
+   new discovery rules — a plain CLI installs the face as a normal atom and the manifest rides
+   along as payload.
 
 ## 1. Identity
 
@@ -49,8 +58,8 @@ decisions those cycles build on and must not relitigate.
 (qntx) as a library — it does not shell out to `skills-cli` — and may additionally offer
 CLI-passthrough sugar (`grimoire add owner/repo` behaving like `npx skills add`). The
 skills-are-spells / pack-is-a-grimoire vocabulary carries the theme: a pack is a bound, curated
-book of spells, which is exactly the existing doctrine ("a pack is a curated manifest, not a
-directory" — now: not *merely* a directory).
+book of spells — and per decision 7, the book is itself a spell: install the grimoire like any
+skill and it teaches the agent to use the rest.
 
 ## 2. Repo topology
 
@@ -60,28 +69,24 @@ grimoire/
 │   ├── grimoire-pack/    # pack format: parse/validate/resolve manifests (canonical impl)
 │   ├── grimoire-core/    # operations: wraps skill::SkillManager + pack ops; no UI imports
 │   └── grimoire/         # the TUI + CLI verbs (ratatui; binary `grimoire`)
-├── skills/               # the shared atoms — generic skills (Vercel-format, as today)
-├── packs/
-│   └── clankshop/
-│       ├── PACK.md       # manifest: frontmatter for tools, runbook body for humans
-│       └── skills/       # optional pack-specific skills (each <name>/SKILL.md)
+├── skills/               # ALL the atoms (Vercel-format, as today) — including pack faces:
+│   └── clankshop/        #   a pack: SKILL.md (face) + PACK.md (manifest + runbook body)
+│                         #   members = ordinary sibling skills, named in PACK.md frontmatter
 ├── docs/spec/            # the pack format spec (versioned document)
 ├── docs/design/          # design docs (as today)
 ├── install.sh            # stays: zero-dependency shell bootstrap + shell reference impl
 └── repos/skill-rs        # gitignored reading reference (the dep comes from crates.io, pinned)
 ```
 
-**Hard seam rule:** crates never read `packs/` or `skills/` at build time — content appears in
+**Hard seam rule:** crates never read `skills/` at build time — content appears in
 the workspace only as integration-test fixtures. This preserves the mechanism/composition
 doctrine (the tool never depends on the pack) and keeps future extraction of `crates/` to its own
 repo a `git mv`, which is the escape hatch the "ecosystem later" ambition relies on.
 
-**Pack layout (amended from single-file `packs/<name>.md`):** a pack is a **named directory
-marked by a `PACK.md` at its root**, mirroring the `<skill>/SKILL.md` idiom. Frontmatter is the
-machine surface; the body is the runbook. A pack directory may carry a `skills/` folder of
-**pack-specific skills** (e.g. clankshop's own executable-face skill belongs there, not among the
-generic atoms). Degenerate case that falls out for free: `PACK.md` at a repo's root makes the
-whole repo one distributable pack (pack-as-repo).
+**Pack layout (decision 7):** `skills/clankshop/` stays exactly where it is and gains a
+`PACK.md` (absorbing `packs/clankshop.md`); the `packs/` shelf retires. Degenerate case that
+still falls out for free: `PACK.md` at a repo's root makes the whole repo one distributable pack
+(pack-as-repo). Pack enumeration for tools = scan discovered skills for a `PACK.md` sibling.
 
 ## 3. Pack format (boundaries; details are sub-project ①)
 
@@ -90,17 +95,18 @@ Formalizes the existing frontmatter: `name`, `description`, `skills`, roles
 entrypoint). `grimoire-pack` becomes the canonical parser; `install.sh` remains the shell
 reference implementation.
 
-Open questions owned by ① (recorded here so they aren't lost):
+Open questions owned by ① (recorded here so they aren't lost; pack-as-skill dissolved the
+earlier nested-discovery and pack-local-namespace questions — members are ordinary skills under
+existing rules):
 
-- **Skill reference resolution:** a manifest's `skills:` list draws from the pack's own
-  `skills/` and the repo's shared `skills/` — resolution order (pack-local first?) and explicit
-  reference syntax to be specified.
-- **Name uniqueness:** pack-local skills are valid Vercel-format skills, so plain CLIs discover
-  them as ordinary atoms (graceful degradation working as intended — but pack-local ≠ hidden).
-  The spec needs a collision rule across a repo's packs and shared library.
+- **Member reference scope:** `skills:` names resolve against the same repo's discovered skills
+  in v1; whether/how a pack may reference skills from other repos is deferred — ① decides if
+  that deferral is spec'd explicitly.
 - **Lock semantics** for pack-as-unit installs (extending the existing pack-lock work).
 - **`setup:` contract:** what a tool is allowed to assume about the entrypoint (a slash-command
   string it offers to run — never auto-executes).
+- **Face-vs-manifest identity:** both `SKILL.md` and `PACK.md` carry name/description
+  frontmatter — ① specifies which wins where, and what a PACK.md-only (faceless) pack means.
 
 ## 4. TUI application (boundaries; details are sub-project ③)
 
@@ -117,14 +123,14 @@ build cycle. The format is load-bearing and small; the restructure is thin once 
 the layout; the TUI builds against a settled format.
 
 **Clankshop coordination (freeze rule):** the clankshop restructure proceeds in parallel, but
-`packs/clankshop.md` (→ `packs/clankshop/PACK.md`), the pack frontmatter/lock format, and
-`install.sh --pack` are owned by sub-project ① — clankshop phases touching those surfaces wait
-for ① so they land on the new format once. Moving `skills/clankshop/` into
-`packs/clankshop/skills/` is part of that same coordinated landing.
+the pack frontmatter/lock format, the `packs/clankshop.md` → `skills/clankshop/PACK.md`
+absorption, and `install.sh --pack` are owned by sub-project ① — clankshop phases touching
+those surfaces wait for ① so they land on the new format once. `skills/clankshop/` itself does
+not move.
 
 ## 6. Testing & risk (umbrella altitude)
 
-- `grimoire-pack`: golden tests with `packs/clankshop/PACK.md` as fixture (fixture use only —
+- `grimoire-pack`: golden tests with `skills/clankshop/PACK.md` as fixture (fixture use only —
   the seam rule).
 - `grimoire-core`: sandboxed integration tests against throwaway fixture repos/projects (the
   harness pattern proven in the backend evaluation).
