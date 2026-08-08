@@ -98,7 +98,7 @@ legitimately retain every retired term (verified: 8 files hit `derive-seams` alo
 
 ## Phase 2 — the new roles and the instruments
 
-- [ ] `skills/guardian/` — new build (SKILL.md + tend/judge verbs; `testing/` chapter seeded
+- [x] `skills/guardian/` — new build (SKILL.md + tend/judge verbs; `testing/` chapter seeded
   from doctrine Task 0.3); joins lock `skills:`/`core:` + README inventory in the same commit →
   Task 2.6
 - [ ] `skills/debugger/SKILL.md` — conform as the diagnostic instrument: findings per the

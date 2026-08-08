@@ -612,15 +612,15 @@ verification-judgment flow); modify `packs/clankshop.md` frontmatter (`skills:` 
 (The design specifies guardian's scope, not its verb names — these two are this plan's minimal
 decomposition; renaming them during build is a task-local call, adding a third is not.)
 
-- [ ] The role: tends `.handbook/testing/` (gate definition, CI/CD pipeline doc, diagnostics
+- [x] The role: tends `.handbook/testing/` (gate definition, CI/CD pipeline doc, diagnostics
   playbook — seeded from the doctrine's `testing/` chapter, Task 0.3); owns verification
   **judgment** (defect vs flaky gate; does this change need a deeper pass; is the playbook
   missing a chapter). No records of its own; no seat; investigations are written by whoever runs
   the debugger. On unstamped roots: read-only, emit the fact.
-- [ ] Description self-scopes on verification-stewardship intents ("harden the gate", "the CI
+- [x] Description self-scopes on verification-stewardship intents ("harden the gate", "the CI
   keeps flaking", "we need a diagnostics playbook") — distinct from debugger's
   root-cause-a-defect intents; the phase-gate probe checks the pair.
-- [ ] Verify: lint (new dir; `README.md` inventory line added in the same commit); lock updated;
+- [x] Verify: lint (new dir; `README.md` inventory line added in the same commit); lock updated;
   role-contract conformance (tend-don't-own, removable without harm — chapter content never
   names guardian). Commit.
 

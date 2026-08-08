@@ -50,7 +50,8 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `feature` | the planning spine: brainstorm → design → plan → build, plus independent review |
-| `foreman` | the dev-workflow hub: route changes, deploy/operate a `.agents/foreman/` docs system — `setup` (greenfield) or `migrate` (brownfield onramp) |
+| `foreman` | the change router + rulebook steward: classify a change, dispatch it to its lane, tend the deployed routing/workflow chapters |
+| `guardian` | the verification role: tend `.handbook/testing/` (gate / pipeline / diagnostics playbook) + the defect-vs-flake and verification-depth judgment |
 | `handoff` | save/resume a session as a self-contained hand-off any agent can pick up |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
