@@ -47,6 +47,8 @@ for key in handbook_unknown steward_stale unregistered orphaned_registrations \
 done
 expect "green: stores complete"        "stores_missing=" "$TMP/facts"
 expect "green: records projection current" "records_projection_version=$DV" "$TMP/facts"
+expect_eq "green: lock fact lists have no empty tokens" "clean" \
+  "$(grep -E '^lock_(members|optional)=' "$TMP/facts" | grep -q ',,' && echo doubled || echo clean)"
 
 # every seeded entry carries its provenance marker / origin keys
 inv_doc=$(grep -cE '^INV-[0-9]+:' "$DOCTRINE/rules/INVARIANTS.md")

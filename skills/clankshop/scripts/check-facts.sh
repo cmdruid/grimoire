@@ -352,8 +352,8 @@ LOCK=$DIR/../PACK.md
 if [ -f "$LOCK" ]; then
   echo "lock_found=1"
   lock_face=$(sed -n 's/^name:[[:space:]]*//p' "$LOCK" | head -1)
-  lock_skills=$(sed -n 's/^required:[[:space:]]*//p' "$LOCK" | head -1 | tr ',' ' ')
-  lock_optional=$(sed -n 's/^optional:[[:space:]]*//p' "$LOCK" | head -1 | tr ',' ' ')
+  lock_skills=$(sed -n 's/^required:[[:space:]]*//p' "$LOCK" | head -1 | tr ',' ' ' | tr -s ' ')
+  lock_optional=$(sed -n 's/^optional:[[:space:]]*//p' "$LOCK" | head -1 | tr ',' ' ' | tr -s ' ')
   lock_members="$lock_face $lock_skills"
   echo "lock_members=$(printf '%s' "$lock_members" | tr ' ' ',')"
   echo "lock_optional=$(printf '%s' "$lock_optional" | tr ' ' ',')"
