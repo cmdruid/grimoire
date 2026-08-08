@@ -1,6 +1,6 @@
 # `/backlog task` — capture a task (product/feature follow-up)
 
-Capture follow-up work into `.records/tasks.md`. TASKS is the one tracker with a **human producer** —
+Capture follow-up work into `.records/trackers/tasks.md`. TASKS is the one tracker with a **human producer** —
 "put this in the backlog" is something *you* say — alongside agents. This verb is the quick, anytime
 way to add a well-formed item.
 
@@ -14,9 +14,9 @@ byproducts across *all* trackers is `/backlog debrief`.
 - "put this in the backlog", "add a task: X", "remind me to …", "/backlog task", or "any
   follow-ups worth capturing from this?" — anytime, by you or an agent.
 
-**Do NOT use** for: a defect (`/backlog bug` → `.records/bugs/`), a project problem/concern/limitation
-(`/backlog issue` → `.records/issues.md`), a durable project fact (`/backlog note` →
-`.records/notes/`), a dev-experience observation (`/backlog feedback` → `.records/feedback.md`),
+**Do NOT use** for: a defect (`/backlog bug` → `.records/trackers/bugs/`), a project problem/concern/limitation
+(`/backlog issue` → `.records/trackers/issues.md`), a durable project fact (`/backlog note` →
+`.records/trackers/notes/`), a dev-experience observation (`/backlog feedback` → `.records/trackers/feedback.md`),
 the end-of-work multi-tracker sweep (`/backlog debrief`), or tidying the list (`/backlog curate`).
 Don't invoke it mid-task for routine status checks.
 
@@ -24,15 +24,16 @@ Don't invoke it mid-task for routine status checks.
 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
-- Tasks: `<root>/.records/tasks.md`. Create it if missing (`# Tasks` header + a one-line note that
-  an item is *removed when it ships*, recorded in `.records/archive/`).
+- Tasks: `<root>/.records/trackers/tasks.md`. If the trackers are missing — or the root carries no
+  installation block at all (unstamped) — run `/backlog init` first (lazily; it scaffolds the
+  trackers and creates-or-adopts the installation block), then continue.
 
 ## Tasks structure
 
-`.records/tasks.md` is a single **living** list — one top-level header, one section per group. Items
-are plain `-` bullets (**no checkboxes**): an item is *open* while it's listed and simply **removed
-when it ships** — the commit, plus any `.records/archive/` stream digest, is the record (turning it into
-work is `/feature` / `/workstream`; the periodic relevance pass is `/foreman calibrate`, not a checkbox).
+`.records/trackers/tasks.md` is a single **living** list — one top-level header, one section per group. Items
+are plain `-` bullets (**no checkboxes**): an item is *open* while it's listed and **removed on
+completion** (`/backlog done T-041` — its done-log line is the archive; turning it into
+work is `/feature` / `/workstream`).
 
 **Follow the file's existing groups.** If `tasks.md` exists, adopt its group headings and heading
 level exactly — extend them, don't restructure. Add a new group only when nothing fits. A long-lived
@@ -48,8 +49,13 @@ buckets only, skipping any that's empty:
 (A problem observed but *not* a build item is a `/backlog issue`, not a task; a reproducible defect is
 a `/backlog bug`.)
 
-**Per-item:** concrete description (with `file:line` where it applies) · **why** (one line) ·
-**effort** `(S/M/L)` · trailing `· added YYYY-MM-DD`. Mark a genuine maybe `(unsure)` and say why.
+**Per-item — the wire format** (schema: the installation's `.handbook/rules/RECORDS.md`):
+`- T-041 — <task text> · added YYYY-MM-DD`. The task text carries the concrete description (with
+`file:line` where it applies) · **why** (one line) · **effort** `(S/M/L)`. Mark a genuine maybe
+`(unsure)` and say why. **ID allocation is trunk-side only:** take the next free `T-` number
+scanning the live list *and* the done log (IDs are never reused); when capturing where the trunk
+is unreachable (a work branch, detached HEAD), write `((pending: <slug>))` in the ID position —
+`/backlog curate` stamps the real ID at landing, before anything cites it.
 
 ## Capture
 
@@ -72,7 +78,7 @@ Procedure:
    **Dedupe** against existing items — skip a near-duplicate rather than add it. Never edit or
    remove existing items in capture; you only add. (To *reshape* the list, that's `/backlog curate`.)
 5. **Commit (standalone only).** Invoked **standalone**, scoped-commit the tasks change via
-   `scripts/scoped-commit.sh <root> "Tasks: <short what>" .records/tasks.md`, then run the host doc-linter.
+   `scripts/scoped-commit.sh <root> "Tasks: <short what>" .records/trackers/tasks.md`, then run the host doc-linter.
    Invoked **inside `/backlog debrief`**, do **not** commit — only write; the sweep makes the
    single atomic commit. (This standalone self-commit is a deliberate refinement: a `/backlog task`
    add now lands on its own rather than waiting for an unrelated commit.)
@@ -80,10 +86,10 @@ Procedure:
 
 ## Removal — a pointer, not a mode
 
-A shipped or abandoned item is **removed**, not checked off: delete the bullet (in the commit that
-ships the work, or when `/backlog curate` weeds a dead one). There is no `prune` step and no `[x]` —
-the commit history plus any `.records/archive/` stream digest are the record, and the periodic relevance
-pass is `/foreman calibrate`. **This verb never writes `.records/archive/`.**
+A finished or abandoned item is **removed**, not checked off — via `/backlog done T-041` (which
+appends the one done-log line that is its archive), or when `/backlog curate` weeds a dead one
+(logged `dropped`). There is no `prune` step and no `[x]`. **This verb never removes entries and
+never writes the done log.**
 
 ## Relationship to neighboring verbs
 
@@ -104,6 +110,6 @@ pass is `/foreman calibrate`. **This verb never writes `.records/archive/`.**
 
 ## Done when
 
-The named follow-up(s) are in `.records/tasks.md` as well-formed, deduped, grouped bullets — and nothing
+The named follow-up(s) are in `.records/trackers/tasks.md` as well-formed, deduped, grouped bullets — and nothing
 shipped is left lingering (that removal is on-ship + `/backlog curate` hygiene, never this verb). To reshape or
 weed the list, run `/backlog curate`.

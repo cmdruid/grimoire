@@ -1,5 +1,6 @@
 ---
 type: bug
+id: <B-n — next free counter, trunk-allocated; pending until curation stamps it branch-side>
 status: open
 updated: <YYYY-MM-DD>
 ---

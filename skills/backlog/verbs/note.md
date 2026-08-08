@@ -1,7 +1,7 @@
 # `/backlog note` — capture a durable project fact / knowledge
 
 Capture a **durable fact or piece of knowledge about the project** — the kind of thing worth
-remembering but not yet a load-bearing invariant — into `.records/notes/<slug>.md`. This is the
+remembering but not yet a load-bearing invariant — into `.records/trackers/notes/<slug>.md`. This is the
 quick, one-shot path to the notes store; the full end-of-work sweep is `/backlog debrief`.
 
 **A fact about the project, not an action and not the dev experience.** A note records *what is true*
@@ -33,9 +33,15 @@ browsing. If it reads as a standalone investigation someone would open on its ow
 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
-- Note: `<root>/.records/notes/<slug>.md`, from this skill's `templates/note.md`. Start
-  the file with the template's frontmatter block (`type: note` / `status` / `updated` / `related`) —
-  the doc-linter gate rejects a `notes/` store-dir file without it. Schema: `docs/TAXONOMY.md`.
+- Note: `<root>/.records/trackers/notes/<slug>.md`, from this skill's `templates/note.md`. Start
+  the file with the template's frontmatter block (`type: note` / `id` / `status` / `updated` /
+  `related`) — the store-dir frontmatter is mandatory. `id:` takes the next free `N-` counter,
+  **allocated trunk-side only** (scan the live store, its `archive/`, *and* the done log; IDs are
+  never reused); capturing where the trunk is unreachable, leave `id:` pending — `/backlog curate`
+  stamps it at landing. Schema: the installation's `.handbook/rules/RECORDS.md`.
+- If the trackers are missing — or the root carries no installation block at all (unstamped) —
+  run `/backlog init` first (lazily; it scaffolds the trackers and creates-or-adopts the
+  installation block), then continue.
 
 ## Note structure
 
@@ -50,7 +56,7 @@ report, a `MEMORY.md` line), never left orphaned.
    really about the dev experience — write no note (route it to its home) and say so.
 2. **Confirm the kind.** It's a project *fact*, not a follow-up and not dev-experience feedback; it's
    worth remembering but below the `MEMORY.md` invariant bar.
-3. **Slug** the note (short kebab). **Write** it to `.records/notes/<slug>.md` from
+3. **Slug** the note (short kebab). **Write** it to `.records/trackers/notes/<slug>.md` from
    `templates/note.md` — frontmatter block first, then the `_backs:_` line and the long-form context.
 4. **Link it** from the tracker entry it backs (fill the `related:` frontmatter and the entry's
    pointer). A note that nothing links to is an orphan — either link it or it doesn't belong here.
@@ -79,6 +85,6 @@ report, a `MEMORY.md` line), never left orphaned.
 
 ## Done when
 
-The durable fact is a `.records/notes/<slug>.md` file with the `templates/note.md` frontmatter,
+The durable fact is a `.records/trackers/notes/<slug>.md` file with the `templates/note.md` frontmatter,
 linked from the tracker entry it backs, deduped against what's there — and the chat names the note
 title and path.

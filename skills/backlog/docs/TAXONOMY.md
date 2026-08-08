@@ -17,11 +17,11 @@ of building it? Four kinds are project-subject; one (`feedback`) is the single d
 
 | kind | subject | nature | store |
 |---|---|---|---|
-| `note` | project | a durable fact / piece of knowledge | `.records/notes/<slug>.md` |
-| `task` | project | an action to build / do | `.records/tasks.md` |
-| `issue` | project | a problem / concern / limitation | `.records/issues.md` |
-| `bug` | project | a reproducible code defect | `.records/bugs/<YYYY-MM-DD>-<slug>.md` |
-| `feedback` | dev-experience | any observation (skills / tooling / env / workflow) | `.records/feedback.md` |
+| `note` | project | a durable fact / piece of knowledge | `.records/trackers/notes/<slug>.md` |
+| `task` | project | an action to build / do | `.records/trackers/tasks.md` |
+| `issue` | project | a problem / concern / limitation | `.records/trackers/issues.md` |
+| `bug` | project | a reproducible code defect | `.records/trackers/bugs/<YYYY-MM-DD>-<slug>.md` |
+| `feedback` | dev-experience | any observation (skills / tooling / env / workflow) | `.records/trackers/feedback.md` |
 
 These five kinds and their stores are the same set the `SKILL.md` verb-dispatch table routes to;
 keep the two identical. A host does **not** extend this set — the five kinds are the whole taxonomy.
@@ -56,7 +56,7 @@ Most captures are obvious. Three boundaries carry real judgment; the model makes
   decision, a detail too long for one tracker line. **Subordinate:** a note exists to be reached
   through the tracker entry that links it, never by browsing. If it reads as a standalone
   investigation someone would open on its own, it belongs in `reports/`, not `notes/`.
-- **Store:** `.records/notes/<slug>.md` (short kebab slug), from `templates/note.md`. A
+- **Store:** `.records/trackers/notes/<slug>.md` (short kebab slug), from `templates/note.md`. A
   **store dir** — carries frontmatter (see below).
 - **Format:** the frontmatter block, then a `# <Title> — note` heading, a `_backs:_` line naming the
   tracker entry it backs, then the long-form context. Link it from that entry (fill `related:`) — a
@@ -67,19 +67,19 @@ Most captures are obvious. Three boundaries carry real judgment; the model makes
   decision, out-of-batch future scope. (A problem observed but *not* a build item is an `issue`; a
   reproducible defect is a `bug`.) TASKS is the one tracker with a **human producer** ("put this in
   the backlog") alongside agents.
-- **Store:** `.records/tasks.md` — a single **flat living list**, not a store dir (no
+- **Store:** `.records/trackers/tasks.md` — a single **flat living list**, not a store dir (no
   per-file frontmatter). One top-level header, one section per durable **domain / milestone group**
   (e.g. `Performance`, `Tooling / CI`, `Known limitations`); a fresh file seeds from `Loose ends` /
   `Adjacent improvements` / `Open questions` / `Future scope`.
 - **Format:** plain `-` bullets, **no checkboxes** — an item is *open* while listed and simply
-  **removed** when it ships (the commit, plus any `.records/archive/` stream digest, is the record).
+  **removed** on completion (`/backlog done` — the done-log line in `.records/done/log.md` is the archive).
   Per item: concrete description (with `file:line` where it applies) · **why** (one line) · **effort**
   `(S/M/L)` · trailing `· added YYYY-MM-DD`. Mark a genuine maybe `(unsure)` and say why.
 
 ### `issue` — a project problem / concern / limitation
 - **What:** "something about the project is wrong, risky, or limited" that isn't a reproducible
   defect and isn't a build item — a known limitation, an architectural risk, a design concern, a gap.
-- **Store:** `.records/issues.md` — a **flat log**, not a store dir (no per-file frontmatter).
+- **Store:** `.records/trackers/issues.md` — a **flat log**, not a store dir (no per-file frontmatter).
 - **Format:** entries grouped under category sections with a **category-prefixed running number** —
   `P#` (Problem / limitation) or `R#` (Risk / concern) — taking the next free number under that
   prefix, never renumbering existing entries. Each entry:
@@ -96,11 +96,11 @@ Most captures are obvious. Three boundaries carry real judgment; the model makes
   behavior. If it turns out **working-as-coded but surprising**, it's not a bug: capture it as a
   `/backlog note` (`/foreman` promotes it to `.agents/foreman/docs/GOTCHAS.md` during `calibrate`) and file no
   report.
-- **Store:** `.records/bugs/<YYYY-MM-DD>-<slug>.md`, from `templates/bug-report.md`. A
+- **Store:** `.records/trackers/bugs/<YYYY-MM-DD>-<slug>.md`, from `templates/bug-report.md`. A
   **store dir** — carries frontmatter (see below). Load-bearing rule: **`bugs/` is a store, not a
   work queue** — a report is tracked from a **linked actionable item** (a `tasks.md` line, or an
   `issues.md` entry when it's a broader project problem), never fished out of `bugs/` for work. Fixed
-  reports move to `.records/bugs/archive/`.
+  reports move to `.records/trackers/bugs/archive/`.
 - **Format** (per the template): **Severity** (crash | wrong-output | dropped-state | flaky |
   cosmetic) and **flaky/transient?**; a **Repro** (a seed + scripted scenario, or exact commands +
   steps — a scripted repro the harness can replay is best); **Expected vs actual** with evidence (a
@@ -112,7 +112,7 @@ Most captures are obvious. Three boundaries carry real judgment; the model makes
   directional ideas about the skills, scripts, tooling, and environment. The **single**
   dev-experience channel (observations that once split into `issue`s now all land here). Anything
   about the *project itself* goes to its project home; keep only the dev-experience residue here.
-- **Store:** `.records/feedback.md` — a **flat list** of dated entries, no sections, not a
+- **Store:** `.records/trackers/feedback.md` — a **flat list** of dated entries, no sections, not a
   store dir (no per-file frontmatter). Newest added at the bottom of the live region.
 - **Format** (per `templates/feedback.md`): `### <short title> · YYYY-MM-DD` + a short body noting
   whether it's positive / a concern / a friction / a directional idea, and where it might lead if
@@ -149,13 +149,13 @@ them. Templates, and any `README.md` / `archive/` inside a store, carry no front
 
 | Carries frontmatter — store dirs | Does NOT — flat aggregators / non-instances |
 |---|---|
-| `.records/bugs/`, `.records/notes/` | `.records/tasks.md`, `.records/issues.md`, `.records/feedback.md`, `templates/*`, a store's `README.md` / `archive/` |
+| `.records/trackers/bugs/`, `.records/trackers/notes/` | `.records/trackers/tasks.md`, `.records/trackers/issues.md`, `.records/trackers/feedback.md`, `templates/*`, a store's `README.md` / `archive/` |
 
 Because coverage of the store dirs is total, the metadata is queryable:
 
 ```sh
-rg -l '^status: open' .records/bugs/     # all open bug reports
-rg -l '^type: note'   .records/notes/    # every note
+rg -l '^status: open' .records/trackers/bugs/     # all open bug reports
+rg -l '^type: note'   .records/trackers/notes/    # every note
 ```
 
 ## Draining is the consumer's job (this schema captures only)

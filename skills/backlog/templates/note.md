@@ -1,5 +1,6 @@
 ---
 type: note
+id: <N-n — next free counter, trunk-allocated; pending until curation stamps it branch-side>
 status: evergreen
 updated: <YYYY-MM-DD>
 related: [<the index entry this backs>]

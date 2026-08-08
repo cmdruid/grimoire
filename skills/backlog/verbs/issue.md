@@ -1,6 +1,6 @@
 # `/backlog issue` — capture a project problem / concern / limitation
 
-File a **project problem, concern, or limitation** into `.records/issues.md` the moment it
+File a **project problem, concern, or limitation** into `.records/trackers/issues.md` the moment it
 surfaces — a known limitation, an architectural concern, a risk, a non-code problem that isn't a
 reproducible defect and isn't a build item. This is the quick, one-shot path to the issues log; the
 full end-of-work sweep is `/backlog debrief`.
@@ -34,20 +34,21 @@ agent avoids the trap.
 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
-- Issues log: `<root>/.records/issues.md`. It is a flat markdown log, **not** a store dir — no
-  per-file frontmatter (the doc-linter does not gate it).
+- Issues log: `<root>/.records/trackers/issues.md`. It is a flat markdown log, **not** a store dir — no
+  per-file frontmatter. If the trackers are missing — or the root carries no installation block at
+  all (unstamped) — run `/backlog init` first (lazily; it scaffolds the trackers and
+  creates-or-adopts the installation block), then continue.
 
 ## Issues structure & numbering
 
-`.records/issues.md` groups entries under category sections and gives each a **category-prefixed running
-number**:
-- **`P#`** — Problem / limitation (a project defect-of-design, a known limitation, a gap).
-- **`R#`** — Risk / concern (an architectural risk, a fragility, a concern to revisit).
-
-(Sessions also add dated `## Added <date> — <session>` sections; an entry still takes the next free
-number for its category prefix.) **Follow the file's existing scheme** — pick the category that
-fits, scan for the **highest existing number** under that prefix, and take the next one. Do not
-renumber existing entries.
+`.records/trackers/issues.md` groups `### I-n` entries under `##` category sections — the wire
+format (schema: the installation's `.handbook/rules/RECORDS.md`) is
+`### I-017 — <title> (HIGH|MEDIUM|LOW)`. **ID allocation is trunk-side only:** take the next free
+`I-` number scanning the live file *and* the done log (IDs are never reused; never renumber);
+capturing where the trunk is unreachable, write `((pending: <slug>))` in the ID position —
+`/backlog curate` stamps the real ID at landing. A migrated entry keeps its old identifier as
+`(alias <old>)` on the heading line. **Follow the file's existing category sections** — pick the
+one that fits; add a section only when nothing fits.
 
 ## Procedure
 
@@ -56,23 +57,23 @@ renumber existing entries.
    observation (`/backlog feedback`); route those to their home and stop. If it's a working-as-coded
    trap, capture it as a `/backlog note` (`/foreman` promotes it to `.agents/foreman/docs/GOTCHAS.md`
    during `calibrate`).
-2. **Form the entry.** Pick the category (P/R) and the next free number. Write:
-   - `### <prefix><n> — <short title> (<HIGH|MEDIUM|LOW>)`
+2. **Form the entry.** Pick the category section and allocate the next free `I-` number (or the
+   pending placeholder off-trunk). Write:
+   - `### I-<n> — <short title> (<HIGH|MEDIUM|LOW>)`
    - **What's wrong** — the concrete problem/concern/limitation, with `file:line` / context where it
      applies.
    - **Impact** — who/what it affects, how badly.
    - **Suggested direction** — the change or investigation that would address it (one or two lines).
 3. **Dedupe** against existing entries — if the problem is already logged, sharpen that entry
    rather than adding a near-duplicate.
-4. **Append** under the right category section, continuing the numbering. Never edit unrelated
-   entries.
+4. **Append** under the right category section. Never edit unrelated entries.
 5. **Capture a durable trap as a `/backlog note`** if one surfaced — `/foreman` promotes it to
    `.agents/foreman/docs/GOTCHAS.md` during `calibrate`.
 6. **Commit (standalone only).** Invoked **standalone**, scoped-commit via
-   `scripts/scoped-commit.sh <root> "Issue <prefix><n>: <short what>" .records/issues.md` (+ the
-   note file under `.records/notes/` if you captured a trap), then run the host doc-linter. Invoked **inside `/backlog debrief` or a `/foreman calibrate`
+   `scripts/scoped-commit.sh <root> "Issue I-<n>: <short what>" .records/trackers/issues.md` (+ the
+   note file under `.records/trackers/notes/` if you captured a trap), then run the host doc-linter. Invoked **inside `/backlog debrief` or a `/foreman calibrate`
    sweep**, do **not** commit — only write; the sweep makes the single atomic commit.
-7. **Report** the entry id (`P#`/`R#`) and the path.
+7. **Report** the entry id (`I-n`) and the path.
 
 ## Relationship to neighboring verbs
 

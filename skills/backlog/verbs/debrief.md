@@ -37,19 +37,19 @@ apply it as written; each home's format authority is its capture verb.
 
 | Surfaced thing | Home | Capture verb |
 |---|---|---|
-| a thing to build / an unfinished or adjacent action | `.records/tasks.md` | `/backlog task` |
-| a reproducible code defect | `.records/bugs/<YYYY-MM-DD>-<slug>.md` | `/backlog bug` |
-| a project problem / concern / limitation | `.records/issues.md` | `/backlog issue` |
-| a durable project fact / knowledge — including a would-be **invariant or gotcha** | `.records/notes/<slug>.md` | `/backlog note` |
-| a dev-experience observation (skills / tooling / env / workflow) | `.records/feedback.md` | `/backlog feedback` |
+| a thing to build / an unfinished or adjacent action | `.records/trackers/tasks.md` | `/backlog task` |
+| a reproducible code defect | `.records/trackers/bugs/<YYYY-MM-DD>-<slug>.md` | `/backlog bug` |
+| a project problem / concern / limitation | `.records/trackers/issues.md` | `/backlog issue` |
+| a durable project fact / knowledge — including a would-be **invariant or gotcha** | `.records/trackers/notes/<slug>.md` | `/backlog note` |
+| a dev-experience observation (skills / tooling / env / workflow) | `.records/trackers/feedback.md` | `/backlog feedback` |
 
 **Would-be invariant or gotcha → a `note`.** A load-bearing invariant or a working-as-coded trap that
 surfaces is captured as a `/backlog note` (a durable project fact) — `debrief` never writes
 `MEMORY.md` or `GOTCHAS.md`, and never anything under `.agents/foreman/`. Promoting a note into a
 `MEMORY.md` invariant or a `GOTCHAS.md` entry is `/foreman`'s job (during `calibrate`), not this sweep's.
 
-**Frontmatter is mandatory on any store-dir file you create here** (`.records/bugs/`,
-`.records/notes/`): start it with that type's frontmatter block — copying from the named
+**Frontmatter is mandatory on any store-dir file you create here** (`.records/trackers/bugs/`,
+`.records/trackers/notes/`): start it with that type's frontmatter block — copying from the named
 template gives it to you. The doc-linter gate rejects a store-dir file without it. Schema:
 `docs/TAXONOMY.md`.
 
@@ -61,7 +61,7 @@ template gives it to you. The doc-linter gate rejects a store-dir file without i
   conversation — code touched, a defect observed, a decision deferred, a tool that fought you, an
   idea the user floated. Do **not** pad with pattern-matched generics ("add more tests"). Mark a
   genuine maybe `(unsure)` and say why; surfacing uncertainty beats false confidence.
-- **`bugs/` is a store, not a queue.** A defect → file the **report** in `.records/bugs/` *and*
+- **`bugs/` is a store, not a queue.** A defect → file the **report** in `.records/trackers/bugs/` *and*
   create the actionable item (a `tasks.md` line, or an `issues.md` entry) that **links** it. The
   report is the evidence; the linked item is what gets worked. Never leave a report with nothing
   pointing at it.
@@ -75,9 +75,9 @@ template gives it to you. The doc-linter gate rejects a store-dir file without i
 
 All paths project-relative. Resolve the project root + real date with `date +%Y-%m-%d` — don't guess.
 
-- `<root>/.records/tasks.md`, `<root>/.records/issues.md`, `<root>/.records/feedback.md`
-- `<root>/.records/bugs/<YYYY-MM-DD>-<slug>.md` (from this skill's `templates/bug-report.md`)
-- `<root>/.records/notes/<slug>.md` (from this skill's `templates/note.md`)
+- `<root>/.records/trackers/tasks.md`, `<root>/.records/trackers/issues.md`, `<root>/.records/trackers/feedback.md`
+- `<root>/.records/trackers/bugs/<YYYY-MM-DD>-<slug>.md` (from this skill's `templates/bug-report.md`)
+- `<root>/.records/trackers/notes/<slug>.md` (from this skill's `templates/note.md`)
 
 **Landing debrief captures (the root may be off-trunk):** these are **shared `.records/`
 files** — cross-cutting captures that must be durable + visible *now*, independent of any stream.
@@ -89,8 +89,8 @@ lands it. The trunk-branch guard + the pathspec-atomic commit rule are in the ro
 discipline*; apply them here. `debrief` is a **sweep**, so it makes **one** atomic commit over
 **every** file it touched (the capture verbs it fans out to only *write* — they don't self-commit
 inside the sweep): `scripts/scoped-commit.sh <root> "Debrief: route follow-ups" <every file this
-debrief wrote>` — list `.records/tasks.md` `.records/issues.md`
-`.records/feedback.md`, any bug report, any `.records/notes/<slug>.md`. The worktree's
+debrief wrote>` — list `.records/trackers/tasks.md` `.records/trackers/issues.md`
+`.records/trackers/feedback.md`, any bug report, any `.records/trackers/notes/<slug>.md`. The worktree's
 ignored hand-off is not a debrief target.
 
 ## Procedure
@@ -104,7 +104,7 @@ ignored hand-off is not a debrief target.
    but not opened. The scan is primarily over the **conversation** (the richest source), but ground
    it with filesystem facts: `scripts/backlog-health.sh debrief-scan <root> [<trunk-ref>]` emits
    `dirty_backlog:` (uncommitted writes to backlog's own trackers --
-   `.records/tasks.md`/`issues.md`/`feedback.md`/`bugs/`/`notes/` — captured along the way but not
+   `.records/trackers/tasks.md`/`issues.md`/`feedback.md`/`bugs/`/`notes/` — captured along the way but not
    yet routed) and `new_todos:` (TODO/FIXME/XXX/HACK markers this work added — candidates to route
    or resolve).
 4. **Bin each into exactly one home** per the taxonomy. Sketch the routing plan first (what goes
@@ -117,9 +117,9 @@ ignored hand-off is not a debrief target.
      (TASKS/ISSUES) per `/backlog bug`. `bugs/` is a store, not a queue — never leave a report
      unlinked.
    - **ISSUES** → the `/backlog issue` convention: an impact-ranked entry (what's wrong · impact ·
-     suggested direction), continuing the file's category numbering (`P#`/`R#`).
+     suggested direction), the `I-` wire format, trunk-side ID allocation.
    - **notes** → the `/backlog note` convention: a durable project fact in
-     `.records/notes/<slug>.md` (frontmatter block + `_backs:_` line), linked from the tracker
+     `.records/trackers/notes/<slug>.md` (frontmatter block + `_backs:_` line), linked from the tracker
      entry it backs. A would-be **invariant or gotcha** is captured here as a note — `/foreman`
      promotes it to `MEMORY.md`/`GOTCHAS.md` during `calibrate`.
    - **FEEDBACK** → the `/backlog feedback` convention: a dated entry (`templates/feedback.md`), noting
@@ -158,6 +158,6 @@ ignored hand-off is not a debrief target.
 ## Done when
 
 Every byproduct the work surfaced sits in exactly one durable backlog home — with a
-`.records/notes/` fact linked where an entry needed depth (or a would-be invariant/gotcha
+`.records/trackers/notes/` fact linked where an entry needed depth (or a would-be invariant/gotcha
 parked as a note for `/foreman` to promote) — nothing is double-logged, nothing was written under
 `.agents/foreman/`, and the chat report names what went where.

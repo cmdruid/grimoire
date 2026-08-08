@@ -39,19 +39,19 @@ legitimately retain every retired term (verified: 8 files hit `derive-seams` alo
 
 ## Phase 2 — backlog (the records instrument; re-framing only, NO rename)
 
-- [ ] `skills/backlog/SKILL.md` — tracker store paths (`.records/` flat → `.records/trackers/`)
+- [x] `skills/backlog/SKILL.md` — tracker store paths (`.records/` flat → `.records/trackers/`)
   + verb table gains `done` + escalation family → Task 2.1
-- [ ] `skills/backlog/verbs/{task,bug,issue,note,feedback}.md` — store paths, trunk-side ID
+- [x] `skills/backlog/verbs/{task,bug,issue,note,feedback}.md` — store paths, trunk-side ID
   allocation discipline, lazy-`init` call on unstamped roots → Task 2.1
-- [ ] `skills/backlog/verbs/init.md` — door registration rewritten to the pack-style block
+- [x] `skills/backlog/verbs/init.md` — door registration rewritten to the pack-style block
   (today: path-SHA stamp + `Edges:` body, lines 48/85) → Task 2.1
-- [ ] `skills/backlog/scripts/scaffold-records.sh` — hardcodes old flat store paths; rewrite to
+- [x] `skills/backlog/scripts/scaffold-records.sh` — hardcodes old flat store paths; rewrite to
   `.records/trackers/` + ID-aware shapes → Task 2.1
-- [ ] `skills/backlog/scripts/backlog-health.sh` — hardcodes old flat store paths; rewrite +
+- [x] `skills/backlog/scripts/backlog-health.sh` — hardcodes old flat store paths; rewrite +
   absorb foreman-health `inventory`'s tracker-size facts → Task 2.1
-- [ ] `skills/backlog/templates/{bug-report,note}.md` — store-dir frontmatter gains `id:` →
+- [x] `skills/backlog/templates/{bug-report,note}.md` — store-dir frontmatter gains `id:` →
   Task 2.1
-- [ ] `skills/foreman/templates/done-record.md` — **copied** to
+- [x] `skills/foreman/templates/done-record.md` — **copied** to
   `skills/backlog/templates/done-record.md` (backlog is the `done/` steward); the foreman copy
   stays until Task 3.2 (live `workstream/verbs/ship.md:107` still references it) → Task 2.1
 - [ ] `skills/backlog/verbs/curate.md` — ID stamping, duplicate-ID repair with aliases, ticket

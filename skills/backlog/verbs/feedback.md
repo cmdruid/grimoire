@@ -1,7 +1,7 @@
 # `/backlog feedback` — capture a dev-experience observation
 
 Capture the agent's voice on the **development experience** — the skills, scripts, tooling, and
-environment you work *through* — into `.records/feedback.md`. This is the **single dev-experience
+environment you work *through* — into `.records/trackers/feedback.md`. This is the **single dev-experience
 channel**: observations, praise, concerns, and the day-to-day frictions (a slow/opaque gate, a silent
 failure, a misleading doc, a harness papercut) that used to be filed as `issue`s all land here. This
 is the quick, one-shot path to the feedback log; the full end-of-work sweep is `/backlog debrief`.
@@ -32,22 +32,29 @@ problem/concern/limitation (`/backlog issue`), a reproducible defect (`/backlog 
 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
-- Feedback: `<root>/.records/feedback.md`. Create it if missing (`# FEEDBACK` header + the one-line note
-  that project items go to their real home). It is a flat log, **not** a store dir — no per-file
-  frontmatter.
+- Feedback: `<root>/.records/trackers/feedback.md`. It is a flat log, **not** a store dir — no
+  per-file frontmatter. If the trackers are missing — or the root carries no installation block at
+  all (unstamped) — run `/backlog init` first (lazily; it scaffolds the trackers and
+  creates-or-adopts the installation block), then continue.
 
 ## Feedback structure
 
-`.records/feedback.md` is a single **flat** list of dated entries — **no sections**, newest added at the
-bottom of the live region. Each entry follows `templates/feedback.md`:
+`.records/trackers/feedback.md` is a single **flat** list of dated entries — **no sections**, newest added at the
+bottom of the live region. The wire format (schema: the installation's
+`.handbook/rules/RECORDS.md`) is `### F-003 · <short title> · YYYY-MM-DD`; each entry follows
+`templates/feedback.md`:
 
 ```
-### <short title> · YYYY-MM-DD
+### F-<n> · <short title> · YYYY-MM-DD
 
 <The observation / friction / suggestion — keep it short. Note whether it's positive, a concern, or
 a directional idea, and where it might lead if anywhere (a project item it should become, a doctrine
 change, or "just an observation").>
 ```
+
+**ID allocation is trunk-side only:** take the next free `F-` number scanning the live file *and*
+the done log (IDs are never reused); capturing where the trunk is unreachable, write
+`((pending: <slug>))` in the ID position — `/backlog curate` stamps the real ID at landing.
 
 The **feedback audit** (`/foreman calibrate`) periodically *drains* this file — routing each item to its
 real home, folding system-relevant signal into doctrine, or acting on it — so it stays a live signal,
@@ -64,7 +71,7 @@ not a graveyard.
    adding a near-duplicate.
 4. **Append** the dated entry to the live region (don't disturb the drained-marker history above).
 5. **Commit (standalone only).** Invoked **standalone**, scoped-commit via
-   `scripts/scoped-commit.sh <root> "Feedback: <short title>" .records/feedback.md`, then run the host
+   `scripts/scoped-commit.sh <root> "Feedback: <short title>" .records/trackers/feedback.md`, then run the host
    doc-linter. Invoked **inside `/backlog debrief` or a `/foreman calibrate` sweep**, do **not** commit —
    only write; the sweep makes the single atomic commit.
 6. **Report** the entry title and the path.
@@ -87,6 +94,6 @@ not a graveyard.
 
 ## Done when
 
-The dev-experience note is a dated `.records/feedback.md` entry (positive / concern / friction /
+The dev-experience note is a dated `.records/trackers/feedback.md` entry (positive / concern / friction /
 directional, with where it might lead), deduped against what's there, with any project part routed to
 its real home — and the chat names the entry and path.

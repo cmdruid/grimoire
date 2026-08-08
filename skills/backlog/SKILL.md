@@ -5,8 +5,9 @@ description: "The capture bureau — the single collection front-door for a proj
 
 # backlog — the capture bureau
 
-One skill: the **single collection front-door** for a project's `.records/` trackers. It owns the tracker
-artifacts (`tasks.md`, `issues.md`, `feedback.md`, `notes/`, `bugs/`), their **formats**, the capture
+One skill: the **single collection front-door** for a project's `.records/` stores. It owns the tracker
+artifacts under `.records/trackers/` (`tasks.md`, `issues.md`, `feedback.md`, `notes/`, `bugs/`),
+the completion log (`.records/done/log.md`, via `done`), their **formats**, the capture
 **schema** (`docs/TAXONOMY.md`), the end-of-work **sweep**, and tracker **hygiene**. Everything that
 *captures a follow-up* lives here; standing up, routing, and tuning the dev system is a separate
 skill, `/foreman`.
@@ -29,13 +30,16 @@ and follow it**; do not reconstruct a procedure from memory.
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
 | `/backlog init` | `verbs/init.md` | Stand up backlog's own `.records/` home + register its route into the front-door (idempotent, no external floor) | "set up the trackers", "stand up the backlog" |
-| `/backlog bug` | `verbs/bug.md` | File a reproducible **defect** → `.records/bugs/` (linked from an actionable item) | "file a bug", "this is broken — repro" |
-| `/backlog task` | `verbs/task.md` | Capture a thing to build (product/feature follow-up) → `.records/tasks.md` | "put X in the backlog", "remind me to…" |
-| `/backlog issue` | `verbs/issue.md` | Capture a **project** problem/concern/limitation → `.records/issues.md` | "known limitation", "architectural risk" |
-| `/backlog feedback` | `verbs/feedback.md` | Capture a **dev-experience** observation → `.records/feedback.md` | "felt great", "the gate is too slow", "docs heavy" |
-| `/backlog note` | `verbs/note.md` | Capture a durable **project fact** → `.records/notes/<slug>.md` | "capture this fact", "write down how this works" |
+| `/backlog bug` | `verbs/bug.md` | File a reproducible **defect** → `.records/trackers/bugs/` (linked from an actionable item) | "file a bug", "this is broken — repro" |
+| `/backlog task` | `verbs/task.md` | Capture a thing to build (product/feature follow-up) → `.records/trackers/tasks.md` | "put X in the backlog", "remind me to…" |
+| `/backlog issue` | `verbs/issue.md` | Capture a **project** problem/concern/limitation → `.records/trackers/issues.md` | "known limitation", "architectural risk" |
+| `/backlog feedback` | `verbs/feedback.md` | Capture a **dev-experience** observation → `.records/trackers/feedback.md` | "felt great", "the gate is too slow", "docs heavy" |
+| `/backlog note` | `verbs/note.md` | Capture a durable **project fact** → `.records/trackers/notes/<slug>.md` | "capture this fact", "write down how this works" |
 | `/backlog debrief` | `verbs/debrief.md` | **Sweep** a finished body of work; route every byproduct to its tracker | "wrap up before I reset", "capture what surfaced" |
 | `/backlog curate` | `verbs/curate.md` | Tidy the lists — dedupe, re-rank, sharpen, weed (hygiene, never draining) | "tidy the backlog", "reprioritize what's left" |
+| `/backlog done <id>` | `verbs/done.md` | **Complete** an entry per the schema's completion table + append its one done-log line | "mark T-041 done", "close out that task" |
+| `/backlog ticket` / `promote` / `close` | *(lands in Task 2.2 of the rollout plan)* | The escalation family — direct tickets, entry promotion (with pause), resolution | "escalate to the human" |
+| `/backlog sync` | *(lands in Task 2.3 of the rollout plan)* | Mirror open tickets to the remote issue system | "sync the tickets" |
 
 **No default lane.** `/backlog` with no recognized verb is ambiguous — ask which tracker the item
 belongs to (or run `/backlog debrief` if the intent is "capture everything that surfaced").
@@ -52,6 +56,13 @@ tracker's format, plus the store-dir frontmatter rules — is canonical here in
 
 - **Resolve root + real date.** Project-relative paths; resolve the root from a project dir the
   conversation references, else cwd, else ask. Get the date with `date +%Y-%m-%d` — never guess it.
+- **Counter IDs are trunk-allocated.** Every entry carries a typed counter ID (`T-`/`I-`/`F-`/
+  `B-`/`N-` — the schema's namespace; the installation's `.handbook/rules/RECORDS.md`). Allocate
+  only on the trunk checkout, in the capture's own scoped commit: the next free number scanning
+  the live store *and* the done log — an ID is never reused and is immutable once published.
+  Where the trunk is unreachable (a work branch, detached HEAD), write `((pending: <slug>))` in
+  the ID position (flat trackers) or leave `id:` pending (store dirs); `/backlog curate` stamps
+  the real ID at landing, before anything cites it.
 - **Scripts compute facts; the verb prose decides.** The verb files (and this router) carry the
   *judgment* — what classifies as a bug vs. an issue, how to rank impact, when to dedupe, whether an
   entry is really done, whether the shipped-record exists. The bundled scripts do only the

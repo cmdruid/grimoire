@@ -469,29 +469,29 @@ chiropractor → architect/auditor → **calibrator last** (it consumes every ot
 `skills/backlog/verbs/done.md`; **copy** `skills/foreman/templates/done-record.md` →
 `skills/backlog/templates/done-record.md`.
 
-- [ ] Tracker paths → `.records/trackers/` (`tasks.md`, `issues.md`, `feedback.md`, `bugs/`,
+- [x] Tracker paths → `.records/trackers/` (`tasks.md`, `issues.md`, `feedback.md`, `bugs/`,
   `notes/`); wire formats per Appendix B; store-dir frontmatter gains `id:`.
-- [ ] **ID allocation discipline:** counter IDs allocated only on the trunk checkout
+- [x] **ID allocation discipline:** counter IDs allocated only on the trunk checkout
   (pathspec-scoped commit); branch-side capture takes a slug placeholder; `curate` stamps the real
   ID at landing (Appendix B).
-- [ ] **`done <id>`** — the canonical completion verb: mutate the entry **per Appendix C's
+- [x] **`done <id>`** — the canonical completion verb: mutate the entry **per Appendix C's
   completion table** (flat entries removed, the log line their archive; store-dir status
   advanced; an absent/completed/paused ID refuses with a fact), append the done-log line, per
   the writer map (Appendix C). Done-record template **copied**
   to backlog (the `done/` steward); the foreman copy **stays until Task 3.2** — live
   `workstream/verbs/ship.md:107` still references it, so deleting it here breaks workstream for
   a phase.
-- [ ] Rewrite `scaffold-records.sh` and `backlog-health.sh` to the `.records/trackers/` paths
+- [x] Rewrite `scaffold-records.sh` and `backlog-health.sh` to the `.records/trackers/` paths
   and the ID-aware entry shapes (both hardcode the old flat stores today); `backlog-health.sh`
   additionally absorbs the tracker-size facts foreman-health `inventory` supplies today (the
   destination Task 2.5's transfer table names — landed and tested here, before 2.5 removes the
   source).
-- [ ] **`init` (lazy):** each capture verb calls it on an unstamped root — creates the
+- [x] **`init` (lazy):** each capture verb calls it on an unstamped root — creates the
   `.records/trackers/` skeleton + creates-or-adopts the installation block, idempotently, touching
   no `.handbook/` chapter (Appendix H). Its door registration is rewritten to the **pack-style
   block** (doctrine body, `clankshop@<pack-version>` stamp, no `Edges:` — Appendix G's door-block
   protocol; today it writes a path-SHA/`Edges:` block, `verbs/init.md:69`).
-- [ ] Verify: Appendix C's removal-span fixtures (last-in-a-non-final-category, middle entry,
+- [x] Verify: Appendix C's removal-span fixtures (last-in-a-non-final-category, middle entry,
   EOF — the category-header-preservation cases); manifest rows for these surfaces checked off;
   lint. Commit.
 

@@ -10,7 +10,7 @@ taxonomy is canonical in `docs/TAXONOMY.md` (a thing to build → `/backlog task
 problem/concern/limitation → `/backlog issue`, a durable fact → `/backlog note`, a dev-experience
 observation → `/backlog feedback`).
 
-The load-bearing rule: **`.records/bugs/` is a store, not a work queue.** You file a report there and
+The load-bearing rule: **`.records/trackers/bugs/` is a store, not a work queue.** You file a report there and
 track the fix from a **linked actionable item**; you never fish in `bugs/` for work. So a report is
 never left with nothing pointing at it.
 
@@ -34,18 +34,25 @@ single-defect, right-now path to the same destination.
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` (see the router's shared
 discipline) — don't guess.
 
-- Report: `<root>/.records/bugs/<YYYY-MM-DD>-<slug>.md`, from this skill's `templates/bug-report.md`. Start
-  the file with the template's `type: bug` frontmatter block (`type`/`status`/`updated`) — the
-  doc-linter gate rejects a `.records/bugs/` file without it. Schema: `docs/TAXONOMY.md`.
-- Fixed reports move to `<root>/.records/bugs/archive/`.
-- The linking actionable item lives in `.records/tasks.md` (or an `.records/issues.md` entry if
+- Report: `<root>/.records/trackers/bugs/<YYYY-MM-DD>-<slug>.md`, from this skill's `templates/bug-report.md`. Start
+  the file with the template's `type: bug` frontmatter block (`type`/`id`/`status`/`updated`) —
+  the store-dir frontmatter is mandatory. `id:` takes the next free `B-` counter, **allocated
+  trunk-side only** (scan the live store, its `archive/`, *and* the done log; IDs are never
+  reused); capturing where the trunk is unreachable, leave `id:` pending — `/backlog curate`
+  stamps it at landing. Schema: the installation's `.handbook/rules/RECORDS.md`.
+- A fixed report's completion (`/backlog done B-009`) advances its frontmatter; `/backlog curate`
+  may age resolved reports into `<root>/.records/trackers/bugs/archive/`.
+- If the trackers are missing — or the root carries no installation block at all (unstamped) —
+  run `/backlog init` first (lazily; it scaffolds the trackers and creates-or-adopts the
+  installation block), then continue.
+- The linking actionable item lives in `.records/trackers/tasks.md` (or an `.records/trackers/issues.md` entry if
   it's tracked as a broader project problem) — never in `bugs/` itself.
 
 ## Procedure
 
 1. **Confirm it's a bug.** It's an observed, reproducible defect, not a task/issue/note/feedback item
    (route those to their home and stop). **Check `.agents/foreman/docs/GOTCHAS.md` first** (and
-   `.records/notes/` for a trap not yet promoted) — it may be a known trap (working-as-coded).
+   `.records/trackers/notes/` for a trap not yet promoted) — it may be a known trap (working-as-coded).
    If so, it's not a bug: capture it as a `/backlog note` if it isn't one already (`/foreman` promotes
    it to `GOTCHAS.md` during `calibrate`), and stop.
 2. **Diagnose enough to capture a repro** (per the host's `.agents/foreman/docs/DIAGNOSTICS.md`: observe →
@@ -55,7 +62,7 @@ discipline) — don't guess.
    errors the normal run swallows. **If it's flaky, capture everything the moment it happens** — seed,
    scenario, log line, screenshot — before anything else.
 3. **Resolve root + date; slug** the defect (short kebab).
-4. **Write the report** to `.records/bugs/<YYYY-MM-DD>-<slug>.md` from `templates/bug-report.md`:
+4. **Write the report** to `.records/trackers/bugs/<YYYY-MM-DD>-<slug>.md` from `templates/bug-report.md`:
    - **Status** (open), **Severity** (crash | wrong-output | dropped-state | flaky | cosmetic),
      **Flaky/transient?**
    - **Repro** — seed + scenario or exact commands/steps (a scripted repro is best).
@@ -65,8 +72,8 @@ discipline) — don't guess.
 5. **Link it from an actionable item** — `bugs/` is a store, so the report must be tracked from
    somewhere actionable:
    - **Fixing now?** Make the fix (patch or feature, by size), note the commit in the report's
-     Status, then `git mv` the report to `.records/bugs/archive/`.
-   - **Deferring?** Add a `.records/tasks.md` line (or an `.records/issues.md` entry if it's a
+     Status, then `git mv` the report to `.records/trackers/bugs/archive/`.
+   - **Deferring?** Add a `.records/trackers/tasks.md` line (or an `.records/trackers/issues.md` entry if it's a
      broader project problem) that **links** the report path. Never leave a report unlinked.
 6. **Commit (standalone only).** Invoked **standalone**, scoped-commit the report + its linking item
    in one step via `scripts/scoped-commit.sh <root> "File <slug> bug + tracker link" <paths…>`, then run
@@ -88,7 +95,7 @@ discipline) — don't guess.
 
 ## Done when
 
-The defect has a report in `.records/bugs/` with a real repro + evidence, that report is **linked from an
+The defect has a report in `.records/trackers/bugs/` with a real repro + evidence, that report is **linked from an
 actionable item** (or already fixed-and-archived with its commit), no working-as-coded "bug" was
 filed (captured as a `/backlog note` instead, for `/foreman` to promote to `GOTCHAS.md`), and the chat
 names where the report and its tracker live.
