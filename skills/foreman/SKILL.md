@@ -35,8 +35,7 @@ chapter work — there is no separate drain verb.
   conversation references, else cwd, else ask. Get the date with `date +%Y-%m-%d` — never guess it.
 - **Scripts compute facts; the verb prose decides.** The verb files (and this router) carry the
   *judgment* — how to classify a change, whether drift is real, how a routed improvement lands.
-  The bundled scripts do only the deterministic, mechanical work: the **read-only** fact script
-  `scripts/foreman-health.sh` (`derive-seams`) and the **mutating
+  The bundled scripts do only the deterministic, mechanical work: the **mutating
   mechanical helper** `scripts/scoped-commit.sh` (the atomic pathspec-scoped commit — it mutates
   by design, but only ever the paths it is handed). **Never push a decision into a script:** a
   script is stateless and can't see session context, so a *verdict* it emits is sometimes

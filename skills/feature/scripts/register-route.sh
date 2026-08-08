@@ -25,8 +25,9 @@
 # script dependency (portable, per SKILL.md -> *Structure, plugin posture,
 # portability*). The parsing/write CONTRACT (delimiter format, section name,
 # idempotency rule) must stay in sync across both copies by convention; a future
-# format change updates both (same doctrine as skills-lint.sh check 8 vs.
-# foreman-health.sh derive-seams -- accepted small duplication, shared contract).
+# format change updates both (accepted small duplication for a
+# shared contract -- the same trade skills-lint.sh check 8 makes, parsing a
+# block grammar another writer owns).
 set -euo pipefail
 
 front="${1:?usage: register-route.sh <front-door> <skill-name> [<built-against>]}"

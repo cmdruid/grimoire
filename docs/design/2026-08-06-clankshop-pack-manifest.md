@@ -191,9 +191,9 @@ drain owner):
   `skills/{architect,auditor,backlog,chiropractor,debugger,feature,foreman,workstream}/SKILL.md`
   (+ any `Edges:` route-block content a Phase-2 conformance missed) — removed; sibling-blind
   indirections rewritten to direct pack references; helpers untouched → Task 4.2
-- [ ] `skills/foreman/scripts/foreman-health.sh` — `derive-seams` removed (its last home after
+- [x] `skills/foreman/scripts/foreman-health.sh` — `derive-seams` removed (its last home after
   2.5/2.8); composition is authored → Task 4.3
-- [ ] `skills/{foreman,architect,auditor,feature}/scripts/register-route.sh` — the
+- [x] `skills/{foreman,architect,auditor,feature}/scripts/register-route.sh` — the
   `derive-seams` comparison comments (line 29 at HEAD; comments only — backlog and
   skill-builder copies verified clean) rewritten → Task 4.3
 - [x] `packs/clankshop.md` body — reduced to frontmatter (manifest + lock) + a short pointer at

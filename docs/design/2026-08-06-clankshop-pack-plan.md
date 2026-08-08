@@ -920,16 +920,21 @@ names the script and command), and the four `register-route.sh` copies whose com
 `derive-seams` (foreman, architect, auditor, feature — line 29 at HEAD; comments only, verified;
 the backlog and skill-builder copies are clean).
 
-- [ ] Remove `derive-seams` by deleting `foreman-health.sh` outright and rewriting the
+- [x] Remove `derive-seams` by deleting `foreman-health.sh` outright and rewriting the
   `skills/foreman/SKILL.md` bullet that names it (composition is authored — doctrine + runbook;
   helpers' edges remain as *declarations* validated by the lint gate, but no seam derivation
-  runs).
-- [ ] Rewrite the stale comparison comments in the four `register-route.sh` copies (the Files
-  list) so the active-surface sweep below can pass.
-- [ ] Verify, scoped to **active** surfaces only — `skills/**`, `packs/`, `README.md`,
+  runs). *(Script deleted; the *Scripts compute facts* bullet now names only
+  `scoped-commit.sh`.)*
+- [x] Rewrite the stale comparison comments in the four `register-route.sh` copies (the Files
+  list) so the active-surface sweep below can pass. *(All four line-29 comments were
+  byte-identical; rewritten to cite lint check 8's parse-anothers-grammar trade instead.
+  Shellcheck clean.)*
+- [x] Verify, scoped to **active** surfaces only — `skills/**`, `packs/`, `README.md`,
   `AGENTS.md`: no `derive-seams` reference remains. Historical records (`docs/design/*`,
   `docs/BACKLOG.md` — 4 hits verified) legitimately retain the term and are excluded
-  (design-docs-are-historical). Lint. Commit.
+  (design-docs-are-historical). Lint. Commit. *(Sweep CLEAN — `packs/` glob dropped per the
+  Migration note; chiropractor's "absorbed from foreman-health" provenance comments retained
+  as historical attribution. Lint `fails=0 warns=10`.)*
 
 ### Task 4.4: Absorb `packs/clankshop.md`'s body + library-doctrine surfaces
 
