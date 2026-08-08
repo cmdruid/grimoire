@@ -83,10 +83,10 @@ assembly, not a different assembly.
 - **Nothing dropped**: every table row's source is accounted for at its destination (or explicitly
   `stays put` / triaged-out with the human's sign-off); the table doubles as the checklist. Assembly
   validation (`check`) must be green on the migrated tree before the merge.
-- **Stamp**: write the installation block last (`scripts/install-block.sh write <root> 1 clankshop
-  <pack-version>`, the pack version from the manifest — this pack's `PACK.md` frontmatter
-  `version:`), merge the migration branch, and remove the
-  worktree. The project is now stamped — and never re-migrated.
+- **Stamp**: write the installation block last (`scripts/install-block.sh write <root> 1
+  clankshop <pack-version>`, the pack version from the manifest — this pack's `PACK.md`
+  frontmatter `version:`), merge the migration branch, and remove the worktree. The project is
+  now stamped — and never re-migrated.
 
 ## Done when
 

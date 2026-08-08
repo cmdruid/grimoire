@@ -55,7 +55,7 @@ not a schedule:
 The **instruments** are different: the records instrument (backlog) and the diagnostic instrument
 (debugger) are procedures anyone operates — a role mid-work, a pipeline, the human — and the
 judgment belongs to the operator. The **pipelines** (feature, workstream) are the work processes
-the roles' system supports: one turns an idea into gate-green code, the other encapsulates
+the system supports: one turns an idea into gate-green code, the other encapsulates
 shipping. The **helpers** (delegate, mailbox, handoff) are portable plumbing, useful on any repo.
 
 ## The escalation story
