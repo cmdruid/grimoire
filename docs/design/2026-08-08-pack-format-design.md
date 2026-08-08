@@ -68,8 +68,32 @@
 - Upstream courtesy issue to qntx: `@filter`-after-URL-subpath parsing quirk (unrelated to
   packs; noted during backend evaluation).
 
+## Independent review (2026-08-08)
+
+Draft 1 was reviewed by a fresh-context Codex agent cast as a third-party implementer (spec
+file only; verbatim findings: `docs/design/reviews/2026-08-08-pack-format-codex-review.md`).
+Verdict on draft 1: not implementable standalone — 37 findings. Dispositions in draft 2:
+
+- **Fixed:** all four contradictions (faceless packs now root-only; lock example carries the
+  pack's own entry; guard pointer falls back to the face when `setup:` absent; guard vs.
+  self-healing boundary stated) and all nine ambiguities (re-pin defined as accept-disk-bytes;
+  scope targeting + per-pack shadowing; adopt/replace defined non-silent; `setup.ran` =
+  best-effort dispatch record reconciled by check; optional removal drops the lock entry;
+  orphaned = manifest no longer locally resolvable; face = pack-dir entry, one artifact).
+  Gap closures: normative hash algorithm (Appendix A, byte-verified against the reference
+  implementations), normative discovery summary (Appendix B), manifest grammar, unsupported
+  format/lock-version behavior, source canonicalization + `ref`, reinstall/upgrade, shared
+  members, check's input model + fact table, content-vs-placement split with ecosystem locks.
+- **Acknowledged as stated limits (§8), not solved in format 1:** plain-CLI mutations
+  producing partial systems; stale markers after removals (no teardown key yet); flat skill
+  namespace. The guard is spec'd as a bootstrap gate; `check` is the integrity instrument.
+- **Left to implementations:** deep transaction mechanics (journaling, crash recovery,
+  concurrency) — spec requires stage-then-commit + never-silently-plausible outcomes;
+  `grimoire-pack` decides the how.
+
 ## Open questions deliberately deferred (format 2 candidates)
 
 - Cross-repo member references.
-- Additional lifecycle keys (teardown, check) — reserved, unspecified.
+- Additional lifecycle keys (**teardown** — promoted to first candidate by review findings
+  I4/I5, stale-marker states; check, …) — reserved, unspecified.
 - Registry/distribution semantics beyond git repos (skills.sh has no pack concept yet).
