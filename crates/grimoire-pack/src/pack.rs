@@ -2,6 +2,9 @@
 //! also contains `PACK.md` (its `SKILL.md` is the face); a faceless pack is a
 //! `PACK.md` at the repository root with no sibling `SKILL.md` —
 //! manifest-only. Enumeration is a full-depth operation.
+//!
+//! Enumeration reports per-manifest outcomes — valid packs plus issues; one
+//! broken or foreign manifest never hides the rest of the repository.
 
 use crate::discovery::{self, Skill};
 use crate::manifest::Manifest;
@@ -21,8 +24,24 @@ pub struct Pack {
     pub shape: PackShape,
 }
 
-/// Enumerate and validate every pack in the repository (spec §1, §2).
-pub fn enumerate(root: &Path) -> Result<Vec<Pack>> {
+/// One manifest that did not yield a valid pack, and why.
+#[derive(Debug)]
+pub struct Issue {
+    pub manifest_path: PathBuf,
+    pub error: PackError,
+}
+
+/// Everything `enumerate` learned about the repository's packs.
+#[derive(Debug, Default)]
+pub struct Enumeration {
+    pub packs: Vec<Pack>,
+    pub issues: Vec<Issue>,
+}
+
+/// Enumerate every pack in the repository (spec §1, §2). A manifest that
+/// fails validation becomes an [`Issue`] rather than aborting the whole scan
+/// — [`Err`] is reserved for walk-level I/O failure.
+pub fn enumerate(root: &Path) -> Result<Enumeration> {
     let skills = discovery::discover(root, true)?;
     let mut manifests: Vec<PathBuf> = Vec::new();
     for s in &skills {
@@ -43,18 +62,26 @@ pub fn enumerate(root: &Path) -> Result<Vec<Pack>> {
     // A PACK.md beside no SKILL.md anywhere below the root is invalid — find those too.
     find_stray_manifests(root, 0, &mut manifests)?;
 
-    let mut packs: Vec<Pack> = Vec::new();
+    let mut out = Enumeration::default();
     for path in manifests {
-        let pack = validate_one(root, &path, &skills)?;
-        if packs.iter().any(|p| p.manifest.name == pack.manifest.name) {
-            return Err(PackError::Shape(format!(
-                "two manifests declare the pack name {}",
-                pack.manifest.name
-            )));
+        match validate_one(root, &path, &skills) {
+            Ok(pack) => {
+                if out.packs.iter().any(|p| p.manifest.name == pack.manifest.name) {
+                    out.issues.push(Issue {
+                        manifest_path: path,
+                        error: PackError::Shape(format!(
+                            "two manifests declare the pack name {}",
+                            pack.manifest.name
+                        )),
+                    });
+                } else {
+                    out.packs.push(pack);
+                }
+            }
+            Err(error) => out.issues.push(Issue { manifest_path: path, error }),
         }
-        packs.push(pack);
     }
-    Ok(packs)
+    Ok(out)
 }
 
 fn validate_one(root: &Path, manifest_path: &Path, skills: &[Skill]) -> Result<Pack> {
@@ -66,6 +93,11 @@ fn validate_one(root: &Path, manifest_path: &Path, skills: &[Skill]) -> Result<P
     let dir = manifest_path.parent().expect("manifest has a parent");
 
     let shape = if discovery::is_skill_dir(dir) {
+        if dir == root {
+            return Err(PackError::Shape(
+                "the repository root cannot be a faced pack -- a faced pack's members live outside its directory (spec 1)".into(),
+            ));
+        }
         // Faced: face name must equal manifest name; nothing nests below (§1).
         let face = discovery::skill_name(dir);
         if face != manifest.name {
@@ -125,19 +157,21 @@ fn assert_nothing_nested(pack_dir: &Path) -> Result<()> {
             })?
             .filter_map(|e| e.ok())
         {
-            let p = entry.path();
-            if p.is_dir() {
-                walk(&p, false)?;
-            } else if !top {
-                let base = p.file_name().unwrap_or_default();
-                if base == "SKILL.md" || base == "PACK.md" {
-                    return Err(PackError::Shape(format!(
-                        "nested {} below a faced pack dir: {}",
-                        base.to_string_lossy(),
-                        p.display()
-                    )));
+            let Ok(ft) = entry.file_type() else { continue };
+            let base = entry.file_name();
+            if ft.is_dir() {
+                if base == ".git" || base == "node_modules" || base == "target" {
+                    continue;
                 }
+                walk(&entry.path(), false)?;
+            } else if ft.is_file() && !top && (base == "SKILL.md" || base == "PACK.md") {
+                return Err(PackError::Shape(format!(
+                    "nested {} below a faced pack dir: {}",
+                    base.to_string_lossy(),
+                    entry.path().display()
+                )));
             }
+            // symlinks and other entry types: skipped, never followed
         }
         Ok(())
     }
@@ -146,26 +180,28 @@ fn assert_nothing_nested(pack_dir: &Path) -> Result<()> {
 
 /// A PACK.md that is neither beside a SKILL.md nor at the root is invalid (§1).
 fn find_stray_manifests(dir: &Path, depth: usize, manifests: &mut Vec<PathBuf>) -> Result<()> {
-    if depth > 12 {
+    if depth > discovery::MAX_DEPTH {
         return Ok(());
     }
-    for entry in std::fs::read_dir(dir)
+    let mut entries: Vec<_> = std::fs::read_dir(dir)
         .map_err(|e| PackError::Io {
             path: dir.to_path_buf(),
             source: e,
         })?
         .filter_map(|e| e.ok())
-    {
-        let p = entry.path();
+        .collect();
+    entries.sort_by_key(|e| e.file_name());
+    for entry in entries {
+        let Ok(ft) = entry.file_type() else { continue };
         let base = entry.file_name();
-        if p.is_dir() {
+        if ft.is_dir() {
             if base == ".git" || base == "node_modules" || base == "target" {
                 continue;
             }
-            find_stray_manifests(&p, depth + 1, manifests)?;
-        } else if base == "PACK.md" && depth > 0 && !manifests.contains(&p) {
-            // found a PACK.md that full-depth skill discovery did not claim
-            manifests.push(p);
+            find_stray_manifests(&entry.path(), depth + 1, manifests)?;
+        } else if ft.is_file() && base == "PACK.md" && depth > 0 && !manifests.contains(&entry.path())
+        {
+            manifests.push(entry.path());
         }
     }
     Ok(())

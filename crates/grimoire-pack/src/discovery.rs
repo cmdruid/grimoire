@@ -110,7 +110,7 @@ fn children(dir: &Path) -> Result<Vec<PathBuf>> {
 }
 
 // Conservative default; Appendix B leaves the fallback bound to implementations.
-const MAX_DEPTH: usize = 12;
+pub const MAX_DEPTH: usize = 12;
 
 fn walk(dir: &Path, depth: usize, found: &mut Vec<Skill>) -> Result<()> {
     if depth > MAX_DEPTH {
