@@ -98,6 +98,8 @@ fn children(dir: &Path) -> Result<Vec<PathBuf>> {
         path: dir.to_path_buf(),
         source: e,
     })?;
+    // file_type() does not follow symlinks, so symlinked directories are
+    // intentionally invisible here — consistent with Appendix A's symlink stance.
     let mut out: Vec<PathBuf> = rd
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().map(|t| t.is_dir()).unwrap_or(false))
@@ -107,6 +109,7 @@ fn children(dir: &Path) -> Result<Vec<PathBuf>> {
     Ok(out)
 }
 
+// Conservative default; Appendix B leaves the fallback bound to implementations.
 const MAX_DEPTH: usize = 12;
 
 fn walk(dir: &Path, depth: usize, found: &mut Vec<Skill>) -> Result<()> {

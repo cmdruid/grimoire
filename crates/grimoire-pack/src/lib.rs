@@ -8,6 +8,7 @@ pub mod discovery;
 pub mod frontmatter;
 pub mod hash;
 pub mod manifest;
+pub mod pack;
 
 #[derive(Debug, thiserror::Error)]
 pub enum PackError {
