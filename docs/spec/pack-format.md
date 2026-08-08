@@ -168,7 +168,10 @@ scope** (reference counting at pack altitude), then drop the lock entry. A membe
 individual **optional** members leaves no trace: drop the member entry from the lock, remove
 the skill if unreferenced; a missing optional member is never drift. Removing a **required**
 member of an installed pack (by hand or plain CLI) is not a tool operation this spec defines —
-it is a state `check` reports as *broken*.
+it is a state `check` reports as *broken*. When removing a pack whose lock entry declares
+`setup:`, the tool MUST surface that setup artifacts may persist in the project and point at
+the pack's face for manual teardown (markers are pack-defined — no tool can find them once the
+lock entry is gone; a `teardown:` lifecycle key is reserved for a future revision).
 
 **Shared members.** Two packs MAY both reference an installed skill; the refcount governs
 removal. If their locks record different hashes for it, `check` reports the mismatch against

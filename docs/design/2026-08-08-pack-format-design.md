@@ -87,6 +87,12 @@ Verdict on draft 1: not implementable standalone — 37 findings. Dispositions i
 - **Acknowledged as stated limits (§8), not solved in format 1:** plain-CLI mutations
   producing partial systems; stale markers after removals (no teardown key yet); flat skill
   namespace. The guard is spec'd as a bootstrap gate; `check` is the integrity instrument.
+  Post-review limits discussion (2026-08-08) ranked stale-marker-after-removal the one live
+  risk (fires on every removal of a set-up pack; undetectable post-hoc since markers are
+  pack-defined) → §5 gained a MUST: removal of a `setup:`-declaring pack surfaces persisting
+  setup artifacts and points at the face for manual teardown. Mutation drift is neutralized
+  ergonomically instead — carried to ③'s design: the TUI runs `check` ambiently (launch/project
+  open). Flat namespace: inherited ecosystem property, accepted.
 - **Left to implementations:** deep transaction mechanics (journaling, crash recovery,
   concurrency) — spec requires stage-then-commit + never-silently-plausible outcomes;
   `grimoire-pack` decides the how.
