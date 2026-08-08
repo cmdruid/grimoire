@@ -10,6 +10,26 @@ short pointer, then lists only its **local overrides** underneath — the same p
 private-override shape a personal dotfiles config uses over a shared one. Apply this doc whenever you
 add or revise a skill; `skill-builder calibrate` is what keeps it current as practice evolves.
 
+## Two regimes: portable skills vs. pack core members
+
+This doctrine's **independence rules** — self-scoping descriptions, typed edges, the no-sibling-seam
+discipline — exist so a skill routes and functions **bare**, with no composition deployed. A **pack
+core member** (a skill a pack manifest's `core:` extension key names — see the pack-format spec) is
+written for the opposite premise: its pack's authored composition *is* its context, the seams live in
+the pack's doctrine/runbook, and its prose may name pack siblings directly. So the split:
+
+- **Standalone skills and helpers** (any skill not named `core:` by an installed pack manifest, this
+  library's `skill-builder` included) follow the **full portable discipline** below — independence
+  rules, typed edges, the lint gate's boundary checks.
+- **Pack core members** follow the **pack's authored composition**: no typed-edge blocks, no
+  edge-derivation machinery; sibling references are ordinary prose, judged by the pack's own docs.
+  The lint gate reads `core:` from the pack manifest and exempts these members from its independence
+  checks (sibling-in-description, typed-edge blocks, sibling verb-roster); everything else —
+  frontmatter limits, bundled-ref resolution, script syntax — applies to every skill regardless.
+
+Everything below states the **portable** regime; where a rule is independence-flavored, read it as
+scoped to standalone skills and helpers.
+
 ## Design philosophy
 
 - **Scripts compute facts; agents decide.** Push mechanical, deterministic state-analysis into small
@@ -93,7 +113,8 @@ add or revise a skill; `skill-builder calibrate` is what keeps it current as pra
 ## The three layers a skill may self-describe
 
 1. **Typed edges** (`produces`/`consumes`/`handoff`) — the mechanical wiring points. **Required of
-   every skill** (an all-empty block is a *stated* fact, "I'm a pure mechanism," not an omission).
+   every portable skill** (an all-empty block is a *stated* fact, "I'm a pure mechanism," not an
+   omission; pack core members carry none — § Two regimes).
 2. **Ideal-use examples** — self-contained *"how to use me"* route/workflow a composer or role skill
    can ingest to understand usage. **Enrichment.**
 3. **Deployable seed** — project-customizable assets (e.g. a `templates/` home) plus an authoring

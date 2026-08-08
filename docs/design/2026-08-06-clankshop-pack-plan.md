@@ -44,7 +44,13 @@ is in the recorded phase baseline**: the Phase 0 gate records the expected forwa
 warns (doctrine prose naming `/guardian`/`/calibrator` before Phase 2 creates them), each later
 phase gate re-states the expected set, and every recorded warn must clear by the gate of the
 phase that resolves it. Phase 4 Task 4.1 changes the gate itself (core-member exemption) and
-re-states the baseline from scratch. Phase-end
+re-states the baseline from scratch. **Recorded (2026-08-08, Task 4.1 landed): `fails=0
+warns=10`** — the pre-4.1 baseline 11 minus exactly the `audit-finding` orphan-type warn
+(auditor is a `core:` member, so its edge declarations no longer feed check 8's orphan
+analysis; this also retires BL-4's known false-positive for good). The 9 description-length
+warns (check 1) and mailbox's sibling-`/delegate` warn (a helper, check 7) persist by design;
+4.2's core edge-block strips are already outside the checked set, so no further delta is
+expected from this phase. Phase-end
 gates add the **routing probe** (descriptions-only fixture + fresh subagent, per the Phase-gate
 tasks) and, from Phase 1 on, the committed **fixture harnesses** under
 `skills/clankshop/scripts/tests/`.
@@ -861,18 +867,23 @@ re-verified 2026-08-08), so it must precede 4.3's sweep.
 **Files:** Modify `skills/skill-builder/scripts/skills-lint.sh`,
 `skills/skill-builder/docs/DOCTRINE.md`.
 
-- [ ] The lint gate reads the pack lock's `core:` line (`packs/clankshop.md` frontmatter — the
+- [x] The lint gate reads the pack lock's `core:` line (`packs/clankshop.md` frontmatter — the
   machine-readable membership rule) and exempts core members from the independence checks **that
   actually exist** (verified at review — edges blocks are already optional, skills-lint.sh:218,
   so there is no "presence" check to exempt): the sibling-name/boundary description warns, the
   edge-block validation + orphan-type pairing, and the sibling verb-roster checks; helpers and
-  skill-builder itself keep the full discipline.
-- [ ] `DOCTRINE.md` gains the pack-vs-portable split: the portable authoring rules apply to
+  skill-builder itself keep the full discipline. *(Landed per the Migration note: `core:` is read
+  from PACK.md frontmatter via install.sh's discovery walk — `$root/PACK.md` + `skills/*/PACK.md`
+  — so a second pack's `core:` composes; checks 7/8/9 gained an `is_core` skip.)*
+- [x] `DOCTRINE.md` gains the pack-vs-portable split: the portable authoring rules apply to
   standalone skills and helpers; pack core members follow the pack's authored composition.
-- [ ] **Re-baseline the gate:** run lint, record the new `warns=N` in this plan's Gate line
+  *(New § "Two regimes" after the intro + a scope qualifier on the layer-1 edges requirement.)*
+- [x] **Re-baseline the gate:** run lint, record the new `warns=N` in this plan's Gate line
   (edit above), attribute every delta (core boundary warns disappearing; nothing unexplained).
-- [ ] Verify: lint on a helper still enforces edges (seed a deliberate violation in a temp copy;
-  confirm it fails). Commit.
+  *(Recorded: `fails=0 warns=10`, sole delta the `audit-finding` orphan — see the Gate line.)*
+- [x] Verify: lint on a helper still enforces edges (seed a deliberate violation in a temp copy;
+  confirm it fails). Commit. *(Temp fixture: helper with seeded sibling-edge violation →
+  `fails=1`; same skill listed `core:` in a fixture PACK.md → `fails=0`. Shellcheck clean.)*
 
 ### Task 4.2: Strip core members' typed-edge machinery
 

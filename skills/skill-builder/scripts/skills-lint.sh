@@ -46,6 +46,14 @@
 #      backticked-per-verb-token shape is caught; a prose-listed roster ("its verbs
 #      are init, brainstorm, plan...") needs the manual boundary-audit scan, the
 #      same class of gap check 7 already documents for description-level refs.
+#
+# Core-member exemption (clankshop rollout, Task 4.1): a pack manifest
+# (PACK.md, spec format 1) may carry a `core:` frontmatter line -- a grimoire
+# author extension key (spec §2: unknown keys, tool-ignored) naming the members
+# written for the pack's authored composition rather than standalone use. Core
+# members are exempt from the independence checks (7: sibling-in-description,
+# 8: typed-edge blocks, 9: sibling verb-roster); helpers and skill-builder
+# itself keep the full discipline. Discovery mirrors install.sh's resolve walk.
 set -euo pipefail
 
 root="${1:-$(pwd)}"
@@ -57,6 +65,16 @@ fail() { echo "FAIL: $*"; fails=$((fails + 1)); }
 warn() { echo "WARN: $*"; warns=$((warns + 1)); }
 
 [ -d "$skills_dir" ] || { echo "FAIL: no skills/ under $root"; exit 1; }
+
+# ---- pack core members (the core-member exemption; header comment) -----------
+core_members=" "
+for pm in "$root/PACK.md" "$root"/skills/*/PACK.md; do
+  [ -f "$pm" ] || continue
+  pfm="$(awk '/^---$/{n++; next} n==1{print} n>=2{exit}' "$pm")"
+  pcore="$(printf '%s\n' "$pfm" | sed -n 's/^core:[[:space:]]*//p' | head -1)"
+  [ -n "$pcore" ] && core_members="$core_members$pcore "
+done
+is_core() { case "$core_members" in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 
 # ---- 1. frontmatter ----------------------------------------------------------
 for sk in "$skills_dir"/*/; do
@@ -169,6 +187,7 @@ rm -f /tmp/skills-lint-xref.$$
 # separators/paths (`bug/patch/feature`, `.agents/foreman/`) don't false-positive.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
+  is_core "$name" && continue     # core-member exemption (header comment)
   f="$sk/SKILL.md"
   [ -f "$f" ] || continue
   fm="$(awk '/^---$/{n++; next} n==1{print} n>=2{exit}' "$f")"
@@ -202,6 +221,7 @@ emdash="—"
 edge_types="$(mktemp "${TMPDIR:-/tmp}/skills-lint-edges.XXXXXX")"
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
+  is_core "$name" && continue     # core-member exemption (header comment)
   f="$sk/SKILL.md"
   [ -f "$f" ] || continue
   # Extract the delimiter names present (open + close). `|| true`: grep exits 1 on
@@ -288,6 +308,7 @@ rm -f "$edge_types"
 roster="$(mktemp "${TMPDIR:-/tmp}/skills-lint-roster.XXXXXX")"
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
+  is_core "$name" && continue     # core-member exemption (header comment)
   f="$sk/SKILL.md"
   [ -f "$f" ] || continue
   awk -v self="$name" '
