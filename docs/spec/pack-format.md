@@ -1,7 +1,7 @@
 # Pack Format Specification
 
-**Format revision:** 1 · **Status:** draft 4 for review (2026-08-08; drafts 1–2 revised against
-two independent implementer reviews, draft 4 against owner review — see
+**Format revision:** 1 · **Status:** draft 5 for review (2026-08-08; drafts 1–2 revised against
+two independent implementer reviews, drafts 4–5 against owner review — see
 `docs/design/2026-08-08-pack-format-design.md`) ·
 **Design record:** `docs/design/2026-08-08-pack-format-design.md`
 
@@ -56,7 +56,6 @@ preservation; formatting of the frontmatter block MAY normalize).
 name: clankshop                 # required. Pack identity. [a-z0-9-]+
 version: 1.0.0                  # required. Semver 2.0.0 of this pack release.
 description: "One-line summary" # required.
-format: 1                       # required. Pack-format revision this manifest targets.
 required: architect, auditor    # required members — bare skill names, comma-separated.
 optional: bug, task             # optional members — default-installed, removable without trace.
 ---
@@ -73,10 +72,14 @@ as semver 2.0.0. Duplicate YAML keys are invalid.
   naming an unresolvable member is **invalid**.
 - The face skill is implicitly a member and MUST NOT be listed.
 - **Unknown frontmatter keys** MUST be ignored (and preserved per above). Future format
-  revisions claim them; `format:` bumps only on breaking change.
-- A tool encountering a `format:` value it does not implement MUST NOT install, upgrade, or
-  otherwise act on that manifest; it MAY still enumerate and display the pack. (Removing an
-  *already-installed* pack is governed by the lock, not the manifest, and remains permitted.)
+  revisions claim them.
+- **`format:` is optional; absent means format 1** — format-1 manifests SHOULD simply omit it.
+  When present it MUST be a positive integer naming the pack-format revision the manifest
+  targets; it bumps only on breaking change, and a future breaking revision will require
+  declaring it. A tool encountering a `format:` value it does not implement MUST NOT install,
+  upgrade, or otherwise act on that manifest; it MAY still enumerate and display the pack.
+  (Removing an *already-installed* pack is governed by the lock, not the manifest, and remains
+  permitted.)
 
 ## 3. The lock: `grimoire.lock`
 
@@ -108,7 +111,7 @@ pack-based skills' reads, project shadows global per pack name.
       "source": "github:cmdruid/grimoire",
       "ref": "a1b2c3d",
       "installedAt": "2026-08-08T00:00:00Z",
-      "members": {
+      "skills": {
         "clankshop": { "hash": "sha256:…", "required": true },
         "architect": { "hash": "sha256:…", "required": true },
         "task":      { "hash": "sha256:…", "required": false }
@@ -122,7 +125,7 @@ pack-based skills' reads, project shadows global per pack name.
   `github:<owner>/<repo>`; other git URLs and absolute local paths are recorded verbatim.
   `ref` (optional) records the commit or tag actually installed, when known. The pair is what
   update flows resolve against; local-path sources update from disk.
-- `members` records **what is installed**, one entry per installed member, keyed by skill name.
+- `skills` records **what is installed**, one entry per installed member, keyed by skill name.
   For a faced pack, the pack directory (face + `PACK.md` + support files) appears under the
   pack's own name. For a faceless pack there is no pack-directory entry — and the tool MUST
   cache the manifest's machine surface into the lock entry (a `manifest` object holding the

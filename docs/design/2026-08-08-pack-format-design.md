@@ -48,8 +48,9 @@
 - Absorb `packs/clankshop.md` into `skills/clankshop/PACK.md` (pack-as-skill; the skill dir
   does not move); retire the `packs/` shelf; `install.sh --pack` reads the new location and
   writes the sidecar lock.
-- Frontmatter migrates: `name:` stays `name:`, `pack-version: 1`→`version: 1.0.0`, `layout:`→
-  `format: 1`, `core:`+`helpers:` fold into `required:` (minus `clankshop` itself — the face is
+- Frontmatter migrates: `name:` stays `name:`, `pack-version: 1`→`version: 1.0.0`, `layout:`
+  dropped (`format:` is optional; absent = format 1), `core:`+`helpers:` fold into `required:`
+  (minus `clankshop` itself — the face is
   implicit, spec §2), `optional:` stays (both lists comma-separated). No `setup:` key exists —
   setup lives in the face (spec §6), which clankshop's face already does.
 - Task 3.3 (bare→ranged helpers + SKILL.md `version:` keys) is **cancelled by this design**;
@@ -144,6 +145,16 @@ The spec owner's read of draft 3 produced five directives, all applied in draft 
    explicitly one bit per pack: entry present = fully installed (transaction-guaranteed), no
    entry = not installed; no pending sub-states. System-setup state stays where §7 always put
    the real gate: the pack-defined marker.
+
+A second owner pass the same day (draft 5) added two more:
+
+6. **Lock `members` → `skills`** as the JSON key (prose keeps "member" as the concept term).
+7. **`format:` demoted to optional-with-default:** absent means format 1, and format-1
+   manifests SHOULD omit it. The *mechanism* survives without the mandatory key — the
+   refuse-on-unimplemented-value rule stays, so a future breaking revision declares `format: 2`
+   and format-1 tools refuse to act instead of misparsing. Dropping the rule entirely was
+   rejected: without it, old tools would ignore an unknown `format:` key and misread a
+   breaking-revision manifest.
 
 ## Open questions deliberately deferred (format 2 candidates)
 
