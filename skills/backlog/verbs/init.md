@@ -2,7 +2,7 @@
 
 Create the `.records/` trackers `/backlog` owns and register backlog's route into the project's
 always-loaded front-door doc — **without depending on the pack onramps (`/clankshop setup` / `migrate`) having scaffolded anything
-first**. This is the "capture bureau that can build its own drawer": a bare install of `/backlog`
+first**. This is the records instrument building its own drawer: a bare install of `/backlog`
 alone can stand up a working, visible capture home. Both halves are **idempotent** and **never clobber
 filed entries** — re-running `init` converges to the same state.
 

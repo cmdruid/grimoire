@@ -43,7 +43,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 |---|---|
 | `architect` | the design-system engine: a project's regenerable `.agents/architect/` seed — stand up (`init`/`extract`), evaluate (`check`), drift-correct (`reconcile`), evolve (`distill`/`plan`/`brainstorm`), plus `prep` |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
-| `backlog` | the capture desk: file follow-ups by kind (task/bug/issue/feedback/note), sweep finished work (`debrief`), curate the lists (`curate`) |
+| `backlog` | the records instrument: capture by kind, complete (`done` + the done log), escalate via tickets (+ mirror), curate, debrief |
 | `bug` | capture alias: `/bug` proxies the records instrument's bug capture (optional pack member) |
 | `calibrator` | the improvement loop: intake captured signal + quality findings, dispatch to the owning role, verify uptake, close; the doctrine seam both ways |
 | `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |

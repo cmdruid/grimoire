@@ -112,7 +112,7 @@ legitimately retain every retired term (verified: 8 files hit `derive-seams` alo
   replaced by the frozen facts (`has_front_door`/`has_stewardship_map`/`has_glossary`); consumes
   `spine-parse.sh`; its `.records/archive` + typed-edge comment references updated; fixtures
   updated → Task 2.8
-- [ ] `skills/foreman/scripts/foreman-health.sh` — `stale-refs` + `coverage` absorbed into
+- [x] `skills/foreman/scripts/foreman-health.sh` — `stale-refs` + `coverage` absorbed into
   chiropractor's scripts (destination tested first, then both subcommands deleted here) →
   Task 2.8
 - [x] `skills/architect/SKILL.md` + `verbs/{extract,init,brainstorm,plan}.md` +
@@ -143,7 +143,7 @@ drain owner):
 - [x] `skills/skill-builder/verbs/calibrate.md` + SKILL.md references — the toolmaker's own
   doctrine-distillation verb, **outside the pack** — **no change** (verified when 2.11 lands:
   the calibrate-grammar supersession covers pack members only)
-- [ ] `packs/clankshop.md` — the four 2026-07-28 drain seam rows (`backlog ↔ chiropractor`,
+- [x] `packs/clankshop.md` — the four 2026-07-28 drain seam rows (`backlog ↔ chiropractor`,
   `backlog ↔ architect`, amended `foreman ↔ chiropractor` / `architect ↔ foreman` cells) + the
   `tracker-entry` vocabulary row — replaced with the calibrator-loop framing (minimal edits;
   full body absorption is Task 4.4) → Task 2.12

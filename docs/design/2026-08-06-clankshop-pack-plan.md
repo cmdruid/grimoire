@@ -746,16 +746,24 @@ remove chiropractor's `## Calibrate` surfaces (per Tasks 2.5/2.8/2.9).
 **Files:** Modify `packs/clankshop.md` (the four steward-grammar drain seam rows + the
 `tracker-entry` vocabulary row — dissolved per manifest).
 
-- [ ] Remove/replace the 2026-07-28 drain seam rows (`backlog ↔ chiropractor`,
+- [x] Remove/replace the 2026-07-28 drain seam rows (`backlog ↔ chiropractor`,
   `backlog ↔ architect`, the amended `foreman ↔ chiropractor` / `architect ↔ foreman` cells) with
   the calibrator-loop framing — minimal edits; the body's full absorption is Task 4.4.
-- [ ] **Routing probe, full set** (pack §10): "file a bug" / "where do I start" / "escalate to the
+- [x] **Routing probe, full set** (pack §10): "file a bug" / "where do I start" / "escalate to the
   human" / "audit the docs" / "audit the code" / "calibrate the system" / "set up the project" —
   descriptions + aliases only, fresh subagent, one pick each. All 7 correct or fix-and-re-probe.
-- [ ] **Vocabulary sweep** (pack §2 table): grep the pack's prose for the banned usages (mirror
+- [x] **Vocabulary sweep** (pack §2 table): grep the pack's prose for the banned usages (mirror
   called "the tracker"; promotion called "upstream contribution"; instrument/role framing) — fix
   every hit.
-- [ ] Lint `fails=0`; manifest Phase-2 rows all checked.
+- [x] Lint `fails=0`; manifest Phase-2 rows all checked (the `templates/report.md` row is
+  Task 4.4's by disposition). *(Gate run 2026-08-07: `fails=0 warns=11` — 10 of the pre-phase
+  baseline (foreman's description-length warn cleared with the Task 2.5 rewrite; all 4 recorded
+  forward-reference warns cleared as required) **plus one recorded delta**: `audit-finding`
+  declared by only one skill — foreman's `consumes` dissolved with its calibrate verb in Task
+  2.11; clears at the Phase 4 gate when Task 4.2 strips the core edges blocks. Routing probe
+  7/7: bug · foreman · backlog · chiropractor · auditor · calibrator · clankshop. Vocabulary
+  sweep clean. Fixture suite `scripts/tests/run.sh` all green — 173 asserts across six
+  harnesses.)*
 
 ---
 
