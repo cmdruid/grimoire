@@ -4,6 +4,7 @@
 
 use std::path::PathBuf;
 
+pub mod discovery;
 pub mod frontmatter;
 pub mod hash;
 pub mod manifest;
