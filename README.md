@@ -93,6 +93,20 @@ transactionally, and records the install in the sidecar `grimoire.lock` beside t
   doctrine (chapter registry, roster, door profile) in `skills/clankshop/doctrine/` and the
   methodology in `skills/clankshop/docs/RUNBOOK.md`.
 
+## Repo layout
+
+Beyond the skills, this repo carries the pack format and its tooling (the umbrella design:
+`docs/design/2026-08-07-grimoire-repurpose-design.md`):
+
+- **`crates/`** — a Cargo workspace (build from the repo root). `grimoire-pack` is the pack
+  format's reference library; `grimoire-core` (operations) and the `grimoire` TUI itself land
+  next (the app crate publishes as `skill-grimoire`; the binary is `grimoire`). Crates never
+  read `skills/` at build time — content appears only as test fixtures.
+- **`docs/spec/`** — the pack format spec (`pack-format.md`); `install.sh` stays the
+  zero-dependency shell reference implementation.
+- **`repos/`** — gitignored reading references (e.g. the qntx `skill` clone); real dependencies
+  come from crates.io, pinned.
+
 ## Authoring conventions
 
 - **Self-contained + location-agnostic.** A skill references its own bundled resources
