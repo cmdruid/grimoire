@@ -1,6 +1,6 @@
 # ② repo restructure — design brief (doubles as the plan)
 
-**Status:** approved (2026-08-08). Sub-project ② of the grimoire repurpose
+**Status:** shipped (2026-08-08). Sub-project ② of the grimoire repurpose
 (`docs/design/2026-08-07-grimoire-repurpose-design.md`, §2 topology + §6 risks). Small-feature
 tier: this brief is also the implementation plan — no separate plan doc.
 
@@ -66,15 +66,15 @@ the dormant name.)
 
 ## Tasks
 
-- [ ] **1. Workspace root.** Write root `Cargo.toml` (virtual manifest per decision 1). Delete
+- [x] **1. Workspace root.** Write root `Cargo.toml` (virtual manifest per decision 1). Delete
   `crates/grimoire-pack/.gitignore` and `crates/grimoire-pack/target/`. `git rm`
   `crates/grimoire-pack/Cargo.lock`; run `cargo test` from root (generates root `Cargo.lock`;
   expect 36 green) and `cargo clippy --all-targets -- -D warnings`; commit root `Cargo.toml` +
   `Cargo.lock`.
-- [ ] **2. Git hygiene.** `git rm --cached repos/skill-rs`; `git rm .gitmodules`; write and
+- [x] **2. Git hygiene.** `git rm --cached repos/skill-rs`; `git rm .gitmodules`; write and
   `git add` the root `.gitignore` (`/target`, `/repos/`, `TODO.md`); verify `git submodule
   status` is empty and `repos/skill-rs/` still on disk; `rmdir packs/ scripts/`; commit.
-- [ ] **3. README layout section.** Short `crates/` + workspace + `repos/` note in `README.md`,
+- [x] **3. README layout section.** Short `crates/` + workspace + `repos/` note in `README.md`,
   consistent with umbrella §2; commit.
 
 ## Verification (done-when)
