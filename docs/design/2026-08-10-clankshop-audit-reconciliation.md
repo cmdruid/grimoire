@@ -1,6 +1,6 @@
 # Clankshop audit reconciliation — rebuild concept retired, merge damage repaired
 
-**Status: proposed** (brainstormed with the owner 2026-08-10; decisions below are owner-ratified).
+**Status: executed 2026-08-10** (owner-approved; see the reconciliation plan beside this doc).
 Follows the role merge (`docs/design/2026-08-10-clankshop-role-merge.md`, executed at `d412eef`/
 `c928bcc`) and repairs what its full-skill audit found; amends
 `docs/design/2026-08-06-clankshop-pack.md`'s design doctrine by retiring the rebuild workflow.
