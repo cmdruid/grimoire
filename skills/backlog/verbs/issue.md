@@ -35,9 +35,8 @@ agent avoids the trap.
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
 - Issues log: `<root>/.records/trackers/issues.md`. It is a flat markdown log, **not** a store dir — no
-  per-file frontmatter. If the trackers are missing — or the root carries no installation block at
-  all (unstamped) — run `/backlog init` first (lazily; it scaffolds the trackers and
-  creates-or-adopts the installation block), then continue.
+  per-file frontmatter. If the trackers are missing — run `/backlog setup` first (lazily; it
+  scaffolds the trackers at the records root and registers the route), then continue.
 
 ## Issues structure & numbering
 

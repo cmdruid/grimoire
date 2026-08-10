@@ -30,7 +30,7 @@ and follow it**; do not reconstruct a procedure from memory.
 
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
-| `/backlog init` | `verbs/init.md` | Stand up backlog's own `.records/` home + register its route into the front-door (idempotent, no external floor) | "set up the trackers", "stand up the backlog" |
+| `/backlog setup` | `verbs/setup.md` | Stand up backlog's tracker home at the records root + register its route into the front-door (idempotent, no external floor, framework or not) | "set up the trackers", "stand up the backlog" |
 | `/backlog bug` | `verbs/bug.md` | File a reproducible **defect** → `.records/trackers/bugs/` (linked from an actionable item) | "file a bug", "this is broken — repro" |
 | `/backlog task` | `verbs/task.md` | Capture a thing to build (product/feature follow-up) → `.records/trackers/tasks.md` | "put X in the backlog", "remind me to…" |
 | `/backlog issue` | `verbs/issue.md` | Capture a **project** problem/concern/limitation → `.records/trackers/issues.md` | "known limitation", "architectural risk" |
@@ -101,7 +101,7 @@ capture format and books-keeping; what the captured signal *means* is judged dow
   over every file it touched. `/backlog curate` follows the same rule (standalone self-commits; inside a
   larger sweep it is write-only). Each verb file states which path applies.
 
-## Scope boundary + unstamped conduct
+## Scope boundary + host conduct
 
 `/backlog` is the **records instrument** — it files, completes, escalates, sweeps, and keeps the
 stores tidy, and owns their formats and the schema projection. It **captures; it never drains.**
@@ -109,11 +109,15 @@ Draining the captured signal into the handbook, routing the dev system, auditing
 development itself each belong to another pack member — the pack's doctrine and runbook own that
 composition.
 
-**On an unstamped root** (no installation block), verb by verb: the **five capture verbs** call
-`init` lazily (it creates the trackers skeleton and creates-or-adopts the installation block —
-exactly its pre-stamp write license, touching no `.handbook/` chapter); **every other verb** —
-`ticket`, `promote`, `sync`, `close`, `done`, `curate`, `debrief` — **refuses**: emit `unstamped`
-and point at the clankshop onramps (`setup` / `migrate`).
+**Host conduct — standalone by default, framework-aware when present.** Every verb works on any
+repo: the stores live under the project's **records root** (the front door's `records-root:`
+declaration, else `.records/` — verb files write the default; a declared root substitutes
+throughout), and no verb refuses or stalls for lack of an installation block. The five capture
+verbs call `setup` lazily when the trackers are missing; the lifecycle verbs — `ticket`,
+`promote`, `sync`, `close`, `done`, `curate`, `debrief` — operate on whatever stores exist.
+Framework integrations (the schema projection, the deployed check chain) apply on a clankshop
+host and are simply absent elsewhere; never emit `unstamped` or route to the clankshop onramps
+as a precondition.
 
 ## Companion skills (separate, not absorbed)
 

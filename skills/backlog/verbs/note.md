@@ -40,9 +40,8 @@ Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't g
   **allocated trunk-side only** (scan the live store, its `archive/`, *and* the done log; IDs are
   never reused); capturing where the trunk is unreachable, leave `id:` pending — `/backlog curate`
   stamps it at landing. Schema: the installation's `.handbook/rules/RECORDS.md`.
-- If the trackers are missing — or the root carries no installation block at all (unstamped) —
-  run `/backlog init` first (lazily; it scaffolds the trackers and creates-or-adopts the
-  installation block), then continue.
+- If the trackers are missing — run `/backlog setup` first (lazily; it scaffolds the trackers at
+  the records root and registers the route), then continue.
 
 ## Note structure
 

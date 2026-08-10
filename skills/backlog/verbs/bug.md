@@ -42,9 +42,8 @@ discipline) — don't guess.
   stamps it at landing. Schema: the installation's `.handbook/rules/RECORDS.md`.
 - A fixed report's completion (`/backlog done B-009`) advances its frontmatter; `/backlog curate`
   may age resolved reports into `<root>/.records/trackers/bugs/archive/`.
-- If the trackers are missing — or the root carries no installation block at all (unstamped) —
-  run `/backlog init` first (lazily; it scaffolds the trackers and creates-or-adopts the
-  installation block), then continue.
+- If the trackers are missing — run `/backlog setup` first (lazily; it scaffolds the trackers at
+  the records root and registers the route), then continue.
 - The linking actionable item lives in `.records/trackers/tasks.md` (or an `.records/trackers/issues.md` entry if
   it's tracked as a broader project problem) — never in `bugs/` itself.
 

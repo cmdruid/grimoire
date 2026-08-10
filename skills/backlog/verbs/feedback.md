@@ -33,9 +33,8 @@ problem/concern/limitation (`/backlog issue`), a reproducible defect (`/backlog 
 Project-relative. Resolve the root + real date with `date +%Y-%m-%d` — don't guess.
 
 - Feedback: `<root>/.records/trackers/feedback.md`. It is a flat log, **not** a store dir — no
-  per-file frontmatter. If the trackers are missing — or the root carries no installation block at
-  all (unstamped) — run `/backlog init` first (lazily; it scaffolds the trackers and
-  creates-or-adopts the installation block), then continue.
+  per-file frontmatter. If the trackers are missing — run `/backlog setup` first (lazily; it
+  scaffolds the trackers at the records root and registers the route), then continue.
 
 ## Feedback structure
 
