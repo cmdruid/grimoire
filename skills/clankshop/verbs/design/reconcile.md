@@ -156,6 +156,6 @@ Commit only the report path written this run, scoped and pathspec-atomic, no `Co
   human or `distill` or the caller enacts.
 - **Never write executable code** (framing rule 2) — read `src/` to compare; author prose only.
 - **Write only `.records/`** (framing rule 2) — the report is a deliverable; the seed stays pure,
-  mutated only by the curated path (`init`/`distill`/human editorial).
+  mutated only by the curated path (`seed`/`distill`/human editorial).
 - **A snapshot must not pose as authoritative** (`docs/DESIGN-DOCTRINE.md`) — the report is stamped with the
   HEAD and `check` baseline it was built against, and names the systems it did not reach.

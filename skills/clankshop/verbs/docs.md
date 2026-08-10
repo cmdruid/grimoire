@@ -152,7 +152,7 @@ are dead on a standalone clone and strand the agent. This is a hard rule, and en
 - **Scan each nested root standalone and gate self-containment.** Run the scanner separately on
   each nested root (`scripts/spine-scan.sh <sub_root>`). For each, require `escaping_refs` empty
   and no `stale_ref` that points at a superproject or sibling path. Any such outward reference is
-  a self-containment **gap** for that repo (see RUBRIC Currency) -- report it with the file and
+  a self-containment **gap** for that repo (see DOC-RUBRIC Currency) -- report it with the file and
   the offending ref so it can be fixed. Fan out parallel subagents per root for scale.
 - **One diagnosis per in-scope spine.** When a nested spine is in scope for full diagnosis, score
   it on its own terms -- its own entry door, its own maturity. Keep per-spine scores separate: a
@@ -190,7 +190,7 @@ Read-Path; coherence informs Consistency).
 
 ## Diagnose
 
-Score the spine against all 12 dimensions in `docs/DOC-docs/DOC-RUBRIC.md`. Each dimension maps to scanner facts
+Score the spine against all 12 dimensions in `docs/DOC-RUBRIC.md`. Each dimension maps to scanner facts
 and/or read-only judgment; the rubric specifies which. Scoring is three-tier per dimension:
 **solid** (healthy), **drift** (degradation started, targeted fix needed), **gap** (broken or
 absent, structural repair needed).
@@ -314,7 +314,7 @@ empty). Report any findings that did not resolve.
 
 - **A role of the pack, still spine-generic.** The scanner consumes the pack face's shared
   declaration parser and knows the deployed layout directly; everything else references only this
-  skill's own `scripts/spine-scan.sh`, `docs/DOC-docs/DOC-RUBRIC.md`, and `templates/doc-drift.md`. Generic
+  skill's own `scripts/spine-scan.sh`, `docs/DOC-RUBRIC.md`, and `templates/doc-drift.md`. Generic
   concepts ("fan out parallel subagents", "a workflow engine if the harness offers one") are used
   in place of any named tool.
 - **Docs only.** Source code, test files, build configs, and binary assets are out of scope.

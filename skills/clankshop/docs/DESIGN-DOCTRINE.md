@@ -213,13 +213,13 @@ There are two homes, and the write-boundary between them is a hard rule, not a c
 |---|---|---|
 | Home | `.handbook/design/` | `.records/` (e.g. `.records/design/draft/`) |
 | Status | curated, present-tense, binding | provisional analysis / working artifacts |
-| Mutated by | `init`, `distill`, human editorial **only** | `extract`, `reconcile` (and other analysis verbs) |
+| Mutated by | `seed`, `distill`, human editorial **only** | `extract`, `reconcile` (and other analysis verbs) |
 
 **`extract` and `reconcile` write only `.records/`.** They produce analysis *about* the design — a
 recovered draft, a drift report — which is a deliverable, not the design itself. Letting an analysis
 verb write into `.handbook/design/` would relaunder the code's current shape back over curated
 design, reintroducing exactly the "code is the source of truth" inversion the seed exists to invert
 (§ Two temporal kinds of doc; the durability gradient). The seed is mutated only by the curated path:
-`init` (compile/migrate), `distill` (collapse change-records), and direct human editorial. This is
+`seed` (compile/migrate), `distill` (collapse change-records), and direct human editorial. This is
 the same source-vs-record split `auditor` and `foreman` run — the rubric/seed is durable and curated;
 the findings/deliverables accumulate in `.records/`.

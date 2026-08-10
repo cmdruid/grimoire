@@ -7,7 +7,7 @@ The seeded chapters carry file-level provenance back to the pack doctrine (`orig
 carries one version integer. The seam is judgment, not machinery: read the deployed chapter and
 the current doctrine side by side and classify each difference yourself. This verb runs the seam
 in both directions — downstream (the doctrine changed; offer it here) and upstream (this project
-proved a rule; offer it to the doctrine). The calibrator judges and routes; it **never edits a
+proved a rule; offer it to the doctrine). This verb judges and routes; it **never edits a
 chapter and never writes the upstream library.**
 
 ## Downstream — offer/apply for upstream updates
@@ -23,7 +23,7 @@ chapter and never writes the upstream library.**
    divergence.
 3. **Apply via the owning role:** an **accepted** update is dispatched as an improvement item to
    the role owning the chapter; that role applies it and re-stamps the file's `origin-version:`
-   to the current doctrine version. The calibrator verifies uptake (chapter updated, stamp
+   to the current doctrine version. The chiropractor verifies uptake (chapter updated, stamp
    current, check green) and closes per the intake pass's books (a `drained` line).
 
 ## Upstream — prepare a contribution (a human lands it)

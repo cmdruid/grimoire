@@ -130,6 +130,5 @@ Route: file a task (proxy for the records instrument's task capture).
 `doctrine-version:` is one integer for the whole doctrine, carried in every declaration block;
 bump it (everywhere, in one commit) whenever seeded content changes. Downstream, a deployed file
 whose `origin-version:` — or RECORDS' `built-against:` stamp — is behind the current version was
-seeded from older content; reconciling it is the improvement loop's judgment call (the
-calibrator's doctrine seam): read the two bodies side by side, offer the differences, respect
+seeded from older content; reconciling it is the improvement loop's judgment call (the doctrine seam — `/clankshop calibrate doctrine`): read the two bodies side by side, offer the differences, respect
 local divergence — the operating agent is the differ.

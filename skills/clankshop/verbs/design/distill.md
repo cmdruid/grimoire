@@ -7,7 +7,7 @@ describe, so the seed stays a clean present-tense source of truth as the project
 `docs/DESIGN-DOCTRINE.md` § Two temporal kinds of doc for the failure mode this verb cures, and § The
 durability gradient for what `distill` is allowed to touch (it writes `.handbook/design/src/<system>.md`
 and, on promotion, `PHILOSOPHY.md`; never code). *(Seam: `distill` compacts the seed's own accretion;
-external signal arrives as calibrator-routed improvement items, applied here as ordinary seed work.)*
+external signal arrives as improvement items routed by `calibrate`, applied here as ordinary seed work.)*
 
 ## Cadence B — manual, milestone-triggered
 

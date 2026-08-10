@@ -23,7 +23,7 @@ Three hard rules follow, and they govern every step below:
    pass and the fresh-agent read-test have hardened it (Step 6).
 2. **`extract` writes ONLY to `.records/design/draft/`.** It **never** writes into
    `.handbook/design/`. The seed home stays pure — mutated only by the curated path
-   (`init`/`distill`/human editorial). `extract` produces a *deliverable*, not a seed; see
+   (`seed`/`distill`/human editorial). `extract` produces a *deliverable*, not a seed; see
    `docs/DESIGN-DOCTRINE.md` § Deliverables in `.records/`, seed in `.handbook/design/`.
 3. **`extract` never writes executable code.** Standing architect discipline: it reads `src/` to
    inventory and infer, and authors design prose only.
@@ -40,7 +40,7 @@ Three hard rules follow, and they govern every step below:
 ## 2. When to use — and when not to
 
 `extract` is for a codebase with **no design layer**: no `.handbook/design/` seed, and nothing for
-`init` migrate-mode to fold (no `DESIGN.md`, no per-subsystem docs directory). It is the step
+`seed` migrate-mode to fold (no `DESIGN.md`, no per-subsystem docs directory). It is the step
 *before* a seed exists — it manufactures the raw material a human then hardens into one.
 
 Redirect in two cases:
@@ -50,7 +50,7 @@ Redirect in two cases:
   seed) instead. Re-extracting over a live seed would just relaunder the code's current shape back
   over curated design.
 - **Design docs exist but no seed** (a `DESIGN.md`, a `docs/design/*` directory) → that is
-  `init` migrate-mode's job, not `extract`'s. There is already curated material to fold; don't
+  `seed` migrate-mode's job, not `extract`'s. There is already curated material to fold; don't
   reverse-engineer what a human already wrote down.
 
 ## 3. Inventory the code
@@ -125,7 +125,7 @@ to real `.handbook/design/` seed runs through two steps `extract` explicitly han
    semantic sufficiency proof no script can substitute for.
 
 Only after both does the hardened draft fold into the seed — via `/clankshop design seed` in **migrate
-mode**, with `.records/design/draft/` as the source material `init` reshapes into `.handbook/design/`.
+mode**, with `.records/design/draft/` as the source material `seed` reshapes into `.handbook/design/`.
 State this path in the report; do not run it — `extract` stops at the draft + gap report.
 
 ## 7. Report + commit

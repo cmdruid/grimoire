@@ -2,7 +2,7 @@
 
 Hat: `roles/chiropractor.md` — read the hat first; you operate this verb wearing that hat.
 
-Run one pass of the improvement loop over the **frozen intake table** — the calibrator is the
+Run one pass of the improvement loop over the **frozen intake table** — this hat is the
 only scanner of these sources, and every item leaves the pass either dispatched-and-closed,
 dispatched-and-open (uptake pending), or explicitly skipped with its reason.
 
