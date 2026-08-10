@@ -127,7 +127,7 @@ ignored hand-off is not a debrief target.
      improvement loop to land in the rules chapters.
    - **FEEDBACK** → the `/backlog feedback` convention: a dated entry (`templates/feedback.md`), noting
      whether it's praise, a concern, a friction, or a directional idea, and where it might lead. This
-     is the **single dev-experience channel** — a reaction to a *workflow skill you used* (`/foreman`,
+     is the **single dev-experience channel** — a reaction to a *workflow skill you used* (`/clankshop`,
      `/feature`, `/workstream`, `/delegate`, …) lands here too, not split off elsewhere.
 6. **Dedupe** against existing entries in each file before writing.
 7. **Commit once + report.** Make the single atomic scoped commit over every file touched (above),

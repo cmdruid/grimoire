@@ -26,7 +26,7 @@ settings change, no precedence question.
   <design-file>`, or `/feature review <doc>`, by hand works exactly as when a flow calls it).
 - **The flow** is the orchestration that sequences verbs and owns the seams *around* planning --
   landing the work and capturing what it surfaced. The orchestrator is the user (standalone), the
-  `/foreman` router, or a `/workstream` loop. **`/feature` itself never lands or debriefs** (see
+  `/clankshop route` router, or a `/workstream` loop. **`/feature` itself never lands or debriefs** (see
   *Composition*).
 
 ## Host layout -- standalone by default, framework-aware when present
@@ -250,7 +250,7 @@ debrief -- the orchestrator owns both (see *Composition*).
 Review a spine artifact someone already wrote -- a design, an implementation plan, a roadmap, or an
 ADR -- as an **independent** second set of eyes, distinct from the *self*-review baked into `design`
 and `plan` (self-review is the author checking their own work; this verb is not the author). The
-**cross-cutting** verb: callable any time on any artifact, by any orchestrator (you, `/foreman`, a
+**cross-cutting** verb: callable any time on any artifact, by any orchestrator (you, `/clankshop route`, a
 `/workstream`, or a coordinator reviewing another stream's doc). Like `brainstorm` it is
 **artifact-free** -- output is findings + a verdict in context, no file written; like every verb it
 never edits, lands, or debriefs. It reviews **documents, not diffs** -- a code change is `/code-review`.
@@ -415,7 +415,7 @@ them. **`/feature` never debriefs, ships, or lands.**
 - **Inside `/workstream`** -> the stream calls `/feature` per queue item; `build` stops at gate-green
   and **hands back**. Landing, capture, and the reset ritual around the hand-back are `/workstream`'s to
   run and document — `/feature` initiates none of it.
-- **`/foreman`** (router) -> for a feature, dispatches into `/feature` at the right verb (start at
+- **`/clankshop route`** (router) -> for a feature, dispatches into `/feature` at the right verb (start at
   `brainstorm`, or jump to `design`/`plan` if an approach/spec already exists).
 - **`review`** (cross-cutting) -> any orchestrator can call it on an artifact at any point: after
   `design` as an independent gate before `plan`, after `plan` before `build`, or standalone (a

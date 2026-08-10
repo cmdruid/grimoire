@@ -23,7 +23,7 @@ signal → capture → route → lane → gate → land → done log
 2. **Route.** The front door's compiled table dispatches the common intents at tier 0. The
    ambiguous case walks `.handbook/rules/ROUTING.md` — the classification judgment: known gotcha
    or real bug, patch or feature, spike or build. The unsure row goes to the operations role
-   (`/foreman`), whose whole job at this moment is to classify and dispatch.
+   (`/clankshop route`), whose whole job at this moment is to classify and dispatch.
 3. **Lane.** Each lane file (`.handbook/workflows/`) is complete: purpose, policy citations, the
    seams where a role takes over, and a by-hand walk that works with **no skills installed** —
    the skills accelerate the lanes, they are never prerequisites.

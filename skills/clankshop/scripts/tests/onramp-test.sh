@@ -152,7 +152,7 @@ expect "install: rerun re-locks"     "locked    clankshop@$PV" "$TMP/inst2"
 
 # ============ fixture 5: registration stability (plan Task 5.3, pulled forward) ============
 # setup writes each member's pack-style door block once; the four self-registering
-# members (backlog setup, architect setup, auditor setup, feature setup) re-register
+# members (backlog setup, auditor setup, feature setup) re-register
 # lazily during normal use, through their own register-route.sh copies. The contract:
 # an existing pack-style block is ADOPTED -- re-registration converges byte-identically,
 # never rewrites the real front door -- and a hand-broken delimiter leaves the file
@@ -162,7 +162,7 @@ R=$TMP/regstab
 mkdir -p "$R" && git -C "$R" init -qb main . 2>/dev/null
 project_doctrine "$R" "$DOCTRINE" "$SKILLS" "make test" main "$PV"
 cp "$R/AGENTS.md" "$TMP/door.before"
-for m in backlog architect auditor feature; do
+for m in backlog auditor feature; do
   extract_door_body "$DOCTRINE/README.md" "$m" > "$TMP/body.$m"
   bash "$SKILLS_SRC/$m/scripts/register-route.sh" "$R/AGENTS.md" "$m" "clankshop@$PV" \
     < "$TMP/body.$m" > "$TMP/reg.$m" 2>&1

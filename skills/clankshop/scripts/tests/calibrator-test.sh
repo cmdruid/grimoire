@@ -9,7 +9,7 @@ DIR=$(CDPATH='' cd "$(dirname "$0")" && pwd -P)
 . "$DIR/lib.sh"
 pass=0; fail=0   # re-assigned by lib.sh's helpers (shellcheck cannot follow the source)
 CLANKSHOP_SCRIPTS=$(CDPATH='' cd "$DIR/.." && pwd -P)
-CAL_SCRIPTS=$(CDPATH='' cd "$DIR/../../../calibrator/scripts" && pwd -P)
+CAL_SCRIPTS=$(CDPATH='' cd "$DIR/.." && pwd -P)
 
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/clankshop-calibrator.XXXXXX")
 trap 'rm -rf "$TMP"' EXIT

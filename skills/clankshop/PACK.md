@@ -2,11 +2,11 @@
 name: clankshop
 version: 1.0.0
 description: "The full development loop as a skill pack: route a change, design at seed altitude, plan and build features gate-green, ship them from long-lived workstreams, delegate work without polluting context, keep sessions resumable, root-cause bugs before patching them, and audit both code quality and doc ergonomics."
-required: architect, auditor, backlog, calibrator, chiropractor, debugger, delegate, feature, foreman, guardian, handoff, mailbox, workstream
+required: auditor, backlog, debugger, delegate, feature, handoff, mailbox, workstream
 optional: bug, task
 # core: is a grimoire author extension (spec §2 unknown key, ignored by tools) — the
 # lint gate's core-member exemption rule; helpers = the members not listed here.
-core: clankshop, architect, auditor, backlog, calibrator, chiropractor, debugger, feature, foreman, guardian, workstream
+core: clankshop, auditor, backlog, debugger, feature, workstream
 ---
 
 # clankshop — the disciplined development loop
@@ -15,7 +15,9 @@ The frontmatter above is the pack's **manifest** (spec format 1) — the machine
 `install.sh` and the lint gate read. The pack's content lives beside this file in
 `skills/clankshop/`:
 
-- `SKILL.md` — the pack face: the `setup` / `migrate` / `check` verbs.
+- `SKILL.md` — the pack face: the system verbs (`setup` / `migrate` / `check`), the intent verbs
+  (`design` / `route` / `verify` / `calibrate` / `docs`) with their role hats (`roles/`), and
+  `ask <role>` for hat-on discussion.
 - `doctrine/` — the seed content `setup` and `migrate` project, through a project's facts, into
   its `.handbook/`; the doctrine index (`doctrine/README.md`) carries the chapter registry, the
   team roster, and the door profile.

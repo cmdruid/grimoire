@@ -25,7 +25,7 @@ retroactively edited (INV-8).
 **Seam glue:** with the pipeline installed, `/feature` runs the spine (brainstorm → design →
 plan → build) and stops at gate-green — landing and the debrief sweep stay with whoever
 orchestrates the lane (a workstream, or this walk by hand). A foundational design decision at
-stake → work that piece as the architect (`/architect`) before planning against it. A
+stake → work that piece as the architect (`/clankshop design`) before planning against it. A
 preference / scope / sign-off call only the human can make → `/backlog promote` per the promotion
 bar. After landing, sweep the finished work to the trackers (`/backlog debrief`) and complete the
 queue item's done-log line.

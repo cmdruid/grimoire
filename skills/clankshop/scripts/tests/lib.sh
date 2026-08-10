@@ -103,17 +103,13 @@ project_doctrine() {
   # --- stewardship maps: preamble lines + per-producer blocks, stamped.
   cat > "$pr_root/.handbook/README.md" <<EOF
 # Handbook — stewardship map
-One stewardship line per chapter: rules/ — the operations role; workflows/ — the
-operations role; design/ — the design role; testing/ — the verification role;
+One stewardship line per chapter: rules/ — the foreman hat; workflows/ — the
+foreman hat; design/ — the architect hat; testing/ — the guardian hat;
 rules/RECORDS.md — the records instrument's stamped projection.
-<!-- steward:foreman -->
-chapters: rules workflows
+<!-- steward:clankshop -->
+chapters: rules workflows design testing
 built-against: clankshop@$pr_pv
-<!-- /steward:foreman -->
-<!-- steward:architect -->
-chapters: design
-built-against: clankshop@$pr_pv
-<!-- /steward:architect -->
+<!-- /steward:clankshop -->
 EOF
   cat > "$pr_root/.records/README.md" <<EOF
 # Records — stewardship map

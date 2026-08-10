@@ -35,13 +35,8 @@ with a doctrine version bump.
 
 | tier | member | is | manages / does |
 |---|---|---|---|
-| **pack** | `clankshop` | the pack's executable face | doctrine + runbook; `setup` / `migrate` / system `check` |
-| **role** | `architect` | design expertise | `.handbook/design/` + `.records/design/` |
-| **role** | `foreman` | operations expertise | `route`; `.handbook/rules/` + `workflows/`; `.records/logs/` |
-| **role** | `guardian` | verification expertise | `.handbook/testing/` (gate, CI/CD, diagnostics playbook); verification judgment |
-| **role** | `auditor` | code-quality expertise | rubric (seat) + `.records/audit/` |
-| **role** | `chiropractor` | docs-quality expertise | audits `.handbook/` + `.records/` + the front door |
-| **role** | `calibrator` | the improvement loop | intake over trackers + quality findings; dispatches improvement items; upstream contributions |
+| **pack** | `clankshop` | the development system's face | doctrine + runbook + the four role hats (architect, foreman, guardian, chiropractor); system verbs `setup` / `migrate` / `check`; intent verbs `design` / `route` / `verify` / `calibrate` / `docs`; `ask <role>` |
+| **instrument** | `auditor` | the code-quality instrument | rubric (seat) + `.records/audit/`; standalone on any repo |
 | **instrument** | `backlog` | the records instrument | capture + debrief + `done` + curate + tickets/escalation; `.handbook/rules/RECORDS.md`; `.records/trackers|tickets|done` |
 | **instrument** | `debugger` | the diagnostic instrument | the root-cause procedure; guided by the diagnostics playbook |
 | **pipeline** | `feature` | brainstorm → build | planning artifacts → `.records/plans|adr` |
@@ -68,13 +63,13 @@ ROUTING's dispatch rows, never duplicated into the door):
 | build a feature | `/feature` |
 | capture a follow-up | `/backlog` (aliases: `/bug`, `/task`) |
 | escalate to the human | `/backlog promote` |
-| a design decision at seed altitude | `/architect` |
-| harden the gate / CI / the diagnostics playbook | `/guardian` |
+| a design decision at seed altitude | `/clankshop design` |
+| harden the gate / CI / the diagnostics playbook | `/clankshop verify` |
 | audit the code | `/auditor` |
-| audit the docs | `/chiropractor` |
-| calibrate the system | `/calibrator` |
+| audit the docs | `/clankshop docs` |
+| calibrate the system | `/clankshop calibrate` |
 | set up / migrate / check the system | `/clankshop` |
-| unsure / mixed altitude | `/foreman` |
+| unsure / mixed altitude | `/clankshop route` |
 
 ### Registration block bodies (frozen — the door-block protocol's single source)
 
@@ -85,44 +80,15 @@ member's standard delimiters, stamped `built-against:clankshop@<pack-version>`. 
 here; an optional proxy registers only when installed.)
 
 ```markdown
-### /clankshop — the pack face
-Route: stand up (`setup`), onboard (`migrate`), or validate (`check`) this installation; the
-pack's doctrine and runbook home.
-```
-
-```markdown
-### /foreman — route a change
-Route: classify a bug / patch / feature / spike and dispatch it to its lane; keeps the rulebook
-(`.handbook/rules/` + `.handbook/workflows/`).
-```
-
-```markdown
-### /architect — design expertise
-Route: foundational design work at seed altitude; tends `.handbook/design/` and
-`.records/design/`.
-```
-
-```markdown
-### /guardian — verification expertise
-Route: harden the gate, the CI/CD pipeline, and the diagnostics playbook; tends
-`.handbook/testing/`; judges defect-vs-flaky and verification depth.
+### /clankshop — the development system
+Route: stand up (`setup`), onboard (`migrate`), or validate (`check`) this installation; route a
+change (`route`); seed-altitude design (`design`); verification stewardship (`verify`); the
+improvement loop (`calibrate`); docs quality (`docs`); `ask <role>` for a hat-on discussion.
 ```
 
 ```markdown
 ### /auditor — code quality
 Route: rubric-driven code-quality audits; findings and history in `.records/audit/`.
-```
-
-```markdown
-### /chiropractor — docs quality
-Route: audit `.handbook/`, `.records/`, and the front door for conformance, resolution, budgets,
-and navigability; findings to `.records/reports/`.
-```
-
-```markdown
-### /calibrator — the improvement loop
-Route: drain captured signal and quality findings into system improvements — intake, dispatch to
-the owning role, verify uptake, close; prepares upstream doctrine contributions.
 ```
 
 ```markdown
