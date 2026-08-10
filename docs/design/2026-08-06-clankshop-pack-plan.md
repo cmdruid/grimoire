@@ -47,7 +47,13 @@ decision and removal record: `docs/design/2026-08-10-doctrine-sync-removal.md`. 
 divergence from Appendix H (owner, 2026-08-10): `feature` is standalone** — its unstamped refusal
 is replaced by `skills/feature/SKILL.md` § *Host layout* (same shape as workstream's), and `init`
 is renamed `setup`, registering the pack-style block on a clankshop host and its own bundled body
-under a `standalone` stamp elsewhere; no verb refuses or routes to the onramps.
+under a `standalone` stamp elsewhere; no verb refuses or routes to the onramps. **Extended
+(owner, 2026-08-10) to the self-init family:** the self-init verbs are uniformly `setup`
+(`backlog init` → `setup`, `architect init` → `setup`, `auditor deploy` → `setup` with `deploy`
+kept as an alias), and **backlog is standalone**: its trackers scaffold at the resolved
+records-root on any repo, its lifecycle verbs operate on whatever stores exist instead of
+refusing unstamped, and its `setup` no longer writes the installation block — that pre-stamp
+license (§3.4's backlog row) is retired; framework assembly stays with the onramps.
 
 **Goal:** Implement the clankshop pack per `docs/design/2026-08-06-clankshop-pack.md` §8, over the
 mechanics of `docs/design/2026-08-04-agent-framework.md`. Where the two docs differ, **pack §7 is

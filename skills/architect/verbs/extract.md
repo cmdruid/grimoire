@@ -53,7 +53,7 @@ Redirect in two cases:
 
 ## 3. Inventory the code
 
-Reuse `init` greenfield's code-inventory shape (see `verbs/init.md` Step 3, "Greenfield mode"):
+Reuse `setup` greenfield's code-inventory shape (see `verbs/setup.md` Step 3, "Greenfield mode"):
 partition the codebase into systems informed by its **actual module boundaries** — one candidate
 system per identifiable code unit — and build the seam graph from **cross-references** between them
 (an import, call, or shared type from one system into another is a seam-graph edge). Record, per
@@ -122,7 +122,7 @@ to real `.handbook/design/` seed runs through two steps `extract` explicitly han
    agent *only* the hardened draft and confirm it can act on it without guessing. This is the
    semantic sufficiency proof no script can substitute for.
 
-Only after both does the hardened draft fold into the seed — via `/architect init` in **migrate
+Only after both does the hardened draft fold into the seed — via `/architect setup` in **migrate
 mode**, with `.records/design/draft/` as the source material `init` reshapes into `.handbook/design/`.
 State this path in the report; do not run it — `extract` stops at the draft + gap report.
 
@@ -130,7 +130,7 @@ State this path in the report; do not run it — `extract` stops at the draft + 
 
 Close `extract` with: the systems inventoried, the apparent contracts drafted, the spine files
 stamped (with `VISION`'s inference flagged as weakest), the headline entries of the gap report, and
-the explicit next step (human editorial → read-test → `/architect init` migrate-mode). Make the
+the explicit next step (human editorial → read-test → `/architect setup` migrate-mode). Make the
 provisional nature unmissable: this is a draft to harden, not a seed to build against.
 
 Commit the draft outputs scoped and pathspec-atomic (only the `.records/design/draft/` paths written

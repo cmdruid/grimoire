@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: "Deploy and operate a code-quality audit framework split source-vs-record: the rubric (GUIDE.md, rules/, metrics.sh) is a project's .agents/roles/auditor/ seed; deliverables (FINDINGS.md, logs/, metrics.csv, history/) accumulate in .records/audit/. Calibrate against GUIDE.md, scope by risk-weight, run metrics.sh, score targets against the rules/ dimensions, log and record findings, and drain actionable findings to the host's trackers -- which in turn calibrate the rubric. Use when the user runs `/auditor`, asks to audit/quality-check the codebase or a module, or to stand up the audit framework on a project that lacks one. `/auditor deploy` bootstraps both homes from the bundled BOOTSTRAP.md; `/auditor metrics` runs metrics.sh; `/auditor check` runs the invariant gate. This audits PROJECT CODE — code quality scored against a rubric."
+description: "Deploy and operate a code-quality audit framework split source-vs-record: the rubric (GUIDE.md, rules/, metrics.sh) is a project's .agents/roles/auditor/ seed; deliverables (FINDINGS.md, logs/, metrics.csv, history/) accumulate in .records/audit/. Calibrate against GUIDE.md, scope by risk-weight, run metrics.sh, score targets against the rules/ dimensions, log and record findings, and drain actionable findings to the host's trackers -- which in turn calibrate the rubric. Use when the user runs `/auditor`, asks to audit/quality-check the codebase or a module, or to stand up the audit framework on a project that lacks one. `/auditor setup` bootstraps both homes from the bundled BOOTSTRAP.md; `/auditor metrics` runs metrics.sh; `/auditor check` runs the invariant gate. This audits PROJECT CODE — code quality scored against a rubric."
 ---
 
 # auditor — the code-quality audit driver
@@ -14,7 +14,7 @@ truth -- **re-read `GUIDE.md` each pass**; this skill orchestrates the loop, it 
 restate the rubric.
 
 If the host project has **no `.agents/roles/auditor/` (rubric) or `.records/audit/` (deliverables)
-yet**, deploy both first (see *Deploy mode*), then operate them. The skill is self-contained:
+yet**, set both up first (see *Setup mode*), then operate them. The skill is self-contained:
 it bundles the blueprint and a worked example so it can stand the system up anywhere.
 
 ## What this skill bundles
@@ -34,7 +34,7 @@ invariants). It is **not** a docs-system maintenance sweep. Different domain.
 
 ## Modes (selected by argument)
 
-- **`deploy`** (alias `init`) -- stand up `.agents/roles/auditor/` (rubric) and `.records/audit/`
+- **`setup`** (alias `deploy`) -- stand up `.agents/roles/auditor/` (rubric) and `.records/audit/`
   (deliverables) on a project that lacks them.
 - **(no arg) -- a pass.** Run the audit loop, scoped to a risk-weighted target (or all).
 - **`metrics`** -- run the host's `.agents/roles/auditor/metrics.sh`: print the report, append the
@@ -43,12 +43,12 @@ invariants). It is **not** a docs-system maintenance sweep. Different domain.
   count of the host's native-invariant smell is a P0 and fails).
 - **`<target>`** -- a path scopes a pass to that target at its depth.
 
-**Unstamped conduct:** `deploy` is a **writer** on an unstamped root — exactly its pre-stamp
+**Unstamped conduct:** `setup` is a **writer** on an unstamped root — exactly its pre-stamp
 license: the seat (`.agents/roles/auditor/`), the deliverables home (`.records/audit/`), and the
 installation block (created-or-adopted). **Every other mode is read-only on an unstamped root**:
-emit `unstamped`, point at the clankshop onramps (or `deploy`), and stop.
+emit `unstamped`, point at the clankshop onramps (or `setup`), and stop.
 
-## Deploy mode
+## Setup mode
 
 When the host has no `.agents/roles/auditor/` or `.records/audit/`, follow the bundled `BOOTSTRAP.md`:
 
@@ -69,7 +69,7 @@ When the host has no `.agents/roles/auditor/` or `.records/audit/`, follow the b
    `<language>`; run it for a baseline `.records/audit/logs/metrics.csv` row; wire `--check`
    on the native invariant.
 5. **Wire + gate** -- add one pointer from the host's doc index; run the host's gate.
-6. **Register the front-door route — the pack-style block — and stamp the root.** `deploy` keeps
+6. **Register the front-door route — the pack-style block — and stamp the root.** `setup` keeps
    its pre-stamp write right: it self-inits both homes on an unstamped root and
    **creates-or-adopts the installation block** (the pack face's `install-block.sh write
    <root> 1`), so a bare single-role install yields a resolvable installation. The registration
@@ -86,7 +86,7 @@ When the host has no `.agents/roles/auditor/` or `.records/audit/`, follow the b
    An existing pack-style block written by setup is **adopted** (re-running converges
    byte-identically). Report `appended`/`replaced`; if **malformed**, surface it and stop -- a
    delimiter was hand-broken, the human repairs it, never force it. Idempotent: re-running
-   `deploy` rewrites only auditor's own `skill:auditor` block, never a sibling's.
+   `setup` rewrites only auditor's own `skill:auditor` block, never a sibling's.
    **Grimoire caveat (patient-zero):** never register against grimoire's own authored
    `AGENTS.md` -- this step is exercised only against a throwaway fixture front-door.
 7. **Baseline pass + Select exemplars** -- run a lean pass to seed `FINDINGS.md`, then
@@ -144,7 +144,7 @@ generic `rules/` are an authored distillation -- update them by hand when a dime
 For a **pass**: reproducible `metrics.sh` numbers, targets scored against the `rules/`
 contracts (every 5 evidence-backed, false-positives refuted), raw output logged,
 findings recorded with permanent IDs, and **every** actionable finding drained with
-`Graduated:` backfilled. For a **deploy**: a `.agents/roles/auditor/` + `.records/audit/` pair that
+`Graduated:` backfilled. For a **setup**: a `.agents/roles/auditor/` + `.records/audit/` pair that
 passes the host's gate,
 a baseline `FINDINGS.md`, pinned exemplars, a wired doc-index pointer, and a front-door
-`skill:auditor` route block (Deploy mode step 6).
+`skill:auditor` route block (Setup mode step 6).

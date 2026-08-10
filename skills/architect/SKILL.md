@@ -1,6 +1,6 @@
 ---
 name: architect
-description: "The design-system engine — a project's `.handbook/design/` seed: present-tense, regenerable design code builds from. `/architect init` stands up `.handbook/design/` (compiles a PROJECT.md brief, or migrates existing docs). `/architect extract` is the brownfield onramp — recover a provisional design draft from code into `.records/design/draft/`. `/architect brainstorm` and `/architect plan` do seed-altitude (foundational, not feature-scope) design work. `/architect distill` collapses accreted ADRs/plans into clean present-tense specs (external signal arrives as improvement items the loop dispatches; `distill` compacts internal accretion). `/architect check` validates seed health; `/architect reconcile` reports deep semantic seed↔code drift to `.records/reports/`. `/architect prep` (Plan B) plans clearing retired code for a fresh rebuild. Use when the user runs `/architect ...`, sets up a design-doc system, or makes a foundational design change."
+description: "The design-system engine — a project's `.handbook/design/` seed: present-tense, regenerable design code builds from. `/architect setup` stands up `.handbook/design/` (compiles a PROJECT.md brief, or migrates existing docs). `/architect extract` is the brownfield onramp — recover a provisional design draft from code into `.records/design/draft/`. `/architect brainstorm` and `/architect plan` do seed-altitude (foundational, not feature-scope) design work. `/architect distill` collapses accreted ADRs/plans into clean present-tense specs (external signal arrives as improvement items the loop dispatches; `distill` compacts internal accretion). `/architect check` validates seed health; `/architect reconcile` reports deep semantic seed↔code drift to `.records/reports/`. `/architect prep` (Plan B) plans clearing retired code for a fresh rebuild. Use when the user runs `/architect ...`, sets up a design-doc system, or makes a foundational design change."
 ---
 
 # architect — the design-system engine
@@ -21,7 +21,7 @@ lives in `verbs/<verb>.md`; the portable doctrine lives in `docs/DOCTRINE.md`.
   `docs/DOCTRINE.md`.
 
 ## Unstamped conduct
-`init` and `extract` are **writers** on an unstamped root — exactly their pre-stamp license: the
+`setup` and `extract` are **writers** on an unstamped root — exactly their pre-stamp license: the
 design chapter, design records, skeleton stewardship maps, and the installation block
 (created-or-adopted, so a bare single-role install yields a resolvable installation). **Every
 other verb is read-only on an unstamped root**: emit `unstamped`, point at the clankshop onramps,
@@ -30,7 +30,7 @@ and stop.
 ## Verbs
 | verb | file | one-liner |
 |---|---|---|
-| `init` | `verbs/init.md` | compile a PROJECT.md brief (or migrate existing docs) into `.handbook/design/` |
+| `setup` | `verbs/setup.md` | compile a PROJECT.md brief (or migrate existing docs) into `.handbook/design/` |
 | `extract` | `verbs/extract.md` | brownfield onramp: recover a descriptive, provisional design draft from code into `.records/design/draft/` |
 | `brainstorm` | `verbs/brainstorm.md` | foundation-altitude ideation on the seed (radical, alpha-licensed) |
 | `plan` | `verbs/plan.md` | sequence a design-evolution campaign |

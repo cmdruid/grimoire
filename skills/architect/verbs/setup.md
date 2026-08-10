@@ -1,4 +1,4 @@
-# `/architect init` — bootstrap or migrate the `.handbook/design/` seed
+# `/architect setup` — bootstrap or migrate the `.handbook/design/` seed
 
 Stands up a project's `.handbook/design/` seed (see `docs/DOCTRINE.md` for the durability gradient and the
 two-tier system-spec this verb populates). Two modes, one procedure with a fork at Step 3:
@@ -7,10 +7,10 @@ two-tier system-spec this verb populates). Two modes, one procedure with a fork 
   scattered design material to fold in; the brief is the only real input besides whatever code
   already exists.
 - **Migrate** — an existing project has design material spread across a root `PROJECT.md`/
-  `DESIGN.md` and a per-subsystem docs directory (e.g. `docs/design/*`). `init` folds that
+  `DESIGN.md` and a per-subsystem docs directory (e.g. `docs/design/*`). `setup` folds that
   material into the seed's shape rather than writing it fresh.
 
-Both modes end the same way: `init` is not done until `/architect check` reports a complete spine
+Both modes end the same way: `setup` is not done until `/architect check` reports a complete spine
 (and every migrated system has a contract).
 
 ## 1. Detect mode
@@ -27,7 +27,7 @@ Look for existing design material in the project root:
 
 Reconciling the brief's literal signal list (`PROJECT.md`, `DESIGN.md`, `docs/design/` all "→
 migrate"): a bare `PROJECT.md` alone, with no `DESIGN.md` and no subsystem-docs directory, *is*
-the greenfield case — it is exactly the "loose vision brief" `init` is meant to compile. Treat
+the greenfield case — it is exactly the "loose vision brief" `setup` is meant to compile. Treat
 `DESIGN.md` or a real subsystem-docs directory as the actual migrate signal; `PROJECT.md`'s role
 differs by what else is present, not by its own existence.
 
@@ -80,7 +80,7 @@ modes — greenfield just has thinner sources.
      `src/…:NN`-style pointers into the actual code they describe (a file path alone is an
      acceptable pointer when a specific line isn't meaningful; never paste code). If a described
      piece of architecture no longer matches any code you can find, that's drift worth flagging in
-     the init report, not something to paper over by keeping the stale prose.
+     the setup report, not something to paper over by keeping the stale prose.
    - **Acceptance:** carry over any concrete scenarios/gates/determinism checks the source doc
      already names. If the source doc has nothing concrete, leave the template's `<...>`
      placeholder rather than inventing one — `/architect check` will flag it as
@@ -94,7 +94,7 @@ modes — greenfield just has thinner sources.
 4. **Not every doc under the subsystem-docs directory is a committed system spec.** Some are
    explicitly speculative or forward-looking (e.g. a subsystem doc marked "not committed").
    Use judgment: migrate committed subsystems as normal; for a speculative doc,
-   either skip it and note the decision in the init report for the human to make, or migrate it
+   either skip it and note the decision in the setup report for the human to make, or migrate it
    with a contract that's honest about its non-committal status — don't silently launder a
    "maybe someday" doc into a binding contract.
 
@@ -110,7 +110,7 @@ difference: instead of reshaping loose prose, you are **hardening an already see
    `docs/DOCTRINE.md` § Sufficiency, a draft traced off code is circular until a human decides what the
    design *should* guarantee; folding it unresolved just relaunders that circularity into
    `.handbook/design/`. For each gap: turn an "apparent"/"appears to" observation into decided intent,
-   fill or knowingly accept each placeholder acceptance, and state the resolution in the init report.
+   fill or knowingly accept each placeholder acceptance, and state the resolution in the setup report.
 3. Drop the `status: extracted — sufficiency-unproven` stamp once resolved — a folded system carries the
    normal `distilled_through_*: none` stamp (Step 3, point 3 above), not the draft's provisional one.
 4. `.records/design/draft/` is **transient by contract** — born at `extract`, consumed exactly
@@ -130,7 +130,7 @@ pass writes.
 in the project's own operational history (`.records/adr/`, `.records/plans/`, etc.). Per `docs/DOCTRINE.md`,
 change-records and standing specs are temporally distinct; folding an ADR chain's *history* into
 the seed reintroduces exactly the scar-smear the seed exists to avoid. `distill` is the verb that
-later mines those change-records to refresh a spec — `init` only establishes the baseline stamp
+later mines those change-records to refresh a spec — `setup` only establishes the baseline stamp
 (`none`) that `distill` will work forward from.
 
 ## 4. Consume the bootstrap inputs
@@ -139,8 +139,8 @@ Once their content lives in the seed, the source material is **spent** — in mi
 `PROJECT.md`/`DESIGN.md` **and** every per-subsystem doc actually migrated in Step 3 (e.g.
 `docs/design/<system>.md` for each system now living at `.handbook/design/src/<system>.md`); in greenfield
 mode it's just `PROJECT.md`. Leaving a migrated subsystem doc in place, unlinked, recreates the
-two-source-of-truth problem `init` exists to close — don't stop at the root files. This is a
-document edit — `init` performs it directly:
+two-source-of-truth problem `setup` exists to close — don't stop at the root files. This is a
+document edit — `setup` performs it directly:
 
 - Default: replace each with a one-line pointer to `.handbook/design/` (e.g. "Superseded by `.handbook/design/` — see
   `.handbook/design/README.md`." for the root files, or "Superseded by `.handbook/design/src/<system>.md`." for a
@@ -153,7 +153,7 @@ document edit — `init` performs it directly:
 
 ## 5. Update project wiring — code-blind: doc edits direct, code edits are a handoff
 
-This step is the one place `init` must actively watch the altitude seam (`docs/DOCTRINE.md` § The
+This step is the one place `setup` must actively watch the altitude seam (`docs/DOCTRINE.md` § The
 seam — altitude, not medium). "Update project wiring" covers three kinds of reference that can go
 stale once `.handbook/design/` exists and the old docs are gone/moved:
 
@@ -164,14 +164,14 @@ stale once `.handbook/design/` exists and the old docs are gone/moved:
 For each, ask: *is the thing I'd edit a document, or executable code?*
 
 - **Document** (markdown, a `.ron`/`.yaml` config the linter reads declaratively, a repo-map file
-  like `AGENTS.md`) → `init` edits it directly, in the same pass. This is authoring the seed's
+  like `AGENTS.md`) → `setup` edits it directly, in the same pass. This is authoring the seed's
   surroundings, not writing code.
-- **Executable code** (a doc checker's source, a build script, a compiled indexer) → `init`
+- **Executable code** (a doc checker's source, a build script, a compiled indexer) → `setup`
   does **not** edit it. Emit a short handoff note instead: what
   moved, what the code currently assumes, and what change would make it correct again. Hand that
   note to `/foreman` or `/feature` to execute — do not guess at the project's tracker; if the project
   has one (a backlog file, an issue tracker), file it there per that project's convention, and
-  otherwise surface the note directly in `init`'s final report so the human can route it.
+  otherwise surface the note directly in `setup`'s final report so the human can route it.
 
 This is a direct consequence of the altitude split in `docs/DOCTRINE.md`: `/architect` never writes
 executable code, even code as small as a one-line linter glob update. The rebuild-instinct to "just
@@ -183,19 +183,19 @@ fix the one-liner" is exactly the boundary this step exists to hold.
 bash <skill-dir>/scripts/architect-check.sh <project>/.handbook/design [<repo-root>]
 ```
 
-`init` is not done until:
+`setup` is not done until:
 
 - `spine_complete=true`, and
-- `contract:<sys>=true` for every system `init` migrated or inventoried.
+- `contract:<sys>=true` for every system `setup` migrated or inventoried.
 
 Both are `architect-check.sh`'s exit-1 conditions (see `verbs/check.md`) — a missing spine or a
 contract-less system means there's no constitution, or no binding contract, for anything
-downstream to build against. If either is still false, that's `init` unfinished, not `init` done
+downstream to build against. If either is still false, that's `setup` unfinished, not `setup` done
 with follow-ups: go back and fill the gap.
 
 The remaining facts (`drift`, `acceptance_placeholder`, `map_orphan`/`map_dangling`,
 `baseline_date`) are advisory. Don't silently patch them to make the report look cleaner — surface
-them in `init`'s final report exactly as `verbs/check.md` prescribes (flag drift and placeholder
+them in `setup`'s final report exactly as `verbs/check.md` prescribes (flag drift and placeholder
 acceptance to the human; note orphan/dangling MAP rows as cheap hygiene). A migration that lands
 with a handful of honest `acceptance_placeholder`s and a filed handoff note is a correct outcome;
 one that fabricates acceptance criteria to clear the check is not.
@@ -204,7 +204,7 @@ one that fabricates acceptance criteria to clear the check is not.
 
 Once `check` reports `spine_complete=true`, register architect's route into the project's
 always-loaded front-door doc — the same "self-init, no floor" + "visibility by construction"
-corollaries `/backlog init` established (`docs/design/2026-07-18-skill-self-init-model.md` §1, §3).
+corollaries `/backlog setup` established (`docs/design/2026-07-18-skill-self-init-model.md` §1, §3).
 This makes a bare install of `/architect` visible with **no composer** present, same as the seed itself
 needed no `/foreman setup` to stand up.
 
@@ -233,15 +233,15 @@ needed no `/foreman setup` to stand up.
    An existing pack-style block written by setup is **adopted** (re-running converges
    byte-identically), never overwritten with a different body. Report `appended` / `replaced`. If
    it reports **malformed**, surface that — a delimiter was hand-broken; the human repairs it,
-   then re-run. Do **not** force it. The write is **idempotent**: re-running `init` rewrites only
-   architect's own `skill:architect` block, never a sibling's. `init` also **creates-or-adopts
+   then re-run. Do **not** force it. The write is **idempotent**: re-running `setup` rewrites only
+   architect's own `skill:architect` block, never a sibling's. `setup` also **creates-or-adopts
    the installation block** (its pre-stamp write license alongside the design chapter, records,
    and skeleton maps — via the pack face's `install-block.sh write <root> 1`), so a bare
    single-role install yields a resolvable installation.
 
 ## Report
 
-Close `init` with: the detected mode, the spine files stamped, the systems migrated/inventoried
+Close `setup` with: the detected mode, the spine files stamped, the systems migrated/inventoried
 (and any skipped as speculative, per Step 3), what happened to `PROJECT.md`/`DESIGN.md` (pointer
 or delete), any handoff note(s) emitted for code-side wiring (Step 5), the final `check` facts
 — pass/fail on the hard blockers plus a list of what's advisory-outstanding — and the front-door

@@ -201,7 +201,7 @@ sufficiency discipline exists to break. So `extract`'s output is honest about it
 
 A draft becomes a seed only through a **hardening** step `extract` hands off and does not perform: a
 human editorial pass (deciding intended design, resolving the gap report) **then** the fresh-agent
-read-test (§ Sufficiency) — and only then a fold into `.handbook/design/` via `/architect init`
+read-test (§ Sufficiency) — and only then a fold into `.handbook/design/` via `/architect setup`
 migrate-mode. The human deciding what the design *should* guarantee is what breaks the circle; the
 code deciding what it *happens* to do is what keeps a raw extraction circular.
 
