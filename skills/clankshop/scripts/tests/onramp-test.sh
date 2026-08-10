@@ -42,7 +42,7 @@ expect "green: chapters complete"      "chapters_missing=" "$TMP/facts"
 for key in handbook_unknown steward_stale unregistered orphaned_registrations \
            registration_stale routing_unresolved lane_missing routing_entry_unresolved \
            ticket_problems ticket_blocking_cycles done_log_inconsistent dup_ids \
-           missing_base bump_uncovered lock_missing_installed; do
+           lock_missing_installed; do
   expect "green: ${key} empty" "${key}_count=0" "$TMP/facts"
 done
 expect "green: stores complete"        "stores_missing=" "$TMP/facts"
@@ -50,10 +50,10 @@ expect "green: records projection current" "records_projection_version=$DV" "$TM
 expect_eq "green: lock fact lists have no empty tokens" "clean" \
   "$(grep -E '^lock_(members|optional)=' "$TMP/facts" | grep -q ',,' && echo doubled || echo clean)"
 
-# every seeded entry carries its provenance marker / origin keys
+# every doctrine INV entry is seeded; whole-file assets carry their origin keys
 inv_doc=$(grep -cE '^INV-[0-9]+:' "$DOCTRINE/rules/INVARIANTS.md")
-inv_marked=$(grep -cE '^INV-[0-9]+:.*⟨clankshop:INV-[0-9]+ @v'"$DV"'⟩' "$R/.handbook/rules/INVARIANTS.md")
-expect_eq "green: every INV line marked" "$inv_doc" "$inv_marked"
+inv_dep=$(grep -cE '^INV-[0-9]+:' "$R/.handbook/rules/INVARIANTS.md")
+expect_eq "green: every INV entry seeded" "$inv_doc" "$inv_dep"
 for sub in workflows testing; do
   for f in "$DOCTRINE/$sub"/*.md; do
     b=$(basename "$f" .md)
@@ -70,13 +70,6 @@ done
 # cold-clone readable: nothing in the handbook points at a skill path or harness home
 grep -rEn 'skills/|\.claude|~/' "$R/.handbook" > "$TMP/coldclone" 2>/dev/null || true
 expect_eq "green: cold-clone readable (no skill paths in .handbook)" "" "$(cat "$TMP/coldclone")"
-
-# the seeded deployment classifies UNCHANGED across the board (projection == protocol)
-bash "$CLANKSHOP_SCRIPTS/doctrine-diff.sh" "$R" gate="make test" trunk=main > "$TMP/diff" 2>&1
-states=$(grep -c '^state:' "$TMP/diff" || true)
-unchanged=$(grep -c '=unchanged$' "$TMP/diff" || true)
-expect_eq "green: every seeded entry unchanged" "$states" "$unchanged"
-expect_absent "green: no missing bases in diff" "missing-base=" "$TMP/diff"
 
 # ============ fixture 2: migrate ============
 R=$TMP/brown
@@ -95,7 +88,7 @@ expect "migrate: no active streams"   "inplace_streams_count=0" "$TMP/pre"
 
 # execute the confirmed mapping table in a WORKTREE (the mechanical walk of the verb):
 #   TODO.md items      -> tasks.md entries, IDs minted, (alias TODO-n) preserved
-#   docs/RULES.md      -> a project INVARIANTS entry (no origin marker: not doctrine-seeded)
+#   docs/RULES.md      -> a project INVARIANTS entry (project-local, not doctrine-seeded)
 #   decisions doc      -> .records/adr/ (moved verbatim)
 WT=$TMP/brown-wt
 git -C "$R" worktree add -q "$WT" -b migrate/clankshop
@@ -124,7 +117,7 @@ expect "migrate: rule migrated"    "INV-$next: Always run the linter" "$R/.handb
 # check green on the migrated tree
 bash "$CLANKSHOP_SCRIPTS/check-facts.sh" "$R" "$SKILLS" > "$TMP/facts2" 2>&1
 expect "migrate: stamped"          "stamped=1" "$TMP/facts2"
-for key in ticket_problems dup_ids missing_base routing_unresolved lane_missing; do
+for key in ticket_problems dup_ids routing_unresolved lane_missing; do
   expect "migrate: ${key} empty" "${key}_count=0" "$TMP/facts2"
 done
 expect "migrate: stores complete"  "stores_missing=" "$TMP/facts2"

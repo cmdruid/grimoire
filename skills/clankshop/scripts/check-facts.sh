@@ -376,68 +376,10 @@ for f in .records/design-draft/*.md .records/design/draft/*.md; do
   echo "$f:updated=$(frontmatter "$f" updated)"
 done | emit_capped design_draft 10
 
-# ---------- provenance stamps + missing bases ----------
+# ---------- doctrine version vs deployed projection ----------
 DOCTRINE=$DIR/../doctrine
-BASES=$DOCTRINE/BASES.md
-# Fence-stripped view of the base archive: its header carries fenced EXAMPLE base/bump
-# blocks (grammar documentation), which must never read as real archive entries.
-if [ -f "$BASES" ]; then
-  awk '/^[ ]*(```|~~~)/{f=!f;next} f{next} {print}' "$BASES" > "$TMP/bases"
-else
-  : > "$TMP/bases"
-fi
-BASES=$TMP/bases
 DV=$(awk '/^doctrine-version: /{print $2; exit}' "$DOCTRINE/README.md" 2>/dev/null || true)
 echo "doctrine_version=$DV"
 RPV=""
 [ -f .handbook/rules/RECORDS.md ] && RPV=$(awk '/^built-against: /{v=$2; sub(/^.*@/,"",v); print v; exit}' .handbook/rules/RECORDS.md)
 echo "records_projection_version=$RPV"
-# Collect deployed (origin, version) pairs: line markers, heading keys, declaration keys.
-{
-  grep -rhoE "⟨clankshop:[^ ⟩]+ @v[0-9]+" .handbook 2>/dev/null \
-    | sed -E 's/^⟨(clankshop:[^ ]+) @v([0-9]+)$/\1@v\2/' || true
-  git ls-files --cached --others --exclude-standard -- '.handbook/*.md' 2>/dev/null \
-    | while IFS= read -r hf; do [ -f "$hf" ] && printf '%s\n' "$hf"; done \
-    | tr '\n' '\0' | { xargs -0 awk '
-        /^origin: /         { o = $2 }
-        /^origin-version: / { if (o != "") { print o "@v" $2; o = "" } }
-      ' 2>/dev/null || true; }
-} | sort -u > "$TMP/prov" || true
-emit_capped provenance_stamps 30 < "$TMP/prov"
-# missing base: no BASES block for origin at version >= N AND no live doctrine entry.
-while IFS= read -r pv; do
-  [ -n "$pv" ] || continue
-  o=${pv%@v*}; v=${pv##*@v}
-  if [ -f "$BASES" ] && awk -v o="$o" -v v="$v" '
-       index($0, "<!-- base " o " @v") == 1 {
-         s = $0; sub(/^.*@v/, "", s); sub(/ -->.*$/, "", s)
-         if (s + 0 >= v + 0) found = 1
-       }
-       END { exit found ? 0 : 1 }' "$BASES"; then
-    continue
-  fi
-  short=${o#clankshop:}
-  case "$short" in
-    INV-*) grep -q "^$short:" "$DOCTRINE/rules/INVARIANTS.md" 2>/dev/null && continue ;;
-    G-*)   grep -qE "^##+ $short:" "$DOCTRINE/rules/GOTCHAS.md" 2>/dev/null && continue ;;
-    POL-*) grep -qE "^##+ $short:" "$DOCTRINE/rules/POLICY.md" 2>/dev/null && continue ;;
-    workflows/*|testing/*) [ -f "$DOCTRINE/$short.md" ] && continue ;;
-  esac
-  echo "$pv"
-done < "$TMP/prov" | emit_capped missing_base 20
-# bump-record coverage: a bump vK origin needs its base block keyed @v(K-1).
-if [ -f "$BASES" ]; then
-  awk '
-    match($0, /^<!-- bump v[0-9]+:/) {
-      v = $0; sub(/^<!-- bump v/, "", v); sub(/:.*$/, "", v)
-      s = $0; sub(/^<!-- bump v[0-9]+: */, "", s); sub(/ *-->.*$/, "", s)
-      n = split(s, os, " ")
-      for (i = 1; i <= n; i++) print os[i] "@v" (v - 1)
-    }
-  ' "$BASES" | sort -u | while IFS= read -r need; do
-    o=${need%@v*}; v=${need##*@v}
-    grep -qF "<!-- base $o @v$v -->" "$BASES" || echo "$need"
-  done | emit_capped bump_uncovered 20
-else
-  echo "bump_uncovered_count=0"; echo "bump_uncovered="
-fi

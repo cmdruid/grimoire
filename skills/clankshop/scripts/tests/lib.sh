@@ -63,20 +63,9 @@ project_doctrine() {
            "$pr_root/.records/trackers/bugs" "$pr_root/.records/trackers/notes" \
            "$pr_root/.records/tickets" "$pr_root/.records/done"
 
-  # --- rules: INVARIANTS (line markers), GOTCHAS/POLICY (empty declared stores),
-  #     ROUTING (whole), RECORDS (stamped projection) -- doctrine keys dropped.
-  awk -v dv="$pr_dv" '
-    /^<!-- spine-doc v[0-9]+$/ { decl = 1 }
-    decl && /^doctrine(-version)?: / { next }
-    decl && /^-->$/ { decl = 0 }
-    /^INV-[0-9]+:/ {
-      id = $1; sub(/:$/, "", id)
-      print $0 " \342\237\250clankshop:" id " @v" dv "\342\237\251"; next
-    }
-    { print }
-  ' "$pr_doc/rules/INVARIANTS.md" | fill_slots "$pr_gate" "$pr_trunk" \
-    > "$pr_root/.handbook/rules/INVARIANTS.md"
-  for f in GOTCHAS POLICY ROUTING; do
+  # --- rules: INVARIANTS/GOTCHAS/POLICY/ROUTING copied clean (doctrine keys dropped),
+  #     RECORDS (stamped projection below).
+  for f in INVARIANTS GOTCHAS POLICY ROUTING; do
     awk '
       /^<!-- spine-doc v[0-9]+$/ { decl = 1 }
       decl && /^doctrine(-version)?: / { next }
