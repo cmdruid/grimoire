@@ -41,9 +41,9 @@ owners processes each independently — accepting one never hides the rest.
    - Commit the claim **trunk-side, pathspec-scoped, before any dispatch** — the claim commit is
      the serialization point; if it conflicts (another pass landed first), re-scan and skip.
    - Dispatch the item to the **owning role** — the role owning the indicted chapter or store
-     (a routing gap → the rulebook steward; a gate/playbook gap → the verification role; a
-     seed divergence → the design role; a doc-form finding → the docs-quality role; a record
-     format concern → the records instrument's steward). The role applies it with its own
+     (a routing gap → the foreman hat; a gate/playbook gap → the guardian hat; a
+     seed divergence → the architect hat; a doc-form finding → the chiropractor's `docs` verb; a
+     record format concern → the records instrument). The role applies it with its own
      expertise, as ordinary work through the ordinary lanes.
    - An item that crosses the promotion bar — a *decision*, *sign-off*, *ambiguity*, or *access*
      need only the human can resolve — is handed to `/backlog promote` instead of an owning

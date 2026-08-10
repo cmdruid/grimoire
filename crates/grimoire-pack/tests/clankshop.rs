@@ -21,7 +21,7 @@ fn clankshop_is_a_valid_faced_pack() {
         .find(|p| p.manifest.name == "clankshop")
         .expect("clankshop pack found");
     assert!(matches!(clank.shape, PackShape::Faced { .. }));
-    assert_eq!(clank.manifest.version.to_string(), "1.0.0");
+    assert_eq!(clank.manifest.version.to_string(), "1.1.0");
     assert!(clank.manifest.required.iter().any(|m| m == "backlog"));
     assert_eq!(clank.manifest.optional, vec!["bug", "task"]);
     // the author-extension key rides in unknown, preserved

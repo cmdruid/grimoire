@@ -41,7 +41,7 @@ the onramps).
    it classifies.
 4. **Keep the seams true:** if the gate command itself changed, the rules chapters that cite
    `<gate>` (INVARIANTS) were filled with the old command at deploy — flag the mismatch to the
-   rulebook steward rather than editing another role's chapter.
+   rulebook steward — raise it via `/clankshop route` — rather than editing another hat's chapter.
 5. **Commit** trunk-side, scoped to the chapter paths. **Report** what changed and why, citing
    the evidence from step 2.
 

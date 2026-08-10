@@ -312,7 +312,7 @@ empty). Report any findings that did not resolve.
 
 ## Boundaries
 
-- **A role of the pack, still spine-generic.** The scanner consumes the pack face's shared
+- **A verb of the pack face, still spine-generic.** The scanner consumes the pack face's shared
   declaration parser and knows the deployed layout directly; everything else references only this
   skill's own `scripts/spine-scan.sh`, `docs/DOC-RUBRIC.md`, and `templates/doc-drift.md`. Generic
   concepts ("fan out parallel subagents", "a workflow engine if the harness offers one") are used

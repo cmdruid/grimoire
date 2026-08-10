@@ -2,7 +2,7 @@
 type: doc-drift
 id: doc-drift-<YYYY-MM-DD>-<slug>   # = the filename stem, verbatim; suffix -2/-3 on collision BEFORE first publication, never rename after
 date: <YYYY-MM-DD>
-source: <what triggered the audit — "scheduled audit", a calibrate signal entry ID, a user ask>
+source: <what triggered the audit — "scheduled audit", an improvement-item ID from `calibrate`, a user ask>
 processed: []                        # finding keys the improvement loop has drained; a YAML list, never a boolean
 ---
 

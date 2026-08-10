@@ -6,8 +6,8 @@
 # spaces in any value -- for the /clankshop design health verb (verbs/design/health.md) to
 # judge. This script catches STRUCTURAL rot only (missing spine, missing
 # contract, stale/dangling pointers, placeholder acceptance, MAP gaps); it
-# cannot judge whether a spec that passes is actually SUFFICIENT to rebuild
-# from -- that is the fresh-agent read-test, not a thing a script can check.
+# cannot judge whether a spec that passes actually SAYS ENOUGH TO ACT ON --
+# that is the fresh-agent read-test, not a thing a script can check.
 #
 # bash-3.2 safe (macOS default); read-only, never mutates.
 set -euo pipefail

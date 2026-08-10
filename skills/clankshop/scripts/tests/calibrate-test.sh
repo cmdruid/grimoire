@@ -1,5 +1,5 @@
 #!/bin/sh
-# calibrator-test.sh -- the improvement-loop fixtures (plan Task 2.11): the intake
+# calibrate-test.sh -- the improvement-loop fixtures (plan Task 2.11): the intake
 # scan's claim discipline (a repeated pass dispatches nothing already claimed; a
 # concurrent second pass sees the first pass's trunk-side claim and dispatches
 # nothing), pause skipping, the two-finding report (one finding processed never
@@ -11,7 +11,7 @@ pass=0; fail=0   # re-assigned by lib.sh's helpers (shellcheck cannot follow the
 CLANKSHOP_SCRIPTS=$(CDPATH='' cd "$DIR/.." && pwd -P)
 CAL_SCRIPTS=$(CDPATH='' cd "$DIR/.." && pwd -P)
 
-TMP=$(mktemp -d "${TMPDIR:-/tmp}/clankshop-calibrator.XXXXXX")
+TMP=$(mktemp -d "${TMPDIR:-/tmp}/clankshop-calibrate.XXXXXX")
 trap 'rm -rf "$TMP"' EXIT
 TODAY=$(date +%Y-%m-%d)
 
@@ -109,5 +109,5 @@ printf '%s\n' "$out_b" > "$TMP/outb"
 expect "concurrent pass sees the landed claim" "skipped_claimed=F-001" "$TMP/outb"
 expect_absent "concurrent pass dispatches nothing claimed" "eligible=F-001" "$TMP/outb"
 
-echo "calibrator: pass=$pass fail=$fail"
+echo "calibrate: pass=$pass fail=$fail"
 [ "$fail" -eq 0 ]
