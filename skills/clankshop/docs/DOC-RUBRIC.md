@@ -1,6 +1,6 @@
-# Chiropractor Rubric -- 12-Dimension Reference
+# The doc rubric -- the 12-dimension spine reference
 
-This document is the scoring reference for the `chiropractor` diagnosis. Each
+This document is the scoring reference for the `/clankshop docs` diagnosis. Each
 dimension is self-contained: it states what the scanner measures, which scanner
 fact keys inform the score, and what solid/drift/gap looks like in practice.
 

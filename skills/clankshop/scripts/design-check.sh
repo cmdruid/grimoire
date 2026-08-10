@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# architect-check.sh <design-dir> [repo-root]
+# design-check.sh <design-dir> [repo-root]
 #
 # Read-only fact-computing validator for a project's design/ seed (see
 # ../docs/DOCTRINE.md). Emits clean `key=value` facts -- no verdicts, no
@@ -14,7 +14,7 @@ set -euo pipefail
 
 usage() {
   cat >&2 <<'EOF'
-usage: architect-check.sh <design-dir> [repo-root]
+usage: design-check.sh <design-dir> [repo-root]
 
   <design-dir>   a design/ directory (spine root files + src/<system>.md)
   <repo-root>    root for resolving src/...:NN pointers (default: <design-dir>/..)
@@ -37,7 +37,7 @@ EOF
 DESIGN_DIR="$1"
 REPO_ROOT="${2:-$1/..}"
 
-[ -d "$DESIGN_DIR" ] || { echo "architect-check.sh: no such directory: $DESIGN_DIR" >&2; exit 1; }
+[ -d "$DESIGN_DIR" ] || { echo "design-check.sh: no such directory: $DESIGN_DIR" >&2; exit 1; }
 
 fail=0
 
