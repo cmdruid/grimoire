@@ -14,7 +14,7 @@ fill**, marked `<like this>`.
 
 ## How to use this file
 
-- **Full deploy:** read *Principles*, fill the *Slots*, then create the *Manifest* files using the
+- **Full setup:** read *Principles*, fill the *Slots*, then create the *Manifest* files using the
   *Rule-file shape* and the per-file briefs. Wire the *Metrics script* and the *drains*.
 - **Partial borrow:** the most valuable standalone borrow is the *Rule-file shape* (one uniform
   contract per dimension) + the *Finding lifecycle* (a tracker that drains into your existing
@@ -264,9 +264,9 @@ Answer these in order; the answers fill the *Slots* and shape the rubric:
 
 ---
 
-## 10. Deployment playbook
+## 10. Setup playbook
 
-**Full deploy** (leaves-before-index, so each commit stays `<gate>`-green):
+**Full setup** (leaves-before-index, so each commit stays `<gate>`-green):
 1. Fill the *Slots* (§2) via the *Decision walk* (§9).
 2. Write the `rules/<dimension>.md` files from the *Rule-file shape* (§6) -- the 12 portable
    dimensions + your `<native dimensions>`, with `<language>` greps. (They reference `../GUIDE.md`

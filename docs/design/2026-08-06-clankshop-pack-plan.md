@@ -53,7 +53,10 @@ under a `standalone` stamp elsewhere; no verb refuses or routes to the onramps. 
 kept as an alias), and **backlog is standalone**: its trackers scaffold at the resolved
 records-root on any repo, its lifecycle verbs operate on whatever stores exist instead of
 refusing unstamped, and its `setup` no longer writes the installation block — that pre-stamp
-license (§3.4's backlog row) is retired; framework assembly stays with the onramps.
+license (§3.4's backlog row) is retired; framework assembly stays with the onramps. **Auditor
+followed (same date):** every mode works on any repo (a missing rubric points at `setup`, never
+at the onramps), its `setup` writes no installation block either and registers
+standalone-stamped off-framework — §3.4's single-role install-block licenses are fully retired.
 
 **Goal:** Implement the clankshop pack per `docs/design/2026-08-06-clankshop-pack.md` §8, over the
 mechanics of `docs/design/2026-08-04-agent-framework.md`. Where the two docs differ, **pack §7 is

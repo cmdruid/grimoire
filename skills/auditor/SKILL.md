@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: "Deploy and operate a code-quality audit framework split source-vs-record: the rubric (GUIDE.md, rules/, metrics.sh) is a project's .agents/roles/auditor/ seed; deliverables (FINDINGS.md, logs/, metrics.csv, history/) accumulate in .records/audit/. Calibrate against GUIDE.md, scope by risk-weight, run metrics.sh, score targets against the rules/ dimensions, log and record findings, and drain actionable findings to the host's trackers -- which in turn calibrate the rubric. Use when the user runs `/auditor`, asks to audit/quality-check the codebase or a module, or to stand up the audit framework on a project that lacks one. `/auditor setup` bootstraps both homes from the bundled BOOTSTRAP.md; `/auditor metrics` runs metrics.sh; `/auditor check` runs the invariant gate. This audits PROJECT CODE — code quality scored against a rubric."
+description: "Set up and operate a code-quality audit framework split source-vs-record: the rubric (GUIDE.md, rules/, metrics.sh) is a project's .agents/roles/auditor/ seed; deliverables (FINDINGS.md, logs/, metrics.csv, history/) accumulate in .records/audit/. Calibrate against GUIDE.md, scope by risk-weight, run metrics.sh, score targets against the rules/ dimensions, log and record findings, and drain actionable findings to the host's trackers -- which in turn calibrate the rubric. Use when the user runs `/auditor`, asks to audit/quality-check the codebase or a module, or to stand up the audit framework on a project that lacks one. `/auditor setup` bootstraps both homes from the bundled BOOTSTRAP.md; `/auditor metrics` runs metrics.sh; `/auditor check` runs the invariant gate. This audits PROJECT CODE — code quality scored against a rubric."
 ---
 
 # auditor — the code-quality audit driver
@@ -20,13 +20,13 @@ it bundles the blueprint and a worked example so it can stand the system up anyw
 ## What this skill bundles
 
 - **`BOOTSTRAP.md`** -- the portable blueprint: principles, slots, the uniform
-  rule-file shape, the metrics-script structure, the decision-walk + deployment
+  rule-file shape, the metrics-script structure, the decision-walk + setup
   playbook. The generic templates live inside it.
 - **`rules/`** -- a generic, language-neutral rule-set for the 12 portable dimensions
-  (host-specific greps/exemplars as `<slots>`). The deployable rubric.
+  (host-specific greps/exemplars as `<slots>`). The rubric `setup` stands up.
 
 There is **no generated worked-example mirror.** Scaffold from `BOOTSTRAP.md` (its
-deployment playbook + the inline rule/template shapes) and use the **host repo's own
+setup playbook + the inline rule/template shapes) and use the **host repo's own
 `.agents/roles/auditor/` + `.records/audit/`**, as they fill in, as the live example.
 
 **Scope boundary:** `/auditor` audits **project code** (quality + the host's sacred
@@ -34,7 +34,7 @@ invariants). It is **not** a docs-system maintenance sweep. Different domain.
 
 ## Modes (selected by argument)
 
-- **`setup`** (alias `deploy`) -- stand up `.agents/roles/auditor/` (rubric) and `.records/audit/`
+- **`setup`** -- stand up `.agents/roles/auditor/` (rubric) and `.records/audit/`
   (deliverables) on a project that lacks them.
 - **(no arg) -- a pass.** Run the audit loop, scoped to a risk-weighted target (or all).
 - **`metrics`** -- run the host's `.agents/roles/auditor/metrics.sh`: print the report, append the
@@ -43,10 +43,13 @@ invariants). It is **not** a docs-system maintenance sweep. Different domain.
   count of the host's native-invariant smell is a P0 and fails).
 - **`<target>`** -- a path scopes a pass to that target at its depth.
 
-**Unstamped conduct:** `setup` is a **writer** on an unstamped root — exactly its pre-stamp
-license: the seat (`.agents/roles/auditor/`), the deliverables home (`.records/audit/`), and the
-installation block (created-or-adopted). **Every other mode is read-only on an unstamped root**:
-emit `unstamped`, point at the clankshop onramps (or `setup`), and stop.
+**Host conduct — standalone by default, framework-aware when present.** Every mode works on any
+repo; no mode refuses or stalls for lack of a framework install. `setup` is the writer: the seat
+(`.agents/roles/auditor/`) and the deliverables home (`<records-root>/audit/` — the front door's
+`records-root:` declaration, else `.records/`; prose here writes the default). The other modes
+need the seat to exist — no rubric yet → point at `setup` and stop; never emit `unstamped` or
+route to the clankshop onramps. `setup` writes **no installation block** — standing the framework
+up is the human's separate decision (the clankshop onramps), never an audit-seat side effect.
 
 ## Setup mode
 
@@ -69,24 +72,25 @@ When the host has no `.agents/roles/auditor/` or `.records/audit/`, follow the b
    `<language>`; run it for a baseline `.records/audit/logs/metrics.csv` row; wire `--check`
    on the native invariant.
 5. **Wire + gate** -- add one pointer from the host's doc index; run the host's gate.
-6. **Register the front-door route — the pack-style block — and stamp the root.** `setup` keeps
-   its pre-stamp write right: it self-inits both homes on an unstamped root and
-   **creates-or-adopts the installation block** (the pack face's `install-block.sh write
-   <root> 1`), so a bare single-role install yields a resolvable installation. The registration
-   body is auditor's entry in the pack doctrine's **door profile** (the fenced `### /auditor`
-   block in `skills/clankshop/doctrine/README.md` — copied verbatim, never authored here),
-   stamped `clankshop@<pack-version>` (from the installation block when pack-stamped, else the
-   pack manifest's `version:` — the pack face's `PACK.md`), carrying **no `Edges:` lines**. The front door must **exist**;
-   a missing front door is a project-setup gap, say so and stop before writing. Feed the body on
-   stdin to `scripts/register-route.sh <front-door> auditor clankshop@<pack-version>`:
-   ```markdown
-   ### /auditor — code quality
-   Route: rubric-driven code-quality audits; findings and history in `.records/audit/`.
-   ```
-   An existing pack-style block written by setup is **adopted** (re-running converges
-   byte-identically). Report `appended`/`replaced`; if **malformed**, surface it and stop -- a
-   delimiter was hand-broken, the human repairs it, never force it. Idempotent: re-running
-   `setup` rewrites only auditor's own `skill:auditor` block, never a sibling's.
+6. **Register the front-door route.** The front door must **exist**; if the project has none,
+   say so and **offer** to create a minimal one — the human's call, never a silent side effect.
+   Body and stamp resolve by host:
+   - **Clankshop host** (the root carries the installation block): the body is auditor's entry
+     in the pack doctrine's **door profile** (the fenced `### /auditor` block in
+     `skills/clankshop/doctrine/README.md` — copied verbatim, never authored here), stamped
+     `built-against:clankshop@<pack-version>` read from the installation block, carrying **no
+     `Edges:` lines**. An existing pack-style block written by the composer is **adopted**
+     (re-running converges byte-identically).
+   - **Any other host:** auditor's own bundled body (below), stamped `built-against:standalone`
+     — there is no pack to version against:
+     ```markdown
+     ### /auditor — code quality
+     Route: rubric-driven code-quality audits; findings and history in `.records/audit/`.
+     ```
+   Feed the resolved body on stdin to `scripts/register-route.sh <front-door> auditor <stamp>`.
+   Report `appended`/`replaced`; if **malformed**, surface it and stop -- a delimiter was
+   hand-broken, the human repairs it, never force it. Idempotent: re-running `setup` rewrites
+   only auditor's own `skill:auditor` block, never a sibling's.
    **Grimoire caveat (patient-zero):** never register against grimoire's own authored
    `AGENTS.md` -- this step is exercised only against a throwaway fixture front-door.
 7. **Baseline pass + Select exemplars** -- run a lean pass to seed `FINDINGS.md`, then
@@ -137,7 +141,7 @@ When `FINDINGS.md` grows large, sweep resolved entries into `.records/audit/hist
 `BOOTSTRAP.md` is **canonical here** -- edit it in place (no deployed copy exists). The
 generic `rules/` are an authored distillation -- update them by hand when a dimension's
 *method* changes. There is no mirror to re-sync; this repo's own `.agents/roles/auditor/` +
-`.records/audit/`, once deployed, are the live worked example.
+`.records/audit/`, once set up, are the live worked example.
 
 ## Done when
 
