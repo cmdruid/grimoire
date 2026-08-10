@@ -152,7 +152,7 @@ expect "install: rerun re-locks"     "locked    clankshop@$PV" "$TMP/inst2"
 
 # ============ fixture 5: registration stability (plan Task 5.3, pulled forward) ============
 # setup writes each member's pack-style door block once; the four self-registering
-# members (backlog init, architect init, auditor deploy, feature init) re-register
+# members (backlog init, architect init, auditor deploy, feature setup) re-register
 # lazily during normal use, through their own register-route.sh copies. The contract:
 # an existing pack-style block is ADOPTED -- re-registration converges byte-identically,
 # never rewrites the real front door -- and a hand-broken delimiter leaves the file

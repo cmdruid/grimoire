@@ -1,20 +1,19 @@
 ---
 name: feature
-description: "Execute the planning spine as verbs -- `/feature brainstorm | design | plan | build`, plus the cross-cutting `review` (an independent ground-truthed verdict on an existing design/plan/roadmap/ADR), `/feature init` (self-register its front-door route), and `/feature templates [<name>]` (customize one bundled planning-template shape, on demand). Use when the user runs `/feature ...`, or asks to brainstorm / design / plan / build / review a feature or its design, plan, or roadmap. Turns an idea into a validated approach, an argued spec, a task-by-task plan, and tested code at gate-green, tuned to the host's gate and templates. The four stages are primitives an orchestrator sequences; `feature` ends at gate-green and never debriefs, ships, or lands. For a one-line patch, skip it (fix on the trunk)."
+description: "Execute the planning spine as verbs -- `/feature brainstorm | design | plan | build`, plus the cross-cutting `review` (an independent ground-truthed verdict on an existing design/plan/roadmap/ADR), `/feature setup` (register its front-door route), and `/feature templates [<name>]` (customize one bundled planning-template shape, on demand). Use when the user runs `/feature ...`, or asks to brainstorm / design / plan / build / review a feature or its design, plan, or roadmap. Turns an idea into a validated approach, an argued spec, a task-by-task plan, and tested code at gate-green, tuned to the host's gate and templates. The four stages are primitives an orchestrator sequences; `feature` ends at gate-green and never debriefs, ships, or lands. For a one-line patch, skip it (fix on the trunk)."
 ---
 
 # feature -- the executable planning spine
 
-`/feature <verb> [args]` makes the host's **feature lane** (the installation's
-`.handbook/workflows/feature.md`) executable. Its four core verbs ARE the lane's plan-and-build
-walk (validate -> design -> plan -> build); landing and the debrief sweep stay with the
-orchestrator (`/backlog debrief`). A
+`/feature <verb> [args]` executes the planning spine (validate -> design -> plan -> build); on a
+clankshop host its four core verbs ARE the host feature lane's plan-and-build walk
+(`.handbook/workflows/feature.md`). Landing and the debrief sweep stay with the
+orchestrator. A
 fifth verb, `review`, is **cross-cutting** -- an independent ground-truthed critique of an artifact any
 stage produced, callable at any point. Each verb
-distills the planning discipline it needs into a compact checklist, pointed at the host's gate
-(the installation's `.handbook/testing/GATE.md`), templates (this skill's own bundled `templates/`),
-frontmatter (the record schema -- the installation's `.handbook/rules/RECORDS.md`), and
-home (planning artifacts always land in `.records/plans/`; ADRs in `.records/adr/`).
+distills the planning discipline it needs into a compact checklist, pointed at the host's gate,
+this skill's own bundled `templates/`, and the plans home -- inputs resolved per host in
+*Host layout*, below.
 
 This skill is **self-contained and uniquely named**: it depends on no other skill and collides with
 none. The upstream superpowers planning skills stay installed but go unused for planning -- no
@@ -30,28 +29,39 @@ settings change, no precedence question.
   `/foreman` router, or a `/workstream` loop. **`/feature` itself never lands or debriefs** (see
   *Composition*).
 
-## Unstamped conduct
+## Host layout -- standalone by default, framework-aware when present
 
-Every feature verb -- `init` included -- is **read-only on an unstamped root**: emit `unstamped`,
-point at the clankshop onramps (the pack face's `setup` / `migrate`), and stop. Feature is not a
-pre-stamp writer: its verbs execute the lane of a stamped system, and `init` registers a route
-into a door the onramps compose.
+Feature is **self-contained**: every verb works on any repo -- no framework install is a
+precondition, and no verb ever refuses or stalls for lack of one. The verbs consume four host
+inputs; where each resolves varies by host:
+
+| input | clankshop host (installation block present) | any other host |
+|---|---|---|
+| the gate | the command `.handbook/testing/GATE.md` names | the project's own test/build command -- discover it (manifests, CI config) or ask once |
+| design context | `.handbook/design/`, plus `.handbook/rules/` INVARIANTS + GOTCHAS | whatever design docs, READMEs, and ADRs the project has |
+| the plans home | `.records/plans/` (ADRs: `.records/adr/`) | the project's own docs/records convention -- a declared records-root, an existing docs area; ask once if unclear |
+| the record schema | frontmatter per `.handbook/rules/RECORDS.md` | keep the same artifact frontmatter; no schema seam |
+
+On any other host, **skip the framework-only seams** (`/backlog debrief`, the schema floor)
+instead of stalling on them. Do not create `.handbook/` or `.records/` on a host that doesn't
+have them, and never emit `unstamped` or route to the clankshop onramps: standing the framework
+up is the human's separate decision, not a feature's precondition.
 
 ## The verbs (the spine, executable)
 
 | Verb | Does | Consumes -> Produces | Args |
 |---|---|---|---|
 | `brainstorm` | idea -> validated approach; **classifies the tier** | prompt -> approved approach (in context) + tier call | `<prompt>` |
-| `design` | write the design spec; self-review; user-review gate | approach -> `.records/plans/<date>-<slug>-design.md` | `[notes/context]` |
-| `plan` | write the impl plan; run the **plan gate** | design -> `.records/plans/<date>-<slug>-implementation.md` | `<design-file>` |
+| `design` | write the design spec; self-review; user-review gate | approach -> the plans home: `<date>-<slug>-design.md` | `[notes/context]` |
+| `plan` | write the impl plan; run the **plan gate** | design -> the plans home: `<date>-<slug>-implementation.md` | `<design-file>` |
 | `build` | execute task-by-task to the green gate | plan -> code + checked-off tasks | `<plan-file>` |
 | `review` | **cross-cutting:** independent ground-truthed critique of an existing artifact | any spine artifact -> a verdict (in context) | `<doc-file> [focus]` |
 
 The first four are the linear spine (stages 1-4); `review` is orthogonal -- it critiques any artifact
 the others produce, at any point, and is not part of the brainstorm->build sequence. Two more verbs
-are **infrastructure, not spine stages**: `init` self-registers feature's route into the project's
-front-door doc (see *init*, below) -- feature's whole self-init entry point, idempotent (and
-refusing on an unstamped root, per *Unstamped conduct*); and
+are **infrastructure, not spine stages**: `setup` registers feature's route into the project's
+front-door doc (see *setup*, below) -- feature's whole self-init entry point, idempotent, working
+framework or standalone (*Host layout*); and
 `templates` deploys exactly one bundled template shape as an editable project override, on demand (see
 *templates*, below) -- an optional action most projects never need.
 
@@ -85,9 +95,9 @@ Turn an idea into an approach a human has approved, and **classify the tier** so
 know how much to produce. No file is written; the output is an agreed approach held in context.
 
 Checklist:
-1. **Explore context first** -- read the relevant code/docs/recent commits, the design chapter
-   (`.handbook/design/`), and the installation's invariants (`.handbook/rules/INVARIANTS.md`)
-   before asking anything. Don't brainstorm blind.
+1. **Explore context first** -- read the relevant code/docs/recent commits and the host's design
+   context (*Host layout*: the design chapter and invariants on a clankshop host, the project's
+   own design docs otherwise) before asking anything. Don't brainstorm blind.
 2. **Scope check** -- if the idea spans several independent subsystems, say so and decompose into
    separate features before refining details; brainstorm the first one.
 3. **Ask one question at a time** -- multiple-choice when you can, open-ended when you must. One
@@ -118,11 +128,11 @@ Checklist:
 1. **Write the spec** with the template's sections: **Problem** (the root need, not a surface knob),
    **Goal**, **Approach** (+ the 1-2 alternatives rejected and why), **Mechanism** (concrete enough
    to implement from), **Verification** (how we'll know it works).
-2. **Land it in `.records/plans/`** as `.records/plans/<YYYY-MM-DD>-<slug>-design.md`, with frontmatter
-   `type: design`, `status: draft`, `updated: <today>`, `related: [...]` -- the `type`/`status`
-   vocabulary the record schema (the installation's `.handbook/rules/RECORDS.md`) defines and the
-   doc-linter enforces (`design` moves
-   `draft -> active -> shipped` as the feature advances).
+2. **Land it in the plans home** (*Host layout*) as `<YYYY-MM-DD>-<slug>-design.md`, with frontmatter
+   `type: design`, `status: draft`, `updated: <today>`, `related: [...]` (on a clankshop host this
+   is the record schema's `type`/`status` vocabulary, doc-linter enforced; keep the same
+   frontmatter standalone). `design` moves
+   `draft -> active -> shipped` as the feature advances.
 3. **Spec self-review** (the lane's design-review gate, first half) -- scan the written spec for: placeholders
    (TBD/TODO/vague), internal contradictions, scope (focused enough for one plan?), ambiguity (any
    requirement readable two ways -> pick one, make it explicit). Fix inline.
@@ -165,13 +175,13 @@ Checklist:
      member of an existing set, a new caller of a proven system): a wiring/membership **unit test
      suffices** -- a live visual spike there adds fiddly cost for low marginal assurance. Classify
      which case you are in before defaulting to the visual spike.
-   - Name the load-bearing live-API traps from the installation's `.handbook/rules/GOTCHAS.md` in the
-     plan's **Global Constraints** so each task re-verifies them.
+   - Name the load-bearing live-API traps from the host's gotchas list (`.handbook/rules/GOTCHAS.md`,
+     when the host has one) in the plan's **Global Constraints** so each task re-verifies them.
 3. **Plan self-review** -- spec coverage (every spec requirement maps to a task -- list gaps), a
    placeholder scan, and type/name consistency across tasks. Fix inline; add a task for any
    uncovered requirement.
-4. **Land it** as `.records/plans/<YYYY-MM-DD>-<slug>-implementation.md`, frontmatter `type:
-   implementation`, `status: draft`, `updated`, `related: [<the design>]`. An ADR (`.records/adr/`, via
+4. **Land it** in the plans home as `<YYYY-MM-DD>-<slug>-implementation.md`, frontmatter `type:
+   implementation`, `status: draft`, `updated`, `related: [<the design>]`. An ADR (the ADR home, via
    `templates/adr.md`) is part of this stage **only** if a cross-cutting decision surfaced -- one
    per track, never per phase.
 
@@ -227,8 +237,8 @@ separate failing-test dispatch (then a second impl dispatch) only when red-first
 an **isolated worktree** when the delegate must run the loop itself. The gate always runs at the
 orchestrator (single build location), whichever mode authored the change.
 
-**Green gate** (the lane's walk step 4): the host's full gate (the installation's
-`.handbook/testing/GATE.md`) green **plus a relevant end-to-end / scenario
+**Green gate** (the lane's walk step 4): the host's full gate (*Host layout*) green **plus a
+relevant end-to-end / scenario
 check** before each commit; build in the worktree, never inline on the trunk. Optionally request a
 **read-only** code-review subagent before finishing.
 
@@ -256,17 +266,16 @@ Checklist:
 3. **Apply the rubric for the doc's type:**
    - **design** -- Problem is the *root need*, not a surface knob; Approach justified with alternatives
      rejected; Mechanism implementable; **grounded** (refs resolve, claims match code); aligned with
-     the design chapter (`.handbook/design/`), the installation's `.handbook/rules/INVARIANTS.md`,
-     ADRs, and `.handbook/rules/GOTCHAS.md`; scope = one plan; ambiguity resolved; YAGNI.
+     the host's design context (*Host layout*) and ADRs; scope = one plan; ambiguity resolved; YAGNI.
    - **implementation** -- **spec->plan coverage** (every design requirement maps to a task -- list
      gaps); bite-sized testable tasks, exact paths, complete code (no "similar to Task N"); plan-gate
-     grounding; riskiest piece spiked first; load-bearing `.handbook/rules/GOTCHAS.md` traps in
-     Global Constraints; per-task verify.
+     grounding; riskiest piece spiked first; load-bearing gotcha traps in
+     Global Constraints (when the host has a gotchas list); per-task verify.
    - **roadmap** -- phase decomposition + build order/dependencies explicit; each phase shippable;
      cross-cutting decisions surfaced as ADRs.
    - **adr** -- decision + alternatives + consequences honest; supersession recorded.
-   - **any type** -- internal consistency (no section contradicts another); frontmatter valid per
-     the record schema (the installation's `.handbook/rules/RECORDS.md`); right altitude.
+   - **any type** -- internal consistency (no section contradicts another); frontmatter valid
+     (per the record schema on a clankshop host); right altitude.
 4. **Report the verdict, in context** (the output IS this shape, in order):
    - **Verdict:** one of `approve` / `approve-with-changes` / `needs-rework`.
    - **Findings ranked by severity**, each as: location (`file:line` or section) -> what's wrong ->
@@ -303,15 +312,15 @@ library owned that receiving side before now:
 5. **Push back with reasoning when the feedback is wrong.** Disagreement is a legitimate outcome, not
    a failure to comply -- state the evidence, not just a refusal.
 
-## init -- register feature's front-door route (self-init on a stamped root)
+## setup -- register feature's front-door route
 
-Register feature's route into the project's always-loaded front-door doc. This is feature's
-**whole self-init entry point** (not a spine stage) and its **only** job: it makes a bare install
-of `/feature` on an already-stamped root *visible* -- the fourth core route writer, alongside the
-roles' own domain self-inits. It does **not** touch templates -- customizing a template shape is a
-separate, optional, on-demand action (see *templates* below) that a project may never need.
-Feature is not a pre-stamp writer: on an unstamped root `init` refuses like every other verb
-(*Unstamped conduct*), pointing at the onramps.
+Make `/feature` visible in the project's always-loaded front-door doc. This is feature's **whole
+self-init entry point** (not a spine stage) and its **only** job. On a pack install
+`/clankshop setup` writes this block for every member at bootstrap; this verb exists for the
+installs the composer never sees -- feature added to a stamped root after bootstrap, or feature
+running **standalone** on a repo with no framework at all. It does **not** touch templates --
+customizing a template shape is a separate, optional, on-demand action (see *templates* below)
+that a project may never need.
 
 The principle here is **visibility by construction**: a skill registers its route where the harness
 already loads it, so it surfaces with no composer present. Idempotent: re-running is a
@@ -319,27 +328,28 @@ no-op beyond refreshing the `built-against` stamp; a sibling skill's own front-d
 touched.
 
 Checklist:
-1. **Resolve the front-door doc + the stamp.** The registration target is the project's
-   always-loaded front-door (`AGENTS.md`/`CLAUDE.md`, whichever the harness auto-loads); it must
-   **exist** -- if the project has none, that's a project-setup gap, say so and stop before writing.
-   The stamp is the **pack version** -- `clankshop@<pack-version>`, read from the root's
-   installation block (the unstamped-conduct guard already verified the root is stamped); core
-   members carry no individual version.
+1. **Resolve the front-door doc.** The registration target is the project's always-loaded
+   front-door (`AGENTS.md`/`CLAUDE.md`, whichever the harness auto-loads). It must exist -- if
+   the project has none, say so and **offer** to create a minimal one; creating a front door is
+   the human's call, never a silent side effect.
    **Grimoire caveat (patient-zero):** never register against grimoire's own authored `AGENTS.md` -- see
    *The fixture caveat* below.
-2. **Register the route -- the pack-style block.** The body is feature's entry in the pack
-   doctrine's **door profile** (the fenced `### /feature` block in
-   `skills/clankshop/doctrine/README.md` -- the single source every route writer copies, never
-   authored here), stamped `built-against:clankshop@<pack-version>`, carrying **no `Edges:`
-   lines**. Feed it on stdin to
-   `scripts/register-route.sh <front-door> feature clankshop@<pack-version>`:
-   ```markdown
-   ### /feature — the planning pipeline
-   Route: brainstorm → design → plan → build a feature to gate-green; planning artifacts to
-   `.records/plans/` and `.records/adr/`.
-   ```
-   An existing pack-style block written by setup is **adopted** (re-running converges
-   byte-identically), never overwritten with a different body. Report `appended` / `replaced`. If
+2. **Resolve the body + stamp by host** (*Host layout*):
+   - **Clankshop host:** the body is feature's entry in the pack doctrine's **door profile** (the
+     fenced `### /feature` block in `skills/clankshop/doctrine/README.md` -- the single source
+     every pack route writer copies, never authored here), stamped
+     `built-against:clankshop@<pack-version>` read from the root's installation block, carrying
+     **no `Edges:` lines**. An existing pack-style block written by the composer is **adopted**
+     (re-running converges byte-identically), never overwritten with a different body.
+   - **Any other host:** feature's own bundled body, stamped `built-against:standalone` -- there
+     is no pack to version against:
+     ```markdown
+     ### /feature — the planning pipeline
+     Route: brainstorm → design → plan → build a feature to gate-green; planning artifacts to
+     the project's plans home.
+     ```
+3. **Register.** Feed the resolved body on stdin to
+   `scripts/register-route.sh <front-door> feature <stamp>`. Report `appended` / `replaced`. If
    it reports **malformed**, surface that -- a delimiter was hand-broken; the human repairs it,
    then re-run. Do **not** force it.
 
@@ -388,9 +398,9 @@ override is on disk (or already was), and the spine verbs resolve against it on 
 
 There is no separate `/feature` state file. Each verb consumes the previous verb's artifact by path:
 `brainstorm`'s approach lives in context -> `design` writes the design doc -> `plan` reads it and
-writes the implementation plan -> `build` reads the plan and checks off its tasks. Those artifacts are
-the `.records/plans/` docs the record schema already catalogs; `/feature` is the engine that
-*produces what the schema indexes*, and each doc's frontmatter `status` tracks its lifecycle.
+writes the implementation plan -> `build` reads the plan and checks off its tasks. Those artifacts
+live in the plans home (*Host layout*; on a clankshop host they are the `.records/plans/` docs the
+record schema catalogs), and each doc's frontmatter `status` tracks its lifecycle.
 `review` is the exception: it **consumes** any of these artifacts by path and produces only an
 in-context verdict, adding nothing to the chain (artifact-free, like `brainstorm`).
 
@@ -400,7 +410,8 @@ in-context verdict, adding nothing to the chain (artifact-free, like `brainstorm
 them. **`/feature` never debriefs, ships, or lands.**
 
 - **Standalone** (a one-off feature) -> the user runs `brainstorm -> design -> plan -> build`, then
-  lands the work and runs **`/backlog debrief`** at the done-when (the lane's close-the-books step).
+  lands the work and sweeps the follow-ups it surfaced -- **`/backlog debrief`** on a clankshop
+  host (the lane's close-the-books step), the project's own convention otherwise.
 - **Inside `/workstream`** -> the stream calls `/feature` per queue item; `build` stops at gate-green
   and **hands back**. Landing, capture, and the reset ritual around the hand-back are `/workstream`'s to
   run and document — `/feature` initiates none of it.

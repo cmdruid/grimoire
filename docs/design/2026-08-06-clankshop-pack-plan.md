@@ -43,7 +43,11 @@ workstream only. **Superseded (owner, 2026-08-10): Appendix J's three-way-diff l
 archive (BASES.md), bump records, per-entry provenance markers, the differ, and the
 `missing_base`/`bump_uncovered` facts are removed as unearned machinery; file-level origin stamps
 and `doctrine-version` remain. Appendix J's text is unchanged per the historical-record rule;
-decision and removal record: `docs/design/2026-08-10-doctrine-sync-removal.md`.
+decision and removal record: `docs/design/2026-08-10-doctrine-sync-removal.md`. **Second ratified
+divergence from Appendix H (owner, 2026-08-10): `feature` is standalone** — its unstamped refusal
+is replaced by `skills/feature/SKILL.md` § *Host layout* (same shape as workstream's), and `init`
+is renamed `setup`, registering the pack-style block on a clankshop host and its own bundled body
+under a `standalone` stamp elsewhere; no verb refuses or routes to the onramps.
 
 **Goal:** Implement the clankshop pack per `docs/design/2026-08-06-clankshop-pack.md` §8, over the
 mechanics of `docs/design/2026-08-04-agent-framework.md`. Where the two docs differ, **pack §7 is
