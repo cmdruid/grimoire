@@ -28,7 +28,8 @@ owners processes each independently — accepting one never hides the rest.
 
 ## Procedure
 
-1. **Resolve root; confirm stamped** (else refuse: `unstamped`, point at the onramps).
+1. **Resolve root; confirm stamped.** The loop drains the deployed stores — on an unstamped root
+   there is nothing to drain: report that, point at the onramps, and write nothing.
 2. **Scan:** `scripts/intake-scan.sh <root>` — eligible items per source, with paused entries,
    claimed entries (`[⇢ dispatched …]` / `dispatched:` / a live `source:` claim), and
    `processed:`-stamped finding keys already excluded. Apply the **eligibility bars** (the table)
@@ -44,6 +45,9 @@ owners processes each independently — accepting one never hides the rest.
      seed divergence → the design role; a doc-form finding → the docs-quality role; a record
      format concern → the records instrument's steward). The role applies it with its own
      expertise, as ordinary work through the ordinary lanes.
+   - An item that crosses the promotion bar — a *decision*, *sign-off*, *ambiguity*, or *access*
+     need only the human can resolve — is handed to `/backlog promote` instead of an owning
+     hat; it stays claimed until the ticket resolves, like any other work.
 4. **Verify uptake before closing:** the owning role's edit **landed** (the chapter/store
    changed as dispatched) and the deployed check chain is green. No uptake yet → the item stays
    claimed and open; a stale claim surfaces as an age fact and `/backlog curate` may release it

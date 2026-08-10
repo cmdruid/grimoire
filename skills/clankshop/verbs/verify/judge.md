@@ -15,8 +15,8 @@ recurring calls own this verb:
   deserves an end-to-end walk; a pure refactor with green gate usually doesn't. Verdict: the
   specific extra check, or "the gate suffices" — with why.
 - **Is the playbook missing a chapter?** An investigation that navigated a symptom the playbook
-  doesn't cover, twice, has earned its chapter. Verdict: the chapter to add (then `tend` writes
-  it).
+  doesn't cover, twice, has earned its chapter. Verdict: the chapter to add (then `tend`
+  (`/clankshop verify tend`) writes it).
 
 ## When to use
 
@@ -25,8 +25,9 @@ recurring calls own this verb:
   before opening an investigation.
 
 **Do NOT use** to perform the root-cause investigation itself (that's the bug lane's diagnostic
-procedure, playbook-guided), or to edit chapters (`tend` executes what this verb decides). On an
-unstamped root: read-only — emit `unstamped`, point at the onramps.
+procedure, playbook-guided), or to edit chapters (`tend` executes what this verb decides).
+Judgment needs no installation — a defect-vs-flake call reads the evidence anywhere; only the
+chapter writes it earns (via `tend`) wait for a stamped root.
 
 ## Procedure
 

@@ -19,17 +19,18 @@ investigations earn chapters. The three docs and their jobs:
 - "harden the gate", "the gate doesn't cover X", "document the CI", "the pipeline changed",
   "add a diagnostics chapter for <symptom>", "the playbook is missing what that investigation
   taught us".
-- After a `judge` call that ended "the playbook/gate definition is missing something" — `tend`
-  executes what `judge` decided.
+- After a `judge` (`/clankshop verify judge`) call that ended "the playbook/gate definition is
+  missing something" — `tend` executes what `judge` decided.
 
 **Do NOT use** to root-cause a live defect (the bug lane's diagnostic procedure), to build new
-test infrastructure (specify it here, route the build through the ordinary lanes), or on an
-unstamped root (read-only: emit `unstamped`, point at the onramps).
+test infrastructure (specify it here, route the build through the ordinary lanes), on an
+unstamped root, judgment still runs — advise and specify freely; chapter writes wait (point at
+the onramps).
 
 ## Procedure
 
-1. **Resolve root**; confirm the root is stamped and `.handbook/testing/` exists (absent → that's
-   a deploy gap; point at the pack onramps, don't scaffold here).
+1. **Resolve root.** Tending writes `.handbook/testing/`: unstamped or chapter-less → report the
+   gap, point at the pack onramps, and write nothing — advise freely, scaffold never.
 2. **Ground the edit.** Read the chapter as deployed; verify the claims you're about to write
    against the tree (run the gate command, read the CI config, re-read the investigation report
    that earned the playbook chapter). A verification doc that overstates coverage is worse than a

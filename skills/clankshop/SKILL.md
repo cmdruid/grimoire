@@ -29,6 +29,13 @@ a small instruction file — identity, standing judgments, domain — and the di
 never appear as procedure routes; routes never carry the expertise; `ask` is the one route that
 addresses a hat directly.
 
+**Shared discipline (every verb, hatted or not):** resolve the project root first — a project
+directory the conversation references, else the working directory, else ask — and use
+project-relative paths from it. Get the real date with `date +%Y-%m-%d`; never guess it. Verbs
+that write into the deployed layout (`.handbook/`, `.records/`) need a stamped root: absent the
+installation block, report what's missing, point at `setup`/`migrate`, and write nothing —
+**judgment runs anywhere; writes need a home.**
+
 | verb | hat | does |
 |---|---|---|
 | `setup` | — | greenfield bootstrap: facts by script, decisions by interview, project the doctrine, stamp (`verbs/setup.md`) |

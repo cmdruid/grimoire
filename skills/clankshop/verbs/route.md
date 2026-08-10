@@ -12,9 +12,10 @@ the common cases at zero extra reads, dispatching straight to a lane. `route` is
 behind the table**: invoked from its *unsure / mixed altitude* row (or when no table is stamped
 yet), never a mandatory hop in front of it.
 
-**On an unstamped root** (no installation block), foreman is **read-only**: emit `unstamped`,
-point at the clankshop onramps (`setup` / `migrate`), and stop — foreman no longer stands systems
-up, and `/clankshop route init` does not exist.
+**On an unstamped root** (no installation block) there is no deployed walk to read: classify by
+the pack doctrine's own chapter (`doctrine/rules/ROUTING.md`) and say you did, but write no
+rulebook and no log — the onramps (`setup` / `migrate`) stand the system up, and
+`/clankshop route init` does not exist. Judgment runs anywhere; writes need a home.
 
 ## Procedure
 
@@ -55,8 +56,8 @@ content changes are ordinary trunk-side scoped commits.
 ## Altitude discriminator (feature vs architect)
 
 The seam is **altitude**, not docs-vs-code: `/feature` mutates **code** (a change built against
-the seed); `/clankshop design` mutates **the seed itself** (the foundation code is later regenerated
-from). *Changing the foundation → `/clankshop design`. Building on it → `/feature`.* Route to the
+the seed); `/clankshop design` mutates **the seed itself** (the foundation code is built against).
+*Changing the foundation → `/clankshop design`. Building on it → `/feature`.* Route to the
 architect whenever the change asks "should this tenet/contract/seam even be this way," not "how
 do I build the next thing on top of it." Without this check the router silently sends
 foundational work down the incremental feature lane.

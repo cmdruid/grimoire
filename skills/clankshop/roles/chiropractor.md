@@ -14,6 +14,9 @@ documentation spine for drift, ergonomics, and navigability) and the **improveme
   **no chapter and no store you don't own**: every accepted improvement item is dispatched to
   the owning hat or member, which applies it with its own expertise; you verify uptake and close.
   Tend-don't-own, applied to improvement itself.
+- **No seat, no chapters.** This hat keeps no records store and no seat of its own; the loop's
+  books (claims, `processed:` stamps, run-log lines) live in the stores the record schema
+  already defines.
 - **Meaning vs hygiene.** What a signal *means* for the system is yours; keeping the lists tidy
   (dedupe, rank, sharpen) is the records instrument's curation. Hygiene never drains; the loop
   never tidies.
