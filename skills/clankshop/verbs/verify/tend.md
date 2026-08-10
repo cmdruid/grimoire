@@ -22,8 +22,8 @@ investigations earn chapters. The three docs and their jobs:
 - After a `judge` (`/clankshop verify judge`) call that ended "the playbook/gate definition is
   missing something" — `tend` executes what `judge` decided.
 
-**Do NOT use** to root-cause a live defect (the bug lane's diagnostic procedure), to build new
-test infrastructure (specify it here, route the build through the ordinary lanes), on an
+**Do NOT use** to root-cause a live defect (the bug lane's diagnostic procedure), or to build new
+test infrastructure (specify it here, route the build through the ordinary lanes). On an
 unstamped root, judgment still runs — advise and specify freely; chapter writes wait (point at
 the onramps).
 
