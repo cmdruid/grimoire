@@ -57,6 +57,12 @@ license (§3.4's backlog row) is retired; framework assembly stays with the onra
 followed (same date):** every mode works on any repo (a missing rubric points at `setup`, never
 at the onramps), its `setup` writes no installation block either and registers
 standalone-stamped off-framework — §3.4's single-role install-block licenses are fully retired.
+**Third ratified divergence from Appendix H (owner, 2026-08-10): the framework roles merge into
+the pack face** — `architect`, `foreman`, `guardian`, `calibrator`, `chiropractor` cease to be
+separate skills; routes flatten to intent verbs (`design`, `route`, `verify`, `calibrate`,
+`docs`) that inherit role "hats" (an instruction layer inside clankshop; calibrator's duties fold
+into the chiropractor hat), plus `ask <role>` for hat-on discussion; `auditor` stays standalone.
+Design + migration plan: `docs/design/2026-08-10-clankshop-role-merge.md`.
 
 **Goal:** Implement the clankshop pack per `docs/design/2026-08-06-clankshop-pack.md` §8, over the
 mechanics of `docs/design/2026-08-04-agent-framework.md`. Where the two docs differ, **pack §7 is
