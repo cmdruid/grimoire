@@ -34,7 +34,7 @@ addresses a hat directly.
 | `setup` | — | greenfield bootstrap: facts by script, decisions by interview, project the doctrine, stamp (`verbs/setup.md`) |
 | `migrate` | — | brownfield onramp: generic inventory, one confirmed mapping table, stamp (`verbs/migrate.md`) |
 | `check` | — | whole-system assembly validation — facts only (`verbs/check.md`) |
-| `design [<verb>]` | architect | seed-altitude design. Bare = seed work (bootstrap/migrate the design chapter, `verbs/design/seed.md`); subverbs `brainstorm` · `plan` · `extract` · `distill` · `reconcile` · `health` (`verbs/design/`); `prep` pending (method: `docs/DESIGN-DOCTRINE.md`) |
+| `design [<verb>]` | architect | seed-altitude design. Subverbs `seed` (bare `design` is its alias; bootstrap/migrate the design chapter) · `brainstorm` · `plan` · `extract` · `distill` · `reconcile` · `health` (seed completeness/drift facts) (`verbs/design/`; method: `docs/DESIGN-DOCTRINE.md`) |
 | `route [<change>]` | foreman | classify a change, apply the promotion bar, dispatch it to its lane; tend the rulebook (`verbs/route.md`) |
 | `verify tend\|judge` | guardian | tend the testing chapters; make the verification call — defect vs flake, verification depth (`verbs/verify/`) |
 | `calibrate [intake\|doctrine]` | chiropractor | the improvement loop: drain captured signal into dispatched improvements; the doctrine seam (`verbs/calibrate/`; default `intake`) |

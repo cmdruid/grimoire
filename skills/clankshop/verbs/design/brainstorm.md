@@ -13,9 +13,9 @@ durability gradient this verb edits along.
 
 `brainstorm` is one of the two verb names `/clankshop design` shares with `/feature` — the one collision
 risk in the whole system. The invocation-time resolver: **this verb mutates the seed itself (the
-foundation you later regenerate code from); the same-named `/feature` verb mutates code built against
-it.** Changing the foundation → here; building on it → `/feature`. (The altitude seam itself is the
-runbook's — `skills/clankshop/PACK.md` + `docs/DESIGN-DOCTRINE.md`.)
+foundation); the same-named `/feature` verb mutates code built against it.** Changing the
+foundation → here; building on it → `/feature`. (The altitude seam is `docs/DESIGN-DOCTRINE.md`
+§ The seam's.)
 
 If the question in front of you is "how should we build feature X" — even a gnarly, cross-cutting
 X — that's `/feature brainstorm`. If the question is "is the tenet/contract/seam X *builds on*
@@ -68,7 +68,7 @@ doesn't yet). If a session's conclusion is "here's a feature to build," that con
 3. **Land the terminal artifact as a seed edit.** Write the change directly into the target file:
    a revised tenet line in `PHILOSOPHY.md`, a revised `## Contract (BINDING)` section in
    `.handbook/design/src/<system>.md`, an updated seam-graph entry in `MAP.md`, or a revised section of
-   `VISION.md`. This is a document edit, performed directly, same as `init`'s Step 5 — not a
+   `VISION.md`. This is a document edit, performed directly, same as `seed`'s Step 5 — not a
    proposal handed elsewhere for someone else to make. If the target file doesn't exist yet (a
    brand-new system the brainstorm concluded should exist), create it from
    `templates/design/system-spec.md` with the contract tier filled and the reference-architecture tier
@@ -82,7 +82,7 @@ doesn't yet). If a session's conclusion is "here's a feature to build," that con
    thing it was asked about and hands off the ripple.
 
 5. **Stop at the edit — this verb never touches code.** `brainstorm` doesn't validate the change
-   against `check`, doesn't scope prep, and doesn't queue `/feature` work. If the human wants the
+   against `health` and doesn't queue `/feature` work. If the human wants the
    change sequenced into reality next, that's `/clankshop design plan`; if they want the seed's structural
    health re-verified, that's `/clankshop design health`.
 

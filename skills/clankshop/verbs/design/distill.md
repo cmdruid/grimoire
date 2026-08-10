@@ -15,7 +15,7 @@ Change-records are allowed to accrete freely during fast incremental work — th
 keeping them separate from the seed (`docs/DESIGN-DOCTRINE.md` § Two temporal kinds of doc): zero
 coherence tax on the forward, incremental path. `distill` is the deliberate, **user-enacted**
 counter-motion, run at a milestone the human chooses — not a per-change tax, not triggered
-automatically by `check`'s distill-debt signal (that signal only tells you debt exists; a human
+automatically by `health`'s distill-debt signal (that signal only tells you debt exists; a human
 still decides when paying it down is worth the session). Never run `distill` as a background or
 scheduled step.
 
@@ -57,7 +57,7 @@ read, not an auto-commit.
      the tests exercising it) to surface these, not rely on change-records alone. A spec folded
      only from written records, when the code disagrees, is folding a *documented* history, not
      the *actual* one — treat a records-vs-code mismatch found here as a live discrepancy to
-     reconcile, the same way `check`'s `drift:<sys>` flags one mechanically after the fact.
+     reconcile, the same way `health`'s `drift:<sys>` flags one mechanically after the fact.
 
    The scars — every dead end, reversal, and superseded chain member — drop out of the reconciled
    result. They are not lost: git retains them as archaeology, and the change-records themselves

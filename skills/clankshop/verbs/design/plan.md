@@ -2,8 +2,8 @@
 
 Hat: `roles/architect.md` — read the hat first; you operate this verb wearing that hat.
 
-Sequences how a seed change becomes reality: which specs get revised, which systems get
-prepped/regenerated, and in what order — a **seed-altitude roadmap**, not a build plan. See
+Sequences how a seed change becomes reality: which specs get revised, which systems' code
+follows, and in what order — a **seed-altitude roadmap**, not a build plan. See
 `docs/DESIGN-DOCTRINE.md` for the durability gradient this verb sequences across, and
 `verbs/design/brainstorm.md` for the verb that usually feeds it a starting change.
 
@@ -11,7 +11,7 @@ prepped/regenerated, and in what order — a **seed-altitude roadmap**, not a bu
 
 `plan` is the other verb name `/clankshop design` shares with `/feature` — same collision, same resolver as
 `brainstorm`: **this verb plans work on the seed itself; the same-named `/feature` verb plans a code
-change built against it.** (The altitude seam is the runbook's — `skills/clankshop/PACK.md`.)
+change built against it.** (The altitude seam is `docs/DESIGN-DOCTRINE.md` § The seam's.)
 
 `/clankshop design plan` never produces an implementation plan — it produces a **sequence of seed work and
 seed-driven downstream work**, expressed as references to other verbs, not as steps a developer
@@ -26,17 +26,10 @@ the top one:
   `.handbook/design/` files get revised, and in what order — e.g. "retire the `combat.md` contract's old
   hit-resolution invariant before touching `inventory.md`'s drop-table seam, since the latter
   depends on the former."
-- **Per-system readiness + build work** (`plan` only *references* this — it is Plan B's job, not
-  this verb's): for each system the campaign touches, whether it needs `/clankshop design prep` first
-  (code already exists and is in the way, or a seam needs hardening before a feature attaches) and
-  then an ordinary `/feature plan` → `/feature build` cycle. `plan` names *that this step exists
-  and in what order it runs*, and stops there — it does not scope the prep brief, does not write
-  the feature plan, and does not touch code. Per `docs/DESIGN-DOCTRINE.md` § The keystone, the clear run
-  and the build run are separate `/feature` executions regardless of what `plan` says; `plan`'s
-  job ends at naming the sequence.
-
-If a step in the campaign turns out not to need `prep` at all (pure greenfield — the system has no
-code yet), say so in the sequence rather than inserting a no-op prep step.
+- **Build work** (`plan` only *references* this): for each system whose code must change once
+  its spec is settled, an ordinary `/feature` cycle (`plan` → `build`) executes the change
+  against the revised seed. `plan` names *that this step exists and in what order it runs*, and
+  stops there — it does not write the feature plan and does not touch code.
 
 ## Procedure
 
@@ -51,7 +44,7 @@ code yet), say so in the sequence rather than inserting a no-op prep step.
    connect to the changed boundary, which systems' `.handbook/design/src/<system>.md` reference-architecture
    pointers assume the old shape. A tenet change in `PHILOSOPHY.md` can touch every system; a
    single seam redraw in `MAP.md` touches only the two systems on either end. Don't rely on the
-   brainstorm session's own blast-radius guess (§4 of `verbs/design/brainstorm.md`) without re-deriving
+   brainstorm session's own blast-radius guess (Procedure step 4 of `verbs/design/brainstorm.md`) without re-deriving
    it from `MAP.md` — that guess was made mid-dialogue and may be incomplete.
 
 3. **Sequence the spec revisions.** For each affected system, decide whether its
@@ -61,16 +54,14 @@ code yet), say so in the sequence rather than inserting a no-op prep step.
    these by dependency, not by convenience — a system's contract can't be correctly revised before
    the tenet or seam it depends on is settled.
 
-4. **Sequence the per-system readiness + build work.** For each system whose *code* will need to
-   change once its spec is settled, note in order: does it need `/clankshop design prep` (code exists, needs
-   clearing or a hardened seam) or does it go straight to `/feature plan` (no code yet, or the
-   change is additive enough that no readiness pass is needed)? Record this as a reference —
-   "system X: prep (replace) → feature build" — not as an executed step. Sequence across systems
-   by their `MAP.md` dependency order: a system other systems depend on generally clears/rebuilds
-   before its dependents, so a dependent's build run lands against an already-settled seam.
+4. **Sequence the build work.** For each system whose *code* will need to change once its spec
+   is settled, record the reference — "system X: spec revision → `/feature`" — not an executed
+   step; a system whose change stays inside the seed is tagged "spec revision only." Sequence
+   across systems by their `MAP.md` dependency order: a system other systems depend on generally
+   lands before its dependents, so a dependent's build lands against an already-settled seam.
 
 5. **Author the campaign doc, and land it in the right home.** The campaign doc is the sequence
-   itself: the ordered list of spec revisions (Step 3) and referenced prep/build work (Step 4),
+   itself: the ordered list of spec revisions (Step 3) and referenced build work (Step 4),
    with the dependency reasoning that produced the order. It is **not** a standing spec — it's a
    snapshot of a plan of action, temporally scoped to this one campaign, closer in kind to the
    change-records `docs/DESIGN-DOCTRINE.md` keeps out of `.handbook/design/` than to the present-tense specs that
@@ -78,25 +69,25 @@ code yet), say so in the sequence rather than inserting a no-op prep step.
    - **`.handbook/design/` (e.g. `.handbook/design/plans/<slug>.md`)** — only if the project has no existing
      roadmap/plan convention of its own. Simple, portable default for a fixture or a
      brand-new project.
-   - **The project's own roadmap location** (`<project: .records/plans/<date>-<slug>.md, indexed
-     from ROADMAP.md>`; conventions vary) — **the recommended default**
+   - **The project's own roadmap location** (commonly `.records/plans/<date>-<slug>.md`, indexed
+     from the project's roadmap; conventions vary) — **the recommended default**
      whenever the project already has one. A design-evolution campaign is a plan of forthcoming
      change, exactly the shape `.records/`'s operational history already exists to hold, and landing it
      there keeps it discoverable next to the ordinary feature roadmap instead of forking a second
      planning surface inside the seed.
 
    State which home was used and why in the report — don't silently default without recording the
-   reasoning, since the next `/clankshop design prep` invocation needs to find this document.
+   reasoning, since whoever walks the sequence needs to find this document.
 
 6. **Stop at the campaign doc — this verb never executes the sequence.** `plan` doesn't invoke
-   `/clankshop design prep`, doesn't invoke `/feature`, and doesn't touch code. Handing the campaign doc to
+   `/feature` and doesn't touch code. Handing the campaign doc to
    the human (or to `/clankshop route`/`/workstream` as the project's own orchestration layer) to actually walk
    the sequence is the next step, and it's outside this verb.
 
 ## Report
 
 Close `plan` with: the input change(s) the campaign sequences, the blast radius computed from
-`MAP.md` (Step 2), the ordered spec-revision list (Step 3), the ordered prep/build reference list
-(Step 4) — each item tagged with its recommended mode (prep replace / prep extend / straight to
-`/feature`, or none needed), where the campaign doc landed and why (Step 5), and an explicit
-reminder that nothing in the sequence has been executed yet.
+`MAP.md` (Step 2), the ordered spec-revision list (Step 3), the ordered build-work reference list
+(Step 4) — each item tagged *spec revision only* or *spec + build work → `/feature`*, where the
+campaign doc landed and why (Step 5), and an explicit reminder that nothing in the sequence has
+been executed yet.

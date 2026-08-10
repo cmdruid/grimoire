@@ -9,12 +9,11 @@ and § Sufficiency, and its circularity for why this draft is a starting point, 
 ## Read this framing before you write anything
 
 `extract` is **descriptive, not prescriptive.** What it produces is a *map of what the code appears
-to do* — not a proven, binding seed a rebuild could regenerate that code from. This is not a
-limitation to work around; it is the **circularity trap** stated in `docs/DESIGN-DOCTRINE.md` § Sufficiency:
-a seed reverse-engineered from code and then used to rebuild that code proves only
-reverse-engineering skill, never that the *standing seed was sufficient on its own*. A draft that
-looks complete because it was traced off working code is exactly the failure the discipline exists to
-catch.
+to do* — not a proven, binding seed. This is not a limitation to work around; it is the
+**circularity trap** stated in `docs/DESIGN-DOCTRINE.md` § Sufficiency: a spec reverse-engineered
+from code proves only reverse-engineering skill, never that the *standing seed says enough on its
+own*. A draft that looks complete because it was traced off working code is exactly the failure
+the discipline exists to catch.
 
 Three hard rules follow, and they govern every step below:
 
@@ -27,6 +26,10 @@ Three hard rules follow, and they govern every step below:
    `docs/DESIGN-DOCTRINE.md` § Deliverables in `.records/`, seed in `.handbook/design/`.
 3. **`extract` never writes executable code.** Standing architect discipline: it reads `src/` to
    inventory and infer, and authors design prose only.
+
+This verb writes the deployed layout (`.records/design/draft/`). On an unstamped root — no
+installation block — report what is missing, point at `/clankshop setup` / `migrate`, and write
+nothing; the inventory-and-judge half (Steps 1–3's reading) runs anywhere.
 
 ## 1. Preconditions — resolve root + date, confirm the onramp applies
 
@@ -55,7 +58,7 @@ Redirect in two cases:
 
 ## 3. Inventory the code
 
-Reuse `setup` greenfield's code-inventory shape (see `verbs/design/seed.md` Step 3, "Greenfield mode"):
+Reuse `seed` greenfield's code-inventory shape (see `verbs/design/seed.md` Step 3, "Greenfield mode"):
 partition the codebase into systems informed by its **actual module boundaries** — one candidate
 system per identifiable code unit — and build the seam graph from **cross-references** between them
 (an import, call, or shared type from one system into another is a seam-graph edge). Record, per
@@ -97,16 +100,16 @@ Mirror the seed's shape so the draft is *foldable* later, but write it all under
 
 Alongside the draft, write `.records/design/draft/SUFFICIENCY-GAPS.md`: the record of *what
 hardening must resolve* before this draft can become a seed. This is the part that keeps `extract`
-honest — the draft says "here is what exists"; the gap report says "here is what a rebuild would have
-to guess." For each system, list:
+honest — the draft says "here is what exists"; the gap report says "here is what an agent acting on
+this spec would have to guess." For each system, list:
 
 - **Systems found** and their **apparent contracts** (one line each, cross-referencing the draft).
-- **Invariants implied but unexplained** — the code enforces it, but nothing says *why*, so a rebuild
-  can't know whether it is sacred or incidental.
+- **Invariants implied but unexplained** — the code enforces it, but nothing says *why*, so a later
+  implementer can't know whether it is sacred or incidental.
 - **Un-inferable acceptance criteria** — where behavior has no existing test/gate to read, so the
-  "does the rebuild pass?" question has no answer yet.
-- **Anything a rebuild would guess** — magic constants without rationale, ordering the code depends on
-  but never states, error-handling that may be deliberate or may be an accident.
+  "does the implementation pass?" question has no answer yet.
+- **Anything an implementer would guess** — magic constants without rationale, ordering the code
+  depends on but never states, error-handling that may be deliberate or may be an accident.
 
 Frame this list as the sufficiency-failure ledger, not a to-do afterthought: per `docs/DESIGN-DOCTRINE.md`
 § Sufficiency, every gap here is a place the extracted draft is *known* not to be self-sufficient.

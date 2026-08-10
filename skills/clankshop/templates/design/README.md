@@ -1,9 +1,9 @@
 # Design system
 
-This is `.handbook/design/` — the regenerable **seed**. It is the present-tense, standing source of truth
-for what this project *is* and how it works; the project's code is the disposable **build
-output** compiled from it. When code and seed disagree, the seed is not automatically right — but
-the seed is what a rebuild reads, so drift here is drift that propagates.
+This is `.handbook/design/` — the **seed**. It is the present-tense, standing source of truth
+for what this project *is* and how it works; the project's code is what gets built against it.
+When code and seed disagree, the seed is not automatically right — but the seed is what an
+implementer reads, so drift here is drift that propagates.
 
 ## Layout
 
@@ -18,7 +18,8 @@ the seed is what a rebuild reads, so drift here is drift that propagates.
 ```
 
 The four root files (`VISION`, `PHILOSOPHY`, `GLOSSARY`, `MAP`) are the **required spine** —
-`/clankshop design health` fails if any is missing. `.handbook/design/src/` holds the compilable per-system specs,
+`/clankshop design health` fails if any is missing.
+`.handbook/design/src/` holds the per-system specs,
 roughly 1:1 with code units, organized by the same durability gradient: the spine is the
 constitution; `src/` is the source code of the design.
 
@@ -36,5 +37,5 @@ constitution; `src/` is the source code of the design.
 **Reference-arch is a disposable snapshot — verify before trusting.** Every `src/<system>.md`
 Reference Architecture tier is a best-guess description of the *current* implementation, stamped
 with the commit/ADR/date it was last distilled through. It rots as code moves. Before relying on
-it — especially before a rebuild — check it against the actual code it points at. The Contract
+it — especially before acting on it — check it against the actual code it points at. The Contract
 tier is binding; the Reference Architecture tier is not.

@@ -9,11 +9,16 @@ two-tier system-spec this verb populates). Two modes, one procedure with a fork 
   scattered design material to fold in; the brief is the only real input besides whatever code
   already exists.
 - **Migrate** — an existing project has design material spread across a root `PROJECT.md`/
-  `DESIGN.md` and a per-subsystem docs directory (e.g. `docs/design/*`). `setup` folds that
+  `DESIGN.md` and a per-subsystem docs directory (e.g. `docs/design/*`). `seed` folds that
   material into the seed's shape rather than writing it fresh.
 
-Both modes end the same way: `setup` is not done until `/clankshop design health` reports a complete spine
+Both modes end the same way: `seed` is not done until `/clankshop design health` reports a complete spine
 (and every migrated system has a contract).
+
+This verb writes the deployed layout (`.handbook/design/`). On an unstamped root — no
+installation block — report what is missing, point at `/clankshop setup` / `migrate`, and write
+nothing: the face owns bootstrap, and there is no pre-stamp write license here. Judgment
+(mode detection, advice on the material found) runs anywhere.
 
 ## 1. Detect mode
 
@@ -29,7 +34,7 @@ Look for existing design material in the project root:
 
 Reconciling the brief's literal signal list (`PROJECT.md`, `DESIGN.md`, `docs/design/` all "→
 migrate"): a bare `PROJECT.md` alone, with no `DESIGN.md` and no subsystem-docs directory, *is*
-the greenfield case — it is exactly the "loose vision brief" `setup` is meant to compile. Treat
+the greenfield case — it is exactly the "loose vision brief" `seed` is meant to compile. Treat
 `DESIGN.md` or a real subsystem-docs directory as the actual migrate signal; `PROJECT.md`'s role
 differs by what else is present, not by its own existence.
 
@@ -82,7 +87,7 @@ modes — greenfield just has thinner sources.
      `src/…:NN`-style pointers into the actual code they describe (a file path alone is an
      acceptable pointer when a specific line isn't meaningful; never paste code). If a described
      piece of architecture no longer matches any code you can find, that's drift worth flagging in
-     the setup report, not something to paper over by keeping the stale prose.
+     the seed report, not something to paper over by keeping the stale prose.
    - **Acceptance:** carry over any concrete scenarios/gates/determinism checks the source doc
      already names. If the source doc has nothing concrete, leave the template's `<...>`
      placeholder rather than inventing one — `/clankshop design health` will flag it as
@@ -96,7 +101,7 @@ modes — greenfield just has thinner sources.
 4. **Not every doc under the subsystem-docs directory is a committed system spec.** Some are
    explicitly speculative or forward-looking (e.g. a subsystem doc marked "not committed").
    Use judgment: migrate committed subsystems as normal; for a speculative doc,
-   either skip it and note the decision in the setup report for the human to make, or migrate it
+   either skip it and note the decision in the seed report for the human to make, or migrate it
    with a contract that's honest about its non-committal status — don't silently launder a
    "maybe someday" doc into a binding contract.
 
@@ -112,7 +117,7 @@ difference: instead of reshaping loose prose, you are **hardening an already see
    `docs/DESIGN-DOCTRINE.md` § Sufficiency, a draft traced off code is circular until a human decides what the
    design *should* guarantee; folding it unresolved just relaunders that circularity into
    `.handbook/design/`. For each gap: turn an "apparent"/"appears to" observation into decided intent,
-   fill or knowingly accept each placeholder acceptance, and state the resolution in the setup report.
+   fill or knowingly accept each placeholder acceptance, and state the resolution in the seed report.
 3. Drop the `status: extracted — sufficiency-unproven` stamp once resolved — a folded system carries the
    normal `distilled_through_*: none` stamp (Step 3, point 3 above), not the draft's provisional one.
 4. `.records/design/draft/` is **transient by contract** — born at `extract`, consumed exactly
@@ -132,7 +137,7 @@ pass writes.
 in the project's own operational history (`.records/adr/`, `.records/plans/`, etc.). Per `docs/DESIGN-DOCTRINE.md`,
 change-records and standing specs are temporally distinct; folding an ADR chain's *history* into
 the seed reintroduces exactly the scar-smear the seed exists to avoid. `distill` is the verb that
-later mines those change-records to refresh a spec — `setup` only establishes the baseline stamp
+later mines those change-records to refresh a spec — `seed` only establishes the baseline stamp
 (`none`) that `distill` will work forward from.
 
 ## 4. Consume the bootstrap inputs
@@ -141,8 +146,8 @@ Once their content lives in the seed, the source material is **spent** — in mi
 `PROJECT.md`/`DESIGN.md` **and** every per-subsystem doc actually migrated in Step 3 (e.g.
 `docs/design/<system>.md` for each system now living at `.handbook/design/src/<system>.md`); in greenfield
 mode it's just `PROJECT.md`. Leaving a migrated subsystem doc in place, unlinked, recreates the
-two-source-of-truth problem `setup` exists to close — don't stop at the root files. This is a
-document edit — `setup` performs it directly:
+two-source-of-truth problem `seed` exists to close — don't stop at the root files. This is a
+document edit — `seed` performs it directly:
 
 - Default: replace each with a one-line pointer to `.handbook/design/` (e.g. "Superseded by `.handbook/design/` — see
   `.handbook/design/README.md`." for the root files, or "Superseded by `.handbook/design/src/<system>.md`." for a
@@ -155,7 +160,7 @@ document edit — `setup` performs it directly:
 
 ## 5. Update project wiring — code-blind: doc edits direct, code edits are a handoff
 
-This step is the one place `setup` must actively watch the altitude seam (`docs/DESIGN-DOCTRINE.md` § The
+This step is the one place `seed` must actively watch the altitude seam (`docs/DESIGN-DOCTRINE.md` § The
 seam — altitude, not medium). "Update project wiring" covers three kinds of reference that can go
 stale once `.handbook/design/` exists and the old docs are gone/moved:
 
@@ -166,85 +171,45 @@ stale once `.handbook/design/` exists and the old docs are gone/moved:
 For each, ask: *is the thing I'd edit a document, or executable code?*
 
 - **Document** (markdown, a `.ron`/`.yaml` config the linter reads declaratively, a repo-map file
-  like `AGENTS.md`) → `setup` edits it directly, in the same pass. This is authoring the seed's
+  like `AGENTS.md`) → `seed` edits it directly, in the same pass. This is authoring the seed's
   surroundings, not writing code.
-- **Executable code** (a doc checker's source, a build script, a compiled indexer) → `setup`
+- **Executable code** (a doc checker's source, a build script, a compiled indexer) → `seed`
   does **not** edit it. Emit a short handoff note instead: what
   moved, what the code currently assumes, and what change would make it correct again. Hand that
   note to `/clankshop route` or `/feature` to execute — do not guess at the project's tracker; if the project
   has one (a backlog file, an issue tracker), file it there per that project's convention, and
-  otherwise surface the note directly in `setup`'s final report so the human can route it.
+  otherwise surface the note directly in `seed`'s final report so the human can route it.
 
 This is a direct consequence of the altitude split in `docs/DESIGN-DOCTRINE.md`: `/clankshop design` never writes
-executable code, even code as small as a one-line linter glob update. The rebuild-instinct to "just
+executable code, even code as small as a one-line linter glob update. The instinct to "just
 fix the one-liner" is exactly the boundary this step exists to hold.
 
 ## 6. Run `check` — the completion gate
 
 ```bash
-bash <skill-dir>/scripts/clankshop design-check.sh <project>/.handbook/design [<repo-root>]
+bash <skill-dir>/scripts/design-check.sh <project>/.handbook/design [<repo-root>]
 ```
 
-`setup` is not done until:
+`seed` is not done until:
 
 - `spine_complete=true`, and
-- `contract:<sys>=true` for every system `setup` migrated or inventoried.
+- `contract:<sys>=true` for every system `seed` migrated or inventoried.
 
-Both are `architect-check.sh`'s exit-1 conditions (see `verbs/design/health.md`) — a missing spine or a
+Both are `design-check.sh`'s exit-1 conditions (see `verbs/design/health.md`) — a missing spine or a
 contract-less system means there's no constitution, or no binding contract, for anything
-downstream to build against. If either is still false, that's `setup` unfinished, not `setup` done
+downstream to build against. If either is still false, that's `seed` unfinished, not `seed` done
 with follow-ups: go back and fill the gap.
 
 The remaining facts (`drift`, `acceptance_placeholder`, `map_orphan`/`map_dangling`,
 `baseline_date`) are advisory. Don't silently patch them to make the report look cleaner — surface
-them in `setup`'s final report exactly as `verbs/design/health.md` prescribes (flag drift and placeholder
+them in `seed`'s final report exactly as `verbs/design/health.md` prescribes (flag drift and placeholder
 acceptance to the human; note orphan/dangling MAP rows as cheap hygiene). A migration that lands
 with a handful of honest `acceptance_placeholder`s and a filed handoff note is a correct outcome;
 one that fabricates acceptance criteria to clear the check is not.
 
-## 7. Register the front-door route (self-registration)
-
-Once `check` reports `spine_complete=true`, register architect's route into the project's
-always-loaded front-door doc — the same "self-init, no floor" + "visibility by construction"
-corollaries `/backlog setup` established (`docs/design/2026-07-18-skill-self-init-model.md` §1, §3).
-This makes a bare install of `/clankshop design` visible with **no composer** present, same as the seed itself
-needed no `/clankshop route setup` to stand up.
-
-1. **Resolve the front-door doc + the stamp.** The registration target is the project's
-   always-loaded front-door (`AGENTS.md`/`CLAUDE.md`, whichever the harness auto-loads); it must
-   **exist** — if the project has none, that's a project-setup gap, say so and stop before writing.
-   The stamp is the **pack version** — `clankshop@<pack-version>`, read from the root's
-   installation block when the root is pack-stamped, else from the pack manifest's `version:`
-   line (the pack face's `PACK.md`, beside the installed skills); core members carry no
-   individual version.
-   **Grimoire caveat (patient-zero):** never register against grimoire's own authored `AGENTS.md` — this
-   verb is exercised only against a throwaway fixture front-door (a temp `AGENTS.md` under the
-   scratchpad, never the real one); in a consuming project the parameter resolves to that project's real
-   front-door, which is the whole point (model §3.2).
-2. **Register the route — the pack-style block.** The body is architect's entry in the pack
-   doctrine's **door profile** (the fenced `### /clankshop design` block in
-   `skills/clankshop/doctrine/README.md` — the single source every route writer copies, never
-   authored here), stamped `clankshop@<pack-version>` (from the root's installation block when
-   pack-stamped, else the pack manifest's `version:`), carrying **no `Edges:` lines**. Feed it
-   on stdin to `scripts/register-route.sh <front-door> architect clankshop@<pack-version>`:
-   ```markdown
-   ### /clankshop design — design expertise
-   Route: foundational design work at seed altitude; tends `.handbook/design/` and
-   `.records/design/`.
-   ```
-   An existing pack-style block written by setup is **adopted** (re-running converges
-   byte-identically), never overwritten with a different body. Report `appended` / `replaced`. If
-   it reports **malformed**, surface that — a delimiter was hand-broken; the human repairs it,
-   then re-run. Do **not** force it. The write is **idempotent**: re-running `setup` rewrites only
-   architect's own `skill:architect` block, never a sibling's. `setup` also **creates-or-adopts
-   the installation block** (its pre-stamp write license alongside the design chapter, records,
-   and skeleton maps — via the pack face's `install-block.sh write <root> 1`), so a bare
-   single-role install yields a resolvable installation.
-
 ## Report
 
-Close `setup` with: the detected mode, the spine files stamped, the systems migrated/inventoried
+Close `seed` with: the detected mode, the spine files stamped, the systems migrated/inventoried
 (and any skipped as speculative, per Step 3), what happened to `PROJECT.md`/`DESIGN.md` (pointer
-or delete), any handoff note(s) emitted for code-side wiring (Step 5), the final `check` facts
-— pass/fail on the hard blockers plus a list of what's advisory-outstanding — and the front-door
-registration result (Step 7): `appended`/`replaced`/`malformed` + the `built-against` stamp.
+or delete), any handoff note(s) emitted for code-side wiring (Step 5), and the final `check` facts
+— pass/fail on the hard blockers plus a list of what's advisory-outstanding.

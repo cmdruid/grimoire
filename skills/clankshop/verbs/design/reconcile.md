@@ -2,11 +2,11 @@
 
 Hat: `roles/architect.md` — read the hat first; you operate this verb wearing that hat.
 
-`check`'s deep counterpart. Where `check` runs cheaply and often to catch *structural* rot
+`health`'s deep counterpart. Where `health` runs cheaply and often to catch *structural* rot
 (missing spine, missing contract, pointer-drift, stale baselines) mechanically, `reconcile` is the
 **expensive, occasional, semantic** read: it holds the seed's binding contracts against the
 **actual code** and finds where the two have *diverged in meaning* — not just where a pointer rotted.
-See `docs/DESIGN-DOCTRINE.md` § Cheap `check`, deep `reconcile` for the split, and § Deliverables in
+See `docs/DESIGN-DOCTRINE.md` § Cheap `health`, deep `reconcile` for the split, and § Deliverables in
 `.records/`, seed in `.handbook/design/` for the write-boundary this verb obeys.
 
 ## Read this framing before you write anything
@@ -25,8 +25,8 @@ See `docs/DESIGN-DOCTRINE.md` § Cheap `check`, deep `reconcile` for the split, 
    code** — standing architect discipline: it reads `src/` to compare, and authors prose only.
 
 `reconcile` is deep and expensive — a per-system semantic read is not a per-change tax. Run it
-occasionally (a milestone, a suspected drift, before trusting the seed for a rebuild), the way you
-run the fresh-agent read-test — not on every commit the way you run `check`.
+occasionally (a milestone, a suspected drift, before trusting the seed), the way you
+run the fresh-agent read-test — not on every commit the way you run `health`.
 
 ## 1. Preconditions — resolve root + date, confirm a seed exists
 
@@ -38,12 +38,12 @@ run the fresh-agent read-test — not on every commit the way you run `check`.
   instead — there is nothing to reconcile the code *against* yet.
 - Confirm the report home: `.records/reports/` under the repo root. Create it if absent.
 
-## 2. Scope from `check` first — don't re-derive its structural facts
+## 2. Scope from `health` first — don't re-derive its structural facts
 
-Run (or read a recent run of) `check`'s fact script and let it aim the expensive read:
+Run (or read a recent run of) `health`'s fact script and let it aim the expensive read:
 
 ```bash
-bash <skill-dir>/scripts/clankshop design-check.sh <project>/.handbook/design [<repo-root>]
+bash <skill-dir>/scripts/design-check.sh <project>/.handbook/design [<repo-root>]
 ```
 
 `reconcile` **builds on** these facts rather than re-computing them — the script already establishes
@@ -59,7 +59,7 @@ the budget the semantic pass is *for*. Use the facts as a suspect list:
   so its contract is especially likely to have drifted unnoticed.
 
 Start with the systems these signals flag; **widen to the rest as the session budget allows.** A
-system `check` reports clean is not proven semantically conformant (that's the whole reason
+system `health` reports clean is not proven semantically conformant (that's the whole reason
 `reconcile` exists — see § The one thing this script cannot tell you in `verbs/design/health.md`), so a full pass
 reads every system; a budget-limited pass reads the suspects and says in the report which systems it
 did **not** reach.
@@ -68,7 +68,7 @@ did **not** reach.
 
 For each system in scope, read its `## Contract (BINDING)` and its `## Reference Architecture`
 against the code the reference-arch tier points at (`src/…:NN`). You are not checking that the
-pointers *resolve* (that's `check`); you are checking that the code's actual behavior and the
+pointers *resolve* (that's `health`); you are checking that the code's actual behavior and the
 contract's claims still **mean the same thing**. Hunt three kinds of divergence:
 
 - **Code guarantees something the contract omits.** The code enforces an invariant, ordering, or
@@ -116,7 +116,7 @@ the same day), suffix the slug deterministically (`-2`, `-3`, …) **before firs
 never rename or overwrite a published report; the newer report supersedes by date, and says so.
 Structure it so the human can act on it and the next reader can trust its provenance:
 
-- **Header** — the date, the repo HEAD short SHA reconciled against, and the `check` baseline it
+- **Header** — the date, the repo HEAD short SHA reconciled against, and the `health` baseline it
   scoped from (Step 2). This stamps *what the report was built against* so its age is legible later.
 - **Scope** — which systems were read semantically, and (for a budget-limited pass) which were **not**
   reached, so a clean absence isn't mistaken for a clean verdict.
@@ -138,10 +138,12 @@ Commit only the report path written this run, scoped and pathspec-atomic, no `Co
 
 ## The seams around this verb
 
-- **vs `check`** — `check` is the cheap, frequent, *structural* gate (does a pointer resolve, is a
+- **vs `health`** — `health` is the cheap, frequent, *structural* gate (does a pointer resolve, is a
   contract present); `reconcile` is the deep, occasional, *semantic* read (does the contract still
-  *mean* what the code does). `reconcile` consumes `check`'s facts to aim itself; it does not replace
-  them.
+  *mean* what the code does). `reconcile` consumes `health`'s facts to aim itself; it does not
+  replace them.
+- **vs `/clankshop check`** — the face's `check` validates the *assembly* (stamps, projections,
+  registrations); it never reads the seed's content. Different fact namespace, different question.
 - **vs `distill`** — `distill` folds accreted *change-records* (ADRs, plans) into the spec; it reads
   code only to catch decisions that never got an ADR. `reconcile` is a direct *contract-vs-code*
   comparison and enacts nothing — when it finds an ADR-smear, it **recommends** `distill`, it doesn't
@@ -158,4 +160,4 @@ Commit only the report path written this run, scoped and pathspec-atomic, no `Co
 - **Write only `.records/`** (framing rule 2) — the report is a deliverable; the seed stays pure,
   mutated only by the curated path (`seed`/`distill`/human editorial).
 - **A snapshot must not pose as authoritative** (`docs/DESIGN-DOCTRINE.md`) — the report is stamped with the
-  HEAD and `check` baseline it was built against, and names the systems it did not reach.
+  HEAD and `health` baseline it was built against, and names the systems it did not reach.
