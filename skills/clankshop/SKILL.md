@@ -41,7 +41,7 @@ layout directly — atomic versioning is what makes that safe.
 
 | asset | where | is |
 |---|---|---|
-| doctrine | `doctrine/` | the pack's seed content: `rules/`, `workflows/`, `testing/` chapters; index + registry + roster + door profile (`doctrine/README.md`); the base archive (`doctrine/BASES.md`) |
+| doctrine | `doctrine/` | the pack's seed content: `rules/`, `workflows/`, `testing/` chapters; index + registry + roster + door profile (`doctrine/README.md`) |
 | runbook | `docs/RUNBOOK.md` | the methodology narrative — the flow of a change, when to assume which role, the three altitudes, escalation, the improvement loop |
 | pack manifest | `PACK.md` beside this SKILL.md | the release manifest `install.sh --pack` resolves and preflights |
 
@@ -50,9 +50,11 @@ The manifest is pack-as-skill, `docs/spec/pack-format.md` format 1: `name:` and 
 extension key (the lint gate's core-member exemption). Installs are recorded in the sidecar
 `grimoire.lock`.
 
-The doctrine's declaration blocks carry `doctrine: clankshop` + `doctrine-version:`; every
-seedable entry has a stable origin ID (`clankshop:INV-4`), so seeding is copying entries under the
-projection protocol — provenance-stamped, base-recorded, mechanically diffable.
+The doctrine's declaration blocks carry `doctrine: clankshop` + `doctrine-version:`. Seeding is
+copying content through the project's facts, with file-level provenance: whole-file assets land
+with a path-qualified `origin:` stamp (`clankshop:workflows/patch`), and RECORDS lands stamped
+`built-against:` its doctrine version — enough for a later reconcile pass to compare a deployed
+chapter against the current doctrine and judge.
 
 ## Verbs
 

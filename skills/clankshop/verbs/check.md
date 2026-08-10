@@ -55,12 +55,6 @@ human); `seats` (each role's seat present for installed roles that need one);
 is a fact; the human decides whether it is intentional); `design_draft` — surviving draft
 content that should have been distilled or retired.
 
-**Provenance:** `missing_base` — a deployed stamp citing an `origin@version` with **no
-retrievable base** (not in the archive per the retrieval rule, not in the live doctrine) means
-the three-way diff cannot run for that entry; `bump_uncovered` — a bump record naming an origin
-with no base block is archive corruption (`doctrine/BASES.md`'s coverage contract). Both are red:
-the improvement loop is blind there.
-
 ## Verdict shape
 
 Report **green** (no red facts), or the red facts grouped by the fix's owner: regenerate a

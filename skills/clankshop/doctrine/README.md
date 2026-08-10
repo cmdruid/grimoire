@@ -8,10 +8,9 @@ docs: rules/ROUTING.md rules/GOTCHAS.md rules/INVARIANTS.md rules/POLICY.md rule
 
 The pack's seed content: what `setup` and `migrate` project — through a project's facts — into its
 `.handbook/`. Every member doc is a spine doc (declaration block first); the doctrine's source ID
-is `clankshop`, this version is **1**, and every seedable entry's origin ID is its typed ID
-qualified by that source (`clankshop:INV-4`; whole-file assets are path-qualified —
-`clankshop:workflows/<lane>`, `clankshop:testing/<DOC>`). Superseded entry bodies live in
-`BASES.md` (the base archive; bump procedure below). This index is the parse anchor — the
+is `clankshop` and this version is **1**. Whole-file assets are stamped at projection with a
+path-qualified origin (`clankshop:workflows/<lane>`, `clankshop:testing/<DOC>`) and the doctrine
+version they were seeded from (versioning note below). This index is the parse anchor — the
 spine-index block, not naming convention, is what discovery keys on.
 
 ## Chapter registry
@@ -160,11 +159,11 @@ Route: file a bug (proxy for the records instrument's bug capture).
 Route: file a task (proxy for the records instrument's task capture).
 ```
 
-## The bump procedure (BASES.md)
+## Versioning
 
-Before any doctrine version bump lands: for **every entry changed or retired in the bump**, append
-the prior body to `BASES.md` as a delimited base block, **plus one bump record naming exactly
-those origins** (the coverage metadata). A bump record citing an origin with no body block, or a
-deployed provenance stamp citing an `origin@version` with no retrievable base, is a check fact —
-never a silent live-body fallback. The exact grammar, retrieval rule, and rationale live in
-`BASES.md`'s header.
+`doctrine-version:` is one integer for the whole doctrine, carried in every declaration block;
+bump it (everywhere, in one commit) whenever seeded content changes. Downstream, a deployed file
+whose `origin-version:` — or RECORDS' `built-against:` stamp — is behind the current version was
+seeded from older content; reconciling it is the improvement loop's judgment call (the
+calibrator's doctrine seam): read the two bodies side by side, offer the differences, respect
+local divergence — the operating agent is the differ.

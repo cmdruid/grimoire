@@ -63,14 +63,11 @@ stamps it `built-against: clankshop-doctrine@<doctrine-version>`. The authority 
 doctrine states the schema, backlog executes it, the stamped projection is its writing — setup
 never writes the file by hand.
 
-**Every seeded entry is provenance-stamped** (the projection protocol — frozen as Appendix J of
-the rollout plan; grammar and retrieval in `doctrine/BASES.md`):
-
-- a one-line entry (INV) appends its marker: `⟨clankshop:INV-4 @v1⟩`;
-- a heading-led entry (G/POL — none seed today, the encoding stands) carries `origin:` +
-  `origin-version:` lines under the heading;
-- a whole-file asset (each lane and testing file) carries `origin:` + `origin-version:` keys in
-  its declaration block (path-qualified origin: `clankshop:workflows/patch`).
+**Provenance is file-level and lightweight:** each whole-file asset (a lane, a testing skeleton)
+carries `origin:` + `origin-version:` keys in its declaration block (path-qualified:
+`clankshop:workflows/patch`), and RECORDS carries its `built-against:` stamp. Entry bodies are
+copied clean — no per-entry markers; a later reconcile pass compares the deployed chapter
+against the current doctrine and judges.
 
 Targets:
 

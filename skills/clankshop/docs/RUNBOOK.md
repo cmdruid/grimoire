@@ -91,8 +91,8 @@ The system grows from its own exhaust. The **calibrator** runs the loop:
 3. **Uptake and closure** — the calibrator verifies the edit landed (chapter changed,
    check-green), completes the item as `drained`, and stamps the source so nothing is claimed
    twice or never cleared.
-4. **Upstream** — a locally-proven rule can flow back: the calibrator runs the three-way diff
-   against the doctrine, assembles the evidence, and **prepares** the contribution — a human
+4. **Upstream** — a locally-proven rule can flow back: the calibrator compares it against the
+   current doctrine, assembles the evidence, and **prepares** the contribution — a human
    lands it in doctrine vNext. Other projects' calibrators then see the update as an *offer*
    (never a silent overwrite; a local edit or deletion is respected as divergence, a state, not
    an error).
