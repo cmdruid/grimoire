@@ -15,7 +15,7 @@ every installed skill in place:
 ```
 git clone https://github.com/cmdruid/grimoire && cd grimoire
 ./install.sh --list              # see what's here
-./install.sh chiropractor        # install one skill (into ~/.claude/skills)
+./install.sh debugger            # install one skill (into ~/.claude/skills)
 ./install.sh --pack clankshop    # install a whole pack
 ./install.sh --remove handoff    # uninstall
 ```
@@ -27,13 +27,14 @@ git clone https://github.com/cmdruid/grimoire && cd grimoire
 ## The skills
 
 The `clankshop` pack binds most of them into one development loop, tiered by the pack doctrine's
-roster (`skills/clankshop/doctrine/README.md`): **roles** — expertise an agent assumes when the
-moment calls for it (`architect` design, `foreman` operations and routing, `guardian` verification,
-`auditor` code quality, `chiropractor` docs quality, `calibrator` the improvement loop);
-**instruments** — procedures anyone operates (`backlog` the records instrument, `debugger` the
-diagnostic instrument); **pipelines** — the work processes (`feature` turns an idea into gate-green
-code, `workstream` encapsulates continuous shipping); **helpers** — portable plumbing useful on any
-repo (`delegate`, `mailbox`, `handoff`); plus the pack **face** (`clankshop`) and the optional
+roster (`skills/clankshop/doctrine/README.md`): the pack **face** (`clankshop`) carries the
+doctrine, the runbook, and the **role hats** — expertise layers its intent verbs inherit
+(`design` the architect, `route` the foreman, `verify` the guardian, `calibrate`/`docs` the
+chiropractor; `ask <role>` puts a hat on for discussion); **instruments** — procedures anyone
+operates (`backlog` the records instrument, `debugger` the diagnostic instrument, `auditor` the
+code-quality instrument); **pipelines** — the work processes (`feature` turns an idea into
+gate-green code, `workstream` encapsulates continuous shipping); **helpers** — portable plumbing
+useful on any repo (`delegate`, `mailbox`, `handoff`); plus the optional
 capture aliases (`bug`, `task`). `skill-builder` is a category of one: the **toolmaker** — it
 stewards the skills in this library themselves (scaffold new ones, audit boundary health, calibrate
 authoring doctrine), not project code, and is deliberately outside the `clankshop` pack (see *The
@@ -41,29 +42,23 @@ packs* below).
 
 | skill | what it does |
 |---|---|
-| `architect` | the design-system engine: a project's regenerable `.handbook/design/` seed — stand up (`init`/`extract`), evaluate (`check`), drift-correct (`reconcile`), evolve (`distill`/`plan`/`brainstorm`), plus `prep` |
-| `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers |
+| `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
 | `backlog` | the records instrument: capture by kind, complete (`done` + the done log), escalate via tickets (+ mirror), curate, debrief |
 | `bug` | capture alias: `/bug` proxies the records instrument's bug capture (optional pack member) |
-| `calibrator` | the improvement loop: intake captured signal + quality findings, dispatch to the owning role, verify uptake, close; the doctrine seam both ways |
-| `chiropractor` | audit + tune a repo's documentation spine for agent ergonomics |
-| `clankshop` | the clankshop pack's executable face: the pack's doctrine + runbook home and the system verbs — `setup` (greenfield bootstrap), `migrate` (brownfield onramp), `check` (whole-system assembly validation) |
+| `clankshop` | the development system: doctrine + runbook + role hats; system verbs (`setup` / `migrate` / `check`), intent verbs (`design` / `route` / `verify` / `calibrate` / `docs`), and `ask <role>` for hat-on discussion |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `feature` | the planning spine: brainstorm → design → plan → build, plus independent review |
-| `foreman` | the change router + rulebook steward: classify a change, dispatch it to its lane, tend the deployed routing/workflow chapters |
-| `guardian` | the verification role: tend `.handbook/testing/` (gate / pipeline / diagnostics playbook) + the defect-vs-flake and verification-depth judgment |
 | `handoff` | save/resume a session as a self-contained hand-off any agent can pick up |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
 | `task` | capture alias: `/task` proxies the records instrument's task capture (optional pack member) |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
-`foreman` and `backlog` split what used to be one skill (`dev`): `foreman` kept the router +
-system-maintainer half, `backlog` took the capture-inbox half — one collection front-door instead
-of a shared one. `architect` is a rename of `design` (verbs unchanged); `auditor` is a rename of
-`audit` (see *Storage convention* below and `docs/design/2026-07-17-library-refactor.md` for the
-full rationale).
+The former role skills (`architect`, `foreman`, `guardian`, `calibrator`, `chiropractor`) merged
+into `clankshop` as hats behind its intent verbs
+(`docs/design/2026-08-10-clankshop-role-merge.md`); earlier lineage lives in
+`docs/design/2026-07-17-library-refactor.md`.
 
 ### Storage convention: what a deployed project carries
 

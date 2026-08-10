@@ -1,6 +1,7 @@
 # Clankshop role merge — flattened routes, role hats, one skill
 
-**Status: draft for owner review** (2026-08-10). Third ratified divergence from the pack plan's
+**Status: executed 2026-08-10** (owner-approved; amendments: `hat` verb renamed `ask` with an
+optional opening prompt, calibrator folded into the chiropractor hat). Third ratified divergence from the pack plan's
 Appendix H once approved; supersedes the role-tier *skill* packaging of
 `docs/design/2026-08-06-clankshop-pack.md` (roles remain as an instruction layer; their
 standalone-skill packaging is retired).
@@ -108,16 +109,16 @@ judgment; they compose (source vs projection, as everywhere).
 
 ## Task list
 
-- [ ] **T1** — this design lands (owner-approved) + the plan-status divergence line.
-- [ ] **T2** — the merged skeleton: `roles/` (four hats distilled from the five role SKILL.mds —
+- [x] **T1** — this design lands (owner-approved) + the plan-status divergence line.
+- [x] **T2** — the merged skeleton: `roles/` (four hats distilled from the five role SKILL.mds —
       calibrator folds into chiropractor), `verbs/` moves (procedure files relocated + renamed
       per the grammar), router table + dispatch rule + `ask` verb in SKILL.md. Old skills still
       present; suite green.
-- [ ] **T3** — the cutover: PACK.md manifest + core list; doctrine door profile + roster +
+- [x] **T3** — the cutover: PACK.md manifest + core list; doctrine door profile + roster +
       stewardship shape; `check-facts.sh` + `lib.sh` + onramp fixture; delete the five skill
       dirs. One commit, suite green (count will drop with the registration asserts).
-- [ ] **T4** — the prose sweep: RUNBOOK, descriptions, cross-skill references, library
+- [x] **T4** — the prose sweep: RUNBOOK, descriptions, cross-skill references, library
       README/AGENTS.md. Lint baseline re-stated (five description WARNs disappear).
-- [ ] **T5** — verify: full suite + lint + drift check; repo-wide grep proves no `/architect`,
+- [x] **T5** — verify: full suite + lint + drift check; repo-wide grep proves no `/architect`,
       `/foreman`, `/guardian`, `/calibrator`, `/chiropractor` routes remain (persona names
       survive only as hat/seat names and in historical design docs).

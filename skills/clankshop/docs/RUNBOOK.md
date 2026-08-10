@@ -35,27 +35,31 @@ signal → capture → route → lane → gate → land → done log
 6. **Done log.** Completion appends one line to `.records/done/log.md` — the auditable trail from
    item to commits. The books stay closed in one motion, not as an afterthought.
 
-## When to assume which role
+## When which hat
 
-A role is an expertise an agent **inherits**: when the moment calls for it, load the skill and
-*be* that role for the session. The front door and the lane files say when — the role moments,
-not a schedule:
+A role is a **hat** — an expertise layer the pack face carries (`roles/`): each intent verb
+loads its hat before its procedure, so calling the verb *is* assuming the role. The front door
+and the lane files say when — the role moments, not a schedule:
 
-- **A design decision at stake** — a contract, a tenet, a system boundary → work it as the
-  architect before planning against it.
+- **A design decision at stake** — a contract, a tenet, a system boundary → `/clankshop design`
+  (the architect hat) before planning against it.
 - **Routing or rulebook judgment** — where does this change start; does this rule belong in the
-  rulebook → the operations role (foreman).
+  rulebook → `/clankshop route` (the foreman hat).
 - **Verification judgment** — is this failure a defect or a flaky gate; does this change need a
-  deeper pass; is the playbook missing a chapter → the verification role (guardian).
-- **A code-quality sweep** → the auditor, scoring against the project rubric.
-- **A docs-quality pass** — conformance, citations, budgets, navigability → the docs role
-  (chiropractor).
-- **What does this signal mean for the system** → the calibrator (the improvement loop, below).
+  deeper pass; is the playbook missing a chapter → `/clankshop verify` (the guardian hat).
+- **A code-quality sweep** → `/auditor`, scoring against the project rubric.
+- **A docs-quality pass** — conformance, citations, budgets, navigability → `/clankshop docs`
+  (the chiropractor hat).
+- **What does this signal mean for the system** → `/clankshop calibrate` (the chiropractor hat;
+  the improvement loop, below).
+- **A discussion with a role, no procedure** → `/clankshop ask <role>` — the hat goes on and the
+  agent converses as that expertise.
 
-The **instruments** are different: the records instrument (backlog) and the diagnostic instrument
-(debugger) are procedures anyone operates — a role mid-work, a pipeline, the human — and the
-judgment belongs to the operator. The **pipelines** (feature, workstream) are the work processes
-the system supports: one turns an idea into gate-green code, the other encapsulates
+The **instruments** are different: the records instrument (backlog), the diagnostic instrument
+(debugger), and the code-quality instrument (auditor) are procedures anyone operates — a hatted
+agent mid-work, a pipeline, the human — and the judgment belongs to the operator. The
+**pipelines** (feature, workstream) are the work processes the system supports: one turns an
+idea into gate-green code, the other encapsulates
 shipping. The **helpers** (delegate, mailbox, handoff) are portable plumbing, useful on any repo.
 
 ## The escalation story
@@ -78,27 +82,28 @@ the ticket resolves, the origin un-pauses and advances, the done log gets its li
 
 ## The improvement loop
 
-The system grows from its own exhaust. The **calibrator** runs the loop:
+The system grows from its own exhaust. The **chiropractor hat** runs the loop
+(`/clankshop calibrate`):
 
 1. **Intake** — one pass over the declared sources: the dev-experience channel, process-flavored
    issues, system-flavored notes, and the quality findings (audit findings past the
    system-improvement bar, doc-drift reports, investigation lessons). Paused entries are always
    skipped; no other role scans these sources.
 2. **Dispatch** — each accepted signal becomes an ID'd improvement item routed to the **owning
-   role** as ordinary work: a trap to the rulebook, a spec correction to the design chapter, a
-   playbook gap to testing, a schema fix to the records projection. The calibrator edits no
+   hat or member** as ordinary work: a trap to the rulebook, a spec correction to the design
+   chapter, a playbook gap to testing, a schema fix to the records projection. The loop edits no
    chapter — tend-don't-own holds all the way down.
-3. **Uptake and closure** — the calibrator verifies the edit landed (chapter changed,
+3. **Uptake and closure** — the loop verifies the edit landed (chapter changed,
    check-green), completes the item as `drained`, and stamps the source so nothing is claimed
    twice or never cleared.
-4. **Upstream** — a locally-proven rule can flow back: the calibrator compares it against the
+4. **Upstream** — a locally-proven rule can flow back: the loop compares it against the
    current doctrine, assembles the evidence, and **prepares** the contribution — a human
-   lands it in doctrine vNext. Other projects' calibrators then see the update as an *offer*
-   (never a silent overwrite; a local edit or deletion is respected as divergence, a state, not
-   an error).
+   lands it in doctrine vNext. Other projects' improvement loops then see the update as an
+   *offer* (never a silent overwrite; a local edit or deletion is respected as divergence, a
+   state, not an error).
 
 Meanwhile the instrument keeps its own house: curation (dedupe, rank, sharpen, ID stamping) is
-the records instrument's upkeep — what a signal *means* is the calibrator's question, how the
+the records instrument's upkeep — what a signal *means* is the loop's question, how the
 lists are kept is not.
 
 ## Ship continuously, delegate, survive a reset

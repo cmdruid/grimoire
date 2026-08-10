@@ -9,13 +9,14 @@ it whenever you add or revise one. It is distilled from practice; the `workstrea
 `scripts/workstream-git.sh` + *Helper scripts* section) is the worked reference.
 
 Most of these skills are members of the **`clankshop` pack**, tiered by the pack doctrine's roster
-(`skills/clankshop/doctrine/README.md`): **roles** — expertise an agent assumes (`architect` design,
-`foreman` operations, `guardian` verification, `auditor` code quality, `chiropractor` docs quality,
-`calibrator` the improvement loop); **instruments** — procedures anyone operates (`backlog` the
-records instrument, `debugger` the diagnostic instrument); **pipelines** (`feature`, `workstream`);
-and portable **helpers** (`delegate`, `mailbox`, `handoff`). The pack face (`skills/clankshop/`)
-carries the doctrine and runbook; `skill-builder` is the library's own toolmaker and stays outside
-the pack. See `README.md` for the full inventory.
+(`skills/clankshop/doctrine/README.md`): the pack **face** (`skills/clankshop/`) carries the
+doctrine, the runbook, and the **role hats** — expertise layers its intent verbs inherit
+(`design` the architect, `route` the foreman, `verify` the guardian, `calibrate`/`docs` the
+chiropractor; `ask <role>` for hat-on discussion); **instruments** — procedures anyone operates
+(`backlog` the records instrument, `debugger` the diagnostic instrument, `auditor` the
+code-quality instrument); **pipelines** (`feature`, `workstream`);
+and portable **helpers** (`delegate`, `mailbox`, `handoff`). `skill-builder` is the library's own
+toolmaker and stays outside the pack. See `README.md` for the full inventory.
 
 A consuming project gets the pack **deployed**, not copied: `/clankshop setup` (or `migrate`)
 projects the doctrine through the project's facts into **`.handbook/`** (the projected,

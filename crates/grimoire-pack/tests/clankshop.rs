@@ -22,7 +22,7 @@ fn clankshop_is_a_valid_faced_pack() {
         .expect("clankshop pack found");
     assert!(matches!(clank.shape, PackShape::Faced { .. }));
     assert_eq!(clank.manifest.version.to_string(), "1.0.0");
-    assert!(clank.manifest.required.iter().any(|m| m == "foreman"));
+    assert!(clank.manifest.required.iter().any(|m| m == "backlog"));
     assert_eq!(clank.manifest.optional, vec!["bug", "task"]);
     // the author-extension key rides in unknown, preserved
     assert!(clank.manifest.unknown.iter().any(|(k, _)| k == "core"));
@@ -49,6 +49,6 @@ fn clankshop_is_a_valid_faced_pack() {
 #[test]
 fn clankshop_member_hashes_compute() {
     let root = repo_root();
-    let h = grimoire_pack::hash::member_hash(&root.join("skills/foreman")).unwrap();
+    let h = grimoire_pack::hash::member_hash(&root.join("skills/backlog")).unwrap();
     assert!(h.starts_with("sha256:"));
 }
