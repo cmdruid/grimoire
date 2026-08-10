@@ -44,8 +44,8 @@ the top one:
    connect to the changed boundary, which systems' `.handbook/design/src/<system>.md` reference-architecture
    pointers assume the old shape. A tenet change in `PHILOSOPHY.md` can touch every system; a
    single seam redraw in `MAP.md` touches only the two systems on either end. Don't rely on the
-   brainstorm session's own blast-radius guess (Procedure step 4 of `verbs/design/brainstorm.md`) without re-deriving
-   it from `MAP.md` — that guess was made mid-dialogue and may be incomplete.
+   brainstorm session's own blast-radius guess (Procedure step 4 of `verbs/design/brainstorm.md`)
+   without re-deriving it from `MAP.md` — that guess was made mid-dialogue and may be incomplete.
 
 3. **Sequence the spec revisions.** For each affected system, decide whether its
    `.handbook/design/src/<system>.md` needs a direct edit (a small contract update `plan` can make inline,
