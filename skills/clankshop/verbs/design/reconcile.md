@@ -31,12 +31,13 @@ run the fresh-agent read-test — not on every commit the way you run `health`.
 ## 1. Preconditions — resolve root + date, confirm a seed exists
 
 - Resolve the repo root (where `src/…:NN` reference-arch pointers resolve) and today's date
-  (`YYYY-MM-DD`, `date +%F`) — the report's filename and header carry this date so the drift it
+  (`YYYY-MM-DD`, `date +%Y-%m-%d`) — the report's filename and header carry this date so the drift it
   records is legible against a known point in time.
 - Confirm `.handbook/design/` exists. **No seed → this is not reconcile's job.** If the codebase has
   no design layer at all, point the user to `/clankshop design extract` (recover a first draft from code)
   instead — there is nothing to reconcile the code *against* yet.
-- Confirm the report home: `.records/reports/` under the repo root. Create it if absent.
+- Confirm the report home: `.records/reports/` under the repo root. Create it if absent (a
+  stamped root — see the shared discipline in `SKILL.md`).
 
 ## 2. Scope from `health` first — don't re-derive its structural facts
 
@@ -159,5 +160,5 @@ Commit only the report path written this run, scoped and pathspec-atomic, no `Co
 - **Never write executable code** (framing rule 2) — read `src/` to compare; author prose only.
 - **Write only `.records/`** (framing rule 2) — the report is a deliverable; the seed stays pure,
   mutated only by the curated path (`seed`/`distill`/human editorial).
-- **A snapshot must not pose as authoritative** (`docs/DESIGN-DOCTRINE.md`) — the report is stamped with the
+- **A snapshot must not pose as authoritative** (`skills/skill-builder/docs/DOCTRINE.md`) — the report is stamped with the
   HEAD and `health` baseline it was built against, and names the systems it did not reach.

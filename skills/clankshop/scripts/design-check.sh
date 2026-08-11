@@ -2,7 +2,7 @@
 # design-check.sh <design-dir> [repo-root]
 #
 # Read-only fact-computing validator for a project's design/ seed (see
-# ../docs/DOCTRINE.md). Emits clean `key=value` facts -- no verdicts, no
+# ../docs/DESIGN-DOCTRINE.md). Emits clean `key=value` facts -- no verdicts, no
 # spaces in any value -- for the /clankshop design health verb (verbs/design/health.md) to
 # judge. This script catches STRUCTURAL rot only (missing spine, missing
 # contract, stale/dangling pointers, placeholder acceptance, MAP gaps); it

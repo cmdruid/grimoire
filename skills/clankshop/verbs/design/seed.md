@@ -96,7 +96,7 @@ modes — greenfield just has thinner sources.
 3. Stamp the frontmatter `distilled_through_adr: none`, `distilled_through_commit: none`,
    `distilled_through_date: none` — a migrated spec has not been through a `distill` pass yet, even
    though its content is freshly written today. (This is the three-key form the `system-spec.md`
-   template and `architect-check.sh` both parse; don't use an older single-key `distilled-through:`
+   template and `design-check.sh` both parse; don't use an older single-key `distilled-through:`
    shape.)
 4. **Not every doc under the subsystem-docs directory is a committed system spec.** Some are
    explicitly speculative or forward-looking (e.g. a subsystem doc marked "not committed").
@@ -184,7 +184,7 @@ This is a direct consequence of the altitude split in `docs/DESIGN-DOCTRINE.md`:
 executable code, even code as small as a one-line linter glob update. The instinct to "just
 fix the one-liner" is exactly the boundary this step exists to hold.
 
-## 6. Run `check` — the completion gate
+## 6. Run `health` — the completion gate
 
 ```bash
 bash <skill-dir>/scripts/design-check.sh <project>/.handbook/design [<repo-root>]
@@ -211,5 +211,5 @@ one that fabricates acceptance criteria to clear the check is not.
 
 Close `seed` with: the detected mode, the spine files stamped, the systems migrated/inventoried
 (and any skipped as speculative, per Step 3), what happened to `PROJECT.md`/`DESIGN.md` (pointer
-or delete), any handoff note(s) emitted for code-side wiring (Step 5), and the final `check` facts
+or delete), any handoff note(s) emitted for code-side wiring (Step 5), and the final `health` facts
 — pass/fail on the hard blockers plus a list of what's advisory-outstanding.

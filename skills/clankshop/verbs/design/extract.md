@@ -34,7 +34,7 @@ nothing; the inventory-and-judge half (Steps 1–3's reading) runs anywhere.
 ## 1. Preconditions — resolve root + date, confirm the onramp applies
 
 - Resolve the repo root (the directory the code lives under) and today's date (`YYYY-MM-DD`,
-  `date +%F`) — the draft's provisional stamps carry this date so drift against the code is legible
+  `date +%Y-%m-%d`) — the draft's provisional stamps carry this date so drift against the code is legible
   later.
 - Confirm the draft home: `.records/design/draft/` under the repo root. Create it if absent. If a
   previous `extract` draft already sits there, treat this as a re-run — supersede it in place and say

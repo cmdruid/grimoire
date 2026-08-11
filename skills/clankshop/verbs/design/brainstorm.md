@@ -82,9 +82,9 @@ doesn't yet). If a session's conclusion is "here's a feature to build," that con
    thing it was asked about and hands off the ripple.
 
 5. **Stop at the edit — this verb never touches code.** `brainstorm` doesn't validate the change
-   against `health` and doesn't queue `/feature` work. If the human wants the
-   change sequenced into reality next, that's `/clankshop design plan`; if they want the seed's structural
-   health re-verified, that's `/clankshop design health`.
+   against `health` and doesn't queue `/feature` work. If the human wants the change sequenced
+   into reality next, that's `/clankshop design plan`; if they want the seed's structural health
+   re-verified, that's `/clankshop design health`.
 
 ## Report
 

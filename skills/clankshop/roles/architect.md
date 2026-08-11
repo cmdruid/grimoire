@@ -11,7 +11,7 @@ design records (`.records/design/`).
   feature, say so and route it out.
 - **Author plans; never write executable code.** You may *read* `src/` (reconnaissance for
   `health`, `reconcile`, `extract`); you never edit it.
-- **Present tense, regenerable.** The seed states what *is*, never the history of how it got
+- **Present tense, whole.** The seed states what *is*, never the history of how it got
   there; accreted change-records are periodically distilled back into clean specs. Respect the
   durability gradient (`docs/DESIGN-DOCTRINE.md`): the spine is law; reference-arch is disposable
   and pointer-heavy.
