@@ -58,7 +58,7 @@
 #      sentence) by a `§ Heading` reference must name a file with a matching
 #      `#`-heading (FAIL -- evidence: citing file, cited file, the heading text
 #      that didn't resolve). Path resolution reuses check 2's two-stage docs/ rule
-#      (bundle, then repo root, gated on the skill bundling its own docs/) --
+#      (bundle, then repo root) for any skill (unlike check 2's per-skill gating) --
 #      an unresolved path is check 2's problem, not this one's. Heading match
 #      is lenient: backticks and trailing punctuation
 #      stripped, case-insensitive, and a real heading need only CONTAIN the cited
@@ -440,10 +440,10 @@ rm -f "$roster"
 # heading). Precision over reach: an exotic citation shape going unpaired is
 # fine; a FAIL naming the wrong heading or the wrong file is not.
 #
-# Path resolution reuses resolve_bundle_ref (shared with check 2, above); an
-# unresolved path is check 2's problem for a skill that bundles docs/ (FAIL),
-# or simply out of scope for one that doesn't (its docs/ refs aren't gated) --
-# this check only fires once a target file is confirmed to exist.
+# Path resolution reuses resolve_bundle_ref (shared with check 2, above); check 10
+# resolves paths unconditionally for any skill (not gated on bundled docs/), so it
+# fires on genuinely dangling citations regardless. An unresolved path is check 2's
+# problem; this check only fires once a target file is confirmed to exist.
 section="§"
 para_marker="@@PARA@@"
 window=100
