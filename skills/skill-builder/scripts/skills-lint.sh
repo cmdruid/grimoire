@@ -15,7 +15,8 @@
 #      quoted when it contains ": " (FAIL -- strict-YAML nested-mapping trap).
 #   2. Intra-skill refs: backticked scripts/|templates/|verbs/|references/|rules/
 #      paths named in a skill's .md files resolve inside that skill dir (FAIL).
-#      (docs/ is excluded -- verbs use it host-relative; check 3 covers bundled docs.)
+#      docs/ refs resolve two-stage: <skill-dir>/docs/<path>, then (if absent)
+#      <repo-root>/docs/<path> -- FAIL only when neither exists.
 #   3. foreman BOOTSTRAP <-> bundle: every `name.md` the foreman BOOTSTRAP's docs/ or
 #      templates/ manifest lines name exists in the bundle (FAIL).
 #   4. Consumption wiring: every skills/<name> has a ~/.claude/skills/<name>
@@ -98,15 +99,21 @@ done
 
 # ---- 2. intra-skill refs -----------------------------------------------------
 # Backticked tokens that look like a bundled-resource path. Single-path shape
-# only (no spaces/flags), rooted at a known bundle dir.
+# only (no spaces/flags), rooted at a known bundle dir. docs/ resolves
+# two-stage (header comment): bundle-local first, then the repo root -- a
+# verb may point at either its skill's own bundled docs/ or the library's
+# shared docs/ tree.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   find "$sk" -name '*.md' -print0 | while IFS= read -r -d '' md; do
     grep -oE '`[^`]+`' "$md" 2>/dev/null | tr -d '`' \
-      | grep -E '^(scripts|templates|verbs|references|rules)/[A-Za-z0-9._/-]+\.(md|sh)$' \
+      | grep -E '^(scripts|templates|verbs|references|rules|docs)/[A-Za-z0-9._/-]+\.(md|sh)$' \
       | sort -u \
       | while IFS= read -r ref; do
-          [ -e "$sk$ref" ] || echo "MISS $name ${md#"$sk"} -> $ref"
+          case "$ref" in
+            docs/*) [ -e "$sk$ref" ] || [ -e "$root/$ref" ] || echo "MISS $name ${md#"$sk"} -> $ref" ;;
+            *)      [ -e "$sk$ref" ] || echo "MISS $name ${md#"$sk"} -> $ref" ;;
+          esac
         done
   done
 done > /tmp/skills-lint-refs.$$ || true
