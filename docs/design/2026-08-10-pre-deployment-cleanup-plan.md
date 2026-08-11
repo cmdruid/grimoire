@@ -27,7 +27,7 @@ new check is proven against a deliberately-broken scratch copy before it is trus
   check's precision — never delete the check or add a blanket exemption. If you cannot make a
   check both correct and quiet, STOP and report BLOCKED with the false positives.
 - **Scratch work goes in the session scratchpad**, never in the repo tree.
-- Paths are repo-root-relative (`/Users/cscott/Repos/grimoire`). Line numbers are as of `8f22723`;
+- Paths are repo-root-relative. Line numbers are as of `8f22723`;
   verify quoted strings before editing and re-locate by phrasing if they moved.
 
 ---
@@ -52,7 +52,7 @@ comment block (lines ~13–19). Note the existing prefix list
 
 In the scratchpad (NOT the repo), make a throwaway copy of one skill and inject a bad ref:
 ```bash
-S=/private/tmp/claude-501/-Users-cscott-Repos-grimoire/be6dfc0a-ea8b-49e6-a8d9-7ae901fcd13f/scratchpad/lintfix
+S=<scratchpad>/lintfix
 rm -rf "$S" && mkdir -p "$S/skills"
 cp -R skills/clankshop "$S/skills/clankshop"
 printf '\nBogus ref: `docs/NOPE-does-not-exist.md`\n' >> "$S/skills/clankshop/SKILL.md"
@@ -73,7 +73,7 @@ check 3 covers bundled docs.)` note with the two-stage rule.
 
 ```bash
 bash skills/skill-builder/scripts/skills-lint.sh "$S" 2>&1 | grep -i "NOPE"      # expect: a FAIL line
-bash skills/skill-builder/scripts/skills-lint.sh /Users/cscott/Repos/grimoire 2>&1 | tail -1
+bash skills/skill-builder/scripts/skills-lint.sh . 2>&1 | tail -1
 ```
 Expected: the scratch copy FAILs on the injected ref; the real tree still reports
 `fails=0 warns=8`. If the real tree FAILs, a legitimate `docs/` ref does not resolve — report each
@@ -123,7 +123,7 @@ no file named — those cite the current file or a section by prose and are out 
 
 In the scratchpad, copy a skill and inject a bogus citation:
 ```bash
-S=/private/tmp/claude-501/-Users-cscott-Repos-grimoire/be6dfc0a-ea8b-49e6-a8d9-7ae901fcd13f/scratchpad/lintsec
+S=<scratchpad>/lintsec
 rm -rf "$S" && mkdir -p "$S/skills" && cp -R skills/clankshop "$S/skills/clankshop"
 printf '\nSee `docs/DESIGN-DOCTRINE.md` § This Heading Does Not Exist for details.\n' >> "$S/skills/clankshop/SKILL.md"
 ```
@@ -145,7 +145,7 @@ Add it as the next numbered check. Rules:
 
 ```bash
 bash skills/skill-builder/scripts/skills-lint.sh "$S" 2>&1 | grep -i "This Heading Does Not Exist"   # expect FAIL
-bash skills/skill-builder/scripts/skills-lint.sh /Users/cscott/Repos/grimoire 2>&1 | tail -1        # expect fails=0 warns=8
+bash skills/skill-builder/scripts/skills-lint.sh . 2>&1 | tail -1        # expect fails=0 warns=8
 ```
 If the real tree FAILs, each hit is either a real dangling citation (fix it in this commit and say
 so in the report) or a matcher false positive (tighten the matcher). Do not exempt § checking.
@@ -221,7 +221,7 @@ phantom routes`, `face: <verb> carries a Hat pointer`, …) so a failure names i
 Copy the bundle to the scratchpad, break it four ways (one at a time), and confirm the matching
 assertion fails each time:
 ```bash
-S=/private/tmp/claude-501/-Users-cscott-Repos-grimoire/be6dfc0a-ea8b-49e6-a8d9-7ae901fcd13f/scratchpad/facetest
+S=<scratchpad>/facetest
 # (a) phantom route: add a router row naming verbs/design/prep.md   -> assertion 1 fails
 # (b) orphan file: create verbs/orphan.md                            -> assertion 2 fails
 # (c) strip a Hat: line from a verb file                             -> assertion 3 fails
@@ -243,7 +243,7 @@ total** — it replaces 174 as the recorded baseline.
 - [ ] **Step 5: Lint and commit**
 
 ```bash
-bash skills/skill-builder/scripts/skills-lint.sh /Users/cscott/Repos/grimoire   # expect fails=0 warns=8
+bash skills/skill-builder/scripts/skills-lint.sh .   # expect fails=0 warns=8
 git add skills/clankshop/scripts/tests/face-test.sh skills/clankshop/scripts/tests/run.sh
 git commit -m "clankshop(tests): face-shape suite -- router rows resolve to real verb files, no orphan verbs, every hatted verb carries a resolving Hat pointer, the hat set is closed; the phantom-prep class is now mechanically caught" -- skills/clankshop/scripts/tests/face-test.sh skills/clankshop/scripts/tests/run.sh
 ```
@@ -302,7 +302,7 @@ say so in the report.
 
 ```bash
 bash skills/clankshop/scripts/tests/run.sh          # ALL GREEN, counts per Task 3's new total
-bash skills/skill-builder/scripts/skills-lint.sh /Users/cscott/Repos/grimoire   # fails=0 warns=8
+bash skills/skill-builder/scripts/skills-lint.sh .   # fails=0 warns=8
 cargo test --workspace                               # 36 green
 ```
 The onramp fixture derives `DV` from the doctrine, so a green suite here is the real proof the
@@ -355,7 +355,7 @@ documented router/fragment exception that keeps warn #1).
 
 ```bash
 for d in skills/*/; do n=$(basename $d); [ -f "$d/SKILL.md" ] && awk -v n="$n" '/^description:/{sub(/^description: */,""); if (length($0)>750) print length($0), n}' "$d/SKILL.md"; done   # expect: empty
-bash skills/skill-builder/scripts/skills-lint.sh /Users/cscott/Repos/grimoire | tail -3
+bash skills/skill-builder/scripts/skills-lint.sh . | tail -3
 ```
 Expected: `fails=0 warns=1`, the surviving warn being mailbox's sibling reference.
 
@@ -398,7 +398,7 @@ Expected: 7/7. A mis-route means the trim cut a load-bearing trigger — restore
 
 ```bash
 bash skills/clankshop/scripts/tests/run.sh          # ALL GREEN
-bash skills/skill-builder/scripts/skills-lint.sh /Users/cscott/Repos/grimoire   # fails=0 warns=1
+bash skills/skill-builder/scripts/skills-lint.sh .   # fails=0 warns=1
 cargo test --workspace                               # 36 green
 git add skills/mailbox/SKILL.md skills/skill-builder/SKILL.md skills/auditor/SKILL.md skills/workstream/SKILL.md skills/feature/SKILL.md skills/backlog/SKILL.md skills/delegate/SKILL.md skills/clankshop/verbs/ask.md skills/clankshop/docs/DOC-RUBRIC.md
 git commit -m "library(polish): descriptions under the 750 budget (new lint baseline fails=0 warns=1 -- only mailbox's documented sibling-ref survives, so a new warn is visible again), ask.md names the hat-verb pairing and its off-framework byproduct fallback, DOC-RUBRIC speaks the bundle's em dash" -- skills/mailbox/SKILL.md skills/skill-builder/SKILL.md skills/auditor/SKILL.md skills/workstream/SKILL.md skills/feature/SKILL.md skills/backlog/SKILL.md skills/delegate/SKILL.md skills/clankshop/verbs/ask.md skills/clankshop/docs/DOC-RUBRIC.md
