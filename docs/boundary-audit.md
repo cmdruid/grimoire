@@ -11,6 +11,26 @@ skills, not portable doctrine.
 
 ## Routing-probe run log
 
+**2026-08-11 (`bootstrap` added)** — 7 probes against `bootstrap` + its 4 closest neighbors
+(`clankshop`, `feature`, `workstream`, `skill-builder`), **7/7** routed correctly (fresh sub-agent,
+descriptions only). The pair that needed checking is `bootstrap`/`clankshop`: `clankshop setup` is
+self-described as the *"greenfield bootstrap"*, so the two collide on the library's most overloaded
+word. Both adversarial decoys held — "bootstrap the development system" and the verbatim "do a
+greenfield bootstrap" routed to `clankshop`, with `bootstrap` only as runner-up. The probe named the
+real discriminator unprompted: **whether a repository already exists**. That clause was then folded
+into `bootstrap`'s description ("...and no repository exists yet") to sharpen the closest case rather
+than leave it to inference.
+
+| prompt | expects |
+|---|---|
+| "I've got an idea for a new CLI tool. Help me think it through, then get me a repo." | `bootstrap` |
+| "set up the agent framework on this existing repo" | `clankshop` |
+| "let's brainstorm the next feature for this codebase" | `feature` |
+| "bootstrap the development system for this project" | `clankshop` |
+| "I want to start a new project from scratch. Grill me on the design first." | `bootstrap` |
+| "do a greenfield bootstrap" | `clankshop` |
+| "write me a roadmap and architecture doc for the new thing — there's no repo yet" | `bootstrap` |
+
 **2026-07-23 (`debugger` added)** — 8 probes against `debugger`, `auditor`, `chiropractor`, and
 `skill-builder`, **8/8** routed correctly (fresh sub-agent, descriptions only). The sharpest case —
 "I tried two fixes and neither worked, what now?" — correctly stayed with `debugger` rather than

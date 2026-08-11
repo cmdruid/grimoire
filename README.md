@@ -44,6 +44,7 @@ packs* below).
 |---|---|
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
 | `backlog` | the records instrument: capture by kind, complete (`done` + the done log), escalate via tickets (+ mirror), curate, debrief |
+| `bootstrap` | idea → a new git repo carrying five founding documents: `grill` (design-tree interview, writes nothing) → `land` (create, write, commit); standalone, outside every pack |
 | `bug` | capture alias: `/bug` proxies the records instrument's bug capture (optional pack member) |
 | `clankshop` | the development system: doctrine + runbook + role hats; system verbs (`setup` / `migrate` / `check`), intent verbs (`design` / `route` / `verify` / `calibrate` / `docs`), and `ask <role>` for hat-on discussion |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
