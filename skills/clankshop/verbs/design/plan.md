@@ -11,7 +11,7 @@ follows, and in what order — a **seed-altitude roadmap**, not a build plan. Se
 
 `plan` is the other verb name `/clankshop design` shares with `/feature` — same collision, same resolver as
 `brainstorm`: **this verb plans work on the seed itself; the same-named `/feature` verb plans a code
-change built against it.** (The altitude seam is `docs/DESIGN-DOCTRINE.md` § The seam's.)
+change built against it.** (The altitude seam is `docs/DESIGN-DOCTRINE.md` § The seam — altitude, not medium.)
 
 `/clankshop design plan` never produces an implementation plan — it produces a **sequence of seed work and
 seed-driven downstream work**, expressed as references to other verbs, not as steps a developer

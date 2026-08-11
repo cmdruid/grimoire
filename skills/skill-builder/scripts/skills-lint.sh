@@ -47,6 +47,17 @@
 #      backticked-per-verb-token shape is caught; a prose-listed roster ("its verbs
 #      are init, brainstorm, plan...") needs the manual boundary-audit scan, the
 #      same class of gap check 7 already documents for description-level refs.
+#  10. Section citations: a backticked `.md` path immediately followed (same
+#      sentence) by a `§ Heading` reference must name a file with a matching
+#      `#`-heading (FAIL -- evidence: citing file, cited file, the heading text
+#      that didn't resolve). Path resolution reuses check 2's two-stage docs/ rule
+#      (bundle, then repo root) -- an unresolved path is check 2's FAIL, not this
+#      one's. Heading match is lenient: backticks and trailing punctuation
+#      stripped, case-insensitive, and a real heading need only CONTAIN the cited
+#      text (citations legitimately abbreviate: `§ Cheap health, deep reconcile`
+#      cites the real `## Cheap \`health\`, deep \`reconcile\``). A bare
+#      `§ Heading` with no backticked path nearby is out of scope -- it cites the
+#      current file or is prose, not a cross-file pointer.
 #
 # Core-member exemption (clankshop rollout, Task 4.1): a pack manifest
 # (PACK.md, spec format 1) may carry a `core:` frontmatter line -- a grimoire
@@ -360,6 +371,83 @@ if [ -s "$roster" ]; then
   ' | sort)
 fi
 rm -f "$roster"
+
+# ---- 10. section citations (§) resolve to a real heading ---------------------
+# A backticked `.md` path immediately followed by a `§ <Heading>` reference, in
+# the same sentence, must name a file with a matching `#`-heading. Files are
+# joined into one line first (ORS=" ") because this prose wraps near 100 cols --
+# the dominant real shape splits the path and its `§` across a line break.
+# Pairing uses a bounded character window (250) since bash/awk has no sentence
+# tokenizer: a path resets the window to 0, and a `§` only pairs with the most
+# recent path if it's within that window -- real same-sentence pairs run well
+# under 100 chars apart, and unrelated paragraphs run well over 250, per the
+# survey behind this check (task-2 brief). A bare `§ Heading` with no path
+# token in-window is a self-reference/prose mention -- out of scope, skipped.
+# Heading-text extraction stops at the first `.` `;` `)` `:` `,` or the connector
+# words " for "/" and " -- real headings in this corpus never legitimately
+# continue past one of these, so stopping early only under-captures (safe: a
+# true prefix is still CONTAINED by the real heading). Path resolution reuses
+# check 2's two-stage docs/ rule verbatim (bundle, then repo root); an
+# unresolved path is check 2's FAIL, not this one's -- this check only fires
+# once a target file is confirmed to exist.
+section="§"
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  find "$sk" -name '*.md' -print0 | while IFS= read -r -d '' md; do
+    rel="${md#"$sk"}"
+    awk 'BEGIN{ORS=" "}{print}' "$md" | awk -v sec="$section" -v name="$name" -v rel="$rel" '
+      BEGIN {
+        pathre = "`(scripts|templates|verbs|references|rules|docs)/[A-Za-z0-9._/-]+\\.md`"
+        headre = sec " [A-Z][^.;):,]*"
+        full = pathre "|" headre
+      }
+      {
+        text = $0
+        curpath = ""
+        dist = 999999
+        while (match(text, full)) {
+          dist += RSTART - 1
+          tok = substr(text, RSTART, RLENGTH)
+          if (substr(tok, 1, 1) == "`") {
+            curpath = tok
+            gsub(/`/, "", curpath)
+            dist = 0
+          } else {
+            if (curpath != "" && dist <= 250) {
+              head = substr(tok, length(sec) + 2)
+              fi = index(head, " for ")
+              ai = index(head, " and ")
+              if (fi > 0 && (ai == 0 || fi < ai)) head = substr(head, 1, fi - 1)
+              else if (ai > 0) head = substr(head, 1, ai - 1)
+              gsub(/^[[:space:]]+|[[:space:]]+$/, "", head)
+              if (head != "") print name "\t" rel "\t" curpath "\t" head
+            }
+            dist += RLENGTH
+          }
+          text = substr(text, RSTART + RLENGTH)
+        }
+      }
+    '
+  done
+done > /tmp/skills-lint-sec.$$ || true
+while IFS=$'\t' read -r sname rel ref headtext; do
+  sk="$skills_dir/$sname/"
+  case "$ref" in
+    docs/*) if [ -f "$sk$ref" ]; then target="$sk$ref"; elif [ -f "$root/$ref" ]; then target="$root/$ref"; else target=""; fi ;;
+    *)      if [ -f "$sk$ref" ]; then target="$sk$ref"; else target=""; fi ;;
+  esac
+  [ -n "$target" ] || continue                # check 2 already FAILs an unresolved path
+  case "$target" in *.md) ;; *) continue ;; esac
+  needle="$(printf '%s' "$headtext" | tr -d '`' | tr '[:upper:]' '[:lower:]' | sed -E 's/[[:space:].,;:)]+$//')"
+  [ -n "$needle" ] || continue
+  found=0
+  while IFS= read -r htext; do
+    hnorm="$(printf '%s' "$htext" | tr -d '`' | tr '[:upper:]' '[:lower:]')"
+    case "$hnorm" in *"$needle"*) found=1; break ;; esac
+  done < <(grep -E '^#+[[:space:]]' "$target" | sed -E 's/^#+[[:space:]]+//')
+  [ "$found" -eq 1 ] || fail "$sname: $rel cites \`$ref\` § $headtext -- no heading in that file contains it"
+done < /tmp/skills-lint-sec.$$
+rm -f /tmp/skills-lint-sec.$$
 
 # ---- summary -----------------------------------------------------------------
 echo "fails=$fails warns=$warns"
