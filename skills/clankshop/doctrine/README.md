@@ -2,7 +2,7 @@
 
 <!-- spine-index v1
 doctrine: clankshop
-doctrine-version: 1
+doctrine-version: 2
 docs: rules/ROUTING.md rules/GOTCHAS.md rules/INVARIANTS.md rules/POLICY.md rules/RECORDS.md workflows/patch.md workflows/bug.md workflows/feature.md workflows/spike.md testing/GATE.md testing/PIPELINE.md testing/DIAGNOSTICS.md
 -->
 

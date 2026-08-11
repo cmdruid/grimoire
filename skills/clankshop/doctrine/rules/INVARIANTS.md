@@ -5,7 +5,7 @@ kind: invariants
 entry: ^(INV-[0-9]+):
 ids: INV
 doctrine: clankshop
-doctrine-version: 1
+doctrine-version: 2
 refs: .handbook/** .records/**
 budget: 25 entries
 -->

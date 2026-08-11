@@ -5,7 +5,7 @@ kind: gotchas
 entry: ^## (G-[0-9]+):
 ids: G
 doctrine: clankshop
-doctrine-version: 1
+doctrine-version: 2
 refs: .handbook/** .records/**
 budget: 20 entries
 exclude: archive/**

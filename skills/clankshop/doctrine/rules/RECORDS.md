@@ -3,7 +3,7 @@
 <!-- spine-doc v1
 kind: records
 doctrine: clankshop
-doctrine-version: 1
+doctrine-version: 2
 refs: .handbook/** .records/**
 -->
 
@@ -96,8 +96,8 @@ trunk**, not gate-green.
 
 **The writer map** (stated once, here): a fast-path item finished → `backlog done`; a ticket
 resolved or wontfixed → `backlog close` (writes the line itself); a dispatched improvement item
-landed → the calibrator confirms uptake, then `backlog done … --outcome drained`; a workstream
-ship → `backlog done` per shipped item **and** its own full done-record file into
+landed → the improvement loop confirms uptake, then `backlog done … --outcome drained`; a
+workstream ship → `backlog done` per shipped item **and** its own full done-record file into
 `.records/done/`; dropped at curation → `curate` logs the `dropped` outcome. Full done-record
 files remain a feature-lane / workstream artifact only. **The logged ID for ticket completion:** a
 **promoted** ticket's line carries the **origin entry's ID** (the work item; the gist cites the

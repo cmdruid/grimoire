@@ -3,7 +3,7 @@
 <!-- spine-doc v1
 kind: testing
 doctrine: clankshop
-doctrine-version: 1
+doctrine-version: 2
 refs: .handbook/**
 -->
 

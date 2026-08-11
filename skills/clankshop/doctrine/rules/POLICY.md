@@ -5,7 +5,7 @@ kind: policy
 entry: ^## (POL-[0-9]+):
 ids: POL
 doctrine: clankshop
-doctrine-version: 1
+doctrine-version: 2
 refs: .handbook/** .records/**
 budget: 10 entries
 -->
