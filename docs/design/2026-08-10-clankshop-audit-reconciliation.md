@@ -155,3 +155,13 @@ reconciliation as its own effort. `auditor`, the instruments, pipelines, and hel
 untouched. The record schema and doctrine chapters (`doctrine/rules|workflows|testing`) are
 untouched — no `doctrine-version` bump. Where the rebuild workflow lands, if anywhere, is a
 future design — nothing here reserves a home for it.
+
+**Known residue, deliberately deferred** (from the final whole-branch review): the last live
+"calibrator" token sits in `doctrine/rules/RECORDS.md:99` ("landed → the calibrator confirms
+uptake…"), a doctrine chapter this campaign held out of scope; it projects into every install's
+`.handbook/rules/RECORDS.md`. Fold it into the next `doctrine-version` bump rather than
+rediscovering it. Also recorded for the next campaign of this shape: two of this plan's
+verification greps were provably blind — `regenerat` cannot match `regenerable`, and the
+`health` sweep was a hand-listed file set rather than a repo-wide
+``grep -rn '`check`' skills/clankshop/verbs/design/``. Both let residue through into a
+final-review fix wave (`eab0172`).
