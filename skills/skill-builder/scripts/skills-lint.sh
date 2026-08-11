@@ -66,6 +66,14 @@
 #      cites the real `## Cheap \`health\`, deep \`reconcile\``). A bare
 #      `§ Heading` with no backticked path nearby is out of scope -- it cites the
 #      current file or is prose, not a cross-file pointer.
+#  11. Orphan verb files: the inverse of check 2. Check 2 gates a `verbs/...`
+#      ref against a missing file (a phantom route); this gates a real
+#      `verbs/**/*.md` file on disk against a missing ref -- what an abandoned
+#      rename leaves behind, invisible. Every `verbs/**/*.md` in a skill must be
+#      cited by some `.md` in that SAME skill, either directly (a backticked
+#      `verbs/x/y.md`) or via a backticked directory citation that is a prefix
+#      of its path (`verbs/design/` covers `verbs/design/plan.md`) (FAIL --
+#      names the skill and the orphan file).
 #
 # Core-member exemption (clankshop rollout, Task 4.1): a pack manifest
 # (PACK.md, spec format 1) may carry a `core:` frontmatter line -- a grimoire
@@ -497,6 +505,36 @@ while IFS=$'\t' read -r sname rel ref headtext; do
   [ "$found" -eq 1 ] || fail "$sname: $rel cites \`$ref\` § $headtext -- no heading in that file contains it"
 done < /tmp/skills-lint-sec.$$
 rm -f /tmp/skills-lint-sec.$$
+
+# ---- 11. orphan verb files ----------------------------------------------------
+# The inverse of check 2: check 2 goes ref -> file (a phantom route FAILs when
+# the file is missing); this goes file -> ref (an orphan FAILs when no citation
+# names it). resolve_bundle_ref isn't the right tool here -- it resolves a
+# single ref to a file, not a file to whichever citation(s) might cover it --
+# but the extraction reuses check 2's same verbs/ path shape (one of
+# $bundle_prefixes), just matched against files on disk instead of against a
+# ref pulled from prose. A file is covered if some backticked token in the
+# skill's OWN .md files either names it directly (`verbs/x/y.md`) or names an
+# enclosing directory as a prefix of its path (`verbs/x/`).
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  vdir="${sk}verbs"
+  [ -d "$vdir" ] || continue
+  cited="$(find "$sk" -name '*.md' -print0 | xargs -0 grep -ohE '`[^`]+`' 2>/dev/null \
+    | tr -d '`' | grep -E '^verbs/[A-Za-z0-9._/-]+/?$' | sort -u || true)"
+  while IFS= read -r -d '' vf; do
+    rel="${vf#"$sk"}"
+    covered=0
+    while IFS= read -r ref; do
+      [ -z "$ref" ] && continue
+      if [ "$ref" = "$rel" ]; then covered=1; break; fi
+      case "$ref" in
+        */) case "$rel" in "$ref"*) covered=1; break ;; esac ;;
+      esac
+    done <<< "$cited"
+    [ "$covered" -eq 1 ] || fail "$name: $rel is not cited by any .md in this skill (orphan verb file)"
+  done < <(find "$vdir" -name '*.md' -print0)
+done
 
 # ---- summary -----------------------------------------------------------------
 echo "fails=$fails warns=$warns"
