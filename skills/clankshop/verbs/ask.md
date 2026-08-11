@@ -4,9 +4,10 @@ Assume a role's expertise for a **discussion** — no procedure attached. The us
 judgment conversationally: advice, critique, exploration, a second opinion, all through the
 role's standing judgments.
 
-`<role>` names the hat: `architect`, `foreman`, `guardian`, `chiropractor` (canonical), with the
-matching intent token accepted as an alias (`design`, `route`, `verify`, `docs`/`calibrate`).
-Unknown role → list the four hats and ask.
+`<role>` names the hat, each paired with the intent verb it wears while working:
+`architect` → `design`, `foreman` → `route`, `guardian` → `verify`, `chiropractor` →
+`calibrate`/`docs`. The canonical hat name and its paired verb are interchangeable as `<role>`
+(`ask architect` and `ask design` land on the same hat). Unknown role → list the four hats and ask.
 
 ## Procedure
 
@@ -22,8 +23,10 @@ Unknown role → list the four hats and ask.
    work, route it to the owning intent verb (`design`, `route`, `verify`, `calibrate`, `docs` —
    or a lane outside this skill) and keep the hat on while doing it.
 5. **The hat persists** until the user switches hats (`ask` again) or takes it off. Byproducts
-   of the discussion worth keeping are captured through the ordinary records instrument, not
-   left in chat.
+   of the discussion worth keeping are captured through the ordinary records instrument when the
+   host has one. On a host with no framework there is no records instrument to capture into —
+   surface the byproducts to the user in the conversation instead of writing files (judgment runs
+   anywhere; writes need a home).
 
 ## Done when
 
