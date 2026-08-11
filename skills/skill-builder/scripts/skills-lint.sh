@@ -15,12 +15,16 @@
 #      quoted when it contains ": " (FAIL -- strict-YAML nested-mapping trap).
 #   2. Intra-skill refs: backticked scripts/|templates/|verbs/|references/|rules/|
 #      roles/|doctrine/ paths named in a skill's .md files resolve inside that
-#      skill dir (FAIL). docs/ refs resolve two-stage: <skill-dir>/docs/<path>,
-#      then (if absent) <repo-root>/docs/<path> -- FAIL when neither exists AND
-#      <repo-root>/docs/ itself exists (a genuinely dangling ref, this clone);
-#      WARN instead when <repo-root>/docs/ doesn't exist at all (a foreign
-#      library this portable skill was copied into, so a grimoire-only
-#      provenance citation can't be checked -- the portability claim up top).
+#      skill dir (FAIL). docs/ refs are gated ONLY for a skill that bundles its
+#      own docs/ dir -- such a skill's docs/ refs resolve two-stage:
+#      <skill-dir>/docs/<path>, then (if absent) <repo-root>/docs/<path> (a
+#      provenance citation, e.g. docs/design/2026-...md); FAIL when neither
+#      resolves. A skill with no bundled docs/ dir cannot be citing a bundle
+#      doc, so its docs/ refs are host- or repo-relative (a verb naming a
+#      document it creates/reads in a CONSUMING project, e.g. docs/ROADMAP.md)
+#      and are entirely out of this check's scope -- not even attempted. This
+#      also carries the portability property: a portable skill with no bundled
+#      docs/ is simply never gated on docs/, in any library it's copied into.
 #   3. (retired -- the foreman BOOTSTRAP manifest lost its subject; numbering held.)
 #   4. Consumption wiring: every skills/<name> has a ~/.claude/skills/<name>
 #      symlink pointing at it (FAIL) and a README mention (WARN).
@@ -54,8 +58,9 @@
 #      sentence) by a `§ Heading` reference must name a file with a matching
 #      `#`-heading (FAIL -- evidence: citing file, cited file, the heading text
 #      that didn't resolve). Path resolution reuses check 2's two-stage docs/ rule
-#      (bundle, then repo root) -- an unresolved path is check 2's FAIL or WARN, not this
-#      one's. Heading match is lenient: backticks and trailing punctuation
+#      (bundle, then repo root, gated on the skill bundling its own docs/) --
+#      an unresolved path is check 2's problem, not this one's. Heading match
+#      is lenient: backticks and trailing punctuation
 #      stripped, case-insensitive, and a real heading need only CONTAIN the cited
 #      text (citations legitimately abbreviate: `§ Cheap health, deep reconcile`
 #      cites the real `## Cheap \`health\`, deep \`reconcile\``). A bare
@@ -115,8 +120,6 @@ done
 # One prefix alternation and one resolver, used by both checks so "what counts as
 # a bundled-resource path" and "how does docs/ resolve" can't drift apart.
 bundle_prefixes='scripts|templates|verbs|references|rules|docs|roles|doctrine'
-has_root_docs=0
-[ -d "$root/docs" ] && has_root_docs=1
 
 # resolve_bundle_ref <skill-dir> <ref>
 # <ref> is a path like "verbs/foo.md" or "docs/x.md", relative to a skill bundle
@@ -136,35 +139,31 @@ resolve_bundle_ref() {
 # ---- 2. intra-skill refs -----------------------------------------------------
 # Backticked tokens that look like a bundled-resource path. Single-path shape
 # only (no spaces/flags), rooted at a known bundle dir ($bundle_prefixes). docs/
-# resolves two-stage via resolve_bundle_ref, above -- a verb may point at either
-# its skill's own bundled docs/ or the library's shared docs/ tree. A ref that
-# still misses is a FAIL, unless it's a docs/ ref AND this root has no docs/
-# tree at all -- then it's a WARN (a portable-skill copy into a foreign library
-# can't check a grimoire-only provenance citation; header entry above).
+# refs are gated only for a skill that bundles its own docs/ dir -- resolved
+# two-stage via resolve_bundle_ref, above (bundle-local, then repo-root
+# provenance citations). A skill with no bundled docs/ dir cannot be referring
+# to a bundle doc, so its docs/ refs are skipped entirely here -- not resolved,
+# not FAILed (host- or repo-relative, e.g. a verb naming a document it
+# creates/reads in a consuming project; header entry above).
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
+  has_skill_docs=0
+  [ -d "${sk}docs" ] && has_skill_docs=1
   find "$sk" -name '*.md' -print0 | while IFS= read -r -d '' md; do
     grep -oE '`[^`]+`' "$md" 2>/dev/null | tr -d '`' \
       | grep -E "^($bundle_prefixes)/[A-Za-z0-9._/-]+\.(md|sh)\$" \
       | sort -u \
       | while IFS= read -r ref; do
+          case "$ref" in
+            docs/*) [ "$has_skill_docs" -eq 1 ] || continue ;;
+          esac
           resolve_bundle_ref "$sk" "$ref" >/dev/null || echo "MISS $name ${md#"$sk"} -> $ref"
         done
   done
 done > /tmp/skills-lint-refs.$$ || true
 while IFS= read -r line; do
   set -- $line
-  ref="$5"
-  case "$ref" in
-    docs/*)
-      if [ "$has_root_docs" -eq 1 ]; then
-        fail "$2: $3 references $5 (not in the bundle)"
-      else
-        warn "$2: $3 references $5 (not in the bundle -- no docs/ tree at $root; can't check a foreign library's provenance citation)"
-      fi
-      ;;
-    *) fail "$2: $3 references $5 (not in the bundle)" ;;
-  esac
+  fail "$2: $3 references $5 (not in the bundle)"
 done < <(awk '$1=="MISS"{print}' /tmp/skills-lint-refs.$$)
 rm -f /tmp/skills-lint-refs.$$
 
@@ -434,9 +433,9 @@ rm -f "$roster"
 # fine; a FAIL naming the wrong heading or the wrong file is not.
 #
 # Path resolution reuses resolve_bundle_ref (shared with check 2, above); an
-# unresolved path is check 2's problem (a FAIL, or a WARN in a foreign library
-# without a docs/ tree) -- this check only fires once a target file is
-# confirmed to exist.
+# unresolved path is check 2's problem for a skill that bundles docs/ (FAIL),
+# or simply out of scope for one that doesn't (its docs/ refs aren't gated) --
+# this check only fires once a target file is confirmed to exist.
 section="§"
 para_marker="@@PARA@@"
 window=100
