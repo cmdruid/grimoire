@@ -25,12 +25,21 @@ awk '
   on { exit }
 ' "$SKILL_MD" > "$TMP/rows"
 
+# ---- assertion 0: the router-table parse actually produced rows -- if the table's
+# header text or shape ever changes and the awk parse above silently comes up empty,
+# every downstream assertion would otherwise report a wall of spurious "orphan verb
+# file" findings instead of failing at the actual break ----
+rowcount=$(wc -l < "$TMP/rows" | tr -d ' ')
+gotrows="0"; [ "$rowcount" -gt 0 ] && gotrows="1"
+expect_eq "face: router-table parse produced at least one row" "1" "$gotrows"
+
 # For every row: collect every backtick span starting with "verbs/" (the row-cited
-# paths), and pair any that name a DIRECTORY (trailing "/") with that row's hat column.
-# An escaped pipe inside a backticked verb token (`verify tend\|judge`) would otherwise
-# split into extra fields -- neutralize it before field-splitting.
+# paths), and pair EVERY one -- directory row ("verbs/design/") or single-file row
+# ("verbs/route.md") alike -- with that row's hat column. An escaped pipe inside a
+# backticked verb token (`verify tend\|judge`) would otherwise split into extra
+# fields -- neutralize it before field-splitting.
 : > "$TMP/paths"
-: > "$TMP/dirhats"
+: > "$TMP/pathhats"
 : > "$TMP/hats"
 while IFS= read -r row; do
   safe=$(printf '%s\n' "$row" | sed 's/\\|/@PIPE@/g')
@@ -38,9 +47,7 @@ while IFS= read -r row; do
   printf '%s\n' "$hat" >> "$TMP/hats"
   for p in $(printf '%s\n' "$row" | grep -oE '`verbs/[^`]*`' | tr -d '`'); do
     printf '%s\n' "$p" >> "$TMP/paths"
-    case "$p" in
-      */) printf '%s\t%s\n' "$p" "$hat" >> "$TMP/dirhats" ;;
-    esac
+    printf '%s\t%s\n' "$p" "$hat" >> "$TMP/pathhats"
   done
 done < "$TMP/rows"
 
@@ -67,22 +74,28 @@ while IFS= read -r f; do
 done < "$TMP/verbfiles"
 expect_eq "face: no orphan verb files" "" "$orphans"
 
-# ---- assertion 3: hat pointers resolve -- every verb file under a directory the router
-# pairs with a hat opens with a "Hat: \`roles/<role>.md\`" line in its first 5 lines, and
-# that roles/<role>.md exists. System verbs (setup/migrate/check -- no directory row, no
-# hat) are never in $TMP/dirhats, so they are never required to carry one. ----
+# ---- assertion 3: hat pointers resolve -- every verb file the router pairs with a hat
+# (a directory row's whole verbs/**/*.md contents, or a single-file row directly) opens
+# with a "Hat: \`roles/<role>.md\`" line in its first 5 lines, and that roles/<role>.md
+# exists. System verbs (setup/migrate/check -- hat "—") and rows with a multi-word,
+# non-role hat value (ask's "the named hat") are never required to carry one. ----
 badhats=""
+check_hat() {  # <verb-file> -- uses the enclosing loop's $hat and appends to $badhats
+  vf="$1"
+  [ -f "$vf" ] || return 0
+  relvf=${vf#"$BUNDLE"/}
+  head -5 "$vf" | grep -qF "Hat: \`roles/$hat.md\`" || badhats="$badhats $relvf"
+  [ -f "$BUNDLE/roles/$hat.md" ] || badhats="$badhats $relvf(roles/$hat.md-missing)"
+}
 while IFS="$(printf '\t')" read -r d hat; do
   case "$hat" in
     ''|'—'|*' '*) continue ;;  # no hat, or a multi-word non-role value (e.g. ask's "the named hat")
   esac
-  for vf in "$BUNDLE/$d"*.md; do
-    [ -f "$vf" ] || continue
-    relvf=${vf#"$BUNDLE"/}
-    head -5 "$vf" | grep -qF "Hat: \`roles/$hat.md\`" || badhats="$badhats $relvf"
-    [ -f "$BUNDLE/roles/$hat.md" ] || badhats="$badhats $relvf(roles/$hat.md-missing)"
-  done
-done < "$TMP/dirhats"
+  case "$d" in
+    */) for vf in "$BUNDLE/$d"*.md; do check_hat "$vf"; done ;;
+    *)  check_hat "$BUNDLE/$d" ;;
+  esac
+done < "$TMP/pathhats"
 expect_eq "face: hatted verb files carry a resolving Hat pointer" "" "$badhats"
 
 # ---- assertion 4: the hat set is closed -- roles/ holds exactly the router's hats ----
