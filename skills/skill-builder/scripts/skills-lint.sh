@@ -13,12 +13,15 @@
 # Checks:
 #   1. SKILL.md frontmatter: description present, <=1024 chars (FAIL), >750 (WARN),
 #      quoted when it contains ": " (FAIL -- strict-YAML nested-mapping trap).
-#   2. Intra-skill refs: backticked scripts/|templates/|verbs/|references/|rules/
-#      paths named in a skill's .md files resolve inside that skill dir (FAIL).
-#      docs/ refs resolve two-stage: <skill-dir>/docs/<path>, then (if absent)
-#      <repo-root>/docs/<path> -- FAIL only when neither exists.
-#   3. foreman BOOTSTRAP <-> bundle: every `name.md` the foreman BOOTSTRAP's docs/ or
-#      templates/ manifest lines name exists in the bundle (FAIL).
+#   2. Intra-skill refs: backticked scripts/|templates/|verbs/|references/|rules/|
+#      roles/|doctrine/ paths named in a skill's .md files resolve inside that
+#      skill dir (FAIL). docs/ refs resolve two-stage: <skill-dir>/docs/<path>,
+#      then (if absent) <repo-root>/docs/<path> -- FAIL when neither exists AND
+#      <repo-root>/docs/ itself exists (a genuinely dangling ref, this clone);
+#      WARN instead when <repo-root>/docs/ doesn't exist at all (a foreign
+#      library this portable skill was copied into, so a grimoire-only
+#      provenance citation can't be checked -- the portability claim up top).
+#   3. (retired -- the foreman BOOTSTRAP manifest lost its subject; numbering held.)
 #   4. Consumption wiring: every skills/<name> has a ~/.claude/skills/<name>
 #      symlink pointing at it (FAIL) and a README mention (WARN).
 #   5. bash -n every scripts/*.sh (FAIL); shellcheck if installed (WARN).
@@ -108,29 +111,60 @@ for sk in "$skills_dir"/*/; do
   esac
 done
 
+# ---- shared: bundle-ref resolution (checks 2 & 10) ---------------------------
+# One prefix alternation and one resolver, used by both checks so "what counts as
+# a bundled-resource path" and "how does docs/ resolve" can't drift apart.
+bundle_prefixes='scripts|templates|verbs|references|rules|docs|roles|doctrine'
+has_root_docs=0
+[ -d "$root/docs" ] && has_root_docs=1
+
+# resolve_bundle_ref <skill-dir> <ref>
+# <ref> is a path like "verbs/foo.md" or "docs/x.md", relative to a skill bundle
+# ($sk, trailing slash). Non-docs/ prefixes resolve bundle-local only; docs/
+# resolves two-stage: bundle-local first, then (if absent) the repo root's docs/
+# tree (check 2's header entry). On success prints the resolved path and returns
+# 0; on failure prints nothing and returns 1.
+resolve_bundle_ref() {
+  local sk="$1" ref="$2"
+  if [ -f "$sk$ref" ]; then printf '%s' "$sk$ref"; return 0; fi
+  case "$ref" in
+    docs/*) [ -f "$root/$ref" ] && { printf '%s' "$root/$ref"; return 0; } ;;
+  esac
+  return 1
+}
+
 # ---- 2. intra-skill refs -----------------------------------------------------
 # Backticked tokens that look like a bundled-resource path. Single-path shape
-# only (no spaces/flags), rooted at a known bundle dir. docs/ resolves
-# two-stage (header comment): bundle-local first, then the repo root -- a
-# verb may point at either its skill's own bundled docs/ or the library's
-# shared docs/ tree.
+# only (no spaces/flags), rooted at a known bundle dir ($bundle_prefixes). docs/
+# resolves two-stage via resolve_bundle_ref, above -- a verb may point at either
+# its skill's own bundled docs/ or the library's shared docs/ tree. A ref that
+# still misses is a FAIL, unless it's a docs/ ref AND this root has no docs/
+# tree at all -- then it's a WARN (a portable-skill copy into a foreign library
+# can't check a grimoire-only provenance citation; header entry above).
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   find "$sk" -name '*.md' -print0 | while IFS= read -r -d '' md; do
     grep -oE '`[^`]+`' "$md" 2>/dev/null | tr -d '`' \
-      | grep -E '^(scripts|templates|verbs|references|rules|docs)/[A-Za-z0-9._/-]+\.(md|sh)$' \
+      | grep -E "^($bundle_prefixes)/[A-Za-z0-9._/-]+\.(md|sh)\$" \
       | sort -u \
       | while IFS= read -r ref; do
-          case "$ref" in
-            docs/*) [ -e "$sk$ref" ] || [ -e "$root/$ref" ] || echo "MISS $name ${md#"$sk"} -> $ref" ;;
-            *)      [ -e "$sk$ref" ] || echo "MISS $name ${md#"$sk"} -> $ref" ;;
-          esac
+          resolve_bundle_ref "$sk" "$ref" >/dev/null || echo "MISS $name ${md#"$sk"} -> $ref"
         done
   done
 done > /tmp/skills-lint-refs.$$ || true
 while IFS= read -r line; do
   set -- $line
-  fail "$2: $3 references $5 (not in the bundle)"
+  ref="$5"
+  case "$ref" in
+    docs/*)
+      if [ "$has_root_docs" -eq 1 ]; then
+        fail "$2: $3 references $5 (not in the bundle)"
+      else
+        warn "$2: $3 references $5 (not in the bundle -- no docs/ tree at $root; can't check a foreign library's provenance citation)"
+      fi
+      ;;
+    *) fail "$2: $3 references $5 (not in the bundle)" ;;
+  esac
 done < <(awk '$1=="MISS"{print}' /tmp/skills-lint-refs.$$)
 rm -f /tmp/skills-lint-refs.$$
 
@@ -376,30 +410,46 @@ rm -f "$roster"
 # A backticked `.md` path immediately followed by a `§ <Heading>` reference, in
 # the same sentence, must name a file with a matching `#`-heading. Files are
 # joined into one line first (ORS=" ") because this prose wraps near 100 cols --
-# the dominant real shape splits the path and its `§` across a line break.
-# Pairing uses a bounded character window (250) since bash/awk has no sentence
-# tokenizer: a path resets the window to 0, and a `§` only pairs with the most
-# recent path if it's within that window -- real same-sentence pairs run well
-# under 100 chars apart, and unrelated paragraphs run well over 250, per the
-# survey behind this check (task-2 brief). A bare `§ Heading` with no path
-# token in-window is a self-reference/prose mention -- out of scope, skipped.
-# Heading-text extraction stops at the first `.` `;` `)` `:` `,` or the connector
-# words " for "/" and " -- real headings in this corpus never legitimately
-# continue past one of these, so stopping early only under-captures (safe: a
-# true prefix is still CONTAINED by the real heading). Path resolution reuses
-# check 2's two-stage docs/ rule verbatim (bundle, then repo root); an
-# unresolved path is check 2's FAIL, not this one's -- this check only fires
-# once a target file is confirmed to exist.
+# the dominant real shape splits the path and its `§` across a line break. Blank
+# lines are replaced with a paragraph-marker token (not just collapsed to a
+# space like every other line) before flattening, so paragraph boundaries
+# survive the join.
+#
+# Pairing is paragraph-scoped: hitting the marker resets the pending path and
+# the distance counter, so a path in one paragraph can never pair with a `§` in
+# a later one -- a stale path otherwise persists past a blank line and can pull
+# in an unrelated `§` two paragraphs away, FAILing by naming the wrong file.
+# Within a paragraph, pairing still uses a bounded character window -- shrunk to
+# 100 (was 250; the widest real same-sentence gap measured in this corpus is 72
+# chars, so this keeps a safety margin while more than halving how far
+# unrelated text could still pair). Heading-text capture also stops at the
+# paragraph marker itself (excluded from the capture class), so a citation with
+# no closing punctuation before a blank line no longer swallows the next
+# paragraph's prose into its heading needle -- the other half of the same
+# false-positive class. Heading-text extraction otherwise stops at the first
+# `.` `;` `)` `:` `,` or the connector words " for "/" and " -- real headings in
+# this corpus never legitimately continue past one of these, so stopping early
+# only under-captures (safe: a true prefix is still CONTAINED by the real
+# heading). Precision over reach: an exotic citation shape going unpaired is
+# fine; a FAIL naming the wrong heading or the wrong file is not.
+#
+# Path resolution reuses resolve_bundle_ref (shared with check 2, above); an
+# unresolved path is check 2's problem (a FAIL, or a WARN in a foreign library
+# without a docs/ tree) -- this check only fires once a target file is
+# confirmed to exist.
 section="§"
+para_marker="@@PARA@@"
+window=100
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   find "$sk" -name '*.md' -print0 | while IFS= read -r -d '' md; do
     rel="${md#"$sk"}"
-    awk 'BEGIN{ORS=" "}{print}' "$md" | awk -v sec="$section" -v name="$name" -v rel="$rel" '
+    awk -v para="$para_marker" 'BEGIN{ORS=" "} /^[[:space:]]*$/ { print para; next } { print }' "$md" \
+      | awk -v sec="$section" -v name="$name" -v rel="$rel" -v para="$para_marker" -v win="$window" -v prefixes="$bundle_prefixes" '
       BEGIN {
-        pathre = "`(scripts|templates|verbs|references|rules|docs)/[A-Za-z0-9._/-]+\\.md`"
-        headre = sec " [A-Z][^.;):,]*"
-        full = pathre "|" headre
+        pathre = "`(" prefixes ")/[A-Za-z0-9._/-]+\\.md`"
+        headre = sec " [A-Z][^.;):,@]*"
+        full = pathre "|" headre "|" para
       }
       {
         text = $0
@@ -408,12 +458,15 @@ for sk in "$skills_dir"/*/; do
         while (match(text, full)) {
           dist += RSTART - 1
           tok = substr(text, RSTART, RLENGTH)
-          if (substr(tok, 1, 1) == "`") {
+          if (tok == para) {
+            curpath = ""
+            dist = 999999
+          } else if (substr(tok, 1, 1) == "`") {
             curpath = tok
             gsub(/`/, "", curpath)
             dist = 0
           } else {
-            if (curpath != "" && dist <= 250) {
+            if (curpath != "" && dist <= win) {
               head = substr(tok, length(sec) + 2)
               fi = index(head, " for ")
               ai = index(head, " and ")
@@ -432,11 +485,8 @@ for sk in "$skills_dir"/*/; do
 done > /tmp/skills-lint-sec.$$ || true
 while IFS=$'\t' read -r sname rel ref headtext; do
   sk="$skills_dir/$sname/"
-  case "$ref" in
-    docs/*) if [ -f "$sk$ref" ]; then target="$sk$ref"; elif [ -f "$root/$ref" ]; then target="$root/$ref"; else target=""; fi ;;
-    *)      if [ -f "$sk$ref" ]; then target="$sk$ref"; else target=""; fi ;;
-  esac
-  [ -n "$target" ] || continue                # check 2 already FAILs an unresolved path
+  target="$(resolve_bundle_ref "$sk" "$ref" || true)"
+  [ -n "$target" ] || continue                # check 2 already flags an unresolved path
   case "$target" in *.md) ;; *) continue ;; esac
   needle="$(printf '%s' "$headtext" | tr -d '`' | tr '[:upper:]' '[:lower:]' | sed -E 's/[[:space:].,;:)]+$//')"
   [ -n "$needle" ] || continue
