@@ -54,7 +54,7 @@
 #      sentence) by a `§ Heading` reference must name a file with a matching
 #      `#`-heading (FAIL -- evidence: citing file, cited file, the heading text
 #      that didn't resolve). Path resolution reuses check 2's two-stage docs/ rule
-#      (bundle, then repo root) -- an unresolved path is check 2's FAIL, not this
+#      (bundle, then repo root) -- an unresolved path is check 2's FAIL or WARN, not this
 #      one's. Heading match is lenient: backticks and trailing punctuation
 #      stripped, case-insensitive, and a real heading need only CONTAIN the cited
 #      text (citations legitimately abbreviate: `§ Cheap health, deep reconcile`

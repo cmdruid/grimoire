@@ -1,8 +1,8 @@
 #!/bin/sh
 # face-test.sh -- the face-shape fixtures (plan Task 3): every verb path the SKILL.md
 # router table cites resolves to a real file or directory, every verbs/**/*.md file is
-# reachable from some row, every verb file living under a directory the router pairs
-# with a hat opens with a resolving Hat: pointer, and roles/ holds exactly the hats the
+# reachable from some row, every verb file the router pairs with a hat (directory row
+# or single-file row) opens with a resolving Hat: pointer, and roles/ holds exactly the hats the
 # router names -- no extra, no missing. Reads the live bundle read-only, resolved
 # relative to this script (never a hardcoded path), so the phantom-prep class (a router
 # row naming a file that was never created) is now mechanically caught.
