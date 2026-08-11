@@ -1,6 +1,6 @@
 # Pre-deployment cleanup — gate hardening, doctrine v2, description budget
 
-**Status: proposed** (owner asked for "as much cleanup as is reasonable" before the live
+**Status: executed 2026-08-10** (owner asked for "as much cleanup as is reasonable" before the live
 deployment test, 2026-08-10). Follows
 `docs/design/2026-08-10-clankshop-audit-reconciliation.md`, whose final review and *Known
 residue* note supply most of this scope.
@@ -83,8 +83,10 @@ rubric that *defines* Consistency should not violate it).
 
 ## Verification
 
-Baselines after the campaign: shell suite **ALL GREEN with the face-test added** (assert total
-rises — the new figure is recorded, not held); lint **`fails=0 warns=1`** (the new baseline);
+Baselines after the campaign: shell suite **ALL GREEN with the face-test added** — new assert
+total **178** (face 4, onramp 82, backlog 35, escalation 13, mirror 28, calibrate 16,
+spine-scan PASS); lint **`fails=0 warns=1`** (the new baseline — the surviving warn is
+`mailbox`'s documented `/delegate` sibling-ref);
 `cargo test --workspace` **36 green**; drift `checked=3 drift=0`. Two probes: the new lint checks
 are proven by *deliberately* introducing each defect class in a scratch copy and confirming a
 FAIL (a gate that never fails on a known-bad input is not a gate); the routing probe re-runs over
