@@ -37,6 +37,7 @@ expect "workshop can mint a record" "# Backlog" "$p"
 "$RS" 'done' "$p" --as dropped --note "fixture teardown" >/dev/null
 "$RS" check >"$OUT"
 expect "records lifecycle green inside the workshop" "records check: OK (1 records)" "$OUT"
+expect "workshop check surfaces the ticket count" "open tickets: 0" "$OUT"
 
 # proven by breaking: the seam refuses a double standup (upgrade is a diff)
 rc=0; "$JOURNAL/scripts/standup.sh" "$proj" >"$OUT" 2>"$ERR" || rc=$?

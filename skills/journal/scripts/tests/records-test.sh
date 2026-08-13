@@ -108,6 +108,43 @@ expect_eq "closed-without-ledger check rc" "2" "$rc"
 expect "check names the coherence break" "closing status 'done' but no history.tsv ledger line" "$ERR"
 rm "$sneaky"
 
+# --- record links: `→ <store>/<file>.md` must resolve (link-rot detection) --------
+tr_rec="$("$RS" new trackers --title "Backlog")"
+note_rel="$("$RS" list --type notes | head -1 | cut -f1)"
+printf -- '- [ ] %s — wire the alpha [→ %s]\n' "$today" "$note_rel" >> "$tr_rec"
+printf -- '- [ ] %s — prose example, unchecked [→ path/to/linked-record.md]\n' "$today" >> "$tr_rec"
+"$RS" check >"$OUT"
+expect "resolving link passes check" "records check: OK" "$OUT"
+printf -- '- [ ] %s — rotted [→ notes/never-existed.md]\n' "$today" >> "$tr_rec"
+rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "broken link check rc" "2" "$rc"
+expect "check names the broken link" "broken link → notes/never-existed.md" "$ERR"
+sed -i.bak '/rotted/d' "$tr_rec" && rm -f "$tr_rec.bak"
+
+# --- open-ticket visibility: check surfaces the count both ways -------------------
+"$RS" check >"$OUT"
+expect "no tickets reports zero" "open tickets: 0" "$OUT"
+tk="$("$RS" new tickets --title "Need the API key")"
+"$RS" check >"$OUT"
+expect "open ticket surfaces in check" "open tickets: 1" "$OUT"
+"$RS" 'done' "$tk" --note "key provided" >/dev/null
+"$RS" check >"$OUT"
+expect "closed ticket leaves the count" "open tickets: 0" "$OUT"
+
+# --- prune-candidates: still-existing × still-closed × ledger-dated ---------------
+"$RS" prune-candidates >"$OUT"
+expect "consumed plan is a prune candidate" "consumed	plans/$today-alpha-the-first-plan.md" "$OUT"
+"$RS" prune-candidates --until 2000-01-01 >"$OUT"
+expect_absent "until-filter excludes newer closures" "alpha-the-first-plan" "$OUT"
+"$RS" touch "$tk" --status open >/dev/null   # reopened after closure: no longer prunable
+"$RS" prune-candidates >"$OUT"
+expect_absent "reopened record is not a candidate" "need-the-api-key" "$OUT"
+rm "$proj/.records/plans/$today-alpha-the-first-plan.md"   # pruned: ledger line stays,
+"$RS" prune-candidates >"$OUT"                             # candidate disappears
+expect_absent "pruned record drops off the shortlist" "alpha-the-first-plan" "$OUT"
+"$RS" check >"$OUT"
+expect "check green after prune (ledger line survives)" "records check: OK" "$OUT"
+
 # malformed ledger: hand-written lines are a fact check reports
 echo "garbage line" >> "$proj/.records/history.tsv"
 rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?

@@ -11,6 +11,7 @@
 #   records.sh touch <path> [--status open|current]
 #   records.sh done <path> [--as done|dropped|superseded|consumed] [--note "..."]
 #   records.sh history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
+#   records.sh prune-candidates [--until d]
 #   records.sh check
 #
 # Stores are the top-level directories at the records root; `templates/`, `scripts/`,
@@ -35,6 +36,7 @@ usage: records.sh <command> [args]
   touch   <path> [--status open|current]
   done    <path> [--as done|dropped|superseded|consumed] [--note "..."]
   history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
+  prune-candidates [--until d]
   check
 EOF
   exit 1
@@ -282,6 +284,26 @@ cmd_history() {
   fi
 }
 
+# prune-candidates: ledger entries whose record file still exists and is still
+# closed — the review station's prune shortlist (curate proposes; the human
+# confirms; deletion keeps the ledger line + git history as the trace).
+cmd_prune_candidates() {
+  f_until=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --until) [ $# -ge 2 ] || usage; f_until="$2"; shift 2 ;;
+      *) usage ;;
+    esac
+  done
+  [ -f "$LEDGER" ] || return 0
+  awk -F'\t' -v z="$f_until" 'z != "" && $1 > z { next } { print }' "$LEDGER" \
+    | while IFS="$TAB" read -r d disp rel dt title note; do
+        [ -f "$RR/$rel" ] || continue
+        is_closing "$(fm_field "$RR/$rel" status)" || continue
+        printf '%s\t%s\t%s\t%s\t%s\n' "$d" "$disp" "$rel" "$dt" "$title"
+      done
+}
+
 cmd_check() {
   tmp="$(mktemp "${TMPDIR:-/tmp}/records-check.XXXXXX")"
   trap 'rm -f "$tmp"' EXIT
@@ -325,6 +347,24 @@ cmd_check() {
       done
       fails=$((fails + 1))
     fi
+    # record links: a body reference `→ <store>/<file>.md` must resolve at the
+    # root (link-rot detection). Only tokens whose first segment is a real
+    # top-level directory are checked, so prose and template examples can't
+    # manufacture false rot.
+    links="$(grep -o '→ *[A-Za-z0-9._/-]*\.md' "$RR/$rel" 2>/dev/null | sed 's/^→ *//' | sort -u || true)"
+    if [ -n "$links" ]; then
+      while IFS= read -r lnk; do
+        case "$lnk" in
+          */*)
+            if [ -d "$RR/${lnk%%/*}" ] && ! [ -f "$RR/$lnk" ]; then
+              echo "FAIL: $rel — broken link → $lnk" >&2
+              fails=$((fails + 1))
+            fi ;;
+        esac
+      done <<LINKS
+$links
+LINKS
+    fi
     # status <-> ledger coherence: a closing status with no ledger line is a fact.
     status="$(fm_field "$RR/$rel" status)"
     if is_closing "$status"; then
@@ -345,6 +385,13 @@ cmd_check() {
       fails=$((fails + 1))
     fi
   fi
+  # open-ticket visibility: tickets await a human, so the check surfaces them.
+  open_tickets=0
+  while IFS= read -r rel; do
+    case "$rel" in tickets/*) ;; *) continue ;; esac
+    is_closing "$(fm_field "$RR/$rel" status)" || open_tickets=$((open_tickets + 1))
+  done < "$tmp"
+  echo "open tickets: $open_tickets"
   if [ "$fails" -gt 0 ]; then
     echo "records check: FAIL ($fails of $count records/ledger)" >&2
     exit 2
@@ -361,6 +408,7 @@ case "$cmd" in
   touch)   cmd_touch "$@" ;;
   done)    cmd_done "$@" ;;
   history) cmd_history "$@" ;;
+  prune-candidates) cmd_prune_candidates "$@" ;;
   check)   cmd_check "$@" ;;
   *) usage ;;
 esac

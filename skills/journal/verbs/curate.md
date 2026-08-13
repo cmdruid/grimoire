@@ -16,7 +16,9 @@ signal *means* for the system — that judgment lives downstream.
    (survivor absorbs; loser closed `superseded`, note naming it).
 4. **Propose prunes, don't execute them unasked**: closed records past the project's prune
    threshold (project doctrine — journal has no default) can be deleted; the ledger line and
-   git history remain the trace. List the candidates and let the human confirm.
+   git history remain the trace. `records.sh prune-candidates --until <threshold-date>` is the
+   shortlist (still-existing, still-closed records the ledger dates at or before the
+   threshold); list it and let the human confirm.
 5. **One scoped commit** over everything touched
    (`scripts/scoped-commit.sh <root> "Journal: curate" <paths…>`) when standalone; write-only
    inside a larger sweep. End green: `records.sh check`.

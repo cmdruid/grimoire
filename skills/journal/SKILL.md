@@ -60,7 +60,7 @@ is (or run `/journal debrief` if the intent is "capture everything that surfaced
 - **Resolve the records root, then let `records.sh` own the facts.** The root is the project's
   declared `records-root:` (front-door `AGENTS.md` declaration), else `.records/`. The deployed
   tool is `<records-root>/scripts/records.sh` — invoke **it** for every date, path, and
-  conformance fact (`new`/`touch`/`done`/`list`/`history`/`check`); never guess a date, never
+  conformance fact (`new`/`touch`/`done`/`list`/`history`/`prune-candidates`/`check`); never guess a date, never
   hand-stamp front-matter, never write `history.tsv` by hand. Where the layer isn't stood up
   yet, the capture verbs run `setup` lazily rather than stalling.
 - **Scripts compute facts; the verb prose decides.** What classifies as a bug vs. an issue, how
