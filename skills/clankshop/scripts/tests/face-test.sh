@@ -1,108 +1,45 @@
-#!/bin/sh
-# face-test.sh -- the face-shape fixtures (plan Task 3): every verb path the SKILL.md
-# router table cites resolves to a real file or directory, every verbs/**/*.md file is
-# reachable from some row, every verb file the router pairs with a hat (directory row
-# or single-file row) opens with a resolving Hat: pointer, and roles/ holds exactly the hats the
-# router names -- no extra, no missing. Reads the live bundle read-only, resolved
-# relative to this script (never a hardcoded path), so the phantom-prep class (a router
-# row naming a file that was never created) is now mechanically caught.
+#!/usr/bin/env bash
+# face-test.sh — the face's own assembly: every verb the SKILL.md router names resolves
+# to a real file, every verb file is routed, and the bundled seed passes its own
+# contract test (the seed mirrors a deployed .handbook, so context.sh runs in place).
 set -eu
-DIR=$(CDPATH='' cd "$(dirname "$0")" && pwd -P)
+DIR="$(cd "$(dirname "$0")" && pwd)"
+SKILL="$(cd "$DIR/../.." && pwd)"
 . "$DIR/lib.sh"
-pass=0; fail=0   # re-assigned by lib.sh's helpers (shellcheck cannot follow the source)
-BUNDLE=$(CDPATH='' cd "$DIR/../.." && pwd -P)
-SKILL_MD="$BUNDLE/SKILL.md"
 
-TMP=$(mktemp -d "${TMPDIR:-/tmp}/clankshop-face.XXXXXX")
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/clankshop-face-test.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
+OUT="$TMP/out"
 
-# ---- parse the router table only (the "| verb | hat | does |" table -- SKILL.md has a
-# second, unrelated "| asset | where | is |" table further down) ----
-awk '
-  /^\| verb \| hat \| does \|/ { on = 1; next }
-  on && /^\|---/ { next }
-  on && /^\|/ { print; next }
-  on { exit }
-' "$SKILL_MD" > "$TMP/rows"
+# router rows -> files
+for v in setup migrate check persona; do
+  [ -f "$SKILL/verbs/$v.md" ] && pass=$((pass + 1)) || { echo "FAIL: router names verbs/$v.md but it is missing" >&2; fail=$((fail + 1)); }
+  grep -qF "verbs/$v.md" "$SKILL/SKILL.md" && pass=$((pass + 1)) || { echo "FAIL: SKILL.md does not route verbs/$v.md" >&2; fail=$((fail + 1)); }
+done
 
-# ---- assertion 0: the router-table parse actually produced rows -- if the table's
-# header text or shape ever changes and the awk parse above silently comes up empty,
-# every downstream assertion would otherwise report a wall of spurious "orphan verb
-# file" findings instead of failing at the actual break ----
-rowcount=$(wc -l < "$TMP/rows" | tr -d ' ')
-gotrows="0"; [ "$rowcount" -gt 0 ] && gotrows="1"
-expect_eq "face: router-table parse produced at least one row" "1" "$gotrows"
+# files -> router rows (no orphan verbs)
+for f in "$SKILL"/verbs/*.md; do
+  b="verbs/$(basename "$f")"
+  grep -qF "$b" "$SKILL/SKILL.md" && pass=$((pass + 1)) || { echo "FAIL: $b exists but SKILL.md never cites it" >&2; fail=$((fail + 1)); }
+done
 
-# For every row: collect every backtick span starting with "verbs/" (the row-cited
-# paths), and pair EVERY one -- directory row ("verbs/design/") or single-file row
-# ("verbs/route.md") alike -- with that row's hat column. An escaped pipe inside a
-# backticked verb token (`verify tend\|judge`) would otherwise split into extra
-# fields -- neutralize it before field-splitting.
-: > "$TMP/paths"
-: > "$TMP/pathhats"
-: > "$TMP/hats"
-while IFS= read -r row; do
-  safe=$(printf '%s\n' "$row" | sed 's/\\|/@PIPE@/g')
-  hat=$(printf '%s\n' "$safe" | awk -F'|' '{print $3}' | sed 's/^ *//; s/ *$//')
-  printf '%s\n' "$hat" >> "$TMP/hats"
-  for p in $(printf '%s\n' "$row" | grep -oE '`verbs/[^`]*`' | tr -d '`'); do
-    printf '%s\n' "$p" >> "$TMP/paths"
-    printf '%s\t%s\n' "$p" "$hat" >> "$TMP/pathhats"
-  done
-done < "$TMP/rows"
+# scripts the verbs lean on exist and parse
+for s in seed.sh migrate-scan.sh; do
+  [ -f "$SKILL/scripts/$s" ] && pass=$((pass + 1)) || { echo "FAIL: scripts/$s missing" >&2; fail=$((fail + 1)); }
+  bash -n "$SKILL/scripts/$s" && pass=$((pass + 1)) || { echo "FAIL: scripts/$s does not parse" >&2; fail=$((fail + 1)); }
+done
 
-# ---- assertion 1: no phantom routes -- every cited path exists on disk ----
-missing=""
-while IFS= read -r p; do
-  [ -e "$BUNDLE/$p" ] || missing="$missing $p"
-done < "$TMP/paths"
-expect_eq "face: no phantom routes" "" "$missing"
+# the seed self-checks: context.sh resolves its handbook root as seed/ itself
+"$SKILL/seed/scripts/context.sh" --check >"$OUT"
+expect "seed's own load sets green" "load sets: OK" "$OUT"
 
-# ---- assertion 2: no orphan verb files -- every verbs/**/*.md is reachable from some
-# row, either named directly or living under a directory a row names ----
-find "$BUNDLE/verbs" -name '*.md' | sort > "$TMP/verbfiles"
-orphans=""
-while IFS= read -r f; do
-  rel=${f#"$BUNDLE"/}
-  reachable=0
-  grep -qxF "$rel" "$TMP/paths" && reachable=1
-  if [ "$reachable" -eq 0 ]; then
-    d=$(dirname "$rel")/
-    grep -qxF "$d" "$TMP/paths" && reachable=1
+# seed carries no v1 machinery vocabulary
+for needle in "spine-doc" "doctrine-version:" "steward:" "skill:.*BEGIN"; do
+  if grep -rqE "$needle" "$SKILL/seed"; then
+    echo "FAIL: v1 vocabulary '$needle' present in seed/" >&2; fail=$((fail + 1))
+  else
+    pass=$((pass + 1))
   fi
-  [ "$reachable" -eq 1 ] || orphans="$orphans $rel"
-done < "$TMP/verbfiles"
-expect_eq "face: no orphan verb files" "" "$orphans"
+done
 
-# ---- assertion 3: hat pointers resolve -- every verb file the router pairs with a hat
-# (a directory row's whole verbs/**/*.md contents, or a single-file row directly) opens
-# with a "Hat: \`roles/<role>.md\`" line in its first 5 lines, and that roles/<role>.md
-# exists. System verbs (setup/migrate/check -- hat "—") and rows with a multi-word,
-# non-role hat value (ask's "the named hat") are never required to carry one. ----
-badhats=""
-check_hat() {  # <verb-file> -- uses the enclosing loop's $hat and appends to $badhats
-  vf="$1"
-  [ -f "$vf" ] || return 0
-  relvf=${vf#"$BUNDLE"/}
-  head -5 "$vf" | grep -qF "Hat: \`roles/$hat.md\`" || badhats="$badhats $relvf"
-  [ -f "$BUNDLE/roles/$hat.md" ] || badhats="$badhats $relvf(roles/$hat.md-missing)"
-}
-while IFS="$(printf '\t')" read -r d hat; do
-  case "$hat" in
-    ''|'—'|*' '*) continue ;;  # no hat, or a multi-word non-role value (e.g. ask's "the named hat")
-  esac
-  case "$d" in
-    */) for vf in "$BUNDLE/$d"*.md; do check_hat "$vf"; done ;;
-    *)  check_hat "$BUNDLE/$d" ;;
-  esac
-done < "$TMP/pathhats"
-expect_eq "face: hatted verb files carry a resolving Hat pointer" "" "$badhats"
-
-# ---- assertion 4: the hat set is closed -- roles/ holds exactly the router's hats ----
-awk '$0 !~ /^(—)?$/ && $0 !~ / /' "$TMP/hats" | sort -u > "$TMP/hats.expected"
-expected_hats=$(tr '\n' ' ' < "$TMP/hats.expected" | sed 's/ *$//')
-actual_hats=$(for f in "$BUNDLE"/roles/*.md; do [ -f "$f" ] && basename "$f" .md; done | sort | tr '\n' ' ' | sed 's/ *$//')
-expect_eq "face: hat set is closed" "$expected_hats" "$actual_hats"
-
-echo "face: pass=$pass fail=$fail"
-[ "$fail" -eq 0 ]
+report "face-test"

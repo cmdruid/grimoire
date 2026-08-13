@@ -1,128 +1,44 @@
-# `/clankshop setup` — the greenfield bootstrap
+# `setup` — greenfield bootstrap
 
-Stand a fresh project up on the clankshop pack: **facts by script, decisions by interview,
-projection by doctrine** — then stamp. Greenfield only: a root already carrying content of any
-shape (docs, trackers, prior agent scaffolding) belongs to the brownfield onramp (`migrate`, which
-classifies what exists instead of assuming nothing does), and a stamped root is already an
-installation (`check` validates it; the improvement loop edits it). Whole-system assembly is this
-verb and `migrate` alone — roles never bootstrap the system (the pre-stamp dispatch table: the
-pack design, §3.4).
+Stand up the workshop on a project that has none: project the seed handbook, stand up the
+records layer (via `journal`), write the door, validate. Facts come from scripts and
+inspection; the few real decisions are confirmed with the human, once.
 
-Patient-zero note: in the grimoire library itself this verb is exercised only against throwaway
-temp-dir fixtures — never against the library's own front door.
+**Guard:** resolve the project root first — a project directory the conversation references,
+else the working directory, else ask. If `<root>/.handbook` already exists, stop: this project
+is seeded (an upgrade is a judgment-assisted diff against the current seed, anchored by the
+README's stamp line — not a re-seed). If the project has organic structure worth adopting
+(doc trees, trackers, a legacy records root), prefer `migrate`.
 
-## Preconditions
+## The walk
 
-1. **Resolve the root**: `scripts/install-block.sh resolve <session-path>`. Expected: `unmanaged`,
-   or an unstamped repo root. A stamped root → refuse and point at `check` — re-setup is never the
-   fix. A resolved *enclosing* installation → this project is already inside one; stop and surface
-   that.
-2. **Greenfield check**: the root has no substantive pre-existing process content (tracker-like
-   files, record stores, agent scaffolding of any convention). Anything of the kind → stop and
-   route to `migrate`; setup never classifies existing content.
-3. **A git repo.** No repo → offer `git init` first; the seeded rules are trunk-anchored and the
-   stamp lives in a committed door.
+1. **Gather the two facts the seed needs.**
+   - `<trunk>`: the project's trunk branch — `git -C <root> branch --show-current` on a fresh
+     repo, or the default branch where a remote exists.
+   - `<gate>`: the project's one gate command. Propose it from inspection (test runner, build
+     manifest, CI config); confirm with the human. A brand-new project with no gate yet gets a
+     placeholder confirmed as such — the guardian fills it when one exists.
+2. **Project the seed** (mechanics are scripted):
+   `scripts/seed.sh <root> --gate '<gate>' --trunk '<trunk>'`
+   — copies the template handbook to `<root>/.handbook`, fills the slots, writes the one
+   install stamp (`Seeded from clankshop vX.Y on DATE` in `.handbook/README.md`), and
+   self-checks the load sets. It refuses an existing `.handbook`.
+3. **Stand up the records layer — delegate to `journal`** (a required pack member; the records
+   layer is its domain). Run its standup for `<root>`: the `.records/` stores, templates,
+   `records.sh`, and the history ledger are its deployed assets, not this skill's. If
+   `journal` is not available, say so and stop short of improvising a records layer — the
+   workshop is doctrine-only until it stands up.
+4. **Write the door.** Integrate into `<root>/AGENTS.md` (create it if absent; integrate,
+   never clobber — existing content stays):
+   - a pointer: the workshop's doctrine lives in `.handbook/` — start at
+     `.handbook/README.md`;
+   - a thin routing table compiled from `core/ROUTING.md`'s dispatch rows (kind of work →
+     station or workflow). Detail stays in the handbook; the door only routes.
+5. **Validate**: run the `check` verb. Setup is complete only when it comes back green.
 
-## Step 1 — facts by script
+## Notes
 
-`scripts/interrogate.sh <root>`: gate-command candidates from package manifests, trunk name,
-remote + issue-system presence, the `.gitmodules` inventory, doc landmarks. Facts only — nothing
-here decides anything.
-
-## Step 2 — interview (only genuine decisions)
-
-One question at a time; never ask what a fact already answered. The genuine decisions:
-
-- **The gate** — the one command that must be green before any commit. Confirm from the
-  candidates; several candidates (or none) is exactly the judgment the human owns.
-- **Lanes** — the four seeded lanes (patch, bug, feature, spike) deploy by default; the decision
-  is any lane the project genuinely lacks or adds, and the entry point where facts leave a choice.
-- **Submodule opt-ins** — per `.gitmodules` entry: managed under this installation (joins the
-  submodule index and coverage) or independent (its own future installation)?
-- **Mirror on/off** — asked only when an issue system exists: mirror tickets to it? Record the
-  choice as a standing judgment (a POL entry with its rationale). No remote or no issue system →
-  no question, no mirror, no behavior change.
-
-## Step 3 — project the doctrine through the facts
-
-Source: this skill's `doctrine/` at its current `doctrine-version` (declaration blocks carry it).
-**Minimal-seed filtering** — universal content deploys, everything else stays upstream:
-
-- INVARIANTS seeds only its universal parameterized rules;
-- GOTCHAS and POLICY deploy as declared-empty formats;
-- RECORDS deploys complete (formats are not project-variable);
-- ROUTING deploys whole;
-- the opted-in lane files and the three testing skeletons deploy with their parameter slots
-  (`<gate>`, `<trunk>`) filled from steps 1–2.
-
-No generic prose ships.
-
-**RECORDS deploys via the records instrument's projection writer** —
-`skills/backlog/scripts/records-projection.sh <root> <doctrine-dir> gate=… trunk=…` — which
-stamps it `built-against: clankshop-doctrine@<doctrine-version>`. The authority chain: the
-doctrine states the schema, backlog executes it, the stamped projection is its writing — setup
-never writes the file by hand.
-
-**Provenance is file-level and lightweight:** each whole-file asset (a lane, a testing skeleton)
-carries `origin:` + `origin-version:` keys in its declaration block (path-qualified:
-`clankshop:workflows/patch`), and RECORDS carries its `built-against:` stamp. Entry bodies are
-copied clean — no per-entry markers; a later reconcile pass compares the deployed chapter
-against the current doctrine and judges.
-
-Targets:
-
-| target | gets |
-|---|---|
-| `.handbook/rules/` | ROUTING, GOTCHAS, INVARIANTS, POLICY, RECORDS |
-| `.handbook/workflows/` | the opted-in lanes (seed: patch, bug, feature, spike) |
-| `.handbook/testing/` | GATE (names the confirmed gate), PIPELINE, DIAGNOSTICS |
-| `.handbook/design/` | created empty — content is the design role's, never seeded |
-| `.records/trackers/` | `tasks.md`, `issues.md`, `feedback.md`, `bugs/`, `notes/` — empty stores in wire format |
-| `.records/tickets/`, `.records/done/log.md` | the escalation store and the done log, empty |
-
-Other record stores (plans, adr, design, audit, reports, archive) are created by their owning
-members on first use — setup seeds only what the doctrine and the records schema define.
-
-## Step 4 — the door, the maps, the registrations
-
-- **`AGENTS.md`** (create, or extend a bare existing door): the **compiled tier-0 table** from the
-  door profile (`doctrine/README.md`) — keep only rows whose owning member is installed — with the
-  **one shared fallback line** beneath it. The table is a stamped projection of the deployed
-  `.handbook/rules/ROUTING.md`; lane paths stay in ROUTING's dispatch rows, never duplicated into
-  the door.
-- **Each installed member's door registration block**: body copied **verbatim** from the door
-  profile's frozen bodies, between that member's own `<!-- skill:<name> -->` delimiters, stamped
-  `built-against: clankshop@<pack-version>`. Created-or-adopted, never edited inside another
-  writer's delimiters. Without these blocks, `check`'s `unregistered` fact can never be empty on a
-  fresh setup. Core bodies carry no `Edges:` lines; helpers register under their own independence
-  protocol; an optional proxy registers only when installed.
-- **The two-region stewardship maps**: `.handbook/README.md` + `.records/README.md` — a short
-  authoritative preamble (one stewardship line per chapter, never reading order) plus one
-  delimited steward block per producer, each stamped `built-against:` its input (a core member's
-  block: `clankshop@<pack-version>`).
-- **The submodule index** (only when `.gitmodules` exists): the composer's own delimited block in
-  the door, opted-in rows only, stamped against `.gitmodules` + the gitlink SHAs.
-
-## Step 5 — stamp
-
-Last, after everything above is on disk:
-`scripts/install-block.sh write <root> 1 clankshop <pack-version>` — `layout: 1`, the pack
-version read from the manifest (this pack's `PACK.md` frontmatter `version:`). The stamp is the
-commit point: framework verbs refuse an unstamped root, and stamping first would license every
-verb against a half-built installation.
-
-## Verify
-
-Run the assembly validation (`check`) — a fresh setup must come back green: no `unregistered`
-members, every stamped projection matching its named input, chapter presence per the registry,
-empty stores in wire format. The projection walk itself is proven mechanically by the pack's
-onramp fixture harness; this verb's judgment (interview, filtering) is exactly what the fixture
-does not automate.
-
-## Done when
-
-The root is stamped (`layout: 1`, `pack: clankshop`, `pack-version:` current); `AGENTS.md` carries
-the compiled table + fallback line, every installed member's registration block, and the submodule
-index when applicable; `.handbook/` holds the four chapters with every seeded entry
-provenance-stamped; `.records/` holds the tracker skeleton, tickets store, and done log; the
-stewardship maps stand in both roots; and `check` is green.
+- The handbook is the **project's** document from this moment: project specifics accrete below
+  the seeded preambles; upgrades diff against the current seed rather than re-projecting.
+- Nothing here writes outside `<root>`; commits (if the human wants them) are scoped to the
+  paths written (`.handbook/`, `.records/`, `AGENTS.md`).

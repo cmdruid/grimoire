@@ -1,96 +1,43 @@
-# `/clankshop migrate` — the brownfield onramp
+# `migrate` — brownfield onramp
 
-Bring a project with pre-existing content — documents, tracker-like files, record stores, prior
-agent scaffolding of **any** convention — onto the pack. **Format-agnostic by design**: this verb
-names no legacy formats and enumerates none; it inventories whatever exists, classifies each
-artifact **by its content** into the taxonomy, and executes one confirmed mapping pass. A stamped
-root is never re-migrated; an empty root belongs to `setup`.
+Bring an existing project with **organic** structure — ad-hoc doc trees, hand-rolled trackers
+and notes, possibly a legacy records root (e.g. `dev/`) — into the workshop layout. The spine
+of the procedure: inventory by script, one confirmed mapping table, mechanical moves by
+script, judgment merges by hand, done means `check` green.
 
-Patient-zero note: in the grimoire library itself this verb is exercised only against throwaway
-temp-dir fixtures — never against the library's own tree.
+**Guard:** resolve the project root first (conversation → cwd → ask). If `<root>/.handbook`
+exists, stop — already seeded. On a genuinely bare repo prefer `setup` (nothing to migrate).
 
-## Preconditions — facts first, then judgment
+## The walk
 
-Run `scripts/migrate-preflight.sh <root>` and judge its facts:
+1. **Preflight (script).** `scripts/migrate-scan.sh <root>` inventories candidate artifacts —
+   markdown docs with their git dates and first headings, tracker-shaped files, doc-tree
+   roots, CI configs, the door files present. Facts only; classification is yours.
+2. **One confirmed mapping table.** Propose a destination for **every** inventoried artifact —
+   a station chapter (doctrine folds into `core/` or a station `POLICY.md`), a record store
+   (`.records/<store>/`), or *leave in place* — and show the human the whole table at once.
+   **Nothing moves before the table is confirmed.** A legacy records root the project wants to
+   keep (e.g. `dev/`) is declared in place via the door's `records-root:` line, never bulk
+   `git mv`'d.
+3. **Execute the mechanical rows.**
+   - Seed the doctrine: `scripts/seed.sh <root> --gate '<gate>' --trunk '<trunk>'` (the two
+     facts confirmed alongside the table).
+   - Stand up the records machinery via `journal` (its standup owns `.records/` scaffolding,
+     templates, `records.sh`) — pointed at the declared records root.
+   - Move adopted records into their stores with `git mv` (history survives); keep original
+     filenames — the path is the ID either way.
+   - Backfill front-matter on every adopted record: `doctype` from the destination store,
+     `created`/`updated` from `git log`, `status` flagged for judgment where ambiguous.
+4. **Perform the judgment merges.** Organic policy and convention docs fold into `core/` or
+   the station `POLICY.md`s **below** the seeded preambles — integrated, deduplicated, linked
+   (the precedence rule holds from day one). The door is written **into** the existing
+   `AGENTS.md`: pointer + thin routing table, existing content preserved.
+5. **Done means `check` is green.** Run the `check` verb; fix what it reports. One conformance
+   regime, no grandfathering: after migration, `records.sh` sees everything.
 
-- **`stamped=1` → refuse.** The root is already an installation; drift is `check`'s and the
-  improvement loop's business, not a re-migration.
-- **`tree_clean=0` → stop.** Migration executes as history-rewriting moves; a dirty tree makes
-  rollback ambiguous. Have the human land or stash first.
-- **Active workstreams → stop.** Both kinds block: `linked_worktrees` (a stream's worktree holds
-  branch state the moves would strand) **and** `inplace_streams` (an in-place stream holds custody
-  of the shared tree — the worktree check alone cannot see it).
-- **`dup_ids` non-empty → resolve in the table.** Two artifacts claiming one identifier cannot
-  both keep it as an alias; the mapping table must resolve every collision row before execution.
-- **Unclassifiable artifacts → triage.** Anything the classification below cannot place is
-  surfaced to the human as its own mapping-table row — never guessed, never dropped.
+## Notes
 
-A declared `records-root` (a live front-door variable, not a legacy format) is **respected in
-place**: the same walk runs against it, and nothing is bulk-moved to `.records/` just to satisfy
-the default path.
-
-## Step 1 — generic inventory
-
-Walk the root (tracked files; the preflight's facts anchor the git shape) and list every artifact
-that carries process content: docs, trackers of any shape, record stores, scaffolding, config-like
-process files. The inventory is complete before anything is classified — classification quality
-depends on seeing the whole set.
-
-## Step 2 — content classification
-
-Classify each artifact **by what its content is**, into the taxonomy the doctrine deploys:
-
-| the content is… | it becomes |
-|---|---|
-| a load-bearing rule | an INVARIANTS entry |
-| a procedure / how-to | its lane file (or a testing chapter doc) |
-| a standing judgment | a POLICY entry |
-| a trap / surprising behavior | a GOTCHAS entry |
-| a work item (todo, issue, bug report) | a tracker entry in wire format |
-| a decision record | `.records/adr/` |
-| completion evidence / changelog-like history | `.records/done/` |
-| project-specific tool material | the owning role's seat — "no seat" is a valid outcome |
-| an operator override (user-authored config) | stays put, untouched |
-| none of the above, or genuinely ambiguous | a triage row for the human |
-
-## Step 3 — one confirmed mapping table
-
-Propose the **complete** table: every inventoried artifact in **exactly one row** — source path →
-destination (+ new ID where one is minted) → alias to preserve → note. Collision rows (from
-`dup_ids`) and triage rows are resolved here. The human confirms the table **once**; no
-incremental re-asks, no post-confirmation additions. The confirmed table is the contract the
-execution and the nothing-dropped check both run against.
-
-## Step 4 — execution, in a worktree with rollback
-
-Execute the table in a **dedicated worktree** on a migration branch — never on the live checkout:
-
-- moves and rewrites per the table, one artifact at a time;
-- **alias preservation**: every pre-existing identifier survives verbatim on its restamped entry —
-  `(alias <old>)` on flat-store lines/headings, a frontmatter `alias:` key on store-dir items
-  (the per-store encodings: `.handbook/rules/RECORDS.md`); in-repo citations of the old
-  identifier are rewritten to the new ID;
-- the **alias map** (old → new, complete) is recorded in the migration's done-record;
-- any failure mid-pass → discard the worktree and branch: the live checkout was never touched.
-
-Then run the projection half of the bootstrap exactly as `setup` does (doctrine → `.handbook/`
-with provenance stamps, the door table + registration blocks, the stewardship maps, the records
-skeleton for stores the table did not populate) — migration is classification **plus** the same
-assembly, not a different assembly.
-
-## Step 5 — nothing-dropped check, then stamp
-
-- **Nothing dropped**: every table row's source is accounted for at its destination (or explicitly
-  `stays put` / triaged-out with the human's sign-off); the table doubles as the checklist. Assembly
-  validation (`check`) must be green on the migrated tree before the merge.
-- **Stamp**: write the installation block last (`scripts/install-block.sh write <root> 1
-  clankshop <pack-version>`, the pack version from the manifest — this pack's `PACK.md`
-  frontmatter `version:`), merge the migration branch, and remove the worktree. The project is
-  now stamped — and never re-migrated.
-
-## Done when
-
-The confirmed mapping table is fully executed with nothing dropped; every pre-existing identifier
-survives as an alias with citations rewritten and the alias map in the done-record; the handbook,
-door, maps, and records stores stand exactly as a fresh `setup` would leave them; `check` is
-green; and the root is stamped.
+- The install stamp is written by `seed.sh` in step 3; the migration is not "installed" until
+  step 5 is green — say so honestly if you stop early.
+- Batch the mechanical moves into scoped commits per store, so the history reads as the
+  migration it is.

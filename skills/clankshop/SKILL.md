@@ -1,91 +1,53 @@
 ---
 name: clankshop
-description: "The clankshop development system — one skill carrying the pack's doctrine, runbook, role hats, and verbs. System verbs: setup (greenfield bootstrap), migrate (brownfield onramp), check (assembly validation). Intent verbs, each worn with its role hat: design (the architect — seed-altitude design), route (the foreman — classify a change, dispatch it to its lane), verify (the guardian — gate/CI/diagnostics stewardship and verification judgment), calibrate + docs (the chiropractor — the improvement loop and docs-quality audits). ask <role> puts a hat on for discussion. Use when asked to set up/migrate/check the system, route a change, do seed-altitude design, harden the gate, audit the docs, calibrate the system, or talk to a role."
+description: "Set up and operate an agentic workshop around a code project: a deployed structure of doctrine (.handbook/), records (.records/), and routing (the AGENTS.md door) organized as four stations — design (the architect), build (the foreman), test (the guardian), review (the admin). Verbs: setup (greenfield bootstrap: seed the handbook, stand up records via journal, write the door), migrate (brownfield onramp: inventory, one confirmed mapping table, adopt), check (assembly validation), and persona summons (architect/foreman/guardian/admin — load a station's context and discuss through its lens). Use when asked to set up or migrate the workshop/handbook on a project, validate its assembly, or talk to a station persona."
 ---
 
-# clankshop — the development system
+# clankshop — the workshop system
 
-The face of the **clankshop pack**: one atomically-versioned skill carrying the whole
-development system — the **doctrine** (the pack's seed content, in the spine format), the
-**runbook** (the methodology narrative), the **role hats** (the pack's expertise layer), and the
-**verbs** that operate it all. Separate pack members remain only where a skill earns a
-standalone life (the instruments, pipelines, and helpers — see *The pack*, below).
+The face of the **clankshop pack**: the skill that stands up an **agentic workshop** around a
+code project — a deployed structure of doctrine, records, and routing that lets agents (and
+humans) work the project through a well-defined lifecycle, with the right context loaded at
+the right time. Design: `docs/design/2026-08-12-clankshop-v2.md` (repo-root provenance
+citation).
 
-Whole-system assembly belongs to this skill alone: the pack bootstraps, nothing else does. This
-`SKILL.md` is a thin router — each verb's procedure lives in `verbs/`, read on demand; when a
-verb is selected, read its file and follow it.
+The workshop is a line of four **stations** — `design` (the architect), `build` (the foreman),
+`test` (the guardian), `review` (the admin). A station merges place and actor: an agent works
+a station by loading its context. Personas are **project-resident doctrine**, not machinery —
+each station's chapter opens in its persona's voice; nothing routes on the names.
 
-Design docs: `docs/design/2026-08-06-clankshop-pack.md` (the pack design, layered on
-`docs/design/2026-08-04-agent-framework.md`, the framework mechanics) as amended by
-`docs/design/2026-08-10-clankshop-role-merge.md` (roles merged into the face) and
-`docs/design/2026-08-10-doctrine-sync-removal.md`; rollout plan
-`docs/design/2026-08-06-clankshop-pack-plan.md`.
+Three deployed surfaces carry it: **`.handbook/`** (doctrine — how we work),
+**`.records/`** (work products, including the living design spec), and **`AGENTS.md`** (the
+door: a thin routing table plus the handbook pointer). Once seeded, all three are the
+**project's** documents — provenance is one install stamp line in `.handbook/README.md`, and
+upgrades are a judgment-assisted diff against the current seed.
 
-## Verbs and hats — the two-layer contract
+This `SKILL.md` is a thin router: each verb's procedure lives in `verbs/`, read on demand —
+when a verb is selected, read its file and follow it.
 
-**Routes are intent verbs; expertise is a hat the verb inherits.** A hat (`roles/<role>.md`) is
-a small instruction file — identity, standing judgments, domain — and the dispatch rule is:
-**read the hat first, then the verb file; you operate the verb wearing that hat.** Role names
-never appear as procedure routes; routes never carry the expertise; `ask` is the one route that
-addresses a hat directly.
+## Verbs
 
-**Shared discipline (every verb, hatted or not):** resolve the project root first — a project
-directory the conversation references, else the working directory, else ask — and use
-project-relative paths from it. Get the real date with `date +%Y-%m-%d`; never guess it. Verbs
-that write into the deployed layout (`.handbook/`, `.records/`) need a stamped root: absent the
-installation block, report what's missing, point at `setup`/`migrate`, and write nothing —
-**judgment runs anywhere; writes need a home.**
-
-| verb | hat | does |
+| invocation | verb file | does |
 |---|---|---|
-| `setup` | — | greenfield bootstrap: facts by script, decisions by interview, project the doctrine, stamp (`verbs/setup.md`) |
-| `migrate` | — | brownfield onramp: generic inventory, one confirmed mapping table, stamp (`verbs/migrate.md`) |
-| `check` | — | whole-system assembly validation — facts only (`verbs/check.md`) |
-| `design [<verb>]` | architect | seed-altitude design. Subverbs `seed` (bare `design` is its alias; bootstrap/migrate the design chapter) · `brainstorm` · `plan` · `extract` · `distill` · `reconcile` · `health` (seed completeness/drift facts) (`verbs/design/`; method: `docs/DESIGN-DOCTRINE.md`) |
-| `route [<change>]` | foreman | classify a change, apply the promotion bar, dispatch it to its lane; tend the rulebook (`verbs/route.md`) |
-| `verify tend\|judge` | guardian | tend the testing chapters; make the verification call — defect vs flake, verification depth (`verbs/verify/`) |
-| `calibrate [intake\|doctrine]` | chiropractor | the improvement loop: drain captured signal into dispatched improvements; the doctrine seam (`verbs/calibrate/`; default `intake`) |
-| `docs [<scope>]` | chiropractor | audit and tune the documentation spine — scan → diagnose → adjust (`verbs/docs.md`) |
-| `ask <role> [<prompt>]` | the named hat | put a hat on for a discussion — expertise without a procedure (`verbs/ask.md`) |
+| `setup` | `verbs/setup.md` | greenfield bootstrap: seed the handbook, records standup via `journal`, write the door, `check` green |
+| `migrate` | `verbs/migrate.md` | brownfield onramp: scripted inventory, one confirmed mapping table, mechanical moves + judgment merges |
+| `check` | `verbs/check.md` | assembly validation — load sets, stamp, slots, links, records conformance |
+| `<persona> [prompt]` | `verbs/persona.md` | summon a station's voice for discussion — judgment only, no procedure |
 
-The fact partition: `check` owns **assembly** facts; document-shape facts are `docs`'s; code
-quality is the standalone auditor's. Scripts compute facts; verb prose owns judgment.
-
-## The pack — the members
-
-`clankshop` is the pack's face and carries the four hats (architect, foreman, guardian,
-chiropractor — see `roles/`). The remaining members are skills with standalone lives of their
-own; the full roster is the **team roster** in `doctrine/README.md`:
-
-- **instruments** — invokable procedures whose operator exercises the judgment: `backlog` (the
-  records instrument), `debugger` (the diagnostic instrument), `auditor` (the code-quality
-  instrument).
-- **pipelines** — the work processes the system supports: `feature` (idea to gate-green code),
-  `workstream` (shipping lanes).
-- **helpers** — portable plumbing keeping the full independence discipline: `delegate`,
-  `mailbox`, `handoff` (plus the optional `/bug` and `/task` capture proxies).
-
-Core members (face + instruments + pipelines) reference each other and the deployed layout
-directly — atomic versioning is what makes that safe.
+Shared discipline: resolve the project root first (a directory the conversation references,
+else the working directory, else ask); get the real date with `date +%Y-%m-%d`, never guess
+it; scripts compute facts, verbs own judgment.
 
 ## Assets
 
 | asset | where | is |
 |---|---|---|
-| doctrine | `doctrine/` | the pack's seed content: `rules/`, `workflows/`, `testing/` chapters; index + registry + roster + door profile (`doctrine/README.md`) |
-| runbook | `docs/RUNBOOK.md` | the methodology narrative — the flow of a change, when which hat, the three altitudes, escalation, the improvement loop |
-| hats | `roles/` | the expertise layer: architect, foreman, guardian, chiropractor |
-| design doctrine | `docs/DESIGN-DOCTRINE.md` | the seed contract and method behind `design` (+ `templates/design/`) |
-| doc rubric | `docs/DOC-RUBRIC.md` | the 12-dimension spine rubric behind `docs` (+ `templates/doc-drift.md`) |
-| pack manifest | `PACK.md` beside this SKILL.md | the release manifest `install.sh --pack` resolves and preflights |
+| the seed | `seed/` | the template handbook — mirrors a deployed `.handbook/` exactly (README, `core/`, four station chapters, `seed/scripts/context.sh`) |
+| seeding mechanics | `scripts/seed.sh` | projects `seed/` into a target root: copy, slot fill, install stamp, self-check |
+| migration preflight | `scripts/migrate-scan.sh` | brownfield inventory facts for `migrate` |
+| pack manifest | `PACK.md` beside this SKILL.md | the roster `install.sh --pack` resolves (`docs/spec/pack-format.md`, repo-root) |
 
-The manifest is pack-as-skill, `docs/spec/pack-format.md` format 1: `name:` and `version:`
-(semver), the `required:` and `optional:` comma-separated member lists, plus the `core:`
-extension key (the lint gate's core-member exemption). Installs are recorded in the sidecar
-`grimoire.lock`.
-
-The doctrine's declaration blocks carry `doctrine: clankshop` + `doctrine-version:`. Seeding is
-copying content through the project's facts, with file-level provenance: whole-file assets land
-with a path-qualified `origin:` stamp (`clankshop:workflows/patch`), and RECORDS lands stamped
-`built-against:` its doctrine version — enough for a later reconcile pass to compare a deployed
-chapter against the current doctrine and judge.
+The records layer — `records.sh`, templates, `.records/` scaffolding — is deliberately **not**
+here: it belongs to `journal`, a required pack member; `setup` delegates records standup to
+it. The load rule, layout, and precedence rules live in the seed's own `README.md` — the
+deployed handbook documents itself.

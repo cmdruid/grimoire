@@ -75,13 +75,13 @@
 #      of its path (`verbs/design/` covers `verbs/design/plan.md`) (FAIL --
 #      names the skill and the orphan file).
 #
-# Core-member exemption (clankshop rollout, Task 4.1): a pack manifest
-# (PACK.md, spec format 1) may carry a `core:` frontmatter line -- a grimoire
-# author extension key (spec §2: unknown keys, tool-ignored) naming the members
-# written for the pack's authored composition rather than standalone use. Core
-# members are exempt from the independence checks (7: sibling-in-description,
-# 8: typed-edge blocks, 9: sibling verb-roster); helpers and skill-builder
-# itself keep the full discipline. Discovery mirrors install.sh's resolve walk.
+# Pack-face exemption (clankshop v2): the one skill dir that carries a PACK.md
+# is the pack's FACE -- it composes the pack, so naming its members is its job,
+# not a boundary leak. Faces are exempt from the independence checks
+# (7: sibling-in-description, 8: typed-edge blocks, 9: sibling verb-roster);
+# every non-face member -- helper, utility, and skill-builder itself -- keeps
+# the full discipline. (Replaces v1's `core:`-key exemption: v2 packs declare
+# dependency as manifest data, and members are standalone by design.)
 set -euo pipefail
 
 root="${1:-$(pwd)}"
@@ -94,15 +94,13 @@ warn() { echo "WARN: $*"; warns=$((warns + 1)); }
 
 [ -d "$skills_dir" ] || { echo "FAIL: no skills/ under $root"; exit 1; }
 
-# ---- pack core members (the core-member exemption; header comment) -----------
-core_members=" "
-for pm in "$root/PACK.md" "$root"/skills/*/PACK.md; do
+# ---- pack faces (the pack-face exemption; header comment) --------------------
+pack_faces=" "
+for pm in "$root"/skills/*/PACK.md; do
   [ -f "$pm" ] || continue
-  pfm="$(awk '/^---$/{n++; next} n==1{print} n>=2{exit}' "$pm")"
-  pcore="$(printf '%s\n' "$pfm" | sed -n 's/^core:[[:space:]]*//p' | head -1 | tr ',' ' ')"
-  [ -n "$pcore" ] && core_members="$core_members$pcore "
+  pack_faces="$pack_faces$(basename "$(dirname "$pm")") "
 done
-is_core() { case "$core_members" in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+is_pack_face() { case "$pack_faces" in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 
 # ---- 1. frontmatter ----------------------------------------------------------
 for sk in "$skills_dir"/*/; do
@@ -246,7 +244,7 @@ rm -f /tmp/skills-lint-xref.$$
 # separators/paths (`bug/patch/feature`, `.agents/foreman/`) don't false-positive.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
-  is_core "$name" && continue     # core-member exemption (header comment)
+  is_pack_face "$name" && continue  # pack-face exemption (header comment)
   f="$sk/SKILL.md"
   [ -f "$f" ] || continue
   fm="$(awk '/^---$/{n++; next} n==1{print} n>=2{exit}' "$f")"
@@ -280,7 +278,7 @@ emdash="—"
 edge_types="$(mktemp "${TMPDIR:-/tmp}/skills-lint-edges.XXXXXX")"
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
-  is_core "$name" && continue     # core-member exemption (header comment)
+  is_pack_face "$name" && continue  # pack-face exemption (header comment)
   f="$sk/SKILL.md"
   [ -f "$f" ] || continue
   # Extract the delimiter names present (open + close). `|| true`: grep exits 1 on
@@ -367,7 +365,7 @@ rm -f "$edge_types"
 roster="$(mktemp "${TMPDIR:-/tmp}/skills-lint-roster.XXXXXX")"
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
-  is_core "$name" && continue     # core-member exemption (header comment)
+  is_pack_face "$name" && continue  # pack-face exemption (header comment)
   f="$sk/SKILL.md"
   [ -f "$f" ] || continue
   awk -v self="$name" '

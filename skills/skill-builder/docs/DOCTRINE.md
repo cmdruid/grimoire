@@ -10,25 +10,25 @@ short pointer, then lists only its **local overrides** underneath — the same p
 private-override shape a personal dotfiles config uses over a shared one. Apply this doc whenever you
 add or revise a skill; `skill-builder calibrate` is what keeps it current as practice evolves.
 
-## Two regimes: portable skills vs. pack core members
+## Two regimes: pack faces vs. everything else
 
 This doctrine's **independence rules** — self-scoping descriptions, typed edges, the no-sibling-seam
-discipline — exist so a skill routes and functions **bare**, with no composition deployed. A **pack
-core member** (a skill a pack manifest's `core:` extension key names — see the pack-format spec) is
-written for the opposite premise: its pack's authored composition *is* its context, the seams live in
-the pack's doctrine/runbook, and its prose may name pack siblings directly. So the split:
+discipline — exist so a skill routes and functions **bare**, with no composition deployed. The one
+structural exception is a **pack face**: the skill dir that carries a `PACK.md` manifest (see the
+pack-format spec). Composing the pack is the face's *job* — its manifest declares the members and
+its prose may name them directly; that is dependency as manifest data, not a boundary leak. So the
+split:
 
-- **Standalone skills and helpers** (any skill not named `core:` by an installed pack manifest, this
-  library's `skill-builder` included) follow the **full portable discipline** below — independence
-  rules, typed edges, the lint gate's boundary checks.
-- **Pack core members** follow the **pack's authored composition**: no typed-edge blocks, no
-  edge-derivation machinery; sibling references are ordinary prose, judged by the pack's own docs.
-  The lint gate reads `core:` from the pack manifest and exempts these members from its independence
-  checks (sibling-in-description, typed-edge blocks, sibling verb-roster); everything else —
-  frontmatter limits, bundled-ref resolution, script syntax — applies to every skill regardless.
+- **Every non-face skill** — pack members included, this library's `skill-builder` too — follows the
+  **full portable discipline** below: independence rules, typed edges, the lint gate's boundary
+  checks. A pack member is standalone by design; membership grants no exemption.
+- **Pack faces** are exempt from the lint gate's independence checks (sibling-in-description,
+  typed-edge blocks, sibling verb-roster) — the gate discovers faces by the presence of `PACK.md`;
+  everything else — frontmatter limits, bundled-ref resolution, script syntax — applies to every
+  skill regardless.
 
 Everything below states the **portable** regime; where a rule is independence-flavored, read it as
-scoped to standalone skills and helpers.
+scoped to non-face skills.
 
 ## Design philosophy
 
@@ -114,7 +114,7 @@ scoped to standalone skills and helpers.
 
 1. **Typed edges** (`produces`/`consumes`/`handoff`) — the mechanical wiring points. **Required of
    every portable skill** (an all-empty block is a *stated* fact, "I'm a pure mechanism," not an
-   omission; pack core members carry none — § Two regimes).
+   omission; pack faces carry none — § Two regimes).
 2. **Ideal-use examples** — self-contained *"how to use me"* route/workflow a composer or role skill
    can ingest to understand usage. **Enrichment.**
 3. **Deployable seed** — project-customizable assets (e.g. a `templates/` home) plus an authoring

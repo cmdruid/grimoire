@@ -1,13 +1,18 @@
-#!/bin/sh
-# run.sh -- the clankshop fixture harness (plan Task 1.8): every committed test in
-# scripts/tests/, one command. Fixture instances are temp-dir-local and destroyed;
-# patient-zero holds -- nothing runs against the library's own tree.
-set -eu
-DIR=$(CDPATH='' cd "$(dirname "$0")" && pwd -P)
+#!/usr/bin/env bash
+# run.sh — the clankshop test harness entrypoint. Runs every suite against throwaway
+# fixtures (patient-zero holds: nothing touches the library's own tree).
+set -u
+DIR="$(cd "$(dirname "$0")" && pwd)"
+
 rc=0
-for t in face-test.sh onramp-test.sh backlog-test.sh escalation-test.sh mirror-test.sh calibrate-test.sh spine-scan-test.sh; do
+for t in seed-test.sh face-test.sh migrate-scan-test.sh lint-exemption-test.sh; do
   echo "== $t"
   bash "$DIR/$t" || rc=1
 done
-if [ "$rc" -eq 0 ]; then echo "clankshop tests: ALL GREEN"; else echo "clankshop tests: FAILURES"; fi
+
+if [ "$rc" -eq 0 ]; then
+  echo "clankshop tests: ALL GREEN"
+else
+  echo "clankshop tests: FAILURES" >&2
+fi
 exit "$rc"

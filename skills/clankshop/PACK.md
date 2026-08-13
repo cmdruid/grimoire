@@ -1,34 +1,39 @@
 ---
 name: clankshop
-version: 1.1.0
-description: "The full development loop as a skill pack: route a change, design at seed altitude, plan and build features gate-green, ship them from long-lived workstreams, delegate work without polluting context, keep sessions resumable, root-cause bugs before patching them, and audit both code quality and doc ergonomics."
-required: auditor, backlog, debugger, delegate, feature, handoff, mailbox, workstream
-optional: bug, task
-# core: is a grimoire author extension (spec §2 unknown key, ignored by tools) — the
-# lint gate's core-member exemption rule; helpers = the members not listed here.
-core: clankshop, auditor, backlog, debugger, feature, workstream
+version: 2.0.0
+description: "An agentic workshop for a code project: doctrine, records, and routing deployed as four stations (design/build/test/review), with helpers for planning, records, streams, audits, and debugging."
+required: backlog
+optional: auditor, debugger, delegate, feature, handoff, mailbox, workstream, bug, task
 ---
 
-# clankshop — the disciplined development loop
+# clankshop — the workshop pack
 
 The frontmatter above is the pack's **manifest** (spec format 1) — the machine surface
-`install.sh` and the lint gate read. The pack's content lives beside this file in
-`skills/clankshop/`:
+`install.sh` reads. Installing the face installs the members; `required:` names the workshop's
+hard dependencies (the records layer), `optional:` the members installed by default but
+removable without trace.
 
-- `SKILL.md` — the pack face: the system verbs (`setup` / `migrate` / `check`), the intent verbs
-  (`design` / `route` / `verify` / `calibrate` / `docs`) with their role hats (`roles/`), and
-  `ask <role>` for hat-on discussion.
-- `doctrine/` — the seed content `setup` and `migrate` project, through a project's facts, into
-  its `.handbook/`; the doctrine index (`doctrine/README.md`) carries the chapter registry, the
-  team roster, and the door profile.
-- `docs/RUNBOOK.md` — the universal methodology: how a change flows through a deployed
-  installation, when to assume which role, how the system improves itself.
+The v2 roster, by coupling tier (how much workshop a skill needs):
 
-Install from the clone root: `./install.sh --pack clankshop`. Then, in the target project,
-`/clankshop setup` (greenfield) or `/clankshop migrate` (brownfield) — both end with the
-installation block stamped, the handbook projected, and `check` green.
+| tier | skill | is |
+|---|---|---|
+| system | `clankshop` | the seed (handbook + `context.sh`) + `setup` / `migrate` / `check` / persona summons |
+| helper | `blueprint` | feature planning on any repo — ideation to implementation plan |
+| helper | `journal` | **owns the records layer** — `records.sh`, templates, stores, the history ledger; required (setup delegates records standup to it) |
+| helper | `workstream` | long-lived development streams — worktrees, queues, shipping |
+| helper | `auditor` | code-quality audits; drains findings into the records when a workshop is present |
+| helper | `debugger` | root-cause debugging anywhere; guided by the test station's diagnostics when present |
+| utility | `checkpoint` | save/resume session context |
+| utility | `mailbox` | worktree-safe transport for delegated results |
+| utility | `delegate` | sub-agent dispatch routing |
+| utility | `scheduler` | cron/launchd wrapper for recurring agent runs |
+
+**Transition note (v2 rollout):** the manifest lists members by their **current** directory
+names so the pack stays installable at every phase of the v2 rebuild; the roster above uses
+the v2 names. Pending renames: `backlog` → `journal`, `feature` → `blueprint`, `handoff` →
+`checkpoint`; `scheduler` is a new port. The manifest tracks each rename as it lands. The
+`bug`/`task` capture proxies remain optional members.
 
 **One library skill is deliberately not a member:** `skill-builder`, the toolmaker steward for
-the skills library itself. It scaffolds and audits the skills doing the deploying — a
-maintainer's tool for whoever authors skills, not part of the development loop this pack
-composes for a consuming project. It stays outside the manifest by design.
+the skills library itself — a maintainer's tool for whoever authors skills, not part of the
+workshop this pack deploys.
