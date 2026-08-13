@@ -33,8 +33,10 @@ lints green under the recalibrated gate.
 `backlog` → `journal`; it owns the records layer. 168 v1-machinery references — the
 heaviest member. Requires phase 1 (the delegation seam).
 
-- **`records.sh`** (`list` / `show` / `new` / `touch` / `check`), `.records/templates/`,
-  the front-matter contract.
+- **`records.sh`** (`list` / `show` / `new` / `touch` / `done` / `history` / `check`),
+  `.records/templates/`, the front-matter contract, and the **history ledger**
+  (`.records/history.tsv` — closure in place, `done` as its sole writer, `check` enforcing
+  status↔ledger coherence).
 - **Standup both ways**: standalone on a bare repo, and the delegated seam `setup` calls.
 - **Verbs reframed to v2**: capture by kind, curate, escalate, debrief — against the eight
   stores, date-slug filenames, no counters, no done log.
@@ -51,9 +53,8 @@ dependency-weight order:
 - **`auditor`** (36 refs): strip registration/seat machinery; enrichment via the
   install-stamp probe; findings drain through `records.sh`.
 - **`workstream`** (29 refs): `.handbook` paths → v2; build-station context summon.
-  *Carries one small decision the spec leaves open*: the v2 store list has no `done`
-  store, so pick the done-record home — a `reports` record tagged `debrief`, or a
-  tracker closed with `status: done`.
+  Done-records are resolved by the spec's history ledger: shipped units land as ledger
+  entries, plus a `reports` record tagged `debrief` when the unit warrants narrative.
 - **`blueprint`** (27 refs + the new design): rename from `feature`; the six verbs
   (`brainstorm` / `grill` / `spec` / `roadmap` / `plan` / `review`); dual-mode entry
   (install-stamp probe, bundled templates, confirmed output home standalone).
