@@ -5,7 +5,7 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 rc=0
-for t in seed-test.sh face-test.sh migrate-scan-test.sh lint-exemption-test.sh; do
+for t in seed-test.sh face-test.sh migrate-scan-test.sh lint-exemption-test.sh setup-journal-test.sh; do
   echo "== $t"
   bash "$DIR/$t" || rc=1
 done

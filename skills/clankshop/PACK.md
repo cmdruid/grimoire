@@ -2,7 +2,7 @@
 name: clankshop
 version: 2.0.0
 description: "An agentic workshop for a code project: doctrine, records, and routing deployed as four stations (design/build/test/review), with helpers for planning, records, streams, audits, and debugging."
-required: backlog
+required: journal
 optional: auditor, debugger, delegate, feature, handoff, mailbox, workstream, bug, task
 ---
 
@@ -30,9 +30,10 @@ The v2 roster, by coupling tier (how much workshop a skill needs):
 
 **Transition note (v2 rollout):** the manifest lists members by their **current** directory
 names so the pack stays installable at every phase of the v2 rebuild; the roster above uses
-the v2 names. Pending renames: `backlog` → `journal`, `feature` → `blueprint`, `handoff` →
-`checkpoint`; `scheduler` is a new port. The manifest tracks each rename as it lands. The
-`bug`/`task` capture proxies remain optional members.
+the v2 names. Landed: `backlog` → `journal` (the v2 records layer — stores + `records.sh` +
+the history ledger). Pending renames: `feature` → `blueprint`, `handoff` → `checkpoint`;
+`scheduler` is a new port. The manifest tracks each rename as it lands. The `bug`/`task`
+capture proxies remain optional members.
 
 **One library skill is deliberately not a member:** `skill-builder`, the toolmaker steward for
 the skills library itself — a maintainer's tool for whoever authors skills, not part of the
