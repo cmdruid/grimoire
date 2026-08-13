@@ -7,6 +7,11 @@ deliberately broken input.
 
 ## Phase 1 — the face: rebuild `clankshop`
 
+> **Shipped 2026-08-13** (`stream/v2`, "clankshop(build): v2 face rebuild"). Exit criteria met:
+> fixture harness ALL GREEN (seed → `context.sh --check` green on a throwaway repo),
+> `context.sh --check` and the recalibrated gate exemption both proven by breaking, face lints
+> at zero FAILs. Gate recalibration landed as the pack-face exemption (`core:` key retired).
+
 Replace `skills/clankshop/` internals with v2. Everything else depends on this.
 
 - **Seed handbook**: `README.md` (flow narrative + layout/load/precedence rules + stamp
