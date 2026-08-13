@@ -2,7 +2,7 @@
 
 > Status: settled design, 2026-08-12. This is a full v2 redesign of the `clankshop` skill —
 > the v1 implementation (never deployed) is prior art, not a constraint. Remaining work is
-> execution: see *Open items*.
+> execution: see *Open items* and the roadmap, `2026-08-12-clankshop-v2-roadmap.md`.
 
 ## Purpose
 
