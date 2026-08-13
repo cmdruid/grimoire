@@ -1,11 +1,16 @@
 # BOOTSTRAP -- a portable code-quality audit system
 
-A self-contained, language-neutral blueprint for a code-quality audit system, split across two
-homes by how often each part changes: the rubric (`.agents/roles/auditor/`, hand-curated source of
-truth) and the deliverables (`.records/audit/`, accumulated per-run output). It audits a project's
-*own code* for quality and invariant-conformance, surfaces findings as a bounded + drained tracker,
-and is re-runnable each cycle. Drop this file into any project and an agent can **reconstruct the
+A self-contained, language-neutral blueprint for a code-quality audit system, split by how often
+each part changes: the **rubric** (hand-curated source of truth -- `GUIDE.md`, `rules/`,
+`metrics.sh`, in the host's rubric home) and the **deliverables** (per-pass output, drained into
+the host's records or trackers -- never a standing store of the audit's own). It audits a
+project's *own code* for quality and invariant-conformance, surfaces findings with evidence, and
+is re-runnable each cycle. Drop this file into any project and an agent can **reconstruct the
 whole system**, or **borrow a piece**.
+
+The rubric home is mode-dependent (see the skill's entry probe): on a clankshop workshop host it
+is `.handbook/test/workflows/audit/` (guardian doctrine, loaded on demand); standalone it is a
+directory confirmed once at setup (default `docs/audit/`). `<home>` below means that directory.
 
 It is a sibling to any companion dev-system blueprint (one that blueprints the surrounding deployed doc-system, if the host has one). This
 file blueprints only the audit subsystem. It is deliberately project-agnostic: anything specific to
@@ -28,9 +33,9 @@ fill**, marked `<like this>`.
 
 These are *why* the system is shaped as it is. Keep them even if you change the file layout.
 
-- **Bounded + drained, like every deployed doc artifact.** The methodology is durable (re-read each pass);
-  the finding tracker is *living* and **drains into the host project's existing trackers**, so it
-  never becomes a second graveyard. (Same principle as the dev-system blueprint.)
+- **Bounded + drained.** The methodology is durable (re-read each pass); findings **drain into
+  the host's existing records and trackers the moment a pass ends**, so the audit never grows a
+  second graveyard of its own. The audit surfaces and prioritizes; the host schedules.
 - **One rule file per dimension, all in one shape.** An agent (or subagent) reads exactly one file
   and has the complete scoring contract for that dimension. Uniformity is what makes the audit
   parallelizable and calibratable.
@@ -60,7 +65,7 @@ Decide these before reconstructing. They are what make the generic framework you
 | `<language>` | The implementation language -> drives the anti-pattern greps + metrics recipes. | Rust / TypeScript / Python |
 | `<native dimensions>` | The host's sacred invariants, each promoted to a scored dimension atop the 12 portable ones. | "Determinism" (worldgen pure in `(seed, pos)`); "AI-boundary" |
 | `<targets>` | The audited units, each tagged Deep / Mid / Light by blast radius. | `voxel/`, `content/` (Deep); `ai/` (Mid); `config.rs` (Light) |
-| `<drains>` | The host's **existing** trackers a finding graduates into -- never a parallel queue. | `.records/tasks.md` (feature work) + `.records/bugs/` (defects) |
+| `<drains>` | The host's **existing** capture homes a finding graduates into -- never a parallel queue. | workshop: bugs records + Backlog/Issues/Feedback tracker lines (via the records layer); standalone: the host's own tracker files |
 | `<exemplars>` | The in-repo files a score of 5 is measured against (often one library file + one service/system file). | filled by the *Select exemplars* step |
 | `<gate>` | The host's quality command the audit run must satisfy. | `./tests/scripts/ci.sh` |
 
@@ -68,51 +73,42 @@ Decide these before reconstructing. They are what make the generic framework you
 
 ## 3. The two lifecycles
 
-The system splits cleanly by how often each part changes -- keep them in separate **homes**, not
-just separate files.
+The system splits cleanly by how often each part changes.
 
-- **Durable methodology -- the seed, `.agents/roles/auditor/`.** `README.md`, `GUIDE.md` (the thin hub),
-  `TEMPLATE.md` (the finding-entry shape), `rules/` (one file per dimension), and `metrics.sh` (the
-  authored metric-computation tool). Re-read each pass; revised only when the *method* changes, not
-  when findings do. Hand-curated seed, unlike the accumulating record stores.
-- **Living tracker -- the record, `.records/audit/`.** `FINDINGS.md` (scorecards + open findings),
-  append-only `logs/` (raw per-pass output + `metrics.csv`), and `history/` (swept-resolved
-  findings). Churns every pass; nothing here is hand-authored, only accumulated.
+- **Durable methodology -- the rubric, `<home>`.** `GUIDE.md` (the hub, carrying the
+  finding-entry shape), `rules/` (one file per dimension), and `metrics.sh` (the authored
+  metric-computation tool). Re-read each pass; revised only when the *method* changes, not when
+  findings do. Hand-curated doctrine.
+- **Per-pass deliverables -- drained, never stored by the audit.** Each pass produces one
+  **pass report** (a `reports` record on a workshop host, tagged `audit`; a dated file in
+  `<home>` standalone) holding the scorecard, the quoted metrics, and every finding with
+  evidence -- then every actionable finding **drains** to its `<drain>` and the report closes.
+  The sequence of pass reports *is* the trend history; there is no separate findings tracker,
+  log directory, or CSV to tend.
 
-Never mix them: a finding in `GUIDE.md`, or methodology in `FINDINGS.md`, is the drift this split
-prevents -- now enforced by directory, not just by convention. The living tracker's mechanics --
-the finding entry shape, IDs, drains, and the sweep -- are in §7. The two homes are not one-way:
-`.records/audit/`'s accumulated findings are the signal that periodically **calibrates**
-`.agents/roles/auditor/`'s rubric (exemplars, thresholds, known false-positives) -- the same
-deliverables-inform-seed shape as `architect`/`foreman`.
+Never mix them: a finding in `GUIDE.md` is the drift this split prevents. The flow is not
+one-way: drained findings are the signal that periodically **calibrates** the rubric
+(exemplars, thresholds, known false-positives).
 
 ---
 
 ## 4. Directory & file manifest
 
-Two homes, split by the two lifecycles (§3):
+One authored home (the rubric); deliverables drain per §3:
 
 ```
-.agents/roles/auditor/      -- the rubric (seed, hand-curated, source of truth)
-  README.md          -- subsystem index: the two lifecycles, the audit loop, the drains, and the
-                        (deferred) "Select exemplars" step
-  GUIDE.md           -- durable methodology hub: framing, risk-weighted scope, the rubric index,
-                        scoring rules, process, severity, drains
-  TEMPLATE.md        -- the finding-entry shape + how to file (IDs, themes, status, draining)
-  rules/             -- one file per dimension, all in the uniform shape (§6)
-  metrics.sh         -- the <language> objective-metrics script (§8)
-
-.records/audit/        -- the deliverables (accumulated per-run output)
-  FINDINGS.md        -- living tracker: pass-history table + per-pass scorecard + open findings
-  logs/
-    README.md        -- the append-only per-pass log convention
-    metrics.csv      -- trend history, one row per run, written by `.agents/roles/auditor/metrics.sh`
-  history/           -- (created on first sweep) dated resolved-findings records
+<home>/               -- the rubric (hand-curated, source of truth)
+                         workshop: .handbook/test/workflows/audit/ · standalone: docs/audit/
+  GUIDE.md            -- the hub: framing, risk-weighted scope, the rubric index, scoring
+                         rules, process, the finding-entry shape, severity, drains
+  rules/              -- one file per dimension, all in the uniform shape (§6)
+  metrics.sh          -- the <language> objective-metrics script (§8)
 ```
 
-Dependency direction: `README` -> `GUIDE` -> `rules/` (all within `.agents/roles/auditor/`); `TEMPLATE`
-(`.agents/roles/auditor/`) -> `FINDINGS` (`.records/audit/`, the one dependency that crosses homes). Build
-leaves before indexes (rules before GUIDE before README) so each commit stays `<gate>`-green.
+Standalone, dated pass reports (`YYYY-MM-DD-audit-<scope>.md`) accumulate beside the rubric in
+`<home>`; on a workshop host they are `reports` records and never live here. Dependency
+direction: `GUIDE` -> `rules/`. Build leaves before indexes (rules before GUIDE) so each commit
+stays `<gate>`-green.
 
 ---
 
@@ -198,25 +194,24 @@ Until the *Select exemplars* step runs, the *Calibrated examples* and *Exemplars
 
 ## 7. The finding lifecycle + drains
 
-`FINDINGS.md` **stages** findings; the host project's trackers **own** the committed work.
+The **pass report** stages findings; the host's records and trackers **own** the committed
+work. No sequential IDs, no living findings tracker, no resolved-findings archive: the report's
+path is the ID, and a finding is cited as `<report-path>` + its heading.
 
-- **ID:** a themed, zero-padded sequential ID per theme (`DOC-01`, `GOD-03`, `DET-01`). Permanent
-  -- never renumbered, even after resolution.
-- **Entry shape** (in `TEMPLATE.md`): Status; Severity; Confidence (high/med/low); Effort (S/M/L);
-  Dimension; Target; Location (`path:line` or `--`); Found (`YYYY-MM-DD (pass N)`); **`Graduated:`**
-  (a link into a `<drain>`, or `--`); optional **`processed:`** (a YAML list of finding keys the
-  improvement loop has drained -- its terminal writeback; never a boolean); Finding (with the
-  metric/`file:line` evidence); Fix; Resolution. Each entry's themed ID doubles as its stable
-  **finding key** (`<FINDINGS-path>#<ID>` is how a consumer cites one finding).
-- **Drain -- two bars.** An **ordinary code finding** graduates into a `<drain>` (feature work ->
-  the backlog; a defect -> the bug store), backfills `Graduated:`, and is scheduled through the
-  routing walk. A finding that passes the **system-improvement bar** -- evidence the *framework
-  itself* should change (a rule, a chapter, a gate), not the project's code -- feeds the
-  improvement loop's intake instead; the loop dispatches it to the owning role and stamps
-  `processed:` when drained. There is **no parallel work queue** -- the audit surfaces, the host
-  trackers and the loop schedule.
-- **Sweep:** when `FINDINGS.md` grows, move resolved entries verbatim into
-  `history/audit-findings-resolved-<date>.md`, keeping the live tracker short (bounded + drained).
+- **Entry shape** (stated in `GUIDE.md`): a `###` heading per finding, then Severity;
+  Confidence (high/med/low); Effort (S/M/L); Dimension; Target; Location (`path:line` or
+  `--`); Drained (a link/line reference into a `<drain>`, or `--` while open); Finding (with
+  the metric/`file:line` evidence); Fix.
+- **Drain -- by kind, at pass end.** A **defect** becomes a bug capture (workshop: a `bugs`
+  record linked from the report; standalone: the host's defect tracker). **Feature work /
+  cleanup** becomes a backlog item (workshop: a **Backlog** tracker line). A **project problem
+  or risk** becomes an **Issues** line. Evidence the *rubric or framework itself* should change
+  -- not the project's code -- becomes a **Feedback** line, the improvement loop's intake.
+  Backfill each finding's `Drained:` field as it graduates. There is **no parallel work
+  queue** -- the audit surfaces, the host trackers schedule.
+- **Close the report.** Once every actionable finding is drained, close the pass report
+  (workshop: `records.sh done <report> --as consumed --note "findings drained"`); the ledger
+  keeps the trace. Standalone, the dated file simply stands as the pass's record.
 
 Severity is **scaled to the audit's purpose**. For an ongoing-hygiene audit (no release gate): P0 =
 a correctness / invariant violation to fix before relying on the code; P1 = a material quality gap;
@@ -227,10 +222,11 @@ and add an exit gate. State which model you chose in `GUIDE.md`.
 
 ## 8. The metrics script (the `<language>` slot)
 
-`metrics.sh` turns the rule-file grep recipes into reproducible numbers, prints a Markdown report,
-and appends one trend row per run to `logs/metrics.csv`. It is the only deeply language-specific
-file. Compute the quantifiable dimensions; never guess a number the script can produce. Typical
-columns (rename per language):
+`metrics.sh` turns the rule-file grep recipes into reproducible numbers and prints a Markdown
+report -- quote it verbatim in the pass report, which is where the numbers persist (the report
+sequence is the trend; the script keeps no state of its own). It is the only deeply
+language-specific file. Compute the quantifiable dimensions; never guess a number the script can
+produce. Typical columns (rename per language):
 
 - **doc coverage** -- module-header coverage + public-item doc coverage.
 - **structure** -- count of files over a size threshold + the largest file.
@@ -267,27 +263,28 @@ Answer these in order; the answers fill the *Slots* and shape the rubric:
 ## 10. Setup playbook
 
 **Full setup** (leaves-before-index, so each commit stays `<gate>`-green):
-1. Fill the *Slots* (§2) via the *Decision walk* (§9).
+1. Fill the *Slots* (§2) via the *Decision walk* (§9); resolve `<home>` per the skill's entry
+   probe (workshop: `.handbook/test/workflows/audit/`; standalone: confirm once, default
+   `docs/audit/`).
 2. Write the `rules/<dimension>.md` files from the *Rule-file shape* (§6) -- the 12 portable
    dimensions + your `<native dimensions>`, with `<language>` greps. (They reference `../GUIDE.md`
    in backticks, since it does not exist yet.)
-3. Write `GUIDE.md` (`.agents/roles/auditor/`, the hub): framing, the risk-weighted `<targets>` table,
-   the rubric index (linking each `rules/` file), scoring rules, process, severity, drains.
-4. Write `TEMPLATE.md` (`.agents/roles/auditor/`) then `FINDINGS.md` (`.records/audit/`, the tracker
-   skeleton).
-5. Write `logs/README.md` + the `metrics.csv` header (both `.records/audit/logs/`), then
-   `README.md` (`.agents/roles/auditor/`, the index -- everything it links now exists).
-6. Write `metrics.sh` (`.agents/roles/auditor/metrics.sh`, §8); run it for a baseline
-   `.records/audit/logs/metrics.csv` row; wire `--check` if you have an invariant to gate.
-7. Wire the subsystem into the host's doc index (one pointer per home) and run `<gate>`.
-8. Run a **lean baseline pass** (one reader per Deep/Mid target) to seed `FINDINGS.md` and prove
-   the rubric is usable.
+3. Write `GUIDE.md` (`<home>`, the hub): framing, the risk-weighted `<targets>` table, the
+   rubric index (linking each `rules/` file), scoring rules, process, the finding-entry shape
+   (§7), severity, drains.
+4. Write `metrics.sh` (`<home>/metrics.sh`, §8); run it for a baseline report; wire `--check`
+   if you have an invariant to gate.
+5. Wire the rubric in -- workshop: a `core/ROUTING.md` row ("audit the code" -> this workflow)
+   and, if the guardian should run it on cadence, a chore line in `test/POLICY.md`; standalone:
+   one pointer from the host's doc index. Run `<gate>`.
+6. Run a **lean baseline pass** (one reader per Deep/Mid target) to produce the first pass
+   report and prove the rubric is usable.
 
 **Select exemplars (the deferred step).** Once the framework has landed, anchor it to real code:
 scan the source, nominate the best-documented / cleanest representative file(s) (often one
 pure-logic/library file + one service/system file), pin them as the score-5 `<exemplars>` in
-`.agents/roles/auditor/GUIDE.md`, and backfill calibrated `file:line` examples into each rule's *Calibrated examples* and
-*Exemplars* sections. Do this before relying on cross-pass score comparisons.
+`<home>/GUIDE.md`, and backfill calibrated `file:line` examples into each rule's *Calibrated
+examples* and *Exemplars* sections. Do this before relying on cross-pass score comparisons.
 
 **Build the verify automation when the rubric has stabilized.** A score-then-verify fan-out (one
 agent per target reading its `rules/` file as the contract, then an adversarial verifier per high
@@ -300,5 +297,5 @@ then, run passes by hand with the grep recipes.
 
 This blueprint is a snapshot of a living system; it drifts unless maintained. Update it when
 the system's *structure* changes -- a dimension added, the rule-file shape revised, the drain model
-flipped -- not for routine rule-content edits. Treat it as one more thing the host's spine audit
-checks, alongside a companion dev-system blueprint, if the host has one.
+flipped -- not for routine rule-content edits. Treat it as one more thing the host's doc-audit
+sweep checks, if the host has one.
