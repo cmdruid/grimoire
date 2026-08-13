@@ -61,6 +61,16 @@ phase-1 fixture exercises setup → journal delegation end to end.
 
 ## Phase 3 — helper upgrades
 
+> **Shipped 2026-08-13** (`stream/v2`, six commits "clankshop(build): v2 auditor" …
+> "records.sh small upgrades + tests"). Exit criteria met: every member lints green (fails=0)
+> and the boundary WARNs closed (`/backlog` window, `/blueprint` forward-ref); records seams
+> exercised against the phase-1 fixture (setup→journal delegation suite); the new
+> `records.sh` checks (record-link validation, open-ticket count, prune-candidates filters)
+> each proven by breaking. Rider: `migrate.md` audited against the eight-store schema
+> (mapping menu; non-closing backfill rule) and `records.sh` grew
+> `prune-candidates` — the agreed Phase-2 follow-ups. Blueprint landed as one commit
+> (rename + six verbs, build verb retired to the host lane); PACK.md records the rename.
+
 Requires phases 1–2 (helpers probe the install stamp and call `records.sh`). In
 dependency-weight order:
 
