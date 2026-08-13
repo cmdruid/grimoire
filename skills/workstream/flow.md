@@ -27,7 +27,7 @@ delegation route and ship cadence) and recorded in the hand-off Coordinates `mod
 Mode is orthogonal to *Ship cadence* and the *Delegation route*: a `manual` stream still has a cadence
 (it governs when SHIP fires) and may still delegate **for fan-out** (parallel Explore, mechanical
 sweeps) — but in `manual` mode delegation is **not** the model lever (the session model already *is*
-the phase model), so `/feature build`'s per-phase model routing is off.
+the phase model), so the build's per-phase model routing is off.
 
 ## The three rules
 
@@ -51,27 +51,26 @@ you build to completion is the **phase**, not the whole feature: at each phase b
 **park** for the model swap (see *Manual mode: the phase loop*). In `delegate` mode the unit is the
 whole feature, exactly as above.
 
-**The build itself is `/feature`'s job, when available.** If the `/feature` skill is installed, run
-the plan with **`/feature build <plan>`** — its execution discipline is already worktree-aware
-(mode-routed authoring — inline, `/mailbox` patch, or isolated worktree, with the main session always
-the **sole writer**; artifact-free, red-first, ends at gate-green) and **hands back** here, so
-`/workstream` keeps owning the reset ritual (`/feature` never ships or debriefs). **Per-phase model
-routing (`delegate` mode):** `build` may dispatch each phase to a model-matched delegate via `/mailbox`, routed per the
-`/delegate` skill's model-routing table. (**In `manual` mode this is off** — the BUILD session is
-already on the build-model, so `build` runs inline; delegation stays available only for fan-out/grunt,
-never as the model lever.) The route is **confirmed once and recorded in the hand-off**
-(*Delegation route* section) so an autonomous loop never stalls re-asking it, and provider failures
-(quota/limit/outage) **degrade per `/delegate`'s fallback ladder -- down to inline on the orchestrator --
-rather than blocking the loop**. Delegates author read-only into a `.mailbox/` slot the orchestrator
-applies and gates. The **gate stays single-location** in this worktree regardless of who authored the
-change. Earlier stages map
-the same way: `/feature brainstorm | design | plan` produce the queue's design/plan artifacts. When
-`/feature` isn't installed, build the plan **by hand** per the host's feature lane where one is
-documented (`.handbook/build/workflows/feature.md` on a workshop host), else the plan template's own
-structure — the
-loop is unchanged either way; `/feature` is the preferred *realization*, not a hard dependency. (The
-seam ownership is the contract: whoever builds, `build` stops at gate-green and `/workstream` lands +
-debriefs.)
+**The stream builds the plan itself, per the host's build lane.** Execute the plan's tasks/slices
+red-first to gate-green, following the host's feature lane where one is documented
+(`.handbook/build/workflows/feature.md` on a workshop host — its walk's build step), else the plan
+template's own structure. The execution discipline is the loop's own: the main session is the
+**sole writer** of the tree, authoring is mode-routed per `/delegate` (inline, a `/mailbox` patch
+slot the orchestrator applies, or an isolated worktree merged back), the **gate stays
+single-location** in this worktree regardless of who authored the change, and progress is
+artifact-free (the plan's own checkboxes). **Per-phase model routing (`delegate` mode):** each
+work-unit may go to a model-matched delegate via `/mailbox`, routed per the `/delegate` skill's
+model-routing table. (**In `manual` mode this is off** — the BUILD session is already on the
+build-model, so the build runs inline; delegation stays available only for fan-out/grunt, never as
+the model lever.) The route is **confirmed once and recorded in the hand-off** (*Delegation route*
+section) so an autonomous loop never stalls re-asking it, and provider failures
+(quota/limit/outage) **degrade per `/delegate`'s fallback ladder -- down to inline on the
+orchestrator -- rather than blocking the loop**. The **planning stages** map to `/blueprint`, when
+installed: `/blueprint spec` (and `roadmap`) argue the queue's design artifacts, `/blueprint plan`
+writes each feature's tracer-bullet plan, `/blueprint review` gates a high-stakes plan before
+build — blueprint never builds; the stream does. Without `/blueprint`, author the plan by hand per
+the lane. Either way the seam ownership is the contract: the build stops at gate-green and
+`/workstream` lands + debriefs.
 
 ### Seam rule — the only places the agent round-trips
 
@@ -130,7 +129,7 @@ item as buildable work (a KNOWN next-item *or* an AMBIGUOUS pick), cheaply confi
 on a workshop host `records.sh history --grep <slug>` (the closure ledger), else grep the project's own
 done trail — plus glance at the code surface it names. A stale entry otherwise costs a
 wasted question round-trip + an Explore dispatch before `build` discovers there is nothing to build.
-(Same doctrine as `/feature plan`'s grounding gate: verify inherited/queued work is real before building it.)
+(Same doctrine as `/blueprint plan`'s grounding gate: verify inherited/queued work is real before building it.)
 
 After the single launch confirm, build to completion. (This is the same interaction for `create`'s
 tail, `load`'s resume, and `recycle`'s relaunch — there is no separate per-verb menu.)
@@ -248,11 +247,11 @@ ritual's **save** + a **park** for a `/model` swap. The hand-off records the cur
 `build` | `ship`) so `load` resumes into the right phase and reminds you of its model (from the
 hand-off's *Phase model map*). The three phases, each ending `save -> park -> reset -> load`:
 
-> **PLAN** (plan-model) — author the feature's plan: `/feature design` + `/feature plan` into
+> **PLAN** (plan-model) — author the feature's plan: `/blueprint spec` + `/blueprint plan` into
 > `.records/plans/`. Then **save** (record `Phase: build`) -> **park**: "Plan ready. Switch to <build-model>
 > (`/model <m>`), `/clear`, `/workstream load <stream>`."
 >
-> **BUILD** (build-model) — `/feature build <plan>` to gate-green, then `/journal debrief` #1 (the
+> **BUILD** (build-model) — build the plan to gate-green (the host's build lane), then `/journal debrief` #1 (the
 > feature's follow-ups). Then act on *Ship cadence*: **at a landing point**, **save** (`Phase: ship`)
 > -> park for the ship-model swap. **Between landing points**, **save** (`Phase: plan` for the *next*
 > feature) -> park for the plan-model swap. (Completed features still accumulate on the branch; only

@@ -119,7 +119,7 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
      — it is what points a compacted session back to the hand-off; `flow.md` -> *Scenario C*.)
    - **Build the Cheat sheet** (the template's `## Cheat sheet` section) — a durable orientation map so
      a resuming or small-context agent navigates this domain without re-exploring (the exploration
-     `/feature brainstorm`/`plan` would otherwise re-derive into context that each reset destroys).
+     `/blueprint brainstorm`/`plan` would otherwise re-derive into context that each reset destroys).
      Dispatch a few **read-only** Explore subagents (allowed: `create` runs on the root checkout, and
      the read-only bar forbids *editing* in a worktree, not reading) to map the domain the plan/brief
      targets, then fill the four pointer blocks from what they find — the key host source files +

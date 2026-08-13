@@ -51,7 +51,7 @@
        tracker line via `/journal issue`; else the project's own) tagged
        `[conflict band-aid]`: `<file:line>` + why + this stream's name.
      A later review pass walks `grep -rn "REVIEW(conflict)"` (or the `[conflict band-aid]` entries) with
-     the host's code-review tooling or `/feature review`.
+     the host's code-review tooling or `/blueprint review`.
 3. **Re-gate by what the rebase actually pulled in — the gate-by-what-lands matrix.** This is the
    canonical decision (Landing step 2 in `verbs/ship.md` applies this same matrix): do NOT
    blanket-run the full gate. A rebase that only

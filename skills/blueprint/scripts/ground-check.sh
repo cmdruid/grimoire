@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ground-check.sh <root> <doc> [<doc>...]
 #
-# Plan re-grounding aid for /feature's plan gate. A design ages well but the
+# Plan re-grounding aid for /blueprint's plan gate. A design ages well but the
 # literal code it references ages fast (a renamed type, a moved file). This
 # extracts the rooted path / `file:line` references a design or plan doc points
 # at and reports which no longer resolve at the worktree's HEAD -- so

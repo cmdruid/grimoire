@@ -56,13 +56,13 @@ blocks every stream's `ship`).
 4. **Land the artifacts** per *Where designs land*, then run the debrief sweep to route follow-ups.
 
 ## The toolbox (durable reference -> depth in the docs)
-- **The design spine:** brainstorm (idea -> validated approach), design (argued spec), plan
-  (task-by-task implementation plan), build (gate-green code), review (independent verdict on any
-  artifact, callable anytime).
+- **The design spine:** brainstorm (divergent ideation), grill (resolve every decision branch),
+  spec (argued specification), roadmap (multi-phase decision map), plan (tracer-bullet
+  implementation plan), review (independent two-axis verdict on any artifact, callable anytime).
   `<project: planning tier docs -- see host AGENTS.md>`
 - **Templates:** `<project: spec, ADR, roadmap, implementation plan templates -- if the host has
-  /feature installed, its bundled templates/ (plan-design, plan-implementation, roadmap, adr); else
-  equivalent>` Match the host repo's frontmatter schema (type / status / updated fields).
+  /blueprint installed, its bundled templates/ (spec, plan, roadmap, adr); else
+  equivalent>` Match the host repo's frontmatter schema (doctype / status / dates / tags).
 - **Change router:** `<project: change router doc (classifies any change -> the right lane) -- see host AGENTS.md>`
 - **Capture:** file feature follow-ups to the backlog; dev-tool friction to the issues tracker;
   qualitative notes to feedback; defects to the bug tracker. Run the debrief sweep at the end of a
