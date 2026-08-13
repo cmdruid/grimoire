@@ -35,6 +35,15 @@ lints green under the recalibrated gate.
 
 ## Phase 2 — `journal` (rewrite, not rename)
 
+> **Shipped 2026-08-13** (`stream/v2`, "clankshop(build): v2 records layer"). Exit criteria
+> met: `records.sh check` proven by breaking (contract violations, closed-without-ledger,
+> malformed ledger — and the suite itself proven red by disabling the ledger append);
+> standalone standup green on a bare repo (declared records-root honored, additive on legacy
+> trees); the delegation suite exercises seed → journal standup → both check facts end to
+> end. Journal harness 69 assertions ALL GREEN; lint at zero FAILs (sibling `/backlog` refs
+> WARN by design until phase 3). Decisions recorded in the phase plan: ticket mirror
+> deferred; quick captures are tracker-body lines; v1 records migration is `migrate`'s job.
+
 `backlog` → `journal`; it owns the records layer. 168 v1-machinery references — the
 heaviest member. Requires phase 1 (the delegation seam).
 
