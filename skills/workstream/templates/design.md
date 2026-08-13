@@ -35,7 +35,7 @@ blocks every stream's `ship`).
 - **Ground before designing.** Read the project vision doc + the core design principles doc and skim
   the relevant code BEFORE opening the brainstorm -- the project's foundational architecture often
   makes the core decision unusually clean. The right grounding turns a hard design into an obvious one.
-  `<project: vision doc, design principles doc, and key invariants -- see host AGENTS.md + .handbook/rules/INVARIANTS.md>`
+  `<project: vision doc, design principles doc, and key invariants -- see host AGENTS.md + .handbook/core/INVARIANTS.md>`
 - **Lead with the load-bearing fork.** Find the one decision the whole architecture hangs on and put
   it to the user first, each option elaborated with a recommendation up front -- don't bury it under
   detail.
@@ -73,7 +73,7 @@ blocks every stream's `ship`).
 - **The project keystone is a design tool, not just a constraint.** The foundational architecture
   invariant often makes a feature's core decision unusually clean -- ask "can this be derived instead
   of stored?" early.
-  `<project: keystone invariant -- see host AGENTS.md + .handbook/rules/INVARIANTS.md>`
+  `<project: keystone invariant -- see host AGENTS.md + .handbook/core/INVARIANTS.md>`
 - **The product fork hides the architecture fork.** A seemingly UX-level question (e.g., a UX-level
   choice that dictates whether any state needs to be stored at all) often dictates whether state is
   persisted at all. Surface that coupling explicitly.
@@ -81,13 +81,13 @@ blocks every stream's `ship`).
   re-deriving decisions -- record the chosen approach AND the rejected alternatives + why.
 - **Don't re-brainstorm settled decisions.** Once a design/ADR lands, the build stream executes it; a
   resumed session reads the approved design, it doesn't relitigate it.
-- `<project: additional hard-won design lessons -- see the host's .handbook/rules/INVARIANTS.md>`
+- `<project: additional hard-won design lessons -- see the host's .handbook/core/INVARIANTS.md>`
 
 ## Where designs land
 - Design artifacts are **docs-only** -> land on the integration trunk pathspec-scoped
   (`<project: pathspec-scoped commit command -- see host AGENTS.md>`); the **doc-linter is the only
   relevant check** -- **skip the full build gate**. Root index is contended -- never `git add -A`.
-- Artifacts: the design spec (with frontmatter) in `<project: design specs location -- e.g. .records/plans/>`;
+- Artifacts: the design spec (with frontmatter) in `<project: design specs location -- e.g. .records/design/>`;
   any decision in a new ADR (index it in the dev index); roadmap/backlog updates marking the feature
   designed.
   `<project: ADR location, dev index -- see host AGENTS.md>`

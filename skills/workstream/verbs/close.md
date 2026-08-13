@@ -1,11 +1,11 @@
 # `close`  · runs at the seam (tear down — queue exhausted or paused)
 
 **`close` is a lean teardown — by default it creates no artifacts, makes no root commit, and writes
-no record.** The stream's durable trail already exists: every shipped feature wrote its own
-`.records/done/` record at `ship`, and follow-ups were already routed by the reset ritual's `debrief`. Do
-**not** re-capture at close — no close `.records/done/` record, no FEEDBACK/ISSUES/notes sweep, no
+no record.** The stream's durable trail already exists: every shipped feature left its ledger entry
+(and any debrief report) at `ship`, and follow-ups were already routed by the reset ritual's `debrief`. Do
+**not** re-capture at close — no close record, no Feedback/Issues/notes sweep, no
 `<target>` advance. (If a close is *genuinely* eventful and you have unrouted learnings, run
-`/backlog debrief` explicitly **before** closing — the user's call, never the default path.) The common case
+`/journal debrief` explicitly **before** closing — the user's call, never the default path.) The common case
 (queue exhausted, nothing unshipped) is **three git commands** and no token-heavy bookkeeping.
 
 `<target>` = the workstream's `integration-target` (Coordinates).
@@ -39,4 +39,4 @@ no record.** The stream's durable trail already exists: every shipped feature wr
    `git -C <root> branch -D <branch>`, then `rm -rf <root>/.workstreams/<stream>/` (hand-off
    directory — scratch, never merged). `worktree-teardown.sh` is not invoked.
 
-   Any ADR stays live in `.records/adr/`.
+   Any ADR stays live in the records root's `adr/` store.

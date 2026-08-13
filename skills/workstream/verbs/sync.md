@@ -47,7 +47,8 @@
      survived — capture it **at the moment** (not deferred to reset, where the detail is lost), two ways:
      - leave a grep-able marker at the band-aid site: `// REVIEW(conflict): <one-line why>` — this **is**
        the review-pass target, and it satisfies the host's annotate-debt-in-source rule;
-     - add a one-line entry to the host's dev-experience/friction tracker (e.g. `.records/issues.md`) tagged
+     - add a one-line entry to the host's dev-experience/friction tracker (workshop host: an **Issues**
+       tracker line via `/journal issue`; else the project's own) tagged
        `[conflict band-aid]`: `<file:line>` + why + this stream's name.
      A later review pass walks `grep -rn "REVIEW(conflict)"` (or the `[conflict band-aid]` entries) with
      the host's code-review tooling or `/feature review`.
@@ -72,7 +73,7 @@
    This is the fix for the fresh-stream full-build: a markdown-only stream that rebases onto a moved
    `<target>` now runs at most the seconds-long doc-linter, never a from-scratch full build. Report
    which path you took and the result. (The concrete gate and doc-linter are the host's — surfaced in
-   its `AGENTS.md` / `.handbook/testing/`; the docs-vs-build split needs no host globs, it is just the `.md`
+   its `AGENTS.md` / `.handbook/test/`; the docs-vs-build split needs no host globs, it is just the `.md`
    test, so it stays portable.)
 
 `sync` **does not save** — it rebases + gates, nothing else (saves are coupled to the reset;

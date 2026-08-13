@@ -75,7 +75,7 @@ trunk). So the coordinator NEVER does iterative, scratch-generating work on the 
   the design stream, not here.
 - **Respect stream ownership** -- check `/workstream status` + the relevant decision record before
   touching a path another stream owns.
-- `<project: additional hard-won coordinator lessons -- see the host's .handbook/rules/INVARIANTS.md>`
+- `<project: additional hard-won coordinator lessons -- see the host's .handbook/core/INVARIANTS.md>`
 
 ## Durable orientation pointers
 - **Front door:** `<project: AGENTS.md location>`; **dev index:** `<project: dev index location>`;

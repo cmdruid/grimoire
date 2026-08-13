@@ -13,7 +13,7 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
 > - **Plain `create` (create-and-drive) → STOP.** `create` ends by *entering the loop*, and driving a
 >   second stream from this context splits your loop; standing up a stream to drive is the
 >   **coordinator's** job (root-resident), not yours. This holds **even if the human asks you directly**
->   to "also" run the stream here. Instead **capture** the work (`/backlog bug` or `/backlog task`) or
+>   to "also" run the stream here. Instead **capture** the work (`/journal bug` or `/journal task`) or
 >   **surface** it at a seam. Read the "all work is a workstream" doctrine correctly: it means *the
 >   coordinator gives each body of work its own stream*, **not** *you spawn-and-drive one mid-loop*. And
 >   needing **isolation** for a *sub-task of your own feature* is not a new workstream either — that is a
@@ -60,7 +60,7 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    - **any other existing file or doc-section** (resolves to a file, a path ending `.md`, or a
      `<doc>#<anchor>` pointer) -> *plan-bound* (`source-kind: plan`, or `roadmap` for a roadmap
      section): the queue is that plan's phases, or that section's forward list. This covers both a
-     standalone `.records/plans/` plan AND a section of an ongoing roadmap (a stream/track heading whose
+     standalone `plans/`-store plan AND a section of an ongoing roadmap (a stream/track heading whose
      forward list is the queue).
    - **anything else** (multi-word, or a non-file token) -> *free-text brief* for the first feature
      (`source-kind: brief`).
@@ -69,10 +69,12 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    `git -C <root> worktree add -b stream/<stream> <root>/.workstreams/<stream> <target>`.
 5. **Seed the plan on the branch** (plan-bound, *new untracked plan file* only; `create` makes no root
    commit). If the source is an already-tracked doc, skip. If it's a new untracked plan file, move it
-   into the worktree under `.records/plans/` (`mv <plan-path> <root>/.workstreams/<stream>/.records/plans/<basename>`
-   — including from any default output dir the host doc-linter forbids), run the host's doc-linter
-   from the worktree, then commit it **on the stream branch** (it rides to
-   `<target>` at first ship): `git -C <worktree> add .records/plans/<basename> && git -C <worktree> commit -m "Seed stream/<stream>: plan" -- .records/plans/<basename>`.
+   into the worktree under the host's plans home — `<records-root>/plans/` on a workshop host (ensure
+   it carries the front-matter contract; mint via `records.sh new plans` + fill if it lacks one), the
+   project's own plans location elsewhere — including from any default output dir the host doc-linter
+   forbids. Run the host's doc-linter from the worktree, then commit it **on the stream branch** (it
+   rides to `<target>` at first ship): `git -C <worktree> add <plans-home>/<basename> &&
+   git -C <worktree> commit -m "Seed stream/<stream>: plan" -- <plans-home>/<basename>`.
    Brief / unplanned mode: nothing to seed. Template mode: nothing to seed on the branch either — the template
    is an external tracked doc; its durable doctrine is **embedded** into the hand-off in step 6 (and
    re-embedded by `recycle`), and only its **name or path** is recorded in Coordinates `source:`.

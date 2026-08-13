@@ -125,11 +125,11 @@ Every delegation returns **three** compact things -- never the raw exploration:
      written rests on a wrong assumption. Escalate to a stronger model or a smaller re-scoped task --
      never a same-model retry of the unchanged dispatch (that treats a difficulty problem as if it
      were a transient provider hiccup).
-3. **Byproducts block** -- a small, structured list in `/backlog debrief`'s taxonomy, surfaced by the
-   delegate (it does a mini-debrief of its own slice):
-   - follow-up work → BACKLOG · defect noticed → bugs · dev-experience friction → ISSUES · qualitative
-     note → FEEDBACK · **feedback about a skill itself → the skills' own `FEEDBACK.md`, tagged by skill**
-     (not a project tracker). **Empty is fine and explicit.**
+3. **Byproducts block** -- a small, structured list in `/journal debrief`'s capture kinds, surfaced by
+   the delegate (it does a mini-debrief of its own slice):
+   - follow-up work → Backlog · defect noticed → bug record · project problem/risk → Issues ·
+     dev-experience observation → Feedback · **feedback about a skill itself → the skills' home
+     feedback channel, tagged by skill** (not a project tracker). **Empty is fine and explicit.**
 
 **Route on status, don't just relay it:**
 - **DONE** → proceed, but still re-establish trust from evidence (below) -- a self-reported DONE is not
@@ -137,14 +137,14 @@ Every delegation returns **three** compact things -- never the raw exploration:
 - **DONE_WITH_CONCERNS** → investigate the named doubt yourself before accepting; it is exactly the
   kind of specific, bounded claim worth five minutes of verification.
 - **NEEDS_CONTEXT** → re-dispatch with the missing piece filled in; log why the original prompt fell
-  short as a byproduct (ISSUES/FEEDBACK) -- it improves the next prompt, not just this one.
+  short as a byproduct (an Issues/Feedback line) -- it improves the next prompt, not just this one.
 - **BLOCKED** → escalate (bigger model / smaller task) on the first one or two; **three or more BLOCKED
   reports on re-scoped attempts of the same underlying task means the task or the plan itself is
   wrong, not the model** -- stop re-scoping and take it back to whoever owns the plan, the same
   "question the fundamentals, not the Nth attempt" shape `debugger` uses for a run of failed fixes.
 
 **Stash returned byproducts into your running capture notes immediately** (as you would your own
-discovered follow-ups) so they survive context compaction to the end-of-work `/backlog debrief`. They land
+discovered follow-ups) so they survive context compaction to the end-of-work `/journal debrief`. They land
 back in your context by contract, so debrief needs no special handling.
 
 **Weak model = weak detector.** A cheap delegate spots fewer byproducts than you would. "Report anything

@@ -35,8 +35,8 @@ is the harm this rule exists to prevent. Two consequences follow, keyed on *what
 
 - **You never spawn a stream for your own work.** When in-stream work surfaces something that *would
   be* its own stream — a tangent, a debug bug, the next roadmap track — you **capture or surface it;
-  you never stand it up to drive**: a **defect** → `/backlog bug`; **feature work** → `/backlog task`
-  (`.records/tasks.md`) — on a non-framework host, the project's own tracker instead (*Host layout*);
+  you never stand it up to drive**: a **defect** → `/journal bug`; **feature work** → `/journal task`
+  (a **Backlog** tracker line) — on a non-workshop host, the project's own tracker instead (*Host layout*);
   the **next track / a new stream** → name it at a seam and hand it to the human/coordinator. Plain
   `create` *enters the loop*, so standing up a stream to drive is a **coordinator-only**,
   trunk-resident action — never yours. Needing isolation for a sub-task of your *own* feature is a
@@ -84,23 +84,27 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 | `close` | `verbs/close.md` | `verbs/ship.md` (if WIP ships) | tear the stream down | root |
 | `status` | `verbs/status.md` | — | list active workstreams (read-only) | anywhere |
 
-## Host layout — standalone by default, framework-aware when present
+## Host layout — standalone by default, workshop-aware when present
 
 Workstream is **self-contained**: its own state is `.workstreams/<stream>/` (hand-offs, registry)
-plus ordinary git branches and worktrees, and **every verb works on any repo** — no framework
-install is a precondition, and no verb ever refuses or stalls for lack of one. Only where the
-durable records land varies by host:
+plus ordinary git branches and worktrees, and **every verb works on any repo** — no workshop
+install is a precondition, and no verb ever refuses or stalls for lack of one. One probe decides
+where the durable records land: does the project's `.handbook/README.md` carry the clankshop
+install stamp (`Seeded from clankshop`)?
 
-- **Clankshop host** (the front door carries the installation block; `.handbook/` + `.records/`
-  exist): use the framework homes exactly as the verbs write them — done-records and the done log
-  to `.records/done/`, plans to `.records/plans/`, the `/backlog done` seam, the record schema
-  (`.handbook/rules/RECORDS.md`).
-- **Any other host**: use the project's **own** conventions for the same artifacts — its declared
-  `records-root` or existing records/docs layout — and **skip the framework-only seams**
-  (`/backlog done`, the schema's frontmatter floor) instead of stalling on them. Do not create
-  `.handbook/` or `.records/` on a host that doesn't have them, and never emit `unstamped` or
-  route to the clankshop onramps: standing the framework up is the human's separate decision,
-  not a stream's precondition.
+- **Workshop host** (stamp present): the records layer is deployed — plans live in the
+  `plans/` store, shipped units close through `records.sh done` (the `history.tsv` ledger line)
+  plus an optional `reports/` record tagged `debrief`, queue items are **Backlog** tracker
+  lines, and debriefs route through `/journal debrief`. The records root is the declared
+  `records-root:` (front-door `AGENTS.md` declaration), else `.records/`; the deployed tool is
+  `<records-root>/scripts/records.sh` — invoke it for every record fact, never hand-stamp. At
+  loop entry (`create`/`load`), **summon the build station's context**
+  (`.handbook/scripts/context.sh build`) — the stream works the build station.
+- **Any other host**: use the project's **own** conventions for the same artifacts — its
+  existing records/docs layout — and **skip the records-layer seams** (`records.sh`, the
+  ledger, tracker lines) instead of stalling on them. Do not create `.handbook/` or
+  `.records/` on a host that doesn't have them, and never route to the clankshop onramps:
+  standing the workshop up is the human's separate decision, not a stream's precondition.
 
 ## Discipline (applies to EVERY verb — non-negotiable)
 
@@ -124,8 +128,8 @@ durable records land varies by host:
 - **The live hand-off never merges.** It lives at `.workstreams/<stream>/WORKSTREAM.md`. The
   `.workstreams/` .gitignore hides it from the **main** checkout; `create` ALSO adds it to the
   worktree's own `info/exclude` so it's ignored from **inside** the worktree too. Durable records
-  (the feature's `.records/done/` record, plan-archive, roadmap-ledger row, ADR) are committed **on the
-  branch** and reach the trunk through the ff-merge — not hand-committed to the root.
+  (the feature's plan closure + ledger line, debrief report, roadmap-ledger row, ADR) are committed
+  **on the branch** and reach the trunk through the ff-merge — not hand-committed to the root.
 - **No remote.** Integrate locally against the workstream's `<target>` (Coordinates
   `integration-target`): `git -C <worktree> rebase <target>` + a by-ref advance of `<target>`
   (`verbs/ship.md` -> *Landing*). Never hardcode `main` — the trunk may be `dev` later.
@@ -133,9 +137,9 @@ durable records land varies by host:
   passes through the *one* root index, and `git commit` records the **entire** index — not just what
   you `git add`'d this turn — so a sibling staging concurrently gets swept into your commit (ISSUES
   W1). Two rules: **(1) Don't hand-commit a stream's own records to the root at all** — the feature's
-  `.records/done/` record, plan-archive, and roadmap-ledger row commit **on the branch** and reach the trunk
+  plan closure + ledger line and roadmap-ledger row commit **on the branch** and reach the trunk
   via the **ff-merge**, the single root mutation (and `--ff-only` fails safe: rejected → re-`sync` +
-  retry). **(2) For the few commits that must touch the root** (`/backlog debrief`'s captures — `create`
+  retry). **(2) For the few commits that must touch the root** (`/journal debrief`'s captures — `create`
   seeds its plan **on the branch**, and `close` writes nothing), stage **and** commit in **one** tool call scoped with an
   explicit pathspec: `git -C <root> add <p> && git -C <root> commit -m "…" -- <p>` — the `-- <p>`
   excludes anything that raced into the index. A **rename/move** (`git mv`) stages a delete + an

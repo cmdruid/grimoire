@@ -23,9 +23,10 @@ hardcode `main`.
    <target>` (full gate only when both `own` and `incoming` are build-relevant; doc-linter only when
    `own_docs_only=true`; skip entirely when only the incoming side changed or nothing did). The
    ship-specific notes on top of that matrix:
-   - **The skip case is the common case at a land** — most ships land only `.records/done/` records,
-     roadmap rows, and plans, so a code stream should **not** pay a full gate run for a sibling's
-     markdown (the *incoming-changes* waste the matrix exists to kill).
+   - **The skip case is the common case at a land** — most ships land only record closures (a
+     plan's status flip + its ledger line), debrief reports, and roadmap rows, so a code stream
+     should **not** pay a full gate run for a sibling's markdown (the *incoming-changes* waste the
+     matrix exists to kill).
    - The doc-linter-only case holds **even after a code-heavy rebase**: markdown doesn't compile,
      and the incoming code is already green on `<target>` (ISSUES W16/W8).
    - **`incoming_empty=true`** (`sync` reported "up to date", no replay): the loop's last green gate
@@ -75,7 +76,7 @@ additions:
     doctrine as the local ff-advance.
   - **`pr`** — do NOT advance `<target>` locally. Instead: `git -C <root> push origin <branch>`,
     then `gh pr create --base <target> --head <branch> --title "<feature subject>" --body "<the
-    .records/done records this lands>"`. The queue does NOT advance at ship — it advances when the PR
+    shipped units this lands>"`. The queue does NOT advance at ship — it advances when the PR
     merges, checked at the next `sync`/`load` (`git -C <root> fetch origin` then `git -C <root>
     log <branch>..origin/<target>` contains the merge, or `gh pr view <branch> --json state`).
     Step 3 of the ship procedure (queue advance) is deferred accordingly; record a line-start
@@ -95,35 +96,38 @@ touches the shared root, and it fails safe (a rejected advance just means re-syn
 independent of what the root has checked out. Never hand-commit these records to the root.
 
 1. **Commit the shipping records on the branch — BEFORE landing.** These are doc-only, so gate them
-   with the host's fast doc-linter (from the worktree), not the full gate:
-   - **A record per accumulated feature.** For **each** feature completed since the last ship (one under
-     `per-stage`; possibly several under `milestone`/`per-track`), write `.records/done/<YYYY-MM-DD>-<slug>.md`
-     (add a `-N` suffix if a same-day record for that slug exists). **Reference the feature's commits by
-     subject line, NOT by sha:** Landing (step 2) rebases this branch *after* this record is written,
-     which rewrites every sha but **preserves subjects** — a sha-cited record would strand dead refs and
-     need a correction commit (worse under deferred cadence: many records, and contention can force
-     *several* rebases per ship; subject-refs survived two contention rebases with zero fixups). On a
-     **clankshop host**, **open each with the `type: done-record` frontmatter block**
-     (`type`/`status: shipped`/`updated`), from the done-record template the records instrument
-     bundles, `backlog/templates/done-record.md` -- the doc-linter gate rejects a `.records/done/`
-     file without it (a done-record is a feature-lane / workstream artifact, not a capture kind; its
-     shape is the record schema's, the installation's `.handbook/rules/RECORDS.md`). On any **other
-     host** (SKILL.md *Host layout*), write the record wherever the project keeps its records
-     (its `records-root` / existing layout) in the project's own shape — the record is the
-     requirement, the schema is the framework's. Then `git -C <worktree> add <record> &&
-     git -C <worktree> commit -m "Record <slug> shipped" -- <record>`.
-   - **A done-log line per shipped item** (clankshop hosts — the record schema's writer map): for
-     each shipped feature that traces to a live tracker entry (`T-…` / `I-…` / a `B-…` file), run
-     `/backlog done <id>` **in the worktree** — the entry mutation and the `.records/done/log.md`
-     line commit on the branch and land atomically with the ship. A queue item with no tracker
-     entry (a roadmap row) is completed by its ledger-row advance below instead — never invent an
-     ID to log. On a non-framework host this seam is **skipped**: mark the item done in the
-     project's own tracker, in that tracker's format.
-   - If the feature had its own implementation plan, archive it in one atomic commit:
-     `git -C <worktree> mv .records/plans/<feature-plan> .records/plans/archive/ && git -C <worktree> commit -m "Archive <feature-plan>" -- .records/plans/<feature-plan> .records/plans/archive/<feature-plan>`.
+   with the host's fast doc-linter (from the worktree), not the full gate. A shipped unit's durable
+   trace is a **history-ledger entry plus an optional debrief report** (the records layer's closure
+   model); on a **workshop host** (the records layer is deployed) it is written with the deployed
+   tool — `<records-root>/scripts/records.sh` — never by hand:
+   - **Close each accumulated feature's plan record in place.** For **each** feature completed
+     since the last ship (one under `per-stage`; possibly several under `milestone`/`per-track`)
+     whose plan lives in the `plans/` store, run (in the worktree)
+     `records.sh done plans/<its-plan>.md --note "shipped: <feature subjects>"` — the status flips
+     in place (a closed record never moves; there is no archive) and the one ledger line lands in
+     `history.tsv`. **Reference the feature's commits by subject line, NOT by sha** in the note and
+     any narrative: Landing (step 2) rebases this branch *after* these records are written, which
+     rewrites every sha but **preserves subjects** (subject-refs survived two contention rebases
+     with zero fixups). Commit the flip and the ledger together:
+     `git -C <worktree> add <plan> <records-root>/history.tsv && git -C <worktree> commit -m
+     "Record <slug> shipped" -- <plan> <records-root>/history.tsv`. A feature with **no** plan
+     record (a roadmap row built directly) is completed by its roadmap ledger-row advance below —
+     never mint a record just to close it.
+   - **A debrief report when the unit warrants narrative** — implementation surprises, follow-on
+     context a future reader needs beyond the ledger line: `records.sh new reports --title "…"`,
+     tag it `debrief`, write findings-first, commit it on the branch. A routine unit needs no
+     report; the ledger line is the trace.
+   - **Complete the queue item's tracker line** (workshop hosts): if the shipped feature traces to
+     a **Backlog** tracker line, flip its `[ ]` → `[x]` (append the completion date) and
+     `records.sh touch <tracker>` — committed on the branch, landing atomically with the ship. On
+     any **other host** (SKILL.md *Host layout*) this seam maps to the project's own records/tracker
+     conventions: record the shipped unit and mark the item done there, in that layout's format —
+     the trace is the requirement, the ledger is the framework's.
    - If the queue is tracked in a roadmap doc, update its ledger/queue row for this stream and commit
      it on the branch too: `git -C <worktree> commit -m "Roadmap: <stream> shipped <feature>" -- <roadmap-path>`.
-     (At `sync` this may additively conflict with a sibling stream's row — resolve "keep both".)
+     (At `sync` this may additively conflict with a sibling stream's row — resolve "keep both". The
+     same applies to `history.tsv` — append-only, so a sibling's ship conflicts additively; keep both
+     lines.)
 2. **Land** (the shared sequence above): `sync` (rebase — replays the feature + these records onto
    `<target>`'s tip; resolve any additive ledger conflict), gate only if the tree changed, then
    **advance `<target>` by ref** (Landing step 3 — `merge --ff-only` if the root is on `<target>`,
@@ -131,8 +135,10 @@ independent of what the root has checked out. Never hand-commit these records to
    atomically; it is the only shared-root mutation and is independent of the root's current HEAD.
 3. **Advance the queue — hand-off only** (the ledger row already rode the branch in step 1): in the
    (ignored) worktree hand-off, mark **all landed features** done and set the next queue item current.
-   Then **draft** the next feature's implementation plan from the queue source into `.records/plans/` (a
-   working-tree draft — it rides the *next* ship; do not commit it now). Do not start the next
+   Then **draft** the next feature's implementation plan from the queue source into the host's plans
+   home (workshop: mint it with `records.sh new plans --title "…"` so the front-matter contract is
+   stamped; elsewhere the project's own plans location) — a working-tree draft: it rides the *next*
+   ship; do not commit it now. Do not start the next
    feature automatically. **In `manual` mode, skip this draft** — plan-authoring belongs to the next
    PLAN session on the plan-model (`flow.md` -> *Manual mode: the phase loop*); set `Phase: plan`
    instead and PLAN starts the draft fresh.
