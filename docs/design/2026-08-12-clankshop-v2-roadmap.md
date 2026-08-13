@@ -88,6 +88,17 @@ writes exercised against the phase-1 fixture.
 
 ## Phase 4 — `scheduler` port *(independent — parallel to 2–3)*
 
+> **Shipped 2026-08-13** (`stream/v2`, "clankshop(plan): Phase 4 scheduler port" +
+> "clankshop(build): scheduler port lands"). Exit criteria met: install/uninstall/list/
+> status/run round-trip on a fixture (79 asserts, both platform paths via stubs); the
+> cron↔launchd weekday trap proven by breaking (map sed-broken → suite red on exactly the
+> two weekday asserts → restored green); lint fails=0, sibling suites green; PACK.md
+> manifest lists `scheduler`. Design deltas over the port source, settled by human and
+> recorded in the phase plan: single `tick` entrypoint (`run` test-fires the identical
+> path), prompt/prompt-file payload (file read fresh per tick), self-gitignoring
+> `.scheduler/` home with committable HEARTBEAT override, user scope only, explicit
+> permission stance. Back-porting `schedule.sh` to thinklab stays the human's call.
+
 From thinklab's `agent-scheduler` (`templates/.../task-scheduler` is its retired
 ancestor).
 
