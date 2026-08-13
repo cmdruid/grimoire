@@ -286,7 +286,7 @@ ensures the supporting skills are present.
 | utility | `checkpoint` (was `handoff`) | save/resume session context |
 | utility | `mailbox` | worktree-safe transport for delegated results |
 | utility | `delegate` | sub-agent dispatch routing (decides whether/where; mailbox is the transport) |
-| utility | `scheduler` | cron wrapper + chores runner. *Placeholder: an existing implementation exists and needs to be located.* |
+| utility | `scheduler` | cron wrapper + chores runner — schedules recurring agent runs (prompt-as-argument) via launchd on macOS / cron on Linux. Base: thinklab's `agent-scheduler` skill + `spawn-agent`; see open items for its two v2 upgrades. |
 
 ### Blueprint verbs
 
@@ -386,7 +386,15 @@ them in each deployed `POLICY.md`.
 
 ## Open items
 
-- [ ] Locate the existing `scheduler` implementation.
+- [ ] Port `scheduler` from thinklab's `agent-scheduler` skill (located 2026-08-12;
+      `templates/agent-template/skills/task-scheduler` is its retired ancestor). Two v2
+      upgrades: **script the facts** (a bundled `schedule.sh install|uninstall|list|status`
+      owning plist generation and the cron↔launchd conversion — currently all prose), and a
+      **runner fallback ladder** (prefer `spawn-agent` when on `$PATH`; degrade to direct
+      `claude -p` / `codex exec`) so the utility stays portable and public-repo-safe.
+      Durability notes: launchd labels are single-instance (overlap-safe); the cron path
+      needs `flock`; offer systemd timers (`Persistent=true`) as the Linux alternative for
+      missed-tick coalescing.
 - [ ] After clankshop is finalized: the upgrade wave, in dependency-weight order (see the
       check below) — `journal`, `auditor`, `workstream`, `blueprint`, then the light
       touches (`debugger`, `checkpoint`, the `bug`/`task` proxies) and the repo-root
