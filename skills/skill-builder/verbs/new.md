@@ -51,14 +51,10 @@ verb's job).
    - Draft the new skill's own `<new-skill>/verbs/init.md`: an idempotent home-scaffold
      (create-if-absent for each store the skill
      owns; never touch existing content) **plus** front-door self-registration, modeled on the
-     `register-route.sh` mechanism (`docs/DOCTRINE.md` § Typed edges & registration) — content-vs-
+     front-door registration mechanism (`docs/DOCTRINE.md` § Typed edges & registration) — content-vs-
      arrangement split, absent→append / present→replace-between-delimiters / malformed→report-and-stop.
-   - Copy `skill-builder`'s own `scripts/register-route.sh` (the canonical reference — not another
-     skill's copy) into the new skill's `scripts/`, unmodified except its header comment (which may
-     name the new skill for orientation). Do **not** have the new skill call out to `skill-builder`'s
-     copy at runtime — each durable-home skill bundles its own, so it stays self-contained and works
-     installed alone (BL-6). `skill-builder check`'s drift pass verifies every deployed copy stays in
-     functional sync with the reference going forward.
+     A skill implementing it bundles its **own** registration script (self-containment: no runtime
+     call-out to another skill's copy — it must work installed alone, BL-6).
    - State the `built-against` stamp formula as **path-scoped to the new skill's own directory** —
      `git -C <skill-dir> log -1 --format=%h -- .`, never `git -C <skill-dir> rev-parse --short HEAD`
      (the latter collapses to one value across every skill on a monorepo skills-root, BL-7) — else a

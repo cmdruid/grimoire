@@ -38,13 +38,6 @@ memory.
 - **`scripts/skills-lint.sh`** — the mechanical gate: frontmatter limits, bundled-ref resolution,
   script syntax, cross-skill ref checks, edge-block well-formedness. Takes a `<library-root>` argument
   (default: the current directory) so it checks whatever library it's pointed at.
-- **`scripts/register-route.sh`** — the reference copy of the front-door self-registration mechanism.
-  Every durable-home skill bundles its **own** copy (self-containment; see *Disposition* below and
-  BL-6 in a host library's own backlog) — this one is the source `new` stamps from and `check`'s drift
-  pass compares against, not a shared runtime dependency.
-- **`scripts/register-route-drift.sh`** — compares every deployed `register-route.sh` copy's
-  functional body against the reference and reports drift.
-
 ## Disposition (scored against its own doctrine)
 
 - **Self-init / home:** none — an **in-place steward**. It maintains the host library's own `skills/`
