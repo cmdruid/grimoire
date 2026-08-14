@@ -76,7 +76,7 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 |---|---|---|---|---|
 | `create <stream> [<src>] [--in-place]` | `verbs/create.md` | `flow.md` | seed worktree or in-place branch + hand-off, enter the loop (`--seed-only`: seed + hand back a `load` command, no loop) | root checkout (`--seed-only`: also from a workstream) |
 | `load <stream>` | `verbs/load.md` | `flow.md` | re-enter an existing stream after a reset | worktree |
-| `save` | `verbs/save.md` | — | checkpoint the hand-off in place | worktree |
+| `save` | `verbs/save.md` | — | checkpoint the hand-off in place (the stream's "save a checkpoint" — never `/checkpoint`) | worktree |
 | `sync` | `verbs/sync.md` | — | pull the trunk's movement into the worktree | worktree |
 | `park` / `unpark` | `verbs/park.md` | — | hand the shared tree back to the trunk / take it back (in-place only) | root (in-place) |
 | `ship` | `verbs/ship.md` | `verbs/sync.md` | land accumulated feature(s), advance the queue | worktree |

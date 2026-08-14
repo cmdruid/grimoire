@@ -126,6 +126,10 @@ feature with its delegation tally (debrief #1), e.g. `- <feature> — delegation
 Build the current feature to **completion** (autonomy rule): run all its tasks, committing as you go;
 round-trip **only at a seam** — launch / blocker / genuine fork / feature-completion. **Saves are
 coupled to the reset**, not to each task or verb (`sync` and `ship` do not save).
+**Vocabulary guard:** in this session, "save a checkpoint" / "checkpoint this" means
+**`/workstream save`** — never `/checkpoint`: this file IS the stream's checkpoint, and a
+competing root `CHECKPOINT.md` corrupts the resume path (`/checkpoint` refuses here for that
+reason).
 **Every seam-status message leads with the anchor line** `WORKSTREAM <stream> — hand-off: <abs
 path to this file>` (`/checkpoint`'s anchor-line technique) — repeated, salient state a compaction
 summarizer reliably keeps, covering the

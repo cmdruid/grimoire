@@ -1,6 +1,6 @@
 ---
 name: checkpoint
-description: Keep a living save-state for the current session's work and recover from context loss. `/checkpoint save` writes/refreshes the root CHECKPOINT.md (gitignored living scratch, never consumed); `/checkpoint resume` loads it and continues; `/checkpoint done` ends the lifecycle (gated delete). Owns the Save/Resume/Lifecycle/Recovery disciplines other skills borrow, including compaction recovery (continue from the file after an involuntary context summarization). An explicit path argument targets that file instead (unmanaged escape hatch). Use when asked to save/snapshot/checkpoint context, resume prior work, recover after compaction, or close out a finished checkpoint. Scoped to the single root, non-worktree session.
+description: Keep a living save-state for the current session's work and recover from context loss. `/checkpoint save` writes/refreshes the root CHECKPOINT.md (gitignored living scratch, never consumed); `/checkpoint resume` loads it and continues; `/checkpoint done` ends the lifecycle (gated delete). Owns the Save/Resume/Lifecycle/Recovery disciplines other skills borrow, including compaction recovery. An explicit path argument targets that file instead (unmanaged escape hatch). Use when asked to save/snapshot/checkpoint context, resume prior work, recover after compaction, or close out a finished checkpoint. Scoped to the single root session; refused inside a workstream (worktree or in-place), whose hand-off is the checkpoint with its own save verb.
 ---
 
 # Checkpoint skill
@@ -11,10 +11,12 @@ vendor) or a context-loss survivor can read as the entry point and continue from
 record. *(Formerly the `handoff` skill — the one-shot baton is retired; see Lifecycle below.)*
 
 Two layers, by isolation — pick by where the session lives:
-- **Worktree streams** → `/workstream` (its own worktree-local `WORKSTREAM.md`). Not this skill:
-  a `/checkpoint save` from a session driving a worktree stream is **refused** with a pointer to
-  `/workstream save` — a competing root save-state beside a stream hand-off corrupts the resume
-  path.
+- **Workstream sessions** → `/workstream` (its own `WORKSTREAM.md` hand-off). Not this skill:
+  a `/checkpoint save` from a session driving a stream — **worktree or in-place** (an in-place
+  stream is rooted at the root checkout, so "this is the root session" proves nothing on its
+  own) — is **refused** with a pointer to `/workstream save` — a competing root save-state
+  beside a stream hand-off corrupts the resume path. The save procedure's **stream guard**
+  (step 1) is the mechanical form of this refusal.
 - **The single active root session** → `/checkpoint` → root `CHECKPOINT.md`.
 
 **One root checkpoint, one owner.** A session that did not create or resume the root
@@ -45,7 +47,8 @@ Verbs:
   see *Recovery discipline*.
 
 Do not invoke for routine status updates within the same session, or for memory entries. For a
-long-running feature in an isolated **worktree**, use `/workstream`, not this.
+session driving a **workstream** (isolated worktree or in-place), use `/workstream`, not this —
+"save a checkpoint" there means `/workstream save`, the stream's hand-off being its checkpoint.
 
 ## Where it writes
 
@@ -131,8 +134,13 @@ Steps 2–4 are the **Save discipline** (exportable, above). Steps 1, 5–6 are 
 
 1. **Sanity-check the request, and resolve the target.** If the conversation has been short,
    contains no concrete work to checkpoint, or is purely Q&A with nothing to resume, push back —
-   ask what specifically to preserve. Resolve the target per *Where it writes*. For the root
-   file: run the **foreign-checkpoint guard** (an existing `CHECKPOINT.md` this session neither
+   ask what specifically to preserve. Resolve the target per *Where it writes*. In a git repo,
+   run the **stream guard** (mechanical — the *Two layers* refusal): probe for a workstream
+   context — `WORKSTREAM.md` at `git rev-parse --show-toplevel` (a worktree stream), or a
+   `.workstreams/<stream>/WORKSTREAM.md` under the toplevel recording `isolation: in-place`
+   with HEAD on that stream's branch (an in-place stream). A hit → **refuse and point to
+   `/workstream save`**; do not write. Then, for the root file: run the
+   **foreign-checkpoint guard** (an existing `CHECKPOINT.md` this session neither
    created nor resumed → stop and surface; never overwrite) and the **ignore check**.
 2. **Scan for sensitive material.** Look for secrets, credentials, API tokens, private keys, or
    PII. Do NOT include them; in your reply, mention what you elided so the user can re-supply it
