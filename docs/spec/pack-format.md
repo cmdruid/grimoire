@@ -56,8 +56,8 @@ preservation; formatting of the frontmatter block MAY normalize).
 name: clankshop                 # required. Pack identity. [a-z0-9-]+
 version: 1.0.0                  # required. Semver 2.0.0 of this pack release.
 description: "One-line summary" # required.
-required: architect, auditor    # required members — bare skill names, comma-separated.
-optional: bug, task             # optional members — default-installed, removable without trace.
+required: journal               # required members — bare skill names, comma-separated.
+optional: bug, task, scheduler  # optional members — default-installed, removable without trace.
 ---
 ```
 
@@ -113,7 +113,7 @@ pack-based skills' reads, project shadows global per pack name.
       "installedAt": "2026-08-08T00:00:00Z",
       "skills": {
         "clankshop": { "hash": "sha256:…", "required": true },
-        "architect": { "hash": "sha256:…", "required": true },
+        "journal":   { "hash": "sha256:…", "required": true },
         "task":      { "hash": "sha256:…", "required": false }
       }
     }
