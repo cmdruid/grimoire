@@ -42,10 +42,11 @@ this library was.)
 - **Feedback channel.** `docs/DOCTRINE.md`'s "skills are living artifacts" bullet says route friction
   to the skills' home feedback channel. For grimoire that channel is **GitHub issues**, tagged by
   skill — an installation may override it with its own collection file (see `README.md`).
-- **Patient-zero caveat.** The deployed mechanisms — door registration, projections, self-init
+- **Patient-zero caveat.** The deployed mechanisms — the door, the seed projection, records
+  standup, self-init
   (`docs/DOCTRINE.md` covers the helpers' portable regime) — are **built and tested here**, but
   grimoire's own `AGENTS.md` is authored library doctrine, not a consuming project's scaffold —
-  **never let registration blocks or deployed-layout content accrete in it**. Every deployed
+  **never let door blocks or deployed-layout content accrete in it**. Every deployed
   mechanism is exercised against throwaway fixtures instead (committed harnesses in
   `skills/clankshop/scripts/tests/`; fixture instances in temp dirs).
 

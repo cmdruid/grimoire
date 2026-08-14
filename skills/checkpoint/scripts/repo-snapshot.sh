@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # repo-snapshot.sh <root>
 #
-# Repo-state facts for /handoff's Save discipline -- the "Repo state" section
+# Repo-state facts for /checkpoint's Save discipline -- the "Repo state" section
 # (branch, clean/dirty) and the "What's been done" reconciliation against
 # `git log`, in one read instead of several probes.
 #

@@ -24,8 +24,8 @@ checkpoint **stops and surfaces** instead of overwriting another session's only 
 (There is no named-session layer: concurrent parallel sessions are `/workstream`'s job; the rare
 legitimate second file is an **explicit path**, below, with no managed lifecycle.)
 
-A *durable* record of *finished* work is a `.records/done/` entry (or the host's done trail), not
-a checkpoint.
+A *durable* record of *finished* work closes through the host's records layer (`records.sh done`
++ the history ledger, where deployed — else the host's own done trail), not a checkpoint.
 
 Verbs:
 - **save** — synthesize the current conversation into the checkpoint file (create or refresh).
