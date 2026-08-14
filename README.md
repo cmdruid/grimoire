@@ -17,7 +17,7 @@ git clone https://github.com/cmdruid/grimoire && cd grimoire
 ./install.sh --list              # see what's here
 ./install.sh debugger            # install one skill (into ~/.claude/skills)
 ./install.sh --pack clankshop    # install a whole pack
-./install.sh --remove handoff    # uninstall
+./install.sh --remove checkpoint # uninstall
 ```
 
 - **Claude Code** loads user-level skills from `~/.claude/skills/` — the default target.
@@ -26,57 +26,55 @@ git clone https://github.com/cmdruid/grimoire && cd grimoire
 
 ## The skills
 
-The `clankshop` pack binds most of them into one development loop, tiered by the pack doctrine's
-roster (`skills/clankshop/doctrine/README.md`): the pack **face** (`clankshop`) carries the
-doctrine, the runbook, and the **role hats** — expertise layers its intent verbs inherit
-(`design` the architect, `route` the foreman, `verify` the guardian, `calibrate`/`docs` the
-chiropractor; `ask <role>` puts a hat on for discussion); **instruments** — procedures anyone
-operates (`backlog` the records instrument, `debugger` the diagnostic instrument, `auditor` the
-code-quality instrument); **pipelines** — the work processes (`feature` turns an idea into
-gate-green code, `workstream` encapsulates continuous shipping); **helpers** — portable plumbing
-useful on any repo (`delegate`, `mailbox`, `handoff`); plus the optional
-capture aliases (`bug`, `task`). `skill-builder` is a category of one: the **toolmaker** — it
-stewards the skills in this library themselves (scaffold new ones, audit boundary health, calibrate
-authoring doctrine), not project code, and is deliberately outside the `clankshop` pack (see *The
-packs* below).
+The `clankshop` pack binds most of them into one **agentic workshop**, tiered by coupling in the
+pack manifest (`skills/clankshop/PACK.md`): the pack **face** (`clankshop`) carries the seed
+handbook and the four **stations** — `design` (the architect), `build` (the foreman), `test` (the
+guardian), `review` (the admin) — with system verbs (`setup` / `migrate` / `check`) and persona
+summons; **helpers** — `blueprint` (feature planning), `journal` (the records layer — the one
+required member), `workstream` (development streams), `auditor` (code-quality audits), `debugger`
+(root-cause diagnostics); **utilities** — `checkpoint`, `mailbox`, `delegate`, `scheduler`; plus
+the optional capture aliases (`bug`, `task`). `skill-builder` is a category of one: the
+**toolmaker** — it stewards the skills in this library themselves (scaffold new ones, audit
+boundary health, calibrate authoring doctrine), not project code, and is deliberately outside the
+`clankshop` pack (see *The packs* below).
 
 | skill | what it does |
 |---|---|
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
-| `backlog` | the records instrument: capture by kind, complete (`done` + the done log), escalate via tickets (+ mirror), curate, debrief |
+| `blueprint` | feature planning on any repo: ideation → spec → tracer-bullet plan → review, plus roadmap tending — plans; never builds |
 | `bootstrap` | idea → a new git repo carrying five founding documents: `grill` (design-tree interview, writes nothing) → `land` (create, write, commit); standalone, outside every pack |
-| `bug` | capture alias: `/bug` proxies the records instrument's bug capture (optional pack member) |
-| `clankshop` | the development system: doctrine + runbook + role hats; system verbs (`setup` / `migrate` / `check`), intent verbs (`design` / `route` / `verify` / `calibrate` / `docs`), and `ask <role>` for hat-on discussion |
+| `bug` | capture alias: `/bug` proxies the records layer's bug capture (optional pack member) |
+| `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
+| `clankshop` | the workshop face: seed handbook + the four stations; `setup` / `migrate` / `check`, and persona summons for hat-on discussion |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
-| `feature` | the planning spine: brainstorm → design → plan → build, plus independent review |
-| `handoff` | save/resume a session as a self-contained hand-off any agent can pick up |
+| `journal` | owns the records layer: eight typed stores + `records.sh` + the history ledger; capture by kind, tickets, debrief, curate, standup |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
+| `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
-| `task` | capture alias: `/task` proxies the records instrument's task capture (optional pack member) |
+| `task` | capture alias: `/task` proxies the records layer's task capture (optional pack member) |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
-The former role skills (`architect`, `foreman`, `guardian`, `calibrator`, `chiropractor`) merged
-into `clankshop` as hats behind its intent verbs
+The v2 rebuild (`docs/design/2026-08-12-clankshop-v2.md`) reshaped the pack into the four-station
+workshop and renamed `backlog` → `journal`, `feature` → `blueprint`, `handoff` → `checkpoint`
+(adding `scheduler`); the former role skills had already merged into the face
 (`docs/design/2026-08-10-clankshop-role-merge.md`); earlier lineage lives in
 `docs/design/2026-07-17-library-refactor.md`.
 
 ### Storage convention: what a deployed project carries
 
-A project the pack is deployed onto carries three agent-tooling roots, filtered from a direct code
-read the way `.github/` is. **`.handbook/`** holds the projected, locally-grown chapters — that
-project's source of truth (`rules/` and `workflows/` tended by the operations role, `design/` by
-the design role, `testing/` by the verification role, plus the records instrument's stamped
-projection `rules/RECORDS.md`). **`.records/`** holds every typed record (trackers, tickets, the
-done log, plans/ADRs, design drafts, reports, audit deliverables). **`.agents/roles/`** holds lazy
-machinery-only seats (e.g. the auditor's rubric). Because paths don't encode ownership,
-`/clankshop setup` writes the two-region **stewardship maps** (`.handbook/README.md` +
-`.records/README.md`) mapping content → location → steward, each block stamped against its input.
+A project the workshop is deployed onto carries three surfaces, filtered from a direct code read
+the way `.github/` is. **`.handbook/`** holds the project's own doctrine — a README (load rules +
+the one install stamp line), `core/`, the four station chapters, and `scripts/context.sh` —
+seeded from the pack face and locally grown thereafter. **`.records/`** holds the work products:
+eight typed stores (`adr`, `bugs`, `design`, `notes`, `plans`, `reports`, `tickets`, `trackers`)
+plus `records.sh`, templates, and the `history.tsv` closure ledger — owned by `journal`.
+**`AGENTS.md`** is the door: a thin routing table plus the handbook pointer. Once seeded, all
+three are the project's documents; the deployed handbook and records READMEs document their own
+layout.
 
-Session hand-offs stay **gitignored scratch** (root `HANDOFF.md`, steward `handoff`) —
-not a `.records/` store. The full store tree lives in the pack doctrine's record schema
-(`skills/clankshop/doctrine/rules/RECORDS.md`); the roster and door profile live in the doctrine
-index (`skills/clankshop/doctrine/README.md`).
+Session checkpoints stay **gitignored scratch** (root `CHECKPOINT.md`, steward `checkpoint`) —
+not a `.records/` store.
 
 ## The packs
 
@@ -84,10 +82,10 @@ A pack is a **skill directory with a `PACK.md` manifest** (`docs/spec/pack-forma
 the face installs like any skill, `install.sh --pack` resolves the manifest, installs the members
 transactionally, and records the install in the sidecar `grimoire.lock` beside the target dir.
 
-- **`clankshop`** (`skills/clankshop/PACK.md`) — the skills above (minus `skill-builder`, its own
-  maintainer tool) as one disciplined development loop: the composition lives with the face — the
-  doctrine (chapter registry, roster, door profile) in `skills/clankshop/doctrine/` and the
-  methodology in `skills/clankshop/docs/RUNBOOK.md`.
+- **`clankshop`** (`skills/clankshop/PACK.md`) — the skills above (minus `bootstrap` and
+  `skill-builder`) as one agentic workshop: the composition lives with the face — the seed
+  handbook in `skills/clankshop/seed/` (mirroring a deployed `.handbook/` exactly) and the
+  coupling-tier roster in the manifest itself.
 
 ## Repo layout
 

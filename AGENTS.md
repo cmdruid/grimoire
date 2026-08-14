@@ -8,25 +8,24 @@ This file captures the **design philosophy** for the tools, scripts, and skills 
 it whenever you add or revise one. It is distilled from practice; the `workstream` skill (its
 `scripts/workstream-git.sh` + *Helper scripts* section) is the worked reference.
 
-Most of these skills are members of the **`clankshop` pack**, tiered by the pack doctrine's roster
-(`skills/clankshop/doctrine/README.md`): the pack **face** (`skills/clankshop/`) carries the
-doctrine, the runbook, and the **role hats** — expertise layers its intent verbs inherit
-(`design` the architect, `route` the foreman, `verify` the guardian, `calibrate`/`docs` the
-chiropractor; `ask <role>` for hat-on discussion); **instruments** — procedures anyone operates
-(`backlog` the records instrument, `debugger` the diagnostic instrument, `auditor` the
-code-quality instrument); **pipelines** (`feature`, `workstream`);
-and portable **helpers** (`delegate`, `mailbox`, `checkpoint`). `skill-builder` is the library's own
+Most of these skills are members of the **`clankshop` pack**, tiered by coupling in the pack
+manifest (`skills/clankshop/PACK.md`): the pack **face** (`skills/clankshop/`) carries the seed
+handbook and the four **stations** — `design` (the architect), `build` (the foreman), `test` (the
+guardian), `review` (the admin) — with the system verbs (`setup` / `migrate` / `check`) and
+persona summons for hat-on discussion; **helpers** (`blueprint` the planner, `journal` the
+records layer and the one required member, `workstream` the stream driver, `auditor`,
+`debugger`); **utilities** (`checkpoint`, `mailbox`, `delegate`, `scheduler`); and the capture
+aliases (`bug`, `task`). `skill-builder` is the library's own
 toolmaker and stays outside the pack. See `README.md` for the full inventory.
 
-A consuming project gets the pack **deployed**, not copied: `/clankshop setup` (or `migrate`)
-projects the doctrine through the project's facts into **`.handbook/`** (the projected,
-locally-grown chapters — that project's source of truth), stands up **`.records/`** (typed records:
-trackers, tickets, plans, the done log, reports, audit) and lazy machinery-only seats under
-**`.agents/roles/`**, writes the two-region **stewardship maps** (`.handbook/README.md` +
-`.records/README.md`) — stamped snapshots, per the *snapshot must never pose as authoritative* rule
-below — and stamps the installation block. The full layout is the doctrine's record schema
-(`skills/clankshop/doctrine/rules/RECORDS.md`); `README.md` (*Storage convention*) has the short
-version.
+A consuming project gets the workshop **deployed**, not copied: `/clankshop setup` (or `migrate`)
+seeds **`.handbook/`** (the project's own doctrine — README with the load rules and the one
+install stamp line, `core/`, the four station chapters, `scripts/context.sh`), stands up
+**`.records/`** via `journal` (eight typed stores + `records.sh` + the `history.tsv` closure
+ledger), and writes the **`AGENTS.md` door** (a thin routing table plus the handbook pointer).
+Once seeded, all three are the **project's** documents — upgrades are a judgment-assisted diff
+against the current seed. The deployed handbook documents its own layout; `README.md`
+(*Storage convention*) has the short version.
 
 ## Design philosophy
 
