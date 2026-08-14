@@ -145,7 +145,11 @@ outside `docs/design/` and `.scratch/`.
 > caught `pack-format.md`'s stale examples only after the scope lesson: live specs are not
 > history docs); lint fails=0; suites green (seed-test's hardcoded stamp version fixed,
 > proven red-first). Soft spots settled at the plan's foot (contract home; standup is setup's
-> mechanics, not a verb).
+> mechanics, not a verb). **Addendum (same day, post-ship):** template ownership follows the
+> minting verb — backlog owns bugs/notes/tickets/trackers templates, blueprint's rich
+> templates become the plans/design/adr record templates, journal ships only the reports
+> commons; owners lazy-deploy into the records root before minting (`records.sh` unchanged).
+> See the design doc's addendum for the settled decisions.
 
 The format authority and the follow-up lifecycle separate, so the deployment test (phase 7)
 validates the final shape. Design: `2026-08-14-journal-backlog-split-design.md`.
