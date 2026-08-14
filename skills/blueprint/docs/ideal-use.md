@@ -46,6 +46,6 @@ pass.
 The approved plan hands off to the **host's build lane**: on a workshop host the build
 station's feature workflow builds it red-first to the green gate, lands it on the trunk, closes
 the shipped plan (`records.sh done` — the ledger line), and sweeps follow-ups
-(`/journal debrief`). A `/workstream` loop runs those steps as its own ritual per queue item;
+(`/backlog debrief`). A `/workstream` loop runs those steps as its own ritual per queue item;
 standalone, the human walks the project's own conventions. Either way the seam is the same —
 blueprint produces the argued spec and the approved plan; the lane's execution consumes them.

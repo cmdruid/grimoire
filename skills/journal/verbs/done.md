@@ -21,8 +21,9 @@ moves; moves would dangle every path-based link) plus the one ledger line in `hi
    line. Closing a *whole tracker* (rare — a retired concern) goes through `records.sh done`
    like any record.
 5. **Writebacks**: flip/annotate any tracker line pointing at the closed record.
-6. **Commit** per the capture-commit policy (SKILL.md): standalone → its own scoped commit
-   (`Journal: done — <slug> (<disposition>)`); inside a `debrief` sweep → write-only.
+6. **Commit** per the commit policy (SKILL.md): standalone → its own scoped commit
+   (`Journal: done — <slug> (<disposition>)`); inside a client's sweep → write-only (the
+   sweep commits once).
 
 Pruning closed records (deleting the file; ledger + git history remain the trace) is
 `curate`'s proposal to make, against the project's own prune threshold — never part of `done`.

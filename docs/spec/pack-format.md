@@ -57,7 +57,7 @@ name: clankshop                 # required. Pack identity. [a-z0-9-]+
 version: 1.0.0                  # required. Semver 2.0.0 of this pack release.
 description: "One-line summary" # required.
 required: journal               # required members — bare skill names, comma-separated.
-optional: bug, task, scheduler  # optional members — default-installed, removable without trace.
+optional: backlog, scheduler    # optional members — default-installed, removable without trace.
 ---
 ```
 
@@ -114,7 +114,7 @@ pack-based skills' reads, project shadows global per pack name.
       "skills": {
         "clankshop": { "hash": "sha256:…", "required": true },
         "journal":   { "hash": "sha256:…", "required": true },
-        "task":      { "hash": "sha256:…", "required": false }
+        "backlog":   { "hash": "sha256:…", "required": false }
       }
     }
   }

@@ -77,8 +77,8 @@ the *Delegation route* governs there). The default model per phase, cited by eac
 instruction. The swap is a manual `/model` action, so any phase is overridable on the fly — this is the
 reminder default, not a lock.
 - PLAN:  <strong model, e.g. Opus>   — `/blueprint spec` + `/blueprint plan`
-- BUILD: <mid model, e.g. Sonnet>    — build the plan to gate-green + `/journal debrief` #1
-- SHIP:  <strong model, e.g. Opus>   — `/workstream ship` (land, conflict-resolve) + `/journal debrief` #2>
+- BUILD: <mid model, e.g. Sonnet>    — build the plan to gate-green + `/backlog debrief` #1
+- SHIP:  <strong model, e.g. Opus>   — `/workstream ship` (land, conflict-resolve) + `/backlog debrief` #2>
 
 ## TL;DR
 <What shipped, where it stands, and the single recommended next action.>
@@ -132,14 +132,14 @@ summarizer reliably keeps, covering the
 case where this file was last read long before the compaction.
 
 **Reset ritual** (whether Scenario A *lands* depends on *Ship cadence* above):
-- **Feature complete, at a landing point (`per-stage` / a milestone / track end):** `/journal debrief`
+- **Feature complete, at a landing point (`per-stage` / a milestone / track end):** `/backlog debrief`
   (#1 — routes the feature's follow-ups; its commits ride ship's ff-merge free) -> `/workstream ship`
   (lands every accumulated feature + advances the queue, drafts the next plan into the working tree —
   except in `manual` mode, where the next PLAN session drafts it) ->
-  *(if the ship was eventful — conflicts, contention retries, multiple syncs)* `/journal debrief` #2 ->
+  *(if the ship was eventful — conflicts, contention retries, multiple syncs)* `/backlog debrief` #2 ->
   **`/workstream save`** (the single pre-reset checkpoint) -> reset -> `/workstream load <stream>`.
 - **Feature complete, between landing points (`milestone`/`per-track`, not yet a milestone):**
-  `/journal debrief` #1 -> **`/workstream save`** (the feature-completion checkpoint — fires at
+  `/backlog debrief` #1 -> **`/workstream save`** (the feature-completion checkpoint — fires at
   every feature seam, reset or not) -> advance to the next feature *on the same branch* (**no
   ship**; under `milestone` first *propose* a land if this looks like a natural milestone) ->
   *(if context heavy)* reset -> `load`. Unshipped features stay on the branch for the next milestone.
@@ -162,7 +162,7 @@ case where this file was last read long before the compaction.
   sync **more** proactively — held work widens divergence, so `sync`'s `land-readiness` conflict
   forecast matters most here.
 - Capture follow-ups as the feature surfaces them (jot into *What's next* / *Pointers*); the formal
-  routing is `/journal debrief` #1 at completion (the host's PLANNING doc -> *When a plan completes*), the formal save is
+  routing is `/backlog debrief` #1 at completion (the host's PLANNING doc -> *When a plan completes*), the formal save is
   the pre-reset checkpoint.
 - **`manual` mode** (Coordinates `mode: manual`): a feature is three model-phased sessions — PLAN
   (plan-model) -> BUILD (build-model) -> SHIP (ship-model) — and **every phase boundary is a save +

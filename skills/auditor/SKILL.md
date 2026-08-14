@@ -130,8 +130,8 @@ Follow the host's `GUIDE.md` → *Process*; in brief:
 
 ## Relationship to neighboring skills
 
-- A drained *defect* graduates via the host's bug-filing lane (`/journal bug` on a workshop
-  host); a *feature* finding via its backlog capture (`/journal task`); else the host's own
+- A drained *defect* graduates via the host's bug-filing lane (`/backlog bug` on a workshop
+  host); a *feature* finding via its backlog capture (`/backlog task`); else the host's own
   equivalent.
 - If the host has a **heavier, parallelized audit workflow** (score → adversarially verify →
   synthesize), reach for it when a single-reader pass isn't thorough enough.

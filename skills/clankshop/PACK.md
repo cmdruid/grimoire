@@ -1,9 +1,9 @@
 ---
 name: clankshop
-version: 2.0.0
-description: "An agentic workshop for a code project: doctrine, records, and routing deployed as four stations (design/build/test/review), with helpers for planning, records, streams, audits, and debugging."
+version: 2.1.0
+description: "An agentic workshop for a code project: doctrine, records, and routing deployed as four stations (design/build/test/review), with helpers for planning, records, follow-ups, streams, audits, and debugging."
 required: journal
-optional: auditor, blueprint, debugger, delegate, checkpoint, mailbox, scheduler, workstream, bug, task
+optional: auditor, backlog, blueprint, debugger, delegate, checkpoint, mailbox, scheduler, workstream
 ---
 
 # clankshop — the workshop pack
@@ -19,7 +19,8 @@ The v2 roster, by coupling tier (how much workshop a skill needs):
 |---|---|---|
 | system | `clankshop` | the seed (handbook + `context.sh`) + `setup` / `migrate` / `check` / persona summons |
 | helper | `blueprint` | feature planning on any repo — ideation to implementation plan |
-| helper | `journal` | **owns the records layer** — `records.sh`, templates, stores, the history ledger; required (setup delegates records standup to it) |
+| helper | `journal` | **the records format authority** — stores, the record contract, templates, `records.sh`, the history ledger; required (setup delegates records standup to it) |
+| helper | `backlog` | the follow-up lifecycle — capture by kind, tickets, debriefs, tracker grooming; a client of the deployed records layer |
 | helper | `workstream` | long-lived development streams — worktrees, queues, shipping |
 | helper | `auditor` | code-quality audits; drains findings into the records when a workshop is present |
 | helper | `debugger` | root-cause debugging anywhere; guided by the test station's diagnostics when present |
@@ -34,7 +35,9 @@ the v2 names. Landed: `backlog` → `journal` (the v2 records layer — stores +
 the history ledger); `feature` → `blueprint` (the six-verb planning spine); `scheduler` (new
 port — the recurring-runs utility); `handoff` → `checkpoint` (the persistence utility — living
 save-state, the Save/Resume/Lifecycle/Recovery disciplines, compaction recovery). All v2
-renames have landed. The `bug`/`task` capture proxies remain optional members.
+renames have landed. The Phase 6 split then stood `backlog` up as the follow-up lifecycle
+(the name re-minted — v1's `backlog` was the records instrument that became `journal`) and
+**retired the v1 `bug`/`task` capture proxies** — capture routes through `/backlog` directly.
 
 **One library skill is deliberately not a member:** `skill-builder`, the toolmaker steward for
 the skills library itself — a maintainer's tool for whoever authors skills, not part of the

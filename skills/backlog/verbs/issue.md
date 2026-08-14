@@ -4,7 +4,7 @@ Something **wrong or risky about the project itself** — an architectural risk,
 limitation, a maintenance concern. Not a reproducible defect (that is a `bug`), not a thing to
 build (that is a `task`), not a dev-experience observation (that is `feedback`).
 
-1. Resolve the records root (SKILL.md discipline); stand the layer up lazily if missing.
+1. Resolve the records root and the deployed `records.sh` (SKILL.md guard — no records layer → stop and point at `/journal setup`).
 2. **Find or create the Issues tracker**: `records.sh list --type trackers`, title `Issues`;
    when absent, `records.sh new trackers --title "Issues"`.
 3. **Append one line** under `## Items`, newest last:
@@ -13,4 +13,4 @@ build (that is a `task`), not a dev-experience observation (that is `feedback`).
    from the line (`→ <store>/<file>.md`).
 4. **Stamp**: `records.sh touch <tracker-path>`.
 5. **Commit per the capture-commit policy** (SKILL.md): standalone → its own scoped commit
-   (`Journal: issue — <slug>`); inside a `debrief` sweep → write-only.
+   (`Backlog: issue — <slug>`); inside a `debrief` sweep → write-only.

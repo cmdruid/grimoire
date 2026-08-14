@@ -48,7 +48,7 @@
      - leave a grep-able marker at the band-aid site: `// REVIEW(conflict): <one-line why>` — this **is**
        the review-pass target, and it satisfies the host's annotate-debt-in-source rule;
      - add a one-line entry to the host's dev-experience/friction tracker (workshop host: an **Issues**
-       tracker line via `/journal issue`; else the project's own) tagged
+       tracker line via `/backlog issue`; else the project's own) tagged
        `[conflict band-aid]`: `<file:line>` + why + this stream's name.
      A later review pass walks `grep -rn "REVIEW(conflict)"` (or the `[conflict band-aid]` entries) with
      the host's code-review tooling or `/blueprint review`.

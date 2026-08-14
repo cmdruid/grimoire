@@ -32,8 +32,10 @@ expect "gate slot filled" "make test" "$proj/.handbook/core/INVARIANTS.md"
 expect_absent "no unfilled gate slot" "<gate>" "$proj/.handbook/core/INVARIANTS.md"
 expect_absent "no unfilled trunk slot" "<trunk>" "$proj/.handbook/core/ROUTING.md"
 
-# the one install stamp, with the real date (facts from scripts, never guessed)
-expect "stamp version+date" "Seeded from clankshop v2.0.0 on $(date +%Y-%m-%d)." "$proj/.handbook/README.md"
+# the one install stamp, with the real date (facts from scripts, never guessed) — version
+# read from the manifest the same way seed.sh reads it, so a version bump can't false-fail
+pack_version="$(awk '/^---$/{n++; next} n==1 && /^version:/{sub(/^version:[[:space:]]*/, ""); print; exit}' "$SKILL/PACK.md")"
+expect "stamp version+date" "Seeded from clankshop v${pack_version} on $(date +%Y-%m-%d)." "$proj/.handbook/README.md"
 
 # --- deployed context.sh -------------------------------------------------------
 ctx="$proj/.handbook/scripts/context.sh"

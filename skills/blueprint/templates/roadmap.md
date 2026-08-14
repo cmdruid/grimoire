@@ -28,4 +28,4 @@ An ordered list or ASCII diagram — sequencing follows from the edges, not pros
   independently valuable>
 - **Risks:** <...>
 
-_When a phase meets its gate, run `/journal debrief` before advancing._
+_When a phase meets its gate, run `/backlog debrief` before advancing._

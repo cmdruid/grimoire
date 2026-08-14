@@ -35,7 +35,7 @@ is the harm this rule exists to prevent. Two consequences follow, keyed on *what
 
 - **You never spawn a stream for your own work.** When in-stream work surfaces something that *would
   be* its own stream — a tangent, a debug bug, the next roadmap track — you **capture or surface it;
-  you never stand it up to drive**: a **defect** → `/journal bug`; **feature work** → `/journal task`
+  you never stand it up to drive**: a **defect** → `/backlog bug`; **feature work** → `/backlog task`
   (a **Backlog** tracker line) — on a non-workshop host, the project's own tracker instead (*Host layout*);
   the **next track / a new stream** → name it at a seam and hand it to the human/coordinator. Plain
   `create` *enters the loop*, so standing up a stream to drive is a **coordinator-only**,
@@ -95,7 +95,7 @@ install stamp (`Seeded from clankshop`)?
 - **Workshop host** (stamp present): the records layer is deployed — plans live in the
   `plans/` store, shipped units close through `records.sh done` (the `history.tsv` ledger line)
   plus an optional `reports/` record tagged `debrief`, queue items are **Backlog** tracker
-  lines, and debriefs route through `/journal debrief`. The records root is the declared
+  lines, and debriefs route through `/backlog debrief`. The records root is the declared
   `records-root:` (front-door `AGENTS.md` declaration), else `.records/`; the deployed tool is
   `<records-root>/scripts/records.sh` — invoke it for every record fact, never hand-stamp. At
   loop entry (`create`/`load`), **summon the build station's context**
@@ -139,7 +139,7 @@ install stamp (`Seeded from clankshop`)?
   W1). Two rules: **(1) Don't hand-commit a stream's own records to the root at all** — the feature's
   plan closure + ledger line and roadmap-ledger row commit **on the branch** and reach the trunk
   via the **ff-merge**, the single root mutation (and `--ff-only` fails safe: rejected → re-`sync` +
-  retry). **(2) For the few commits that must touch the root** (`/journal debrief`'s captures — `create`
+  retry). **(2) For the few commits that must touch the root** (`/backlog debrief`'s captures — `create`
   seeds its plan **on the branch**, and `close` writes nothing), stage **and** commit in **one** tool call scoped with an
   explicit pathspec: `git -C <root> add <p> && git -C <root> commit -m "…" -- <p>` — the `-- <p>`
   excludes anything that raced into the index. A **rename/move** (`git mv`) stages a delete + an

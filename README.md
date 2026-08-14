@@ -30,10 +30,10 @@ The `clankshop` pack binds most of them into one **agentic workshop**, tiered by
 pack manifest (`skills/clankshop/PACK.md`): the pack **face** (`clankshop`) carries the seed
 handbook and the four **stations** — `design` (the architect), `build` (the foreman), `test` (the
 guardian), `review` (the admin) — with system verbs (`setup` / `migrate` / `check`) and persona
-summons; **helpers** — `blueprint` (feature planning), `journal` (the records layer — the one
-required member), `workstream` (development streams), `auditor` (code-quality audits), `debugger`
-(root-cause diagnostics); **utilities** — `checkpoint`, `mailbox`, `delegate`, `scheduler`; plus
-the optional capture aliases (`bug`, `task`). `skill-builder` is a category of one: the
+summons; **helpers** — `blueprint` (feature planning), `journal` (the records format authority —
+the one required member), `backlog` (the follow-up lifecycle), `workstream` (development
+streams), `auditor` (code-quality audits), `debugger` (root-cause diagnostics); **utilities** —
+`checkpoint`, `mailbox`, `delegate`, `scheduler`. `skill-builder` is a category of one: the
 **toolmaker** — it stewards the skills in this library themselves (scaffold new ones, audit
 boundary health, calibrate authoring doctrine), not project code, and is deliberately outside the
 `clankshop` pack (see *The packs* below).
@@ -41,23 +41,25 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | skill | what it does |
 |---|---|
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
+| `backlog` | the follow-up lifecycle: capture by kind, tickets, debrief sweeps, tracker grooming — a client of the records layer (guards when none) |
 | `blueprint` | feature planning on any repo: ideation → spec → tracer-bullet plan → review, plus roadmap tending — plans; never builds |
 | `bootstrap` | idea → a new git repo carrying five founding documents: `grill` (design-tree interview, writes nothing) → `land` (create, write, commit); standalone, outside every pack |
-| `bug` | capture alias: `/bug` proxies the records layer's bug capture (optional pack member) |
 | `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
 | `clankshop` | the workshop face: seed handbook + the four stations; `setup` / `migrate` / `check`, and persona summons for hat-on discussion |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
-| `journal` | owns the records layer: eight typed stores + `records.sh` + the history ledger; capture by kind, tickets, debrief, curate, standup |
+| `journal` | the records format authority: eight typed stores + the record contract + `records.sh` + the history ledger; setup, done, substrate curate |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
-| `task` | capture alias: `/task` proxies the records layer's task capture (optional pack member) |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
 The v2 rebuild (`docs/design/2026-08-12-clankshop-v2.md`) reshaped the pack into the four-station
 workshop and renamed `backlog` → `journal`, `feature` → `blueprint`, `handoff` → `checkpoint`
-(adding `scheduler`); the former role skills had already merged into the face
+(adding `scheduler`); the journal/backlog split
+(`docs/design/2026-08-14-journal-backlog-split-design.md`) then re-minted `backlog` as the
+follow-up lifecycle over the records layer and retired the v1 `bug`/`task` capture aliases; the
+former role skills had already merged into the face
 (`docs/design/2026-08-10-clankshop-role-merge.md`); earlier lineage lives in
 `docs/design/2026-07-17-library-refactor.md`.
 

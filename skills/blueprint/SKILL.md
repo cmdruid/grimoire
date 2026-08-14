@@ -235,7 +235,7 @@ that consume any artifact and write no new one.
 ## Composition (the orchestrator owns building, landing, capture)
 
 - **Standalone** — the user runs the spine, then the host's build lane executes the plan; the
-  close-the-books sweep is `/journal debrief` on a workshop host, the project's own convention
+  close-the-books sweep is `/backlog debrief` on a workshop host, the project's own convention
   otherwise.
 - **Inside `/workstream`** — the stream calls the planning verbs per queue item and builds the
   plan itself per its own loop; landing, capture, and the reset ritual are the stream's.

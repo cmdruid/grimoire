@@ -13,9 +13,9 @@ manifest (`skills/clankshop/PACK.md`): the pack **face** (`skills/clankshop/`) c
 handbook and the four **stations** — `design` (the architect), `build` (the foreman), `test` (the
 guardian), `review` (the admin) — with the system verbs (`setup` / `migrate` / `check`) and
 persona summons for hat-on discussion; **helpers** (`blueprint` the planner, `journal` the
-records layer and the one required member, `workstream` the stream driver, `auditor`,
-`debugger`); **utilities** (`checkpoint`, `mailbox`, `delegate`, `scheduler`); and the capture
-aliases (`bug`, `task`). `skill-builder` is the library's own
+records format authority and the one required member, `backlog` the follow-up lifecycle,
+`workstream` the stream driver, `auditor`, `debugger`); **utilities** (`checkpoint`, `mailbox`,
+`delegate`, `scheduler`). `skill-builder` is the library's own
 toolmaker and stays outside the pack. See `README.md` for the full inventory.
 
 A consuming project gets the workshop **deployed**, not copied: `/clankshop setup` (or `migrate`)

@@ -19,5 +19,5 @@ standalone on any repo; it is also the **delegated records step** the workshop's
 3. **Commit if the human wants it**, scoped to exactly what was written:
    `scripts/scoped-commit.sh <root> "Stand up the records layer" <records-root>`.
 
-Lazy path: a capture verb finding no records layer runs steps 1–2 inline (no round-trip) and
-notes it did so.
+Standing the layer up is always this verb's deliberate act — clients that find no records
+layer stop and point here rather than improvising one (their guard, this verb's job).

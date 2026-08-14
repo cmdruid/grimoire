@@ -125,7 +125,7 @@ Every delegation returns **three** compact things -- never the raw exploration:
      written rests on a wrong assumption. Escalate to a stronger model or a smaller re-scoped task --
      never a same-model retry of the unchanged dispatch (that treats a difficulty problem as if it
      were a transient provider hiccup).
-3. **Byproducts block** -- a small, structured list in `/journal debrief`'s capture kinds, surfaced by
+3. **Byproducts block** -- a small, structured list in `/backlog debrief`'s capture kinds, surfaced by
    the delegate (it does a mini-debrief of its own slice):
    - follow-up work → Backlog · defect noticed → bug record · project problem/risk → Issues ·
      dev-experience observation → Feedback · **feedback about a skill itself → the skills' home
@@ -144,7 +144,7 @@ Every delegation returns **three** compact things -- never the raw exploration:
   "question the fundamentals, not the Nth attempt" shape `debugger` uses for a run of failed fixes.
 
 **Stash returned byproducts into your running capture notes immediately** (as you would your own
-discovered follow-ups) so they survive context compaction to the end-of-work `/journal debrief`. They land
+discovered follow-ups) so they survive context compaction to the end-of-work `/backlog debrief`. They land
 back in your context by contract, so debrief needs no special handling.
 
 **Weak model = weak detector.** A cheap delegate spots fewer byproducts than you would. "Report anything
