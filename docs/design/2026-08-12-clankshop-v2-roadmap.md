@@ -114,6 +114,17 @@ back-porting `schedule.sh` to thinklab.
 
 ## Phase 5 — light touches and library refresh
 
+> **Shipped 2026-08-14** (`stream/v2`, "clankshop(plan): Phase 5 -- checkpoint redesign design
+> doc + expanded plan" … "clankshop(build): Phase 5 exit sweep"). Exit criteria met — with
+> task 2 grown well beyond the queued rename: `handoff` → `checkpoint` became a full redesign
+> (`docs/design/2026-08-13-checkpoint-skill-design.md`, twice Codex-reviewed) — a living
+> save-state and the four persistence disciplines (Save/Resume/Lifecycle/Recovery) moved out of
+> `workstream`, which borrows them back by locally-complete citation with zero behavioral
+> change. Also landed: `register-route` retired (skill-builder `check` now two passes);
+> `debugger`, `pack-format.md`, `README.md`, `AGENTS.md` all speak v2. The dependency sweep ran
+> clean — and prove-by-breaking caught the sweep itself first (`\b` matches nothing in macOS
+> ERE). Lint fails=0; all suites green.
+
 After phase 3 (needs the final names and shapes).
 
 - `debugger` (2 refs), `checkpoint` rename (1 ref), `pack-format.md` touch-up.
