@@ -1,5 +1,8 @@
 ## Workstream compaction recovery
 
+_(The workstream instance of `/checkpoint`'s recovery-anchor convention, with stream-specific
+custody rules.)_
+
 Applies only when your context has just been compacted or summarized (you see a
 compaction/continuation summary in place of the full conversation), and only to the tree your
 working directory is inside (`git rev-parse --show-toplevel`):

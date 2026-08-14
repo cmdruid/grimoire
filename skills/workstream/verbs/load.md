@@ -20,8 +20,9 @@ _Read `flow.md` alongside this verb — `load` re-enters the loop it governs._
    user can pick. **In-place streams own no worktree** — they never appear in `worktree list`;
    locate them the way `status` does, by scanning `<root>/.workstreams/<stream>/WORKSTREAM.md`
    directly (that file IS the hand-off to target).
-2. Apply `/handoff`'s **Resume discipline** to `<worktree>/WORKSTREAM.md`: read it in full and load
-   as context (write/move nothing). Then run the START HERE guard from its Coordinates.
+2. Apply `/checkpoint`'s **Resume discipline** to `<worktree>/WORKSTREAM.md`: read it in full and
+   load as context (write/move nothing — resume never consumes). Then run the START HERE guard
+   from its Coordinates.
    **Worktree streams:** `git -C <worktree> rev-parse --show-toplevel` == worktree and branch
    matches — if either fails, STOP and report.
    **In-place streams** (`isolation: in-place`): the toplevel test compares to the ROOT path; the

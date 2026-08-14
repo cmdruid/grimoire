@@ -103,8 +103,11 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
      would accrete a duplicate per create, ISSUES W12).
      (Without the line `WORKSTREAM.md` shows as untracked inside the worktree and blocks a clean
      `git worktree remove`.)
-   - **Ensure the front-door recovery anchor — idempotently.** Check the host's always-loaded
-     front-door doc (`AGENTS.md`, or `CLAUDE.md` where that is the host's front-door):
+   - **Ensure the front-door recovery anchor — idempotently.** (The workstream **instance** of
+     `/checkpoint`'s recovery-anchor convention — an installer verb with a genuine install moment
+     may automate its own instance; the generic convention stays human-installed.) Check the
+     host's always-loaded front-door doc (`AGENTS.md`, or `CLAUDE.md` where that is the host's
+     front-door):
      `grep -q '^## Workstream compaction recovery' <root>/AGENTS.md` → present, no-op (the normal
      case after the first stream). Absent → **propose** appending this skill's bundled
      `templates/compaction-anchor.md` (resolve from the skill's own base directory, never a host

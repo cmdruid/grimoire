@@ -7,7 +7,8 @@ user invoking `save` directly, the flow's single pre-reset checkpoint, and the f
 **feature-completion checkpoint** (fires at every feature-completion seam alongside debrief #1,
 reset or not — bounding the hand-off's staleness to one in-flight feature). No other verb calls it.
 
-1. Apply `/handoff`'s **Save discipline** to regenerate `<worktree>/WORKSTREAM.md` in place from its
+1. Apply `/checkpoint`'s **Save discipline** (scan/elide secrets; synthesize, don't transcribe;
+   absolute dates) to regenerate `<worktree>/WORKSTREAM.md` in place from its
    own template (the workstream hand-off shape: Coordinates + START HERE + Queue state + Loop
    routine), targeting that explicit path. Worktree specifics: reconcile *What's been done* against
    `git -C <worktree> log`, and **preserve the Coordinates block verbatim** (it's fixed for the stream's life).

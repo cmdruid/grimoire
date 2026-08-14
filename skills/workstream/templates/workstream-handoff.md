@@ -127,7 +127,8 @@ Build the current feature to **completion** (autonomy rule): run all its tasks, 
 round-trip **only at a seam** — launch / blocker / genuine fork / feature-completion. **Saves are
 coupled to the reset**, not to each task or verb (`sync` and `ship` do not save).
 **Every seam-status message leads with the anchor line** `WORKSTREAM <stream> — hand-off: <abs
-path to this file>` — repeated, salient state a compaction summarizer reliably keeps, covering the
+path to this file>` (`/checkpoint`'s anchor-line technique) — repeated, salient state a compaction
+summarizer reliably keeps, covering the
 case where this file was last read long before the compaction.
 
 **Reset ritual** (whether Scenario A *lands* depends on *Ship cadence* above):

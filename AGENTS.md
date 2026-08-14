@@ -15,7 +15,7 @@ doctrine, the runbook, and the **role hats** — expertise layers its intent ver
 chiropractor; `ask <role>` for hat-on discussion); **instruments** — procedures anyone operates
 (`backlog` the records instrument, `debugger` the diagnostic instrument, `auditor` the
 code-quality instrument); **pipelines** (`feature`, `workstream`);
-and portable **helpers** (`delegate`, `mailbox`, `handoff`). `skill-builder` is the library's own
+and portable **helpers** (`delegate`, `mailbox`, `checkpoint`). `skill-builder` is the library's own
 toolmaker and stays outside the pack. See `README.md` for the full inventory.
 
 A consuming project gets the pack **deployed**, not copied: `/clankshop setup` (or `migrate`)
@@ -51,6 +51,9 @@ this library was.)
   `skills/clankshop/scripts/tests/`; fixture instances in temp dirs).
 
 ## Workstream compaction recovery
+
+_(The workstream instance of `/checkpoint`'s recovery-anchor convention, with stream-specific
+custody rules.)_
 
 Applies only when your context has just been compacted or summarized (you see a
 compaction/continuation summary in place of the full conversation), and only to the tree your

@@ -169,7 +169,9 @@ boundary (effectively `per-stage`). Record `per-stage` for a template stream and
 
 ### Reset ritual — saves are coupled to the reset
 
-**A save is justified by imminent — or unpredictable — context loss.** Harness auto-compaction
+**A save is justified by imminent — or unpredictable — context loss.** (This is `/checkpoint`'s
+**Lifecycle discipline** — a living save-state refreshed at checkpoint moments, never consumed by
+a resume — with the stream's own seams as the checkpoint moments.) Harness auto-compaction
 means loss can strike unannounced, so the saves are (1) a user manually invoking `save`, (2) the
 flow's single **pre-reset checkpoint**, (3) `park`'s custody hand-over (in-place streams — a parked
 stream may next be resumed by a *different* session, so parking without saving would strand the
@@ -215,20 +217,29 @@ pre-reset checkpoint. (Save-then-reset = checkpoint; reset-without-save = rollba
 **Scenario C — involuntary reset (auto-compaction).** The harness summarized your context mid-loop:
 no save preceded it and no session boundary fired `load`. You detect it by the
 compaction/continuation summary sitting where your conversation history should be (both Claude Code
-and Codex leave one), or by the host front-door's recovery anchor pointing you here. Ritual:
+and Codex leave one), or by the host front-door's recovery anchor pointing you here. This is
+`/checkpoint`'s **Recovery discipline** (stop -> re-read the save-state in full -> reconcile:
+durable trail beats summary -> continue without a round-trip if KNOWN) run against
+`<worktree>/WORKSTREAM.md`, plus the workstream overlays — re-reading `flow.md` itself, the START
+HERE guard, custody. Ritual:
 
-> stop current work -> re-read `<worktree>/WORKSTREAM.md` in full -> re-read this `flow.md` -> run
-> the hand-off's START HERE guard -> reconcile: `git -C <worktree> log` and the durable records
+> stop current work -> re-read `<worktree>/WORKSTREAM.md` in full -> **re-read this `flow.md`**
+> (the orchestration rules live outside the hand-off; the compaction may have erased them) -> run
+> the hand-off's START HERE guard (in-place streams: the custody check; and never recover another
+> session's worktree) -> reconcile: `git -C <worktree> log` and the durable records
 > (tracker files, the plan, `.records/`) are truth for everything committed; the compaction summary
 > is truth only for in-flight intent — merge them -> continue the current task **without a user
 > round-trip** if the next action is KNOWN.
 
 The pre-compaction session already held its launch confirm — re-confirming after a compaction is a
-nag, not a seam. Round-trip only if the reconcile surfaces genuine ambiguity (a real fork, or the
+nag, not a seam (Recovery inherits the compacted session's standing confirmation; a **fresh**
+session entering the stream runs `load`, whose launch seam earns one). Round-trip only if the
+reconcile surfaces genuine ambiguity (a real fork, or the
 summary contradicting disk). This is `load`-lite: `load`'s resume discipline run in place, minus
 the session-boundary mechanics and minus the launch-confirm seam.
 
-**When compaction itself fails, treat it as a hard session boundary.** Two observed modes
+**When compaction itself fails, treat it as a hard session boundary** (the Recovery discipline's
+failed-compaction rule). Two observed modes
 (design doc, *Failure modes*): the summarizer **refuses** (content grounds; retries fail
 deterministically) or **runs out of room** (small context windows; the session hard-stalls with a
 "start a new thread" error, sometimes only after several successful compactions). Either way the
@@ -236,7 +247,8 @@ session is pinned at the limit: **save if the session can still act**, then rese
 session and `load` — the hand-off + durable records carry the stream across. This is the classic
 reset ritual, nothing new.
 
-**Context-pressure warning = checkpoint cue.** If the harness surfaces a context-low warning,
+**Context-pressure warning = checkpoint cue** (the Lifecycle discipline's third checkpoint
+moment). If the harness surfaces a context-low warning,
 treat it as Scenario B arriving early: run **save** proactively and recommend a reset — beat the
 compactor to a clean checkpoint instead of gambling on the summary.
 
