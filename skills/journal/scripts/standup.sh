@@ -6,8 +6,10 @@
 #   standup.sh <target-root> [--records-root <rel>]
 #
 # Creates <target-root>/<records-root> (default .records): the eight store
-# directories, templates/ (copied from this skill), scripts/records.sh (the
-# deployed asset), and an empty history.tsv ledger. Additive and idempotent-safe:
+# directories, templates/ (journal's bundled commons/example templates only —
+# the skills that mint the other stores own and lazy-deploy their templates,
+# per the SKILL.md template convention), scripts/records.sh (the deployed
+# asset), and an empty history.tsv ledger. Additive and idempotent-safe:
 # it never overwrites an existing file, and it refuses a root that is already
 # stood up (templates/ or scripts/records.sh present — an upgrade is a diff, not
 # a re-standup). A records root that merely EXISTS (a legacy dev/ tree) is fine —
@@ -63,7 +65,9 @@ records carrying the front-matter contract (doctype/status/created/updated/tags)
 \`scripts/records.sh\` is the query + lifecycle tool (\`list\`, \`new\`, \`touch\`,
 \`done\`, \`history\`, \`prune-candidates\`, \`check\`) and the sole writer of
 \`history.tsv\`, the closure ledger. \`templates/\`, \`scripts/\`, and
-\`history.tsv\` are reserved — not stores.
+\`history.tsv\` are reserved — not stores. Store templates arrive with the
+skills that mint them (\`records.sh new\` names the missing template if one
+hasn't been deployed yet).
 
 Stood up by journal on $(date +%Y-%m-%d).
 EOF

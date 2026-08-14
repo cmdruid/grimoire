@@ -53,6 +53,10 @@ is (or run the debrief if the intent is "capture everything that surfaced").
   and conformance fact (`new`/`touch`/`done`/`list`/`check`); never guess a date, never
   hand-stamp front-matter, never write `history.tsv` by hand (per the contract, `records.sh
   done` is its sole writer).
+- **Backlog owns its stores' templates and lazy-deploys them** (the contract's template
+  convention): before minting into `bugs`, `notes`, `tickets`, or `trackers`, copy this skill's
+  bundled `templates/<doctype>.md` into `<records-root>/templates/` when absent — the deployed
+  copy is what `records.sh new` mints from, and it travels with the layer thereafter.
 - **The three canonical trackers**, found by title and created lazily on first capture
   (`records.sh new trackers --title "<Title>"`): **Backlog** (things to build), **Issues**
   (project problems/concerns), **Feedback** (dev-experience observations). Line-items follow

@@ -56,6 +56,24 @@ mechanism/procedure seam (mailbox/delegate; checkpoint/workstream):
   backlog; `clankshop` seed/setup references stay journal (records standup); README/AGENTS
   rosters and PACK.md updated.
 
+## Addendum (2026-08-14, post-ship): template ownership
+
+Human nitpick after the split shipped: journal must not become the dump for other skills'
+record templates. Settled (human, 2026-08-14):
+
+- **Ownership follows the minting verb.** `backlog` bundles `bugs`/`notes`/`tickets`/`trackers`
+  templates; `blueprint`'s existing rich templates become the record templates for
+  `plans`/`design`/`adr` (slot tokens normalized to `records.sh`'s `<title>`/`<date>`; journal's
+  thin stubs for those stores deleted, not moved). `journal` keeps only `reports.md` — the
+  commons (debugger, auditor, and debrief sweeps all mint reports; no single owner), doubling
+  as the worked example of the contract.
+- **Owners lazy-deploy.** `records.sh` is unchanged (it already errors, naming the missing
+  template path). The skill whose verbs mint a store copies its bundled template into
+  `<records-root>/templates/` when absent, before minting; `standup.sh` deploys only journal's
+  commons. The convention is stated once, in the contract section (journal SKILL.md).
+- Landed as a Phase 6 addendum, before phase 7 — the deployment test exercises the final
+  template regime.
+
 ## Non-goals
 
 - No change to the `.records` layout, front-matter contract, ledger semantics, or `records.sh`

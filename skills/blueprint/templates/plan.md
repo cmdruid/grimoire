@@ -1,12 +1,12 @@
 ---
 doctype: plans
 status: open
-created: <YYYY-MM-DD>
-updated: <YYYY-MM-DD>
+created: <date>
+updated: <date>
 tags: [plan]
 ---
 
-# <Feature> — Implementation Plan
+# <title> — Implementation Plan
 
 <Tracer-bullet: slice 1 is the thinnest end-to-end path through the riskiest/newest ground;
 later slices widen it. Each slice is independently testable and committable.>

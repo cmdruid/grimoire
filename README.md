@@ -70,7 +70,8 @@ the way `.github/` is. **`.handbook/`** holds the project's own doctrine — a R
 the one install stamp line), `core/`, the four station chapters, and `scripts/context.sh` —
 seeded from the pack face and locally grown thereafter. **`.records/`** holds the work products:
 eight typed stores (`adr`, `bugs`, `design`, `notes`, `plans`, `reports`, `tickets`, `trackers`)
-plus `records.sh`, templates, and the `history.tsv` closure ledger — owned by `journal`.
+plus `records.sh`, templates, and the `history.tsv` closure ledger — the format is `journal`'s
+(store templates arrive with the skills that mint them; `journal` ships the commons).
 **`AGENTS.md`** is the door: a thin routing table plus the handbook pointer. Once seeded, all
 three are the project's documents; the deployed handbook and records READMEs document their own
 layout.

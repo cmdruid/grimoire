@@ -1,12 +1,12 @@
 ---
 doctype: adr
 status: open
-created: <YYYY-MM-DD>
-updated: <YYYY-MM-DD>
+created: <date>
+updated: <date>
 tags: []
 ---
 
-# <Title>
+# <title>
 
 - **Deciders:** <who>
 - **Related:** <docs / ADRs / stable anchors this connects to — NOT bare plan paths; route

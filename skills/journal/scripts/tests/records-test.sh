@@ -19,6 +19,15 @@ mkdir -p "$proj"
 RS="$proj/.records/scripts/records.sh"
 today="$(date +%Y-%m-%d)"
 
+# Owner lazy-deploy, modeled: standup ships only journal's commons (reports.md); the
+# skills owning the other stores copy their templates in before minting (the SKILL.md
+# template convention). This fixture stands in for those owners — records.sh is the
+# subject here, and it mints from whatever contract-conformant template is deployed.
+for t in plans notes trackers tickets; do
+  printf -- '---\ndoctype: %s\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\n' "$t" \
+    > "$proj/.records/templates/$t.md"
+done
+
 # --- new: minted from the template, slots filled, date-slug filename ------------
 p="$("$RS" new plans --title "Alpha: the first plan")"
 expect_eq "new prints the path" "$proj/.records/plans/$today-alpha-the-first-plan.md" "$p"
@@ -82,7 +91,7 @@ rc=0; "$RS" new gizmos --title "No such store" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "unknown doctype rc" "2" "$rc"
 expect "unknown doctype names the template" "no template for doctype 'gizmos'" "$ERR"
 
-rc=0; "$RS" touch "$proj/.records/templates/adr.md" >"$OUT" 2>"$ERR" || rc=$?
+rc=0; "$RS" touch "$proj/.records/templates/reports.md" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "reserved path refused rc" "2" "$rc"
 expect "reserved path named" "reserved path" "$ERR"
 

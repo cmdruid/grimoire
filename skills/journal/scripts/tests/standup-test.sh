@@ -22,7 +22,13 @@ expect "standup self-check green" "records check: OK (0 records)" "$OUT"
 
 for s in adr bugs design notes plans reports tickets trackers; do
   [ -f "$proj/.records/$s/.gitkeep" ] && pass=$((pass + 1)) || { echo "FAIL: missing store $s" >&2; fail=$((fail + 1)); }
-  [ -f "$proj/.records/templates/$s.md" ] && pass=$((pass + 1)) || { echo "FAIL: missing template $s.md" >&2; fail=$((fail + 1)); }
+done
+# templates: standup ships ONLY journal's commons/example (reports.md); every other
+# store's template is owner-carried and lazy-deployed by the skill that mints it —
+# a pre-deployed copy here would mean standup regressed into the template dump.
+[ -f "$proj/.records/templates/reports.md" ] && pass=$((pass + 1)) || { echo "FAIL: missing commons template reports.md" >&2; fail=$((fail + 1)); }
+for t in adr bugs design notes plans tickets trackers; do
+  [ ! -e "$proj/.records/templates/$t.md" ] && pass=$((pass + 1)) || { echo "FAIL: owner-carried template $t.md pre-deployed by standup" >&2; fail=$((fail + 1)); }
 done
 [ -x "$proj/.records/scripts/records.sh" ] && pass=$((pass + 1)) || { echo "FAIL: records.sh not executable" >&2; fail=$((fail + 1)); }
 [ -f "$proj/.records/history.tsv" ] && pass=$((pass + 1)) || { echo "FAIL: missing history.tsv" >&2; fail=$((fail + 1)); }

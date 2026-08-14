@@ -10,7 +10,9 @@ standalone on any repo; it is also the **delegated records step** the workshop's
    - `<records-root>`: the front-door `AGENTS.md`'s declared `records-root:` if the project
      has one, else `.records` — never invent a third location.
 2. **Run the mechanics**: `scripts/standup.sh <root> [--records-root <rel>]` — creates the
-   eight stores, copies the templates, installs `records.sh` into
+   eight stores, copies the bundled commons/example templates (the other stores' templates
+   arrive with the skills that mint them — SKILL.md's template convention), installs
+   `records.sh` into
    `<records-root>/scripts/`, seeds an empty `history.tsv`, writes the records README, and
    self-checks. It is additive (a legacy records root that merely exists is fine) and refuses
    a root that is **already stood up** — an upgrade is a judgment-assisted diff against the

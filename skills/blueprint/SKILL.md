@@ -25,8 +25,13 @@ and no verb ever refuses or stalls for lack of a workshop.
 - **Workshop present** → artifacts are records: specs and design docs in the `design/` store,
   roadmaps and plans in `plans/`, ADRs in `adr/` — minted with the deployed
   `<records-root>/scripts/records.sh new <store> --title "…"` (the front-matter contract is
-  stamped at write time; the records root is the declared `records-root:`, else `.records/`),
-  body shaped per this skill's bundled `templates/`. **Summon station context per verb**
+  stamped at write time; the records root is the declared `records-root:`, else `.records/`).
+  **Blueprint owns these stores' templates and lazy-deploys them** (the records contract's
+  template convention): before minting, copy the bundled template into
+  `<records-root>/templates/<doctype>.md` when absent — `templates/plan.md` → `plans.md`,
+  `templates/spec.md` → `design.md`, `templates/adr.md` → `adr.md` (the templates carry the
+  contract front-matter plus the `<title>`/`<date>` mint slots; body sections are the
+  authoring scaffold). **Summon station context per verb**
   (`.handbook/scripts/context.sh <station>`): the **design station** for
   `brainstorm`/`grill`/`spec`/`review`, the **build station** for `roadmap`/`plan`.
 - **Standalone** → confirm an **output home** once (default `docs/`); artifacts are the bundled

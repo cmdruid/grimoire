@@ -1,13 +1,14 @@
 ---
 name: journal
-description: "The records-layer format authority — defines a project's `.records/`: the eight typed stores (adr, bugs, design, notes, plans, reports, tickets, trackers), the record front-matter contract, the templates, and the deployed `records.sh` tool (query + lifecycle + the `history.tsv` closure ledger). Verbs: `setup` (stand up the records layer — standalone, or as the workshop's delegated records seam), `done` (close a record in place: disposition + ledger line), `curate` (substrate hygiene: contract check, link rot, duplicate merge, prune proposals). Use when the user runs `/journal ...`, stands up the records layer, closes a record, asks about the record format/contract, or tidies the stores."
+description: "The records-layer format authority — defines a project's `.records/`: the eight typed stores (adr, bugs, design, notes, plans, reports, tickets, trackers), the record front-matter contract, the template convention, and the deployed `records.sh` tool (query + lifecycle + the `history.tsv` closure ledger). Verbs: `setup` (stand up the records layer — standalone, or as the workshop's delegated records seam), `done` (close a record in place: disposition + ledger line), `curate` (substrate hygiene: contract check, link rot, duplicate merge, prune proposals). Use when the user runs `/journal ...`, stands up the records layer, closes a record, asks about the record format/contract, or tidies the stores."
 ---
 
 # journal — the records format authority
 
 One skill: the **definition** of a project's records layer. It owns the stores under the records
 root (default `.records/`), the **record contract** (below — the one citable place), the
-**templates** records are minted from, and the deployed tool **`records.sh`** (query + lifecycle;
+**template convention** (records mint from owner-carried templates — below), and the deployed
+tool **`records.sh`** (query + lifecycle;
 sole writer of the `history.tsv` closure ledger). Journal stands records up on a bare repo by
 itself, and the workshop's `setup` delegates its records step here. Skills that save or track
 artifacts in the records layer — follow-up capture, debugger reports, auditor findings, workstream
@@ -53,6 +54,13 @@ What `records.sh check` mechanically enforces, plus the two body conventions it 
 - **Tracker line form**: `- [ ] YYYY-MM-DD — <item, one sentence>` under `## Items`, newest
   last, optionally linking a record (`→ <store>/<file>.md`); completes as `[x]` + the
   completion date + a `records.sh touch` of the tracker (no ledger line).
+- **Template convention**: `records.sh new <doctype>` mints from
+  `<records-root>/templates/<doctype>.md` (a contract-conformant record with `<title>`/`<date>`
+  slots) and errors, naming the missing path, when the store has no template. **The skill whose
+  verbs mint a store owns that store's template and lazy-deploys it** — copies its bundled
+  template into `<records-root>/templates/` when absent, before minting. Journal itself bundles
+  only `templates/reports.md` — the commons (several skills mint reports; no single owner),
+  doubling as the worked example of the contract — which `setup` deploys with the layer.
 
 ## Verb dispatch (read the file, then follow it)
 

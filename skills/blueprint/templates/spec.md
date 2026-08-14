@@ -1,12 +1,12 @@
 ---
 doctype: design
 status: open
-created: <YYYY-MM-DD>
-updated: <YYYY-MM-DD>
+created: <date>
+updated: <date>
 tags: [spec]
 ---
 
-# <Feature> — Spec
+# <title> — Spec
 
 <Draft weight (brainstorm): fill Problem/Goal, sketch the Approach, list open questions at the
 foot. Spec weight: every section argued, no open questions left — grill resolves them. The
