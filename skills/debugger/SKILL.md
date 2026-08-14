@@ -21,10 +21,11 @@ looking for work (a store is not a queue). A routed report whose linked tracker 
 **unstamped root** (no installation block) the fix-landing and report-writing halves are
 unavailable: emit `unstamped`, point at the clankshop onramps, and investigate read-only at most.
 
-**The playbook.** Where the installation carries `.handbook/testing/DIAGNOSTICS.md`, consult it
+**The playbook.** Where the installation carries `.handbook/test/workflows/diagnostics.md`,
+consult it
 first — symptom → first moves; it frequently short-circuits Phase 1. An investigation that
-navigates a symptom the playbook doesn't cover is a playbook gap worth flagging (the verification
-steward tends that chapter).
+navigates a symptom the playbook doesn't cover is a playbook gap worth flagging (the test
+station tends that playbook).
 
 ## When to Use
 
@@ -105,14 +106,16 @@ State plainly: the reproduction, the root cause (not the symptom), the evidence 
 just the fix that happened to work), the fix, and how it was verified. If Phase 4 hit the three-fix
 threshold, say so explicitly and name the architectural question instead of a fix.
 
-**On a framework installation, the durable record is a report file:**
-`.records/reports/investigation-<YYYY-MM-DD>-<slug>.md` from this skill's
-`templates/investigation.md` — frontmatter floor (`type: investigation`, `id` = the filename stem
-verbatim, `date`, `source`, optional `processed:`), the report body above, and a keyed
-`#### <key> — <title>` heading per actionable finding (the lessons slice the improvement loop
-drains; keys match `[a-z0-9-]+`, unique within the report). If the target filename already exists,
-suffix the slug deterministically (`-2`, `-3`, …) **before first publication**; never rename
-after. Commit it trunk-side, scoped, alongside the linked entry's completion where one applies.
+**On a workshop installation, the durable record is a reports record:** mint it with
+`<records-root>/scripts/records.sh new reports --title "<investigation title>"` — the tool owns
+naming and front-matter (`.records/reports/YYYY-MM-DD-<slug>.md`, doctype/status/created stamped,
+collisions suffixed automatically; never hand-stamp) — then fill the body from this skill's
+`templates/investigation.md` (the body scaffold: reproduction, root cause, evidence,
+fix + verification, then a keyed `#### <key> — <title>` heading per actionable finding a
+downstream debrief/curate pass reads; keys match `[a-z0-9-]+`, unique within the report). Close
+it `consumed` (`records.sh done`) when its substance lands somewhere durable, and link it from
+any tracker line it schedules. Commit it trunk-side, scoped, alongside the linked entry's
+completion where one applies.
 
 ## Boundaries
 

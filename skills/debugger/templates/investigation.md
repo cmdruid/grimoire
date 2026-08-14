@@ -1,12 +1,7 @@
----
-type: investigation
-id: investigation-<YYYY-MM-DD>-<slug>   # = the filename stem, verbatim; suffix -2/-3 on collision BEFORE first publication, never rename after
-date: <YYYY-MM-DD>
-source: <what triggered it — a routed report/entry ID, or "live symptom: <one line>">
-processed: []                            # finding keys the improvement loop has drained; a YAML list, never a boolean
----
+# Investigation body scaffold
 
-# Investigation — <slug>
+_Fills the body of a `reports` record minted by `records.sh new reports --title "..."` — the tool
+stamps the front-matter and filename; this template supplies only the sections below._
 
 ## Reproduction
 
@@ -29,7 +24,7 @@ verified: new test green, nothing else broke, original symptom gone.>
 ## Findings
 
 <One keyed heading per finding an outside consumer might act on — the key matches `[a-z0-9-]+`
-and is unique in this report. The lessons slice is what the improvement loop reads.>
+and is unique in this report. The findings slice is what a debrief/curate pass reads.>
 
 #### <finding-key> — <title>
 
