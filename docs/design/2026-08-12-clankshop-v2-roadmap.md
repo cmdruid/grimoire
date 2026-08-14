@@ -135,6 +135,18 @@ outside `docs/design/` and `.scratch/`.
 
 ## Phase 6 — journal/backlog split *(inserted 2026-08-14)*
 
+> **Shipped 2026-08-14** (`stream/v2`, "clankshop(plan): Phase 6 inserted" … "clankshop(build):
+> Phase 6 -- journal/backlog split"). Exit criteria met: `journal` slimmed to the format
+> authority (the record contract now ONE citable SKILL.md section; verbs setup/done/curate,
+> lazy standup removed); `backlog` stood up (seven verbs moved with history, guard instead of
+> lazy standup, tracker-side curate; runtime on the deployed `records.sh`); proxies deleted;
+> consumers re-pointed (workstream/delegate/auditor/blueprint); PACK 2.1.0. Routing-probe
+> 10/10 on a fresh sub-agent; sweep clean incl. `docs/spec/` (proven by breaking — and it
+> caught `pack-format.md`'s stale examples only after the scope lesson: live specs are not
+> history docs); lint fails=0; suites green (seed-test's hardcoded stamp version fixed,
+> proven red-first). Soft spots settled at the plan's foot (contract home; standup is setup's
+> mechanics, not a verb).
+
 The format authority and the follow-up lifecycle separate, so the deployment test (phase 7)
 validates the final shape. Design: `2026-08-14-journal-backlog-split-design.md`.
 
