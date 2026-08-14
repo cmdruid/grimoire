@@ -133,7 +133,26 @@ After phase 3 (needs the final names and shapes).
 **Exit**: the dependency-check sweep from the spec re-run — zero v1-machinery references
 outside `docs/design/` and `.scratch/`.
 
-## Phase 6 — live deployment test (the finish line)
+## Phase 6 — journal/backlog split *(inserted 2026-08-14)*
+
+The format authority and the follow-up lifecycle separate, so the deployment test (phase 7)
+validates the final shape. Design: `2026-08-14-journal-backlog-split-design.md`.
+
+- **`journal`** becomes the independent `.records` **format authority**: the stores, the
+  front-matter contract (one citable place, `records.sh check` enforcing it), templates, the
+  `records.sh` query/lifecycle surface, `setup`, `standup`, curate's substrate half. Clients
+  cite the contract, never restate it.
+- **`backlog`** (name re-minted, lineage noted) owns the **follow-up lifecycle**: capture by
+  kind, `ticket`, `debrief`, tracker-side `curate`. Doctrinal dependency on journal; runtime
+  dependency on the *deployed* `records.sh`. Optional-but-default pack member; drain shelved.
+- **`bug`/`task` proxies retired** — capture routes through `/backlog` directly.
+- Cross-skill re-points: workstream's debrief seams, delegate's byproducts citation, PACK.md,
+  README/AGENTS.
+
+**Exit**: routing-probe passes on the two new descriptions; suites green; the proxy dirs gone;
+sweep clean on relocated verbs (proven by breaking).
+
+## Phase 7 — live deployment test (the finish line)
 
 The test v1 never got. After everything above.
 
@@ -148,6 +167,6 @@ the first real input to the review station's improvement loop.
 ## Sequencing summary
 
 ```
-1 (face + gate) ──► 2 (journal) ──► 3 (helpers) ──► 5 (refresh) ──► 6 (deploy test)
+1 (face + gate) ──► 2 (journal) ──► 3 (helpers) ──► 5 (refresh) ──► 6 (journal/backlog split) ──► 7 (deploy test)
                                     4 (scheduler) ──────────┘
 ```
