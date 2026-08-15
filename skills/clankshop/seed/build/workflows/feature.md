@@ -25,7 +25,13 @@ approved plan back to this lane.
 3. Plan task-by-task against the live tree — exact paths, complete code per step, riskiest
    piece spiked first. Re-verify every load-bearing signature at `HEAD` before sizing.
 4. Build task-by-task, red-first: failing test → minimal implementation → `<gate>` green →
-   scoped commit (INV-1, INV-3). Pause only at a blocker or a genuine fork.
+   **host formatter/cheap lint on the touched files** → scoped commit (INV-1, INV-3). The fmt
+   step is load-bearing when transcribing plan-embedded literal code — a plan pins the author's
+   hand formatting, not the formatter's, and the drift otherwise goes red at the full gate a
+   cycle later (4 recurrences across independent streams). A **guard/absence test** ("X never
+   happens") also needs a one-time red-proof: disable the guarded mechanism and watch the test
+   fail — a fixture whose world cannot contain X stays green with the guard deleted. Pause only
+   at a blocker or a genuine fork.
 5. Land on `<trunk>` (rebase, re-verify the gate, merge); close the shipped plan
    (`records.sh done`).
 6. Close the books: sweep follow-ups, learnings, and friction to the trackers; a cross-cutting

@@ -71,7 +71,12 @@ never start from a blank template.
    (workshop: design-station summon + the `design/` store's `status: current` spec; standalone:
    the project's own design docs) before asking anything. Don't brainstorm blind.
 2. **Scope check** — an idea spanning several independent subsystems decomposes into separate
-   features first; brainstorm the first one.
+   features first; brainstorm the first one. **And ask "is this already built?"** — probe by
+   *capability* keywords repo-wide (not just the subsystem you expect it in), and `ls`/glob every
+   path or name the idea would claim (plus the host's skills/workflows registry where one exists).
+   An existing implementation turns the feature into a docs/discoverability task — the cheapest
+   outcome, and one that has otherwise surfaced only at execution, after a design doc, an ADR, and
+   a first commit duplicated it.
 3. **Diverge** — propose 2–3 genuinely different approaches with trade-offs; lead with a
    recommendation and say why.
 4. **Converge conversationally** — one question at a time (multiple-choice when possible),
@@ -121,9 +126,21 @@ conversation itself.
    **Goal**, **Approach** (+ alternatives rejected and why), **Mechanism** (concrete enough to
    implement from), **Verification** (how we'll know it works). A cross-cutting decision that
    surfaced gets its ADR (`templates/adr.md`, the `adr/` store) — one per decision, linked.
+   **A numeric before/after acceptance target needs a population ATTRIBUTION, not just a count:**
+   dump a few instances of the metric's population, section one, and name which mechanism/class
+   produces it — a real count over the *wrong class* passes every review and dies only at
+   measurement (observed: a headline "162 → 0" whose population belonged entirely to a class the
+   mechanism deliberately excluded).
 4. **Self-review** — placeholders (TBD/vague), internal contradictions, scope (one plan's
-   worth?), ambiguity (any requirement readable two ways → pick one, make it explicit).
+   worth?), ambiguity (any requirement readable two ways → pick one, make it explicit). **And the
+   greenfield check:** is any mechanism shaped by a constraint we could *delete* instead (a code
+   built-in, an integer substrate, a frozen baseline that could re-baseline)? Name each such
+   constraint explicitly as pay-the-debt vs design-around — grounded review structurally cannot
+   supply this (a reviewer refuting claims against `HEAD` never flags that `HEAD` itself is the
+   problem).
 5. **User-review gate** — the human reviews the written spec before anything plans against it.
+   For an ADR-tier spec, an independent `review` first is recommended by default — design-stage
+   review has caught must-fix defects before any plan existed.
    On approval it becomes the candidate `status: current` spec (workshop: flip via
    `records.sh touch <spec> --status current`; the superseded spec, if any, closes
    `--as superseded` naming its successor).
@@ -161,17 +178,36 @@ writing.
    path visually in isolation; a reused, proven path where only wiring is new needs only a
    wiring test). Later slices widen coverage; each is independently testable and committable,
    with **blocking edges declared** between slices that genuinely depend on each other.
+   **When the acceptance bar is subjective** (art, UX, feel), slice 1 is an **owner-gated concept
+   sample** — one from-scratch instance the human approves *before* any propagation slice (a v1
+   that passed every technical gate has been rejected whole on taste, wasting the propagation).
 2. **The plan gate — re-verify against `HEAD`** (a spec ages well; the literal code it cites
    ages fast): re-read every load-bearing signature / path / count against the worktree's
    `HEAD` before sizing. A claim **inherited from a scout, sub-agent, or queued item** is
-   exactly what this gate re-verifies, never trusts. `scripts/ground-check.sh <root> <spec>`
+   exactly what this gate re-verifies, never trusts. **Ground via a dispatched read-only sweep as
+   the plan's literal Task 0** — a sub-agent checking every queued item's symbols/files against
+   the done trail and live code, not a mental "does this still look right" pass (3-for-3 catching
+   already-shipped or sibling-drained items before build time; the vaguer phrasing lets an author
+   skip to a shallower check). Two claim-specific verdicts: an **"is X still used"** claim needs
+   narrow-then-compile — grep produces the candidate list, the compiler/dead-code analysis issues
+   the verdict (a complete grep has confidently named test-only callers as live); and a
+   **prior-art check** — search capability-wide for an existing implementation before sizing new
+   work. `scripts/ground-check.sh <root> <spec>`
    lists the rooted path / `file:line` references that no longer resolve (facts, not a
-   verdict: you still re-read the signatures). **Re-measure before you size** — run the real
+   verdict: you still re-read the signatures — **a reference that *resolves* can still point at
+   the wrong code**; the script proves the path exists, never that the line supports the prose).
+   **Re-measure before you size** — run the real
    tool against `HEAD`; a snapshot count is a guess. Name the host's load-bearing gotchas
    (workshop: `core/GOTCHAS.md`) in the plan's Global Constraints.
 3. **Writing discipline** — exact file paths; complete code in every slice (no "add error
    handling", no "similar to slice N"); **a verification step per slice** (command + expected
-   result); DRY, YAGNI, red-first.
+   result); DRY, YAGNI, red-first. Two shape rules: a **new shared public type pins its
+   derives/traits** alongside its fields (parallel implementers otherwise each invent a bridge
+   around the missing ones); and an **exploratory/spike slice** is a legitimate distinct shape —
+   when the slice's point is to *discover* an algorithm, write it as a v0 implementation + an
+   **objective probe as the acceptance test** + a bounded measure-and-iterate loop with a stated
+   convergence target and an escalate/fallback branch, instead of pretending the answer is known
+   and faking complete code.
 4. **Self-review** — spec→plan coverage (every requirement maps to a slice — list gaps),
    placeholder scan, type/name consistency. Add a slice for any uncovered requirement.
 5. **Land it** per `templates/plan.md` in the `plans/` store (workshop) or the output home.
@@ -179,8 +215,11 @@ writing.
 Output: the implementation plan. Terminal step: **hand off to the host's build lane** (workshop:
 the build station's feature lane runs it red-first to the green gate; a `/workstream` builds it
 per its own loop). For a multi-slice plan, running `review` on it first is recommended by
-default — an independent grounded pass there has repeatedly caught must-fix bugs before any
-code was written.
+default — its value is **bimodal, and both modes pay**: either an independent grounded pass
+catches must-fix defects before any code (repeatedly: compile breaks, missed callers, perf
+regressions, insufficient test oracles), or it independently corroborates the plan's own flagged
+uncertainties, de-risking building every slice in one pass — and there is no cheap way to know in
+advance which mode a given plan will get.
 
 ## review `<doc>` — the two-axis critique
 
@@ -195,16 +234,32 @@ Artifact-free: findings + a verdict in context, no file written, nothing edited.
    the approach is justified with alternatives honestly weighed; the mechanism is
    implementable as written; scope is one artifact's worth; every requirement is unambiguous;
    for a roadmap/plan, the blocking edges are complete and acyclic and each slice/phase has a
-   real verification/gate.
+   real verification/gate. Two verification-sufficiency checks the hand-trace habit misses:
+   a **numeric acceptance target** must attribute its population to the mechanism's target class
+   (a real count over the wrong class survives every rubric and dies at measurement); and every
+   **guard/absence-style test** ("asserts X never happens") needs a **red-proof** — disable the
+   guarded mechanism once and show the test fails, or argue concretely why the fixture can
+   exercise the failing arm (hand-tracing verifies the green path; it never asks whether the
+   test *can* go red — a fixture whose world cannot contain X stays green with the guard
+   deleted).
 3. **Axis 2 — groundedness** (conforms to the codebase — and to core doctrine when a workshop
    is present): run `scripts/ground-check.sh <root> <doc>`, then **re-read the load-bearing
    signatures/code the claims rest on** (a clean ground-check finds moved files; the trap is a
-   confident doc citing a function that never existed). On a workshop host, check the doc
+   confident doc citing a function that never existed — or a `file:line` that resolves but
+   points at different code than the prose claims). On a workshop host, check the doc
    against `core/` (invariants, gotchas) and the `status: current` spec + live ADRs.
+   **For a design/spec, add the substrate-skeptic pass** — grounding anchors the review to the
+   present code, so deliberately ask its inverse: *which mechanisms would not exist in a
+   from-scratch implementation?* A mechanism shaped by deletable substrate (a code built-in, an
+   integer pipeline, a frozen baseline) is a finding even when every claim about `HEAD` is true.
 4. **Report the verdict, in context**: `approve` / `approve-with-changes` / `needs-rework`;
    findings ranked by severity, each as location → what's wrong → why it matters → a concrete
    fix, must-fix separated from nice-to-have; a confidence note on anything unsure — never a
-   guess presented as fact.
+   guess presented as fact. **A blocking verdict is a durable fact about the artifact, not
+   session chatter:** on `needs-rework`, also write the finding list into the artifact itself (a
+   dated "Review history" section the owner prunes on resolution) — a nine-finding verdict that
+   lived only in context has cost a full re-review after a session park. An approve verdict
+   changes nothing and stays in context.
 
 Depth dial (default off): for a high-stakes artifact, dispatch a few **read-only** subagents in
 parallel — each a distinct lens, one a skeptic trying to *refute* the doc's central claim — and
@@ -220,7 +275,11 @@ external tool:
 
 1. **Verify before implementing — feedback is a claim, not a decision.** Re-check it against
    the actual code/doc (the plan gate's posture): a reviewer's confident claim can still be
-   wrong. Implementing an unverified claim just relocates the error.
+   wrong. Implementing an unverified claim just relocates the error. This applies with full
+   force to **folding a finding into the artifact**: a fold is itself unverified content that
+   bypasses the grounding gate the artifact's own claims passed through — re-ground a fold like
+   any inherited claim, or mark it `(unverified — check at build)` (observed: a fold's confident
+   nice-to-have claim was transcribed as fact and falsified at build).
 2. **No performative agreement.** Don't thank or agree before actually checking; state
    findings and actions plainly.
 3. **One unclear item holds up the whole batch** — clarify all ambiguous items before
