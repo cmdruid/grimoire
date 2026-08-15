@@ -16,7 +16,8 @@ Two layers, by isolation — pick by where the session lives:
   stream is rooted at the root checkout, so "this is the root session" proves nothing on its
   own) — is **refused** with a pointer to `/workstream save` — a competing root save-state
   beside a stream hand-off corrupts the resume path. The save procedure's **stream guard**
-  (step 1) is the mechanical form of this refusal.
+  (step 1, fed by this skill's `scripts/save-guard.sh` — the canonical probe for these sites)
+  is the mechanical form of this refusal.
 - **The single active root session** → `/checkpoint` → root `CHECKPOINT.md`.
 
 **One root checkpoint, one owner.** A session that did not create or resume the root
@@ -76,18 +77,17 @@ Resolving the **root** `CHECKPOINT.md` (the no-argument case), in order:
 3. If still unsure, ask the user before generating.
 
 **The ignore is a checked mechanism, not an assumption — and a tracked file beats an ignore.**
-In a git repo, before writing the root file:
-1. **Tracked-file guard:** if `git -C <root> ls-files --error-unmatch CHECKPOINT.md` succeeds,
-   the path is **tracked** — STOP and surface. An exclude line cannot untrack a file, and a
+In a git repo, before writing the root file (`scripts/save-guard.sh` emits all three facts in
+one read — `checkpoint_tracked=`, `checkpoint_ignored=`, `exclude_file=`):
+1. **Tracked-file guard:** `checkpoint_tracked=true` (`git ls-files --error-unmatch`) — STOP
+   and surface. An exclude line cannot untrack a file, and a
    deleted-but-tracked `CHECKPOINT.md` would be silently recreated over content that belongs to
    history; the human decides (untrack it, or pick another root).
-2. Verify it is ignored (`git -C <root> check-ignore CHECKPOINT.md`); if not, append
-   `CHECKPOINT.md` to the exclude file at `git -C <root> rev-parse --git-path info/exclude` —
-   resolving a relative result against `<root>` before writing (the printed path is
-   cwd-relative; from a linked worktree it resolves into the shared common dir, which is
-   correct — one line covers every checkout). Per-machine, never committed.
-3. **Re-check** `check-ignore` after appending — the append is only done when the re-check
-   passes.
+2. `checkpoint_ignored=false` → append `CHECKPOINT.md` to the emitted `exclude_file=` (the
+   `info/exclude` path already resolved absolute; from a linked worktree it lands in the shared
+   common dir, so one line covers every checkout). Per-machine, never committed.
+3. **Re-check** (`git -C <root> check-ignore CHECKPOINT.md`) after appending — the append is
+   only done when the re-check passes.
 (A stale `HANDOFF.md` exclusion line from the pre-rename era is left alone.)
 
 ## The four disciplines
@@ -156,13 +156,17 @@ Steps 2–4 are the **Save discipline** (exportable, above). Steps 1, 5–6 are 
 1. **Sanity-check the request, and resolve the target.** If the conversation has been short,
    contains no concrete work to checkpoint, or is purely Q&A with nothing to resume, push back —
    ask what specifically to preserve. Resolve the target per *Where it writes*. In a git repo,
-   run the **stream guard** (mechanical — the *Two layers* refusal): probe for a workstream
-   context — `WORKSTREAM.md` at `git rev-parse --show-toplevel` (a worktree stream), or a
-   `.workstreams/<stream>/WORKSTREAM.md` under the toplevel recording `isolation: in-place`
-   with HEAD on that stream's branch (an in-place stream). A hit → **refuse and point to
-   `/workstream save`**; do not write. Then, for the root file: run the
-   **foreign-checkpoint guard** (an existing `CHECKPOINT.md` this session neither
-   created nor resumed → stop and surface; never overwrite) and the **ignore check**.
+   read `scripts/save-guard.sh <dir>` (resolve `scripts/` from this skill's own base directory)
+   — one read emits every mechanical pre-save fact; the decisions stay here:
+   - **Stream guard** (the *Two layers* refusal): `worktree_stream=true` **or**
+     `inplace_branch_match=true` → this session's tree belongs to a workstream — **refuse and
+     point to `/workstream save`**; do not write.
+   - **Tracked-file guard**: `checkpoint_tracked=true` → STOP and surface (*Where it writes*).
+   - **Ignore check**: `checkpoint_ignored=false` → establish the ignore per *Where it writes*
+     (the emitted `exclude_file=` is the resolved target).
+   Then run the **foreign-checkpoint guard** (an existing `CHECKPOINT.md` this session neither
+   created nor resumed → stop and surface; never overwrite — and see the resume procedure's
+   ownership-transfer clause).
 2. **Scan for sensitive material.** Look for secrets, credentials, API tokens, private keys, or
    PII. Do NOT include them; in your reply, mention what you elided so the user can re-supply it
    securely.

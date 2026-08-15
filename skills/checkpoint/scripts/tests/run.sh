@@ -5,7 +5,7 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 rc=0
-for t in snapshot-test.sh; do
+for t in snapshot-test.sh save-guard-test.sh; do
   echo "== $t"
   bash "$DIR/$t" || rc=1
 done

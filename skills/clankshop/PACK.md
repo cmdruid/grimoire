@@ -29,6 +29,13 @@ The v2 roster, by coupling tier (how much workshop a skill needs):
 | utility | `delegate` | sub-agent dispatch routing |
 | utility | `scheduler` | cron/launchd wrapper for recurring agent runs |
 
+**Seam — `checkpoint` / `workstream`:** one session's save-state has exactly one home, picked
+by where the session lives. The single root session → `checkpoint`'s root `CHECKPOINT.md`; a
+session driving a stream (worktree or in-place) → that stream's `WORKSTREAM.md` hand-off and
+`/workstream save` — "save a checkpoint" spoken inside a stream means the stream's verb.
+Checkpoint refuses the stream case mechanically; the canonical probe for its sites is the
+`save-guard.sh` script bundled with checkpoint (workstream's verbs carry their own probe).
+
 **Transition note (v2 rollout):** the manifest lists members by their **current** directory
 names so the pack stays installable at every phase of the v2 rebuild; the roster above uses
 the v2 names. Landed: `backlog` → `journal` (the v2 records layer — stores + `records.sh` +
