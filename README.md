@@ -40,6 +40,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 
 | skill | what it does |
 |---|---|
+| `agent-council` | three-family review panel: independent Claude, Grok, and Codex opinions on a skill package, clustered and ranked by agreement; standalone, outside every pack |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
 | `backlog` | the follow-up lifecycle: capture by kind, tickets, debrief sweeps, tracker grooming — a client of the records layer (guards when none) |
 | `blueprint` | feature planning on any repo: ideation → spec → tracer-bullet plan → review, plus roadmap tending — plans; never builds |
@@ -85,8 +86,8 @@ A pack is a **skill directory with a `PACK.md` manifest** (`docs/spec/pack-forma
 the face installs like any skill, `install.sh --pack` resolves the manifest, installs the members
 transactionally, and records the install in the sidecar `grimoire.lock` beside the target dir.
 
-- **`clankshop`** (`skills/clankshop/PACK.md`) — the skills above (minus `bootstrap` and
-  `skill-builder`) as one agentic workshop: the composition lives with the face — the seed
+- **`clankshop`** (`skills/clankshop/PACK.md`) — the skills above (minus `agent-council`,
+  `bootstrap`, and `skill-builder`) as one agentic workshop: the composition lives with the face — the seed
   handbook in `skills/clankshop/seed/` (mirroring a deployed `.handbook/` exactly) and the
   coupling-tier roster in the manifest itself.
 
