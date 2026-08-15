@@ -19,7 +19,7 @@ Neighbors that this is **not**:
 ## Decision summary (settled with the human, 2026-08-15)
 
 - **Protocol + briefs.** The skill owns one council loop. What to look *for* lives in a brief
-  file. V1 ships `briefs/skill.md`. A later `briefs/feature.md` (or a user-typed question)
+  file. V1 ships `briefs/skill-review.md`. A later `briefs/feature.md` (or a user-typed question)
   plugs into the same loop without rewriting it.
 - **V1 target is a skill package.** Generic enough to review anything later; v1 only accepts a
   directory that contains `SKILL.md`.
@@ -73,7 +73,7 @@ than two seats available.
 ```
 skills/agent-council/
   SKILL.md                 # trigger, loop, degrade rules, report shape, edges
-  briefs/skill.md          # v1 panelist brief (substance, not lint)
+  briefs/skill-review.md          # v1 panelist brief (substance, not lint)
   templates/ballot.md      # round-1 output contract
   templates/review.md      # review-round output contract
   references/spawn.md      # CLI invocations (flags drift; re-read --help per session)
@@ -89,7 +89,7 @@ other seats' identities.
 The skill is a thin driver. It never reviews the target itself.
 
 1. **Resolve the target** — §1. Must contain `SKILL.md` (v1).
-2. **Pick the brief** — v1 always `briefs/skill.md`. Later a flag, a target-shape guess, or a
+2. **Pick the brief** — v1 always `briefs/skill-review.md`. Later a flag, a target-shape guess, or a
    user-supplied question can swap it. The loop does not change.
 3. **Probe seats** — run `scripts/probe-seats.sh`. It prints `key=value` facts
    (`claude=/path` or `claude=`). A missing CLI drops that seat. Fewer than two seats → stop
@@ -223,7 +223,7 @@ It does not recommend whether to convene.
 
 ## 7. The skill brief (v1)
 
-`briefs/skill.md` is what each panelist reads. It is not a restatement of a mechanical
+`briefs/skill-review.md` is what each panelist reads. It is not a restatement of a mechanical
 lint or boundary gate. Lint stays lint. The brief file itself names no sibling skill.
 
 - **Target** is the skill directory. Read `SKILL.md`, then only the verbs / scripts / docs /

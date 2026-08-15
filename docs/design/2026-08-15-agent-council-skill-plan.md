@@ -4,7 +4,7 @@
 
 **Goal:** Land a standalone `skills/agent-council/` package that convenes Claude, Grok, and Codex for an independent two-round review of a skill package and emits a report ranked by agreement.
 
-**Architecture:** Thin driver in `SKILL.md` (the orchestrator never reviews). What to look for lives in `briefs/skill.md`. CLI flags live in `references/spawn.md`. The only executable is `scripts/probe-seats.sh` (facts, not a verdict). Ballots are stdout captured into a temp scratch dir.
+**Architecture:** Thin driver in `SKILL.md` (the orchestrator never reviews). What to look for lives in `briefs/skill-review.md`. CLI flags live in `references/spawn.md`. The only executable is `scripts/probe-seats.sh` (facts, not a verdict). Ballots are stdout captured into a temp scratch dir.
 
 **Tech Stack:** Portable `SKILL.md` package; bash 3.2; the host's `claude` / `grok` / `codex` CLIs at convene time (not in CI).
 
@@ -18,7 +18,7 @@
 - Agreement is the sort key. Severity is displayed, not sorted on. Review round shows clusters **without** ranks.
 - Orchestrator is never a panelist. Same-family stand-ins are forbidden. Seats emit on stdout; orchestrator writes scratch.
 - cwd for each seat is the **target skill directory**.
-- Description is a trigger, not a protocol summary. `briefs/skill.md` names no sibling skill.
+- Description is a trigger, not a protocol summary. `briefs/skill-review.md` names no sibling skill.
 - No live convene in CI. Six authenticated headless runs are not a unit test.
 - `description:` ≤ ~700 chars (hard cap 1024). Quote it if it contains `: `. Edges name types, not siblings.
 - Every task's requirements implicitly include this section and the spec.
@@ -32,7 +32,7 @@
 | `skills/agent-council/scripts/tests/run.sh` | Test entrypoint |
 | `skills/agent-council/templates/ballot.md` | Round-1 output contract |
 | `skills/agent-council/templates/review.md` | Review-round output contract |
-| `skills/agent-council/briefs/skill.md` | V1 panelist brief |
+| `skills/agent-council/briefs/skill-review.md` | V1 panelist brief |
 | `skills/agent-council/references/spawn.md` | CLI invocations (re-read `--help` per session) |
 | `skills/agent-council/SKILL.md` | Trigger, loop, clustering, report, edges |
 | `README.md` | Inventory row + pack minus-list |
@@ -193,7 +193,7 @@ EOF
 **Files:**
 - Create: `skills/agent-council/templates/ballot.md`
 - Create: `skills/agent-council/templates/review.md`
-- Create: `skills/agent-council/briefs/skill.md`
+- Create: `skills/agent-council/briefs/skill-review.md`
 - Create: `skills/agent-council/references/spawn.md`
 - Create: `skills/agent-council/SKILL.md`
 
@@ -247,7 +247,7 @@ ballot shape for claims that are not a refine of an existing cluster.
 - severity: high | mid | low
 ```
 
-- [ ] **Step 3: Write `briefs/skill.md`**
+- [ ] **Step 3: Write `briefs/skill-review.md`**
 
 Do **not** name another skill. Do **not** mention agreement-as-strength or sibling seats.
 
@@ -350,12 +350,12 @@ rubric audit, or when fewer than two seats exist.
 4. Missing or unresolvable → ask. Do not guess a different brief.
 
 V1 refuses a target that is not a skill package. The brief is always
-`briefs/skill.md`.
+`briefs/skill-review.md`.
 
 ## Loop
 
 1. Resolve the target. No `SKILL.md` → stop.
-2. Brief is `briefs/skill.md`.
+2. Brief is `briefs/skill-review.md`.
 3. Run `scripts/probe-seats.sh`. A missing CLI drops that seat. Fewer
    than two paths → stop (one reviewer is not a council).
 4. Confirm cost. Name the seats and that this is up to six headless
@@ -368,7 +368,7 @@ V1 refuses a target that is not a skill package. The brief is always
    seat, **in parallel**, per `references/spawn.md`. cwd is the target
    skill directory. Each prompt (a file in scratch) tells the seat:
    - You are one isolated reviewer. You do not see other reviewers.
-   - Read the brief at `<absolute briefs/skill.md>`.
+   - Read the brief at `<absolute briefs/skill-review.md>`.
    - Emit opinions on stdout in the shape of `<absolute templates/ballot.md>`.
    - Do not edit files. Do not rank. Do not self-tag seats.
    Capture stdout into `round1/<seat>.md`.
@@ -508,7 +508,7 @@ Expected: `ok`.
 
 ```bash
 git add skills/agent-council/SKILL.md \
-        skills/agent-council/briefs/skill.md \
+        skills/agent-council/briefs/skill-review.md \
         skills/agent-council/templates/ballot.md \
         skills/agent-council/templates/review.md \
         skills/agent-council/references/spawn.md
@@ -610,7 +610,7 @@ EOF
 | §4 Opinion contract + malformed / omitted severity | Task 2 templates + `SKILL.md` extract rules |
 | §5 Clustering, tags order, refine-without-fields = confirm, no-show holds | Task 2 `SKILL.md` |
 | §6 Spawn, stdout capture, cwd = target, no same-family fallback | Task 2 `references/spawn.md` + `SKILL.md` |
-| §7 Skill brief, no sibling names, no ranking rule | Task 2 `briefs/skill.md` |
+| §7 Skill brief, no sibling names, no ranking rule | Task 2 `briefs/skill-review.md` |
 | §8 Report shape and sort | Task 2 `SKILL.md` |
 | §9 Done when | Task 2 `SKILL.md` |
 | §10 Non-goals (no feature brief, no journal drain, no verb table) | Global constraints + Task 2 does not add those files |

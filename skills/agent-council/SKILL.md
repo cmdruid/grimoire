@@ -32,12 +32,12 @@ rubric audit, or when fewer than two seats exist.
 4. Missing or unresolvable → ask. Do not guess a different brief.
 
 V1 refuses a target that is not a skill package. The brief is always
-`briefs/skill.md`.
+`briefs/skill-review.md`.
 
 ## Loop
 
 1. Resolve the target. No `SKILL.md` → stop.
-2. Brief is `briefs/skill.md`.
+2. Brief is `briefs/skill-review.md`.
 3. Run `scripts/probe-seats.sh`. A missing CLI drops that seat. Fewer
    than two paths → stop (one reviewer is not a council).
 4. Confirm cost. Name the seats and that this is up to six headless
@@ -50,7 +50,7 @@ V1 refuses a target that is not a skill package. The brief is always
    seat, **in parallel**, per `references/spawn.md`. cwd is the target
    skill directory. Each prompt (a file in scratch) tells the seat:
    - You are one isolated reviewer. You do not see other reviewers.
-   - Read the brief at `<absolute briefs/skill.md>`.
+   - Read the brief at `<absolute briefs/skill-review.md>`.
    - Emit opinions on stdout in the shape of `<absolute templates/ballot.md>`.
    - Do not edit files. Do not rank. Do not self-tag seats.
    Capture stdout into `round1/<seat>.md`.
