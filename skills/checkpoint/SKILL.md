@@ -58,6 +58,13 @@ First classify the trailing argument, then resolve the target:
 - **A path-like argument** (contains `/` or ends in `.md`) → that literal path, verbatim — the
   unmanaged escape hatch for a deliberate second checkpoint file. Unmanaged end to end: no
   anchor check, no lifecycle, and `done <path>` is **rejected** — its owner deletes it.
+  **And unmanaged means un-refreshed:** a persistent explicit-path file is only as fresh as its
+  last save — nothing here maintains it between saves, so **living-memory behavior requires the
+  caller to supply an update cadence** (re-save after each completed unit is the lightweight
+  convention; `/workstream`'s checkpoint routine — refresh at every feature-completion seam — is
+  the reference). The file *shape* alone is not crash-resilient working memory; the cadence is
+  what makes it one, and the difference is easy to miss when reaching for an explicit path as a
+  lighter workstream substitute.
 - **A bare word** (`dev`, `research`, …) → **reject and explain**: named checkpoints do not
   exist. Suggest the root checkpoint (no argument), an explicit path, or — if the real need is a
   concurrent/parallel session — a `/workstream` stream. Never silently reinterpret a bare word

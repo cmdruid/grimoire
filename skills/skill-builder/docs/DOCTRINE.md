@@ -280,6 +280,13 @@ assumption baked silently into the skill's own procedure.
   job).
 - **Gate every change:** `scripts/skills-lint.sh` — frontmatter limits, bundled-ref resolution,
   script syntax, cross-skill refs, edge-block well-formedness. Fix every `FAIL:`.
+- **Prove a new check by breaking it.** A check you just wrote — a test assertion, a lint rule, a
+  reference sweep — is not trusted until it has FAILED on deliberately-broken input (plant the ref,
+  demand red, then fix the plant). A clean first run proves nothing: the check may be matching
+  nothing at all. Concrete portable-regex trap this rule has caught: **never use `\b` in
+  `grep -E`/`git grep -E` patterns meant to be portable** — it is a GNU extension; macOS/BSD ERE
+  treats it as matching *nothing*, so the whole alternative silently never fires and the sweep
+  reports clean over live refs. Use plain substrings or explicit character-class boundaries.
 
 ## References
 
