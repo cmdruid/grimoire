@@ -30,7 +30,20 @@ untracked="$(printf '%s\n' "$porcelain" | grep -c '^??' || true)"
 
 echo "is_git_repo=true"
 echo "date=$(date +%Y-%m-%d)"
-echo "branch=$(git -C "$root" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
+# Branch detection, structurally one line: symbolic-ref names the branch even on
+# an UNBORN branch (HEAD is a symref to a not-yet-existing ref) and fails quietly
+# on detached HEAD; the fallback's --verify -q emits NOTHING on failure (a bare
+# `rev-parse HEAD` prints a stray "HEAD" line to stdout while fataling, which is
+# exactly the two-line branch= defect this replaces).
+branch="$(git -C "$root" symbolic-ref --short -q HEAD || true)"
+detached=false
+if [ -z "$branch" ]; then
+  branch="$(git -C "$root" rev-parse --short --verify -q HEAD || true)"
+  [ -n "$branch" ] && detached=true
+fi
+[ -n "$branch" ] || branch=unknown
+echo "branch=$branch"
+echo "detached=$detached"   # true => branch= holds a commit sha, not a branch name
 echo "dirty=$([ -n "$porcelain" ] && echo true || echo false)"
 echo "staged=$staged"
 echo "unstaged=$unstaged"
@@ -41,8 +54,10 @@ echo "untracked=$untracked"
 echo "recent_commits:"
 git -C "$root" log -8 --format='  %h %s' 2>/dev/null || echo "  (none)"
 
-# Dirty paths (capped) so the hand-off can name what's uncommitted.
+# Dirty paths (capped) so the hand-off can name what's uncommitted. awk consumes
+# ALL its input -- an early-closing reader (head) would SIGPIPE the printf under
+# pipefail (observed exit 141 on a ~3000-file dirty list).
 if [ -n "$porcelain" ]; then
   echo "dirty_paths:"
-  printf '%s\n' "$porcelain" | head -20 | sed 's/^/  /'
+  printf '%s\n' "$porcelain" | awk 'NR<=20 { print "  " $0 }'
 fi
