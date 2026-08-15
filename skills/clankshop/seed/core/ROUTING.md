@@ -16,8 +16,8 @@ below.
 5. **A design decision at stake anywhere above** → the design station shapes that piece first;
    build plans against the settled spec, never against an open question.
 6. **At dispatch, check for escalation:** a decision, sign-off, ambiguity, or access call only
-   the human can make → a ticket (`.records/tickets/`) with a recommended answer, before the
-   work starts.
+   the human can make → a ticket (the records root's `tickets/` store) with a recommended
+   answer, before the work starts.
 
 | change | lane | entry point |
 |---|---|---|

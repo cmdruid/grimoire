@@ -61,7 +61,10 @@ is (or run the debrief if the intent is "capture everything that surfaced").
   (`records.sh new trackers --title "<Title>"`): **Backlog** (things to build), **Issues**
   (project problems/concerns), **Feedback** (dev-experience observations). Line-items follow
   the contract's tracker-line form — one line per item under `## Items`, newest last, linking a
-  dated record when detail doesn't fit the line.
+  dated record when detail doesn't fit the line. **Incumbent-schema guard:** if a tracker's
+  existing items follow a legacy per-item shape the migration never normalized, don't silently
+  mix a second schema into the file — capture in the incumbent shape when one clearly governs,
+  and flag the drift as a `curate` item so normalization happens as one deliberate pass.
 - **Commit on the integration trunk, never a work branch.** A capture writes shared records, so
   it lands on the root checkout's current branch, which must be the integration trunk (never
   hardcode `main`). Guard: if `git -C <root> branch --show-current` is empty (detached HEAD) or

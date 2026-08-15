@@ -7,6 +7,9 @@ script, judgment merges by hand, done means `check` green.
 
 **Guard:** resolve the project root first (conversation → cwd → ask). If `<root>/.handbook`
 exists, stop — already seeded. On a genuinely bare repo prefer `setup` (nothing to migrate).
+The resolved root may legitimately be a **workstream worktree** (a stream whose queue owns the
+migration): everything below then writes and commits on the stream's branch and rides its ship
+— never hop to the trunk checkout to commit a stream-owned migration directly.
 
 ## The walk
 
