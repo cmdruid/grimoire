@@ -241,7 +241,8 @@ The protocol above is harness-neutral; only *how you spawn a sub-agent on the na
 ## Edges
 
 Delegate's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
-names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). **Pure-mechanism
+names (the typed-edge tenet — portable home: skill-builder's `docs/DOCTRINE.md` § *Typed edges*;
+library history: `docs/design/2026-07-18-skill-self-init-model.md` §2). **Pure-mechanism
 plumbing**: no storage, no typed artifact edges (a dispatched task's deliverable is ephemeral and
 consumed inline by whoever called `/delegate`), and no registration -- it is ambient doctrine/routing
 with no captured items to surface, the exact thing registration exists for. All three edges are a

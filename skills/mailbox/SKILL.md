@@ -144,7 +144,8 @@ paid once and a delegate that writes only its slot can't corrupt anything.
 ## Edges
 
 Mailbox's **typed edges** -- its place in a workflow declared as artifact *types*, never as sibling
-names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). **Pure-mechanism
+names (the typed-edge tenet — portable home: skill-builder's `docs/DOCTRINE.md` § *Typed edges*;
+library history: `docs/design/2026-07-18-skill-self-init-model.md` §2). **Pure-mechanism
 plumbing**: `.mailbox/` is gitignored scratch, no typed artifact edges (a slot's patch/verdict is
 ephemeral and consumed inline by the applying parent), and no registration -- transport, not a
 capture home. All three edges are a *stated* empty (model §2.3), not an omission.

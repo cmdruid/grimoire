@@ -75,10 +75,20 @@ Resolving the **root** `CHECKPOINT.md` (the no-argument case), in order:
 2. Else `./CHECKPOINT.md` in the current working directory.
 3. If still unsure, ask the user before generating.
 
-**The ignore is a checked mechanism, not an assumption.** In a git repo, before writing the root
-file, verify it is ignored (`git check-ignore CHECKPOINT.md`); if not, append `CHECKPOINT.md` to
-`.git/info/exclude` — per-machine, never committed. (A stale `HANDOFF.md` exclusion line from the
-pre-rename era is left alone.)
+**The ignore is a checked mechanism, not an assumption — and a tracked file beats an ignore.**
+In a git repo, before writing the root file:
+1. **Tracked-file guard:** if `git -C <root> ls-files --error-unmatch CHECKPOINT.md` succeeds,
+   the path is **tracked** — STOP and surface. An exclude line cannot untrack a file, and a
+   deleted-but-tracked `CHECKPOINT.md` would be silently recreated over content that belongs to
+   history; the human decides (untrack it, or pick another root).
+2. Verify it is ignored (`git -C <root> check-ignore CHECKPOINT.md`); if not, append
+   `CHECKPOINT.md` to the exclude file at `git -C <root> rev-parse --git-path info/exclude` —
+   resolving a relative result against `<root>` before writing (the printed path is
+   cwd-relative; from a linked worktree it resolves into the shared common dir, which is
+   correct — one line covers every checkout). Per-machine, never committed.
+3. **Re-check** `check-ignore` after appending — the append is only done when the re-check
+   passes.
+(A stale `HANDOFF.md` exclusion line from the pre-rename era is left alone.)
 
 ## The four disciplines
 
@@ -93,7 +103,10 @@ citation*) so it degrades gracefully where this skill isn't installed.
   transcribe** (the document is for a future agent, not a chat log — and in a git repo,
   reconcile against `git log`, the truth for what shipped); resolve relative dates to absolute.
 - **Resume discipline** — how it is read: read **in full**, load as context, echo the single
-  next action, **rewrite nothing**. Non-destructive — resume never deletes or edits the file.
+  next action, **rewrite nothing**. Non-destructive — resume never deletes or edits the file,
+  with no exception: a discrepancy resume discovers (a stale file, landed work) is **reported**,
+  and any refresh happens as a separate, confirmed **`save`** after resume completes — never
+  inside the read.
 - **Lifecycle discipline** — how it lives: created at the **first save, which should come
   early** — once the session is demonstrably mid-work (a first unit done, or a stretch of
   unrecoverable in-flight state ahead), not "when I'm done"; before the first save there is no
@@ -103,7 +116,8 @@ citation*) so it degrades gracefully where this skill isn't installed.
   context-pressure warning — save proactively **and recommend a reset**; beat the compactor to a
   clean checkpoint. Never consumed by resume; ended only by `done`. **Presence = work in
   flight**, with two qualified states: a file the durable trail contradicts is **stale** (the
-  file is intent, disk is truth — trust disk, refresh the file), and a file describing work that
+  file is intent, disk is truth — trust disk, refresh the file **via `save`**, never inside a
+  resume), and a file describing work that
   has since landed is a **forgotten `done`** (resume detects this and proposes `done` rather
   than resuming ghost work). **Rollback exception:** a *polluted* context resets **without**
   saving — deliberately rolling back to the last clean checkpoint. Never refresh the file from a
@@ -182,8 +196,15 @@ summary — **do not re-summarize it**, and never consume it.
    first action* verbatim. A resuming session **confirms before continuing** (contrast Recovery,
    which continues without a round-trip — it inherits the compacted session's standing
    confirmation; a fresh session must earn one). While reconciling, apply the Lifecycle
-   discipline's qualified states: a **stale** file → trust disk, refresh; work already landed →
-   propose **`done`** instead of resuming ghost work.
+   discipline's qualified states — resume itself stays read-only in both:
+   - a **stale** file → **report** the discrepancy (what the file claims vs what disk shows);
+     on the human's confirm, transition into a separate **`save`** that refreshes it. Completing
+     resume steps 1–2 plus that confirm **confers ownership** — the transition carries it, so
+     save's foreign-checkpoint guard cannot fire against the session mid-resume. If the save is
+     refused anyway (stream guard; tracked file), **report the refusal and leave the file
+     stale** — disk remains truth for this session; a refused refresh is a surfaced state, not a
+     dead-end.
+   - work already landed → propose **`done`** instead of resuming ghost work.
 
 ## Done procedure
 
@@ -273,7 +294,8 @@ automation belongs to the installer, not here.
   state, next action, and repo baseline all present — with no recourse to the original
   conversation; the root file is verifiably gitignored; the anchor check reported.
 - **resume:** the checkpoint is loaded into context, you've confirmed ready, and the file is
-  untouched on disk.
+  untouched **by resume itself** — a confirmed stale-refresh is a separate `save` with its own
+  done-when.
 - **done:** the gate ran, the root file is deleted, and the user was told.
 - **Recovery:** the compacted session is re-oriented (file + durable trail reconciled) and work
   continued — or, with no file, a fresh save now exists.
@@ -281,7 +303,8 @@ automation belongs to the installer, not here.
 ## Edges
 
 Checkpoint's **typed edges** -- its place in a workflow declared as artifact *types*, never as
-sibling names (the typed-edge tenet; `docs/design/2026-07-18-skill-self-init-model.md` §2). A
+sibling names (the typed-edge tenet -- portable home: skill-builder's `docs/DOCTRINE.md`
+§ *Typed edges*; library history: `docs/design/2026-07-18-skill-self-init-model.md` §2). A
 real **self-chain**: `save` produces the doc, `resume` consumes it back (consumes in the *edge*
 sense of reading -- the living file is never deleted by resume). No durable home (the root
 `CHECKPOINT.md` is gitignored scratch, lazily created) -- registration is optional and not
@@ -293,6 +316,7 @@ implemented.
 - consumes: checkpoint-doc — resume reads the doc back (intra-skill: same skill on both ends)
 <!-- /edges:checkpoint -->
 
-**`checkpoint-doc` is used by exactly one skill**, so `skills-lint.sh` check 8 legitimately WARNs
-(single-use type) even though the pair is correctly matched -- a known false-positive for an
-intra-skill artifact (BL-4), not a fix to make here.
+**`checkpoint-doc` is a stated intra-skill chain** (a produces line AND a consumes line in one
+skill), which `skills-lint.sh` check 8's BL-4 exclusion deliberately covers — so a clean lint is
+the expected state. **A `checkpoint-doc` WARN appearing means the pair broke** (an edge-block
+typo dropped one side) and is a real finding, never a known false positive to wave through.
