@@ -104,7 +104,9 @@ save-first, same discipline as the reset ritual; a parked stream loses nothing.
 Replaces the old "wait for direction." Classify the stream's state and act with confidence. **Gather
 it token-free first:** run `workstream-git.sh stream-state <worktree> <branch> <target>` (SKILL.md ->
 *Helper scripts*) — its facts ARE the KNOWN-vs-AMBIGUOUS input (`behind>0` -> sync; a clean
-`ahead`/`dirty` with a `drafted_next_plan` -> next queue item; `wip_tracked` -> resume mid-feature) —
+`ahead`/`dirty` with a `drafted_next_plan` -> next queue item; `wip_tracked` -> resume mid-feature;
+`rebase_in_progress`/`nested_stray_handoff`/`staged_uncommitted` -> a hard stop to diagnose before
+any classification — `verbs/load.md` step 3) —
 and `cheatsheet-check <worktree>`, flagging any stale orientation pointer (in-place: plus the
 hand-off path — see SKILL.md *Helper scripts*). Then:
 
@@ -130,6 +132,15 @@ on a workshop host `records.sh history --grep <slug>` (the closure ledger), else
 done trail — plus glance at the code surface it names. A stale entry otherwise costs a
 wasted question round-trip + an Explore dispatch before `build` discovers there is nothing to build.
 (Same doctrine as `/blueprint plan`'s grounding gate: verify inherited/queued work is real before building it.)
+Two more ways a queued item can be wrong, beyond *already shipped*:
+- **A sibling stream may own it.** Before committing to a queue item, `git worktree list` and skim
+  each sibling's `WORKSTREAM.md` TL;DR/queue (plus the roadmap's owner column, where one exists); if
+  a sibling owns or is actively building that domain, STOP and coordinate — a collision here has
+  cost a complete gate-green feature build, discovered only at ship.
+- **Its premise may be false.** The done-trail grep can't catch an item whose proposed fix wouldn't
+  deliver its stated goal, or whose premise rests on a feature that doesn't actually work. If the
+  claim is cheap to *run or trace* (a scenario run, a quick read of the fix's code path), do so
+  before presenting it — execute-or-trace, not just check-against-done.
 
 After the single launch confirm, build to completion. (This is the same interaction for `create`'s
 tail, `load`'s resume, and `recycle`'s relaunch — there is no separate per-verb menu.)

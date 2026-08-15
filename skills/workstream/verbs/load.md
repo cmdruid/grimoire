@@ -30,7 +30,15 @@ _Read `flow.md` alongside this verb — `load` re-enters the loop it governs._
    <target>`: `on_stream_branch=true` → proceed; `handoff_parked=true` with `on_target=true` →
    offer **unpark** (`verbs/park.md`) as the launch's KNOWN action; anything else is foreign
    movement → STOP and report, never auto-switch.
-3. Run the **Confident launch** (`flow.md`): classify the stream's state from the hand-off and
+3. **Diff the hand-off's claims against git before acting on them.** The launch facts
+   (`stream-state`, step of the Confident launch) are truth for everything committed; the hand-off
+   is truth only for intent. If its TL;DR/next-action contradicts git (claims work undone that
+   `git -C <worktree> log` / `log <branch>..<target>` shows landed, or vice versa), **surface the
+   contradiction** instead of presenting the stale claim as the plan. Two stream-state facts are
+   hard stops: `rebase_in_progress=true` (an interrupted sync/ship holds the tree — diagnose/abort
+   before anything else) and `nested_stray_handoff=true` (a forked save — reconcile the two copies,
+   keep the Coordinates-addressed one, delete the stray).
+4. Run the **Confident launch** (`flow.md`): classify the stream's state from the hand-off and
    either state the KNOWN next action with a one-word confirm, or offer an AMBIGUOUS pick. Do **not**
    "wait for direction" — act with confidence; a baseline-verify, if warranted, is your own first
    autonomous step. After the single confirm, build to completion.

@@ -20,8 +20,11 @@ hardcode `main`.
    nothing to skip; the reset ritual makes the one save, after the queue has advanced.)
 2. **Gate by what *lands*, not by "the tree moved."** Apply `verbs/sync.md` step 3's canonical
    **gate-by-what-lands matrix** to both axes of `workstream-git.sh gate-facts <worktree> <branch>
-   <target>` (full gate only when both `own` and `incoming` are build-relevant; doc-linter only when
-   `own_docs_only=true`; skip entirely when only the incoming side changed or nothing did). The
+   <target> <BASE>` — threading the pre-rebase `BASE` step 1's sync captured, exactly as sync's
+   step 3 requires (post-rebase, an un-threaded call reads `incoming_empty=true` on a stale axis
+   and wrongly selects the skip branch). Full gate only when both `own` and `incoming` are
+   build-relevant; doc-linter only when
+   `own_docs_only=true`; skip entirely when only the incoming side changed or nothing did. The
    ship-specific notes on top of that matrix:
    - **The skip case is the common case at a land** — most ships land only record closures (a
      plan's status flip + its ledger line), debrief reports, and roadmap rows, so a code stream
@@ -35,13 +38,21 @@ hardcode `main`.
    `workstream-git.sh land-readiness <root> <worktree> <branch> <target>` (SKILL.md -> *Helper
    scripts*):
    `ff_safe` (false ⇒ `<target>` moved; re-`sync` before advancing), `root_on_target`, `root_dirty`
-   (+ `root_dirty_paths`). Branch on `root_on_target`:
-   - **`root_on_target=true`** (root is on the trunk): check `root_dirty` first. If **`root_dirty=true`**
-     (a sibling session is editing the trunk directly), `merge --ff-only` aborts the moment a dirty
-     path overlaps the merge — so don't attempt-then-abort. Surface it instead: name the
-     `root_dirty_paths` and ask their owner to commit or stash them. **Never** stage, commit, or stash a sibling's uncommitted work yourself — it isn't
-     yours and the root index is shared (a stash would also sweep unrelated dirty paths). Once the root
-     is clean, `git -C <root> merge --ff-only <branch>`. This is a *third* contention mode beyond the
+   + **`root_dirty_overlapping`** (+ paths), and **`staged_uncommitted`**.
+   **Staged-index guard first:** if `staged_uncommitted=true` in the worktree, STOP and resolve
+   (commit or unstage the listed paths) before landing — staged-but-uncommitted entries are the
+   strand signature of a `git mv` whose pathspec commit named only one half, and the gate reads the
+   working tree, so nothing else catches it before the land carries it wrong. Then branch on
+   `root_on_target`:
+   - **`root_on_target=true`** (root is on the trunk): key on **`root_dirty_overlapping`**, not the
+     bare `root_dirty` — `merge --ff-only` aborts only when a dirty path OVERLAPS the merge's
+     changed set, and the coordinator-on-main model makes *disjoint* sibling WIP the common case.
+     **`root_dirty_overlapping=false`** → proceed: `git -C <root> merge --ff-only <branch>` (the
+     disjoint dirt is untouched). **`root_dirty_overlapping=true`** → don't attempt-then-abort:
+     name the `root_dirty_overlap_paths` and ask their owner to commit or stash them. **Never**
+     stage, commit, or stash a sibling's uncommitted work yourself — it isn't
+     yours and the root index is shared (a stash would also sweep unrelated dirty paths). Once the overlap
+     is clear, `git -C <root> merge --ff-only <branch>`. This is a *third* contention mode beyond the
      rejected-advance race below: a **dirty** trunk, not a *moved* one — and note the trunk can be both
      (clearing the dirt often means the owner *commits*, which then moves `<target>` and rejects the
      ff, sending you to re-`sync`). (The host's worktree doc → *Shared trunk is contended*.)

@@ -30,12 +30,25 @@
    you're about to run — feeding the pre-flight in step 2. (One call replaces the old bare `git log`
    behind-check and carries the forecast for free; the `root_*`/`ff_safe` facts it also computes are unused
    here — those matter at Landing, `verbs/ship.md`.)
-2. **Capture the pre-rebase base** (you need it to scope the re-gate):
-   `BASE=$(git -C <worktree> merge-base <branch> <target>)`. Then
+2. **Capture the pre-rebase base** (you need it to scope the re-gate — step 3 threads it into
+   `gate-facts`): `BASE=$(git -C <worktree> merge-base <branch> <target>)`. Then
    `git -C <worktree> rebase <target>`. Resolve conflicts (commonly additive: a shared registration
    point — config/module/system registry — build manifests, or shared `.records/` ledger files — usually
    "keep both"), then
    `git -C <worktree> add <file>` and `GIT_EDITOR=true git -C <worktree> rebase --continue`.
+   - **Keep-both is for two ADDITIONS — check what the incoming side did first.** Two inversions of
+     the additive default, both observed resurrecting dead content: (a) if an incoming commit is a
+     **tracker audit/drain** (a re-audit that PRUNED resolved entries), do NOT keep-both the tracker
+     file — rebuild it as the trunk's version plus only your new lines, then diff against `<target>`
+     to verify nothing pruned came back (pruned entries carry no IDs, so a duplicate-ID linter stays
+     silent); (b) if one side **deleted** content the other still carries (a sibling fixed the issue
+     and removed its entry), find out why before keeping it — a reflexive keep-both resurrects a
+     dead entry and any stale references to it. Read the incoming commit subjects before trusting a
+     tracker-file resolution. And (c) **ID-bearing trackers can collide with NO textual conflict** —
+     both sides claim the same next ID (issue number, ADR filename) in different lines, the rebase
+     merges clean, and only a doc-linter (or nothing) catches the duplicate. After any rebase where
+     both sides appended to an ID-bearing tracker, grep the merged file for duplicate IDs before
+     moving on.
    - **Pre-flight the collision (from step 1's forecast).** You already hold `will_conflict` /
      `conflict_files:` — so resolve the named files deliberately and know up front whether a
      `REVIEW(conflict):` marker is coming, instead of being surprised mid-rebase. It's a forecast
@@ -58,7 +71,13 @@
    replays sibling commits onto your branch does not, by itself, require a full gate — that sibling
    code was already gated when it landed on `<target>`, and your own work hasn't changed. Read both
    axes from
-   `workstream-git.sh gate-facts <worktree> <branch> <target>` (SKILL.md -> *Helper scripts*) — where
+   `workstream-git.sh gate-facts <worktree> <branch> <target> <BASE>` (SKILL.md -> *Helper scripts*)
+   — **passing step 2's captured `BASE` as the 4th argument is REQUIRED after a rebase**: a completed
+   rebase moves the merge-base onto `<target>`'s tip, so without `BASE` the incoming axis is computed
+   from a base that no longer predates the rebase and reads vacuously `incoming_empty=true` — the
+   matrix's skip branch selected on a stale fact, i.e. a wrongly skipped gate (hit 5 times across 4
+   streams before the arg existed). `incoming_base=given` in the output confirms the axis is real;
+   `incoming_base=merge-base` after a rebase means the axis is stale — recompute with `BASE`. Where
    **docs-only == every changed path ends in `.md`** and anything else (`*.rs`, build manifests,
    `*.ron` data) is **build-relevant**:
    - **`own_docs_only=false` AND `incoming_docs_only=false`** → run the host's **full gate** (the only

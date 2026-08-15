@@ -108,9 +108,15 @@ install stamp (`Seeded from clankshop`)?
 
 ## Discipline (applies to EVERY verb — non-negotiable)
 
-- **cwd-independent.** Every git command uses `git -C <path>`; every file op uses an **absolute**
-  path. Never trust a bare `cd` to persist between tool calls ("cd doesn't stick").
-  A `cd` is UX-only — it positions the user's prompt, never the agent's correctness.
+- **cwd-independent — ALL commands, not just git.** Every git command uses `git -C <path>`; every
+  file op uses an **absolute** path; and **any other command that resolves relative paths** (build
+  tools, test runners, greps, scripts) is prefixed `cd <worktree> && …` **in the same tool call**.
+  Never trust a bare `cd` to persist between tool calls ("cd doesn't stick") — a mid-session cwd
+  reset has silently retargeted a bare test run at the ROOT checkout, producing a false-green
+  against the trunk's code. A standalone `cd` is UX-only — it positions the user's prompt, never
+  the agent's correctness. Related trap: never `git stash` inside a compound cleanup one-liner —
+  the stash is repo-**global** (shared across all worktrees), so a reflexive stash in a worktree
+  sweeps and strands state; bank WIP as a `wip:` commit instead (`verbs/park.md`).
 - **Present worktree-local references as absolute worktree paths.** When you show the user (in chat,
   a summary, a hand-off) a doc/file you created or changed in the worktree, give its **absolute
   worktree path** (`<worktree>/.records/plans/foo.md`), not a bare repo-relative one — a bare path
@@ -125,7 +131,12 @@ install stamp (`Seeded from clankshop`)?
   the trunk. Authoring is still delegable **read-only**: a subagent may write a `/mailbox` patch slot
   the main session applies (see the `mailbox` skill), or work in its **own isolated worktree** it merges
   back. Delegate the authoring; never the writing of the shared tree.
-- **The live hand-off never merges.** It lives at `.workstreams/<stream>/WORKSTREAM.md`. The
+- **The live hand-off never merges.** The hand-off IS `<worktree>/WORKSTREAM.md` — one absolute
+  path, the Coordinates `this hand-off:` line; `.workstreams/<stream>/WORKSTREAM.md` is only its
+  **ROOT-relative address** (a worktree stream's checkout lives AT `<root>/.workstreams/<stream>`,
+  so the two coincide). Never resolve the relative form against the *worktree* — that mints a stray
+  nested `.workstreams/` copy the next `load` won't read (stream-state's `nested_stray_handoff`
+  flags the signature; `save` verifies its target against Coordinates). The
   `.workstreams/` .gitignore hides it from the **main** checkout; `create` ALSO adds it to the
   worktree's own `info/exclude` so it's ignored from **inside** the worktree too. Durable records
   (the feature's plan closure + ledger line, debrief report, roadmap-ledger row, ADR) are committed
@@ -174,10 +185,13 @@ you layer on session state it cannot see (e.g. "I already gated this `<target>` 
 Subcommands (each consuming verb file names the facts it reads):
 
 - `stream-state <worktree> <branch> <target>` — launch/`load`/`recycle` snapshot (behind/ahead,
-  dirty vs drafted-plan, branch/toplevel guards).
-- `gate-facts <worktree> <branch> <target>` — the two docs-only axes + changed-file lists for the
-  gate-by-what-lands matrix.
-- `land-readiness <root> <worktree> <branch> <target>` — ff-safety, root state, and a read-only
+  dirty vs drafted-plan, branch/toplevel guards, staged-index strand, interrupted-rebase and
+  stray-nested-hand-off signatures).
+- `gate-facts <worktree> <branch> <target> [<pre-rebase-base>]` — the two docs-only axes +
+  changed-file lists for the gate-by-what-lands matrix. **Post-rebase, the 4th arg is required**
+  (`verbs/sync.md` step 2 captures it): without it the incoming axis reads vacuously empty.
+- `land-readiness <root> <worktree> <branch> <target>` — ff-safety, root state (dirty split into
+  overlapping vs disjoint — only overlap blocks a land), and a read-only
   conflict **forecast** (`git merge-tree`; `unknown` on git <2.38).
 - `cheatsheet-check <worktree> [<handoff>]` — flags hand-off cheat-sheet pointers that no longer
   resolve at HEAD — in-place streams pass their `.workstreams/<stream>/WORKSTREAM.md` path.

@@ -7,11 +7,22 @@ user invoking `save` directly, the flow's single pre-reset checkpoint, and the f
 **feature-completion checkpoint** (fires at every feature-completion seam alongside debrief #1,
 reset or not — bounding the hand-off's staleness to one in-flight feature). No other verb calls it.
 
-1. Apply `/checkpoint`'s **Save discipline** (scan/elide secrets; synthesize, don't transcribe;
+1. **Verify the target path first:** the file you are about to write MUST equal the Coordinates
+   `this hand-off:` line (the one absolute path — for a worktree stream that is
+   `<worktree>/WORKSTREAM.md`; `.workstreams/<stream>/…` is only its ROOT-relative address). On
+   mismatch, STOP — do not write: resolving the relative address against the worktree mints a stray
+   nested `.workstreams/` copy, and the next `load` reads the canonical (now stale) file instead
+   (observed: a save silently forked the hand-off this way and even rewrote the Coordinates line to
+   the doubled path).
+   Then apply `/checkpoint`'s **Save discipline** (scan/elide secrets; synthesize, don't transcribe;
    absolute dates) to regenerate `<worktree>/WORKSTREAM.md` in place from its
    own template (the workstream hand-off shape: Coordinates + START HERE + Queue state + Loop
    routine), targeting that explicit path. Worktree specifics: reconcile *What's been done* against
    `git -C <worktree> log`, and **preserve the Coordinates block verbatim** (it's fixed for the stream's life).
+   **Reconcile the TL;DR / next-action too, not just the done-list:** a claim like "X not yet
+   done — do X next" must survive a check against `git -C <worktree> log` AND
+   `git -C <worktree> log <branch>..<target>` (X may have landed on the trunk, or ridden an earlier
+   ship) — a stale next-action is the one lie a resuming session acts on immediately.
    **Refresh the Cheat sheet:** run `workstream-git.sh cheatsheet-check <worktree>` (in-place streams:
    pass the hand-off explicitly — `cheatsheet-check <root> <root>/.workstreams/<stream>/WORKSTREAM.md`
    — since the hand-off does not sit at the tree's root); prune or fix any

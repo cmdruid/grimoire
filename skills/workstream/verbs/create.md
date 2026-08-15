@@ -65,7 +65,22 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    - **anything else** (multi-word, or a non-file token) -> *free-text brief* for the first feature
      (`source-kind: brief`).
    If a single-token argument is genuinely ambiguous, ask the user which they meant rather than guessing.
-4. Branch + worktree from the **target ref** (a ref, so a dirty/off-target root can't corrupt the base):
+4. **Preflight the host, then branch + worktree.** Two first-run checks (both no-ops on a host
+   that has streamed before):
+   - **`.workstreams/` must be ignored in the root**, or the root immediately shows
+     `?? .workstreams/` and stream creation turns into an unplanned root commit later. Run
+     `git -C <root> check-ignore -q .workstreams/`: succeeds → covered. Fails → **propose** adding
+     `.workstreams/` to the host's tracked `.gitignore` (attended: on OK, stage + commit in one
+     pathspec-scoped call per the root-contention rules; a markdown-adjacent one-liner — the host's
+     fast doc gate suffices) or, if the host prefers untracked config, append it to
+     `<root>/.git/info/exclude`. Record which path was taken in the hand-off's *Pointers*.
+     Unattended → use `info/exclude` (no root commit without a human) and record it.
+   - **Submodule-heavy host?** If `<root>/.gitmodules` exists, surface the choice BEFORE
+     `worktree add`: a linked worktree shares **no** submodule checkouts (every top-level submodule
+     starts empty, and host gates that read into them fail until a submodule init clones them all
+     into the stream), so `--in-place` is usually the better isolation here — ask, don't default in.
+   Then branch + worktree from the **target ref** (a ref, so a dirty/off-target root can't corrupt
+   the base):
    `git -C <root> worktree add -b stream/<stream> <root>/.workstreams/<stream> <target>`.
 5. **Seed the plan on the branch** (plan-bound, *new untracked plan file* only; `create` makes no root
    commit). If the source is an already-tracked doc, skip. If it's a new untracked plan file, move it
@@ -89,7 +104,13 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
        (`plan`/`roadmap`/`brief`/`template`). (`source-kind: template` = a bundled template name OR a
        `kind: workstream-template` doc path.)
      - "Stream / queue" section: the roadmap-section queue (plan-bound on a roadmap), a pointer to the plan
-       (plan-file mode), or the verbatim brief (brief mode). **Template mode:** there is no queue — write the
+       (plan-file mode), or the verbatim brief (brief mode). **Sweep a transcribed queue for staleness
+       at authoring time:** when the queue's items were transcribed from tracker/backlog entries (a
+       roadmap seeded from a Backlog sweep), grep EACH item's key symbols/files against the done trail
+       (`records.sh history` / `git log` / the project's done records) **before** recording it — stale
+       tracker entries seed already-shipped queue items (observed 4× across two phases of one
+       roadmap), and the launch-time "verify the front item" check only ever catches them one wasted
+       unit later. **Template mode:** there is no queue — write the
        no-queue/`recycle`-between-units note, and **embed the template's durable sections** (mission, governing
        principle, toolbox, hard-won lessons, the template's own user/conventions block) into the hand-off body
        so the instance is self-contained; the per-unit sections (TL;DR, Queue state, What's been done)
