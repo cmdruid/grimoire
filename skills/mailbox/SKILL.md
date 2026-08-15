@@ -44,15 +44,31 @@ Don't use when:
    for a consume artifact. **The path is absolute on purpose** -- that is what makes it cwd-proof for
    the dispatched sub-agent.
 2. **Dispatch** a sub-agent on the chosen model (see *Realizing the spawn*), handing it the
-   **absolute slot path** + a **self-contained** task, under one hard contract:
-   > "Do your work, then write your result to `<abs slot path>` and nothing else. Do **not** edit any
-   > file in the tree. Return only the slot handle and a one-line summary."
+   **absolute slot path** + a **self-contained** task, under one hard contract — use this phrasing,
+   not a paraphrase:
+   > "**Author your result as text in your own context**, then write it to `<abs slot path>` — you
+   > may write **exactly that one file** and nothing else. **Never use a file-edit tool on any tree
+   > path** — not even to 'edit then diff': compose the diff as text. `git status --short` must
+   > show nothing when you finish. Return only the slot handle and a one-line summary."
+   The phrasing is load-bearing, measured: under a "write only the slot" contract, 2 of ~11
+   dispatches edited the tree anyway — both began as *edit-then-diff*; every dispatch under the
+   author-as-text phrasing completed cleanly. Also snapshot the tree now:
+   `git status --short` at dispatch time is what step 4 verifies against.
+   **Write the slot last-step-first:** tell the delegate to write the slot *before* its final
+   verify pass and re-write it after — a transport drop mid-completion then always leaves a usable
+   slot artifact instead of stranding verified work in the delegate's scratch.
 3. **The delegate completes** by writing the slot and returning the handle + summary -- the only thing
    that crosses into the parent's context.
-4. **Collect the slot** -- by artifact type:
+4. **Collect the slot — VERIFY, then apply/consume.** First the clean-tree check, required (prompt
+   discipline alone is measured-insufficient — see step 2): compare `git status --short` against the
+   dispatch-time snapshot. **Any foreign drift → refuse the collect**: discard the foreign edits (a
+   delegate's direct tree edit — especially a mid-crash partial one — is unreviewable; never adopt
+   it) and re-dispatch. Then, by artifact type:
    - **apply-only** (a patch): `scripts/mailbox-apply.sh <root> <slot>` runs `git apply` + reaps it.
      The content **never enters the parent's context** -- tokenless integration. (Use `--check` first
-     if you want a dry run.)
+     if you want a dry run.) **After applying a code patch, run the host's cheap formatter/lint on
+     the touched files** before the big gate — a delegate can't run the host toolchain, so its
+     hand-formatting otherwise surfaces as a red full gate a cycle later.
    - **consume** (a plan / analysis / verdict): **read the slot into context once**, deliberately.
      That is the intended transfer; the delegate's exploration still never reached you.
 5. **Reap.** `mailbox-apply.sh` reaps on success; for a consumed slot, delete it when done. `.mailbox/`
@@ -64,7 +80,12 @@ Don't use when:
   mint script gives you an absolute path -- pass it through verbatim.
 - **Delegate is read-only on the tree; the parent is the sole writer.** The delegate writes *only* its
   slot. This is the entire safety guarantee -- a delegate that edits the tree reintroduces the
-  corruption hazard the pattern exists to remove.
+  corruption hazard the pattern exists to remove. And it is a guarantee you **verify, not trust**:
+  the step-4 clean-tree check is part of the protocol, not optional hardening.
+- **Never commit in the target tree while a delegate is live.** A pathspec-scoped commit selects
+  *paths*, not *authors* — if a contract-breaching delegate has co-written a path you are
+  committing, the foreign hunks ride your commit silently. Dispatch, collect, verify, *then*
+  commit.
 - **Return tiny; bulk in the slot.** The sub-agent's return message is a handle + one line. If it
   returns the whole diff/doc as its message, you have paid the content through context -- the thing
   this pattern avoids.

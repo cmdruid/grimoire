@@ -43,6 +43,22 @@ doctrine.
 
 Judgment-heavy, ambiguous, or architectural work fails the third test -- do it inline.
 
+**Assess at the right granularity, and check two more facts before fanning out:**
+- **The unit of the delegate-or-not question is the genuinely-rote SUB-TASK, not the batch.** A
+  batch that "looks independent" may decompose into mostly compiler-tight, judgment-heavy pieces
+  with only a sub-trivial rote fraction below the dispatch+apply+gate overhead floor. Ask the
+  question per sub-task. (Corollary: a run of all-inline work is not itself evidence delegation
+  failed to fire — check whether the work was judgment-heavy, sub-trivial, or better scripted
+  before treating a zero streak as a missed opportunity.)
+- **A mechanical bulk transform with a machine-checkable invariant is a SCRIPTING problem before it
+  is a delegation problem.** If the result is provable by diff (byte-identity, a normalized-multiset
+  compare), a deterministic partition/codemod script beats a delegate re-deriving the same
+  transform by reading — reserve delegation for transforms with real per-item judgment.
+- **Does this machine's actual build-parallelism budget make fan-out's wall-clock payoff real?**
+  RAM/build-governor constraints can serialize "parallel" isolated-worktree builds into a queue, so
+  the payoff shrinks toward delegation's fixed overhead. A hand-off's "looks independent" framing
+  alone is not a reason to reach for the heavier mechanism.
+
 ## Posture -- proactive on the act, confirm the route
 
 - **Whether to delegate is your call, and proactive.** When work qualifies, delegate without being
@@ -98,6 +114,9 @@ About to do work →
   state, they weren't independent -- run those sequentially instead.
 - **Isolated worktree** -- when the delegate needs its own live build/test (red-green) loop on its own
   branch. Heaviest (compile/RAM); use when the local loop is worth it. You merge its branch.
+  The brief shape that has carried judgment-heavy sweeps cleanly: a **narrow, list-shaped brief**
+  (the exact sites, the exact transform) plus an explicit **"flag same-pattern sites outside the
+  brief — never silently expand scope"** clause; the flags come back as byproducts you triage.
 
 **Model-routing table** (examples only; the human confirms the actual route):
 
