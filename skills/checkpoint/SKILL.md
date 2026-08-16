@@ -20,10 +20,25 @@ Two layers, by isolation — pick by where the session lives:
   is the mechanical form of this refusal.
 - **The single active root session** → `/checkpoint` → root `CHECKPOINT.md`.
 
-**One root checkpoint, one owner.** A session that did not create or resume the root
-`CHECKPOINT.md` treats an existing one as **foreign**: it either resumes that work (becoming its
-session) or stays out — its own work goes to an explicit-path file. `save` onto a foreign
-checkpoint **stops and surfaces** instead of overwriting another session's only save-state.
+**One root checkpoint, one owner — and ownership must survive the very event this skill exists
+for.** Session memory is what compaction destroys, so "did I create this file?" cannot be the
+whole test. Four rules:
+1. **Ownership is conferred by creating the file, by completing a Resume** (steps 1–2 plus the
+   human's confirm — the resume procedure's transition clause), **or by running Recovery's
+   reconcile** — a compacted session that finds the root file and reconciles it against the
+   durable trail IS the owning session; the foreign guard must never fire against a
+   post-compaction self.
+2. **Reading is not resuming.** A session that merely read the file while exploring has not
+   resumed it and gains no ownership.
+3. **Foreignness requires positive evidence of another session** — content describing work
+   unrelated to this session's, or a different root. A compacted session (a
+   compaction/continuation summary sits where history should be) that finds a checkpoint whose
+   content matches its own in-flight work runs **Recovery's reconcile** rather than treating
+   its own file as foreign — refusing there strands the session into the competing second file
+   this rule exists to prevent.
+4. A genuinely foreign checkpoint → `save` **stops and surfaces** (never overwrites another
+   session's only save-state; never silently): resume it (becoming its session) or stay out —
+   own work goes to an explicit-path file.
 (There is no named-session layer: concurrent parallel sessions are `/workstream`'s job; the rare
 legitimate second file is an **explicit path**, below, with no managed lifecycle.)
 
@@ -35,6 +50,8 @@ Verbs:
 - **resume** — load the checkpoint and continue the work. Never consumes the file.
 - **done** — end the lifecycle: confirm the work is genuinely landed (or deliberately
   abandoned), delete the file, say so.
+- **anchor** — check/install the front-door recovery anchor (the block that makes automatic
+  compaction recovery discoverable) as a one-off human-approved edit.
 
 ## When to use
 
@@ -44,6 +61,8 @@ Verbs:
   session discovering a root `CHECKPOINT.md` via the recovery anchor.
 - **done:** the checkpointed work has landed (or is deliberately abandoned) and the file should
   stop signaling work-in-flight.
+- **anchor:** "install the recovery anchor", save's anchor warning, or standing up a project
+  where compaction recovery should be discoverable from day one.
 - **Recovery** (no verb — a discipline): your context was just compacted/summarized mid-work —
   see *Recovery discipline*.
 
@@ -122,11 +141,16 @@ citation*) so it degrades gracefully where this skill isn't installed.
   than resuming ghost work). **Rollback exception:** a *polluted* context resets **without**
   saving — deliberately rolling back to the last clean checkpoint. Never refresh the file from a
   context you don't trust; the pre-reset refresh applies only to a healthy-but-heavy context.
-- **Recovery discipline** — surviving an involuntary compaction. You detect one by a
+- **Recovery discipline** — surviving an involuntary compaction. **Automatic recovery is
+  anchor-dependent**: it fires only when something still-loaded points at the file (the
+  recovery anchor, or the summary itself); without the anchor, the product of a save is a
+  *resumable* save-state, not automatic recovery — `/checkpoint anchor` installs the
+  guarantee. You detect a compaction by a
   compaction/continuation summary sitting where your conversation history should be. Then:
   **stop** current work → re-read the checkpoint file **in full** → **reconcile**: the durable
   trail is truth for everything committed; the compaction summary is truth only for in-flight
-  intent — merge them → **continue without a user round-trip** if the next action is KNOWN.
+  intent — merge them (completing this reconcile **confers ownership** of the root file — the
+  one-owner rules, above) → **continue without a user round-trip** if the next action is KNOWN.
   Re-confirming after a compaction is a nag, not a seam; round-trip only if the reconcile
   surfaces genuine ambiguity. **No-file fallback:** if compaction strikes before the first save,
   Recovery still runs — reconcile from the durable trail plus the summary alone, then **save
@@ -178,9 +202,10 @@ Steps 2–4 are the **Save discipline** (exportable, above). Steps 1, 5–6 are 
 5. **Write the file** to the target path using the structure below (overwriting in place — a
    refresh rewrites the whole file, it does not append).
 6. **Confirm to the user.** Report the path written. **Managed root saves only:** note whether a
-   front door at this root carries a **recovery anchor** (see *Recovery anchor*) — warn (without
+   front door at this root carries a **recovery anchor** (see *Anchor procedure*) — warn (without
    mutating anything) if none is found, since a save that succeeds while recovery stays
-   undiscoverable is a silent hole. *Front door* = the files the harness actually always-loads
+   undiscoverable is a silent hole — and end the warning with: run **`/checkpoint anchor`** to
+   install it. *Front door* = the files the harness actually always-loads
    at this root (`AGENTS.md`, `CLAUDE.md`, or the host's equivalent); any one carrying the block
    satisfies the check — name which. Offer a memory pointer if the harness supports persistent
    memory.
@@ -257,13 +282,23 @@ section only if it would be empty (one judgment-call exception: the Cheat sheet)
 12. **Suggested first action.** A concrete first move, specific enough to act on immediately.
     (Resume echoes this line, so keep it sharp and self-contained.)
 
-## Recovery anchor — the discoverability convention
+## Anchor procedure (`anchor`) — install the discoverability guarantee
 
 A compacted (or fresh) session only benefits from the checkpoint if something it *still reads*
 points at the file. That something is a short block in the host's **always-loaded front door**
 (`AGENTS.md` / `CLAUDE.md` / equivalent — re-injected every request, so it survives compaction by
-construction). **The human installs it** (or asks the agent to, as a one-off approved edit) —
-this skill ships no registration machinery. The copy-paste block:
+construction). Without it, automatic compaction recovery is undiscoverable — a save still
+produces a resumable save-state, but nothing routes a compacted session back to it.
+
+1. **Check**: scan the root's always-loaded front-door files for the block (a line matching
+   `^## Checkpoint recovery`). Present → report which file carries it; done.
+2. **Absent → propose the block below as a one-off edit** and apply it on the human's approval,
+   appended to the front door they pick. Never self-install without the approval, and never
+   commit it — whether the front door is tracked, and whether this edit ships, stays the
+   host's convention (this skill ships no registration machinery; the `anchor` verb is a
+   proposed, human-approved edit, not self-registration).
+
+The copy-paste block:
 
 ```markdown
 ## Checkpoint recovery
@@ -301,6 +336,8 @@ automation belongs to the installer, not here.
   untouched **by resume itself** — a confirmed stale-refresh is a separate `save` with its own
   done-when.
 - **done:** the gate ran, the root file is deleted, and the user was told.
+- **anchor:** the front door's anchor state was reported; if absent, the block was proposed and
+  — on approval — applied to the file the human picked, verbatim.
 - **Recovery:** the compacted session is re-oriented (file + durable trail reconciled) and work
   continued — or, with no file, a fresh save now exists.
 
