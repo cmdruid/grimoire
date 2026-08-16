@@ -1,6 +1,8 @@
 # Checkpoint refinement plan — 2026-08-15
 
-**Status:** open · **Owner:** rev stream (unit 2) · **Target:** `skills/checkpoint/`
+**Status:** done (2026-08-15 — all six slices built; LP1 shipped at 225e379, LP2 ships the
+rest; probe outcomes logged in `docs/boundary-audit.md`; the contrast-restore contingency was
+not needed) · **Owner:** rev stream (unit 2) · **Target:** `skills/checkpoint/`
 **Revised 2026-08-15** after a three-lens independent review (correctness skeptic:
 needs-rework, narrow; groundedness + coverage/oracles: approve-with-changes). Every fold below
 was re-grounded against the tree or executed before folding; the review's finding list is
