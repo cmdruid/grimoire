@@ -145,4 +145,28 @@ front-door still reaches the transport; purely transport-shaped prompts (cases 1
 to `mailbox` directly. Case 9 routes `none` under both texts — a pre-existing fact about
 `delegate`'s surface, untouched by this change and left as is.
 
+**2026-08-16 (`delegate` claims phase→tier, rev unit 5)** — drains the OPEN `[delegate]`
+FEEDBACK.md entry (filed by unit 4's case 9): the description now claims per-phase model-tier
+selection — trigger clause "when choosing a model tier per build phase" + keyword
+`phase-to-tier` (732 chars; the body's model-routing table was always the claim's substance).
+8-case battery (fresh cold-router sub-agent, descriptions only, full 14-skill roster), new text
+plus an old-text control:
+
+| probe case (abridged) | expects | new | old control |
+|---|---|---|---|
+| pick which model tier should handle each phase of this build | `delegate` | ✓ (cites the new clause) | `delegate` (see note) |
+| hand this grunt work to a cheaper model | `delegate` | ✓ | ✓ |
+| sub-agent's patch back without touching my worktree | `mailbox` | ✓ | ✓ |
+| save a checkpoint of my session state | `checkpoint` | ✓ | ✓ |
+| farm out this refactor, or inline? | `delegate` | ✓ | ✓ |
+| which model should my app call for summarization? | none (over-claim control) | ✓ | ✓ |
+| route work to a different model, keep context lean | `delegate` | ✓ | ✓ |
+| recurring nightly test-suite run | `scheduler` | ✓ | ✓ |
+
+**Note (honest non-reproduction):** the old-text control routed case 1 to `delegate` this run —
+unit 4's observed `none` did not reproduce, so the old text's miss was FLAKY (router-dependent
+semantic stretch), not deterministic. The revision's value is converting that flaky stretch into
+an explicit textual claim the router cites verbatim; no none→delegate flip is claimed. All
+no-steal and over-claim controls hold under the new text.
+
 Re-run (`/skill-builder check`, Pass 2) after any `description:` change.

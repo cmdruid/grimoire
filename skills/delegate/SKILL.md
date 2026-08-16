@@ -1,6 +1,6 @@
 ---
 name: delegate
-description: "Use when about to do work a sub-agent could do (or on explicit /delegate [task]) -- the delegation front-door. Route work for speed, token cost, or context hygiene: offload grunt work to a cheaper model, keep your own context lean. Decide delegate-or-not, pick the mechanism (inline sub-agent / mailbox slot / Codex executor / parallel fan-out / isolated worktree), and confirm the route (which provider/model) with the human -- live cost/quota/availability is state you cannot see. Degrades to a fallback ladder (down to inline) on provider failure, so it runs safely in an autonomous loop. Harness-agnostic (Claude or Codex). Keywords: dispatch, byproducts, model routing."
+description: "Use when about to do work a sub-agent could do, when choosing a model tier per build phase, or on explicit /delegate [task] -- the delegation front-door. Route work for speed, token cost, or context hygiene: offload grunt work to a cheaper model, keep your own context lean. Decide delegate-or-not, pick the mechanism (inline sub-agent / mailbox slot / Codex executor / parallel fan-out / isolated worktree), and confirm the route (which provider/model) with the human -- live cost/quota/availability is state you cannot see. Degrades to a fallback ladder (down to inline) on provider failure, so it runs safely in an autonomous loop. Harness-agnostic (Claude or Codex). Keywords: dispatch, byproducts, model routing, phase-to-tier."
 ---
 
 # delegate -- hand work to a sub-agent, keep the judgment
