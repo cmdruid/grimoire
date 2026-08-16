@@ -1,6 +1,6 @@
 ---
 name: checkpoint
-description: Keep a living save-state for the current session's work and recover from context loss. `/checkpoint save` writes/refreshes the root CHECKPOINT.md (gitignored living scratch, never consumed); `/checkpoint resume` loads it and continues; `/checkpoint done` ends the lifecycle (gated delete). Owns the Save/Resume/Lifecycle/Recovery disciplines other skills borrow, including compaction recovery. An explicit path argument targets that file instead (unmanaged escape hatch). Use when asked to save/snapshot/checkpoint context, resume prior work, recover after compaction, or close out a finished checkpoint. Scoped to the single root session; refused inside a workstream (worktree or in-place), whose hand-off is the checkpoint with its own save verb.
+description: Keep a living save-state for the current session's work and recover it after context loss. Use when asked to save/checkpoint/snapshot the session's context or working state, to resume or pick up prior work, to recover after a compaction/continuation summary appears where conversation history should be, to install the recovery anchor, or to close out (done) a finished checkpoint. Writes one gitignored CHECKPOINT.md at the project root — presence means work in flight; an explicit path argument targets an unmanaged second file instead. Scoped to the single root session's save-state — a session driving an isolated stream saves through that stream's own hand-off and save verb, never this skill.
 ---
 
 # Checkpoint skill

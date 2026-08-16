@@ -78,3 +78,31 @@ cross-reference.
 | "design the foundational architecture" | `architect` |
 
 Re-run (`/skill-builder check`, Pass 2) after any `description:` change.
+
+**2026-08-15** — checkpoint description rewritten self-scoped (no sibling named; 698 chars), unit 2
+of the rev stream, plan `docs/design/2026-08-15-checkpoint-refinement-plan.md`. 13-case battery
+(fresh cold-router sub-agent, descriptions only, environment facts supplied inline): **13/13 with
+the new description**, including the two stream cases — (2) stream context in prompt and (3) the
+OBSERVED 2026-08-14 misroute shape (root cwd, in-place stream, no stream mention in conversation)
+— plus the new collision cases: "remember this for later" → `backlog`, "sweep follow-ups / close
+the books" → `backlog` vs "CHECKPOINT.md's work landed, close it out" → `checkpoint`, explicit-path
+save, mailbox scratch-file decoy, context-pressure phrasing, and the legacy "write a handoff doc"
+decoy. **Control (old contrast-bearing description): also 13/13** — no regression from dropping
+the contrast. **De-scoped control (scoping sentence removed entirely): stream cases STILL routed
+to `workstream`** — its own description (post-a63ee5e save-synonym strengthening) now carries
+them alone, so the routing of cases 2/3 is over-determined and this battery validates
+no-regression rather than sole-cause; checkpoint's scoping sentence is retained as accurate
+self-description and defense in depth, not as the deciding router signal. The plan's contingency
+(restore the contrast clause under a documented exception) was NOT needed. Battery red-capability:
+not demonstrated for the stream cases (over-determination); the companion S4 ownership scenario
+probe did go red against the pre-fix text (compacted-self misjudged foreign), so the fresh-agent
+probe machinery itself is proven discriminating.
+
+| probe case (abridged) | expects | new | old | de-scoped |
+|---|---|---|---|---|
+| "save a checkpoint", plain repo | `checkpoint` | ✓ | ✓ | ✓ |
+| "save a checkpoint", stream in context | `workstream` | ✓ | ✓ | ✓ (via workstream's side) |
+| "save a checkpoint", root cwd + in-place stream (observed misroute) | `workstream` | ✓ | ✓ | ✓ (via workstream's side) |
+| resume post-compaction / snapshot / load / remember-later / close-books / done / explicit path / mailbox decoy / context pressure / handoff decoy | per plan §S5 | ✓ all | ✓ all | — |
+
+Re-run (`/skill-builder check`, Pass 2) after any `description:` change.
