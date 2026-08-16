@@ -42,6 +42,8 @@ usage: workstream-git.sh <subcommand> [args...]
   cheatsheet-check <worktree> [<handoff>]                 cheat-sheet pointer drift
   inplace-scan     <root>                                 in-place streams present?
   inplace-state    <root> <stream> <branch> <target>     custody facts (in-place)
+  tracker-ids      <worktree> <branch> <target> <file> <id-ere> [<pre-rebase-base>]
+                                                          ID collisions across a rebase
 
 Each prints `key=value` facts then (where useful) evidence lists. Read-only;
 emits no recommendation -- the agent maps facts to action via SKILL.md.
@@ -341,6 +343,58 @@ cmd_inplace_state() {
   echo "ahead=$ahead"
 }
 
+# tracker-ids: did both sides of a rebase claim the same tracker ID? An ID-bearing
+# tracker (issue numbers, ADR names) can collide with NO textual conflict -- both
+# sides append different lines claiming the same next ID -- so only an ID-aware
+# compare sees it. IDs are whatever <id-ere> matches (host formats vary; the
+# stream's hand-off Coordinates may record the file+pattern pairs). POST-REBASE
+# the merge-base sits on <target>'s tip, so the incoming set reads empty -- thread
+# the pre-rebase base (verbs/sync.md step 2's BASE) as the 6th arg, same regime as
+# gate-facts. Portable-ERE note: no \b in <id-ere> (BSD ERE matches nothing).
+cmd_tracker_ids() {
+  [ "$#" -eq 5 ] || [ "$#" -eq 6 ] || { echo "usage: workstream-git.sh tracker-ids <worktree> <branch> <target> <file> <id-ere> [<pre-rebase-base>]" >&2; exit 2; }
+  local wt="$1" branch="$2" target="$3" file="$4" ere="$5" prebase="${6:-}"
+  validate_ref "$branch"; validate_ref "$target"
+  [ -n "$ere" ] || { echo "workstream-git.sh: empty id-ere" >&2; exit 2; }
+
+  local base
+  base="$(git -C "$wt" merge-base "$branch" "$target")"
+  if [ -n "$prebase" ]; then
+    git -C "$wt" rev-parse --verify --quiet "$prebase^{commit}" >/dev/null \
+      || { echo "workstream-git.sh: pre-rebase-base does not resolve to a commit: $prebase" >&2; exit 2; }
+    base="$prebase"
+    echo "base=given"
+  else
+    echo "base=merge-base"
+  fi
+
+  # ids_at <ref>: unique sorted IDs in <file> at <ref>; a missing file is an empty set.
+  ids_at() { git -C "$wt" show "$1:$file" 2>/dev/null | grep -oE "$ere" | sort -u || true; }
+  local ids_base ids_own ids_inc own_added inc_added collisions dups
+  ids_base="$(ids_at "$base")"
+  ids_own="$(ids_at "$branch")"
+  ids_inc="$(ids_at "$target")"
+  own_added="$(comm -13 <(printf '%s\n' "$ids_base") <(printf '%s\n' "$ids_own") | grep -v '^$' || true)"
+  inc_added="$(comm -13 <(printf '%s\n' "$ids_base") <(printf '%s\n' "$ids_inc") | grep -v '^$' || true)"
+  collisions="$(comm -12 <(printf '%s\n' "$own_added") <(printf '%s\n' "$inc_added") | grep -v '^$' || true)"
+  # In-file duplicates at the branch tip: the post-rebase signature of a clean
+  # textual merge that kept both claimants of one ID.
+  dups="$(git -C "$wt" show "$branch:$file" 2>/dev/null | grep -oE "$ere" | sort | uniq -d || true)"
+
+  echo "own_added=$(printf '%s' "$own_added" | grep -c . || true)"
+  echo "incoming_added=$(printf '%s' "$inc_added" | grep -c . || true)"
+  echo "id_collisions=$([ -n "$collisions" ] && echo true || echo false)"
+  if [ -n "$collisions" ]; then
+    echo "collision_ids:"
+    printf '%s\n' "$collisions" | sed 's/^/  /'
+  fi
+  echo "in_file_duplicates=$([ -n "$dups" ] && echo true || echo false)"
+  if [ -n "$dups" ]; then
+    echo "duplicate_ids:"
+    printf '%s\n' "$dups" | sed 's/^/  /'
+  fi
+}
+
 main() {
   [ "$#" -ge 1 ] || { usage; exit 2; }
   local sub="$1"; shift
@@ -352,6 +406,7 @@ main() {
     cheatsheet-check) cmd_cheatsheet_check "$@" ;;
     inplace-scan)     cmd_inplace_scan "$@" ;;
     inplace-state)    cmd_inplace_state "$@" ;;
+    tracker-ids)      cmd_tracker_ids "$@" ;;
     *) echo "unknown subcommand: $sub" >&2; usage; exit 2 ;;
   esac
 }

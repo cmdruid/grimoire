@@ -199,6 +199,9 @@ Subcommands (each consuming verb file names the facts it reads):
   one-resident guard).
 - `inplace-state <root> <stream> <branch> <target>` — custody facts for an in-place stream
   (held/parked/foreign classification inputs; WIP-bank + dirty state).
+- `tracker-ids <worktree> <branch> <target> <file> <id-ere> [<pre-rebase-base>]` — did both
+  sides of a rebase claim the same tracker ID (a collision no textual conflict shows)? Post-
+  rebase, the pre-rebase base is required, same regime as `gate-facts`.
 
 The skill also bundles `scripts/worktree-exclude.sh` (idempotent hand-off exclusion, used by
 `create`) and `scripts/worktree-teardown.sh` (the `close` mechanics).

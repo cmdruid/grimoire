@@ -39,6 +39,10 @@ isolated worktree), never editing the shared tree.
                   worktree streams record `local`). `local`: stop after the local trunk advance.
                   `push`: also push `<target>` to the remote. `pr`: push the branch + open a PR
                   instead of advancing locally; the queue advances when the PR merges.>
+- id-trackers:   <OPTIONAL — omit when the host has no ID-bearing trackers. Space-separated
+                  `<repo-relative-file>:<id-ERE>` pairs (e.g. `dev/ISSUES.md:E[0-9]+`) that
+                  sync's post-rebase dup-ID check reads (`workstream-git.sh tracker-ids`,
+                  `verbs/sync.md` step 2c). Portable-ERE rule: no `\b`.>
 - this hand-off: <abs path to .workstreams/<stream>/WORKSTREAM.md>   (ignored; never merges)
 
 ## Delegation route (confirmed once at create — persists across resets)
