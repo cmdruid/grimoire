@@ -13,6 +13,13 @@ The frontmatter above is the pack's **manifest** (spec format 1) — the machine
 hard dependencies (the records layer), `optional:` the members installed by default but
 removable without trace.
 
+**Versioning rule:** `version:` bumps when the **member set** changes — a skill added, removed,
+renamed, or moved between `required:`/`optional:` (minor bump; a manifest spec-format change is
+the major). Content-only edits to this document (roster blurbs, seam notes, the transition
+note) do **not** bump. Consequence to know: `install.sh` stamps `pack_version` into the install
+lock, so a content-only edit ships under the unchanged stamp — the stamp dates the *install*,
+the manifest text is authoritative for what the pack currently says.
+
 The v2 roster, by coupling tier (how much workshop a skill needs):
 
 | tier | skill | is |
