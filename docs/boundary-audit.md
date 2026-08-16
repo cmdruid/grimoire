@@ -170,3 +170,31 @@ an explicit textual claim the router cites verbatim; no none→delegate flip is 
 no-steal and over-claim controls hold under the new text.
 
 Re-run (`/skill-builder check`, Pass 2) after any `description:` change.
+
+**2026-08-16 (`contractor` added, grok stream Task 3)** — 14-case battery for the
+blueprint/contractor split (fresh cold-router sub-agent, descriptions only, 15-skill
+roster including the new `contractor` description and the rewritten `blueprint`
+spec-spine description). **14/14 routed as expected.** No description changes.
+`blueprint` holds bare `/blueprint`, brainstorm/grill/spec/review-spec, and the
+one-phase "spec is enough, just implement" case (does not leak to `contractor`).
+Bare `/contractor` is `none` (no default verb; the skill asks). Job artifacts
+(plan / roadmap / runbook / execute / review-a-plan) go to `contractor`. Ship →
+`workstream`; cheaper-model slice → `delegate`. Sibling-in-description WARN on
+either leaf: none.
+
+| prompt | expects | pick |
+|---|---|---|
+| `/blueprint` (bare) | `blueprint` (brainstorm) | `blueprint` |
+| brainstorm this feature | `blueprint` | `blueprint` |
+| grill the spec until the forks close | `blueprint` | `blueprint` |
+| write the specification for this design | `blueprint` | `blueprint` |
+| review this spec for soundness | `blueprint` | `blueprint` |
+| `/contractor` (bare) | none — must not steal; ask for a verb | none |
+| one-phase feature: spec is enough, just implement | `blueprint` (not `contractor`) | `blueprint` |
+| write an implementation plan | `contractor` | `contractor` |
+| draft a roadmap of phases | `contractor` | `contractor` |
+| compile a runbook from this plan | `contractor` | `contractor` |
+| execute the implementation plan | `contractor` | `contractor` |
+| review this tracer-bullet plan | `contractor` | `contractor` |
+| ship this stream to main | `workstream` | `workstream` |
+| hand this slice to a cheaper model | `delegate` | `delegate` |

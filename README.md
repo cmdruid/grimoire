@@ -30,7 +30,7 @@ The `clankshop` pack binds most of them into one **agentic workshop**, tiered by
 pack manifest (`skills/clankshop/PACK.md`): the pack **face** (`clankshop`) carries the seed
 handbook and the four **stations** — `design` (the architect), `build` (the foreman), `test` (the
 guardian), `review` (the admin) — with system verbs (`setup` / `migrate` / `check`) and persona
-summons; **helpers** — `blueprint` (feature planning), `journal` (the records format authority —
+summons; **helpers** — `blueprint` (specification spine), `contractor` (job lead), `journal` (the records format authority —
 the one required member), `backlog` (the follow-up lifecycle), `workstream` (development
 streams), `auditor` (code-quality audits), `debugger` (root-cause diagnostics); **utilities** —
 `checkpoint`, `mailbox`, `delegate`, `scheduler`. `skill-builder` is a category of one: the
@@ -43,10 +43,11 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `agent-council` | three-family review panel: independent Claude, Grok, and Codex opinions on a skill package, clustered and ranked by agreement; standalone, outside every pack |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
 | `backlog` | the follow-up lifecycle: capture by kind, tickets, debrief sweeps, tracker grooming — a client of the records layer (guards when none) |
-| `blueprint` | feature planning on any repo: ideation → spec → tracer-bullet plan → review, plus roadmap tending — plans; never builds |
+| `blueprint` | specification spine: ideation → argued spec; never plans or builds |
 | `bootstrap` | idea → a new git repo carrying five founding documents: `grill` (design-tree interview, writes nothing) → `land` (create, write, commit); standalone, outside every pack |
 | `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
 | `clankshop` | the workshop face: seed handbook + the four stations; `setup` / `migrate` / `check`, and persona summons for hat-on discussion |
+| `contractor` | one job lead — roadmap, plan, runbook, review, build; never ships; never writes a spec |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `journal` | the records format authority: eight typed stores + the record contract + `records.sh` + the history ledger; setup, done, substrate curate |

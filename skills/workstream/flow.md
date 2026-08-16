@@ -65,12 +65,12 @@ build-model, so the build runs inline; delegation stays available only for fan-o
 the model lever.) The route is **confirmed once and recorded in the hand-off** (*Delegation route*
 section) so an autonomous loop never stalls re-asking it, and provider failures
 (quota/limit/outage) **degrade per `/delegate`'s fallback ladder -- down to inline on the
-orchestrator -- rather than blocking the loop**. The **planning stages** map to `/blueprint`, when
-installed: `/blueprint spec` (and `roadmap`) argue the queue's design artifacts, `/blueprint plan`
-writes each feature's tracer-bullet plan, `/blueprint review` gates a high-stakes plan before
-build — blueprint never builds; the stream does. Without `/blueprint`, author the plan by hand per
-the lane. Either way the seam ownership is the contract: the build stops at gate-green and
-`/workstream` lands + debriefs.
+orchestrator -- rather than blocking the loop**. The **planning stages** map to `/blueprint spec`
+when installed (the argued spec). Then `/contractor plan` **only when sequencing is required**
+(second phase, blocking edges, or a tracer sequence). Build: `/contractor build` when a
+contractor plan exists; otherwise the host lane executes the spec's own slices. Without those
+skills, author the spec/plan by hand per the lane. Either way the seam ownership is the
+contract: the build stops at gate-green and `/workstream` lands + debriefs.
 
 ### Seam rule — the only places the agent round-trips
 
@@ -131,7 +131,7 @@ item as buildable work (a KNOWN next-item *or* an AMBIGUOUS pick), cheaply confi
 on a workshop host `records.sh history --grep <slug>` (the closure ledger), else grep the project's own
 done trail — plus glance at the code surface it names. A stale entry otherwise costs a
 wasted question round-trip + an Explore dispatch before `build` discovers there is nothing to build.
-(Same doctrine as `/blueprint plan`'s grounding gate: verify inherited/queued work is real before building it.)
+(Same doctrine as `/contractor plan`'s grounding gate: verify inherited/queued work is real before building it.)
 Two more ways a queued item can be wrong, beyond *already shipped*:
 - **A sibling stream may own it.** Before committing to a queue item, `git worktree list` and skim
   each sibling's `WORKSTREAM.md` TL;DR/queue (plus the roadmap's owner column, where one exists); if
@@ -270,11 +270,12 @@ ritual's **save** + a **park** for a `/model` swap. The hand-off records the cur
 `build` | `ship`) so `load` resumes into the right phase and reminds you of its model (from the
 hand-off's *Phase model map*). The three phases, each ending `save -> park -> reset -> load`:
 
-> **PLAN** (plan-model) — author the feature's plan: `/blueprint spec` + `/blueprint plan` into
-> `.records/plans/`. Then **save** (record `Phase: build`) -> **park**: "Plan ready. Switch to <build-model>
+> **PLAN** (plan-model) — author the feature's spec (`/blueprint spec`); then `/contractor plan`
+> only when sequencing is required. Then **save** (record `Phase: build`) -> **park**: "Plan ready. Switch to <build-model>
 > (`/model <m>`), `/clear`, `/workstream load <stream>`."
 >
-> **BUILD** (build-model) — build the plan to gate-green (the host's build lane), then `/backlog debrief` #1 (the
+> **BUILD** (build-model) — `/contractor build` when a contractor plan exists; otherwise the
+> host lane walks the spec's slices. Then `/backlog debrief` #1 (the
 > feature's follow-ups). Then act on *Ship cadence*: **at a landing point**, **save** (`Phase: ship`)
 > -> park for the ship-model swap. **Between landing points**, **save** (`Phase: plan` for the *next*
 > feature) -> park for the plan-model swap. (Completed features still accumulate on the branch; only

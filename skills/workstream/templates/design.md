@@ -57,12 +57,14 @@ blocks every stream's `ship`).
 
 ## The toolbox (durable reference -> depth in the docs)
 - **The design spine:** brainstorm (divergent ideation), grill (resolve every decision branch),
-  spec (argued specification), roadmap (multi-phase decision map), plan (tracer-bullet
-  implementation plan), review (independent two-axis verdict on any artifact, callable anytime).
+  spec (argued specification), review (independent two-axis verdict on a spec or design doc).
+  Sequencing (roadmap / plan / runbook) is a different job — only when a second phase, blocking
+  edges, or a tracer sequence is required.
   `<project: planning tier docs -- see host AGENTS.md>`
-- **Templates:** `<project: spec, ADR, roadmap, implementation plan templates -- if the host has
-  /blueprint installed, its bundled templates/ (spec, plan, roadmap, adr); else
-  equivalent>` Match the host repo's frontmatter schema (doctype / status / dates / tags).
+- **Templates:** `<project: spec and ADR templates -- if the host has
+  /blueprint installed, its bundled templates/ (spec, adr); job scaffolds (plan, roadmap)
+  from /contractor if installed; else equivalent>` Match the host repo's frontmatter schema
+  (doctype / status / dates / tags).
 - **Change router:** `<project: change router doc (classifies any change -> the right lane) -- see host AGENTS.md>`
 - **Capture:** file feature follow-ups to the backlog; dev-tool friction to the issues tracker;
   qualitative notes to feedback; defects to the bug tracker. Run the debrief sweep at the end of a

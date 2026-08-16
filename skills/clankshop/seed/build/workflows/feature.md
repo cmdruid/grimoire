@@ -12,8 +12,11 @@ or a design decision at stake.
 commits (INV-3); plans land in `.records/plans/`, ADRs in `.records/adr/`; done means landed on
 `<trunk>` (INV-2); a dated plan or ADR is never retroactively edited (INV-9). A design decision
 at stake goes to the design station **before** planning against it (INV-14). `/blueprint`,
-where installed, runs the planning spine (brainstorm → spec → roadmap/plan) and hands the
-approved plan back to this lane.
+where installed, writes the spec. **One phase, spec already implementable** (has slices or
+is accepted as the plan) → this lane walks those slices; do **not** require
+`/contractor plan`. **Sequencing required** (second phase, blocking edges, or a tracer
+sequence) → `/contractor plan` (and `runbook` / `build` as needed). The stream still
+`ship`s.
 
 ## The walk
 
