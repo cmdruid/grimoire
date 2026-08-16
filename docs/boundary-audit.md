@@ -118,4 +118,31 @@ This entry is the **current baseline**; the entries above that speak v1 names
 (foreman/architect/handoff/feature-era batteries) are retained as dated history only and are
 superseded by this roster.
 
+**2026-08-16 (`mailbox` rescoped, rev unit 4)** — description rewritten per council finding 14
+(council record: `.scratch/mailbox/RESULT.md`, root checkout): the bare `git apply` keyword and
+the backticked `/delegate` sibling name dropped (doctrine: no sibling names in descriptions —
+the lint's standing mailbox/delegate exception retires with it); the HOW-not-WHETHER self-scope
+retained without naming the sibling. 9-case battery (fresh cold-router sub-agent, descriptions
+only), new text plus an old-text control:
+
+| probe case (abridged) | expects | new | old control |
+|---|---|---|---|
+| sub-agent's patch back without it touching the tree | `mailbox` | ✓ | ✓ |
+| "hand this grunt work to a cheaper model" | `delegate` | ✓ | ✓ |
+| farm out this refactor, or inline? | `delegate` | ✓ | ✓ |
+| "apply its patch slot from .mailbox and clean up" | `mailbox` | ✓ | ✓ |
+| dispatch a sub-agent → scratch file + handle | see exception | `delegate` | `mailbox` |
+| "apply this patch file a colleague sent me" | none (keyword-drop control) | ✓ | ✓ |
+| "save a checkpoint of my session state" | `checkpoint` | ✓ | ✓ |
+| route work to a different model, keep context lean | `delegate` | ✓ | ✓ |
+| pick a model tier per build phase | — | none | none (unchanged) |
+
+**Recorded exception (case 5):** the mixed prompt — a dispatch verb wrapped around a
+slot-mechanism description — now lands on the front-door `delegate` instead of `mailbox`.
+Accepted per the unit's scope directive: the sibling name is NOT restored to win the case back.
+Behaviorally safe: `delegate`'s own description names the "mailbox slot" mechanism, so the
+front-door still reaches the transport; purely transport-shaped prompts (cases 1, 4) still route
+to `mailbox` directly. Case 9 routes `none` under both texts — a pre-existing fact about
+`delegate`'s surface, untouched by this change and left as is.
+
 Re-run (`/skill-builder check`, Pass 2) after any `description:` change.
