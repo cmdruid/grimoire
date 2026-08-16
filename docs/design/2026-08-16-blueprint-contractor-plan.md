@@ -1,6 +1,6 @@
 # blueprint / contractor Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Optional execution aid if present: superpowers:subagent-driven-development or superpowers:executing-plans. Those skills are **not** in this library’s inventory — do not stall if they are missing. Walk the tasks in order; checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Split today’s `blueprint` into a drawings skill (`blueprint`: brainstorm / grill / spec / review) and a job-lead skill (`contractor`: roadmap / plan / runbook / review / build), wired into the pack and the stream templates.
 
@@ -15,13 +15,14 @@
 - `blueprint` verbs: `brainstorm`, `grill`, `spec`, `review`. Bare `/blueprint` → `brainstorm`.
 - `contractor` verbs: `roadmap`, `plan`, `runbook`, `review`, `build`. Bare `/contractor` **requires a verb** (ask; do not guess).
 - `grill` lives only on `blueprint`. Open plan branches → spec not settled, back to grill.
-- Small work may stop at `blueprint spec` (spec doubles as the plan). `contractor` is for a second phase, declared blocking edges, or a tracer sequence you would dispatch. Small `contractor` path: `plan` → `review` → `build` — **no `runbook`**.
-- Roadmap is never executable. `runbook` is a conductor. `build` walks a **plan** or a **runbook**, never a raw roadmap.
-- Review before `build` (or a human). Runbook “review” is a cheap completeness check, not a second full `/contractor review` gate.
+- Small work may stop at `blueprint spec` (spec doubles as the plan; slices live **in** `spec.md`, not a pointer to `templates/plan.md`). `contractor` is for a second phase, declared blocking edges, or a tracer sequence you would actually dispatch. Small `contractor` path: `plan` → `review` → `build` — **no `runbook`**. Workstream/handbook composition is **conditional** on that same test — do not mandate `contractor plan` for one-phase work.
+- Roadmap is never executable. `runbook` is a conductor. `build` walks a **plan** or a **runbook**, never a raw roadmap. A roadmap-sourced runbook may be compiled only when **every phase already has a plan path**; `build` does not invent plans.
+- Review before `build` (or a human waiver) applies to **every plan** that will be walked. A runbook completeness check is **additional** (conductor order / pointers). It does **not** substitute for plan review.
 - Delegation is optional. `contractor` does not restate `/delegate` spawn/return. `contractor` does not `ship`, detect a stream, or name siblings in `description:`.
 - Descriptions: trigger-only, ≤ ~700 chars, quote if they contain `: `, no sibling `/name`.
 - Edges name types (`spec`, `plan`, `roadmap`, `runbook`), never sibling names.
-- Self-contained: `contractor` **copies** `ground-check.sh` (do not call `blueprint`’s copy).
+- Self-contained: `contractor` **copies** `ground-check.sh` (do not call `blueprint`’s copy). Task 1 **copies** plan/roadmap templates; it does **not** `git mv` them. Blueprint stays lint-clean until Task 2 deletes its copies.
+- Workshop `plans/` store has **one** deployable record shell (`templates/plans.md`). Plan / roadmap / runbook are body scaffolds plus a `tags:` value (`[plan]`, `[roadmap]`, `[runbook]`), not three competing `plans.md` deploys.
 - `bootstrap` retirement is **out of scope**.
 - Do not edit grimoire `AGENTS.md` except the one existing helper-roster line that already names `blueprint` (inventory, not a door block).
 - Patient-zero: no workshop registration against this library’s real front door.
@@ -51,8 +52,9 @@ Use when the user runs `/contractor`, or asks to write a roadmap, implementation
 | `skills/contractor/verbs/runbook.md` | New conductor procedure |
 | `skills/contractor/verbs/review.md` | Plan/roadmap/runbook critique (not spec) |
 | `skills/contractor/verbs/build.md` | Execute a plan or runbook |
-| `skills/contractor/templates/plan.md` | Move from `skills/blueprint/templates/plan.md` |
-| `skills/contractor/templates/roadmap.md` | Move from `skills/blueprint/templates/roadmap.md` |
+| `skills/contractor/templates/plans.md` | Deployable `plans/` record shell (one doctype) |
+| `skills/contractor/templates/plan.md` | Plan **body** scaffold (copied in Task 1; blueprint keeps its copy until Task 2) |
+| `skills/contractor/templates/roadmap.md` | Roadmap **body** scaffold (same copy rule) |
 | `skills/contractor/scripts/ground-check.sh` | Copy of blueprint’s script; header says contractor |
 | `skills/blueprint/SKILL.md` | Drop roadmap/plan/build-handoff; new description; edges `spec` |
 | `skills/blueprint/docs/ideal-use.md` | Arc ends at approved spec |
@@ -70,25 +72,28 @@ Use when the user runs `/contractor`, or asks to write a roadmap, implementation
 **Files:**
 - Create: `skills/contractor/SKILL.md`
 - Create: `skills/contractor/verbs/{roadmap,plan,runbook,review,build}.md`
-- Create: `skills/contractor/templates/plan.md` (copy then delete from blueprint in Task 2)
-- Create: `skills/contractor/templates/roadmap.md` (same)
+- Create: `skills/contractor/templates/plans.md` (record shell)
+- Create: `skills/contractor/templates/plan.md` (**copy** of blueprint’s; leave the original)
+- Create: `skills/contractor/templates/roadmap.md` (**copy**; leave the original)
 - Create: `skills/contractor/scripts/ground-check.sh`
 
 **Interfaces:**
 - Consumes: type `spec` (a path the user names)
 - Produces: types `roadmap`, `plan`, `runbook`; `build` executes a plan or runbook
-- Blueprint still has the source templates until Task 2 — copy, do not `git mv` yet if that confuses Task 2’s shrink; **prefer `git mv`** so history follows, then Task 2 only deletes leftovers if any
+- Blueprint keeps `templates/plan.md` and `templates/roadmap.md` until Task 2. **Copy only. Do not `git mv`.**
 
 - [ ] **Step 1: Copy templates and ground-check**
 
 ```bash
 mkdir -p skills/contractor/verbs skills/contractor/templates skills/contractor/scripts
-git mv skills/blueprint/templates/plan.md skills/contractor/templates/plan.md
-git mv skills/blueprint/templates/roadmap.md skills/contractor/templates/roadmap.md
+cp skills/blueprint/templates/plan.md skills/contractor/templates/plan.md
+cp skills/blueprint/templates/roadmap.md skills/contractor/templates/roadmap.md
 cp skills/blueprint/scripts/ground-check.sh skills/contractor/scripts/ground-check.sh
 ```
 
-Edit the copy’s header comment: replace `/blueprint's plan gate` with `/contractor plan gate`. Do not change the script’s behavior.
+Edit the copy’s header comment: replace `/blueprint's plan gate` with `/contractor plan gate`. Do not change the script’s behavior. Do **not** delete or move anything under `skills/blueprint/`.
+
+Write `skills/contractor/templates/plans.md` as the **only** file that deploys to `<records-root>/templates/plans.md`. Front-matter slots only (`doctype: plans`, `status: open`, `created`/`updated`, `tags: []`); body is a one-line placeholder (`<!-- verb fills body from plan.md / roadmap.md / runbook list -->`). Verbs overwrite `tags:` and the body after `records.sh new plans`.
 
 - [ ] **Step 2: Write `skills/contractor/SKILL.md`**
 
@@ -96,7 +101,7 @@ Thin router. Must include:
 
 - Frontmatter `name: contractor` and the locked description above (quoted).
 - One-paragraph job: one job lead; drafts the bid and walks it; never writes a spec; never ships.
-- The one workshop probe (copy the probe block from `skills/blueprint/SKILL.md` *One environment probe*, but summon **build** station for `roadmap` / `plan` / `runbook` / `build`, and **build** station for `review` of those artifacts). Template deploy: `templates/plan.md` → `plans.md`, `templates/roadmap.md` → `plans.md` (same store; two templates). Add `templates/runbook.md` only if you introduce a runbook template in Step 4 — otherwise runbook is a `plans/` record whose body is the conductor list (title + ordered steps). Prefer **no new template file** unless the plan/roadmap templates cannot host a short conductor body: write runbooks as `plans/` records with a heading `## Runbook` and an ordered list.
+- The one workshop probe (copy the probe block from `skills/blueprint/SKILL.md` *One environment probe*, but summon **build** station for every contractor verb). **One** deployable record shell: copy `templates/plans.md` → `<records-root>/templates/plans.md` when absent. That shell is the journal doctype (`records.sh new plans`). After minting, the verb **fills the body** from `templates/plan.md` or `templates/roadmap.md` (or a runbook conductor list) and sets `tags:` to exactly one of `[plan]`, `[roadmap]`, `[runbook]`. Never deploy `plan.md` or `roadmap.md` *as* `plans.md`.
 - Verb dispatch table (every verb file backticked as `verbs/<verb>.md`):
 
 | Invocation | Verb file | Does |
@@ -108,7 +113,7 @@ Thin router. Must include:
 | `build` | `verbs/build.md` | execute plan or runbook |
 | (bare) | — | **ask** which verb; do not default |
 
-- Hard seams (verbatim intent from Global Constraints): no sibling names; no ship; optional delegate; review before build; never execute a raw roadmap.
+- Hard seams (verbatim intent from Global Constraints): no sibling names; no ship; optional delegate; every walked **plan** reviewed or waived before `build`; never execute a raw roadmap; runbook check is additional only.
 - Edges:
 
 ```
@@ -135,9 +140,9 @@ Procedure:
 
 1. Resolve input: a **plan** path or a **roadmap** path. Missing → ask. A spec is refused (“that is not a job conductor input”).
 2. **From a plan:** emit a `plans/` record (workshop: `records.sh new plans --title "Runbook: <plan title>"`) or a file in the standalone output home. Body: ordered steps copied from the plan’s slices — command/gate/path only, no approach essay. Each step names the slice id it came from.
-3. **From a roadmap:** same record shape. Body: ordered unblocked phases; each line is “obtain or write the phase plan, then build it.” Do not inline task-level work.
-4. Completeness check (this **is** the runbook review): every phase/slice has a pointer; order respects `requires:`; no raw implementation steps invented. Fail → fix the runbook or send the human back to `plan`/`roadmap`. Do not run the full `review` rubric.
-5. Done when the conductor file exists and the check is green.
+3. **From a roadmap:** refuse unless **every** unblocked phase already has a **plan path** (a written plan record). If any phase lacks a plan, stop and tell the caller to `plan` that phase first — `runbook` does not write plans; `build` does not write plans. Body: ordered unblocked phases, each line a **path** to that phase’s plan, then “build it.” Do not inline task-level work.
+4. Completeness check (conductor only): every phase/slice has a **plan path**; order respects `requires:`; no raw implementation steps invented. Fail → fix the runbook or send the human back to `plan`/`roadmap`. This check is **not** `/contractor review`.
+5. Done when the conductor file exists and the completeness check is green. `build` still requires each referenced plan to have passed `review` (or a human waiver).
 
 - [ ] **Step 5: Write `verbs/review.md`**
 
@@ -148,9 +153,9 @@ Take `skills/blueprint/SKILL.md` section `## review` and **delete** the spec/des
 Procedure:
 
 1. Resolve input: a **plan** or a **runbook**. A raw **roadmap** → refuse; tell the caller to `runbook` it first (describe the artifact type, do not name a sibling skill).
-2. Confirm `review` has passed or the human waives it. If unknown, run `review` (plan) or the runbook completeness check first.
+2. **Every plan that will be walked** must have passed `review` or the human must waive it. If unknown, run `review` on that plan first. For a runbook: also run the conductor completeness check; that check **does not** replace plan review.
 3. **Plan:** walk slices in declared order. Per slice: do it yourself **or** write a self-contained brief and use the host’s delegation mechanism (do not restate spawn flags). After each slice: the slice’s verify command. Do not `ship`.
-4. **Runbook:** walk the conductor list. Each “build this plan” is a nested plan-walk (step 3). Phase gate must pass before the next phase.
+4. **Runbook:** walk the conductor list. Each entry is an existing plan path — nested plan-walk (step 3). Do not run `plan` to fill gaps. Phase gate must pass before the next phase.
 5. Status: DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED — contractor’s own assessment of the **job**, not a git-land.
 6. Done when every step/slice in scope has a verify result or an explicit skip the human accepted.
 
@@ -179,12 +184,14 @@ Expected: `ok`; `bash -n` silent.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add skills/contractor skills/blueprint/templates
+# Blueprint must still lint: its templates are untouched.
+bash skills/skill-builder/scripts/skills-lint.sh
+git add skills/contractor
 git commit -m "$(cat <<'EOF'
 contractor: new job-lead skill (roadmap/plan/runbook/review/build)
 
-Takes plan+roadmap templates from blueprint. Copies ground-check.sh.
-Does not shrink blueprint's SKILL.md yet.
+Copies plan+roadmap body scaffolds and ground-check.sh. Leaves
+blueprint's copies in place so that package stays lint-clean.
 EOF
 )"
 ```
@@ -196,7 +203,9 @@ EOF
 **Files:**
 - Modify: `skills/blueprint/SKILL.md`
 - Modify: `skills/blueprint/docs/ideal-use.md`
+- Modify: `skills/blueprint/templates/spec.md` (inline Slices stub; drop `templates/plan.md` pointer)
 - Modify: `skills/blueprint/scripts/ground-check.sh` (header only, still used by spec/review)
+- Delete: `skills/blueprint/templates/plan.md`, `skills/blueprint/templates/roadmap.md` (after spec.md no longer names them)
 - Test: no `roadmap`/`plan` procedures left in `SKILL.md`; templates dir is spec+adr only
 
 **Interfaces:**
@@ -207,6 +216,7 @@ EOF
 
 - Set `description:` to the locked blueprint draft (quoted).
 - Title stays “the planning spine” **for drawings only**, or retitle “the specification spine” if “planning spine” now overclaims — prefer **specification spine**.
+- Dispatch table must include an explicit bare row: `(none)` → `brainstorm` (Global Constraint, not implicit).
 - Delete verb-table rows and sections for `roadmap` and `plan`.
 - `review` section: specs and design docs only; refuse a plan/roadmap (“wrong artifact for this review”).
 - Terminal step of `spec`: human gate; then **stop**. Do not say “proceed to plan.” Say the accepted spec is the artifact; implementation sequencing is a different job (no sibling name).
@@ -235,7 +245,17 @@ ls skills/blueprint/templates/
 # expect: adr.md spec.md
 ```
 
-Grep `skills/blueprint` for `roadmap` / `plan [` / `/blueprint plan` in procedure (templates/spec.md may still say a small spec may double as a plan — **keep that sentence**).
+In `templates/spec.md`, **remove** the pointer `per templates/plan.md`. Keep “a small feature's spec may double as its plan.” If slices are needed, add a short `## Slices` stub **in `spec.md` itself** (id / verify command / paths) — do not reference a removed file.
+
+Grep `skills/blueprint` for `roadmap` / `` `plan.md` `` / `/blueprint plan`. Zero bundled-ref hits.
+
+Then delete `skills/blueprint/templates/plan.md` and `roadmap.md` (only after `spec.md` no longer names them).
+
+```bash
+bash skills/skill-builder/scripts/skills-lint.sh
+```
+
+Expected: `fails=0` (blueprint still self-contained).
 
 - [ ] **Step 4: Commit**
 
@@ -286,7 +306,15 @@ EOF
 
 - [ ] **Step 3: Seed + workstream composition**
 
-Replace “`/blueprint` runs the planning spine (brainstorm → spec → roadmap/plan)” with: design-at-stake → `/blueprint` (spec); job sequencing and walking → `/contractor` (plan / runbook / build). `workstream` flow PLAN stage: `/blueprint spec` then `/contractor plan`. Build stage: `/contractor build` (stream still `ship`s). `sync.md` “`/blueprint review`” for a **plan** → `/contractor review`. Keep `/blueprint` for specs.
+Replace “`/blueprint` runs the planning spine (brainstorm → spec → roadmap/plan)” with **conditional** composition:
+
+- Design-at-stake → `/blueprint` (spec).
+- **One phase, spec already implementable (has slices or is accepted as the plan)** → host build lane / stream **build** walks those slices; do **not** require `/contractor plan`.
+- **Sequencing required** (second phase, blocking edges, or a tracer sequence) → `/contractor plan` (and `runbook` / `build` as needed). Stream still `ship`s.
+
+`workstream` PLAN stage: `/blueprint spec`; then `/contractor plan` **only when sequencing is required**. Build stage: `/contractor build` when a contractor plan exists; otherwise the host lane executes the spec’s own slices.
+
+`skills/workstream/verbs/sync.md` line that says “host's code-review tooling or `/blueprint review`” after a **source-code** conflict: **drop** `/blueprint review`. Keep generic host code-review tooling. Do **not** replace it with `/contractor review` (that verb refuses code).
 
 Do **not** add those names to `blueprint` or `contractor` descriptions.
 
@@ -306,10 +334,13 @@ Cold-router, at least these cases (record in `docs/boundary-audit.md` as a dated
 
 | prompt | expects |
 |---|---|
+| `/blueprint` (bare) | `blueprint` (brainstorm) |
 | brainstorm this feature | `blueprint` |
 | grill the spec until the forks close | `blueprint` |
 | write the specification for this design | `blueprint` |
 | review this spec for soundness | `blueprint` |
+| `/contractor` (bare) | none — must not steal; agent should ask for a verb |
+| one-phase feature: spec is enough, just implement | `blueprint` (not `contractor`) |
 | write an implementation plan | `contractor` |
 | draft a roadmap of phases | `contractor` |
 | compile a runbook from this plan | `contractor` |
@@ -344,7 +375,9 @@ EOF
 | Split, names, grill-only-on-blueprint | 1, 2 |
 | Contractor verbs including runbook + build | 1 |
 | Small-work stop at spec; no forced contractor | 2 ideal-use + descriptions |
-| Review-before-build; runbook cheap check | 1 verbs/build.md, runbook.md |
+| Review-before-build on every walked plan; runbook check additional | 1 verbs/build.md, runbook.md |
+| One `plans.md` shell; copy not mv; spec.md self-contained slices | 1, 2 |
+| Conditional workstream composition; sync.md stays code-review | 3 |
 | Optional delegate; no ship; no stream detect | 1 SKILL.md seams |
 | Typed edges, no sibling descriptions | 1, 2, 3 probe |
 | Pack / README / handbook / workstream compose | 3 |
@@ -356,3 +389,17 @@ EOF
 - `contractor ship`
 - `agent-council` feature brief (plan docs are not a v1 council target)
 - Rewriting `delegate` or `workstream` loop mechanics beyond citation updates
+
+## Review history — 2026-08-16 Codex (needs-rework → folded)
+
+Independent `codex exec` review of this plan. Must-fix and should-fix folded above:
+
+- one `plans.md` record shell + tagged body scaffolds
+- copy-not-mv so Task 1 cannot leave blueprint unlintable
+- small-work slices live in `spec.md`, no dangling `plan.md` ref
+- roadmap runbook requires existing phase plans; `build` does not write plans
+- runbook completeness ≠ plan review
+- `sync.md` conflict pass stays host code-review, not contractor
+- workstream composition is conditional (small-work path survives)
+- superpowers header optional
+- bare `/blueprint` row in Task 2; probe cases for bare verbs and spec-as-plan
