@@ -9,8 +9,8 @@ tags: []
 # <title>
 
 - **Deciders:** <who>
-- **Related:** <docs / ADRs / stable anchors this connects to — NOT bare plan paths; route
-  build detail through the roadmap>
+- **Related:** <docs / ADRs / stable anchors this connects to — NOT bare
+  implementation-cut paths; keep this ADR on the decision, not the sequence>
 
 ## Context
 <The forces at play: facts about the system, constraints, the problem that forces a decision.>
