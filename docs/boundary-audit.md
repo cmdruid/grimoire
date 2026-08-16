@@ -106,3 +106,16 @@ probe machinery itself is proven discriminating.
 | resume post-compaction / snapshot / load / remember-later / close-books / done / explicit path / mailbox decoy / context pressure / handoff decoy | per plan §S5 | ✓ all | ✓ all | — |
 
 Re-run (`/skill-builder check`, Pass 2) after any `description:` change.
+
+**2026-08-16** — **full v2-roster refresh** (rev stream unit 3): one cold-router probe over all
+**14** current descriptions (agent-council included), 26 cases — per-skill core triggers plus
+every known collision pair: clankshop setup/migrate/persona vs journal setup; the journal/backlog
+Phase-6 split (format/contract/closure vs capture/ticket/debrief); "remember this for later" →
+`backlog`; the checkpoint/workstream stream cases; auditor vs debugger; delegate vs mailbox;
+blueprint verbs vs bootstrap-from-scratch; scheduler; skill-builder new/check; agent-council's
+panel summons. **26/26 routed correctly** — no description changes needed, no follow-up probes.
+This entry is the **current baseline**; the entries above that speak v1 names
+(foreman/architect/handoff/feature-era batteries) are retained as dated history only and are
+superseded by this roster.
+
+Re-run (`/skill-builder check`, Pass 2) after any `description:` change.
