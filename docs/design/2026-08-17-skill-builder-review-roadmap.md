@@ -14,8 +14,8 @@ verb; the first customer is `blueprint`. Each phase needs its own plan (or
 a spec that doubles as one) before build. This file does not carry task
 detail.
 
-Spec: `docs/design/2026-08-17-skill-builder-review.md` (on the stream
-branch until ship). Accepted 2026-08-17.
+Spec: `docs/design/2026-08-17-skill-builder-review.md`. Accepted
+2026-08-17. Shipped 2026-08-17 on `stream/grok`.
 Lock 3 flipped in that spec (classifier + open target; `skill-builder
 review` stays skill-only).
 
@@ -96,6 +96,8 @@ ended at the report; this track ships `generic` + `spec` instead of
   `skill-builder`. The protocol is the product; the convene loop stays
   in `agent-council`. An LLM classifier.
 
+**Status:** met 2026-08-17.
+
 ## Phase 3 — skill-builder review + first use   requires: 2
 
 - **Goal:** `/skill-builder review <skill>` exists. `check` is unchanged
@@ -115,6 +117,8 @@ ended at the report; this track ships `generic` + `spec` instead of
 - **Risks:** review that re-documents `check` or the council. Point,
   don’t paste. Description must not name `/agent-council`.
 
-_When a phase meets its gate, debrief before advancing. Cadence is this
-stream’s `milestone` — propose a land after Phase 3 (or earlier if a
-later stream needs the protocol)._
+**Status:** met 2026-08-17. First use: `/skill-builder review blueprint`
+returned `approve-with-changes`; no must-fix fold. Genesis battery
+unchanged.
+
+_Track landed 2026-08-17 at the Phase 3 milestone._

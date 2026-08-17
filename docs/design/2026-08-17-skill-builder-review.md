@@ -8,13 +8,17 @@ tags: [spec]
 
 # skill-builder review — Spec
 
+**Shipped 2026-08-17** on `stream/grok` — subjects: `Add skill-builder
+review roadmap`; `Accept skill-builder review spec`; `agent-council:
+classify briefs and hand off review`; `skill-builder: add review verb`.
+
 Argued 2026-08-17 on stream `grok` from the locks in
-`docs/design/2026-08-17-skill-builder-review-roadmap.md` (on the stream
-branch until ship). Locks 1, 2, and 4 stand. **Lock 3 flipped** at
-acceptance (conversation 2026-08-17): the council target is no longer
-skill-package-only; a named brief wins, otherwise a mechanical
-classifier selects `generic` / `skill` / `spec`. `skill-builder review`
-stays skill-package-only. Accepted 2026-08-17 (`status: current`).
+`docs/design/2026-08-17-skill-builder-review-roadmap.md`. Locks 1, 2,
+and 4 stand. **Lock 3 flipped** at acceptance (conversation
+2026-08-17): the council target is no longer skill-package-only; a
+named brief wins, otherwise a mechanical classifier selects
+`generic` / `skill` / `spec`. `skill-builder review` stays
+skill-package-only. Accepted 2026-08-17 (`status: current`).
 
 This spec doubles as the Phase 2/3 plan (Slices). A separate
 contractor plan is not required unless a later flip changes a slice
