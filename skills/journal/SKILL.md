@@ -34,12 +34,15 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
   format's.
 - **Closure is in place; history is a ledger.** A finished record never moves: `records.sh
   done` sets the closing status and appends the one ledger line to `history.tsv` — its sole
-  writer, never hand-edited. A tracker *line-item* completes by flipping `[ ]` → `[x]` + a
-  `touch`, not through the ledger.
+  writer, never hand-edited. A tracker *line-item* completes per the contract's line form
+  (below), not through the ledger.
 
 ## The record contract (cite this section; never restate it)
 
-What `records.sh check` mechanically enforces, plus the two body conventions it scans:
+`records.sh check` enforces front-matter, the status vocabulary (including ledger
+coherence), and record-link resolution. Tracker line form is a prose convention —
+`check` does not scan it. The template convention is enforced by `new` (missing
+template → error), not by `check`.
 
 - **Front-matter: five keys**, between `---` delimiters at the top of every record —
   `doctype` (must equal the store directory name), `status`, `created`, `updated` (both
@@ -51,9 +54,13 @@ What `records.sh check` mechanically enforces, plus the two body conventions it 
   `records.sh done`.
 - **Record links**: `→ <store>/<file>.md`, resolved against the records root; `check` flags
   rot.
-- **Tracker line form**: `- [ ] YYYY-MM-DD — <item, one sentence>` under `## Items`, newest
-  last, optionally linking a record (`→ <store>/<file>.md`); completes as `[x]` + the
-  completion date + a `records.sh touch` of the tracker (no ledger line).
+- **Tracker line form**: under `## Items`, newest last. Live and completed (same optional
+  ` → <store>/<file>.md` before the completion date):
+
+      - [ ] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md
+      - [x] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md — 2026-08-17
+
+  Completing a line is that rewrite + a `records.sh touch` of the tracker (no ledger line).
 - **Template convention**: `records.sh new <doctype>` mints from
   `<records-root>/templates/<doctype>.md` (a contract-conformant record with `<title>`/`<date>`
   slots) and errors, naming the missing path, when the store has no template. **The skill whose
@@ -84,11 +91,16 @@ record, or store hygiene. Filing a follow-up is not journal's job (scope boundar
   which disposition, what merges with what — that judgment lives in the verb files. The scripts
   (`records.sh`, `scripts/standup.sh`, `scripts/scoped-commit.sh`) do only deterministic
   mechanics; never push a decision into a script.
-- **Commit on the integration trunk, never a work branch.** Record writes are shared state, so
-  they land on the root checkout's current branch, which must be the integration trunk (never
-  hardcode `main`). Guard: if `git -C <root> branch --show-current` is empty (detached HEAD) or
-  a work branch (`stream/*`, `feature/*`), STOP and say so. **Exception:** record writes inside
-  an active workstream worktree commit on the stream's branch; its ship lands them.
+- **Resolve the commit tree, then commit there.** `<root>` is `git rev-parse --show-toplevel`
+  of the checkout that holds the records you wrote — never a different clone, and never the
+  repo's root checkout from inside a stream worktree (that lands the commit on the trunk
+  through the shared index). `<branch>` is `git -C <root> branch --show-current`. Then, in
+  order: empty `<branch>` (detached HEAD) → STOP. `<root>/WORKSTREAM.md` exists and its
+  Coordinates `branch:` equals `<branch>` → this tree is a worktree stream; commit here. A
+  `<root>/.workstreams/*/WORKSTREAM.md` records `isolation: in-place` and Coordinates
+  `branch:` equals `<branch>` → this tree is an in-place stream holding the root; commit
+  here. `<branch>` matches `stream/*` or `feature/*` → STOP (a work branch this session
+  does not hold). Otherwise commit here (the current trunk — never hardcode `main`).
 - **Pathspec-atomic commit (the shared root index is contended).** Stage *and* commit scoped to
   exactly the paths you wrote, in one step, via `scripts/scoped-commit.sh <root> "<msg>"
   <paths…>`. Never `git add -A`, never `commit -a`, never leave staged work in the root index
@@ -109,3 +121,8 @@ downstream still. Journal owns no judgment beyond its own formats.
 stores live under the records root, and no verb refuses or stalls for lack of a workshop.
 On a workshop host the deployed handbook's routing applies downstream; elsewhere it is simply
 absent — never demand the workshop as a precondition.
+
+## Done when
+
+- **No recognized verb:** asked which of setup / done / curate; did not file a follow-up.
+- **A verb ran:** that verb file's Done when.

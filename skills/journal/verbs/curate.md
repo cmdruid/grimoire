@@ -19,3 +19,11 @@ client that owns the trackers, not here.
 4. **One scoped commit** over everything touched
    (`scripts/scoped-commit.sh <root> "Journal: curate" <paths…>`) when standalone; write-only
    inside a larger sweep. End green: `records.sh check`.
+
+## Done when
+
+- `records.sh check` was green at the end.
+- Quiet closures, link repairs, and merges this pass judged are done (`/journal done` where
+  a record closed).
+- Prune candidates listed; deletions only after the human confirmed a threshold.
+- Standalone commit landed (or write-only inside a sweep).

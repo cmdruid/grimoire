@@ -16,14 +16,23 @@ moves; moves would dangle every path-based link) plus the one ledger line in `hi
    script stamps the date, rewrites `status:`, and appends the ledger line (its sole writer;
    it refuses a double-close). Never hand-edit a status to a closing value — `check` flags a
    closing status with no ledger line.
-4. **Tracker line-items are not records**: a micro-item completes by flipping its line
-   `- [ ]` → `- [x]` (append the completion date) + `records.sh touch <tracker>` — no ledger
-   line. Closing a *whole tracker* (rare — a retired concern) goes through `records.sh done`
-   like any record.
-5. **Writebacks**: flip/annotate any tracker line pointing at the closed record.
+4. **Tracker line-items are not records**: complete the line to the contract's completed
+   form (SKILL.md *The record contract* → Tracker line form) + `records.sh touch <tracker>`
+   — no ledger line. Closing a *whole tracker* (rare — a retired concern) goes through
+   `records.sh done` like any record.
+5. **Writebacks**: `records.sh list --type trackers`, then search each tracker body for
+   `→ <rel>` where `<rel>` is the closed record's records-root-relative path. For each hit,
+   rewrite that line to the contract's completed form and `records.sh touch` the tracker.
 6. **Commit** per the commit policy (SKILL.md): standalone → its own scoped commit
    (`Journal: done — <slug> (<disposition>)`); inside a client's sweep → write-only (the
    sweep commits once).
 
 Pruning closed records (deleting the file; ledger + git history remain the trace) is
 `curate`'s proposal to make, against the project's own prune threshold — never part of `done`.
+
+## Done when
+
+- Record closed: `records.sh done` wrote the disposition + ledger line; writebacks used the
+  contract's completed-line form; standalone commit landed (or write-only inside a sweep).
+- Line-item only: the one line matches the completed form; tracker `touch`ed; no ledger line.
+- Not finished: left open (or `touch --status`); no close.
