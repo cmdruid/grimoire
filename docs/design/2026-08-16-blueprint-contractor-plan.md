@@ -1,5 +1,8 @@
 # blueprint / contractor Implementation Plan
 
+**Shipped 2026-08-16** on `stream/grok` — subjects: `contractor: new job-lead skill`;
+`blueprint: drop plan/roadmap; spec spine only`; `clankshop 2.2.0: add contractor`.
+
 > **For agentic workers:** Optional execution aid if present: superpowers:subagent-driven-development or superpowers:executing-plans. Those skills are **not** in this library’s inventory — do not stall if they are missing. Walk the tasks in order; checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Split today’s `blueprint` into a drawings skill (`blueprint`: brainstorm / grill / spec / review) and a job-lead skill (`contractor`: roadmap / plan / runbook / review / build), wired into the pack and the stream templates.
