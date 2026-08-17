@@ -201,14 +201,16 @@ either leaf: none.
 | hand this slice to a cheaper model | `delegate` | `delegate` |
 
 **2026-08-17 (genesis on blueprint, grok stream)** — new genesis battery (descriptions
-only). Live genesis baseline: genesis prompts expect `blueprint`; workshop-setup
-prompts expect `clankshop`. Dated tables above are history; do not re-run the
-26-case roster expecting the old skill. One expected genesis winner (`blueprint`).
+only; fresh cold-router sub-agent; 14-skill roster, `bootstrap` already deleted).
+**5/5 routed as expected.** Live genesis baseline: genesis prompts expect
+`blueprint`; workshop-setup prompts expect `clankshop`. Dated tables above are
+history; do not re-run the 26-case roster expecting the old skill. One expected
+genesis winner (`blueprint`).
 
-| prompt | expects |
-|---|---|
-| idea → think it through → get a repo | `blueprint` |
-| start a new project from scratch; grill the design | `blueprint` |
-| deploy this spec (founding file in cwd) | `blueprint` |
-| deploy the workshop / set up the agent framework on this existing repo | `clankshop` |
-| stand up the development system on this project | `clankshop` |
+| prompt | expects | pick |
+|---|---|---|
+| idea → think it through → get a repo | `blueprint` | `blueprint` |
+| start a new project from scratch; grill the design | `blueprint` | `blueprint` |
+| deploy this spec (founding file in cwd) | `blueprint` | `blueprint` |
+| deploy the workshop / set up the agent framework on this existing repo | `clankshop` | `clankshop` |
+| stand up the development system on this project | `clankshop` | `clankshop` |
