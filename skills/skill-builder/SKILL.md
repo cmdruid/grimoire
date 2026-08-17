@@ -1,6 +1,6 @@
 ---
 name: skill-builder
-description: "The toolmaker steward for a skills library itself -- not project code, the skills that build it. `new` scaffolds a skill's SKILL.md against the self-init tiers + typed-edge pattern; `check` (alias `audit`) runs the mechanical lint gate plus the independence/boundary-audit workflow (self-scoping descriptions, seam-table cross-check, routing-probe); `calibrate` folds accreted authoring decisions back into the portable doctrine. Portable: installs in any skills library, authoring discipline travels with it, no host-repo dependency. Use when scaffolding a new skill, auditing/linting an existing one, asking about skill-authoring conventions (self-init tiers, typed edges), or checking whether a skill's description routes on its own."
+description: "The toolmaker steward for a skills library itself -- not project code, the skills that build it. `new` scaffolds a skill's SKILL.md against the self-init tiers + typed-edge pattern; `check` (alias `audit`) runs the mechanical lint gate plus the independence/boundary-audit workflow; `review` judges a skill's substance; `calibrate` folds accreted authoring decisions back into the portable doctrine. Portable: installs in any skills library, authoring discipline travels with it, no host-repo dependency. Use when scaffolding a new skill, auditing, linting, or a skill review (followability, holes), asking about skill-authoring conventions (self-init tiers, typed edges), or checking whether a skill's description routes on its own."
 ---
 
 # skill-builder — the toolmaker steward
@@ -25,6 +25,7 @@ memory.
 |---|---|---|
 | `new` | `verbs/new.md` | Scaffold a new skill's `SKILL.md` (+ `init` if durable-home tier) against `docs/DOCTRINE.md`'s pattern |
 | `check` (alias `audit`) | `verbs/check.md` | Run `scripts/skills-lint.sh` + the boundary-audit workflow; report findings |
+| `review` | `verbs/review.md` | Judge a skill package's substance against the skill `review-brief`; optionally consume a `review` baton |
 | `calibrate` | `verbs/calibrate.md` | Fold accreted authoring decisions back into `docs/DOCTRINE.md` (milestone-triggered, human-curated) |
 
 ## What this skill bundles
@@ -50,11 +51,11 @@ memory.
 
 skill-builder's **typed edges** — its place in a workflow declared as artifact *types*, never as
 sibling names (`docs/DOCTRINE.md` § Typed edges). It is a **toolmaker with no private home**: its
-output is new/audited skill files and a conversational report, in-place changes to the library itself,
-not a typed artifact another skill drains. All three edges are a *stated* empty, not an omission.
+output is new/audited skill files and a conversational report, in-place changes to the library itself.
+`review` consumes a `review` baton and a `review-brief`; it does not produce either.
 
 <!-- edges:skill-builder -->
 - produces: — (scaffolded/audited skill files + a conversational report, not a typed artifact)
-- handoff: — (no baton; a scaffold or an audit report ends the pass)
-- consumes: — (reads the library's own skills/ tree, not another skill's typed output)
+- handoff: — (the review ends the pass)
+- consumes: review, review-brief — optional RESULT.md baton; skill brief for same-session judgment
 <!-- /edges:skill-builder -->
