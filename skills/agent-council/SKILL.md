@@ -1,12 +1,12 @@
 ---
 name: agent-council
-description: "Use when the user runs `/agent-council`, asks for a multi-model or cross-vendor review panel, or wants independent Claude, Grok, and Codex opinions on a skill package. Keywords: council, panel, convene, multi-model review, cross-vendor review."
+description: "Use when the user runs `/agent-council`, asks for a multi-model or cross-vendor review panel, or wants independent Claude, Grok, and Codex opinions on a skill, spec, or named path. Keywords: council, panel, convene, multi-model review, cross-vendor review."
 ---
 
 # agent-council — a three-family review panel
 
-Convene isolated Claude, Grok, and Codex reviewers against a skill
-package, cluster their claims, let them update or rescind, and show one
+Convene isolated Claude, Grok, and Codex reviewers against a named
+target, cluster their claims, let them update or rescind, and show one
 list ranked by how many seats support each claim. You are the
 orchestrator. You never sit on the panel.
 
@@ -14,30 +14,51 @@ Scratch-only: ballots live under `$TMPDIR`. No durable home, no `init`.
 
 ## When to use
 
-- Explicit `/agent-council [path]`
+- Explicit `/agent-council [path] [brief]`
 - A request for a multi-model / cross-vendor / council / panel review
-  of a skill package
+  of a skill, a spec, or another named path
 
 **Do not use** for a one-line tweak, a mechanical lint pass, a scored
-rubric audit, or when fewer than two seats exist.
+rubric audit, a source-tree code review, or when fewer than two seats
+exist.
 
 ## Target
 
-`/agent-council [path]`:
+`/agent-council [target] [brief]`:
 
-1. A directory that contains `SKILL.md` → that package.
-2. A relative path → resolve from cwd, then apply (1).
-3. A bare slug → `<git-toplevel>/skills/<slug>/` if that directory
+1. A readable file or directory (relative paths resolve from cwd).
+2. A bare slug → `<git-toplevel>/skills/<slug>/` if that directory
    contains `SKILL.md`.
-4. Missing or unresolvable → ask. Do not guess a different brief.
+3. Missing or unreadable → ask. Do not guess a brief as the target.
+   The first argument is always the target.
 
-V1 refuses a target that is not a skill package. The brief is always
-`briefs/skill-review.md`.
+`[brief]` is optional. Present → a readable file that is not a
+directory and not a skill package (a directory containing
+`SKILL.md`). Unreadable or wrong kind → ask. Do not fall back
+silently.
+
+## Brief
+
+Named `[brief]` wins. Otherwise run `scripts/classify-brief.sh`
+`<target>` (facts: `brief=skill|spec|generic` or empty). Empty →
+ask; do not pick `generic` yourself. Otherwise open the bundled
+file for that token:
+
+| Token | File |
+|---|---|
+| `generic` | `briefs/generic.md` |
+| `skill` | `briefs/skill-review.md` |
+| `spec` | `briefs/spec.md` |
+
+The classifier is mechanical. Do not replace it with a judgment
+about “what this really is.”
 
 ## Loop
 
-1. Resolve the target. No `SKILL.md` → stop.
-2. Brief is `briefs/skill-review.md`.
+1. Resolve the target (*Target*). Unreadable → ask.
+2. Resolve the brief (*Brief*). Pass its absolute path to every seat.
+   Seat cwd is the classifier `workdir` (the directory target, or the
+   file’s parent; a `SKILL.md` file retargets to its parent).
 3. Run `scripts/probe-seats.sh`. A missing CLI drops that seat. Fewer
    than two paths → stop (one reviewer is not a council).
 4. Confirm cost. Name the seats and that this is up to six headless
@@ -47,10 +68,10 @@ V1 refuses a target that is not a skill package. The brief is always
    path once. You write every file in it. Layout: `round1/<seat>.md`,
    `review/<seat>.md`, `clusters.md`, `RESULT.md`, plus prompt files.
 6. **Round 1.** One isolated, read-only, headless process per present
-   seat, **in parallel**, per `references/spawn.md`. cwd is the target
-   skill directory. Each prompt (a file in scratch) tells the seat:
+   seat, **in parallel**, per `references/spawn.md`. cwd is the
+   workdir from step 2. Each prompt (a file in scratch) tells the seat:
    - You are one isolated reviewer. You do not see other reviewers.
-   - Read the brief at `<absolute briefs/skill-review.md>`.
+   - Read the brief at `<absolute brief path>`.
    - Emit opinions on stdout in the shape of `<absolute templates/ballot.md>`.
    - Do not edit files. Do not rank. Do not self-tag seats.
    Capture stdout into `round1/<seat>.md`.
@@ -106,6 +127,10 @@ list and goes under **Rescinded**.
 ## Report
 
 Show this, and write it to `RESULT.md`. No essay that re-argues claims.
+`Brief:` is `skill` / `spec` / `generic` for a bundled brief, or the
+caller file’s basename without `.md`. A consumer can extract live
+ranked opinions with `scripts/read-result.sh` (rescinded claims under
+`## Rescinded` are not live).
 
 ```
 # Council: <target>
@@ -153,10 +178,10 @@ seat is in Seat notes.
 
 ## Edges
 
-Scratch-only. The report ends the pass.
+Scratch-only. The ranked report is a `review` baton (`RESULT.md`).
 
 <!-- edges:agent-council -->
-- produces: review — ranked council report (shown to the user + scratch RESULT.md)
-- handoff: — (the report ends the pass)
-- consumes: — (a path the user names, not another skill's typed artifact)
+- produces: review, review-brief — ranked council report (shown + scratch RESULT.md); bundled briefs
+- handoff: review — RESULT.md is the baton (ballot / reply / report contract unchanged)
+- consumes: review-brief — optional named brief; else classifier token
 <!-- /edges:agent-council -->

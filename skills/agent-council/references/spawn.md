@@ -7,11 +7,12 @@ The orchestrator writes a prompt file in scratch and captures **stdout**
 into `round1/<seat>.md` or `review/<seat>.md`. Codex `-o` is the parent
 CLI writing the final message — same idea. Seats do not write scratch.
 
-cwd for every seat is the **target skill directory**. No model pin unless
-the user named one for this convene. Read-only: prefer an allow-list of
-read tools; otherwise disallow write/edit tools. If a CLI would hang on
-a permission prompt, pass its non-interactive approve flag **after**
-write tools are already gone.
+cwd for every seat is the **target workdir** (the directory target, or
+the file’s parent; a `SKILL.md` file retargets to its parent). No model
+pin unless the user named one for this convene. Read-only: prefer an
+allow-list of read tools; otherwise disallow write/edit tools. If a CLI
+would hang on a permission prompt, pass its non-interactive approve
+flag **after** write tools are already gone.
 
 | Seat | Letter | Binary | Intent |
 |---|---|---|---|
