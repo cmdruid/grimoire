@@ -8,10 +8,12 @@ description: "Use when the user runs `/blueprint`, or asks to brainstorm, grill,
 `/blueprint <verb> [args]` runs the specification spine: divergent ideation
 (`brainstorm`), the interview that resolves every open decision (`grill`), the
 argued specification (`spec`), and the cross-cutting `review` — an independent
-two-axis critique of a spec or design doc. **Building is not blueprint's job**,
-and neither is sequencing implementation. The accepted spec is the artifact;
-implementation sequencing is a different job. Landing and the debrief sweep stay
-with the orchestrator; `/blueprint` never builds, lands, or debriefs.
+two-axis critique of a spec or design doc. Genesis is two verbs around that
+spine: `new` mints a founding-shaped working file; `grill`/`spec` fill it in
+place; `deploy` materializes a **new** repository. **Building is not
+blueprint's job**, and neither is sequencing implementation. Trunk landing
+and the debrief sweep stay with the orchestrator. `deploy` materializes a new
+repository; it does not land onto a host trunk.
 
 This skill is **self-contained and uniquely named**: it depends on no other skill
 and collides with none.
@@ -40,10 +42,17 @@ a workshop.
   vocabulary, so a later migration adopts them unchanged). The project's own
   design docs and READMEs stand in for station context.
 
+**Probe exemption.** The records-mint / output-home path above applies to
+`brainstorm`, feature `spec`, and ADRs. It does **not** apply to `new` or
+`deploy`, and it does **not** apply to `grill`/`spec` when the named file is
+founding-shaped (*Founding-shaped* below). Those stay on the cwd working file.
+
 **Status vocabulary** (the records contract): a working draft is `status: open`;
 the accepted, living spec is promoted to `status: current` (one per subject);
 closure — `done`, `dropped`, `superseded`, `consumed` — goes through
-`records.sh done` on a workshop host.
+`records.sh done` on a workshop host. Founding-shaped working files stay
+`status: open`. They are not the living feature spec. Do not promote them
+to `status: current`.
 
 ## The verbs
 
@@ -51,15 +60,64 @@ closure — `done`, `dropped`, `superseded`, `consumed` — goes through
 |---|---|---|---|
 | (none) | `brainstorm` | conversation + prompt → `design/` doc (`status: open`) | design |
 | `brainstorm [topic]` | divergent ideation → a draft design doc | conversation + prompt → `design/` doc (`status: open`) | design |
-| `grill [doc]` | the interview primitive: question until every decision branch resolves | a draft design / spec (or the conversation) → resolved decisions (in the doc or in context) | design |
-| `spec [doc]` | synthesize → grill the gaps → the argued spec | conversation or draft → `design/` spec, candidate for `status: current` | design |
-| `review <doc>` | two-axis critique: **soundness** + **groundedness** | a spec or design doc → a verdict (in context) | design |
+| `new <name>` | mint `./<name>.md` — founding-shaped, empty of design content | — → that file only | — |
+| `grill [doc]` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** | a draft / spec (or the conversation) → resolved decisions | design |
+| `spec [doc]` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) | conversation or draft → feature `design/` spec, **or** the named founding file | design |
+| `review <doc>` | two-axis critique; founding-shaped → six-H2 + leftover/gap rubric | a spec or design doc → a verdict (in context) | design |
+| `deploy <file>` | project a founding spec into a new repo + three founding docs | founding file → git repository | — |
 
 `brainstorm → spec` is the linear spine; `grill` and `review` are primitives
-callable at any point. Weight scales with the work: a **small feature** may
-stop at the accepted spec (the spec doubles as its plan — slices live **in**
+callable at any point. Bare `/blueprint` stays `brainstorm`. Genesis is
+explicit `new`. Weight scales with the work: a **small feature** may stop
+at the accepted spec (the spec doubles as its plan — slices live **in**
 `templates/spec.md`, not a separate job artifact). For a **patch**, blueprint
 is not used at all.
+
+`new` lives in `verbs/new.md` — read it and follow it. `grill` / `spec` /
+`review` / `brainstorm` stay inline and gain a founding-shaped branch below.
+
+## Founding-shaped
+
+A file is **founding-shaped** iff it has `founding` in `tags:` **and** its
+structural H2 set is exactly the six map strings in `templates/founding.md`,
+each appearing once. That template owns the H2 strings; if they drift, the
+template wins. A duplicate mapped H2 or an extra unmapped H2 fails the shape.
+
+**Parser** (one grammar; founding `grill` / `spec` / `review` and `deploy`
+share it):
+
+1. **Front-matter.** If the file begins with a line `---`, YAML through the
+   next line that is only `---`. `tags:` is a YAML sequence; `founding` is
+   present iff that sequence contains the string `founding`.
+2. **Structural H2.** A line matching `^##[ \t]+\S` that is **not** inside a
+   fenced code block (`` ``` `` or `~~~`). A `##` line inside a fence is body
+   content, not a heading.
+3. **Body span** of an H2 = bytes after that heading line until the next
+   structural H2 or EOF.
+4. **Permitted chrome** (discarded, not leftover): the front-matter, one ATX
+   H1 (`^#[ \t]+`), and blank lines around those.
+5. **Leftover H2** = a structural H2 whose exact string is not in the
+   template map. **Authored leftover** = any non-whitespace byte outside
+   permitted chrome and outside a mapped body (pre-map prose, trailing
+   prose). Either leftover class refuses `deploy` and is a `review` finding.
+
+**Gap vs settled** (mapped bodies only). Strip whole lines matching
+`^Settled: [0-9]{4}-[0-9]{2}-[0-9]{2}\.$` and remaining whitespace.
+Remainder empty → **gap**. Any remaining byte → **settled**. Who/when-only
+is a gap. No italic / `TBD` / `<>` special cases.
+
+**Branch** (on a named `[doc]`; never scan cwd for a founding file):
+
+- **Founding-shaped** → stay on that file. Fill the six map H2s in place.
+  Do not rewrite to `templates/spec.md`. Do not mint a `design/` record.
+  Do not strip `founding`. Do not add an H2 that is not in the map. Do not
+  promote `status`. Who/when notes go **inside** the mapped section as a
+  whole line in this exact form (roman, not italic): `Settled: YYYY-MM-DD.`
+- **No `founding` tag and H2s are not the map** → existing feature-spec
+  `grill` / `spec` / `review` (may reshape / records-mint).
+- **Otherwise** (tag without the exact map, map without the tag, duplicate
+  mapped H2) → refuse: restore the shape with `/blueprint new` or fix the
+  H2 set. Do not reshape. Do not deploy-path this file.
 
 ## brainstorm `[topic]` — divergent ideation into a draft design
 
@@ -100,6 +158,11 @@ conversation's proposal). A job artifact with open decision branches means the
 no artifact of its own; it drives decisions into whichever doc it was aimed at
 (or leaves them in context for the calling verb).
 
+If `[doc]` is named, classify it (*Founding-shaped*) **before** the steps
+below. Founding-shaped → fill the six map H2s in place under that branch;
+do not run the feature-spec reshape. Refuse the otherwise-case. They never
+scan cwd for a founding file.
+
 1. **Build the decision tree** — read the doc/conversation and enumerate every
    open branch: unstated assumptions, either/or forks, vague quantities
    ("fast", "some"), unowned risks, undefined terms. Each becomes a question.
@@ -123,6 +186,12 @@ return to the calling verb (`spec`) or the human.
 Produce the **argued specification** — concrete enough that a gap between
 design and code is detectable, and measurable once found. Start from a
 `brainstorm` draft, an existing doc, or the conversation itself.
+
+If `[doc]` is named, classify it (*Founding-shaped*) **before** the steps
+below. Founding-shaped → synthesize into the six map H2s on that same file;
+run `grill` on those sections; do not write Problem / Goal / Approach as
+H2s; skip the records-mint, `templates/spec.md` rewrite, and status
+promotion. Refuse the otherwise-case. They never scan cwd.
 
 1. **Synthesize first** — assemble everything already decided (conversation,
    draft, prior ADRs) into the spec's shape before asking anything.
@@ -172,7 +241,12 @@ counts). A sequenced plan, multi-phase map, or conductor is the wrong artifact
 for this review — refuse it.
 
 1. **Read the whole doc; detect its kind** from front-matter or shape. A job
-   artifact → refuse ("wrong artifact for this review").
+   artifact → refuse ("wrong artifact for this review"). If founding-shaped
+   (*Founding-shaped*): soundness uses the six map H2s + leftover/gap
+   rules, not `templates/spec.md`. Groundedness is against the bundled
+   `templates/founding.md` and live behavior (and the `deploy` procedure
+   once that verb file exists) — not a library design doc. Do not promote
+   `status`. Feature-spec `review` is otherwise unchanged.
 2. **Axis 1 — soundness** (internally consistent, feasible): no section
    contradicts another; the approach is justified with alternatives honestly
    weighed; the mechanism is implementable as written; scope is one artifact's
@@ -254,13 +328,15 @@ exceptions: primitives that consume a design artifact and write no new one.
 - **Workshop routing** — the handbook's routing walk dispatches design-at-stake
   work here. The orchestrator / host lane consumes the spec.
 
-Do not name a successor skill. The accepted spec is the baton.
+Do not name a successor skill. Feature composition ends at the accepted
+spec; genesis ends at the repo. The accepted spec is the feature baton.
 
 ## Structure, portability
 
 - A self-contained skill directory: `SKILL.md` + `templates/` (`spec.md`,
-  `adr.md` — the bundled body shapes) + `scripts/ground-check.sh` (the
-  re-grounding fact-checker) + `docs/ideal-use.md` (a worked arc).
+  `adr.md`, `founding.md` — the bundled body shapes) + `verbs/new.md` +
+  `scripts/ground-check.sh` (the re-grounding fact-checker) +
+  `docs/ideal-use.md` (a worked arc).
 - **Portable:** no workshop dependency (the one probe degrades to standalone),
   no host paths baked in, travels as one unit wherever the skills are
   installed.
@@ -268,7 +344,7 @@ Do not name a successor skill. The accepted spec is the baton.
 ## Edges
 
 <!-- edges:blueprint -->
-- produces: spec — argued specification (design/ store or output home)
-- handoff: spec — the accepted spec is the baton
+- produces: spec, founding-documents — argued specification; a fresh repo's three founding docs
+- handoff: spec, git-repository — the accepted spec is the feature baton; a fresh repo carrying three founding documents and no code is the genesis baton
 - consumes: — (conversation or a draft the user names)
 <!-- /edges:blueprint -->
