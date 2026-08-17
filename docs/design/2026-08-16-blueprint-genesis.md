@@ -8,6 +8,11 @@ tags: [spec]
 
 # Genesis on blueprint — Spec
 
+**Shipped 2026-08-17** on `stream/grok` — subjects: `Add accepted genesis-on-blueprint spec`;
+`blueprint: add new and founding-shaped grill/spec/review`; `blueprint: add deploy for founding specs`;
+`blueprint: add genesis routing triggers`; `Retire bootstrap; route genesis through blueprint`;
+`Record genesis routing-probe 5/5`.
+
 Argued 2026-08-16 on stream `grok`. Grill resolved dest-suggestion, dest vs
 file name, confirm-to-delete, land-with-open-questions, walk-until-outside-every
 repo, and project name = dest basename. Four `/blueprint review` passes
