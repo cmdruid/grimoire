@@ -32,4 +32,4 @@ Spec: <path to the governing spec / roadmap phase>
 ## Done when
 <The end-state condition and how it is verified (gate green, tests pass, ...).>
 
-_On completion (before landing), run `/backlog debrief` to route what the build surfaced._
+_On completion (before landing), run the host's close-the-books sweep._

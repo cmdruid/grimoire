@@ -26,8 +26,9 @@ that phase can be built. The roadmap never carries task-level detail.
      phase needs that, it needs a `plan`.
 4. **Land it** per SKILL.md *Shared discipline*. Workshop: mint
    `records.sh new plans --title "<Track> — Roadmap"`, then set `tags: [roadmap]`
-   and replace the body with the roadmap scaffold filled in. Standalone: write
-   `templates/roadmap.md` filled in to the output home. Flip `status: current`
-   while the map governs the track.
+   and replace the body with the roadmap scaffold filled in. Standalone:
+   fill `templates/roadmap.md` into the named file in the output home
+   (SKILL.md *Shared discipline*). Flip `status: current` while the map
+   governs the track.
 
 Output: the roadmap. Terminal step: `plan` the first unblocked phase.

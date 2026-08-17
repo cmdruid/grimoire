@@ -18,15 +18,19 @@ A raw **roadmap** is not an input. Compile a runbook first.
 3. **Plan:** walk slices in declared order. Per slice: do it yourself **or**
    write a self-contained brief and use the host's delegation mechanism. After
    each slice: the slice's verify command. Do not `ship`.
-4. **Runbook:** walk the conductor list. Each entry is an existing plan path —
-   nested plan-walk (step 3). Do not run `plan` to fill gaps. Phase gate must
-   pass before the next phase.
+4. **Runbook:** walk the conductor list.
+   - **Plan-sourced:** walk the steps; each step's command/gate is the
+     verify. Do not invent work.
+   - **Roadmap-sourced:** each entry is an existing plan path — nested
+     plan-walk (step 3). Do not run `plan` to fill gaps. Phase gate must
+     pass before the next phase.
 5. **Status** — contractor's own assessment of the **job**, not a git-land:
    - `DONE` — every in-scope slice/step has a verify result
    - `DONE_WITH_CONCERNS` — walked, with residual risk the human should see
    - `NEEDS_CONTEXT` — cannot continue without an answer
    - `BLOCKED` — an external dependency or failed gate
 6. Done when every step/slice in scope has a verify result or an explicit skip
-   the human accepted.
+   the human accepted. After a `DONE` / `DONE_WITH_CONCERNS` walk, run the
+   host's close-the-books sweep (SKILL.md *Hard seams*).
 
 The host lane still lands the result. This verb stops at the job assessment.

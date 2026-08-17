@@ -28,10 +28,11 @@ unsettled, stop and send those branches back.
    code it cites ages fast): re-read every load-bearing signature / path /
    count against the worktree's `HEAD` before sizing. A claim **inherited from a
    scout, sub-agent, or queued item** is exactly what this gate re-verifies,
-   never trusts. **Ground via a dispatched read-only sweep as the plan's
-   literal Task 0** — a sub-agent checking every queued item's symbols/files
-   against the done trail and live code, not a mental "does this still look
-   right" pass. Two claim-specific verdicts: an **"is X still used"** claim
+   never trusts. **Ground as the plan's literal Task 0** — a read-only
+   sweep of every queued item's symbols/files against the done trail and
+   live code, not a mental "does this still look right" pass. Dispatch a
+   sub-agent when the host can; otherwise run the same sweep inline.
+   Two claim-specific verdicts: an **"is X still used"** claim
    needs narrow-then-compile — grep produces the candidate list, the
    compiler/dead-code analysis issues the verdict (a complete grep has
    confidently named test-only callers as live); and a **prior-art check** —
@@ -60,7 +61,8 @@ unsettled, stop and send those branches back.
 7. **Land it** per SKILL.md *Shared discipline* and `templates/plan.md`.
    Workshop: mint `records.sh new plans --title "<title> — Implementation Plan"`,
    then set `tags: [plan]` and replace the body with the plan scaffold filled
-   in. Standalone: write `templates/plan.md` filled in to the output home.
+   in. Standalone: fill `templates/plan.md` into the named file in the
+   output home (SKILL.md *Shared discipline*).
 
 Output: the implementation plan. Terminal step: **`review` then `build`**. The
 host lane still lands the result; `build` walks the slices. For a multi-slice

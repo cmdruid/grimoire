@@ -22,14 +22,16 @@ existing phase-plan paths — never task-level work invented here.
    `build` does not write plans. Body: ordered unblocked phases, each line a
    **path** to that phase's plan, then "build it." Do not inline task-level
    work.
-4. **Completeness check** (conductor only): every phase/slice has a **plan
-   path**; order respects `requires:`; no raw implementation steps invented.
-   Fail → fix the runbook or send the human back to `plan`/`roadmap`. This
-   check is **not** `review`.
+4. **Completeness check** (conductor only). Fail → fix the runbook or
+   send the human back to `plan`/`roadmap`. This check is **not** `review`.
+   - **Plan-sourced:** every step names a slice id and has a command +
+     gate; order respects slice `requires:`; no approach essay.
+   - **Roadmap-sourced:** every unblocked phase has a plan path; order
+     respects phase `requires:`; no raw implementation steps invented.
 5. Done when the conductor file exists and the completeness check is green.
    `build` still requires each referenced plan to have passed `review` (or a
    human waiver).
 
 Land it per SKILL.md *Shared discipline*. Workshop: mint the shell, set
-`tags: [runbook]`, fill the conductor body. Standalone: write a
-`tags: [runbook]` file in the output home.
+`tags: [runbook]`, fill the conductor body. Standalone: write the
+`tags: [runbook]` conductor into the named file in the output home.

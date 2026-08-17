@@ -67,7 +67,11 @@ subject); closure — `done`, `dropped`, `superseded`, `consumed` — goes throu
   branches is not approved — send those branches back to a grill on the spec.
 - **Land it** (minting verbs: `roadmap`, `plan`, `runbook`) per the probe
   above. Workshop: mint the shell, then overwrite `tags:` and the body.
-  Standalone: write the body scaffold (or conductor list) into the output home.
+  Standalone: write `<output-home>/<stem>.md`. Stem = a slug of the title
+  (lowercase, hyphens, no punctuation) with a `-plan` / `-roadmap` /
+  `-runbook` suffix if the slug does not already end in that word. Title
+  missing or stem empty → ask once. Existing file → ask for a different
+  stem; do not overwrite.
 
 ## Hard seams
 
@@ -81,6 +85,9 @@ subject); closure — `done`, `dropped`, `superseded`, `consumed` — goes throu
   unblocked phase already has a plan path.
 - A runbook completeness check is **additional**. It does not substitute for
   plan review.
+- After a walked plan or gated phase, run the host's close-the-books
+  sweep (workshop: the deployed debrief; standalone: the project's own).
+  Do not name a sibling.
 
 ## Edges
 
