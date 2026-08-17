@@ -14,12 +14,13 @@ stamps the front-matter and filename; this template supplies only the sections b
 ## Evidence
 
 <What confirms the root cause independently of the fix: the trace, the boundary logs, the diff
-against the working analog, the minimal probe and its result.>
+against the working analog (omit if `no analog`), the minimal probe and its result (omit if none).>
 
 ## Fix + verification
 
-<The one fix (or "none landed — see findings"), the failing-test-first artifact, and how it was
-verified: new test green, nothing else broke, original symptom gone.>
+<The proposed one fix (or "none landed — see findings"). Before confirm: proposed only, not yet
+applied. After Phase 4: the failing-test-first artifact and how it was verified — new test green,
+nothing else broke, original symptom gone.>
 
 ## Findings
 

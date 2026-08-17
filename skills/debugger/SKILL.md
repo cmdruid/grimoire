@@ -7,25 +7,29 @@ description: "Root-cause a bug, test failure, build break, or unexpected behavio
 
 ## Overview
 
-Investigate a reported or observed failure to its **root cause** before touching any code. Read-only
-by default; propose the smallest fix that tests the hypothesis, and land it only after the human
-confirms. An **instrument**: the procedure is tool-like and the operator owns the judgment — what
-to investigate, whether the verdict warrants a fix, when to stop. The discipline runs anywhere;
-on a framework installation it additionally writes its findings to the report store and follows
-the deployed playbook (below).
+Investigate a reported or observed failure to its **root cause** before writing a fix. An
+**instrument**: the procedure is tool-like and the operator owns the judgment — what to
+investigate, whether the verdict warrants a fix, when to stop. The discipline runs anywhere;
+the probe below adds the playbook and the durable report when a workshop is present.
 
 **Inputs and refusals.** It accepts a **routed report or a live symptom** — a filed bug report is
 welcome input when one exists, never a required floor; it **never enumerates the `bugs/` store**
-looking for work (a store is not a queue). A routed report whose linked tracker entry is
-**paused** is refused with the pause fact — a ticket owns that item until it resolves. On an
-**unstamped root** (no installation block) the fix-landing and report-writing halves are
-unavailable: emit `unstamped`, point at the clankshop onramps, and investigate read-only at most.
+looking for work (a store is not a queue). If the routed report or its linked bug points at an
+open `tickets/` record, refuse with that fact — a ticket owns the item until it resolves. Follow
+the links; on a workshop host, `records.sh list --type tickets --status open` is the lookup. No
+link → continue. A live symptom with no routed report is not this refuse.
 
-**The playbook.** Where the installation carries `.handbook/test/workflows/diagnostics.md`,
-consult it
-first — symptom → first moves; it frequently short-circuits Phase 1. An investigation that
-navigates a symptom the playbook doesn't cover is a playbook gap worth flagging (the test
-station tends that playbook).
+## One environment probe (at entry)
+
+Does `<root>/.handbook/README.md` exist and carry the clankshop install stamp (a line matching
+`Seeded from clankshop`)? That single fact picks the homes; nothing else is probed.
+
+- **Workshop present** → consult `.handbook/test/workflows/diagnostics.md` when that file exists
+  (symptom → first moves; a miss is a playbook gap — the test station tends that playbook). The
+  durable report is a `reports` record (*Report Format*). Records root is the declared
+  `records-root:`, else `.records/`.
+- **Unstamped** → emit `unstamped`, point at the clankshop onramps, and investigate through
+  Phase 3 plus the conversational report only. No report mint. Do not enter Phase 4.
 
 ## When to Use
 
@@ -43,11 +47,19 @@ station tends that playbook).
 guess, not a fix -- even when it happens to work, because you won't know *why* it worked or whether it
 also broke something else.
 
+## Mutation policy
+
+Phases 1–3 do not write the failing test or the fix. Prefer evidence that is already there: the
+stack, a reproduction, `git log` / `git diff`, a working analog, one runtime input. If that cannot
+answer the current question, one temporary probe (a log line or a one-variable flip) is allowed —
+revert it before the report; it is not the fix. Then report the root cause, the evidence, and the
+proposed fix, and **stop**. Phase 4 starts only after the human confirms the root cause and that a
+fix should land.
+
 ## The Four Phases
 
-Complete each phase before moving to the next. Every phase through Phase 3 is **read-only** -- nothing
-gets edited until Phase 4, and Phase 4's fix lands only after the human confirms (the same
-investigate-then-confirm shape every steward in this library uses: read, report, human decides).
+Complete each phase before moving to the next. Mutation policy above is the edit rule for every
+phase.
 
 ### Phase 1 -- Root-cause investigation
 
@@ -61,29 +73,35 @@ investigate-then-confirm shape every steward in this library uses: read, report,
    agent's finding is exactly what this step re-verifies; a plausible inherited claim can point at a
    bug that doesn't exist, and refuting it here is far cheaper than fixing it.
 4. **In a multi-component system, gather evidence at each boundary before guessing which one is at
-   fault** -- log or print what enters and leaves each stage (a build step, a service call, a config
-   load) once, then read the evidence to see where it actually breaks, before investigating that one
-   stage in depth.
+   fault** -- read what enters and leaves each stage from existing logs or output (a build step, a
+   service call, a config load). If that evidence is missing, one temporary probe, then revert
+   (*Mutation policy*). Read the evidence, then investigate the broken stage in depth.
 5. **Trace data flow backward from the failure.** Where does the bad value first appear? What produced
    it? Keep tracing upward until you reach the actual source -- fix there, never at the symptom site.
 
 ### Phase 2 -- Pattern analysis
 
-1. **Find a working analog.** Locate similar code in the same project that works correctly.
-2. **Diff against it, completely.** Read the whole reference, not a skim -- a partial read of a
-   pattern guarantees a partial (and wrong) application of it.
-3. **List every difference**, however small it seems. Don't discard one as "surely irrelevant" without
-   checking.
+1. **Find a working analog.** Locate similar code in the same project that works correctly. After a
+   bounded search with none, record `no analog` and continue to Phase 3.
+2. **Diff against it, completely.** Skip if `no analog`. Read the whole reference, not a skim -- a
+   partial read of a pattern guarantees a partial (and wrong) application of it.
+3. **List every difference**, however small it seems. Skip if `no analog`. Don't discard one as
+   "surely irrelevant" without checking.
 
 ### Phase 3 -- Hypothesis and minimal test
 
 1. **State one hypothesis explicitly**: "X is the root cause because Y." Vague suspicion isn't a
    hypothesis.
-2. **Test it with the smallest possible change** -- one variable, not a bundle of adjustments.
-3. **Confirmed → Phase 4. Refuted → a new hypothesis**, not another fix stacked on top of this one.
+2. **Test it with the smallest possible change** -- preferably one runtime input, one variable, not
+   a bundle. A code probe is last resort and is not the fix (*Mutation policy*).
+3. **Confirmed → report and stop** (*Report Format*). Human confirms → Phase 4. **Refuted → a new
+   hypothesis**, not another fix stacked on top of this one.
 4. **Genuinely don't know?** Say so. Don't paper over the gap with a plausible-sounding guess.
 
 ### Phase 4 -- Fix the root cause
+
+Entered only after the human confirmed the root cause and that a fix should land. Unstamped: do
+not enter. Human declined: stop — the report is the output.
 
 1. **Write a failing test first** -- the smallest reproduction, automated if the project has a test
    framework, a one-off script if it doesn't. This must exist before the fix, not after.
@@ -91,9 +109,7 @@ investigate-then-confirm shape every steward in this library uses: read, report,
    improvements -- a second change in the same commit makes a failed fix unfalsifiable.
 3. **Verify**: the new test passes, nothing else broke, the original symptom is actually gone (not
    just quieter).
-4. **Confirm with the human before landing.** State the root cause, the fix, and the verification --
-   the same report-then-confirm gate every read-only-by-default skill in this library uses before it
-   mutates anything.
+4. **Land** the failing test and the one fix.
 5. **If the fix doesn't resolve it, count.** Fewer than three attempts → back to Phase 1 with what was
    just learned. **Three or more failed fixes → stop.** That pattern -- each attempt revealing a new
    problem somewhere else, or needing progressively larger changes to hold together -- means the
@@ -102,20 +118,32 @@ investigate-then-confirm shape every steward in this library uses: read, report,
 
 ## Report Format
 
-State plainly: the reproduction, the root cause (not the symptom), the evidence that confirms it (not
-just the fix that happened to work), the fix, and how it was verified. If Phase 4 hit the three-fix
-threshold, say so explicitly and name the architectural question instead of a fix.
+State plainly: the reproduction, the root cause (not the symptom), the evidence that confirms it,
+and the proposed fix (not yet applied). Stop for confirm. After Phase 4, add how it was verified.
+If Phase 4 hit the three-fix threshold, say so explicitly and name the architectural question
+instead of a fix.
 
-**On a workshop installation, the durable record is a reports record:** mint it with
+**Workshop present:** the durable record is a reports record. Mint it with
 `<records-root>/scripts/records.sh new reports --title "<investigation title>"` — the tool owns
 naming and front-matter (`.records/reports/YYYY-MM-DD-<slug>.md`, doctype/status/created stamped,
 collisions suffixed automatically; never hand-stamp) — then fill the body from this skill's
 `templates/investigation.md` (the body scaffold: reproduction, root cause, evidence,
 fix + verification, then a keyed `#### <key> — <title>` heading per actionable finding a
 downstream debrief/curate pass reads; keys match `[a-z0-9-]+`, unique within the report). Close
-it `consumed` (`records.sh done`) when its substance lands somewhere durable, and link it from
-any tracker line it schedules. Commit it trunk-side, scoped, alongside the linked entry's
+it `consumed` (`records.sh done`) when its substance lands somewhere durable, and link it from a
+tracker line only when one exists. Commit it trunk-side, scoped, alongside the linked entry's
 completion where one applies.
+
+## Done when
+
+- **Ticket-owned refuse:** stopped with the open-ticket fact.
+- **Unstamped:** conversational report of reproduction, root cause, evidence, and proposed fix.
+  No mint. No Phase 4.
+- **Human declined the fix:** the report stands; no Phase 4.
+- **Workshop, fix landed:** failing test + one fix + verified + landed; reports record filled;
+  closed `consumed` when its substance has a durable home; linked from a tracker line only when
+  one exists.
+- **Three-fix stop:** stopped; architectural question named; no fourth patch.
 
 ## Boundaries
 
@@ -125,6 +153,6 @@ completion where one applies.
 - **Not a scheduled code-quality or doc-ergonomics pass.** Symptom-triggered investigation of one
   reported problem, not a broad scoring sweep across a codebase or a doc spine.
 - **No private home.** Nothing is scaffolded or stored between sessions -- each investigation is
-  independent. The durable outputs are the report file (above) and any tracker captures the
-  installation's record schema names; a verification-depth or flake *judgment* question belongs
-  to the verification role, not here.
+  independent. The durable outputs are the conversational report, the workshop report file (above)
+  when one was minted, and any tracker captures the installation's record schema names; a
+  verification-depth or flake *judgment* question belongs to the verification role, not here.
