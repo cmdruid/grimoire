@@ -43,8 +43,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `agent-council` | three-family review panel: independent Claude, Grok, and Codex opinions on a skill package, clustered and ranked by agreement; standalone, outside every pack |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
 | `backlog` | the follow-up lifecycle: capture by kind, tickets, debrief sweeps, tracker grooming — a client of the records layer (guards when none) |
-| `blueprint` | specification spine: ideation → argued spec; never plans or builds |
-| `bootstrap` | idea → a new git repo carrying five founding documents: `grill` (design-tree interview, writes nothing) → `land` (create, write, commit); standalone, outside every pack |
+| `blueprint` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
 | `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
 | `clankshop` | the workshop face: seed handbook + the four stations; `setup` / `migrate` / `check`, and persona summons for hat-on discussion |
 | `contractor` | one job lead — roadmap, plan, runbook, review, build; never ships; never writes a spec |
@@ -87,8 +86,8 @@ A pack is a **skill directory with a `PACK.md` manifest** (`docs/spec/pack-forma
 the face installs like any skill, `install.sh --pack` resolves the manifest, installs the members
 transactionally, and records the install in the sidecar `grimoire.lock` beside the target dir.
 
-- **`clankshop`** (`skills/clankshop/PACK.md`) — the skills above (minus `agent-council`,
-  `bootstrap`, and `skill-builder`) as one agentic workshop: the composition lives with the face — the seed
+- **`clankshop`** (`skills/clankshop/PACK.md`) — the skills above (minus `agent-council`
+  and `skill-builder`) as one agentic workshop: the composition lives with the face — the seed
   handbook in `skills/clankshop/seed/` (mirroring a deployed `.handbook/` exactly) and the
   coupling-tier roster in the manifest itself.
 
