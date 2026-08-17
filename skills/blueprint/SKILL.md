@@ -114,11 +114,12 @@ is a gap. No italic / `TBD` / `<>` special cases.
   Do not strip `founding`. Do not add an H2 that is not in the map. Do not
   promote `status`. Who/when notes go **inside** the mapped section as a
   whole line in this exact form (roman, not italic): `Settled: YYYY-MM-DD.`
-- **No `founding` tag and H2s are not the map** → existing feature-spec
-  `grill` / `spec` / `review` (may reshape / records-mint).
-- **Otherwise** (tag without the exact map, map without the tag, duplicate
-  mapped H2) → refuse: restore the shape with `/blueprint new` or fix the
-  H2 set. Do not reshape. Do not deploy-path this file.
+- **No `founding` tag and no structural H2 is in the map** → existing
+  feature-spec `grill` / `spec` / `review` (may reshape / records-mint).
+- **Otherwise** (tag without the exact map; any map H2 without being
+  founding-shaped, including a duplicate mapped H2) → refuse: restore the
+  shape with `/blueprint new` or fix the H2 set. Do not reshape. Do not
+  deploy-path this file.
 
 ## brainstorm `[topic]` — divergent ideation into a draft design
 

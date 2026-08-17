@@ -130,8 +130,8 @@ with the workshop face.
 | Invocation | Does | Disk |
 |---|---|---|
 | `new <name>` | Mint `./<name>.md` — founding-shaped spec, empty of design content | that file only |
-| `grill` / `spec` `[doc]` | If `[doc]` is founding-shaped: fill the six map H2s **in place**. Else: existing feature-spec behavior | the named file (founding) or a `design/` spec (feature) |
-| `review <doc>` | If founding-shaped: six-H2 + leftover/gap rubric. Else: existing two-axis feature-spec review | context (+ needs-rework write-back) |
+| `grill` / `spec` `[doc]` | If founding-shaped: fill the six map H2s **in place**. If no `founding` tag and no map H2: existing feature-spec behavior. Else refuse | the named file (founding) or a `design/` spec (feature) |
+| `review <doc>` | If founding-shaped: six-H2 + leftover/gap rubric. If no `founding` tag and no map H2: existing two-axis feature-spec review. Else refuse | context (+ needs-rework write-back) |
 | `deploy <file>` | Project the spec into a repo + three founding docs | the new tree (not the working file) |
 
 Bare `/blueprint` stays `brainstorm` (in-repo ideation). Genesis is explicit
@@ -254,11 +254,12 @@ H2 or an extra unmapped H2 fails the shape.
   **inside** the mapped section as a whole line in this exact form (roman,
   not italic): `Settled: YYYY-MM-DD.` Never a new H2. Do not promote
   `status`.
-- **No `founding` tag and H2s are not the map** → existing feature-spec
-  `grill`/`spec` (may reshape / records-mint).
-- **Otherwise** (tag without the exact map, map without the tag, duplicate
-  mapped H2) → refuse: restore the shape with `/blueprint new` or fix the H2
-  set. Do not reshape. Do not deploy-path this file.
+- **No `founding` tag and no structural H2 is in the map** → existing
+  feature-spec `grill`/`spec` (may reshape / records-mint).
+- **Otherwise** (tag without the exact map; any map H2 without being
+  founding-shaped, including a duplicate mapped H2) → refuse: restore the
+  shape with `/blueprint new` or fix the H2 set. Do not reshape. Do not
+  deploy-path this file.
 
 They never scan cwd for a founding file. The user names `[doc]`.
 
@@ -631,3 +632,9 @@ as spec blocker; per-guard mutation matrix. Finding list pruned.
 **2026-08-17 — human review.** Scope of work names `bootstrap` (teardown).
 New `blueprint` package content stays green (no sibling name, no formerly).
 This section stays until a later review approves.
+
+**2026-08-17 — `/skill-builder review blueprint` leftover.** Tightened the
+named-doc branch: feature-spec path now requires *no* map H2 (not merely
+"H2s are not the exact map"), so a founding file that lost its tag and
+drifted some H2s refuses instead of reshaping. Folded into SKILL.md and
+this spec's branch table.
