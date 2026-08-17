@@ -73,8 +73,9 @@ at the accepted spec (the spec doubles as its plan — slices live **in**
 `templates/spec.md`, not a separate job artifact). For a **patch**, blueprint
 is not used at all.
 
-`new` lives in `verbs/new.md` — read it and follow it. `grill` / `spec` /
-`review` / `brainstorm` stay inline and gain a founding-shaped branch below.
+`new` lives in `verbs/new.md` and `deploy` in `verbs/deploy.md` — read the
+verb file and follow it. `grill` / `spec` / `review` / `brainstorm` stay
+inline and gain a founding-shaped branch below.
 
 ## Founding-shaped
 
@@ -244,9 +245,9 @@ for this review — refuse it.
    artifact → refuse ("wrong artifact for this review"). If founding-shaped
    (*Founding-shaped*): soundness uses the six map H2s + leftover/gap
    rules, not `templates/spec.md`. Groundedness is against the bundled
-   `templates/founding.md` and live behavior (and the `deploy` procedure
-   once that verb file exists) — not a library design doc. Do not promote
-   `status`. Feature-spec `review` is otherwise unchanged.
+   `templates/founding.md`, the deploy procedure (`verbs/deploy.md`), and
+   live behavior — not a library design doc. Do not promote `status`.
+   Feature-spec `review` is otherwise unchanged.
 2. **Axis 1 — soundness** (internally consistent, feasible): no section
    contradicts another; the approach is justified with alternatives honestly
    weighed; the mechanism is implementable as written; scope is one artifact's
@@ -335,8 +336,8 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 
 - A self-contained skill directory: `SKILL.md` + `templates/` (`spec.md`,
   `adr.md`, `founding.md` — the bundled body shapes) + `verbs/new.md` +
-  `scripts/ground-check.sh` (the re-grounding fact-checker) +
-  `docs/ideal-use.md` (a worked arc).
+  `verbs/deploy.md` + `scripts/ground-check.sh` (the re-grounding
+  fact-checker) + `docs/ideal-use.md` (a worked arc).
 - **Portable:** no workshop dependency (the one probe degrades to standalone),
   no host paths baked in, travels as one unit wherever the skills are
   installed.
