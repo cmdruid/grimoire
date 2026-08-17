@@ -1,6 +1,6 @@
 ---
 name: blueprint
-description: "Use when the user runs `/blueprint`, or asks to brainstorm, grill, or write a spec for a feature or design. Turns an idea into an argued specification. grill is the interview primitive until every decision branch resolves. review critiques a spec or design doc (soundness + groundedness). Does not write roadmaps or implementation plans and does not build. For a one-line patch, skip it (fix on the trunk)."
+description: "Use when the user runs `/blueprint`, or asks to brainstorm, grill, or write a spec for a feature or design; or when starting a new project / new repository from scratch (`new`, `deploy`, founding spec, no repo yet). Turns an idea into an argued specification. grill is the interview primitive until every decision branch resolves. review critiques a spec or design doc (soundness + groundedness). Does not write roadmaps or implementation plans and does not build. For a one-line patch, skip it (fix on the trunk)."
 ---
 
 # blueprint — the specification spine

@@ -114,7 +114,8 @@ Phase-6 split (format/contract/closure vs capture/ticket/debrief); "remember thi
 `backlog`; the checkpoint/workstream stream cases; auditor vs debugger; delegate vs mailbox;
 blueprint verbs vs bootstrap-from-scratch; scheduler; skill-builder new/check; agent-council's
 panel summons. **26/26 routed correctly** — no description changes needed, no follow-up probes.
-This entry is the **current baseline**; the entries above that speak v1 names
+This entry is the historical **full-roster** baseline; genesis routing is
+superseded by the 2026-08-17 genesis battery below. The entries above that speak v1 names
 (foreman/architect/handoff/feature-era batteries) are retained as dated history only and are
 superseded by this roster.
 
@@ -198,3 +199,16 @@ either leaf: none.
 | review this tracer-bullet plan | `contractor` | `contractor` |
 | ship this stream to main | `workstream` | `workstream` |
 | hand this slice to a cheaper model | `delegate` | `delegate` |
+
+**2026-08-17 (genesis on blueprint, grok stream)** — new genesis battery (descriptions
+only). Live genesis baseline: genesis prompts expect `blueprint`; workshop-setup
+prompts expect `clankshop`. Dated tables above are history; do not re-run the
+26-case roster expecting the old skill. One expected genesis winner (`blueprint`).
+
+| prompt | expects |
+|---|---|
+| idea → think it through → get a repo | `blueprint` |
+| start a new project from scratch; grill the design | `blueprint` |
+| deploy this spec (founding file in cwd) | `blueprint` |
+| deploy the workshop / set up the agent framework on this existing repo | `clankshop` |
+| stand up the development system on this project | `clankshop` |

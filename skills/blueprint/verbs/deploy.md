@@ -134,8 +134,8 @@ Map → fed file (template owns the H2 strings):
 |---|---|
 | Problem & users | `README.md` |
 | Scope & non-goals | `README.md` |
-| Architecture (components, boundaries, interfaces) | `docs/ARCHITECTURE.md` |
-| Rejected alternatives and why | `docs/ARCHITECTURE.md` |
+| Architecture (components, boundaries, interfaces) | dest `ARCHITECTURE.md` (under dest `docs/`) |
+| Rejected alternatives and why | dest `ARCHITECTURE.md` (under dest `docs/`) |
 | Working conventions & layout | `AGENTS.md` |
 | Declared verification command (intended, not proven) | `AGENTS.md` |
 
@@ -147,9 +147,9 @@ confirm.
 1. Create dest if needed. Track **every path this run creates** (dest
    itself if created; `docs/`; the three project files; `.git` if this run
    inits).
-2. Write three **project** files (`README.md`, `AGENTS.md`,
-   `docs/ARCHITECTURE.md`). `git init` also writes `.git` metadata — that
-   is not a fourth project file. For each mapped H2 in **template/map
+2. Write three **project** files: `README.md`, `AGENTS.md`, and
+   `ARCHITECTURE.md` under dest `docs/`. `git init` also writes `.git`
+   metadata — that is not a fourth project file. For each mapped H2 in **template/map
    order**: if settled, copy its extracted body span **verbatim** under a
    heading of that same H2 string; do not paraphrase. Two H2s that feed
    the same file concatenate in map order. Then, if that file has accepted
