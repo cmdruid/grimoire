@@ -65,11 +65,16 @@ is (or run the debrief if the intent is "capture everything that surfaced").
   existing items follow a legacy per-item shape the migration never normalized, don't silently
   mix a second schema into the file — capture in the incumbent shape when one clearly governs,
   and flag the drift as a `curate` item so normalization happens as one deliberate pass.
-- **Commit on the integration trunk, never a work branch.** A capture writes shared records, so
-  it lands on the root checkout's current branch, which must be the integration trunk (never
-  hardcode `main`). Guard: if `git -C <root> branch --show-current` is empty (detached HEAD) or
-  a work branch (`stream/*`, `feature/*`), STOP and say so. **Exception:** capture inside an
-  active workstream worktree writes + commits on the stream's branch; its ship lands it.
+- **Resolve the commit tree, then commit there.** `<root>` is `git rev-parse --show-toplevel`
+  of the checkout that holds the records you wrote — never a different clone, and never the
+  repo's root checkout from inside a stream worktree (that lands the commit on the trunk
+  through the shared index). `<branch>` is `git -C <root> branch --show-current`. Then, in
+  order: empty `<branch>` (detached HEAD) → STOP. `<root>/WORKSTREAM.md` exists and its
+  Coordinates `branch:` equals `<branch>` → this tree is a worktree stream; commit here. A
+  `<root>/.workstreams/*/WORKSTREAM.md` records `isolation: in-place` and Coordinates
+  `branch:` equals `<branch>` → this tree is an in-place stream holding the root; commit
+  here. `<branch>` matches `stream/*` or `feature/*` → STOP (a work branch this session
+  does not hold). Otherwise commit here (the current trunk — never hardcode `main`).
 - **Pathspec-atomic commit (the shared root index is contended).** Stage *and* commit scoped to
   exactly the paths you wrote, in one step, via `scripts/scoped-commit.sh <root> "<msg>"
   <paths…>`. Never `git add -A`, never `commit -a`, never leave staged work in the root index
@@ -89,3 +94,9 @@ workshop's handbook owns that composition where one is deployed.
 **Standalone by default, framework-aware when present.** Every verb works on any repo whose
 records layer is stood up — no workshop is a precondition. On a workshop host the deployed
 handbook's routing applies downstream; elsewhere it is simply absent.
+
+## Done when
+
+- **No recognized verb:** asked which kind the item is (or whether the intent is a debrief);
+  did not file.
+- **A verb ran:** that verb file's Done when.

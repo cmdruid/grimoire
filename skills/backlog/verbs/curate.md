@@ -11,12 +11,19 @@ authority's half, not this verb's.
    → stop and point at `/journal setup`).
 2. **Walk each tracker** (`records.sh list --type trackers`): dedupe overlapping lines (merge
    into the sharper one), reword vague items until they act cold, re-order by priority (top =
-   next), flip lines that completed without ceremony (`[x]` + date), and drop lines that no
-   longer apply (strike or delete — the tracker body is not a ledger). `records.sh touch`
-   every tracker edited.
+   next — a deliberate exception to the contract's append-newest-last rule; later captures
+   still append last), complete lines that finished without ceremony to the contract's
+   completed tracker-line form, and drop lines that no longer apply (strike or delete — the
+   tracker body is not a ledger). `records.sh touch` every tracker edited.
 3. **Graduate what outgrew its line**: an item that now needs the human becomes a `ticket`
    (`verbs/ticket.md` — link the line to the record); detail that outgrew one sentence gets a
    dated record, linked from the line.
 4. **One scoped commit** over everything touched
    (`scripts/scoped-commit.sh <root> "Backlog: curate" <paths…>`) when standalone; write-only
    inside a larger sweep.
+
+## Done when
+
+- Each tracker walked; edits touched; standalone scoped commit landed (or write-only inside
+  a larger sweep).
+- No records layer: stopped; pointed at standing the layer up.
