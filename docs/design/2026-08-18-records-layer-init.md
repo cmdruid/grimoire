@@ -619,18 +619,13 @@ Carries `notes.md` and already file-mode mints. It does
 **not** already conform: today's `note-mint.sh` still
 lazy-deploys into the **flat**
 `<agent-records>/templates/notes.md` when `records.sh`
-exists. Slice 3 **migrates** that path to
-`<agent-records>/templates/notepad/notes.md`:
-
-- If the flat file exists and
-  `templates/notepad/notes.md` does not, copy flat →
-  skill dir (incumbent project customization), then
-  use the new path. Do not delete the flat file this
-  unit (a later curate can).
-- New deploys write only the skill-dir path.
-- `note-mint-test.sh` today asserts the flat copy
-  (`lazy-deploy copied template`); invert that
-  assertion to the nested dest.
+exists. Slice 3 writes only
+`<agent-records>/templates/notepad/notes.md`. The
+general adopt rule (flat `<doctype>.md` → skill dir)
+covers a leftover flat file if one appears; if it
+does not exist, there is nothing to copy. Invert
+`note-mint-test.sh`'s "lazy-deploy copied template"
+assertion to the nested dest.
 
 Also take both homes, resolve through the
 agent-templates rule, update resolver prose, and
@@ -1215,9 +1210,9 @@ Sync 2026-08-18: rebased onto `main` @ `cd8ae03`
 (21 incoming, no conflict). Folded: `analyst` already
 deploys to `templates/analyst/` — treat as the
 landed pattern; add to inventory + Slice 1 headings
-+ Slice 3 resolver/`--template`. Explicit notepad
-**migrate** of flat `templates/notes.md` →
-`templates/notepad/notes.md`. Incoming
++ Slice 3 resolver/`--template`. Notepad writes
+`templates/notepad/notes.md` only; flat adopt
+no-ops if the file is absent. Incoming
 `records.sh` code-block link-check is orthogonal;
 `--template` still lands on that file in Slice 1.
 
