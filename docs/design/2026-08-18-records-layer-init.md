@@ -965,6 +965,9 @@ required unless a later flip changes a slice boundary.
     `skills/journal/scripts/tests/standup-test.sh`;
     `skills/journal/scripts/tests/records-test.sh`;
     `skills/clankshop/scripts/tests/setup-journal-test.sh`;
+    `skills/clankshop/SKILL.md` (face blurb: records
+    layer is `records.sh` + ledger, not templates +
+    scaffolding);
     `skills/clankshop/verbs/check.md`,
     `verbs/setup.md`, `verbs/migrate.md` (both-names
     resolver; journal standup = tool layer);
@@ -1127,3 +1130,8 @@ Independent `/blueprint review` pass 3, 2026-08-18
    outside `$RR`; check 1 is case-sensitive;
    clankshop face `SKILL.md` drops "templates +
    scaffolding."
+
+Independent `/blueprint review` pass 4, 2026-08-18
+(`needs-rework` — one path-list miss). Folded the
+same day: `skills/clankshop/SKILL.md` is on Slice 1
+Paths. All fourteen prior findings were closed.
