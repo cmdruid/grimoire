@@ -115,8 +115,10 @@ generalization requires:
   subdirectory, and the home itself **only when the home is the derived default**
   (`<agent-records>/doctrine`). A skill must **never** create an *explicitly declared* home
   that is absent — that declaration names someone else's territory (a `handbook` host declares
-  `.handbook`), and creating it would collide with §7's prohibition on creating `.handbook`.
-  An absent declared home degrades per §2.
+  `.handbook`), and materializing it is how a skill fabricates another tool's layout. The
+  standing prohibition is doctrine prose (`DOCTRINE.md` rule 8), **not** a lint check: §7
+  records why "prose that directs creating `.handbook/`" is undecidable by text matching. An
+  absent declared home degrades per §2.
 - **Incumbent wins.** Doctrine is not mint-and-accumulate like records; it is
   **copy-bundled-then-customized**. `auditor setup` (`:84-109`) copies generic bundled `rules/`
   into the host and then runs a human decision-walk to author `GUIDE.md`/`metrics.sh`. So
