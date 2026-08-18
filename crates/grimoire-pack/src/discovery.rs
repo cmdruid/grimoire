@@ -3,6 +3,12 @@
 //! one level deep; full-depth (used for pack enumeration and member
 //! resolution, §1/§2) recurses. First-seen wins on duplicate names; identity
 //! is `name:` in `SKILL.md` frontmatter, directory name as fallback.
+//!
+//! Appendix B leaves the recursive scan's bound to implementations. [`Ignore`]
+//! is ours: a built-in floor of never-scanned directory names plus whatever
+//! repo-relative paths the consumer excludes — the way a tool keeps vendored
+//! clones and test fixtures (real, well-formed skill trees) out of a
+//! repository's own inventory.
 
 use crate::{PackError, Result};
 use std::fs;
