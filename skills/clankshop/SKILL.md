@@ -1,6 +1,6 @@
 ---
 name: clankshop
-description: "Set up and operate an agentic workshop around a code project: a deployed structure of doctrine (.handbook/), records (.records/), and routing (the AGENTS.md door) organized as four stations — design (the architect), build (the foreman), test (the guardian), review (the admin). Verbs: setup (greenfield bootstrap: seed the handbook, stand up records via journal, write the door), migrate (brownfield onramp: inventory, one confirmed mapping table, adopt), check (assembly validation), and persona summons (architect/foreman/guardian/admin — load a station's context and discuss through its lens). Use when asked to set up or migrate the workshop/handbook on a project, validate its assembly, or talk to a station persona."
+description: "Set up or migrate an agentic workshop around a code project: doctrine (.handbook/), records (.records/), and the AGENTS.md door. Verbs: setup (greenfield bootstrap: seed the handbook, stand up records via journal, write the door), migrate (brownfield onramp: inventory, one confirmed mapping table, adopt), check (assembly validation), and persona summons (architect/foreman/guardian/admin). Use when asked to set up or migrate the workshop/handbook on a project, validate its assembly, or talk to a station persona."
 ---
 
 # clankshop — the workshop system
