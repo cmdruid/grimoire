@@ -6,383 +6,339 @@ updated: 2026-08-18
 tags: [spec]
 ---
 
-# `agent-doctrine` — a front-door home for project doctrine — Spec
+# Front-door path homes — one standard for `agent-records`, `agent-templates`, `agent-doctrine` — Spec
 
-`stream/feat` feature 2. Grounded against `1707ede`. Brainstormed and grilled 2026-08-18;
-decision tree resolved (log at the foot). Awaiting human review — `status: open` until then.
+`stream/feat` feature 2. Grounded against `1707ede`. Brainstormed, grilled, three-lens
+reviewed, and **rescoped 2026-08-18 (human)** — see *Scope history*. Awaiting human review;
+`status: open` until then.
 
-Companion: `2026-08-18-handbook-skill-extraction.md` (feature 3), which this unblocks.
+## Scope history (read this before the review log)
+
+The first draft of this spec was narrower and subtly mis-scoped: it treated `agent-doctrine`
+as a single new variable and entangled the `handbook` skill's transition into the framework
+rule. That produced a "transition-window regression" finding in review which **no longer
+applies** — it was an artifact of the mis-scoping, not a defect in the design. The corrected
+scope (human, 2026-08-18):
+
+- Three sibling front-door homes — `<agent-records>`, `<agent-templates>`, `<agent-doctrine>`
+  — under **one** standardized resolution regime that `skill-builder` defines and audits.
+- **Any skill that touches a home resolves it on its own**, reading or writing, with no
+  dependency on any other skill being installed.
+- **`handbook` has nothing to do with this.** It is an ordinary future consumer: it creates
+  `.handbook`, migrates existing doctrine into it, and declares `agent-doctrine: .handbook`.
+  Centralizing and formatting project doctrine is its job; owning the path concept is not.
+  Nothing in this spec waits on it, writes for it, or special-cases `.handbook`.
 
 ## Problem
 
-Skills that read or write **project doctrine** have no shared home resolution. Records got
-one in `1707ede` — the agent-records home (declared `agent-records:`, else legacy
-`records-root:`, else `.records/`), with the rule that a record-writing skill resolves that
-home, carries its own template, and never refuses for lack of a `journal` floor. Doctrine
-never got the equivalent.
+**One of the three homes does not exist, so doctrine gets hardcoded.** Records and templates
+have front-door homes (`DOCTRINE.md:203-262`); doctrine has none, so every skill that touches
+project doctrine invents a path:
 
-The gap splits into two populations, and the second is where the cost falls.
-
-**One doctrine writer, improvising a home.** `auditor`'s rubric — `GUIDE.md` +
-per-dimension `rules/` + `metrics.sh` — is doctrine by any reading, and its standalone
-default is a hardcoded `docs/audit/`, confirmed once at setup (`auditor/SKILL.md:31`). Its
-own walk says "doctrine has one home" for the workshop path (`:93`), then falls back to an
-ad-hoc directory when bare.
-
-**Three doctrine readers for whom doctrine is workshop-gated capability.**
-
-- `debugger` consults `.handbook/test/workflows/diagnostics.md` on a workshop host. Bare, it
-  emits `unstamped`, points at the clankshop onramps, and investigates through Phase 3 only
-  (`debugger/SKILL.md:29-31`). **A bare project cannot have a diagnostics playbook at all.**
-- `workstream`'s build lane reads `.handbook/build/workflows/feature.md`, else falls back to
-  "the plan template's own structure" (`flow.md:56`).
+- `auditor` writes its rubric (`GUIDE.md` + `rules/` + `metrics.sh`) to a hardcoded
+  `docs/audit/`, confirmed once at setup (`auditor/SKILL.md:31`) — while its own walk says
+  "doctrine has one home" (`:93`).
+- `debugger` reads `.handbook/test/workflows/diagnostics.md`; bare, it emits `unstamped` and
+  investigates through Phase 3 only (`:29-31`).
+- `workstream` reads `.handbook/build/workflows/feature.md`, else "the plan template's own
+  structure" (`flow.md:56`).
 - `blueprint` / `contractor` summon station context, else "the project's own design docs
-  stand in" — a home that is not addressable.
+  stand in" — not an addressable home.
 
-**And the probe answers the wrong question.** Six sites across five consumer skills grep
-`.handbook/README.md` for `Seeded from clankshop` to decide whether doctrine exists.
-`1707ede`'s DOCTRINE rule 8 already stripped that probe of its records job, so it now gates
-*only* station and playbook context — asking "is a workshop deployed?" when the real question
-is "where does doctrine live, and is the piece I need in it?" Rule 8 also forbids the
-tempting shortcut (*"Do not create `.handbook/` as a records side effect"*) while offering no
-alternative destination.
+**And the two homes that do exist have no conformance standard.** Their rules are split
+between the front-door-variables section and the record-writing-skills section, with no way
+to ask "does this skill resolve its homes correctly?" other than reading it. `1707ede`
+flipped the record writers by hand; nothing prevents the next skill from hardcoding.
+
+**A boolean is standing in for a path.** Six sites across five skills grep
+`.handbook/README.md` for `Seeded from clankshop` to decide whether doctrine exists — asking
+"is a workshop deployed?" when the question is "where does doctrine live, and is the piece I
+need in it?"
 
 ## Goal
 
-One resolution rule for project doctrine, owned by the framework (`skill-builder`'s portable
-doctrine), resolving on any repo whether or not a workshop, `handbook`, or `clankshop` is
-installed. **Done looks like:** a bare project can hold a diagnostics playbook, an audit
-rubric, and a build lane at an addressable path, and a lint proves every doctrine-touching
-skill resolves that path rather than hardcoding one.
+One citable standard for all three front-door homes, owned by `skill-builder`: every skill
+that reads or writes a home resolves it the same way, on any repo, with no other skill
+installed — and `skill-builder` can **audit** conformance and report violations with the
+file:line and the canonical form to use.
 
 ## Approach
 
-A **front-door variable `agent-doctrine:`**, defaulting to **`<agent-records>/doctrine`**,
-defined and linted by `skill-builder`. Consumers resolve the home and then test for the
-specific artifact they need. `handbook` (feature 3) *declares* the home rather than owning
-the rule.
+Extend the existing front-door-variable mechanism with a third home and unify the conformance
+rules into one auditable standard. This is deliberately **not** a new mechanism:
+`DOCTRINE.md:203` already defines the pattern, the declaration form, the three readers
+(agents / mint scripts / state-analysis helpers), and a canonical bash resolver. Feature 2
+adds the missing home, generalizes the rules from records-only to all three, and makes them
+checkable.
 
-This is a second instance of an existing, documented mechanism, not a new one:
-`DOCTRINE.md:203` *Front-door variables — one declaration, two readers* already names the
-agent-records home as "the canonical example" and fixes the form.
+**`<agent-doctrine>` defaults to `<agent-records>/doctrine`.** This mirrors the accepted
+precedent exactly: `agent-templates` already defaults to `<resolved-agent-records>/templates`
+(`DOCTRINE.md:217-219`), so one `agent-records:` line moves all three homes and a brownfield
+host declares once, not three times.
 
-**Why derive from the records home** rather than a flat `.doctrine/`: a brownfield host
-declaring `agent-records: dev` gets `dev/doctrine` with no second declaration, and it
-structurally guarantees what rule 8 asks for in prose — a bare doctrine writer can never
-create `.handbook/`, because its default home is elsewhere by construction.
+**The doctrine's own bar must be cleared.** `DOCTRINE.md:258-262` sets a high bar for adding
+a front-door variable — the value must truly vary per host, the default must be right for
+every fresh project, and the readers must consume it. `agent-doctrine` clears all three: it
+varies (a `handbook` host puts doctrine at `.handbook`, a brownfield host under its own docs
+tree), the default is right for every fresh project (nobody *must* set it), and five skills
+consume it on day one. The spec states this argument explicitly rather than assuming it.
 
-**Alternatives rejected.**
-
-- *Flat `.doctrine/` default* — every brownfield host declares twice, and the
-  never-create-`.handbook/`-bare guarantee reverts to prose.
-- *Status quo (workshop probe)* — keeps a boolean where a path is needed, leaves auditor's
-  home improvised and three readers workshop-gated, and forces feature 3 to convert consumers
-  that would need converting again.
-- *Give `handbook` the variable* — makes a pack member load-bearing for a framework rule, and
-  every consumer would need to know handbook exists.
-- *Narrower scope (home + writers only, or doctrine only)* — the readers are where the value
-  is, and a variable shipped with zero live consumers is its own risk.
+**Alternatives rejected.** A flat `.doctrine/` default — breaks the one-line-moves-all-homes
+property and makes brownfield hosts declare twice. Per-skill confirmation (auditor's current
+model) — does not compose, and gives each skill a different answer. No variable — leaves
+doctrine hardcoded, which is the problem.
 
 ## Mechanism
 
-### 1. Resolution
+### 1. The third home
 
     <agent-doctrine> :=
       1. the first line-start `agent-doctrine:` value in <root>/AGENTS.md,
-         else in <root>/CLAUDE.md                          → that repo-relative path
+         else in <root>/CLAUDE.md                       → that repo-relative path
       2. else <agent-records>/doctrine
 
-where `<agent-records>` resolves by the existing rule (line-start `agent-records:` in
-`AGENTS.md` then `CLAUDE.md`, else legacy `records-root:`, else `.records/`).
+with a canonical resolver mirroring `resolve_agent_records` (`DOCTRINE.md:244-253`) —
+bash-3.2 safe, same precedence, printing a repo-relative path. **Invariant:** resolution
+never fails and never refuses; every repo has all three homes, declared or derived.
 
-**Invariant:** resolution never fails and never refuses. Every repo has a doctrine home,
-declared or derived.
+### 2. Two-level access
 
-### 2. Two-level access (the rule that is easy to get wrong)
+Resolving a home is not finding an artifact.
 
-Resolving the home is not finding the artifact.
+1. Resolve the home.
+2. Test for the specific artifact.
+3. Present → use it. Absent → **degrade exactly as the skill degrades today**.
 
-1. Resolve `<agent-doctrine>`.
-2. Test for the specific artifact (`<agent-doctrine>/<path>`).
-3. Present → use it. Absent → degrade **exactly as the skill degrades today with no
-   workshop**.
+Never treat home-exists as artifact-exists. `debugger`'s existing *"consult `diagnostics.md`
+when that file exists"* is the model; `contractor` summoning a station against a doctrine home
+with no chapters must degrade, not break.
 
-**Never treat home-exists as artifact-exists.** `contractor` summoning "the build station"
-against a doctrine home containing no station chapters must degrade, not break. `debugger`'s
-existing *"consult `diagnostics.md` when that file exists"* is the model.
+### 3. Own-directory standup, no floor
 
-### 3. Bare creation
+Generalizes record-writing rules 3 and 4 (`DOCTRINE.md:280-286`) to all three homes: on first
+write, `mkdir` your own subdirectory (and the home itself if needed). Do not create another
+skill's assets. A missing tool is never an error; no skill's standup is ever a precondition;
+no description may claim a layer is required; no verb may refuse and send the operator
+elsewhere.
 
-A skill declaring `produces: doctrine` **creates its own subdirectory under the resolved
-home with no floor and no confirmation**, symmetric with grok's settled rule for record
-writers. It must never create `.handbook/`.
+Consequence to state plainly: a first `/auditor setup` on a bare repo materializes
+`.records/doctrine/audit/` — a dot-directory the user did not explicitly opt into, where today
+they would get a visible `docs/audit/`. Accepted, symmetric with record writers.
 
-Consequence to state in the docs: a first `/auditor setup` on a plain repo materializes
-`.records/doctrine/audit/` — a dot-directory the user did not explicitly opt into, where
-today they would get a visible `docs/audit/`. Weighed against a confirmation round-trip the
-records side does not have, and a refuse-and-stop `1707ede` was built to eliminate.
+### 4. Which home — the classification test
 
-### 4. Classification test (prose — a lint cannot judge it)
+A lint cannot judge this; the prose must.
 
-> **Doctrine is living, normative, undated, and never closes. Records are dated, typed, and
-> closeable.**
+> **Records** are dated, typed, closeable instances → `<agent-records>`.
+> **Templates** are the schemas instances mint from → `<agent-templates>`.
+> **Doctrine** is living, normative, undated, and never closes → `<agent-doctrine>`.
 
 Doctrine: an audit rubric, a diagnostics playbook, a build lane, a station chapter. Not
-doctrine: a spec (a dated `design/` record), a notepad fact, an audit *report* (the
-agent-records home).
+doctrine: a spec (a dated `design/` record), a notepad fact, an audit *report*.
 
-### 5. Declaration — typed edges
+### 5. The canonical resolution phrase (pinned literal)
 
-A skill declares its relationship through the existing mechanism: `produces: doctrine` /
-`consumes: doctrine` in its `## Edges` block. One coarse `doctrine` type, matching every
-existing type (`spec`, `report`, `plan`, `note` are all coarse); which artifact is meant goes
-in the edge's prose description.
+Checks 12 and 13 match exact fixed literals; a check matching "a resolution phrase" as a
+semantic category is not implementable. So the standard **defines one canonical sentence per
+home**, and conforming skills use it verbatim. S4 authors it; S3's check greps that literal.
 
-**Known cost, accepted:** an edge-matching composer would derive a loose `auditor → debugger`
-seam that is not real. Acceptable while composer matching is aspirational; revisable by
-splitting the type later.
+Note this does **not** conflict with `DOCTRINE.md:223-224` ("skill prose keeps naming each
+default path literally"). A conforming skill does both: it names the default path literally
+*and* carries the resolution sentence.
 
-### 6. Lint (`skills-lint.sh`, next free check numbers after 13)
+### 6. Declaration — typed edges
 
-Following the established block idiom (`# ---- N. <label> (FAIL) ----`, iterate
-`$skills_dir/*/`, exempt `skill-builder` and pack faces, emit `fail "$name: $rel:$line:
-<label>"`). Checks apply **only to skills declaring a `doctrine` edge**:
+`produces: doctrine` / `consumes: doctrine` in the `## Edges` block, reusing the existing
+mechanism. One coarse `doctrine` type, matching every existing type (`spec`, `report`, `plan`,
+`note`). **Known cost, accepted:** an edge-matching composer would derive a loose `auditor →
+debugger` seam that is not real; revisable by splitting the type later.
+
+### 7. Lint (`skills-lint.sh`, next free numbers after 13)
 
 | # | Label | FAILs when |
 |---|---|---|
-| 14 | `hardcoded doctrine home` | a doctrine-edged skill contains a literal `docs/audit`-style or `.handbook/`-rooted path in prose |
-| 15 | `doctrine home not resolved` | a doctrine-edged skill has no `agent-doctrine` resolution phrase |
-| 16 | `bare handbook creation` | a doctrine-edged skill's prose directs creating `.handbook/` (rule 8's prohibition, now lintable) |
+| 14 | `home not resolved` | a skill declaring a home-touching edge lacks the canonical resolution literal for that home |
+| 15 | `bare handbook creation` | a skill's prose directs creating `.handbook/` (rule 8's prohibition, now checkable) |
 
-**Checks 14–16 MUST skip fenced and four-space-indented blocks.** `skills-lint.sh` has **no
-fence handling today** — every existing check greps raw text — so this is new machinery, and
-it is not optional: `auditor`'s own SKILL.md will *document* the legacy `docs/audit/`
-fallback, so a raw-text check 14 would FAIL the very skill it exists to certify. Port the
-idiom already proven in `journal/scripts/records.sh:356-362` (an awk fence toggle that skips
-fenced and indented alike) into a shared helper.
+**A "hardcoded path" check was specified and then dropped** — recorded so it is not
+reproposed. It is not implementable by text matching *and* it would contradict the doctrine:
+`DOCTRINE.md:223-224` instructs skills to name default paths literally, so a check failing on
+literal paths would fail conforming skills. A hardcoded path and a correctly-documented
+default are the same bytes. Check 14's FAIL-on-absence formulation asserts the right behavior
+positively and has no such ambiguity.
 
-That omission is not hypothetical: it is **BL-20**, the trunk-red defect this stream shipped
-a fix for — `records.sh check` following example links inside code blocks. Reintroducing it
-one file over would be the same bug with a new name.
+Because both checks are FAIL-on-absence or fixed-literal-presence, **no fenced-block handling
+is required** — the earlier fence-skip requirement died with the dropped check. (`skills-lint.sh`
+has no fence handling today; adding it is now a separate concern, captured, not smuggled in.)
 
-*Follow-up, explicitly out of scope:* the shared helper makes fence-skipping available to
-checks 1–13, which all still grep raw text. Retrofitting them is its own change — capture it,
-do not smuggle it in here.
+### 8. Consumers
 
-### 7. Consumer changes
+**Population attribution.** 11 live `Seeded from clankshop` sites in `skills/`, three classes:
 
-**Population attribution for the acceptance target below.** There are **11** live
-`Seeded from clankshop` sites in `skills/`. They are not one class:
+| Class | Count | Disposition |
+|---|---|---|
+| Probes | 6 (`auditor:21`, `blueprint:30`, `contractor:23`, `workstream/SKILL.md:93`, `workstream/verbs/create.md:119`, `debugger:25`) | **5 flip**; debugger's is retained |
+| clankshop-internal | 4 (`setup.md:37`, `check.md:14`, `seed/README.md:68`, `seed-test.sh:38`) | unchanged |
+| Doctrine statement | 1 (`DOCTRINE.md:304`) | reworded |
 
-| Class | Count | Sites | Disposition |
-|---|---|---|---|
-| Consumer probes | 6 | `auditor:21`, `blueprint:30`, `contractor:23`, `workstream/SKILL.md:93`, `workstream/verbs/create.md:119`, `debugger:25` | **5 flip**; debugger's is **retained** (below) |
-| clankshop-internal | 4 | `setup.md:37` (writes), `check.md:14` (asserts), `seed/README.md:68` (template), `seed-test.sh:38` (test) | unchanged |
-| Doctrine statement | 1 | `DOCTRINE.md:304` (rule 8) | **reworded** |
+The target is **5 of 6 probe sites flipped** — the other six are a different class this
+feature does not touch.
 
-So the target is **5 of 6 probe sites flipped**, not "11 → 0" — the other six are a
-different class and this feature deliberately does not touch them.
+- **`auditor`** (writer) — resolves `<agent-doctrine>/audit/`; **legacy `docs/audit/`
+  detection retained**, as `records-root:` remains accepted. Nothing in the field moves.
+  Declares `produces: doctrine`. *(Verify at build: its home becomes resolved rather than
+  "confirmed once at setup" — check the setup walk still reads coherently.)*
+- **`blueprint`, `contractor`, `workstream` (×2)** (readers) — probe replaced by two-level
+  resolution; their "point at the clankshop onramps" branches restructure. **What they
+  restructure *to* is an open build-time item**, not left silent: the intended shape is
+  "resolve the home; use the artifact if present; else the existing bare fallback", with no
+  onramp pointer, since a missing workshop no longer implies missing doctrine.
+- **`debugger`** — playbook read resolves `<agent-doctrine>`; declares `consumes: doctrine`.
+  **Retains the stamp probe for one job only:** gating Phase 4. Phase 4 is already
+  human-gated (`:62-63` — "Phase 4 starts only after the human confirms the root cause and
+  that a fix should land"; `:109` — "Entered only after the human confirmed the root cause and
+  that a fix should land"); the workshop gate is a second, independent gate expressing policy.
+  Two probes, two questions — *is a workshop assembled* is policy, *where is doctrine* is
+  location.
 
-- **`auditor`** — home becomes `<agent-doctrine>/audit/` for new setups; **legacy
-  `docs/audit/` detection retained**, exactly as `records-root:` remains accepted alongside
-  `agent-records:`. Nothing in the field moves. Declares `produces: doctrine`. *(Verify at
-  build: its home becomes resolved rather than "confirmed once at setup" — check the setup
-  walk still reads coherently.)*
-- **`blueprint`, `contractor`, `workstream` (×2)** — probe replaced by two-level resolution;
-  their "point at the clankshop onramps" branches restructure, since a missing workshop no
-  longer implies missing doctrine. Each declares `consumes: doctrine`.
-- **`debugger`** — the diagnostics playbook read flips to home resolution; declares
-  `consumes: doctrine`. **The stamp probe is retained for one job only:** gating Phase 4.
-  Phase 4 is already human-gated (`:62`, `:103` — "starts only after the human confirms the
-  root cause and that a fix is wanted"); the workshop gate is a second, independent gate
-  expressing a policy (do not apply fixes on a project that has not opted into a workshop).
-  Two probes, two distinct questions — *is a workshop assembled* is policy, *where is
-  doctrine* is location, and they were only ever conflated by accident.
+**Transitional note (not a blocker).** Until a host runs `handbook` (feature 3) and gains an
+`agent-doctrine: .handbook` declaration, a seeded workshop's readers resolve
+`<agent-records>/doctrine` and degrade per §2, while its doctrine sits at `.handbook`. This is
+correct behavior under the standard, not a regression to fix here: `handbook`'s migrate is the
+mechanism that moves such a host, and inventing a `.handbook` fallback arm in the framework
+would put back exactly the coupling this scope removed.
 
-### 8. Folds
+### 9. `records.sh` must reserve `doctrine` — code, not prose
 
-- **`DOCTRINE.md:304` (rule 8)** currently reads that the stamp "still picks handbook,
-  station context, and playbooks." After this feature it picks none of those — only workshop
-  policy (debugger's Phase 4) and clankshop-internal provenance. Reword with the mechanism
-  ("fix the doctrine, not just the tool", `DOCTRINE.md:61`).
-- **`journal/SKILL.md:28`** — `doctrine` joins the reserved never-scanned entries.
-  `records.sh check` ignores it and asserts nothing about it (asserting would be journal
-  reaching across a seam).
-- **The distinction must be stated where the default path contradicts it:** the records
-  **home** is a directory that may host sibling layers; the records **layer** is the eight
-  typed stores. Without that sentence, `<agent-records>/doctrine` argues against the rule
-  that `.records` is work output and `.handbook` is doctrine.
-- **`agent-templates`** — unchanged. Doctrine-owned templates resolve under the existing
-  templates home, skill-namespaced. One templates home, no proliferation.
+`records.sh:73` excludes only `templates|scripts` from `stores()`, and `:64`'s `resolve()`
+reserved case is only `templates/*|scripts/*|history.tsv`. So `<agent-records>/doctrine` is
+enumerated as a typed record store, `check` demands record front-matter on every doctrine
+file, and a doctrine path is silently accepted *as a record*. **Reproduced in review.**
+
+This is a **code** change to `skills/journal/scripts/records.sh` (both case arms), not a
+documentation fold — and it must land **before** anything creates the directory.
+
+### 10. Folds
+
+- **`DOCTRINE.md:304` (rule 8)** — currently says the stamp "still picks handbook, station
+  context, and playbooks." After this feature it picks only workshop policy (debugger's Phase
+  4) and clankshop-internal provenance. Reword with the mechanism (`DOCTRINE.md:61`).
+- **`journal/SKILL.md:28`** — `doctrine` joins the reserved never-scanned entries, matching
+  the script change in §9.
+- **The home-vs-layer sentence** — the records **home** is a directory that may host sibling
+  homes; the records **layer** is the eight typed stores. Without it, `<agent-records>/doctrine`
+  argues against the rule that `.records` is work output.
 
 ## Verification
 
-**Gate:** `bash skills/skill-builder/scripts/skills-lint.sh` → `fails=0` (baseline
-`fails=0 warns=22`; warns must not increase), plus `bash
-skills/skill-builder/scripts/tests/run.sh`, `.../journal/scripts/tests/run.sh`,
-`.../clankshop/scripts/tests/run.sh`, `.../analyst/scripts/tests/run.sh`.
+**Gate:** `bash skills/skill-builder/scripts/skills-lint.sh` → `fails=0` (baseline `fails=0
+warns=22`; warns must not increase), plus the `skill-builder`, `journal`, `clankshop`, and
+`analyst` suites.
 
-**The lint fixture — `skills/skill-builder/scripts/tests/lint-doctrine-consumer-test.sh`**,
-mirroring `lint-records-writer-test.sh`: a throwaway library in `mktemp -d`, one fixture
-skill, nothing touching the library's own tree. **Every check gets both proofs** — this is
-the part that makes the suite trustworthy:
+**`lint-doctrine-consumer-test.sh`**, mirroring `lint-records-writer-test.sh` (throwaway
+library in `mktemp -d`; nothing touches the library's own tree). Per check:
 
-- **Red-proof** — plant the breakage (a hardcoded `docs/audit/` path; a doctrine edge with no
-  resolution phrase; prose directing `.handbook/` creation) and assert the specific
-  `FAIL: <name>: <rel>:<line>: <label>` string appears.
-- **Green-proof** — plant the *correct* text and assert the label does **not** appear. This
-  is what catches an over-matching pattern, and `lint-records-writer-test.sh` runs it for
-  every check it owns.
-- **Negative-scope proof** — a fixture skill with **no** doctrine edge and a hardcoded path
-  must **not** fire checks 14–16 (they are edge-scoped).
-- **Fence-proof** — a doctrine-edged fixture whose hardcoded path appears **only inside a
-  fenced block** (and a second inside a four-space-indented block) must **not** fire check
-  14. Without this proof the fence-skipping is unverified, and BL-20 is the record of what
-  that costs.
+- **Red-proof** — plant the breakage (a home-touching edge with no canonical literal; prose
+  directing `.handbook/` creation) and assert the exact `FAIL: <name>: <rel>:<line>: <label>`.
+- **Green-proof** — plant the correct text; assert the label does **not** appear. Catches an
+  over-matching pattern.
+- **Negative-scope proof** — a fixture with **no** home-touching edge must not fire the checks.
 
-**Resolution proof** — a fixture repo exercising all three arms: declared `agent-doctrine:`
-wins; absent declaration derives from a declared `agent-records:`; both absent derives
-`.records/doctrine`. Plus the two-level case: home present, artifact absent → the consumer
-degrades rather than erroring.
+**`records.sh` reserved-directory proof** — plant a doctrine file with no front-matter under
+`<agent-records>/doctrine` in a fixture records root and assert `records.sh check` passes.
+Red-proof: with the §9 fix reverted, the same fixture must FAIL. *This is the proof the
+earlier draft was missing, and its absence is exactly why the defect survived to review.*
 
-**Doctrine: no check is trusted until it FAILs on deliberately-broken input.** A verification
-grep is not evidence.
+**Resolution proof** — three arms: declared `agent-doctrine:` wins; absent, derives from a
+declared `agent-records:`; both absent, derives `.records/doctrine`. Plus two-level: home
+present, artifact absent → consumer degrades rather than erroring.
+
+**Doctrine: no check is trusted until it FAILs on deliberately-broken input.**
 
 ## Slices
 
 | id | does | verify | paths |
 |---|---|---|---|
-| S1 | The `agent-doctrine` section in DOCTRINE.md — variable, resolution, two-level access, bare creation, classification test, typed-edge declaration. No behavior change. | `skills-lint.sh` → `fails=0` | `skills/skill-builder/docs/DOCTRINE.md` |
-| S2 | Fence-skip helper (ported from `records.sh:356-362`) + lint checks 14–16 + `lint-doctrine-consumer-test.sh` (red, green, negative-scope, fence proofs); wire into `run.sh`. | fixture FAILs on planted breakage **and** stays green on fenced examples; `tests/run.sh` green | `skills/skill-builder/scripts/skills-lint.sh`, `scripts/tests/lint-doctrine-consumer-test.sh`, `scripts/tests/run.sh` |
-| S3 | Writer flip: `auditor` home resolution + legacy fallback + `produces: doctrine`. | `skills-lint.sh`; auditor's own suite if present | `skills/auditor/SKILL.md`, `skills/auditor/BOOTSTRAP.md` |
-| S4 | Reader flips: `debugger` (playbook resolves; stamp retained for Phase 4), `workstream` ×2, `blueprint`, `contractor` — each declaring `consumes: doctrine`. | `skills-lint.sh`; resolution proof | the five skills' `SKILL.md` + `workstream/verbs/create.md` |
-| S5 | Folds: rule 8 rewording, `journal` reserved entry, the home-vs-layer sentence. Full gate. | all four suites + `skills-lint.sh` | `skills/skill-builder/docs/DOCTRINE.md`, `skills/journal/SKILL.md` |
+| S1 | `records.sh` reserves `doctrine` (both case arms) + the reserved-directory proof with its red-proof. **First, so nothing creates a directory that breaks the gate.** | `journal` suite; fixture FAILs with the fix reverted | `skills/journal/scripts/records.sh`, `skills/journal/scripts/tests/` |
+| S2 | The unified front-door-homes standard in DOCTRINE.md: third variable + resolver, two-level access, own-directory standup/no-floor generalized to all three homes, the classification test, the canonical resolution literals, the high-bar argument. | `skills-lint.sh` → `fails=0` | `skills/skill-builder/docs/DOCTRINE.md` |
+| S3 | Lint checks 14–15 + `lint-doctrine-consumer-test.sh` (red, green, negative-scope proofs); wire into `run.sh`. | fixture FAILs on planted breakage; `tests/run.sh` green | `skills/skill-builder/scripts/skills-lint.sh`, `scripts/tests/` |
+| S4 | Flip the five: `auditor` (writer, legacy fallback), `debugger` (playbook; stamp retained for Phase 4), `workstream` ×2, `blueprint`, `contractor` — each declaring its edge and carrying the canonical literal. | `skills-lint.sh`; resolution proof | the five skills' `SKILL.md` + `workstream/verbs/create.md` |
+| S5 | Folds: rule 8 rewording, `journal/SKILL.md` reserved entry, the home-vs-layer sentence. Full gate. | all four suites + `skills-lint.sh` | `skills/skill-builder/docs/DOCTRINE.md`, `skills/journal/SKILL.md` |
 
-Sequencing note: S1 before S2 (the lint keys on doctrine the section defines); S2 before
-S3/S4 (checks exist before the skills they check); S5 last (rule 8 only becomes wrong once
-the readers have flipped).
+Sequencing: S1 first (the substrate must tolerate the default before anything writes it); S2
+before S3 (the check greps literals the standard defines); S3 before S4 (checks exist before
+the skills they check); S5 last (rule 8 becomes wrong only once the readers have flipped).
 
 ## Decision log (settled 2026-08-18, human)
 
 | Decision | Resolution |
 |---|---|
-| Variable + default | `agent-doctrine:`, default `<agent-records>/doctrine` (derived) |
-| Owner | `skill-builder` (framework), not `handbook` or `clankshop` |
-| `handbook`'s relationship | *declares* the home; does not own the rule |
-| `handbook`'s pack tier | **`required:`** — `/clankshop setup` hard-stops without it, exactly as it does without `journal`. Distinct from the framework claim: the rule still resolves with no handbook installed |
-| Resolution | Two-level: home, then the artifact; degrade, never break |
-| Scope | Home + writers + **readers** |
+| Scope | All three homes, one standard — not `agent-doctrine` alone |
+| Applies to | Any skill that **touches** a home — readers and writers alike |
+| Variable + default | `agent-doctrine:`, default `<agent-records>/doctrine` |
+| Owner | `skill-builder` (framework) |
+| `handbook`'s role | **None here.** A future consumer that creates `.handbook`, migrates doctrine into it, and declares the variable |
+| `skill-builder` capability | **Audit and report** — flags non-conformance with file:line and the canonical form. It does not rewrite other skills |
+| Resolution | Two-level: home, then artifact; degrade, never break |
 | Declaration | Typed edges, one coarse `doctrine` type |
-| `auditor` migration | Legacy `docs/audit/` fallback retained; no field migration |
+| Hardcoded-path check | **Dropped** — not implementable by text matching, and contradicts `DOCTRINE.md:223-224` |
+| `auditor` migration | Legacy `docs/audit/` retained; no field migration |
 | `debugger` Phase 4 | Keeps the stamp probe for that gate alone |
-| Bare creation | Permitted, no floor, no confirmation, symmetric with record writers |
-| `journal` | `doctrine` joins the reserved list; `records.sh check` asserts nothing |
-| `agent-templates` | Unchanged |
+| Bare creation | Permitted, no floor, no confirmation |
+| `records.sh` | **Code fix** reserving `doctrine`, landing first |
 | Declaration site | `AGENTS.md`, then `CLAUDE.md` |
 
 ## Risks
 
+- **Renaming `agent-records` orphans the sibling homes.** Resolution recomputes; files stay
+  put. A host renaming `agent-records: dev` → `work` strands `dev/doctrine/…` and
+  `dev/templates/…` while skills resolve the new path, find nothing, degrade — or mint a
+  second, empty tree. Nothing detects it. *The existing agent-templates convention
+  (`DOCTRINE.md:217-219`, "one `agent-records:` line moves both homes") carries the same
+  imprecision; this spec inherits it rather than introducing it. Worth a separate capture.*
+- **The nesting convention is young.** `agent-templates`-under-`agent-records` shipped hours
+  ago in `1707ede`; this is its second application, with no field mileage.
+- **Five consumer skills change** — the second consecutive feature to rewrite these files.
+- **This feature edits `skills/workstream/SKILL.md`, the skill driving the stream.** No hazard
+  in the worktree (the harness loads from the root checkout); the running skill changes at
+  ship.
 - **Doctrine nested under the records home reads against the distinction it encodes** —
-  mitigated by the reserved-list entry and the home-vs-layer sentence (§8), which must
-  actually ship or the default path argues against the rule.
-- **`agent-doctrine` and `agent-records` are coupled by the derived default** — moving the
-  records home silently moves doctrine on any host that never declared `agent-doctrine:`.
-  Acceptable; must be stated where hosts read it.
-- **Six consumer skills change** — the second consecutive feature to rewrite these files.
-  `grok` has landed, so the contention is gone.
-- **This feature edits `skills/workstream/SKILL.md`, the skill driving the stream.** No
-  hazard in the worktree (the harness loads from the root checkout), but the running skill
-  changes when this ships.
+  mitigated by §9's code fix and §10's home-vs-layer sentence, which must actually ship.
 
 ## Review history
 
-### 2026-08-18 — independent three-lens review — **needs-rework**
+### 2026-08-18 — independent three-lens review — **needs-rework** → dispositions below
 
-Soundness `needs-rework`, skeptic `needs-rework`, groundedness `approve-with-changes`. All
-findings below were independently re-verified against the tree before being recorded (a
-reviewer's claim is a claim, not a decision). Prune each entry on resolution.
+Soundness `needs-rework`, skeptic `needs-rework`, groundedness `approve-with-changes`. Every
+finding was re-verified against the tree before being recorded or actioned.
 
-**MUST-FIX 1 — the feature regresses every existing workshop host (soundness).** Resolution
-(§1) has two arms: a declared line, or the derived default. **Nothing writes an
-`agent-doctrine:` declaration** — verified: the string appears nowhere in `skills/`, and
-`clankshop/verbs/setup.md:52` + `migrate.md:25,54` write only `agent-records:` /
-`records-root:`. The skill that would declare it is `handbook`, which is feature 3 and out of
-scope here. So after S4, a seeded host with real doctrine at `.handbook/test/workflows/
-diagnostics.md` (verified present in `seed/`) resolves `<agent-records>/doctrine`, finds
-nothing, and silently degrades — losing discovery of content that exists on disk two
-directories over. This falsifies §7's "Nothing in the field moves": the bytes don't move, but
-what finds them stops finding them. It also puts debugger's two gates in live disagreement —
-the retained stamp says "workshop present," while home resolution says "artifact absent,"
-about the same real directory. **Fix:** add a slice having `clankshop`'s `setup` and
-`migrate` write `agent-doctrine: .handbook` into the door (small, in scope, closes the gap
-without waiting on feature 3), and add a resolution-proof arm modelling "seeded `.handbook`,
-no declaration."
+| Finding | Disposition |
+|---|---|
+| **MF1** — feature regresses seeded workshop hosts; nothing writes an `agent-doctrine:` declaration | **WITHDRAWN.** An artifact of the pre-rescope draft, which entangled handbook's transition into the framework rule. Under the corrected scope the transition is `handbook`'s migrate; see §8 *Transitional note* |
+| **MF2** — check 14's fence-skip fix does not cover inline backtick spans, the shape that actually needs protecting | **RESOLVED by dropping the check** (§7). Sharpened on re-verification: skills write every path in inline backticks, so the check is unimplementable *and* contradicts `DOCTRINE.md:223-224` |
+| **MF3** — the journal fold is prose against enforcement code; `.records/doctrine` breaks `records.sh check` | **ACCEPTED, reproduced.** Now §9, a code change, promoted to **S1** so it lands before anything creates the directory, with the missing fixture added |
+| **F4** — a quotation attributed to `debugger:62` used words absent from the file; `:103` mis-cited; `records.sh` range one line short | **ACCEPTED.** §8 now quotes `:62-63` and `:109` verbatim; the stale `records.sh` range citation is gone with the dropped fence requirement |
+| **F5** — "moves" should be "orphans" | **ACCEPTED**, in Risks, with the inherited-not-introduced note |
+| **F6** — check 15's phrase must be a pinned literal | **ACCEPTED**, now §5 |
+| **NTH** — "Consumer probes" label included a producer; reader degrade-target left unstated | **ACCEPTED.** Table relabelled "Probes"; the degrade target is named in §8 |
 
-**MUST-FIX 2 — check 14 is not implementable as text matching (soundness, sharpened).** §6
-prescribes porting the `records.sh` fence toggle so check 14 stops failing `auditor`, which
-documents the legacy `docs/audit/` path. But that path sits in **prose with inline
-single-backtick spans** (`auditor/SKILL.md:31-32`, verified), and the fence toggle skips only
-fenced and four-space-indented blocks — so the prescribed fix does not protect the case that
-motivated it, and the fence-proof would pass while the real case fails. Sharpening on
-re-verification: skills write **every** path in inline backticks, so skipping inline spans
-makes check 14 match nothing, while not skipping them makes it fire on legitimate
-documentation. A hardcoded path and a documented legacy path are textually identical.
-**Recommended fix: drop check 14.** Check 15 (resolution phrase present) asserts the right
-behavior positively and has no such problem; check 16 targets a specific prose directive.
-Proving-a-negative-in-text was the wrong instrument.
-
-**MUST-FIX 3 — the journal fold is prose against enforcement code (skeptic, reproduced).**
-§8 claims "`doctrine` joins the reserved never-scanned entries. `records.sh check` ignores
-it." Verified false as specced: `records.sh:73` excludes only `templates|scripts` from
-`stores()`, and `:64`'s `resolve()` reserved case is only `templates/*|scripts/*|history.tsv`
-— so `doctrine/` is enumerated as a typed record store and `check` demands record
-front-matter on every doctrine file (the skeptic reproduced a `check: FAIL` against a
-fixture). S5's path list never touches `records.sh`. Compounding it: **S3 creates
-`.records/doctrine/audit/` before S5's fold**, so the spec ships a window where its own
-default breaks the records gate — and no fixture plants a doctrine file under the records
-root and runs `check`, so the spec's own verification would miss it. **Fix:** add the
-`records.sh` case-arm edits to S5 (or a dedicated slice), move the fold **before** S3, and
-add the missing fixture.
-
-**FIX 4 — fabricated quotation (groundedness).** `debugger/SKILL.md:62-63` reads "…and that a
-**fix should land**"; this spec quoted "…and that a fix **is wanted**" inside quotation marks.
-That phrase occurs nowhere in the file. Also `:103` is "Human confirms → Phase 4", not the
-cited sentence — the match is at `:109`. And `records.sh:356-362` stops one line short: the
-four-space/tab skip is `:363`.
-
-**FIX 5 — "moves" should be "orphans" (skeptic).** Renaming the records home does not move
-doctrine: resolution recomputes, files stay put, and consumers then resolve an empty path or
-mint a second doctrine tree. Stranding, not relocation, and nothing detects it. *(Note: the
-existing agent-templates convention at `DOCTRINE.md:217-221` — "one `agent-records:` line
-moves both homes" — appears to carry the same imprecision. Inherited, not introduced here;
-worth a separate capture.)*
-
-**FIX 6 — check 15's phrase must be pinned (skeptic).** Checks 12 and 13 match exact fixed
-literals; check 15 matches "an `agent-doctrine` resolution phrase", a semantic category. S4
-must author one canonical sentence and reuse it verbatim so S2 can grep a literal. This
-matters more if check 14 is dropped, since 15 then carries the weight alone.
-
-**NICE-TO-HAVE.** §7's "Consumer probes" class label includes `auditor:21`, which §5 declares
-a *producer* — relabel. §7 says the onramp branches "restructure" without saying to what —
-name it as a build-time open item rather than silence.
-
-**Attacks that FAILED (recorded so they are not re-litigated).** The Problem section's
-reader-gap claims were verified verbatim, not dramatized. The derived default is precedented,
-not accidental coupling: `DOCTRINE.md:217-221` shows agent-templates already nests under
-agent-records — though that convention is hours old and unseasoned. The 11-site inventory and
-its 6/4/1 classification were independently reproduced exactly. The required-tier /
-resolves-bare distinction is consistent across both documents. Alternatives were judged real,
-not strawmen. Blast-radius: bundling is cheaper than the counterfactual by the codebase's own
-resequencing logic. One calibration: debugger's net gain is narrower than the Problem section
-implies — Phases 1–3 run identically today and Phase 4 stays stamp-gated; the gain is that
-the playbook becomes consultable bare.
+**Attacks that FAILED (recorded so they are not re-litigated).** The Problem section's reader
+claims verified verbatim, not dramatized. The derived default is precedented, not accidental
+coupling (`DOCTRINE.md:217-219`) — though that precedent is hours old. The 11-site inventory
+and 6/4/1 classification reproduced exactly. The required-tier / resolves-bare distinction is
+consistent. Alternatives are real, not strawmen. Bundling beats the counterfactual. One
+calibration accepted: debugger's net gain is narrower than first framed — Phases 1–3 run
+identically today and Phase 4 stays stamp-gated; the gain is that the playbook becomes
+consultable bare.
 
 ## Grounding
 
-Built against `1707ede`. Verified: `DOCTRINE.md:203` (front-door variable pattern,
-agent-records as canonical example); `DOCTRINE.md:304` (rule 8); `auditor/SKILL.md:31,93`
-(improvised `docs/audit/` home); `debugger/SKILL.md:29-31` (bare playbook gap), `:62,:103`
-(human gate on Phase 4); `flow.md:56` (workstream build-lane fallback); `journal/SKILL.md:28`
-(reserved-name list); `lint-records-writer-test.sh` (fixture idiom: red-proof + green-proof
-per check); `skills-lint.sh:545` (check block idiom); 11 live `Seeded from clankshop` sites,
-classified in §7.
+Built against `1707ede`. Verified: `DOCTRINE.md:203-262` (front-door variable mechanism, the
+three readers, the canonical resolver, the high bar, patient-zero rule); `:217-219`
+(agent-templates nests under agent-records); `:223-224` (name default paths literally);
+`:264-292` (record-writing rules, incl. own-store standup and no-floor); `:304` (rule 8);
+`:61` ("fix the doctrine, not just the tool"); `auditor/SKILL.md:31,93`;
+`debugger/SKILL.md:29-31,62-63,109`; `flow.md:56`; `journal/SKILL.md:28`;
+`journal/scripts/records.sh:64,73` (the reserved-directory gap); `skills-lint.sh` (13 is the
+highest check; no fence handling anywhere); `lint-records-writer-test.sh` (fixture idiom);
+11 live stamp sites classified in §8; `agent-doctrine` occurs nowhere in `skills/` today.
