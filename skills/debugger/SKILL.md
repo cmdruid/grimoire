@@ -19,16 +19,27 @@ open `tickets/` record, refuse with that fact — a ticket owns the item until i
 the links; on a workshop host, `records.sh list --type tickets --status open` is the lookup. No
 link → continue. A live symptom with no routed report is not this refuse.
 
-## One environment probe (at entry)
+## Two environment probes (at entry)
 
-Does `<root>/.handbook/README.md` exist and carry the clankshop install stamp (a line matching
-`Seeded from clankshop`)? That single fact picks the homes; nothing else is probed.
+Two independent questions. They were previously answered by one probe, which conflated a
+**location** question with a **policy** one — keep them apart.
 
-- **Workshop present** → consult `.handbook/test/workflows/diagnostics.md` when that file exists
-  (symptom → first moves; a miss is a playbook gap — the test station tends that playbook).
-  Phase 4 remains workshop-gated.
-- **Unstamped** → emit `unstamped`, point at the clankshop onramps, and investigate through
-  Phase 3. Do not enter Phase 4.
+**Where does doctrine live?** The diagnostics playbook is doctrine, so it sits under the
+**agent-doctrine home**: the declared `agent-doctrine:` (front-door `AGENTS.md` then
+`CLAUDE.md`), else `<agent-records>/doctrine` (default `.records/doctrine/`). Resolving the
+home is not finding the playbook — resolve it, **then** test for the file. Consult
+`<agent-doctrine>/test/workflows/diagnostics.md` **when that file exists** (symptom → first
+moves; a miss is a playbook gap — the test station tends that playbook). Absent → investigate
+without it. **This probe never gates a phase**; a project with no playbook is investigated the
+same way, just without the shortcut.
+
+**May fixes land on this project?** Phase 4 is gated twice, and both gates are policy:
+
+- the human confirms the root cause and that a fix should land (see Phase 4), **and**
+- the project carries the clankshop install stamp — a line matching `Seeded from clankshop` in
+  `<root>/.handbook/README.md`.
+
+**Unstamped** → emit `unstamped`, and investigate through Phase 3. Do not enter Phase 4.
 
 The report is a record on every host, under the agent-records home (first
 `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else

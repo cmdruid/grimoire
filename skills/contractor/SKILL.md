@@ -19,14 +19,16 @@ and collides with none.
 
 ## One environment probe (at entry)
 
-Does `<root>/.handbook/README.md` exist and carry the clankshop install stamp (a
-line matching `Seeded from clankshop`)? That single fact picks the homes and
-context; nothing else is probed, and no verb ever refuses or stalls for lack of
-a workshop.
+Station context is doctrine, so it lives under the **agent-doctrine home**: the
+declared `agent-doctrine:` (front-door `AGENTS.md` then `CLAUDE.md`), else
+`<agent-records>/doctrine` (default `.records/doctrine/`). Resolving the home is
+not finding the artifact — resolve it, **then** test for the build station's
+loader. Nothing else is probed, and no verb ever refuses or stalls for lack of
+one.
 
-- **Workshop present** → summon the build station
-  (`.handbook/scripts/context.sh build`).
-- **Standalone** → the project's own design docs and READMEs stand in for
+- **`<agent-doctrine>/scripts/context.sh` present** → summon the build station
+  (`<agent-doctrine>/scripts/context.sh build`).
+- **Absent** → the project's own design docs and READMEs stand in for
   station context.
 
 **Destination is not stamped.** `roadmap` / `plan` / `runbook` land in
@@ -120,5 +122,5 @@ The artifact holds the job vocabulary (`status: open` / `current`, slice ids,
 <!-- edges:contractor -->
 - produces: plan, roadmap, runbook — job artifacts in `<agent-records>/plans/`
 - handoff: — (build executes in-place; ship is not this skill)
-- consumes: spec, review — an approved specification, or a findings baton (council RESULT.md or Review history)
+- consumes: spec, review, doctrine — an approved specification, a findings baton (council RESULT.md or Review history), or station context read from the agent-doctrine home
 <!-- /edges:contractor -->

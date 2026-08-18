@@ -648,7 +648,7 @@ done
 # a preceding negation. That rule lives in doctrine prose and in skill review.
 offhome_exempt() { # offhome_exempt <skill>; 1 = still allowed to carry them
   case "$1" in
-    auditor|debugger|workstream|blueprint|contractor) return 0 ;;
+    auditor) return 0 ;;
     *) return 1 ;;
   esac
 }

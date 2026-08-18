@@ -53,7 +53,7 @@ whole feature, exactly as above.
 
 **The stream builds the plan itself, per the host's build lane.** Execute the plan's tasks/slices
 red-first to gate-green, following the host's feature lane where one is documented
-(`.handbook/build/workflows/feature.md` on a workshop host — its walk's build step), else the plan
+(`<agent-doctrine>/build/workflows/feature.md` when that file exists — its walk's build step), else the plan
 template's own structure. The execution discipline is the loop's own: the main session is the
 **sole writer** of the tree, authoring is mode-routed per `/delegate` (inline, a `/mailbox` patch
 slot the orchestrator applies, or an isolated worktree merged back), the **gate stays

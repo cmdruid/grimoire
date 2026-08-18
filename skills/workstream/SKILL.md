@@ -88,17 +88,23 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 
 Workstream is **self-contained**: its own state is `.workstreams/<stream>/` (hand-offs, registry)
 plus ordinary git branches and worktrees, and **every verb works on any repo** — no workshop
-install is a precondition, and no verb ever refuses or stalls for lack of one. One probe
-decides handbook / station / playbook context: does the project's `.handbook/README.md` carry
-the clankshop install stamp (`Seeded from clankshop`)? The **agent-records destination is
-not stamped**.
+install is a precondition, and no verb ever refuses or stalls for lack of one. **Two
+independent questions** — a *location* question and a *policy* question. They were once
+answered by a single stamp probe; keep them apart.
 
-- **Workshop host** (stamp present): summon the build station
-  (`.handbook/scripts/context.sh build`). Filled `<debrief>` is `/backlog debrief`. Queue
-  items are **Backlog** tracker lines only when that tracker file already exists.
-- **Any other host**: no handbook summon. Filled `<debrief>` is the project's own
-  close-the-books sweep (do not invoke `/backlog`). Do not create `.handbook/`. Never
-  route to the clankshop onramps.
+- **Where does doctrine live?** The build lane and station context are doctrine, so they sit
+  under the **agent-doctrine home**: declared `agent-doctrine:` (front-door `AGENTS.md` then
+  `CLAUDE.md`), else `<agent-records>/doctrine` (default `.records/doctrine/`). Resolve the
+  home, **then** test for the artifact: summon the build station with
+  `<agent-doctrine>/scripts/context.sh build` **when that loader exists**; absent → no summon,
+  and the plan template's own structure stands in. **This never gates a verb.**
+- **Is a workshop assembled here?** The install stamp (`Seeded from clankshop` in
+  `<root>/.handbook/README.md`) answers a *policy* question, not a location one, and still
+  governs exactly two things: filled `<debrief>` is `/backlog debrief` when stamped, else the
+  project's own close-the-books sweep (do not invoke `/backlog`); and queue items are
+  **Backlog** tracker lines only when stamped *and* that tracker file already exists.
+- The **agent-records destination is not stamped**. On any host: do not create `.handbook/`,
+  and never route to the clankshop onramps.
 - **Records (every host).** Workstream-owned records — seeded / drafted `plans/` files,
   ship-time plan closes, optional debrief `reports/` — land under the agent-records home
   (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else

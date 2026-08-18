@@ -97,7 +97,7 @@
    This is the fix for the fresh-stream full-build: a markdown-only stream that rebases onto a moved
    `<target>` now runs at most the seconds-long doc-linter, never a from-scratch full build. Report
    which path you took and the result. (The concrete gate and doc-linter are the host's — surfaced in
-   its `AGENTS.md` / `.handbook/test/`; the docs-vs-build split needs no host globs, it is just the `.md`
+   its `AGENTS.md` / `<agent-doctrine>/test/`; the docs-vs-build split needs no host globs, it is just the `.md`
    test, so it stays portable.)
 
 `sync` **does not save** — it rebases + gates, nothing else (saves are coupled to the reset;
