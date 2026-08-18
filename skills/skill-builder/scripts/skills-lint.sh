@@ -79,9 +79,6 @@
 #      `stop and point at `/journal setup``. Evidence: skill, file, line.
 #      Does not match a prohibition ("journal standup is never a
 #      precondition"). Journal, skill-builder, and pack faces are exempt.
-#      LIVE-TREE ACTIVATION DEFERRED: this check runs only when
-#      SKILLS_LINT_FLOOR=1 (fixture proofs). Enable on the live run after
-#      the backlog floor phrases are gone.
 #  13. Project-templates heading (FAIL). A skill that has templates/*.md
 #      must have a `## Project templates` heading in SKILL.md. A skill
 #      with no templates/ dir is out of scope. Pack faces are exempt.
@@ -545,25 +542,21 @@ for sk in "$skills_dir"/*/; do
   done < <(find "$vdir" -name '*.md' -print0)
 done
 
-# ---- 12. journal-floor phrase (FAIL; live run deferred) -----------------------
+# ---- 12. journal-floor phrase (FAIL) -----------------------------------------
 # Case-sensitive exact phrases. Exemptions: journal, skill-builder, pack faces.
-# Gated on SKILLS_LINT_FLOOR=1 until the live tree no longer carries the
-# backlog floor (slice 2). Prove red on a fixture before trusting green.
-if [ "${SKILLS_LINT_FLOOR:-}" = 1 ]; then
-  for sk in "$skills_dir"/*/; do
-    name="$(basename "$sk")"
-    case "$name" in journal|skill-builder) continue ;; esac
-    is_pack_face "$name" && continue
-    while IFS= read -r -d '' f; do
-      rel="${f#"$sk"}"
-      while IFS= read -r line; do
-        [ -n "$line" ] || continue
-        fail "$name: $rel:$line: journal-floor phrase"
-      done < <(grep -nF -e 'Requires a stood-up records layer' \
-                        -e 'stop and point at `/journal setup`' "$f" || true)
-    done < <(find "$sk" -name '*.md' -print0)
-  done
-fi
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  case "$name" in journal|skill-builder) continue ;; esac
+  is_pack_face "$name" && continue
+  while IFS= read -r -d '' f; do
+    rel="${f#"$sk"}"
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      fail "$name: $rel:$line: journal-floor phrase"
+    done < <(grep -nF -e 'Requires a stood-up records layer' \
+                      -e 'stop and point at `/journal setup`' "$f" || true)
+  done < <(find "$sk" -name '*.md' -print0)
+done
 
 # ---- 13. project-templates heading (FAIL) ------------------------------------
 # A skill that ships templates/*.md must declare ## Project templates.

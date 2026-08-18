@@ -33,7 +33,7 @@ EOF
 }
 
 run_lint() {
-  SKILLS_LINT_FLOOR=1 bash "$LINT" "$lib" >"$OUT" 2>"$ERR" || true
+  bash "$LINT" "$lib" >"$OUT" 2>"$ERR" || true
 }
 
 # --- check 12: journal-floor phrase ------------------------------------------
@@ -98,18 +98,6 @@ run_lint
 if grep -q 'templates/\*.md present but SKILL.md has no ## Project templates heading' "$OUT"; then
   echo "FAIL: heading present still matched check 13" >&2
   grep 'Project templates heading' "$OUT" >&2
-  fail=$((fail + 1))
-else
-  pass=$((pass + 1))
-fi
-
-# --- check 12 stays off on the live tree without the flag --------------------
-# (the fixture just proved the check works; the gate is the env var)
-unset SKILLS_LINT_FLOOR
-write_skill 'Requires a stood-up records layer'
-bash "$LINT" "$lib" >"$OUT" 2>"$ERR" || true
-if grep -q 'journal-floor phrase' "$OUT"; then
-  echo "FAIL: check 12 fired without SKILLS_LINT_FLOOR=1" >&2
   fail=$((fail + 1))
 else
   pass=$((pass + 1))

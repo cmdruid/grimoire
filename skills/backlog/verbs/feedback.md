@@ -5,12 +5,14 @@ misfired, a workflow that sang. Signal about the tooling/process, not about the 
 is a `task`/`issue`). Capture honestly, both directions; the improvement loop judges meaning
 downstream.
 
-1. Resolve the records root and the deployed `records.sh` (SKILL.md guard — no records layer → stop and point at `/journal setup`). Before any `records.sh new`, lazy-deploy this skill's `templates/trackers.md` if the deployed copy is absent (SKILL.md).
-2. **Find or create the Feedback tracker**: `records.sh list --type trackers`, title
-   `Feedback`; when absent, `records.sh new trackers --title "Feedback"`.
+1. Resolve both homes (SKILL.md).
+2. **Find or create the Feedback tracker**: if `records.sh` is executable,
+   `records.sh list --type trackers`, title `Feedback`; else scan live
+   `<agent-records>/trackers/*.md` by H1. When absent,
+   `scripts/record-mint.sh mint <agent-records> <agent-templates> trackers "Feedback"`.
 3. **Append one line** under `## Items`, newest last, in the contract's live tracker-line
    form: `- [ ] <date> — [<surface, e.g. the skill or gate name>] <the observation, one sentence>`.
-4. **Stamp**: `records.sh touch <tracker-path>`.
+4. **Stamp**: `scripts/record-mint.sh stamp <agent-records> <tracker-path>`.
 5. **Commit per the capture-commit policy** (SKILL.md): standalone → its own scoped commit
    (`Backlog: feedback — <slug>`); inside a `debrief` sweep → write-only.
 
@@ -18,4 +20,3 @@ downstream.
 
 - Feedback tracker found or created; one live line appended newest-last; tracker touched;
   standalone commit landed (or write-only inside a sweep).
-- No records layer: stopped; pointed at standing the layer up.

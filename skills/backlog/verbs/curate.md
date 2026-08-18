@@ -7,14 +7,14 @@ for the system — that judgment lives downstream. This is the workflow's half o
 record-level hygiene (contract conformance, link rot, prune proposals) is the format
 authority's half, not this verb's.
 
-1. Resolve the records root and the deployed `records.sh` (SKILL.md guard — no records layer
-   → stop and point at `/journal setup`).
-2. **Walk each tracker** (`records.sh list --type trackers`): dedupe overlapping lines (merge
-   into the sharper one), reword vague items until they act cold, re-order by priority (top =
+1. Resolve both homes (SKILL.md).
+2. **Walk each tracker** (`records.sh list --type trackers` when the tool exists; else
+   scan live `<agent-records>/trackers/*.md`): dedupe overlapping lines (merge into the
+   sharper one), reword vague items until they act cold, re-order by priority (top =
    next — a deliberate exception to the contract's append-newest-last rule; later captures
    still append last), complete lines that finished without ceremony to the contract's
    completed tracker-line form, and drop lines that no longer apply (strike or delete — the
-   tracker body is not a ledger). `records.sh touch` every tracker edited.
+   tracker body is not a ledger). `scripts/record-mint.sh stamp` every tracker edited.
 3. **Graduate what outgrew its line**: an item that now needs the human becomes a `ticket`
    (`verbs/ticket.md` — link the line to the record); detail that outgrew one sentence gets a
    dated record, linked from the line.
@@ -26,4 +26,3 @@ authority's half, not this verb's.
 
 - Each tracker walked; edits touched; standalone scoped commit landed (or write-only inside
   a larger sweep).
-- No records layer: stopped; pointed at standing the layer up.

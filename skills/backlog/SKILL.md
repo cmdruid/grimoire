@@ -1,31 +1,21 @@
 ---
 name: backlog
-description: "The follow-up lifecycle over a project's records layer — capture by kind (`/backlog task|bug|issue|feedback` → tracker lines + dated records), `ticket` (escalate to the human), `debrief` (sweep a finished body of work; route every byproduct to its durable home), and tracker-side `curate` (groom the Backlog/Issues/Feedback trackers). Use when the user runs `/backlog ...`, files a follow-up, defect, or observation, escalates to the human, sweeps finished work before a reset, or grooms the trackers. Requires a stood-up records layer — it guards rather than standing one up."
+description: "The follow-up lifecycle over a project's records layer — capture by kind (`/backlog task|bug|issue|feedback` → tracker lines + dated records), `ticket` (escalate to the human), `debrief` (sweep a finished body of work; route every byproduct to its durable home), and tracker-side `curate` (groom the Backlog/Issues/Feedback trackers). Use when the user runs `/backlog ...`, files a follow-up, defect, or observation, escalates to the human, sweeps finished work before a reset, or grooms the trackers."
 ---
 
 # backlog — the follow-up lifecycle
 
 One skill: the loop that keeps follow-ups from evaporating — **debrief** a finished body of
-work, **file** each item by kind, **curate** the trackers so they stay actionable. It runs *on*
-a project's records layer as a **client** of the format: the stores, the record front-matter
-contract, and the tracker-line form are defined by `journal` (the format authority — its
-SKILL.md's *The record contract* section is the one citable spec; this skill cites it, never
-restates it). At runtime every call goes to the **deployed** tool
-`<records-root>/scripts/records.sh` — it travels with the records layer itself, so filing works
-wherever the layer is stood up, with or without any skill installed beside it. **It captures;
-it never drains** — what a captured signal means for the system is judged downstream, and
-draining trackers into scheduled work is deliberately out of scope.
+work, **file** each item by kind, **curate** the trackers so they stay actionable. It writes
+under the agent-records home and carries its own contract. Missing `records.sh` is not an
+error; journal standup is never a precondition. When the tool is present it is used
+opportunistically. **It captures; it never drains** — what a captured signal means for the
+system is judged downstream, and draining trackers into scheduled work is deliberately out
+of scope.
 
 _Lineage: the name is re-minted. v1's `backlog` skill was the whole records instrument (renamed
 `journal` in v2); this `backlog` is the tracker workflow only, named for the capital-B
 **Backlog** tracker it manages. History docs keep the v1 meaning as dated record._
-
-## Guard — the records layer must already exist
-
-Resolve the records root: the project's declared `records-root:` (front-door `AGENTS.md`
-declaration), else `.records/`. If `<records-root>/scripts/records.sh` is absent, **STOP in one
-breath**: say the records layer isn't stood up and point at `/journal setup`. Backlog never
-stands the layer up and never degrades into a second storage format.
 
 This `SKILL.md` is a **thin router**: it dispatches and states the discipline every verb shares
 **once**. Each verb's procedure lives in `verbs/<verb>.md`, **read on demand**. When a verb is
@@ -48,22 +38,30 @@ is (or run the debrief if the intent is "capture everything that surfaced").
 
 ## Shared discipline (every verb relies on this — stated here once)
 
-- **Guard first** (above), then let the deployed `records.sh` own the facts — every date, path,
-  and conformance fact (`new`/`touch`/`done`/`list`/`check`); never guess a date, never
-  hand-stamp front-matter, never write `history.tsv` by hand (per the contract, `records.sh
-  done` is its sole writer).
-- **Backlog owns its stores' templates and lazy-deploys them** (the contract's template
-  convention): before minting into `bugs`, `tickets`, or `trackers`, copy this skill's
-  bundled `templates/<doctype>.md` into `<records-root>/templates/` when absent — the deployed
-  copy is what `records.sh new` mints from, and it travels with the layer thereafter.
+- **Resolve both homes, then mint.** Agent-records home: first line-start `agent-records:`
+  or `records-root:` in `AGENTS.md`, then `CLAUDE.md`; else `.records`. Agent-templates
+  home: first `agent-templates:` in those files; else `<agent-records>/templates`. Pass
+  both into every `scripts/record-mint.sh` call. The script does not scan the front door.
+- **In-package contract.** Front-matter keys: `doctype`, `status`, `created`, `updated`,
+  `tags`. Live statuses: `open`, `current`. Closed: `done`, `dropped`, `superseded`,
+  `consumed`. Dated slug `YYYY-MM-DD-<slug>.md`. Record-link form: `→ <store>/<file>.md`.
+  Tracker-line form under `## Items`, newest last (same optional ` → <store>/<file>.md`
+  before the completion date). Do not send the agent to another skill for those bytes.
+- **`record-mint.sh` is the one minter.** Always call it (from this skill's own `scripts/`).
+  It uses deployed `records.sh` when that file is executable (`new --template <resolved>`);
+  otherwise it writes the contract shape (file-mode). Never write `history.tsv` by hand.
+  Never write the flat `<agent-records>/templates/<doctype>.md`. File-mode close rewrites
+  `status:` / `updated:` only.
+- **List without the tool.** When `records.sh` is missing, scan
+  `<agent-records>/<doctype>/*.md` and honor live vs closing `status:`. Find a tracker
+  by its H1 title among live `trackers/` records.
 - **The three canonical trackers**, found by title and created lazily on first capture
-  (`records.sh new trackers --title "<Title>"`): **Backlog** (things to build), **Issues**
-  (project problems/concerns), **Feedback** (dev-experience observations). Line-items follow
-  the contract's tracker-line form — one line per item under `## Items`, newest last, linking a
-  dated record when detail doesn't fit the line. **Incumbent-schema guard:** if a tracker's
-  existing items follow a legacy per-item shape the migration never normalized, don't silently
-  mix a second schema into the file — capture in the incumbent shape when one clearly governs,
-  and flag the drift as a `curate` item so normalization happens as one deliberate pass.
+  (`record-mint.sh mint <agent-records> <agent-templates> trackers "<Title>"`): **Backlog**
+  (things to build), **Issues** (project problems/concerns), **Feedback** (dev-experience
+  observations). **Incumbent-schema guard:** if a tracker's existing items follow a legacy
+  per-item shape the migration never normalized, don't silently mix a second schema into
+  the file — capture in the incumbent shape when one clearly governs, and flag the drift
+  as a `curate` item so normalization happens as one deliberate pass.
 - **Resolve the commit tree, then commit there.** `<root>` is `git rev-parse --show-toplevel`
   of the checkout that holds the records you wrote — never a different clone, and never the
   repo's root checkout from inside a stream worktree (that lands the commit on the trunk
@@ -90,14 +88,14 @@ is (or run the debrief if the intent is "capture everything that surfaced").
 
 ## Scope boundary + host conduct
 
-`backlog` files, escalates, sweeps, and keeps the trackers sharp. Defining the record format
-and standing the layer up belong to the format authority; closing records through the ledger is
-its lifecycle surface too (the sweep and writebacks invoke it). Draining the captured signal
-into doctrine, routing work, and the development itself each belong to another skill; the
-workshop's handbook owns that composition where one is deployed.
+`backlog` files, escalates, sweeps, and keeps the trackers sharp. The format authority
+owns the contract definition and the tool layer; this skill writes without waiting for
+that tool. Draining the captured signal into doctrine, routing work, and the development
+itself each belong to another skill; the workshop's handbook owns that composition where
+one is deployed.
 
-**Standalone by default, framework-aware when present.** Every verb works on any repo whose
-records layer is stood up — no workshop is a precondition. On a workshop host the deployed
+**Standalone by default, framework-aware when present.** Every verb works on any repo —
+no workshop and no journal standup is a precondition. On a workshop host the deployed
 handbook's routing applies downstream; elsewhere it is simply absent.
 
 ## Done when

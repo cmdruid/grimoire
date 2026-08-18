@@ -1051,7 +1051,7 @@ required unless a later flip changes a slice boundary.
     `## Project templates`. Check 2 live-green;
     check 1 fixture-red then fixture-green, not yet
     on the live run.
-- [ ] **Slice 2: backlog writes without a floor**
+- [x] **Slice 2: backlog writes without a floor**
   <requires: 1>
   - Paths: `skills/backlog/SKILL.md`;
     `skills/backlog/verbs/*.md`;
