@@ -342,6 +342,17 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    `.handbook/` as a side effect of anything. Do not run a workshop onramp as a side
    effect.
 
+   **The stamp still has legitimate consumers — do not "finish the migration" by deleting
+   them.** A skill may keep probing it for a genuine *policy* decision, and two do today:
+   `debugger` gates entering its fix phase on it (may fixes land on a project that has not
+   opted into a workshop?), and `workstream` gates `<debrief>` routing and Backlog
+   tracker-line permission on it. Neither is a leftover. The test when you meet a stamp
+   probe: **if removing it would change *where a file is read from*, it is a location
+   question and belongs to a home resolver; if it would change *whether an action is
+   allowed*, it is a policy question and the stamp is correct.** Conflating the two is the
+   defect this rule was written after, and the tempting cleanup is to conflate them again in
+   the other direction.
+
 The **agent-templates** resolution, per declared project template `<file>` (the verb
 resolves both homes and passes them in; the mint script never opens the front door):
 
