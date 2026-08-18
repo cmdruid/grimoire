@@ -1,12 +1,20 @@
 ---
 doctype: design
-status: open
+status: done
 created: 2026-08-18
 updated: 2026-08-18
 tags: [spec]
 ---
 
 # contractor `revise` — Spec
+
+Shipped 2026-08-18 on stream `grok`: add contractor
+revise spec; record needs-rework on the contractor
+revise spec; fold revise-spec review findings; fold
+F7 — thrash brake covers rejected returns; add revise
+and close the review loop; name revise in the
+contractor inventory. File-mode close — no ledger on
+this host.
 
 Settled 2026-08-18 on stream `grok`. Human approved the
 approach in conversation; this spec is the argued form.

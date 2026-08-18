@@ -1,12 +1,16 @@
 ---
 doctype: design
-status: open
+status: done
 created: 2026-08-18
 updated: 2026-08-18
 tags: [spec]
 ---
 
 # blueprint `revise` — Spec
+
+Shipped 2026-08-18 on stream `grok`: add blueprint revise
+spec; add revise and close the review loop. File-mode
+close — no ledger on this host.
 
 Settled 2026-08-18 on stream `grok`. Ports the contractor
 `revise` machine onto blueprint's artifact set. The human
