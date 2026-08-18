@@ -21,12 +21,13 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
   give notepad ownership of the contract. Do not write `history.tsv` by
   hand. Do not register against this library's real `AGENTS.md`.
 - **Live-API gotchas:** `records.sh` `cmd_new` slug + collision is
-  `skills/journal/scripts/records.sh:171-181`. Template slots are
-  `<title>` and `<date>` (`fill` at lines 136–155). Front-matter is five
-  keys (`skills/journal/SKILL.md` *The record contract*). Commit-tree
-  probe is `skills/journal/SKILL.md:94-103` (already copied onto
-  backlog). Description names no sibling. `description:` ≤ ~700 chars
-  (hard cap 1024).
+  `skills/journal/scripts/records.sh:171-181`. Slot fill is `fill` at
+  `:136-155` (invoked at `:180`). `cmd_done` refuses an already-closing
+  status (`:247`). `cmd_touch` refuses a closing `--status` (`:226`).
+  Front-matter is five keys (`skills/journal/SKILL.md` *The record
+  contract*). Commit-tree probe is `skills/journal/SKILL.md:94-103`.
+  Description names no sibling. `description:` ≤ ~700 chars (hard cap
+  1024).
 - **Coexisting work:** stream `grok` (`stream/grok`) holds this branch;
   unshipped `8506acd` is the backlog review fold. Sibling stream `feat`
   is a different brief — do not drive it. Root checkout may still hold
@@ -44,7 +45,7 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
 
 | Path | Responsibility |
 |---|---|
-| `skills/notepad/scripts/note-mint.sh` | Resolve root; mint or stamp; print facts + path |
+| `skills/notepad/scripts/note-mint.sh` | mint/stamp; uses records.sh when present |
 | `skills/notepad/scripts/tests/note-mint-test.sh` | PATH-isolated / fixture smoke |
 | `skills/notepad/scripts/tests/run.sh` | Test entrypoint |
 | `skills/notepad/templates/notes.md` | Owner-carried notes template (moved) |
@@ -53,7 +54,8 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
 | `skills/notepad/verbs/write.md` | Find-or-update, else mint |
 | `skills/notepad/verbs/find.md` | List / retrieve |
 | `skills/notepad/verbs/supersede.md` | Close old, mint replacement |
-| `skills/backlog/SKILL.md` | Drop note row + notes lazy-deploy |
+| `skills/notepad/verbs/drop.md` | Close dropped; no successor |
+| `skills/backlog/SKILL.md` | Drop note row, notes lazy-deploy, and note/fact trigger prose |
 | `skills/backlog/verbs/debrief.md` | Route facts through notepad `write` |
 | `skills/backlog/verbs/issue.md` | Substantial analysis via notepad `write` |
 | `skills/clankshop/PACK.md` | optional member + 2.3.0 + roster row |
@@ -76,13 +78,14 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
 
     ```
     note-mint.sh mint  <records-root> <title>
-    note-mint.sh stamp <abs-path> [--status <status>]
+    note-mint.sh stamp <records-root> <abs-path> [--status <status>]
     ```
 
     `mint`: create `<records-root>/notes/` if needed; refuse an empty
     slug; write `<records-root>/notes/YYYY-MM-DD-<slug>.md` from
-    `../templates/notes.md` using the same slot fill and the same slug
-    / collision rules as `records.sh` `cmd_new`; print:
+    `../templates/notes.md` using the same `fill` substitution as
+    `records.sh:136-155` (`<title>` / `<date>`) and the same slug /
+    collision rules as `cmd_new` (`:171-181`); print:
 
     ```
     records-root=<abs>
@@ -162,35 +165,45 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
        note.
     3. Root with `records.sh` but *no* `templates/notes.md` → script
        copies the bundled template, then `new` succeeds.
+    4. `stamp --status superseded` with `records.sh` present →
+       `mode=records`, `history.tsv` has one ledger line, `status:
+       superseded`, `records.sh check` exits 0.
+    5. `stamp --status superseded` without `records.sh` → `mode=stamp`
+       or `mode=file`, `status: superseded`, **no** `history.tsv`.
 
     Run: `cd <worktree> && /bin/bash skills/notepad/scripts/tests/run.sh`
-    Expected: all previous plus the three new cases pass.
+    Expected: all previous plus the new cases pass.
 
-- [ ] **Slice 3: skill package (write / find / supersede)** <requires: 2>
+- [ ] **Slice 3: skill package (write / find / supersede / drop)** <requires: 2>
 
   - Files:
     - Create: `skills/notepad/SKILL.md`
     - Create: `skills/notepad/verbs/write.md`
     - Create: `skills/notepad/verbs/find.md`
     - Create: `skills/notepad/verbs/supersede.md`
+    - Create: `skills/notepad/verbs/drop.md`
     - Create: `skills/notepad/scripts/scoped-commit.sh` (byte-copy of
       `skills/backlog/scripts/scoped-commit.sh`)
-  - Change: thin router + three verbs, following the spec §§1, 3, 4.
+  - Change: thin router + four verbs, following the spec §§1, 3, 4.
     Description is the spec's trigger text (tune only if lint length
-    fails). Edges block as specified. Shared discipline: records-root
-    resolver (scan `AGENTS.md` / `CLAUDE.md` for `^records-root:`,
-    else `.records`), commit-tree probe (cite journal's wording; do
-    not invent a third variant), capture-commit policy, write-only
-    mode for a sweep.
+    fails). Edges block as specified (including the write-only sweep
+    `handoff: note`). Shared discipline: the **verb** resolves
+    records-root (`AGENTS.md` then `CLAUDE.md`, else `.records`) and
+    passes it to `note-mint.sh`; commit-tree probe (cite journal's
+    wording; do not invent a third variant); write-only sweep
+    contract (skip `scoped-commit.sh`, print `path=` / `rel=`).
 
-    `write.md`: find-or-update then mint; call `note-mint.sh`; one
-    fact per note; Done when as spec §6.
+    `write.md`: live notes only (`list --status open` / `current`, or
+    skip closing `status:` on a scan); update live duplicate; refuse
+    a closed match; else mint. Done when as spec §6.
 
-    `find.md`: `records.sh list --type notes` when present, else
-    scan `notes/*.md`; print paths + titles; no mint.
+    `find.md`: list/retrieve; default live; no mint.
 
-    `supersede.md`: mint or confirm successor, then close old
-    (`note-mint.sh stamp` / `records.sh done --as superseded`).
+    `supersede.md`: mint or confirm successor; write `→
+    notes/<file>.md` on the old body; `note-mint.sh stamp … --status
+    superseded`. No successor → refuse (`drop`).
+
+    `drop.md`: close `dropped` with a body sentence; no mint.
 
     No `/backlog` / `/journal` names in the description. A body
     pointer at the contract section is allowed (`journal` SKILL.md
@@ -202,8 +215,11 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
       worktree-vs-clone symlink note for `notepad`.
     - Grep the new description for sibling slugs (`backlog`,
       `journal`, `debugger`) — expected: no matches.
-    - Read `SKILL.md` + the three verb files against spec §§4 and 6;
-      every failure row has a matching Done-when / STOP.
+    - Read `SKILL.md` + the four verb files against spec §§4 and 6.
+      The read-back must cite a matching Done-when / STOP for:
+      write-only sweep, commit-tree STOP, live duplicate-update,
+      closed-duplicate refuse, empty find, supersede-without-successor,
+      drop. Do not add shell fixtures for those agent procedures.
 
 - [ ] **Slice 4: cutover + pack wiring** <requires: 3>
 
@@ -211,7 +227,8 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
     - Delete: `skills/backlog/verbs/note.md`
     - Delete: `skills/backlog/templates/notes.md`
     - Modify: `skills/backlog/SKILL.md` (drop the note dispatch row;
-      drop `notes` from the lazy-deploy list)
+      drop `notes` from the lazy-deploy list; rewrite `description:`
+      and intro so `note` / `fact` / "write this down" no longer match)
     - Modify: `skills/backlog/verbs/debrief.md` step 3: facts →
       notepad `write` write-only; keep
       `task`/`bug`/`issue`/`feedback`/`ticket`
@@ -230,6 +247,10 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
     - `rg -n '/backlog note|verbs/note\\.md|templates/notes\\.md' skills/backlog`
       Expected: no remaining mint path (debrief/issue may mention
       notepad `write`).
+    - `rg -n 'note|fact|write this down|write down how this works' skills/backlog/SKILL.md`
+      Expected: no trigger hits in `description:` or the intro
+      (lineage "renamed journal" is fine; capture-by-kind must not
+      list `note`).
     - `rg -n 'notepad' skills/clankshop/PACK.md README.md` — pack
       `optional:` line contains `notepad`; README table has a row.
     - Confirm `PACK.md` frontmatter `version: 2.3.0`.
@@ -242,8 +263,9 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
   note and no other records-layer files.
 - A fixture mint with `records.sh` uses it (`mode=records`) and
   `records.sh check` accepts the note.
-- `/backlog note` is gone; debrief/issue route facts through notepad
-  `write`.
+- `/backlog note` is gone; backlog `description:` no longer matches
+  `note` / `fact`; debrief/issue route facts through notepad `write`
+  write-only.
 - Pack manifest is 2.3.0 and lists `notepad` as optional.
 
 _On completion (before landing), run the host's close-the-books sweep
