@@ -15,8 +15,8 @@ Patient-zero: never target this skill library's own `AGENTS.md`. Cwd dest
 requires `inside a repo` false, so a run from a checkout cannot land on it.
 
 Re-deploy is not a thing. Dest that already holds a deploy-owned path
-(`README.md`, `docs/ARCHITECTURE.md`, or an `AGENTS.md` that already
-carries a mapped H2) → refuse. After a successful deploy the dest tree
+(`README.md`, dest `ARCHITECTURE.md` under dest `docs/`, or an
+`AGENTS.md` that already carries a mapped H2) → refuse. After a successful deploy the dest tree
 is the source of truth. Other pre-existing files stay untracked and are not in the first
 commit. A pre-existing `AGENTS.md` with no mapped H2 is composed by
 **append** only (step 7).
@@ -86,8 +86,8 @@ starts with `.`) or is the working spec file — **except** a `.git` entry
 it.
 
 **In-place legal.** Dest exists as a directory, *Forbidden git context* is
-false, there is no `.git` entry, `README.md` is absent, `docs/ARCHITECTURE.md`
-is absent, and `AGENTS.md` is either absent or contains **none** of the
+false, there is no `.git` entry, `README.md` is absent, dest
+`ARCHITECTURE.md` (under dest `docs/`) is absent, and `AGENTS.md` is either absent or contains **none** of the
 AGENTS-fed mapped H2 strings (`Working conventions & layout`, `Declared
 verification command (intended, not proven)`). Pre-existing `docs/` or
 sibling files do not disqualify.
@@ -119,8 +119,8 @@ Do not bake a host path into this walk.
 - Dest is inside a git repository — name the enclosing toplevel, stop.
 - Dest exists as a file.
 - Dest exists, is not empty, and is not in-place legal — name the
-  colliding deploy-owned path (`README.md`, `docs/ARCHITECTURE.md`, or
-  `AGENTS.md` already carrying a mapped H2). Do not overwrite. Do not
+  colliding deploy-owned path (`README.md`, dest `ARCHITECTURE.md` under
+  dest `docs/`, or `AGENTS.md` already carrying a mapped H2). Do not overwrite. Do not
   merge those files.
 
 An existing **empty** or **in-place legal** directory that is not inside
@@ -178,8 +178,8 @@ confirm.
    - **Pre-existing `AGENTS.md` (in-place compose):** keep the existing
      H1 and body. Append the AGENTS-fed mapped sections (then Open
      questions, if any) after that body. Do not add a second H1. Keep a
-     copy of the original bytes for rollback. `README.md` and
-     `docs/ARCHITECTURE.md` are never composed over — in-place legal
+     copy of the original bytes for rollback. `README.md` and dest
+     `ARCHITECTURE.md` (under dest `docs/`) are never composed over — in-place legal
      already refused if they exist.
 3. After README's mapped sections and its Open questions (if any), append
    one paragraph, not inside a copied body:
