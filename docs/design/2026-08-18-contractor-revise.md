@@ -365,3 +365,59 @@ plus the loop wiring. Sequencing is not required.
     description ≤ 1024 and sibling-clean; `review.md`
     points at `revise` for the fold; `build.md`
     refuses open `needs-rework`.
+
+## Review history
+
+### 2026-08-18 — needs-rework
+
+Must-fix:
+
+- **F1** Mechanism → Pipeline / `build` refuse, and Mechanism →
+  Review history dispositions — `build`'s refuse predicate
+  and `review`'s "approve writes nothing" cannot both be
+  true. Goal says refuse a last recorded `needs-rework`
+  unless waived. Mechanism says refuse only when that
+  block still has unmarked items. After a full `revise`,
+  items are `resolved`/`rejected`, so the Mechanism
+  predicate lets `build` skip re-review. After `revise`
+  plus an `approve` (which writes nothing), the last
+  heading is still `needs-rework`, so a Goal-literal
+  predicate refuses forever. **Fix:** give Review history
+  a dated verdict stamp
+  (`### YYYY-MM-DD — needs-rework | approve | approve-with-changes`)
+  that `review` writes on **every** verdict, including
+  `approve`. `build` passes only when the latest stamp is
+  `approve` / `approve-with-changes`, or the human waives.
+  `needs-rework` is not a pass, open or closed. This is a
+  write-back change, not a new verdict word — add
+  `verbs/review.md` to the slice path list for the stamp
+  (already listed).
+- **F2** Mechanism → Review history dispositions +
+  Procedure step 5 — an unused `keep-optional` "left"
+  unmarked is still **open**, so `build` (under either
+  predicate) treats a declined nice-to-have as blocking.
+  **Fix:** map unused `keep-optional` to `deferred`. Map
+  classify → disposition explicitly: `keep` after amend →
+  `resolved`; `push-back` → `rejected`; `keep-optional`
+  not taken → `deferred`; already-done → `resolved`.
+
+Nice-to-have:
+
+- **F3** Problem ¶3 — overclaims that `build` *will walk*
+  a `needs-rework` plan. Live `build.md` step 2 says
+  "passed `review` or waive," which is ambiguous, not an
+  explicit walk. Grounded hole is the missing predicate
+  (F1), not specified misbehavior. Soften the sentence.
+- **F4** Invocation resolver step 1 — two readable paths
+  with no order and no rule if both are job artifacts.
+  **Fix:** if exactly one path is a job artifact, that is
+  the target; if both are, ask.
+- **F5** Procedure step 7 — "do not silently fold a
+  **third** time" vs "two folds without agreement." The
+  brake should fire on the **first return** of the same
+  must-fix after one `revise` (do not fold it a second
+  time). Align the wording.
+- **F6** Procedure step 3 "aimed at the spec — stop that
+  item" vs step 5 hold-the-batch. Say whether the rest
+  of the batch may proceed after the human acknowledges
+  the spec send-back (recommended: yes).
