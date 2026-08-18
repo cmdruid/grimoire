@@ -6,7 +6,9 @@ of the procedure: inventory by script, one confirmed mapping table, mechanical m
 script, judgment merges by hand, done means `check` green.
 
 **Guard:** resolve the project root first (conversation → cwd → ask). If `<root>/.handbook`
-exists, stop — already seeded. On a genuinely bare repo prefer `setup` (nothing to migrate).
+exists, stop and point at `setup` — resume when `check` would be red; upgrade-as-diff
+when the human asked and `check` is green. On a genuinely bare repo prefer `setup`
+(nothing to migrate).
 The resolved root may legitimately be a **workstream worktree** (a stream whose queue owns the
 migration): everything below then writes and commits on the stream's branch and rides its ship
 — never hop to the trunk checkout to commit a stream-owned migration directly.
@@ -46,8 +48,9 @@ migration): everything below then writes and commits on the stream's branch and 
 3. **Execute the mechanical rows.**
    - Seed the doctrine: `scripts/seed.sh <root> --gate '<gate>' --trunk '<trunk>'` (the two
      facts confirmed alongside the table).
-   - Stand up the records machinery via `journal` (its standup owns `.records/` scaffolding,
-     templates, `records.sh`) — pointed at the declared records root.
+   - Stand up the records machinery via `/journal setup` (it owns `.records/` scaffolding,
+     templates, `records.sh`) — pointed at the declared records root. Do not inline
+     journal's walk.
    - Move adopted records into their stores with `git mv` (history survives); keep original
      filenames — the path is the ID either way. Store directories must not collide with the
      records root's reserved paths (`templates/`, `scripts/`, `history.tsv`).
