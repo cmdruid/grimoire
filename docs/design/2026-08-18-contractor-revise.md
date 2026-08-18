@@ -28,9 +28,9 @@ is wrong) — and then leaves that list with no verb to run it.
 
 Agents currently improvise the amend. The improvisation is
 the hole: a fold is unverified content, the same session is
-the author, and `build` will walk a plan that has been
-"reviewed" even when the last verdict was `needs-rework` if
-the agent treats the write-back as done. The
+the author, and `build`'s "passed `review` or waive" does
+not say what "passed" means — a `needs-rework` write-back
+can be read as done. The
 `plan → review → (needs-rework) → ? → review → build`
 loop has no named owner for the `?`.
 
@@ -46,9 +46,11 @@ clarifying questions).
 `needs-rework` job artifact back to a candidate for
 `review`. It classifies findings with the human, amends the
 original artifact in place, records dispositions, and
-**stops** offering a re-review. `build` refuses a plan
-whose last recorded verdict is `needs-rework` unless the
-human waives.
+**stops** offering a re-review. `build` walks a plan only
+when the latest Review history stamp is `approve` or
+`approve-with-changes`, or the human waives. A
+`needs-rework` stamp is not a pass, whether its items are
+open or closed.
 
 One feature. No new skill. No second remediation document.
 No status promotion to `current`.
@@ -107,13 +109,25 @@ Each arrow is a stop. No verb invokes the next.
 `approve-with-changes` does **not** force `revise`. The
 human asks if they want the nits folded.
 
-`build` (in addition to today's "reviewed or waived"):
-if the artifact's latest Review history entry is a
-`needs-rework` verdict with any item still open
-(unresolved and unrejected), **refuse** — tell the caller
-to `revise` or to waive explicitly. "Unknown, so run
-`review`" stays for artifacts that have never been
-reviewed.
+`review` writes a dated **verdict stamp** into Review
+history on **every** verdict, including `approve`:
+
+```
+### YYYY-MM-DD — needs-rework | approve | approve-with-changes
+```
+
+That is a write-back change, not a new verdict word.
+`needs-rework` still carries the finding list (must-fix
+separated from nice-to-have). `approve` and
+`approve-with-changes` may be a stamp-only line.
+
+`build` (replacing today's ambiguous "passed review"):
+walk only when the **latest** stamp is `approve` or
+`approve-with-changes`, or the human waives explicitly.
+A latest stamp of `needs-rework` is a **refuse** — tell
+the caller to `revise` or to waive. Open vs closed
+items do not change that. No stamp at all → today's
+"unknown, so run `review`" path.
 
 ### Invocation
 
@@ -123,8 +137,11 @@ reviewed.
 
 Resolver, in this order:
 
-1. **Two readable paths** — findings file + job artifact.
-   Fold the file into the artifact.
+1. **Two readable paths.** If exactly one is a job
+   artifact (plan / roadmap / runbook), that is the
+   target and the other is findings. If both are job
+   artifacts, ask. If neither is, ask which artifact
+   they belong to. Fold findings into the target.
 2. **One path that is a plan / roadmap / runbook** and
    carries a Review history with at least one open item —
    that file is both findings and target.
@@ -161,8 +178,8 @@ Must-fix vs nice-to-have comes from the finding when
 present; if omitted, treat as must-fix (the conservative
 default — the human can demote at the table).
 
-Skip any finding already marked `resolved` or `rejected`
-in Review history.
+Skip any finding already marked `resolved`, `rejected`,
+or `deferred` in Review history.
 
 ### Procedure (`verbs/revise.md`)
 
@@ -184,9 +201,11 @@ in Review history.
    - **wrong / out of scope for this job** — classify
      `push-back`.
    - **aimed at the spec** (a new requirement, an open
-     decision branch) — **stop that item**. Do not enlarge
+     decision branch) — **park that item**. Do not enlarge
      the job. Tell the human it belongs on the spec, not
-     in `revise`.
+     in `revise`. After they acknowledge the send-back,
+     the rest of the batch may proceed. The parked item
+     stays unmarked (open) until the spec is settled.
    - **unclear** — classify `ask`.
    - **otherwise** — classify `keep` (must-fix) or
      `keep-optional` (nice-to-have that does not change
@@ -211,7 +230,8 @@ in Review history.
    item holds the whole batch** — do not amend until
    every `ask` is resolved (keep, push-back, or
    keep-optional). A `keep-optional` becomes `keep`
-   only if the human says yes; otherwise leave it.
+   only if the human says yes; otherwise it is
+   `deferred` (not left unmarked).
 6. **Amend in place** (same path, same record). How:
    - Edit the named slice / phase / conductor step.
      **Keep slice and phase ids stable** so the next
@@ -237,35 +257,45 @@ in Review history.
      file-mode).
    - Do **not** mint a successor record.
 7. **Thrash brake.** If the **same finding** (same
-   location + same assertion) is must-fix in Review
-   history from a *prior* `revise` and has come back
-   as must-fix again, do not silently fold a third
-   time — ask the human. Two folds without agreement
-   is a disagreement, not a missing edit.
+   location + same assertion) was already `resolved`
+   by a prior `revise` and has come back as must-fix
+   on a later `review`, do not silently fold it a
+   second time — ask the human. The first return is
+   the brake. Two folds without agreement is a
+   disagreement, not a missing edit.
 8. **Stop.** One sentence the human can act on, then
    the path, then the offer: run `/contractor review`
    on the amended artifact, or waive and `build`. Do
    not run `review`. Do not start `build`.
 
-### Review history dispositions
+### Review history — stamps and dispositions
 
-`review`'s `needs-rework` write-back stays as today: a
-dated `## Review history` (or a dated subsection under
-it) listing findings, must-fix separated from
+`review` writes a dated verdict stamp (Pipeline above)
+on every verdict. Under a `needs-rework` stamp it
+still lists findings, must-fix separated from
 nice-to-have. `revise` **adds** a disposition on each
-item it handled, it does not rewrite the reviewer's
+item it handled; it does not rewrite the reviewer's
 prose.
 
-Per item, one of:
+Classify → disposition:
 
-- `resolved — <what changed>` (slice/section named)
-- `rejected — <reason>`
-- `deferred — <why; nice-to-have not taken>`
-- left unmarked → still open (`build` treats this as
-  blocking if the parent verdict is `needs-rework`)
+| Classify | After the fold | Disposition |
+|---|---|---|
+| `keep` (amended) | edit landed | `resolved — <what changed>` |
+| `already done` | no edit | `resolved — already present` |
+| `push-back` | no edit | `rejected — <reason>` |
+| `keep-optional` taken | edit landed | `resolved — <what changed>` |
+| `keep-optional` not taken | no edit | `deferred — <why>` |
+| spec-aimed, parked | no edit | left unmarked (open) until the spec is settled |
+
+Left unmarked → still open. Open items do **not**
+drive the `build` refuse (the latest **stamp** does).
+They do drive resolver step 2 (a plan with open items
+is a `revise` target) and the inventory skip list
+(`resolved` / `rejected` / `deferred` are skipped).
 
 The owner may prune a fully resolved dated block after
-a later `approve`, as `review` already allows.
+a later `approve`.
 
 ### Why amend, and why re-review (in the verb file)
 
@@ -291,18 +321,22 @@ State both in `revise.md`, not only in this spec. Short:
 - `## Brief the human`: after `revise`, one ask, then
   wait — same as after `plan` / `review`.
 - `Hard seams`: the walked-plan rule becomes: every
-  walked plan has an `approve` (or explicit waive).
+  walked plan has a latest stamp of `approve` or
+  `approve-with-changes` (or an explicit waive).
   `needs-rework` is not a pass. The path back is
   `revise`.
-- `verbs/review.md`: keep the write-back. Replace the
-  "Acting on review feedback" procedure with a pointer
-  — the owner runs `revise`. Keep the one-line "review
-  hands the verdict to the owner and stops."
+- `verbs/review.md`: write the dated verdict stamp on
+  every verdict (including `approve` / `approve-with-changes`).
+  Replace the "Acting on review feedback" procedure
+  with a pointer — the owner runs `revise`. Keep the
+  one-line "review hands the verdict to the owner and
+  stops."
 - `verbs/plan.md` terminal offer stays `review` then
   `build`; do not mention `revise` there (it is not
   the next verb from a fresh plan).
-- `verbs/build.md` step 2: add the `needs-rework` +
-  open-item refuse above.
+- `verbs/build.md` step 2: walk only when the latest
+  stamp is `approve` / `approve-with-changes`, or the
+  human waives. Latest `needs-rework` → refuse.
 - Edges: `consumes: review` in addition to `spec`
   (a findings baton — council `RESULT.md` or Review
   history). Still `produces: plan, roadmap, runbook`.
@@ -314,7 +348,9 @@ State both in `revise.md`, not only in this spec. Short:
 - A `revise` on blueprint specs / design docs (that
   receiving-side list stays on `blueprint` this unit).
 - Auto-chaining any contractor verb.
-- Changing `review`'s verdict vocabulary.
+- Changing `review`'s verdict vocabulary (the stamp
+  reuses `approve` / `approve-with-changes` /
+  `needs-rework`; it does not add a fourth word).
 - Promoting or closing the job record.
 - Migrating this library's `docs/design/` into
   `.records/` (patient-zero).
@@ -339,7 +375,9 @@ State both in `revise.md`, not only in this spec. Short:
   (resolver, classify-then-ask, in-place amend, stable
   ids, Review history dispositions, thrash brake,
   stop-and-offer).
-- `build.md` refuses a `needs-rework` with open items.
+- `build.md` refuses unless the latest stamp is
+  `approve` / `approve-with-changes` (or an explicit
+  waive).
 - A reader of `SKILL.md` can see
   `plan → review → revise → review → build` without
   opening this spec.
@@ -363,8 +401,10 @@ plus the loop wiring. Sequencing is not required.
     `skills/contractor/verbs/build.md`.
   - Verify: lint `fails=0`; `revise.md` cited;
     description ≤ 1024 and sibling-clean; `review.md`
-    points at `revise` for the fold; `build.md`
-    refuses open `needs-rework`.
+    points at `revise` for the fold; `review.md`
+    stamps every verdict; `build.md` refuses unless
+    the latest stamp is `approve` /
+    `approve-with-changes` (or waive).
 
 ## Review history
 
@@ -392,6 +432,8 @@ Must-fix:
   write-back change, not a new verdict word — add
   `verbs/review.md` to the slice path list for the stamp
   (already listed).
+  - resolved — Pipeline now stamps every verdict;
+    `build` keys on the latest stamp only.
 - **F2** Mechanism → Review history dispositions +
   Procedure step 5 — an unused `keep-optional` "left"
   unmarked is still **open**, so `build` (under either
@@ -400,6 +442,8 @@ Must-fix:
   classify → disposition explicitly: `keep` after amend →
   `resolved`; `push-back` → `rejected`; `keep-optional`
   not taken → `deferred`; already-done → `resolved`.
+  - resolved — classify → disposition table; unused
+    `keep-optional` is `deferred`.
 
 Nice-to-have:
 
@@ -408,16 +452,24 @@ Nice-to-have:
   "passed `review` or waive," which is ambiguous, not an
   explicit walk. Grounded hole is the missing predicate
   (F1), not specified misbehavior. Soften the sentence.
+  - resolved — Problem ¶3 now names the ambiguous
+    "passed review" predicate.
 - **F4** Invocation resolver step 1 — two readable paths
   with no order and no rule if both are job artifacts.
   **Fix:** if exactly one path is a job artifact, that is
   the target; if both are, ask.
+  - resolved — resolver step 1: exactly one job
+    artifact is the target; both or neither → ask.
 - **F5** Procedure step 7 — "do not silently fold a
   **third** time" vs "two folds without agreement." The
   brake should fire on the **first return** of the same
   must-fix after one `revise` (do not fold it a second
   time). Align the wording.
+  - resolved — brake fires on the first return after
+    one `revise`.
 - **F6** Procedure step 3 "aimed at the spec — stop that
   item" vs step 5 hold-the-batch. Say whether the rest
   of the batch may proceed after the human acknowledges
   the spec send-back (recommended: yes).
+  - resolved — park the spec-aimed item; rest of batch
+    may proceed after acknowledge; item stays open.
