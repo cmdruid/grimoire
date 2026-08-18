@@ -8,6 +8,9 @@ tags: [plan]
 
 # workstream review remediation — Implementation Plan
 
+**Shipped 2026-08-17** on `stream/grok` — subject: `workstream: fold
+skill-builder review findings`.
+
 Tracer-bullet: slice 1 is the template `ship` → (reset ritual) →
 `recycle` loop an agent actually follows — the two must-fixes plus
 the draft/WIP split, with `ship` still a primitive. Later slices

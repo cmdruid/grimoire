@@ -8,6 +8,9 @@ tags: [spec]
 
 # workstream review — Spec
 
+**Shipped 2026-08-17** on `stream/grok` — subject: `workstream: fold
+skill-builder review findings`.
+
 Accepted 2026-08-17 on stream `grok`. Same-session `/skill-builder review
 workstream` against `skills/agent-council/briefs/skill-review.md`. Verdict:
 **needs-rework**. The human asked to remediate every numbered finding; this
