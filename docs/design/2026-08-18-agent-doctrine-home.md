@@ -1,6 +1,6 @@
 ---
 doctype: design
-status: open
+status: current
 created: 2026-08-18
 updated: 2026-08-18
 tags: [spec]
@@ -8,8 +8,20 @@ tags: [spec]
 
 # Front-door path homes — one standard for `agent-records`, `agent-templates`, `agent-doctrine` — Spec
 
+**Shipped 2026-08-18** on `stream/feat` — subjects: `journal: reserve doctrine/ in records.sh,
+both arms`; `doctrine: define the three front-door path homes and doctrine-touching rules`;
+`skill-builder: add the doctrine-home lint floor and prove it by breaking`; `review: add the
+home-resolution judgment axis the lint cannot cover`; `skills: resolve the agent-doctrine home
+in four consumers`; `auditor: resolve the doctrine home; drop the lint exemption mechanism`;
+`doctrine, journal: fold the stamp's narrowed job and reserve doctrine/`.
+
 `stream/feat` feature 2. Grounded against `1707ede`. Brainstormed, grilled, **two review
-rounds** (three lenses each), rescoped once. Awaiting human review; `status: open` until then.
+rounds** (three lenses each), rescoped once, built in six slices. Human approved 2026-08-18.
+
+**Two checks specified here were dropped during the build, both on evidence** — a
+hardcoded-*default*-path check and a `.handbook/`-creation check. Each is undecidable by text
+matching, and each reason is recorded at §7 so neither is reproposed. Coverage of what
+survived is stated honestly in `docs/BACKLOG.md` BL-23.
 
 ## Scope (human, 2026-08-18)
 
