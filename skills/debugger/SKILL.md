@@ -170,6 +170,14 @@ when one exists.
 - `reports.md`
 - `investigation.md`
 
+## Edges
+
+<!-- edges:debugger -->
+- produces: report — an investigation record
+- handoff: — (none; the operator owns the fix)
+- consumes: — (none; a live symptom or a routed report the caller names)
+<!-- /edges:debugger -->
+
 ## Boundaries
 
 - **An instrument, not a role.** The four-phase procedure is the tool; the operator (whoever the

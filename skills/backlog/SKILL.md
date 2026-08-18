@@ -86,6 +86,14 @@ is (or run the debrief if the intent is "capture everything that surfaced").
 - `tickets.md`
 - `trackers.md`
 
+## Edges
+
+<!-- edges:backlog -->
+- produces: record — bugs/, tickets/, tracker records, and tracker lines
+- handoff: — (none; it captures, it never drains)
+- consumes: record — debrief and curate read existing records
+<!-- /edges:backlog -->
+
 ## Scope boundary + host conduct
 
 `backlog` files, escalates, sweeps, and keeps the trackers sharp. The format authority

@@ -144,6 +144,14 @@ stores live under the agent-records home, and no verb refuses or stalls for lack
 On a workshop host the deployed handbook's routing applies downstream; elsewhere it is simply
 absent — never demand the workshop as a precondition.
 
+## Edges
+
+<!-- edges:journal -->
+- produces: record — the eight stores, the record contract, and deployed records.sh
+- handoff: — (none; writers consume the tool, journal does not terminate a workflow)
+- consumes: — (none; it defines the format)
+<!-- /edges:journal -->
+
 ## Done when
 
 - **No recognized verb:** asked which of setup / done / curate; did not file a follow-up.

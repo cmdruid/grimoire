@@ -374,9 +374,13 @@ one-line resolution; delete only when the reason it existed is gone.
 - **source:** `analyst` build (2026-08-18, `feat` stream) — noticed while choosing coarse edge
   types to match against existing ones. **Recount 2026-08-18 (front-door-homes build):** the
   real number is **seven**, not four — `auditor`, `backlog`, `clankshop`, `debugger`,
-  `journal`, `scheduler`, `workstream`. This now blocks lint coverage, not just tidiness: see
-  [[BL-23]].
-- **status:** open
+  `journal`, `scheduler`, `workstream`. See [[BL-23]] for the lint-coverage follow-on.
+- **status:** done (2026-08-18) — check 8 WARNs on a missing typed-edge block
+  (pack faces still exempt). Proven red then green in `lint-edges-test.sh`.
+  Backfilled `journal`, `backlog`, `auditor`, `debugger`, plus `workstream`
+  and `scheduler` (same hole, not named in the original count). `journal`
+  `produces: record` retires the false `analyst` orphan WARN.
+  <!-- REVIEW(conflict): grok sync 2026-08-18 — incoming left BL-17 open with the seven-count; we kept done (the WARN shipped) and kept the recount + BL-23 pointer. -->
 - **body:** `docs/DOCTRINE.md` says typed edges are **"required of every portable skill"** (an
   all-empty block being a *stated* disposition, not an omission), and `skill-builder new` scaffolds
   the block for new skills. But `skills-lint.sh` only validates a block that **exists** — a skill

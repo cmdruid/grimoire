@@ -105,6 +105,14 @@ Read `.scheduler/logs/<name>.last` first (timestamp + exit code per run), then t
 runner -- so a green `run` means the *job* is sound and remaining failures are environmental
 (load state, machine asleep, TCC).
 
+## Edges
+
+<!-- edges:scheduler -->
+- produces: — (none; jobs are local launchd/cron state)
+- handoff: — (none)
+- consumes: — (none)
+<!-- /edges:scheduler -->
+
 ## Done when
 
 - **`install`:** the four confirmations (schedule+timezone, permission stance, right tool,

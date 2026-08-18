@@ -228,6 +228,14 @@ The skill also bundles `scripts/worktree-exclude.sh` (idempotent hand-off exclus
 
 Hand-off, compaction-anchor, coordinator, and `kind: workstream-template` intake files are package-only.
 
+## Edges
+
+<!-- edges:workstream -->
+- produces: — (none; the stream is isolation and a gitignored hand-off, not a typed record)
+- handoff: — (none; the loop is the skill)
+- consumes: plan — a plan, roadmap, brief, or template as the queue source
+<!-- /edges:workstream -->
+
 ## On-demand doctrine
 
 **`flow.md`** — the agent orchestration: execution modes (`delegate`/`manual`), the autonomy rule,

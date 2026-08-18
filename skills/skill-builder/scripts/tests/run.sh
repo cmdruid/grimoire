@@ -7,6 +7,8 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 rc=0
 echo "== lint-records-writer-test.sh"
 bash "$DIR/lint-records-writer-test.sh" || rc=1
+echo "== lint-edges-test.sh"
+bash "$DIR/lint-edges-test.sh" || rc=1
 
 echo "== lint-doctrine-consumer-test.sh"
 bash "$DIR/lint-doctrine-consumer-test.sh" || rc=1

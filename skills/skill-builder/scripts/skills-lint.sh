@@ -43,7 +43,9 @@
 #      matched open/close delimiters naming the skill itself, edge kind in
 #      produces|consumes|handoff, and a type token that is a plain string, never a
 #      sibling `/name` or bare skill-dir name (FAIL -- edges name types, not
-#      siblings; model 1 corollary 3). A type declared by exactly one skill across
+#      siblings; model 1 corollary 3). A missing block is a WARN (BL-17 --
+#      doctrine requires a block of every portable skill; an all-empty block
+#      is a stated disposition). A type declared by exactly one skill across
 #      the suite is a WARN (likely an orphan/typo -- or a consumer not yet wired;
 #      expected to fire during rollout until Phase 5, model 2.2 "facts not verdicts").
 #   9. Sibling verb-roster enumeration (BL-1): a skill's BODY (not its description --
@@ -321,9 +323,14 @@ for sk in "$skills_dir"/*/; do
   # no match and `pipefail`+`set -e` would kill the assignment otherwise.
   opens="$(grep -oE '^<!-- edges:[a-z][a-z-]* -->$' "$f" | sed 's/^<!-- edges://; s/ -->$//' || true)"
   closes="$(grep -oE '^<!-- /edges:[a-z][a-z-]* -->$' "$f" | sed 's|^<!-- /edges:||; s/ -->$//' || true)"
-  # No block at all is fine -- not every skill has declared edges yet (Phase 5).
-  # (An `if` guard, not an `&&`-list -- a false `&&`-list at statement level trips set -e.)
-  if [ -z "$opens" ] && [ -z "$closes" ]; then continue; fi
+  # Missing block: WARN (BL-17). Doctrine requires a block of every portable
+  # skill; an all-empty block is the stated "none" disposition. Pack faces
+  # are already skipped above. (An `if` guard, not an `&&`-list -- a false
+  # `&&`-list at statement level trips set -e.)
+  if [ -z "$opens" ] && [ -z "$closes" ]; then
+    warn "$name: SKILL.md has no typed-edge block (required of every portable skill; an all-empty block is a stated disposition)"
+    continue
+  fi
   # Well-formedness: exactly one open + one close, both naming this skill.
   if [ "$(printf '%s\n' "$opens" | grep -c .)" -ne 1 ] || [ "$(printf '%s\n' "$closes" | grep -c .)" -ne 1 ] \
      || [ "$opens" != "$name" ] || [ "$closes" != "$name" ]; then
