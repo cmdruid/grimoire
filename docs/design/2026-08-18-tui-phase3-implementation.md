@@ -133,7 +133,19 @@ No migration burden: v0.1 has not shipped, and the only lock in the wild is the 
       **Finding: `install.sh` had no executable coverage** — `parity.rs` asserted core matched
       the shell without ever running it, so 2b would have left one rule with two
       implementations and one untested. It now runs the shell.
-- [ ] Tasks 3–8.
+- [x] **Task 3** — `AppEnv`, the flag surface, the single-door boundary test (`9aedbf7`).
+      **Finding: the clock crate was dropped.** `time`'s `macros` feature could not resolve its
+      pinned `time-macros`, and its `Rfc3339` formatter emits the nanoseconds `now_utc()`
+      carries — which `Timestamp::parse` rejects. What remained was one civil-date conversion,
+      checked against `date -u` vectors (2024, 2000, 2100). Same floor-at-zero reasoning core's
+      `time.rs` and `config.rs` already give.
+- [x] **Tasks 4–8** — job seam, state machine, library screen, ambient check, themed verbs,
+      `TestBackend` tests, dogfood. Two rendering bugs found *by* the gate tests: an overlay
+      sized by line count clipped the line telling the user what to do about a collision, and
+      the estimate that replaced it was still short (greedy word wrap cannot pack a long path
+      that tightly) — now pre-wrapped, so height is exact. Also closed: `ui::init` leaving raw
+      mode on if it failed *after* enabling it.
+      *Outstanding: the interactive dogfood — a human driving the real TUI.*
 
 ## Tasks
 

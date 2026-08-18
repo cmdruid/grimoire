@@ -35,6 +35,15 @@ pub fn init() -> io::Result<Tui> {
         let _ = restore();
     });
     enable_raw_mode()?;
+    // Past this point raw mode is ON, so a `?` that returned straight to the
+    // caller would hand back a cooked-off terminal — the very failure the panic
+    // hook exists to prevent, arriving through the ordinary error path instead.
+    enter().inspect_err(|_| {
+        let _ = restore();
+    })
+}
+
+fn enter() -> io::Result<Tui> {
     let mut out = io::stdout();
     execute!(out, EnterAlternateScreen)?;
     Terminal::new(CrosstermBackend::new(out))
