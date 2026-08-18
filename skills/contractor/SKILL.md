@@ -58,6 +58,22 @@ subject); closure — `done`, `dropped`, `superseded`, `consumed` — goes throu
 | `build` | `verbs/build.md` | execute plan or runbook |
 | (bare) | — | **ask** which verb; do not default |
 
+## Brief the human (every verb)
+
+The artifact holds the job vocabulary (`status: open` / `current`, slice ids,
+`DONE` / `needs-rework`). The conversation does not open with it.
+
+- **Lead with the situation** a newcomer could use: what the software can do
+  now, or what you need the human to decide. Then the path to the artifact.
+- **One ask per stop.** After `plan` or `review`, stop and wait. During
+  `build`, run each slice's verify; brief the human at start, at a blocker,
+  and at the end — not after every slice unless they asked for a running
+  log or a slice failed.
+- **Translate the closing code.** "The plan is at `<path>`. Please read it
+  before I implement." not "Terminal step: `review` then `build`." "The
+  tests would go green and still encode the wrong scripts" not a bare
+  `needs-rework`.
+
 ## Shared discipline (every verb)
 
 - **Read the verb file.** Do not reconstruct a procedure from this router.

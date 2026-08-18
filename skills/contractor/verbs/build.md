@@ -17,7 +17,8 @@ A raw **roadmap** is not an input. Compile a runbook first.
    check **does not** replace plan review.
 3. **Plan:** walk slices in declared order. Per slice: do it yourself **or**
    write a self-contained brief and use the host's delegation mechanism. After
-   each slice: the slice's verify command. Do not `ship`.
+   each slice: the slice's verify command (for you). Do not narrate every
+   slice to the human unless it failed or they asked. Do not `ship`.
 4. **Runbook:** walk the conductor list.
    - **Plan-sourced:** walk the steps; each step's command/gate is the
      verify. Do not invent work.
@@ -34,3 +35,5 @@ A raw **roadmap** is not an input. Compile a runbook first.
    host's close-the-books sweep (SKILL.md *Hard seams*).
 
 The host lane still lands the result. This verb stops at the job assessment.
+Tell the human what the software can do now, what is still open, and
+whether anything is on a side branch — not a bare `DONE` code.

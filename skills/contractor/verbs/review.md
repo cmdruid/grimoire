@@ -43,14 +43,16 @@ the wrong review verb — refuse it.
    `verbs/runbook.md` step 4 (plan-sourced vs roadmap-sourced). That is
    the same check `runbook` already ran — this verb confirms it and
    still does **not** replace plan review of the referenced plans.
-5. **Report the verdict, in context**: `approve` / `approve-with-changes` /
-   `needs-rework`; findings ranked by severity, each as location → what's wrong
-   → why it matters → a concrete fix, must-fix separated from nice-to-have; a
-   confidence note on anything unsure — never a guess presented as fact. **A
-   blocking verdict is a durable fact about the artifact, not session
-   chatter:** on `needs-rework`, also write the finding list into the artifact
-   itself (a dated "Review history" section the owner prunes on resolution).
-   An approve verdict changes nothing and stays in context.
+5. **Report the verdict, in context**: open with one sentence the human can
+   act on (what is wrong with the job, or that it is ready), then the code
+   `approve` / `approve-with-changes` / `needs-rework`. Findings ranked by
+   severity, each as location → what's wrong → why it matters → a concrete
+   fix, must-fix separated from nice-to-have; a confidence note on anything
+   unsure — never a guess presented as fact. **A blocking verdict is a
+   durable fact about the artifact, not session chatter:** on `needs-rework`,
+   also write the finding list into the artifact itself (a dated "Review
+   history" section the owner prunes on resolution). An approve verdict
+   changes nothing and stays in context.
 
 Depth dial (default off): for a high-stakes artifact, dispatch a few
 **read-only** subagents in parallel — each a distinct lens, one a skeptic
