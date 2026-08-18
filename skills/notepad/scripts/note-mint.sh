@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # note-mint.sh — mint or stamp a notes/ record. Facts only.
 #   note-mint.sh mint  <records-root> <title>
-#   note-mint.sh stamp <records-root> <abs-path> [--status <status>]
+#   note-mint.sh stamp <records-root> <abs-path> [--status <status>] [--note "<text>"]
 #
 # Uses <records-root>/scripts/records.sh when that file is executable;
 # otherwise writes the contract shape itself. Never decides update-vs-mint
@@ -10,7 +10,7 @@ set -euo pipefail
 
 usage() {
   echo "usage: note-mint.sh mint  <records-root> <title>" >&2
-  echo "       note-mint.sh stamp <records-root> <abs-path> [--status <status>]" >&2
+  echo "       note-mint.sh stamp <records-root> <abs-path> [--status <status>] [--note \"<text>\"]" >&2
   exit 2
 }
 
@@ -109,9 +109,11 @@ cmd_stamp() {
   [ $# -ge 2 ] || usage
   rr="$1"; path="$2"; shift 2
   status=""
+  note=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --status) [ $# -ge 2 ] || usage; status="$2"; shift 2 ;;
+      --note)   [ $# -ge 2 ] || usage; note="$2"; shift 2 ;;
       *) usage ;;
     esac
   done
@@ -123,7 +125,11 @@ cmd_stamp() {
     case "$path" in
       "$rr"/*)
         if [ -n "$status" ] && is_closing "$status"; then
-          "$rr/scripts/records.sh" done "$path" --as "$status" >/dev/null
+          if [ -n "$note" ]; then
+            "$rr/scripts/records.sh" "done" "$path" --as "$status" --note "$note" >/dev/null
+          else
+            "$rr/scripts/records.sh" "done" "$path" --as "$status" >/dev/null
+          fi
           mode="records"
         else
           if [ -n "$status" ]; then
