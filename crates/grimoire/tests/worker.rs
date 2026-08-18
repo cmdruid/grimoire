@@ -82,8 +82,12 @@ fn a_closed_outcome_channel_stops_the_worker_quietly() {
     let worker = worker::spawn(job_rx, out_tx, run);
 
     drop(out_rx);
-    job_tx.send(Job::Double(1)).unwrap();
-    job_tx.send(Job::Double(2)).unwrap();
+    // Not `.unwrap()`: the worker breaks its loop as soon as one outcome fails
+    // to send, which drops the job receiver — so a send racing that shutdown is
+    // *expected* to fail, and unwrapping it panics the test thread instead of
+    // testing the worker. (Observed as a flake before this comment existed.)
+    let _ = job_tx.send(Job::Double(1));
+    let _ = job_tx.send(Job::Double(2));
 
     worker.join().expect("worker exits without panicking");
 }
