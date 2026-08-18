@@ -15,13 +15,16 @@ slot="${2:?usage: mailbox-apply.sh <root> <slot> [--check]}"
 mode="${3:-}"
 
 [ -d "$root" ] || { echo "mailbox-apply: <root> is not a directory: $root" >&2; exit 1; }
-root="$(cd "$root" && pwd -P)" # physical path -- comparable to git's canonical toplevel
+root="$(cd "$root" && pwd -P)" # physical path
 
 # <root> must BE the target checkout's toplevel (same contract as mailbox-slot.sh):
 # from a subdirectory `git apply` silently SKIPS every hunk outside that directory yet
 # still exits 0 -- a no-op "success" that would reap the slot with nothing applied.
+# Compare two `pwd -P` results: git's toplevel string is a logical path and can
+# disagree with a physical `<root>` when the worktree is reached through a symlink.
 top="$(git -C "$root" rev-parse --show-toplevel 2>/dev/null || true)"
 [ -n "$top" ] || { echo "mailbox-apply: <root> is not inside a git worktree: $root" >&2; exit 1; }
+top="$(cd "$top" && pwd -P)"
 [ "$root" = "$top" ] || { echo "mailbox-apply: <root> is not the worktree toplevel (want: $top): $root" >&2; exit 1; }
 
 [ -f "$slot" ] || { echo "mailbox-apply: slot not found: $slot" >&2; exit 1; }

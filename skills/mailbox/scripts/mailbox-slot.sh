@@ -5,8 +5,9 @@
 # no judgment; the caller hands this path to the sub-agent it spawns.
 #
 # Usage: mailbox-slot.sh <root> [ext]    (ext default: md; e.g. patch, json, md)
-# Why absolute: a dispatched sub-agent's cwd is the repo ROOT, not the worktree, so a
-# relative slot would land in the wrong checkout. An absolute path is cwd-proof.
+# Why absolute: a dispatched sub-agent's cwd is harness-dependent (often the repo
+# ROOT, not the worktree you meant), so a relative slot would land in the wrong
+# checkout. An absolute path is cwd-proof.
 set -euo pipefail
 
 root="${1:?usage: mailbox-slot.sh <root> [ext]}"
@@ -14,14 +15,17 @@ ext="${2:-md}"
 ext="${ext#.}" # tolerate a leading dot
 
 [ -d "$root" ] || { echo "mailbox-slot: <root> is not a directory: $root" >&2; exit 1; }
-root="$(cd "$root" && pwd -P)" # physical path -- must be comparable to git's canonical toplevel
+root="$(cd "$root" && pwd -P)" # physical path
 
 # <root> must BE the target checkout's toplevel -- the canonical `git rev-parse
 # --show-toplevel` of the tree the artifact targets. A subdirectory would mint a stray
 # .mailbox/ the collect step never looks in; a non-repo dir cannot be a patch target at
 # all. Reject both rather than mint a slot the protocol cannot verify.
+# Compare two `pwd -P` results: git's toplevel string is a logical path and can
+# disagree with a physical `<root>` when the worktree is reached through a symlink.
 top="$(git -C "$root" rev-parse --show-toplevel 2>/dev/null || true)"
 [ -n "$top" ] || { echo "mailbox-slot: <root> is not inside a git worktree: $root" >&2; exit 1; }
+top="$(cd "$top" && pwd -P)"
 [ "$root" = "$top" ] || { echo "mailbox-slot: <root> is not the worktree toplevel (want: $top): $root" >&2; exit 1; }
 
 mkdir -p "$root/.mailbox"
