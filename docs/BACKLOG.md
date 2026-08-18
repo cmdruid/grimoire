@@ -14,6 +14,20 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-22 — `records.sh new` performs no reserved-name check
+- **source:** feat stream, agent-doctrine spec review round 2 (2026-08-18).
+- **status:** open
+- **body:** `resolve()` (`records.sh:64`) and `stores()` (`:73`) both exclude reserved
+  directories, but `cmd_new` consults neither. With a matching template planted,
+  `records.sh new templates --title X` succeeds today and mints a record inside a reserved
+  directory — where `list` and `check` will never see it again, so it is silently orphaned
+  rather than flagged. Pre-existing and **not** doctrine-specific: it applies to `templates`
+  and `scripts` as they stand. Surfaced while verifying that the agent-doctrine spec's
+  two-arm fix was complete; deliberately left out of that feature's scope because it is a
+  separate defect with a separate blast radius.
+- **fix sketch:** have `cmd_new` reject a reserved `<doctype>` using the same case arm as
+  `resolve()`, and prove it by breaking — assert `new templates` exits non-zero.
+
 ### BL-21 — mint scripts still emit `records-root=` on stdout
 - **source:** grok stream, records-layer init debrief (2026-08-18).
 - **status:** done (2026-08-18) — both minters now print `agent-records=` and keep
