@@ -163,6 +163,81 @@ fn a_pack_and_a_skill_install_from_this_clone() {
     assert!(!face.exists(), "and the face unlinked");
 }
 
+/// The scenario a dogfooder actually runs: real library content installed into
+/// **someone else's project**, at project scope. Distinct from the global-scope
+/// case above, and the one D5 changed — the lock lands at the project root now,
+/// which means it appears in that project's working tree.
+#[test]
+fn a_pack_installs_into_a_foreign_project_at_project_scope() {
+    let fake_home = tempfile::tempdir().unwrap();
+    let other_project = tempfile::tempdir().unwrap();
+    // A project that knows nothing about grimoire: just a directory.
+    std::fs::write(other_project.path().join("README.md"), "someone's project\n").unwrap();
+
+    let mut app = App::new(
+        AppEnv::rooted(fake_home.path()),
+        repo_root(),
+        Some(other_project.path().to_path_buf()),
+    );
+    let launch = app.launch();
+    settle(&mut app, launch);
+
+    // Switch to project scope, the way `s` does.
+    let jobs = app.on_key(Key::ToggleScope);
+    settle(&mut app, jobs);
+    let target = app.target().expect("a project was opened");
+    assert!(
+        target.skills_dir.starts_with(other_project.path()),
+        "links must land in the project: {}",
+        target.skills_dir.display()
+    );
+
+    select(&mut app, "clankshop");
+    let jobs = app.on_key(Key::Confirm);
+    settle(&mut app, jobs);
+    let jobs = app.on_key(Key::Confirm);
+    settle(&mut app, jobs);
+    app.on_key(Key::Back);
+
+    assert!(app.is_installed("clankshop"), "the project lock records it");
+    // D5: at the project ROOT, not beside the agent dir.
+    assert_eq!(
+        target.lock_path,
+        other_project.path().join("grimoire.lock"),
+        "§3: the project lock lives at the project root"
+    );
+    assert!(target.lock_path.is_file());
+    assert!(
+        !other_project.path().join(".claude/grimoire.lock").exists(),
+        "and nothing is left at the pre-D5 location"
+    );
+
+    // The links point back into this clone — the live-edit property.
+    let face = target.skills_dir.join("clankshop");
+    assert!(
+        std::fs::canonicalize(&face)
+            .unwrap()
+            .starts_with(std::fs::canonicalize(repo_root()).unwrap()),
+        "a project install is still a live view of the library"
+    );
+
+    // Nothing leaked into the fake home: §3's "exactly one scope".
+    assert!(
+        !fake_home.path().join(".agents/grimoire.lock").exists(),
+        "a project install must not touch the global lock"
+    );
+
+    // And it comes back out cleanly.
+    select(&mut app, "clankshop");
+    let jobs = app.on_key(Key::Remove);
+    settle(&mut app, jobs);
+    let jobs = app.on_key(Key::Confirm);
+    settle(&mut app, jobs);
+    app.on_key(Key::Back);
+    assert!(!app.is_installed("clankshop"));
+    assert!(!face.exists(), "the project is left as it was found");
+}
+
 /// The Phase 1 trap, at app altitude: nothing the user can select may resolve
 /// into a nested checkout. In the root checkout `.workstreams/` holds live
 /// worktrees; running there is what makes this real.
