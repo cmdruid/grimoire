@@ -130,6 +130,22 @@ expect_eq "broken link check rc" "2" "$rc"
 expect "check names the broken link" "broken link → notes/never-existed.md" "$ERR"
 sed -i.bak '/rotted/d' "$tr_rec" && rm -f "$tr_rec.bak"
 
+# A template teaching the tracker-line FORM must name a real store to be useful,
+# which defeats the first-segment filter -- so code blocks are skipped outright.
+# Both fence styles and the four-space indent, since templates use all three.
+printf -- '\n    - [ ] %s — indented example [→ notes/%s-nope.md]\n' "$today" "$today" >> "$tr_rec"
+printf -- '\n```\n- [ ] %s — fenced example [→ notes/%s-also-nope.md]\n```\n' "$today" "$today" >> "$tr_rec"
+lrc=0; "$RS" check >"$OUT" 2>"$ERR" || lrc=$?   # rc captured so a regression here
+expect_eq "example links in code blocks do not fail the check" "0" "$lrc"  # reports, not aborts
+expect "example links inside code blocks are not followed" "records check: OK" "$OUT"
+# Red-proof: the skip must not be a blanket amnesty -- a real link OUTSIDE a code
+# block, added while those examples remain, still has to fail.
+printf -- '- [ ] %s — rotted-again [→ notes/never-existed-either.md]\n' "$today" >> "$tr_rec"
+rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "real rot still caught alongside examples" "2" "$rc"
+expect "check still names the real broken link" "broken link → notes/never-existed-either.md" "$ERR"
+sed -i.bak '/rotted-again/d' "$tr_rec" && rm -f "$tr_rec.bak"
+
 # --- open-ticket visibility: check surfaces the count both ways -------------------
 "$RS" check >"$OUT"
 expect "no tickets reports zero" "open tickets: 0" "$OUT"

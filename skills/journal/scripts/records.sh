@@ -348,10 +348,19 @@ cmd_check() {
       fails=$((fails + 1))
     fi
     # record links: a body reference `→ <store>/<file>.md` must resolve at the
-    # root (link-rot detection). Only tokens whose first segment is a real
-    # top-level directory are checked, so prose and template examples can't
-    # manufacture false rot.
-    links="$(grep -o '→ *[A-Za-z0-9._/-]*\.md' "$RR/$rel" 2>/dev/null | sed 's/^→ *//' | sort -u || true)"
+    # root (link-rot detection). Two filters keep illustrations from manufacturing
+    # false rot. (1) Only tokens whose first segment is a real top-level directory
+    # are checked, so prose naming no store can't trip it. (2) CODE BLOCKS are
+    # skipped -- fenced and four-space-indented alike -- because an example line
+    # showing the tracker-line FORM necessarily names a real store, which defeats
+    # filter (1) on its own: a template demonstrating `→ notes/<file>.md` is
+    # teaching syntax, not referencing a record.
+    links="$(awk '
+      /^[[:space:]]*(```|~~~)/ { fence = !fence; next }
+      fence                    { next }
+      /^(    |\t)/             { next }
+      { print }
+    ' "$RR/$rel" 2>/dev/null | grep -o '→ *[A-Za-z0-9._/-]*\.md' | sed 's/^→ *//' | sort -u || true)"
     if [ -n "$links" ]; then
       while IFS= read -r lnk; do
         case "$lnk" in

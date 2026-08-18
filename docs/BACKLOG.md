@@ -18,8 +18,15 @@ one-line resolution; delete only when the reason it existed is gone.
 - **source:** `feat` stream, post-rebase full gate (2026-08-18). Reproduced on `main` @ `420488f`
   with no stream code involved — `bash skills/clankshop/scripts/tests/setup-journal-test.sh` →
   `FAIL: trackers/<date>-backlog.md — broken link → notes/2026-08-01-fact.md`.
-- **status:** open — **the trunk's clankshop suite is currently failing**; this is not a
-  regression from any stream.
+- **status:** done (2026-08-18) — `records.sh check`'s link extractor now skips code blocks
+  (fenced and four-space-indented) before matching `→ <store>/<file>.md`. Both suites green.
+  **The first-segment filter turned out to be no defense here** — an example teaching the
+  tracker-line form *must* name a real store to be useful, which is exactly what that filter
+  keys on; only skipping code blocks fixes the class. Regression test in
+  `skills/journal/scripts/tests/records-test.sh` covers both fence styles plus the indent, and
+  carries a red-proof: a real broken link outside a code block, added while the examples remain,
+  still fails — so the skip cannot decay into a blanket amnesty. Proven by breaking (skip
+  disabled → 2 readable FAILs; restored → 56 passed).
 - **body:** `skills/backlog/templates/trackers.md` illustrates the tracker-line format with two
   four-space-indented example lines (a markdown indented code block) that contain a path-shaped
   token, `notes/2026-08-01-fact.md`. `records.sh check`'s link checker extracts link targets
