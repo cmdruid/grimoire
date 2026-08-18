@@ -75,8 +75,9 @@ used as a proxy for "records exist." Those are different facts.
 The stamp picks handbook and station context. It does not decide
 whether a record gets written, or where.
 
-Journal-as-auditor is already the intended split (`check` /
-`curate` repair front-matter and ledger coherence). Journal-as-
+Journal-as-auditor is already the intended split
+(`records.sh check` / `/journal curate` repair
+front-matter and ledger coherence). Journal-as-
 **prerequisite** inverts it.
 
 ## Goal
@@ -98,11 +99,12 @@ Every pack skill that creates a typed record:
 
 `skill-builder` **observes** the rule (doctrine + `new`
 scaffold) and **enforces** it (`check` mechanical gate +
-`review` judgment). `/journal check` / `curate` remain the
-*file* auditors. `/journal setup` deploys the **tool layer
-only** (`scripts/records.sh`, empty `history.tsv`, README)
-and is never a floor. It creates **no store directory, no
-`.records/templates/`, and no agent-templates home**.
+`review` judgment). `records.sh check` / `/journal curate`
+remain the *file* auditors. `/journal setup` deploys the
+**tool layer only** (`scripts/records.sh`, empty
+`history.tsv`, README) and is never a floor. It creates
+**no store directory, no `.records/templates/`, and no
+agent-templates home**.
 
 Lint `fails=0`. No new sibling sourced at runtime.
 
@@ -142,7 +144,7 @@ either already has a minter (`notepad`), gets a doctype-
 parameterized copy of that minter (`backlog`), or composes
 front-matter + its existing body scaffold in prose when minting
 is rare (`debugger`, `auditor`). Copy-drift of the five-key
-shape is caught by `journal check` and by the review brief, not
+shape is caught by `records.sh check` and by the review brief, not
 by a new shared binary.
 
 **Rejected: flipping this library's own `docs/design/` and
@@ -244,15 +246,20 @@ script never opens `AGENTS.md` / `CLAUDE.md`.
    path. Do not delete the old file this unit.
    **Body scaffolds skip this step** (`spec.md`,
    `plan.md`, `roadmap.md`, `investigation.md`) — they
-   have no legacy flat name.
-   **Blueprint one-time adopt:** if
-   `<agent-records>/templates/design.md` exists, adopt
-   it as `design.md`. If only
-   `<agent-records>/templates/spec.md` exists (today's
-   lazy-deploy: `spec.md` → `design.md`), adopt that
-   file as **`spec.md`** (the body), not as the new
-   `design.md` shell. Do not overwrite a project
-   `spec.md` with stock after that adopt.
+   have no legacy flat name, with one exception:
+   **Blueprint one-time adopt.** Today's lazy-deploy
+   copies bundled `templates/spec.md` to
+   `<agent-records>/templates/design.md`. That file
+   *is the body scaffold* (`doctype: design` plus
+   Problem/Goal/…). If it exists and
+   `<agent-templates>/blueprint/spec.md` does not,
+   copy it to **`spec.md`** (the body). Never adopt
+   it as the new `design.md` shell — that shell
+   comes from the bundled `templates/design.md` in
+   step 3. Do not overwrite a project `spec.md`
+   with stock after that adopt. A stray
+   `<agent-records>/templates/spec.md` (unusual) is
+   also adopted as `spec.md` only.
 3. Else copy the bundled `templates/<file>` to
    `<agent-templates>/<skill>/<file>`, then use it.
 
@@ -306,10 +313,11 @@ pack). Rules:
    store (and the agent-records home directory if needed). Do
    not create `scripts/records.sh`, `history.tsv`, other
    stores, the records README, or `.records/templates/`.
-4. **No floor.** Missing `records.sh` is not an error. Missing
-   `/journal setup` is not an error. A description must not say
-   the skill requires a stood-up records layer. A verb must not
-   stop and point at `/journal setup`.
+4. **No floor.** Missing `records.sh` is not an error.
+   Journal standup is never a precondition. A
+   description must not say the skill requires a
+   stood-up records layer. A verb must not refuse
+   and send the operator to journal standup.
 5. **In-package contract.** The writer states the five keys
    (`doctype`, `status`, `created`, `updated`, `tags`), the
    status vocabulary (`open` | `current` live; `done` |
@@ -391,7 +399,8 @@ fold. Three verbs, one job each. No new verb.
     resolvers (default paths named literally);
   - the five-key in-package contract;
   - a no-floor sentence (missing `records.sh` is not
-    an error; do not point at `/journal setup`);
+    an error; journal standup is never a
+    precondition);
   - `## Project templates` (named files, or an explicit
     "none" if it writes records but locks nothing in
     yet).
@@ -406,15 +415,22 @@ inventory updated). Each is proven red on
 deliberately-broken input before the green is trusted
 (doctrine: prove a new check by breaking it). Journal
 is exempt from the floor-phrase check (it may document
-`/journal setup`). Pack faces are exempt from both,
-same as today's independence checks.
+its own setup). `skill-builder` is exempt from the
+floor-phrase check (it is the enforcer; its doctrine
+and `new` describe the hole without being a floor).
+Pack faces are exempt from both, same as today's
+independence checks.
 
-1. **Journal-floor phrase (FAIL).** A non-`journal`
-   skill's `.md` matches `point at \`/journal setup\``
-   or `Requires a stood-up records layer`. Evidence:
-   skill, file, line. This replaces the Verification
-   grep as the *ongoing* gate; the live backlog Guard
-   is the first plant.
+1. **Journal-floor phrase (FAIL).** A non-exempt
+   skill's `.md` matches `Requires a stood-up records
+   layer` or `stop and point at \`/journal setup\``.
+   Evidence: skill, file, line. The live backlog
+   Guard is the first plant. Do **not** match a
+   prohibition ("journal standup is never a
+   precondition") — that is how `new` / doctrine
+   state the rule. The Verification grep uses these
+   same two phrases and the same exemptions
+   (`journal`, `skill-builder`, pack faces).
 2. **Project-templates heading (FAIL).** The skill
    has `templates/*.md` and `SKILL.md` has no heading
    `## Project templates`. Journal has `reports.md`
@@ -447,9 +463,9 @@ fragile; those are substance.
 
 - **Independence.** If the skill writes typed records, it
   must not require a sibling standup or an executable
-  `records.sh` as a floor. A stop that names `/journal setup`
-  is a finding. A description that requires a stood-up
-  records layer is a finding.
+  `records.sh` as a floor. A stop that treats journal
+  standup as a precondition is a finding. A description
+  that requires a stood-up records layer is a finding.
 - **Output shape.** If it produces a record, the destination
   is `<agent-records>/<store>/` (default `.records/<store>/`),
   not a confirmed `docs/` fallback and not "skip, write
@@ -495,8 +511,13 @@ that merely exists (legacy path, or a notepad-created
 additive and writes the tool beside what is there.
 
 `verbs/setup.md` drops the sentence that clients stop and
-point here, and drops "stand up the eight stores." Done-when
-becomes: tool + ledger + README; no store directories.
+point here, and drops "stand up the eight stores." It
+resolves the home with the both-names rule
+(`agent-records:` preferred, `records-root:` accepted,
+else `.records`) and passes the rel path to
+`standup.sh` (the flag may stay `--records-root`; the
+*scan* is what changes). Done-when becomes: tool +
+ledger + README; no store directories.
 
 `SKILL.md` still *defines* the eight store names and the
 contract. It no longer claims to create those directories.
@@ -542,7 +563,9 @@ when `records.sh` exists. Slice 3 updates the script
 (and `note-mint-test.sh`) to take both homes, resolve
 through the agent-templates rule, and never write
 `.records/templates/`. Resolver prose in `SKILL.md`
-updates to both homes. `## Project templates` lists
+updates to both homes. Verbs (`write`, `supersede`,
+`drop`, `find`) pass both homes on `mint` and keep
+`stamp` as specified. `## Project templates` lists
 `notes.md`.
 
 ### Backlog (the pain)
@@ -609,8 +632,12 @@ skip and do not create `.records/`" to:
   files, ship-time plan closes, optional debrief
   `reports/` — land under the agent-records home.
   File-mode if `records.sh` is missing (fill from the
-  bundled doctype template; stamp-only close). Do not
+  resolved project template; stamp-only close). Do not
   create `.handbook/`.
+- **Records-mode mint:** resolve via the agent-templates
+  rule, pass `records.sh new --template <resolved>`,
+  never write `.records/templates/`. Same for the
+  next-plan draft and an optional debrief report.
 - **Carry and declare** `templates/plans.md` and
   `templates/reports.md` as project templates. Hand-off,
   compaction-anchor, coordinator, and intake templates
@@ -623,13 +650,13 @@ skip and do not create `.records/`" to:
   layout, as today on a non-workshop host.
 - `create` step 5: a new untracked plan moves to
   `<agent-records>/plans/` on every host, with contract
-  front-matter (`records.sh new` or file-mode fill from
-  `templates/plans.md`).
+  front-matter (`records.sh new --template <resolved>`
+  or file-mode fill from the resolved `plans.md`).
 - `ship` step 1: opportunistic `records.sh done`; else
   file-mode stamp of the plan. Ledger commit path only
   when `history.tsv` was actually written.
 - Next-plan draft (delegate mode): same destination,
-  same opportunistic mint.
+  same `--template` / file-mode path.
 - `scripts/workstream-git.sh` `resolve_records_root`
   today scans `^records-root:` only. Update it to the
   both-names resolver and print `agent-records=`. A
@@ -660,8 +687,12 @@ a stamped host. It no longer forks the *destination*:
   minted — same split as contractor `plans.md` / `plan.md`.
 - `## Project templates` lists `design.md`, `adr.md`,
   `spec.md`. `founding.md` is package-only.
-- Opportunistic `records.sh new`; else file-mode from the
-  doctype template.
+- Records-mode: resolve `design.md` / `adr.md` via the
+  agent-templates rule, `records.sh new --template
+  <resolved>`. File-mode: write from that same
+  resolved path. Never write `.records/templates/`.
+  Then fill the body from the resolved `spec.md` (or
+  the ADR body).
 - Status promotion: `records.sh touch --status current`
   when the tool exists; else file-mode stamp. Closure
   through `records.sh done` when the tool exists; else
@@ -678,11 +709,14 @@ Same destination flip for `plans/`:
 - Already carries `templates/plans.md`. Keep it.
 - `## Project templates` lists `plans.md`, `plan.md`,
   `roadmap.md`.
-- Workshop: mint shell then fill body, as today.
-  File-mode: write the plans template (five keys) then
-  overwrite `tags:` and the body from `templates/plan.md`
-  / `roadmap.md` / a runbook conductor, same as the
-  workshop fill.
+- Records-mode: resolve `plans.md` via the
+  agent-templates rule, `records.sh new --template
+  <resolved>`, then fill the body from the resolved
+  `plan.md` / `roadmap.md` / runbook conductor.
+  File-mode: write the resolved plans shell then the
+  same body fill. Never write `.records/templates/`.
+  "As today" is **not** the path — today lazy-deploys
+  into `.records/templates/`.
 - Build / review verbs do not mint.
 
 ### Debugger
@@ -692,9 +726,11 @@ gates Phase 4 (fix landing is not a record question).
 The report is a record on every host:
 
 - After Phase 3, mint a `reports/` record under the
-  agent-records home (opportunistic `records.sh new
-  reports`, else file-mode from `templates/reports.md` +
-  `templates/investigation.md` body).
+  agent-records home. Resolve `reports.md` via the
+  agent-templates rule; `records.sh new --template
+  <resolved>` when the tool exists; else file-mode
+  from that path + the resolved `investigation.md`
+  body. Never write `.records/templates/`.
 - Unstamped Done-when loses "No mint."
 - Do not mint `bugs/` (backlog's store). A deferred
   defect still graduates through the host's bug lane.
@@ -710,18 +746,21 @@ vs confirmed `docs/audit/`). That home is **not** a
 record. The pass report is:
 
 - Always a `reports/` record under the agent-records
-  home, tagged `audit`. Drop the standalone
-  `<home>/YYYY-MM-DD-audit-<scope>.md` path.
+  home, tagged `audit`. Resolve `reports.md` via the
+  agent-templates rule; `records.sh new --template
+  <resolved>` when the tool exists; else file-mode
+  from that path. Drop the standalone
+  `<home>/YYYY-MM-DD-audit-<scope>.md` path. Never
+  write `.records/templates/`.
 - Carry `templates/reports.md`. `## Project templates`
   lists that file.
-- Defects: mint `bugs/` only when `records.sh` is
-  present (workshop-typical) *or* when this skill is
-  willing to file-mode a bugs record from a bundled
-  template. **This unit does not give auditor a `bugs`
-  template.** File-mode defects stay in the reports
-  record; the operator files `/backlog bug` to promote
-  one. That is the same drain-without-impersonation
-  rule as workstream vs the Backlog tracker.
+- **Do not mint `bugs/` this unit.** Auditor has no
+  `bugs` template and must not read backlog's package
+  or a leftover `.records/templates/bugs.md`. Defects
+  stay in the reports record; the operator files
+  `/backlog bug` to promote one. Same
+  drain-without-impersonation rule as workstream vs
+  the Backlog tracker.
 - Tracker-line drain: only when the tracker file
   already exists. Else the report is the queue.
 
@@ -730,7 +769,17 @@ record. The pass report is:
 `setup` / `migrate` still delegate the tool-layer standup
 to journal. That is the workshop onramp, not a client
 refuse. They must not grow their own store `mkdir`s to
-"help." Unchanged otherwise.
+"help."
+
+`check` / `setup` / `migrate` resolve the agent-records
+home with the both-names rule (`agent-records:`
+preferred, `records-root:` accepted, else `.records`).
+A host that only declares `agent-records:` must not be
+told the layer is absent at default `.records/`.
+Prose that says journal standup creates "stores,
+templates" is updated to the tool layer (scripts +
+ledger + README). Files: `verbs/check.md`,
+`verbs/setup.md`, `verbs/migrate.md`.
 
 `PACK.md` roster blurbs that call backlog "a client of
 the deployed records layer" and auditor "drains findings
@@ -748,9 +797,9 @@ No `version:` bump (member set unchanged).
 | Skill-review brief Independence / Output shape | Renaming `.records/` or dropping `records-root:` |
 | Journal tool-layer standup; `records.sh --template` | Journal creating any store dir or `templates/` |
 | Backlog: drop the floor, `record-mint.sh`, project templates | Giving every writer a mint script |
-| Destination flip: workstream, blueprint, contractor, debugger, auditor, notepad resolver | Debugger Phase 4 workshop gate; auditor rubric-home probe |
+| Destination flip: workstream, blueprint, contractor, debugger, auditor, notepad (incl. verbs) | Debugger Phase 4 workshop gate; auditor rubric-home probe; auditor minting `bugs/` |
 | Each writer: bundled doctype template + `## Project templates` | Copying undeclared / skill-internal templates |
-| Clankshop / PACK.md roster wording (no version bump); `setup-journal-test.sh` `--template` | Making journal optional in the pack; moving `records.sh` out of `scripts/` |
+| Clankshop / PACK.md roster wording (no version bump); `setup-journal-test.sh` `--template`; check/setup/migrate both-names resolver | Making journal optional in the pack; moving `records.sh` out of `scripts/` |
 | `workstream-git.sh` both-names resolver | — |
 | `note-mint.sh` both-homes signature; never write `.records/templates/` | — |
 | Brownfield adopt of `.records/templates/<doctype>.md` into the agent-templates home | Deleting legacy `.records/templates/` this unit |
@@ -784,12 +833,13 @@ No `version:` bump (member set unchanged).
   history / this spec / dated design docs):
 
   ```
-  cd <worktree> && rg -n 'point at `/journal setup`|Requires a stood-up records layer' \
-    skills --glob '!**/docs/**'
+  cd <worktree> && rg -n 'Requires a stood-up records layer|stop and point at `/journal setup`' \
+    skills --glob '!**/docs/**' --glob '!**/skill-builder/**'
   ```
 
-  After slice 2, `skills/backlog/` is empty of those
-  strings. After slice 3, no writer skill carries them.
+  Journal and skill-builder are exempt. After slice 2,
+  `skills/backlog/` is empty of those strings. After
+  slice 3, no writer skill carries them.
 - Journal standup test rewritten: after `standup.sh` on
   a bare fixture, the home has `scripts/records.sh`,
   `history.tsv`, `README.md`, and **none** of
@@ -840,11 +890,14 @@ confirm it fails before committing the inverted test.
 
 **Red-proof for the new lint checks.** Plant
 `Requires a stood-up records layer` in a throwaway
-non-journal `SKILL.md` and confirm check 1 FAILs;
-remove it and confirm green. Plant a skill with
-`templates/foo.md` and no `## Project templates` and
-confirm check 2 FAILs; add the heading and confirm
-green. Do not land either check on a first clean run.
+non-exempt `SKILL.md` and confirm check 1 FAILs;
+remove it and confirm green. Plant `journal standup
+is never a precondition` in the same file and
+confirm check 1 stays green (prohibition must not
+match). Plant a skill with `templates/foo.md` and
+no `## Project templates` and confirm check 2
+FAILs; add the heading and confirm green. Do not
+land either check on a first clean run.
 
 ## Slices
 
@@ -869,6 +922,9 @@ required unless a later flip changes a slice boundary.
     `skills/journal/scripts/tests/standup-test.sh`;
     `skills/journal/scripts/tests/records-test.sh`;
     `skills/clankshop/scripts/tests/setup-journal-test.sh`;
+    `skills/clankshop/verbs/check.md`,
+    `verbs/setup.md`, `verbs/migrate.md` (both-names
+    resolver; journal standup = tool layer);
     heading-only `## Project templates` on
     `skills/{notepad,backlog,blueprint,contractor,debugger,workstream,journal,agent-council}/SKILL.md`;
     optionally `skills/clankshop/PACK.md` roster blurbs.
@@ -911,6 +967,7 @@ required unless a later flip changes a slice boundary.
     `skills/auditor/SKILL.md`,
     `templates/reports.md`;
     `skills/notepad/SKILL.md`,
+    `verbs/*.md`,
     `scripts/note-mint.sh`,
     `scripts/tests/note-mint-test.sh`;
     `skills/workstream/scripts/workstream-git.sh`.
@@ -920,7 +977,9 @@ required unless a later flip changes a slice boundary.
     "do not create `.records/`." Debugger unstamped
     Done-when no longer says "No mint." Inventory
     table complete on disk. Each writer has `## Project
-    templates`. Prose says "agent-records home" and
+    templates`. Every records-mode mint passes
+    `--template`. Notepad verbs pass both homes.
+    Prose says "agent-records home" and
     "agent-templates home." Lint `fails=0`.
 
 ## Alternatives rejected (recap)
@@ -966,9 +1025,38 @@ section when the next review is clean.
    (mint scripts take paths; state-analysis helpers
    inline the resolver).
 5. **mid — Legacy adopt had no file→doctype map.**
-   Folded: step 2 is store-named lock-ins only;
-   body scaffolds skip; blueprint `spec.md`→`design.md`
-   is a one-time adopt of the body, not the shell.
+   Folded pass 1 (incomplete). Pass 2: live dest is
+   `.records/templates/design.md` and *is the body*.
+   Refolded: adopt that file as `spec.md`; never as
+   the new `design.md` shell.
 6. **low — File-mode no-`history.tsv` lacked a
    red-proof.** Folded: plant a write, demand red,
    remove the plant.
+
+Independent `/blueprint review` pass 2, 2026-08-18
+(`needs-rework`). Must-fixes folded the same day.
+
+1. **high — Check 1 / grep match the no-floor
+   wording this spec plants in skill-builder.**
+   Folded: check 1 + grep match `Requires a stood-up
+   records layer` or `stop and point at \`/journal
+   setup\``; skill-builder and journal exempt;
+   `new` / doctrine say "journal standup is never a
+   precondition"; red-proof that the prohibition
+   stays green.
+2. **high — Auditor `bugs/` mint has no template
+   after this unit.** Folded: auditor does not mint
+   `bugs/` this unit; defects stay in the report.
+3. **mid — Slice 3 writer bullets still said
+   `records.sh new` as today.** Folded: each writer
+   resolves via the agent-templates rule and passes
+   `--template`; never writes `.records/templates/`.
+4. **mid — Slice 3 omitted notepad verbs.** Folded:
+   `skills/notepad/verbs/*.md` on the path list.
+5. **mid — Door resolvers outside workstream-git.sh
+   stayed `records-root:`-only.** Folded: journal
+   `setup.md` and clankshop check/setup/migrate use
+   both names; clankshop prose describes the tool
+   layer.
+6. **low — `/journal check` is not a verb.** Folded:
+   `records.sh check` / `/journal curate`.
