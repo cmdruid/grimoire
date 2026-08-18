@@ -294,6 +294,89 @@ the readers have flipped).
   hazard in the worktree (the harness loads from the root checkout), but the running skill
   changes when this ships.
 
+## Review history
+
+### 2026-08-18 — independent three-lens review — **needs-rework**
+
+Soundness `needs-rework`, skeptic `needs-rework`, groundedness `approve-with-changes`. All
+findings below were independently re-verified against the tree before being recorded (a
+reviewer's claim is a claim, not a decision). Prune each entry on resolution.
+
+**MUST-FIX 1 — the feature regresses every existing workshop host (soundness).** Resolution
+(§1) has two arms: a declared line, or the derived default. **Nothing writes an
+`agent-doctrine:` declaration** — verified: the string appears nowhere in `skills/`, and
+`clankshop/verbs/setup.md:52` + `migrate.md:25,54` write only `agent-records:` /
+`records-root:`. The skill that would declare it is `handbook`, which is feature 3 and out of
+scope here. So after S4, a seeded host with real doctrine at `.handbook/test/workflows/
+diagnostics.md` (verified present in `seed/`) resolves `<agent-records>/doctrine`, finds
+nothing, and silently degrades — losing discovery of content that exists on disk two
+directories over. This falsifies §7's "Nothing in the field moves": the bytes don't move, but
+what finds them stops finding them. It also puts debugger's two gates in live disagreement —
+the retained stamp says "workshop present," while home resolution says "artifact absent,"
+about the same real directory. **Fix:** add a slice having `clankshop`'s `setup` and
+`migrate` write `agent-doctrine: .handbook` into the door (small, in scope, closes the gap
+without waiting on feature 3), and add a resolution-proof arm modelling "seeded `.handbook`,
+no declaration."
+
+**MUST-FIX 2 — check 14 is not implementable as text matching (soundness, sharpened).** §6
+prescribes porting the `records.sh` fence toggle so check 14 stops failing `auditor`, which
+documents the legacy `docs/audit/` path. But that path sits in **prose with inline
+single-backtick spans** (`auditor/SKILL.md:31-32`, verified), and the fence toggle skips only
+fenced and four-space-indented blocks — so the prescribed fix does not protect the case that
+motivated it, and the fence-proof would pass while the real case fails. Sharpening on
+re-verification: skills write **every** path in inline backticks, so skipping inline spans
+makes check 14 match nothing, while not skipping them makes it fire on legitimate
+documentation. A hardcoded path and a documented legacy path are textually identical.
+**Recommended fix: drop check 14.** Check 15 (resolution phrase present) asserts the right
+behavior positively and has no such problem; check 16 targets a specific prose directive.
+Proving-a-negative-in-text was the wrong instrument.
+
+**MUST-FIX 3 — the journal fold is prose against enforcement code (skeptic, reproduced).**
+§8 claims "`doctrine` joins the reserved never-scanned entries. `records.sh check` ignores
+it." Verified false as specced: `records.sh:73` excludes only `templates|scripts` from
+`stores()`, and `:64`'s `resolve()` reserved case is only `templates/*|scripts/*|history.tsv`
+— so `doctrine/` is enumerated as a typed record store and `check` demands record
+front-matter on every doctrine file (the skeptic reproduced a `check: FAIL` against a
+fixture). S5's path list never touches `records.sh`. Compounding it: **S3 creates
+`.records/doctrine/audit/` before S5's fold**, so the spec ships a window where its own
+default breaks the records gate — and no fixture plants a doctrine file under the records
+root and runs `check`, so the spec's own verification would miss it. **Fix:** add the
+`records.sh` case-arm edits to S5 (or a dedicated slice), move the fold **before** S3, and
+add the missing fixture.
+
+**FIX 4 — fabricated quotation (groundedness).** `debugger/SKILL.md:62-63` reads "…and that a
+**fix should land**"; this spec quoted "…and that a fix **is wanted**" inside quotation marks.
+That phrase occurs nowhere in the file. Also `:103` is "Human confirms → Phase 4", not the
+cited sentence — the match is at `:109`. And `records.sh:356-362` stops one line short: the
+four-space/tab skip is `:363`.
+
+**FIX 5 — "moves" should be "orphans" (skeptic).** Renaming the records home does not move
+doctrine: resolution recomputes, files stay put, and consumers then resolve an empty path or
+mint a second doctrine tree. Stranding, not relocation, and nothing detects it. *(Note: the
+existing agent-templates convention at `DOCTRINE.md:217-221` — "one `agent-records:` line
+moves both homes" — appears to carry the same imprecision. Inherited, not introduced here;
+worth a separate capture.)*
+
+**FIX 6 — check 15's phrase must be pinned (skeptic).** Checks 12 and 13 match exact fixed
+literals; check 15 matches "an `agent-doctrine` resolution phrase", a semantic category. S4
+must author one canonical sentence and reuse it verbatim so S2 can grep a literal. This
+matters more if check 14 is dropped, since 15 then carries the weight alone.
+
+**NICE-TO-HAVE.** §7's "Consumer probes" class label includes `auditor:21`, which §5 declares
+a *producer* — relabel. §7 says the onramp branches "restructure" without saying to what —
+name it as a build-time open item rather than silence.
+
+**Attacks that FAILED (recorded so they are not re-litigated).** The Problem section's
+reader-gap claims were verified verbatim, not dramatized. The derived default is precedented,
+not accidental coupling: `DOCTRINE.md:217-221` shows agent-templates already nests under
+agent-records — though that convention is hours old and unseasoned. The 11-site inventory and
+its 6/4/1 classification were independently reproduced exactly. The required-tier /
+resolves-bare distinction is consistent across both documents. Alternatives were judged real,
+not strawmen. Blast-radius: bundling is cheaper than the counterfactual by the codebase's own
+resequencing logic. One calibration: debugger's net gain is narrower than the Problem section
+implies — Phases 1–3 run identically today and Phase 4 stays stamp-gated; the gain is that
+the playbook becomes consultable bare.
+
 ## Grounding
 
 Built against `1707ede`. Verified: `DOCTRINE.md:203` (front-door variable pattern,
