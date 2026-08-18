@@ -87,7 +87,9 @@ Six verbs. Each names the core call it is a thin wrapper over.
 ### Scope grammar
 
 Scope is **always explicit in effect, defaulted in syntax**. Three flags, shared by every verb
-that touches a destination (`install`, `remove`, `status`, `check`, `init --project`):
+that touches or reports on a destination (`install`, `remove`, `list`, `status`, `check`,
+`init --project`). `list` takes them because it marks which packs are already installed, and
+"installed" is only meaningful against one target:
 
 - `--global` — the agent's global skills dir. **The default when neither is given.**
 - `--project [dir]` — project scope. A bare `--project` means the current directory.
@@ -101,6 +103,24 @@ privilege one harness in its default. This is a **deliberate behavioral differen
 `install.sh`** and must be called out in the README when it lands.
 
 Every command prints its resolved destination before acting, so the default is never silent.
+
+### Library resolution
+
+`install`, `list`, and `check` need a library, and they reuse `main.rs`'s existing cascade
+unchanged: `--library <path>` → the configured default (`config::load`) → the current directory.
+
+With one difference for verbs. The cwd fallback is right for the TUI — it is what lets a
+dogfooder run `grimoire` inside a clone with no setup — but for a verb it turns a missing library
+into an empty result rather than an error: `grimoire list` in an unrelated directory would
+succeed and print nothing. **A verb that falls through to cwd and finds no packs and no loose
+skills exits 2**, naming the three ways to set a library. Silence that looks like success is the
+failure mode worth spending an exit code on.
+
+### `--help`
+
+`grimoire --help` lists the verbs. `grimoire <verb> --help` prints that verb's own flags and
+exits 0, on every verb — including before any scope or library resolution runs, so `--help` works
+in a directory where the command itself would fail.
 
 ### `install`
 
@@ -163,8 +183,21 @@ grimoire init --project [dir] [--agent <id>]  # prepare a project
 **`init`** writes `<config_home>/grimoire/config.toml` with `library = "<path>"`, giving
 `config::save` its first caller. `--library` names the path; without it, the current directory is
 used and must enumerate as a library (at least one pack or loose skill) or the command errors
-rather than recording a path that will not work. Unknown keys in an existing config are preserved
-— `config.rs` already guarantees this.
+rather than recording a path that will not work.
+
+**It must load before it mutates**, in exactly this sequence:
+
+```rust
+let mut config = config::load(env.config_home())?;   // NOT Config::default()
+config.library = Some(path);
+config::save(env.config_home(), &config)?;
+```
+
+This is a correctness requirement, not a style note. `Config::unknown` — which holds the user's
+comments and any key this version does not interpret — is a **private** field populated *only* by
+`config::load`. Constructing a fresh `Config` and assigning `library` compiles cleanly and
+**silently erases every comment and unknown key in the user's config on save**. The preservation
+guarantee lives in the caller's sequence, not in `config.rs`.
 
 **`init --project [dir]`** creates the agent's project skills dir and `<dir>/grimoire.lock`
 containing `{"version": 1, "packs": {}}` (owner, 2026-08-18).
@@ -185,18 +218,35 @@ unlink, so **a skill installed as an atom cannot be removed by the tool at all**
 (`install.sh:261-264`). The CLI makes that hole obvious the moment `install --skill` exists.
 
 ```rust
-/// Remove a skill installed as an atom: unlink an owned symlink, no lock involved.
-/// Mirrors `install_atom`'s "no lock entry" symmetry, and applies `install.sh`'s
-/// ownership rule so another tool's link is reported, never deleted.
-pub fn remove_atom(target: &Target, skill: &str, library: &Library) -> Result<AtomRemoval>
+/// Remove a skill installed as an atom: unlink an owned symlink.
+///
+/// **Reads the lock, never writes it.** An atom has no lock entry of its own —
+/// that is `install_atom`'s deliberate asymmetry — but the lock must still be
+/// consulted, because the refcount guard below depends on it. Mirrors
+/// `install_atom` in writing no entry, and applies `install.sh`'s ownership rule
+/// so another tool's link is reported, never deleted.
+///
+/// `source` is the library root the link must point into — the same role
+/// `PackEntry::source` plays for `plan_remove`.
+pub fn remove_atom(target: &Target, skill: &str, source: &Path) -> Result<AtomRemoval>
 ```
 
 Returns whether the link was removed, absent, or foreign — never an error for "not there", the
 same posture `plan_remove` takes. It reuses `owned_by`, which Phase 3 already made `pub(crate)`.
 
-**It must refuse to unlink a member any installed pack's lock entry claims** in that scope. A
-skill can be both atom-installed and a pack member; unlinking it out from under a pack is exactly
-the breakage §5's reference counting exists to prevent.
+**It must refuse to unlink a skill that any installed pack's lock entry claims** in that scope,
+reporting it as retained rather than removing it. A skill can be both atom-installed and a pack
+member; unlinking it out from under a pack is exactly the breakage §5's reference counting exists
+to prevent. This is why the operation reads the lock despite owning no entry in it — the two
+statements above are one contract, not a contradiction.
+
+**Why not simply give atoms lock entries?** That is the design-around, and it would delete this
+operation entirely: reference counting would cover atoms for free, and `check` would notice a
+broken atom instead of being blind to it. It is rejected for v0.1 as **pay-the-debt, knowingly**
+(owner, 2026-08-18). §3's entries are keyed by pack and carry a version, a source, and a member
+map; an atom has none of those, so locking one changes what a lock entry *means* and belongs in a
+`docs/spec/pack-format.md` conversation, not a CLI phase. The debt is recorded here so the next
+format revision inherits the argument rather than rediscovering it.
 
 ### Exit codes
 
@@ -205,10 +255,30 @@ A taxonomy, so a script can tell "you asked wrong" from "the world said no":
 | Code | Meaning |
 |---|---|
 | 0 | success |
-| 1 | the operation failed (I/O, a read-only lock, an unresolvable member) |
-| 2 | usage error (unknown verb or flag, missing value, `--skip` of a required member) |
+| 1 | the operation failed (I/O, a read-only lock) |
+| 2 | usage error — the request itself was wrong; nothing was attempted |
 | 3 | blocked by preflight — a collision or a missing member; nothing was changed |
 | 4 | `check` found drift (that verb only) |
+
+Every `CoreError` variant maps explicitly, because the obvious mapping is wrong in one place:
+
+| `CoreError` | Code | Note |
+|---|---|---|
+| `Io` | 1 | carries the path already |
+| `Pack` | 1 | a malformed manifest or lock in the library |
+| `LockReadOnly` | 1 | §3: surface the fact, refuse the rewrite |
+| `UnknownPack`, `UnknownSkill` | 2 | the user named something that is not there |
+| `NotInstalled` | 2 | likewise, for a remove |
+| `UnresolvedMember` | 1 | the *library* is inconsistent, not the request |
+| `Timestamp`, `Config` | 1 | malformed on-disk state |
+| `Preflight` **from `install`** | 3 | a real collision or missing member |
+| `Preflight` **from `remove_optional_member`** | **2** | see below |
+
+`remove_optional_member` returns `CoreError::Preflight(1)` when asked to remove a **required**
+member (`remove.rs:131`) — §5 defines no such operation, so it is a malformed *request*, not a
+blocked preflight. Mapping it to 3 would report a collision that does not exist. The dispatcher
+therefore rejects a required member **before** calling core, and treats any `Preflight` reaching
+it from that path as the usage error it is.
 
 **`check` exits 4 when it finds anything that is not *fine***, so it works as a CI gate.
 `OptionalMemberAbsent` is excluded: §5's table calls it *fine*, and a gate that fails on it would
@@ -243,7 +313,19 @@ plumbing the TUI's deselection will need.
   and leaves the destination byte-identical. Proven by breaking: make the abort fall through and
   the test must fail.
 - **`remove_atom`'s refcount guard:** a skill that is both atom-installed and a pack member must
-  survive `remove --skill`. Proven by breaking.
+  survive `remove --skill`. Proven by breaking — disable the lock consultation and the test must
+  go red, which also proves the fixture actually contains the doubly-claimed skill (a guard test
+  whose world cannot produce the failing arm stays green with the guard deleted).
+- **`init` preserves the user's config:** write a `config.toml` carrying a comment and an
+  unrecognized key, run `init --library <other>`, and assert both survive alongside the new
+  value. Proven by breaking — swap the `load` for `Config::default()` and the test must go red.
+  This is the one finding from review whose naive implementation compiles and destroys data, so
+  it gets a test rather than a note.
+- **Exit codes are asserted per class, not just per happy path:** a collision exits 3, an unknown
+  pack exits 2, a required-member removal exits 2 (not 3), a read-only lock exits 1, `check` on a
+  drifted target exits 4 and on a clean one exits 0.
+- **A verb that falls through to cwd with no library exits 2** rather than printing an empty
+  list.
 - **`install.sh` parity, executable:** extend `tests/parity.rs` — which now runs the shell — so
   that for the same pack and target, the binary and the script produce the same links and the same
   lock location. This is the test that keeps the two implementations honest, and it is the reason
@@ -338,3 +420,23 @@ that claim holds too.
    needs only the source root; `&Path` is the lighter seam and avoids an enumeration the
    operation does not perform.
 8. **`grimoire <verb> --help` is unspecified.**
+
+**Dispositions (revise, 2026-08-18)** — all eight verified against `HEAD` before classifying; no
+push-backs, no parked decision branches.
+
+1. `resolved` — the contract is now stated as one thing: reads the lock for the refcount guard,
+   never writes it. Signature and doc comment corrected together.
+2. `resolved` — `list` added to the verbs taking scope flags, with the reason it needs them.
+3. `resolved` — *Mechanism* now specifies the load → mutate → save sequence as a correctness
+   requirement, names the private `unknown` field as the reason, and *Verification* gains a
+   prove-by-breaking test for it.
+4. `resolved` — added a full `CoreError` → exit-code table, and the `remove_optional_member`
+   required-member case is now rejected before core is called and mapped to 2, not 3.
+5. `resolved` — atom-locking is now argued explicitly as pay-the-debt, with the design-around
+   named and the reason it belongs to a format revision rather than a CLI phase (owner,
+   2026-08-18).
+6. `resolved` — added a *Library resolution* section; a verb falling through to cwd with no
+   library exits 2 rather than printing nothing.
+7. `resolved` — signature takes `&Path` (the source root) instead of `&Library`.
+8. `resolved` — added a `--help` section covering per-verb help, resolved before scope or
+   library so it works where the command itself would fail.
