@@ -26,11 +26,13 @@ Runs standalone, or implied by `load` of a parked stream (its custody check rout
 1. **Foreign-dirt check:** if `git -C <root> status --porcelain` is non-empty while parked on the
    trunk, STOP — that dirt is someone else's uncommitted work (the stream's own WIP always rides
    its branch); switching would entangle it. Report and let the human resolve.
-2. **Take the tree:** `git -C <root> switch <branch>`.
-3. **Restore WIP:** if `inplace-state` reports `top_wip=true`, `git -C <root> reset --soft HEAD~1`
+2. **Gather custody facts:** `workstream-git.sh inplace-state <root> <stream> <branch> <target>`
+   (`top_wip` reads the branch ref, so this may run before the switch).
+3. **Take the tree:** `git -C <root> switch <branch>`.
+4. **Restore WIP:** if step 2 reported `top_wip=true`, `git -C <root> reset --soft HEAD~1`
    — the parked WIP returns to the tree uncommitted, exactly as left. Soft-reset ONLY a `wip:`
    commit — never a real commit.
-4. **Record it:** set `Parked: false` in the hand-off's Queue state, then continue per the
+5. **Record it:** set `Parked: false` in the hand-off's Queue state, then continue per the
    hand-off's next action (a fresh session continues into the Confident launch, `flow.md`).
 
 Neither verb gates, lands, or debriefs — custody transfer only. `park` is save-first by
