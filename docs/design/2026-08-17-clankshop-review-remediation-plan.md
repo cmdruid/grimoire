@@ -8,6 +8,9 @@ tags: [plan]
 
 # clankshop review remediation — Implementation Plan
 
+**Shipped 2026-08-18** on `stream/grok` — subject: `clankshop: fold
+skill-builder review findings`.
+
 Walked 2026-08-18 on `stream/grok` — slices 1–3 verified, lint
 `fails=0`. Finding 4's check script remains deferred.
 

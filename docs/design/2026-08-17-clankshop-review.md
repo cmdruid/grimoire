@@ -2,11 +2,14 @@
 doctype: design
 status: current
 created: 2026-08-17
-updated: 2026-08-17
+updated: 2026-08-18
 tags: [spec]
 ---
 
 # clankshop review — Spec
+
+**Shipped 2026-08-18** on `stream/grok` — subject: `clankshop: fold
+skill-builder review findings`.
 
 Accepted 2026-08-17 on stream `grok`. Same-session `/skill-builder review
 clankshop` against `skills/agent-council/briefs/skill-review.md`. Verdict:
