@@ -55,8 +55,10 @@ Records accumulated during development. Each store directory holds markdown
 records carrying the front-matter contract (doctype/status/created/updated/tags);
 \`scripts/records.sh\` is the query + lifecycle tool (\`list\`, \`new\`, \`touch\`,
 \`done\`, \`history\`, \`prune-candidates\`, \`check\`) and the sole writer of
-\`history.tsv\`, the closure ledger. \`templates/\`, \`scripts/\`, and
-\`history.tsv\` are reserved — not stores.
+\`history.tsv\`, the closure ledger. \`templates/\`, \`scripts/\`,
+\`doctrine/\`, and \`history.tsv\` are reserved — not stores. This directory is
+the records *home*; sibling homes (project templates, project doctrine) default
+underneath it without being part of the records layer.
 
 Stores appear when a skill first writes. Project templates live in the
 agent-templates home (default \`.records/templates/<skill>/\`) and arrive

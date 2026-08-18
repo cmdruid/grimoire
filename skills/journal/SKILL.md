@@ -24,8 +24,11 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
 - **Stores are directories; the path is the ID.** Eight stores — `adr`, `bugs`, `design`,
   `notes`, `plans`, `reports`, `tickets`, `trackers` — each holding
   `YYYY-MM-DD-<slug>.md` records minted by `records.sh new`. No counters, no typed IDs, no
-  stored index: querying is a live front-matter scan. `templates/`, `scripts/`, and
-  `history.tsv` are reserved (never scanned). Setup does not create store directories;
+  stored index: querying is a live front-matter scan. `templates/`, `scripts/`,
+  `doctrine/`, and `history.tsv` are reserved (never scanned) — the records **home** is a
+  directory that may host sibling homes (`<agent-templates>`, `<agent-doctrine>` default
+  under it), while the records **layer** is the eight typed stores. Setup does not create
+  store directories;
   the skill that mints a store creates it.
 - **Micro-items are tracker lines, not records.** A tracker record's body holds one-line
   items in the contract's line form (below); detailed material — a bug repro, a durable fact —

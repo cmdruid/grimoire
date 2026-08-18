@@ -333,11 +333,14 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    no ledger line. Repair is journal `curate`: rewrite `status:` back to `open`, then
    `records.sh done`. `records.sh done` refuses an already-closing status — that is why
    the writer must not pretend file-mode close is a ledger close.
-8. **Workshop stamp is orthogonal.** The one probe (`Seeded from clankshop` in
-   `.handbook/README.md`) still picks handbook, station context, and playbooks. It does
-   **not** pick the agent-records destination and does **not** decide whether a record is
-   minted. Do not create `.handbook/` as a records side effect. Do not run a workshop
-   onramp as a records side effect.
+8. **Workshop stamp is orthogonal — and no longer picks any home.** The probe
+   (`Seeded from clankshop` in `.handbook/README.md`) answers one question: *is a workshop
+   assembled here?* That is a **policy** question — may this project's workshop-specific
+   lanes run — not a location one. Station context, playbooks, and lanes are doctrine and
+   resolve through `<agent-doctrine>`; records resolve through `<agent-records>`. The stamp
+   picks **neither**, and does not decide whether a record is minted. Do not create
+   `.handbook/` as a side effect of anything. Do not run a workshop onramp as a side
+   effect.
 
 The **agent-templates** resolution, per declared project template `<file>` (the verb
 resolves both homes and passes them in; the mint script never opens the front door):
