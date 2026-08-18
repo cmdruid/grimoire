@@ -8,6 +8,10 @@ tags: [spec]
 
 # records-layer init — Spec
 
+Finalized for independent review 2026-08-18 on stream
+`grok`. Status stays `open` until that review and the
+human accept it.
+
 Settled 2026-08-18 on stream `grok`. Human brief: pack skills that
 create records must write them to the project's **agent-records
 home** (declared `agent-records:`, else legacy `records-root:`,
@@ -92,15 +96,13 @@ Every pack skill that creates a typed record:
 - never deploys `records.sh`, `history.tsv`, other skills' stores,
   or the records README.
 
-`/skill-builder review` flags a writer that still has a journal
-floor, cannot produce front-matter itself, copies a template it
-did not declare, lacks a bundled file for a declared name, or
-lands records in a confirmed `docs/` fallback. `/journal check`
-/ `curate` remain the file auditors. `/journal setup` deploys
-the **tool layer only** (`scripts/records.sh`, empty
-`history.tsv`, README) and is never a floor. It creates **no
-store directory, no `.records/templates/`, and no
-agent-templates home**.
+`skill-builder` **observes** the rule (doctrine + `new`
+scaffold) and **enforces** it (`check` mechanical gate +
+`review` judgment). `/journal check` / `curate` remain the
+*file* auditors. `/journal setup` deploys the **tool layer
+only** (`scripts/records.sh`, empty `history.tsv`, README)
+and is never a floor. It creates **no store directory, no
+`.records/templates/`, and no agent-templates home**.
 
 Lint `fails=0`. No new sibling sourced at runtime.
 
@@ -113,7 +115,9 @@ templates and **declares** which ones lock into the
 **agent-templates home** (default `.templates/<skill>/`).
 Journal setup shrinks to the tool layer. Workshop probe stays,
 but only for handbook / station / playbook context. Instances
-live in the **agent-records home**.
+live in the **agent-records home**. `skill-builder` is the
+ongoing observer and enforcer so the next skill does not
+re-learn the hole.
 
 **Rejected: full journal layer on first write.** Every capture
 would silently become `/journal setup`. That couples skills that
@@ -334,7 +338,71 @@ A skill does not carry templates for stores it does not mint.
 Auditor and debugger do not carry `bugs.md` this unit
 (impersonation rule, below).
 
-### Enforcement
+### skill-builder — observe and enforce
+
+`skill-builder` is how this rule stays true after the
+fold. Three verbs, one job each. No new verb.
+
+**Observe — doctrine + `new`.**
+
+- `docs/DOCTRINE.md` gains **Record-writing skills** (the
+  rule set above) and the two front-door homes. That is
+  a `calibrate`-shaped fold: the doctrine is the living
+  home; this spec is the argued change.
+- `verbs/new.md` asks, after the tier question and
+  orthogonal to it: *will this skill write typed records
+  into the agent-records home?* Yes → scaffold, in
+  `SKILL.md`:
+  - the inlined agent-records / agent-templates
+    resolvers (default paths named literally);
+  - the five-key in-package contract;
+  - a no-floor sentence (missing `records.sh` is not
+    an error; do not point at `/journal setup`);
+  - `## Project templates` (named files, or an explicit
+    "none" if it writes records but locks nothing in
+    yet).
+  - Not automatically durable-home. Notepad is the
+    worked example of a records-path client.
+  No → do not add those sections.
+
+**Enforce — `check` (mechanical) + `review` (judgment).**
+
+`scripts/skills-lint.sh` grows two checks (header
+inventory updated). Each is proven red on
+deliberately-broken input before the green is trusted
+(doctrine: prove a new check by breaking it). Journal
+is exempt from the floor-phrase check (it may document
+`/journal setup`). Pack faces are exempt from both,
+same as today's independence checks.
+
+1. **Journal-floor phrase (FAIL).** A non-`journal`
+   skill's `.md` matches `point at \`/journal setup\``
+   or `Requires a stood-up records layer`. Evidence:
+   skill, file, line. This replaces the Verification
+   grep as the *ongoing* gate; the live backlog Guard
+   is the first plant.
+2. **Project-templates heading (FAIL).** The skill
+   has `templates/*.md` and `SKILL.md` has no heading
+   `## Project templates`. Journal has `reports.md`
+   and must carry the heading with an explicit none
+   (or an empty list). A skill with no `templates/`
+   dir is out of scope.
+
+**Activation (so slice 1 does not maroon the live
+tree at FAIL):** slice 1 implements both checks,
+proves them red on fixtures, and **enables check 2
+on the live tree** after adding `## Project
+templates` headings (lists from the inventory; no
+behavior change). Check 1 stays fixture-only until
+the end of slice 2, when the backlog floor phrases
+are gone; then it joins the live run. A live-tree
+`fails=0` after slice 1 includes check 2 and
+excludes check 1. After slice 2 it includes both.
+
+List-vs-disk (a listed file missing from `templates/`)
+and "copied a file the list does not name" stay on
+**review** — parsing an arbitrary list in lint is
+fragile; those are substance.
 
 `skills/agent-council/briefs/skill-review.md` — extend
 **Independence** and **Output shape**, no new axis:
@@ -355,11 +423,10 @@ Auditor and debugger do not carry `bugs.md` this unit
   the list does not name. Project copies land under
   `<agent-templates>/<skill>/`.
 
-`/skill-builder review` already judges only the axes the
-brief names. No verb change. `/skill-builder check` does
-not grow a mechanical records-writer lint this unit — the
-grep in Verification is the build gate; the brief is the
-ongoing gate.
+`/skill-builder review` does not change its verb file;
+it already judges only the axes the brief names.
+`calibrate` is not run as a slice — the doctrine fold
+in slice 1 *is* the calibration for this decision.
 
 ### Journal
 
@@ -615,7 +682,22 @@ into the records when a workshop is present" get one-
 line updates so the face does not restate the old floor.
 No `version:` bump (member set unchanged).
 
-### Out of scope
+### Scope of work (this unit)
+
+| In | Out |
+|---|---|
+| Doctrine: both homes + Record-writing skills | Migrating this library's `docs/design/` / `docs/BACKLOG.md` into `.records/` |
+| `skill-builder new` scaffold for record-writers | A new skill-builder verb |
+| `skills-lint.sh` journal-floor + Project-templates heading, with red-proofs | Lint that parses the project-templates *list* vs disk |
+| Skill-review brief Independence / Output shape | Renaming `.records/` or dropping `records-root:` |
+| Journal tool-layer standup; `records.sh --template` | Journal creating any store dir or `templates/` |
+| Backlog: drop the floor, `record-mint.sh`, project templates | Giving every writer a mint script |
+| Destination flip: workstream, blueprint, contractor, debugger, auditor, notepad resolver | Debugger Phase 4 workshop gate; auditor rubric-home probe |
+| Each writer: bundled doctype template + `## Project templates` | Copying undeclared / skill-internal templates |
+| Clankshop / PACK.md roster wording (no version bump) | Making journal optional in the pack; moving `records.sh` out of `scripts/` |
+| Brownfield adopt of `.records/templates/<doctype>.md` into the agent-templates home | Deleting legacy `.records/templates/` this unit |
+
+### Out of scope (recap)
 
 - Standing `.records/` up inside this library as a
   migration of `docs/design/` / `docs/BACKLOG.md`.
@@ -625,8 +707,7 @@ No `version:` bump (member set unchanged).
   the agent-records home.
 - A `templates/lock-in` manifest besides `SKILL.md`.
 - Copying every bundled template by default.
-- A mechanical lint rule in `skills-lint.sh` (the brief
-  + the Verification grep are enough this unit).
+- A lint that parses the project-templates list.
 - Giving every writer a mint script.
 - Changing debugger Phase 4's workshop gate.
 - Changing auditor's rubric-home probe.
@@ -697,33 +778,50 @@ flip those assertions invert (must be absent). Run
 the old assertion once on the *new* script and
 confirm it fails before committing the inverted test.
 
+**Red-proof for the new lint checks.** Plant
+`Requires a stood-up records layer` in a throwaway
+non-journal `SKILL.md` and confirm check 1 FAILs;
+remove it and confirm green. Plant a skill with
+`templates/foo.md` and no `## Project templates` and
+confirm check 2 FAILs; add the heading and confirm
+green. Do not land either check on a first clean run.
+
 ## Slices
 
 This spec doubles as the plan. Sequencing is required
-(doctrine first, then the pain, then the other
-writers). A separate contractor plan is not required
-unless a later flip changes a slice boundary.
+(doctrine and the enforcer first, then the pain, then
+the other writers). A separate contractor plan is not
+required unless a later flip changes a slice boundary.
 
-- [ ] **Slice 1: doctrine + brief + journal tool-layer**
+- [ ] **Slice 1: doctrine + skill-builder + journal tool-layer**
   <requires: —>
   - Paths: `skills/skill-builder/docs/DOCTRINE.md`;
+    `skills/skill-builder/verbs/new.md`;
+    `skills/skill-builder/scripts/skills-lint.sh`;
+    `skills/skill-builder` lint-check tests (or the
+    existing prove-by-breaking fixture pattern);
     `skills/agent-council/briefs/skill-review.md`;
-    `skills/journal/SKILL.md`;
+    `skills/journal/SKILL.md` (incl. `## Project
+    templates` none);
     `skills/journal/verbs/setup.md`;
     `skills/journal/scripts/standup.sh`;
     `skills/journal/scripts/records.sh` (`--template`);
     `skills/journal/scripts/tests/standup-test.sh`;
     `skills/journal/scripts/tests/records-test.sh`;
     optionally `skills/clankshop/PACK.md` roster blurbs.
-  - Verify: lint `fails=0`. Doctrine names both homes;
-    front-door examples are `agent-records:` and
-    `agent-templates:`; records resolver accepts both
-    records names. Brief Independence / Output shape
-    name the records-writer, declaration, and
+  - Verify: lint `fails=0` on the live tree. Doctrine
+    names both homes; `new` asks the record-writer
+    question; both new lint checks have a red-proof
+    then green. Brief Independence / Output shape name
+    the records-writer, declaration, and
     agent-templates checks. `setup.md` no longer says
     clients stop and point here. Standup test: no store
     dirs, no deployed `.records/templates/`.
-    `records.sh new --template` covered.
+    `records.sh new --template` covered. Every
+    template-bearing skill (incl. journal none) has
+    `## Project templates`. Check 2 live-green;
+    check 1 fixture-red then fixture-green, not yet
+    on the live run.
 - [ ] **Slice 2: backlog writes without a floor**
   <requires: 1>
   - Paths: `skills/backlog/SKILL.md`;
@@ -733,7 +831,8 @@ unless a later flip changes a slice boundary.
   - Verify: grep gate empty under `skills/backlog/`.
     `scripts/tests/run.sh` green. Description ≤ 1024
     chars and names no sibling. `## Project templates`
-    lists the three doctypes. Lint `fails=0`.
+    lists the three doctypes. Check 1 enabled on the
+    live run; lint `fails=0`.
 - [ ] **Slice 3: destination flip for the other writers**
   <requires: 2>
   - Paths: `skills/workstream/SKILL.md`,
@@ -772,4 +871,4 @@ unless a later flip changes a slice boundary.
 | `.agents/templates/<skill>/` | Collides with `~/.agents/` |
 | Copy every document-creating template | Not every bundled file is a project schema; the skill declares the set |
 | A `templates/lock-in` manifest | Second roster; `SKILL.md` is the declaration |
-| Mechanical lint in `skills-lint.sh` | Brief + grep are enough this unit; a new check needs its own red-proof later |
+| Lint that parses the project-templates list | Fragile; review owns list-vs-disk and undeclared copies |
