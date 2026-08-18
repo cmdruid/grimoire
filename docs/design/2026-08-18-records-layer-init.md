@@ -1027,6 +1027,8 @@ required unless a later flip changes a slice boundary.
     table complete on disk. Each writer has `## Project
     templates`. Every records-mode mint passes
     `--template`. Notepad verbs pass both homes.
+    Auditor `BOOTSTRAP.md` drain slots no longer
+    say workshop `bugs` records.
     Prose says "agent-records home" and
     "agent-templates home." Lint `fails=0`.
 
