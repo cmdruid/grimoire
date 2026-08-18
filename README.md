@@ -48,7 +48,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `blueprint` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
 | `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
 | `clankshop` | the workshop face: seed handbook + the four stations; `setup` / `migrate` / `check`, and persona summons for hat-on discussion |
-| `contractor` | one job lead — roadmap, plan, runbook, review, build; never ships; never writes a spec |
+| `contractor` | one job lead — roadmap, plan, runbook, review, revise, build; never ships; never writes a spec |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `journal` | the records format authority: eight typed stores + the record contract + `records.sh` + the history ledger; setup, done, substrate curate |
