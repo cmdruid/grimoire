@@ -8,6 +8,10 @@ tags: [spec]
 
 # pack-utilities review — Spec
 
+**Shipped 2026-08-18** on `stream/grok` — subjects: `docs: add
+pack-utilities review spec`; `Fold pack-utilities skill-builder
+review findings`.
+
 Accepted fold set 2026-08-18 on stream `grok`. Same-session
 `/skill-builder review` of `checkpoint`, `mailbox`, `delegate`,
 `scheduler`, and `notepad` against
