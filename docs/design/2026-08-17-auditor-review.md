@@ -8,6 +8,9 @@ tags: [spec]
 
 # auditor review — Spec
 
+**Shipped 2026-08-17** on `stream/grok` — subject: `auditor: fold
+skill-builder review findings`.
+
 Accepted 2026-08-17 on stream `grok`. Same-session `/skill-builder review
 auditor` against `skills/agent-council/briefs/skill-review.md`. Verdict:
 **needs-rework**. The human asked to remediate the findings; this file

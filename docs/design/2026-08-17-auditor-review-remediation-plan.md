@@ -8,6 +8,9 @@ tags: [plan]
 
 # auditor review remediation — Implementation Plan
 
+**Shipped 2026-08-17** on `stream/grok` — subject: `auditor: fold
+skill-builder review findings`.
+
 Tracer-bullet: slice 1 is the setup playbook an agent actually follows
 (`BOOTSTRAP.md` How-to-use + §9 + §10) — the two must-fixes. Later
 slices make the driver match that playbook, then tighten trigger,
