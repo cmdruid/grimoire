@@ -141,9 +141,12 @@ install stamp (`Seeded from clankshop`)?
   worktree's own `info/exclude` so it's ignored from **inside** the worktree too. Durable records
   (the feature's plan closure + ledger line, debrief report, roadmap-ledger row, ADR) are committed
   **on the branch** and reach the trunk through the ff-merge — not hand-committed to the root.
-- **No remote.** Integrate locally against the workstream's `<target>` (Coordinates
-  `integration-target`): `git -C <worktree> rebase <target>` + a by-ref advance of `<target>`
-  (`verbs/ship.md` -> *Landing*). Never hardcode `main` — the trunk may be `dev` later.
+- **Land locally onto `<target>` first.** Integrate against the workstream's `<target>`
+  (Coordinates `integration-target`): `git -C <worktree> rebase <target>` + a by-ref
+  advance of `<target>` (`verbs/ship.md` -> *Landing*). Never hardcode `main` — the trunk
+  may be `dev` later. Do not treat a remote as the integration target. In-place
+  `landing: push | pr` is an optional *tail* after that local land (`pr` skips the local
+  advance and opens a PR instead — still keyed on `<target>`, not on `origin/main`).
 - **Shared trunk is contended — the root index is a shared resource.** Every stream's trunk commit
   passes through the *one* root index, and `git commit` records the **entire** index — not just what
   you `git add`'d this turn — so a sibling staging concurrently gets swept into your commit (ISSUES

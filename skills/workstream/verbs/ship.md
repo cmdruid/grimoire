@@ -144,8 +144,13 @@ independent of what the root has checked out. Never hand-commit these records to
    **advance `<target>` by ref** (Landing step 3 — `merge --ff-only` if the root is on `<target>`,
    else `fetch . <branch>:<target>`). That ref advance delivers the feature AND its records
    atomically; it is the only shared-root mutation and is independent of the root's current HEAD.
-3. **Advance the queue — hand-off only** (the ledger row already rode the branch in step 1): in the
-   (ignored) worktree hand-off, mark **all landed features** done and set the next queue item current.
+3. **Advance the queue — hand-off only** (the ledger row already rode the branch in step 1).
+   **If Coordinates `source-kind: template`:** do not invent a next queue item and do not
+   draft a next plan. Mark the landed unit done in the hand-off (TL;DR / What's been done).
+   Leave step 5's reset ritual in place; `recycle` is the *flow's* next action after that
+   ritual (`flow.md` Scenario A), not something this step calls.
+   **Otherwise** (plan / roadmap / brief): in the (ignored) worktree hand-off, mark
+   **all landed features** done and set the next queue item current.
    Then **draft** the next feature's implementation plan from the queue source into the host's plans
    home (workshop: mint it with `records.sh new plans --title "…"` so the front-matter contract is
    stamped; elsewhere the project's own plans location) — a working-tree draft: it rides the *next*
@@ -157,8 +162,7 @@ independent of what the root has checked out. Never hand-commit these records to
    `WORKSTREAM.md`: `git -C <root> show --stat HEAD` lists no `.workstreams/...` path.
 5. **`ship` does not save.** Hand back to the flow's **reset ritual** (`flow.md`, Scenario A): if the
    ship was
-   *eventful* run `debrief` #2, then make the single **pre-reset `save`** (advanced queue + drafted
-   next plan), then STOP and advise a reset before the next feature (context is heavy). The save lives
+   *eventful* run `debrief` #2, then make the single **pre-reset `save`** (plan-bound: advanced queue + drafted next plan; template: landed unit marked done, no draft), then STOP and advise a reset before the next feature (context is heavy). The save lives
    in the ritual, not here — so a manual `/workstream ship` leaves no checkpoint behind unless a reset
    is actually imminent. (In `manual` mode the pre-reset save records `Phase: plan` and the park swaps
    to the plan-model for the next feature's PLAN — `flow.md` -> *Manual mode: the phase loop*.)

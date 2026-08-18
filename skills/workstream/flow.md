@@ -207,10 +207,12 @@ PLAN/BUILD/SHIP seam — see *Manual mode: the phase loop*):
 
 - **`debrief` #1** routes the *feature's* follow-ups; its tracker commits sit on the branch and
   **ride the eventual ship's ff-merge for free** — whether that ship is now or a later milestone.
-- **`ship` — only at a landing point.** Lands **every accumulated feature** + their debrief commits,
-  advances the queue past all of them, and drafts the next plan into the working tree (uncommitted — it
-  persists on disk across the reset; **in `manual` mode `ship` skips this draft** — the next PLAN
-  session authors it). Between landing points there is **no ship**: the completed
+- **`ship` — only at a landing point.** Lands **every accumulated feature** + their debrief commits.
+  For plan / roadmap / brief: advances the queue and drafts the next plan into the working tree
+  (uncommitted — it persists on disk across the reset; **in `manual` mode `ship` skips this draft** —
+  the next PLAN session authors it). For `source-kind: template`: do not advance a queue and do not
+  draft. After the reset ritual (`save` → reset → `load`) the next action is `recycle`
+  (`verbs/recycle.md`) — `ship` does not invoke it. Between landing points there is **no ship**: the completed
   feature stays on the branch and you start the next.
 - **`debrief` #2 — conditional**: only if a `ship` actually ran *and* was *eventful* (see *Event-driven
   debrief*); its commits ride the *next* ship.
@@ -290,8 +292,8 @@ Two differences from `delegate` mode:
 - **The phase boundary is itself a reset** (not only the feature/heavy-context boundary). A save fires
   at **every** phase boundary in `manual` mode — that is the price of swapping the driving model, and
   the hand-off + cheat sheet are what keep the re-orientation cheap.
-- **SHIP does not draft the next plan.** In `delegate` mode `ship` drafts the next feature's plan into
-  the working tree; in `manual` mode that authoring belongs to the next **PLAN** session (plan with the
+- **SHIP does not draft the next plan.** In `delegate` mode on a plan / roadmap / brief stream, `ship` drafts
+  the next feature's plan into the working tree (`source-kind: template` never drafts); in `manual` mode that authoring belongs to the next **PLAN** session (plan with the
   plan-model), so manual-mode `ship` **skips** the draft-next-plan step and PLAN starts it fresh.
 
 If a `manual` stream is run **unattended** (no human to swap `/model`), it cannot advance past a phase

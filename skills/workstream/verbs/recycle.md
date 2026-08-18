@@ -22,10 +22,14 @@ recycled slot; for a clean-named stream, `close`+`create` instead and pay the re
 1. **Eligibility — any worktree may recycle.** The gate is the work-guard (step 2), not `source-kind`
    (any worktree archetype may recycle; `source-kind` gates only the *arg-omitted* form above).
 2. **Guard — refuse on un-dealt-with work.** Run `workstream-git.sh stream-state <worktree> <branch>
-   <target>`. If `dirty=true` / `wip_tracked=true` (uncommitted) **or** `ahead>0` (committed but
+   <target>`. If `wip_tracked=true` (real uncommitted edits) **or** `ahead>0` (committed but
    unshipped), STOP: the current unit isn't resolved. Direct the user to **`ship`** it (if done) or
    discard it explicitly (a `git -C <worktree> reset --hard` / checkout is the user's call — recycle
-   never destroys work silently). Only a clean, fully-shipped tree may recycle.
+   never destroys work silently). Do **not** key on `dirty=true`: an untracked plans draft is
+   expected dirt (`drafted_next_plan`, `wip_tracked=false`). If that is the only dirt, **delete
+   each path listed in `drafted_next_plan`** (comma-separated; uncommitted; recycle's job is a
+   blank unit) and continue. Do not ask. Do not `rm` a guessed plans glob. Only a
+   fully-shipped tree with no real WIP may recycle.
 
    **In-place streams** (Coordinates `isolation: in-place`): run the custody check first —
    `inplace-state` must report `on_stream_branch=true` (parked → `load`/unpark first; foreign →
@@ -35,9 +39,10 @@ recycled slot; for a clean-named stream, `close`+`create` instead and pay the re
 3. **(If `<target>` moved) re-baseline.** If `behind>0`, run `sync` (`verbs/sync.md`) first so the
    fresh unit starts on
    the current trunk tip (same rebase + scoped re-gate as `sync`).
-4. **Re-instantiate the hand-off from the template.** Regenerate `<worktree>/WORKSTREAM.md` exactly as
-   `create.md`'s **Hand-off instantiation** (step 6) does for template mode, **but in place** (no
-   `worktree add`, no exclude re-run —
+4. **Re-instantiate the hand-off from the template.** The file you write MUST equal the
+   Coordinates `this hand-off:` line (the one absolute path). On mismatch, STOP — do not
+   write. Then regenerate that file exactly as `create.md`'s **Hand-off instantiation**
+   (step 6) does for template mode, **but in place** (no `worktree add`, no exclude re-run —
    already done): **preserve the Coordinates block verbatim** (fixed for the stream's life); if a new
    template was passed, update Coordinates `source`/`source-kind` to match; re-read the template at
    `source:` and **re-embed its durable sections** (so an evolved template propagates), keeping recorded

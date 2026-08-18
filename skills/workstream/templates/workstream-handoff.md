@@ -142,8 +142,9 @@ case where this file was last read long before the compaction.
 **Reset ritual** (whether Scenario A *lands* depends on *Ship cadence* above):
 - **Feature complete, at a landing point (`per-stage` / a milestone / track end):** `/backlog debrief`
   (#1 — routes the feature's follow-ups; its commits ride ship's ff-merge free) -> `/workstream ship`
-  (lands every accumulated feature + advances the queue, drafts the next plan into the working tree —
-  except in `manual` mode, where the next PLAN session drafts it) ->
+  (lands every accumulated feature; plan-bound: advances the queue and drafts the next plan —
+  except in `manual` mode, where the next PLAN session drafts it; template: no queue-advance,
+  no draft — after the reset ritual, `/workstream recycle`) ->
   *(if the ship was eventful — conflicts, contention retries, multiple syncs)* `/backlog debrief` #2 ->
   **`/workstream save`** (the single pre-reset checkpoint) -> reset -> `/workstream load <stream>`.
 - **Feature complete, between landing points (`milestone`/`per-track`, not yet a milestone):**
@@ -179,6 +180,6 @@ case where this file was last read long before the compaction.
   See the skill's *Manual mode: the phase loop*.
 - **Template/intake stream** (`source-kind: template`, e.g. debug/design): a unit is done -> `ship` it, then
   `/workstream recycle` to clear this instance back to a blank unit from the template and start the next
-  (worktree persists). `recycle` refuses if the tree is dirty or has unshipped commits — `ship` or
-  discard first. (This is the intake counterpart to a plan stream's queue-advance.)
+  (worktree persists). `recycle` refuses if `wip_tracked=true` or `ahead>0` —
+  `ship` or discard first. A lone `drafted_next_plan` is deleted, not a refuse. (This is the intake counterpart to a plan stream's queue-advance.)
 - Stream's queue exhausted or paused -> `/workstream close`.
