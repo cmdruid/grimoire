@@ -20,7 +20,7 @@ else `.records/`), produce their own contract-shaped front-matter
 from a template they carry, and create *their own store* without
 a journal floor. Project-lock-in templates live in the
 **agent-templates home** (declared `agent-templates:`, else
-`.templates/`), under `<skill>/`, and only the skill names which
+`<agent-records>/templates`), under `<skill>/`, and only the skill names which
 of its bundled templates are copied there. Journal deploys no
 store directories and no templates. `/skill-builder review`
 enforces that as skill doctrine; `/journal` audits and repairs
@@ -104,8 +104,7 @@ scaffold) and **enforces** it (`check` mechanical gate +
 remain the *file* auditors. `/journal setup` deploys the
 **tool layer only** (`scripts/records.sh`, empty
 `history.tsv`, README) and is never a floor. It creates
-**no store directory, no `.records/templates/`, and no
-agent-templates home**.
+**no store directory and no pre-seeded `templates/`**.
 
 Lint `fails=0`. No new sibling sourced at runtime.
 
@@ -115,7 +114,8 @@ Lint `fails=0`. No new sibling sourced at runtime.
 every current writer onto it in three slices. `records.sh` stays
 opportunistic. Own-store standup only. Each writer carries its
 templates and **declares** which ones lock into the
-**agent-templates home** (default `.templates/<skill>/`).
+**agent-templates home** (default
+`<agent-records>/templates/<skill>/`).
 Journal setup shrinks to the tool layer. Workshop probe stays,
 but only for handbook / station / playbook context. Instances
 live in the **agent-records home**. `skill-builder` is the
@@ -168,6 +168,14 @@ worktree, working-tree draft).
 lives at `~/.agents/`. A project path that starts `.agents/`
 sends agents to the home directory.
 
+**Rejected: a top-level `.templates/` default.** A second
+dotted directory beside `.records/` (and `.handbook/` on a
+workshop host) pollutes the project root. Schema vs
+instances is a named-home split, not a sibling-folder
+split. Flat `.records/templates/<doctype>.md` as the
+*lock-in* path is also rejected — that collapses every
+skill onto one `reports.md`.
+
 **Rejected: copy every document-creating template by default.**
 Not every bundled file is a project schema. The hand-off, a
 founding working file, and a compaction-anchor are skill
@@ -205,29 +213,35 @@ Doctrine's *Front-door variables* section is updated in place:
 the canonical example becomes `agent-records:` (with
 `agent-templates:` beside it), the records resolver accepts
 both records names, and skill prose keeps naming each default
-path literally (`.records/plans/…`, `.templates/backlog/…`).
+path literally (`.records/plans/…`,
+`.records/templates/backlog/…`).
 
 ### The name — agent-templates home
 
-Schema, not instances. Same shape as the agent-records home.
+Schema, not instances. Nested under the records home by
+default so the project root gains no second directory.
 
 | Surface | Value |
 |---|---|
 | Prose | **agent-templates home** |
-| Default path | `.templates/` |
-| Per-skill lock-in | `<agent-templates>/<skill>/` (`<skill>` = the package directory name) |
-| Front-door declaration | `agent-templates: <rel>` |
-| Legacy declaration | none (new). Flat `.records/templates/<doctype>.md` is a brownfield *source*, not an alias |
-| Resolver | first `^agent-templates:` in `AGENTS.md`, then `CLAUDE.md`; else `.templates` |
+| Default path | `<resolved-agent-records>/templates` (i.e. `.records/templates` when the records home is the default) |
+| Per-skill lock-in | `<agent-templates>/<skill>/` — `.records/templates/notepad/notes.md` |
+| Front-door declaration | `agent-templates: <rel>` — **override only** |
+| Legacy declaration | none. Flat `<agent-records>/templates/<doctype>.md` is a brownfield *source*, not the lock-in path |
+| Resolver | first `^agent-templates:` in `AGENTS.md`, then `CLAUDE.md`; else `<resolved-agent-records>/templates` |
 | Verb / mint-script argument | the resolved path (mint scripts do not scan the front door) |
 | State-analysis helper | n/a this unit (no helper keys off the templates home) |
 | Script fact key | `agent-templates=` |
 
-No second front-door variable beyond this one. The default is
-right for every fresh project; a brownfield host that already
-keeps schemas elsewhere declares the line. Journal does not
-create this directory. The first skill that copies a declared
-project template creates `<agent-templates>/<skill>/`.
+One `agent-records:` line moves both homes. Declare
+`agent-templates:` only when schemas must live somewhere
+else. Journal does not create `templates/`. The first
+skill that copies a declared project template creates
+`<agent-templates>/<skill>/` (and thus `templates/` if
+needed). Legacy flat files are **siblings** of the skill
+dirs (`.records/templates/notes.md` vs
+`.records/templates/notepad/notes.md`); adopt copies
+flat → skill dir and does not delete the flat file.
 
 **Resolution, per declared project template `<file>`:**
 
@@ -277,15 +291,21 @@ record-mint.sh mint  <agent-records> <agent-templates> <doctype> <title>
 
 `stamp` keeps `<agent-records> <abs-path>` (no template).
 Records-mode uses `records.sh new --template <resolved>`
-and **never** writes `<agent-records>/templates/`.
+and **never** writes the *flat*
+`<agent-records>/templates/<doctype>.md`. The
+skill-namespaced path
+(`<agent-records>/templates/<skill>/<file>` under the
+default) is the lock-in dest.
 
 **`records.sh new` gains `--template <path>`.** Writers
-always pass the resolved project path. That path **may
-live outside the agent-records home** (default
-`.templates/<skill>/<file>`). Do not require a `$RR`
-prefix. Omitting `--template` keeps today's
-`$RR/templates/$doctype.md` lookup so a brownfield
-home still mints.
+always pass the resolved project path. Under the default
+that path is *inside* the records home
+(`.records/templates/<skill>/<file>`). If
+`agent-templates:` is declared it may live outside.
+Do not require a `$RR` prefix and do not reject a
+path for being under `$RR`. Omitting `--template`
+keeps today's `$RR/templates/$doctype.md` lookup so a
+brownfield home still mints.
 
 ### The record-writer rule (doctrine)
 
@@ -316,7 +336,10 @@ pack). Rules:
 3. **Own-store standup.** On first write, `mkdir` that skill's
    store (and the agent-records home directory if needed). Do
    not create `scripts/records.sh`, `history.tsv`, other
-   stores, the records README, or `.records/templates/`.
+   stores, the records README, or the *flat*
+   `<agent-records>/templates/<doctype>.md`. Creating
+   `<agent-records>/templates/<skill>/` on first
+   lock-in copy is required.
 4. **No floor.** Missing `records.sh` is not an error.
    Journal standup is never a precondition. A
    description must not say the skill requires a
@@ -338,8 +361,9 @@ pack). Rules:
    resolved template, with the same `fill` / slug /
    collision rules notepad already copied from
    `skills/journal/scripts/records.sh`. Resolution is the
-   agent-templates rule above. Never write a second copy
-   under `.records/templates/`.
+   agent-templates rule above. Never write a second
+   copy at the *flat*
+   `<agent-records>/templates/<doctype>.md`.
 7. **Never hand-write `history.tsv`.** File-mode close rewrites
    `status:` (and `updated:`) only. After a later
    `/journal setup`, `records.sh check` will flag a closed
@@ -510,8 +534,8 @@ It does **not**:
 - `mkdir` `adr` / `bugs` / `design` / `notes` / `plans` /
   `reports` / `tickets` / `trackers`;
 - write `.gitkeep` anywhere;
-- `mkdir` `.records/templates/` or the agent-templates home;
-- copy `reports.md` anywhere.
+- pre-seed `templates/` or copy `reports.md` (the first
+  writer creates `<agent-templates>/<skill>/`);
 
 Exit 2 (already stood up) keys **only** on
 `scripts/records.sh` present — not on `templates/`. A home
@@ -595,7 +619,8 @@ lazy-deploys into `<agent-records>/templates/notes.md`
 when `records.sh` exists. Slice 3 updates the script
 (and `note-mint-test.sh`) to take both homes, resolve
 through the agent-templates rule, and never write
-`.records/templates/`. Resolver prose in `SKILL.md`
+the flat `<agent-records>/templates/notes.md`.
+Resolver prose in `SKILL.md`
 updates to both homes. Verbs (`write`, `supersede`,
 `drop`, `find`) pass both homes on `mint` and keep
 `stamp` as specified. `## Project templates` lists
@@ -669,7 +694,8 @@ skip and do not create `.records/`" to:
   create `.handbook/`.
 - **Records-mode mint:** resolve via the agent-templates
   rule, pass `records.sh new --template <resolved>`,
-  never write `.records/templates/`. Same for the
+  never write the flat
+  `<agent-records>/templates/<doctype>.md`. Same for the
   next-plan draft and an optional debrief report.
 - **Carry and declare** `templates/plans.md` and
   `templates/reports.md` as project templates. Hand-off,
@@ -723,7 +749,8 @@ a stamped host. It no longer forks the *destination*:
 - Records-mode: resolve `design.md` / `adr.md` via the
   agent-templates rule, `records.sh new --template
   <resolved>`. File-mode: write from that same
-  resolved path. Never write `.records/templates/`.
+  resolved path. Never write the flat
+  `<agent-records>/templates/<doctype>.md`.
   Then fill the body from the resolved `spec.md` (or
   the ADR body).
 - Status promotion: `records.sh touch --status current`
@@ -747,9 +774,10 @@ Same destination flip for `plans/`:
   <resolved>`, then fill the body from the resolved
   `plan.md` / `roadmap.md` / runbook conductor.
   File-mode: write the resolved plans shell then the
-  same body fill. Never write `.records/templates/`.
+  same body fill. Never write the flat
+  `<agent-records>/templates/<doctype>.md`.
   "As today" is **not** the path — today lazy-deploys
-  into `.records/templates/`.
+  into the flat `templates/<doctype>.md`.
 - Build / review verbs do not mint.
 
 ### Debugger
@@ -763,7 +791,8 @@ The report is a record on every host:
   agent-templates rule; `records.sh new --template
   <resolved>` when the tool exists; else file-mode
   from that path + the resolved `investigation.md`
-  body. Never write `.records/templates/`.
+  body. Never write the flat
+  `<agent-records>/templates/<doctype>.md`.
 - Unstamped Done-when loses "No mint."
 - Do not mint `bugs/` (backlog's store). A deferred
   defect still graduates through the host's bug lane.
@@ -784,7 +813,7 @@ record. The pass report is:
   <resolved>` when the tool exists; else file-mode
   from that path. Drop the standalone
   `<home>/YYYY-MM-DD-audit-<scope>.md` path. Never
-  write `.records/templates/`.
+  write the flat `<agent-records>/templates/<doctype>.md`.
 - Carry `templates/reports.md`. `## Project templates`
   lists that file.
 - **Do not mint `bugs/` this unit.** Auditor has no
@@ -844,7 +873,7 @@ No `version:` bump (member set unchanged).
 | Each writer: bundled doctype template + `## Project templates` | Copying undeclared / skill-internal templates |
 | Clankshop / PACK.md roster wording (no version bump); `setup-journal-test.sh` `--template`; check/setup/migrate both-names resolver | Making journal optional in the pack; moving `records.sh` out of `scripts/` |
 | `workstream-git.sh` both-names resolver | — |
-| `note-mint.sh` both-homes signature; never write `.records/templates/` | — |
+| `note-mint.sh` both-homes signature; never write the flat `<doctype>.md` | — |
 | Brownfield adopt of `.records/templates/<doctype>.md` into the agent-templates home | Deleting legacy `.records/templates/` this unit |
 
 ### Out of scope (recap)
@@ -853,8 +882,10 @@ No `version:` bump (member set unchanged).
   migration of `docs/design/` / `docs/BACKLOG.md`.
 - Renaming the default directory off `.records/`.
 - Dropping the `records-root:` alias this unit.
-- Putting project templates under `.agents/` or inside
-  the agent-records home.
+- A top-level `.templates/` default.
+- Flat `.records/templates/<doctype>.md` as the lock-in
+  path (legacy adopt-only).
+- Putting project templates under `.agents/`.
 - A `templates/lock-in` manifest besides `SKILL.md`.
 - Copying every bundled template by default.
 - A lint that parses the project-templates list.
@@ -1048,6 +1079,8 @@ required unless a later flip changes a slice boundary.
 | Rename the directory to `.agent-records/` | Path churn; the adjective belongs in the prose name |
 | "Working records" | Collides with git working tree |
 | `.agents/templates/<skill>/` | Collides with `~/.agents/` |
+| Top-level `.templates/` default | Root pollution; nest under the records home |
+| Flat `.records/templates/<doctype>.md` as lock-in | One `reports.md` for every writer; skill-namespace instead |
 | Copy every document-creating template | Not every bundled file is a project schema; the skill declares the set |
 | A `templates/lock-in` manifest | Second roster; `SKILL.md` is the declaration |
 | Lint that parses the project-templates list | Fragile; review owns list-vs-disk and undeclared copies |
@@ -1131,6 +1164,14 @@ Independent `/blueprint review` pass 3, 2026-08-18
    outside `$RR`; check 1 is case-sensitive;
    clankshop face `SKILL.md` drops "templates +
    scaffolding."
+
+Human amendment 2026-08-18 (after accept): default
+agent-templates home is
+`<agent-records>/templates/<skill>/`, not a
+top-level `.templates/`. `agent-templates:` is an
+override only. Flat
+`<agent-records>/templates/<doctype>.md` stays
+legacy adopt-only.
 
 Independent `/blueprint review` pass 4, 2026-08-18
 (`needs-rework` — one path-list miss). Folded the
