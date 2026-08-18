@@ -1,9 +1,9 @@
 ---
 name: clankshop
-version: 2.3.0
-description: "An agentic workshop for a code project: doctrine, records, and routing deployed as four stations (design/build/test/review), with helpers for planning, records, follow-ups, streams, audits, and debugging."
+version: 2.4.0
+description: "An agentic workshop for a code project: doctrine, records, and routing deployed as four stations (design/build/test/review), with helpers for planning, records, follow-ups, streams, audits, debugging, and reporting."
 required: journal
-optional: auditor, backlog, blueprint, contractor, debugger, delegate, checkpoint, mailbox, notepad, scheduler, workstream
+optional: analyst, auditor, backlog, blueprint, contractor, debugger, delegate, checkpoint, mailbox, notepad, scheduler, workstream
 ---
 
 # clankshop — the workshop pack
@@ -33,6 +33,7 @@ The v2 roster, by coupling tier (how much workshop a skill needs):
 | helper | `workstream` | long-lived development streams — worktrees, queues, shipping |
 | helper | `auditor` | code-quality audits; drains findings into the records when a workshop is present |
 | helper | `debugger` | root-cause debugging anywhere; guided by the test station's diagnostics when present |
+| helper | `analyst` | reports and briefings for the developer — the records layer read back as prose, from a customizable template catalog |
 | utility | `checkpoint` | living session save-state: save/resume/done + compaction recovery |
 | utility | `mailbox` | worktree-safe transport for delegated results |
 | utility | `delegate` | sub-agent dispatch routing |
@@ -56,6 +57,8 @@ renames have landed. The Phase 6 split then stood `backlog` up as the follow-up 
 **retired the v1 `bug`/`task` capture proxies** — capture routes through `/backlog` directly.
 **2.2.0:** `blueprint`'s plan/roadmap verbs moved to `contractor`.
 **2.3.0:** `notepad` — project memory; `/backlog note` retired.
+**2.4.0:** `analyst` joins as a helper — the first member that reads the records layer back out
+as developer-facing prose.
 
 **One library skill is deliberately not a member:** `skill-builder`, the toolmaker steward for
 the skills library itself — a maintainer's tool for whoever authors skills, not part of the

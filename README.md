@@ -31,8 +31,9 @@ pack manifest (`skills/clankshop/PACK.md`): the pack **face** (`clankshop`) carr
 handbook and the four **stations** — `design` (the architect), `build` (the foreman), `test` (the
 guardian), `review` (the admin) — with system verbs (`setup` / `migrate` / `check`) and persona
 summons; **helpers** — `blueprint` (specification spine), `contractor` (job lead), `journal` (the records format authority —
-the one required member), `backlog` (the follow-up lifecycle), `notepad` (project memory), `workstream` (development
-streams), `auditor` (code-quality audits), `debugger` (root-cause diagnostics); **utilities** —
+the one required member), `backlog` (the follow-up lifecycle), `notepad` (project memory),
+`workstream` (development streams), `auditor` (code-quality audits), `debugger` (root-cause
+diagnostics), `analyst` (reports and briefings read back out of the records); **utilities** —
 `checkpoint`, `mailbox`, `delegate`, `scheduler`. `skill-builder` is a category of one: the
 **toolmaker** — it stewards the skills in this library themselves (scaffold new ones, audit
 boundary health, calibrate authoring doctrine), not project code, and is deliberately outside the
@@ -41,6 +42,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | skill | what it does |
 |---|---|
 | `agent-council` | three-family review panel: independent Claude, Grok, and Codex opinions on a skill package, clustered and ranked by agreement; standalone, outside every pack |
+| `analyst` | reports and briefings for the developer: catch-ups, status, subsystem and health snapshots, guides — synthesized from the records layer and git, from a customizable template catalog |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
 | `backlog` | the follow-up lifecycle: capture by kind, tickets, debrief sweeps, tracker grooming — a client of the records layer (guards when none) |
 | `blueprint` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
