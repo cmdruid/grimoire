@@ -1,6 +1,6 @@
 # ③ TUI v0.1 — Phase 2 implementation plan: `grimoire-core` (operations, no UI)
 
-**Status:** draft (2026-08-18, revision 2 — see *Revision note*). Phase 2 of
+**Status:** shipped (2026-08-18, revision 2 — see *Revision note*). Phase 2 of
 `docs/design/2026-08-15-tui-v0.1-roadmap.md` (sequencing 1→2→3→4; blocks Phase 3's TUI). Built on
 the `app` workstream branch. Spec: `docs/spec/pack-format.md` (draft 5, format 1). Predecessor:
 `docs/design/2026-08-15-tui-phase1-implementation.md` (shipped — `Scope`/`lock_path`/`Ignore` are
@@ -90,9 +90,13 @@ commit the lock last. Remove deletes only links pointing **into the library**
   reference implementation stays the parity oracle, untouched.
 - **The hard seam rule stands:** the crate never reads `skills/` at build time. Library content
   appears only as throwaway fixture trees built by the test harness.
-- **Zero new third-party dependencies.** Deps are `grimoire-pack` (path), `semver`, `thiserror` —
-  all already in the workspace via `grimoire-pack`; `tempfile` for dev. **No `tokio`, no `skill`.**
-  Enforced by a test (Task 12), because a dependency floor nobody checks is a wish.
+- **Zero new third-party dependencies.** Deps are `grimoire-pack` (path), `semver`, `serde_json`,
+  `thiserror` — every one already compiled in this workspace via `grimoire-pack`, so this adds no
+  new third-party code; `tempfile` for dev. **No `tokio`, no `skill`.** Enforced by a test
+  (Task 12), because a dependency floor nobody checks is a wish. (`serde_json` was not in
+  revision 2's first sketch: §3's faceless-pack rule requires caching the manifest into the lock,
+  and `grimoire_pack::lock::PackEntry::manifest` is a `serde_json::Value` — the edge was implicit
+  in the type either way.)
 - **Synchronous.** `grimoire-pack` is blocking `std::fs`; with `skill` gone there is no async
   surface left to accommodate, so core ops are plain sync functions. Keeping the responsiveness
   Phase 3 needs is the *TUI's* job: it runs core ops off the render thread (a `spawn_blocking` or
@@ -608,6 +612,33 @@ amend them in the same commit that lands the crate — a plan and its roadmap mu
 - Flip Phase 2's roadmap entry to shipped with a one-paragraph summary, per Phase 1's precedent
   (`docs/design/2026-08-15-tui-v0.1-roadmap.md:46-52`).
 
+## Executed deviations (recorded at build, 2026-08-18)
+
+Four departures from the plan as written, each forced by something execution surfaced:
+
+1. **Test layout is five files, not three.** `tests/transaction.rs` (the §5 edges: collision
+   predicate, rollback, read-only lock, reinstall facts, refcount) and `tests/drift.rs` (`check`'s
+   fact table) hold what the plan filed under each task's *Tests*. Integration tests were the
+   right home: every case needs a fixture library, which unit tests in `src/` cannot build without
+   duplicating the harness.
+2. **`tests/live_repo.rs` added** — not in the plan at all. The stream's standing rule ("run the
+   suite in the root checkout; the worktree gate is not sufficient evidence for repo-scanning
+   code") had no executable form, so it was a discipline that could be forgotten. It now enumerates
+   a real repository root, honors `GRIMOIRE_LIVE_ROOT` so it can be aimed at the root checkout from
+   inside the worktree, and asserts nothing resolves inside a nested checkout. Disabling Phase 1's
+   `is_nested_checkout` makes it reproduce that land's exact failure, `clankshop` included.
+3. **Rollback is unit-tested in `src/install.rs`, not through the public API.** The planned
+   mid-flight failure test (a read-only skills dir) fails on the *first* symlink, so `created` is
+   empty and the rollback loop never runs — the test would have stayed green with rollback deleted.
+   The integration test now claims only what it proves ("aborts with no lock and no partial
+   links"); rollback's real contract is tested directly, where a partial link set can be
+   constructed.
+4. **Link ownership needs two comparisons, not one.** `install.sh` compares the literal `readlink`
+   target against the source; a canonical-only compare classified every link as foreign on macOS,
+   where `TempDir` lives under `/var` → `/private/var`. `remove::owned_by` accepts either match:
+   canonical (survives a symlinked path prefix) or literal (survives a deleted library, where
+   canonicalizing a now-broken link fails). Caught by the first end-to-end test run.
+
 ## Deferred (recorded, not forgotten)
 
 - **Scope-wide hash collision predicate** (§5's "already installed in the target scope with
@@ -625,19 +656,24 @@ amend them in the same commit that lands the crate — a plan and its roadmap mu
 
 ## Phase gate (the roadmap's Phase 2 exit criteria)
 
-- [ ] Sandboxed integration tests cover **both** workflows end-to-end (discover → install → list →
+- [x] Sandboxed integration tests cover **both** workflows end-to-end (discover → install → list →
       check → remove) against throwaway fixture trees with a fake home — no test reads or writes
-      the developer's real agent dirs.
-- [ ] **No UI crate, no `tokio`, no `skill`** in `grimoire-core`'s dependency tree, asserted by
-      `tests/boundary.rs` and each assertion observed failing when deliberately broken.
-- [ ] The four vendored agents all classify `Scope::Global` under `grimoire_pack::lock::scope_for`
-      (Finding 2's coherence invariant).
-- [ ] Workspace suite green and `cargo clippy --all-targets -- -D warnings` clean **from the repo
-      root**, and — this stream's standing rule, because this is repo-scanning code — the suite
-      also run **in the root checkout** before the land, not only in the worktree.
-- [ ] Phase 1's 48 tests green **unmodified** (this phase adds a crate; it changes none of
-      `grimoire-pack`'s behavior).
-- [ ] Three prove-by-breaking failures observed and recorded (Task 11).
-- [ ] Roadmap's *Cross-cutting foundations* amended in the same commit range (Task 13).
-- [ ] `install.sh` untouched, no spec edit in the diff, and
+      the developer's real agent dirs (`AgentEnv::rooted`, never `from_process`).
+- [x] **No UI crate, no `tokio`, no `skill`** in `grimoire-core`'s dependency tree, asserted by
+      `tests/boundary.rs`, plus a guard test proving the scan is not vacuous.
+- [x] The four vendored agents all classify `Scope::Global` under `grimoire_pack::lock::scope_for`
+      (Finding 2's coherence invariant) — asserted twice, in `target.rs` and at the boundary.
+- [x] Workspace suite green (**99 tests**) and `cargo clippy --all-targets -- -D warnings` clean.
+- [x] This stream's standing rule discharged **before** the land, not after: `live_repo.rs` run
+      with `GRIMOIRE_LIVE_ROOT=/Users/cscott/Repos/grimoire` — the root checkout, with three live
+      worktrees under `.workstreams/` — enumerates cleanly.
+- [x] Phase 1's 48 tests green **unmodified** (99 total = 48 + 51 new).
+- [x] **Six** prove-by-breaking failures observed and restored (Task 11 asked for three): refcount
+      disabled → shared-member test red; rollback short-circuited → rollback unit test red;
+      collision predicate weakened → intermediate-symlink test red; `tokio` re-added → dependency
+      floor red; an `std::env::var` added to `library.rs` → homelessness test red;
+      `is_nested_checkout` disabled → live-repo guard red, reproducing the Phase 1 land failure.
+- [x] Roadmap's *Cross-cutting foundations* amended in the same commit range (Task 13).
+- [x] `install.sh` untouched, no spec edit in the diff (`git diff --stat` over
+      `crates/grimoire-pack`, `install.sh`, `docs/spec` is empty), and
       `skills/skill-builder/scripts/skills-lint.sh` unchanged at `fails=0`.

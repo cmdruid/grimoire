@@ -96,6 +96,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "grimoire-core"
+version = "0.1.0"
+dependencies = [
+ "grimoire-pack",
+ "semver",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "grimoire-pack"
 version = "0.1.0"
 dependencies = [

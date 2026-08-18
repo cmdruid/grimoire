@@ -1,0 +1,18 @@
+[package]
+name = "grimoire-core"
+version = "0.1.0"
+edition = "2021"
+description = "grimoire operations: library model, scopes, agents, pack install/remove/check -- no UI"
+license = "MIT OR Apache-2.0"
+
+# Dependency floor (tests/boundary.rs enforces it): every crate here is already
+# compiled in this workspace via grimoire-pack, so this adds no new third-party
+# code. No `skill`, no `tokio`, no UI crate -- see the Phase 2 plan's Finding 2.
+[dependencies]
+grimoire-pack = { path = "../grimoire-pack" }
+semver = "1"
+serde_json = { version = "1", features = ["preserve_order"] }
+thiserror = "1"
+
+[dev-dependencies]
+tempfile = "3"
