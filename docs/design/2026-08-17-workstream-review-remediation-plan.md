@@ -414,3 +414,74 @@ and `SKILL.md` “No remote.” heading are empty; lint `FAIL:`
 empty. The workstream symlink WARN remains.
 
 _On completion (before landing), run the host's close-the-books sweep._
+
+## Review history
+
+**2026-08-17 — `/contractor review`: `needs-rework`.** Ground-check clean
+(`checked=13`). Blocking findings below; prune this section when they
+are resolved.
+
+### must-fix
+
+1. **Slice 1 makes `ship` call `recycle`.** Location: slice 1 change 1
+   (`ship.md` step 3, proposed “hand back to `recycle`”). `ship.md:158-164`
+   (left untouched) still hands back to the reset ritual. The plan’s own
+   invariant says verbs stay primitives — do not merge `recycle` into
+   `ship`. Spec lock 1’s “hand back to recycle” is the *flow’s* next
+   action after a template ship, not an in-procedure call. As written,
+   an agent recycles mid-`ship` and then still runs step 5 (save /
+   reset), or skips recycle because step 5 wins. Fix: step 3 only
+   *skips* queue-advance and the next-plan draft for
+   `source-kind: template`. Step 5 stays the reset ritual; `flow.md`
+   names `recycle` as the next action after that ritual for a template
+   stream.
+
+2. **Slice 1 does not update the other “ship drafts” sites.** Location:
+   slice 1 Files (only `ship.md` / `recycle.md` / `SKILL.md`). Live
+   claims that survive the slice: `flow.md:210-214` (Scenario A: ship
+   “advances the queue … and drafts the next plan”; only `manual`
+   skips), `ship.md:158-161` (“pre-reset `save` (advanced queue +
+   drafted next plan)”),
+   `templates/workstream-handoff.md:145-146` (same parenthetical).
+   `flow.md` is already in context at every loop entry — an agent will
+   still draft. Fix: add those three sites to slice 1 (or a tight
+   follow-on in the same slice). Template skip = no draft, no
+   “advanced queue” in the save parenthetical.
+
+3. **Slice 1 change recipe is insert *and* replace.** Location: slice 1
+   change 1 prose (`:98-102`) vs the fenced step-3 block (`:104-120`).
+   “Insert this branch after the current first sentence” plus a
+   complete new `3.` block duplicates the numbered step if followed
+   literally. Fix: say **replace** `ship.md:147-155` with the fenced
+   block. Drop the insert sentence.
+
+4. **Slice 5 cannot pass its own verify.** Location: slice 5 change 1
+   gloss (`:336-340`) vs verify (`:373`) and Done when (`:404`). The
+   gloss contains the string `/backlog debrief`. The verify requires
+   that string absent from the template. A correct fold fails the
+   slice. Fix: write the gloss without that exact command string
+   (e.g. “the workshop backlog debrief verb”), or change the verify to
+   accept the gloss and require the Loop-routine / Phase-map *command*
+   hits gone.
+
+### nice-to-have
+
+5. **`landing: pr` parenthetical is unimplemented in the Otherwise
+   branch.** Location: slice 1 change 1. “Either reason is enough”
+   lives only inside the template `if`. Plan-bound + `landing: pr`
+   still hits Otherwise and would advance/draft, fighting
+   `ship.md:88-95`. Drop the pr sentence from the template branch;
+   leave deferral in the Landing tail.
+
+6. **Slice 1 verify `this hand-off:` is already green.** Location:
+   slice 1 verify (`:179`). `recycle.md:33` already contains that
+   phrase. A no-op slice 4-path-fix still passes. Grep for `The file
+   you write MUST equal` instead.
+
+7. **Slice 5 `<requires: 1>` is not a blocking edge.** create /
+   template / flow / close do not need the ship/recycle edits.
+   Parallel-eligible.
+
+8. **“Delete the draft” should name the paths.** Location: slice 1
+   change 2. `drafted_next_plan` can be a comma-separated list.
+   Delete each listed path; do not `rm` a guessed plans glob.
