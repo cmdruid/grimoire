@@ -99,7 +99,7 @@ template are shared by slices 1 and 5 — that is why 5 requires 1.
 
 ## Slices
 
-- [ ] **Slice 1: template ship skip + recycle path (the tracer)** <requires: —>
+- [x] **Slice 1: template ship skip + recycle path (the tracer)** <requires: —>
 
   - Files: Modify `skills/workstream/verbs/ship.md`,
     `skills/workstream/verbs/recycle.md`,
@@ -262,7 +262,7 @@ template are shared by slices 1 and 5 — that is why 5 requires 1.
     hits; lint `fails=0`; workstream line is only the symlink
     WARN.
 
-- [ ] **Slice 2: first-load confirm** <requires: 1> (parallel with 3, 4 once 1 has landed)
+- [x] **Slice 2: first-load confirm** <requires: 1> (parallel with 3, 4 once 1 has landed)
 
   - Files: Modify `skills/workstream/verbs/load.md`,
     `skills/workstream/flow.md`
@@ -314,7 +314,7 @@ template are shared by slices 1 and 5 — that is why 5 requires 1.
     Expected: `unconfirmed` hits both files; load has the new
     step 4 and Confident launch is now step 5; `FAIL:` empty.
 
-- [ ] **Slice 3: unpark gathers** <requires: —> (parallel with 2, 4)
+- [x] **Slice 3: unpark gathers** <requires: —> (parallel with 2, 4)
 
   - Files: Modify `skills/workstream/verbs/park.md`
   - Finding: 7
@@ -354,7 +354,7 @@ template are shared by slices 1 and 5 — that is why 5 requires 1.
     `unpark`; the python assert prints the ok line; `FAIL:`
     empty.
 
-- [ ] **Slice 4: status root** <requires: —> (parallel with 2, 3)
+- [x] **Slice 4: status root** <requires: —> (parallel with 2, 3)
 
   - Files: Modify `skills/workstream/verbs/status.md`
   - Finding: 5
@@ -385,7 +385,7 @@ template are shared by slices 1 and 5 — that is why 5 requires 1.
 
     Expected: both greps hit; `FAIL:` empty.
 
-- [ ] **Slice 5: host-correct debrief** <requires: 1>
+- [x] **Slice 5: host-correct debrief** <requires: 1>
 
   - Files: Modify
     `skills/workstream/templates/workstream-handoff.md`,
