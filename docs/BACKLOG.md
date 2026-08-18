@@ -14,6 +14,57 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-19 — a skill-owned deployed template set is a new convention with no doctrine home
+- **source:** `analyst` build (2026-08-18, `feat` stream); named in
+  `docs/design/2026-08-18-analyst-skill-design.md` and **deliberately deferred by the human** so
+  the build could proceed.
+- **status:** open — deferred on purpose, not overlooked.
+- **body:** three different "a skill owns template files" shapes now coexist and none of them is
+  named in `skill-builder`'s `docs/DOCTRINE.md`: (1) **journal's doctype-mint templates** — flat
+  `<records-root>/templates/<doctype>.md`, slot-filled, consumed by `records.sh new`; (2)
+  **debugger's bundled body-shape template** (`templates/investigation.md`) — shapes a `reports/`
+  record's body, never deployed; (3) **analyst's deployed catalog** —
+  `<records-root>/templates/analyst/*.md`, lazily deployed *specifically so the project can
+  customize it*, never consumed by `records.sh`. Mechanically they don't collide (`records.sh`
+  ignores `templates/` subdirectories — verified at review), so this is a doctrine gap, not a bug.
+  **Follow-up:** a `/skill-builder calibrate` pass to name the generalized pattern (what a
+  skill-owned template set is, where it deploys, who wins on conflict, whether an upgrade may ever
+  overwrite), and then a journal-contract subsection if the pattern warrants one. Until then
+  `analyst` documents its own deploy behavior in its own `SKILL.md` and journal's contract is
+  untouched.
+
+### BL-18 — `records.sh new` cannot set `tags:` at mint time
+- **source:** `analyst` spec review (2026-08-18, `feat` stream) — the soundness reviewer caught a
+  spec mechanism that the tool could not actually perform; verified against
+  `skills/journal/scripts/records.sh`.
+- **status:** open
+- **body:** `records.sh new <doctype> --title "…"` accepts **only** `--title`, and the bundled
+  `templates/reports.md` hardcodes `tags: []` with no tag slot; `touch` sets only `--status`. So no
+  freshly-minted record can be tagged through the tool — any skill that wants a queryable tag on a
+  record it mints must hand-edit the front-matter afterwards. `list --tag` exists and works, so the
+  query half of the feature is already there; only the write half is missing. `analyst` works
+  around it by filling the minted skeleton's `tags:` line along with its body (harmless — it is
+  writing the body anyway), but the asymmetry will bite the next skill that mints records, and it
+  makes "mint then query by tag" read as unsupported when it is merely manual. **Follow-up:** add
+  `--tag` (repeatable) to `records.sh new`, and a `<tags>` slot to the doctype templates that want
+  one. Low risk, contained to journal's own tool.
+
+### BL-17 — the lint gate does not require an `## Edges` block, and four skills have none
+- **source:** `analyst` build (2026-08-18, `feat` stream) — noticed while choosing coarse edge
+  types to match against existing ones.
+- **status:** open
+- **body:** `docs/DOCTRINE.md` says typed edges are **"required of every portable skill"** (an
+  all-empty block being a *stated* disposition, not an omission), and `skill-builder new` scaffolds
+  the block for new skills. But `skills-lint.sh` only validates a block that **exists** — a skill
+  with no `## Edges` section at all passes silently. Four current members have none:
+  `journal`, `backlog`, `auditor`, `debugger` (verified 2026-08-18; each carries zero
+  `<!-- edges:` delimiters). The immediate consequence is invisible: `analyst` declares
+  `consumes: record` and the gate reports it as a single-use orphan type, because the skill that
+  actually *produces* records declares nothing — the warn is real but points at the wrong skill.
+  **Follow-up:** decide whether a missing block should be a FAIL or a WARN (WARN first, probably,
+  to avoid a flag-day), add the check, then backfill the four blocks — journal at least clearly
+  produces a `record` type. Prove the new check by breaking it, per the gate doctrine.
+
 ### BL-13 — `routing-targets` emitter only matches bare backticked `/name` tokens in column-0 rows
 - **source:** front-door architecture final review (2026-07-27,
   `docs/design/2026-07-26-front-door-architecture.md`).
