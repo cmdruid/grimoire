@@ -38,7 +38,15 @@ _Read `flow.md` alongside this verb — `load` re-enters the loop it governs._
    hard stops: `rebase_in_progress=true` (an interrupted sync/ship holds the tree — diagnose/abort
    before anything else) and `nested_stray_handoff=true` (a forked save — reconcile the two copies,
    keep the Coordinates-addressed one, delete the stray).
-4. Run the **Confident launch** (`flow.md`): classify the stream's state from the hand-off and
+4. **Confirm unattended defaults (attended `load` only).** If the hand-off's **Delegation
+   route** contains `unconfirmed`, run `create.md` step 6's pre-confirm sub-steps
+   (execution mode, delegation route, ship cadence; in-place: also landing) *before*
+   Confident launch. Record the result in the hand-off (file write, not a commit). The
+   `unconfirmed` string is the only sentinel — that one interview covers the unattended
+   defaults seed-only / unattended `create` wrote. If the route is already a confirmed
+   route or `inline-only`, skip. Unattended `load` (no human) → leave `unconfirmed` and
+   continue inline; do not invent a confirmation.
+5. Run the **Confident launch** (`flow.md`): classify the stream's state from the hand-off and
    either state the KNOWN next action with a one-word confirm, or offer an AMBIGUOUS pick. Do **not**
    "wait for direction" — act with confidence; a baseline-verify, if warranted, is your own first
    autonomous step. After the single confirm, build to completion.

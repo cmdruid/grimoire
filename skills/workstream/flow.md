@@ -110,6 +110,11 @@ any classification — `verbs/load.md` step 3) —
 and `cheatsheet-check <worktree>`, flagging any stale orientation pointer (in-place: plus the
 hand-off path — see SKILL.md *Helper scripts*). Then:
 
+**If the Delegation route contains `unconfirmed` and a human is present,** run
+`create.md` step 6's pre-confirm interview first (see `verbs/load.md` step 4) — then
+classify. An unconfirmed stream has no standing route; launching past that interview
+is the hole seed-only `create` documented and `load` must close.
+
 - **KNOWN** (one clear next action) -> state it + a **simple confirm**: "Next: continue Task 4
   (template refactor). Proceed?" Covers mid-feature with an obvious next task, a shipped feature with
   a defined next queue item, or main-moved -> `sync`. A baseline-verify (a host build + the host's
