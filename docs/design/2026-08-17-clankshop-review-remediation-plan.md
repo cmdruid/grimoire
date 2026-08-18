@@ -318,3 +318,30 @@ setup` / records-root resolver hit; no `check-facts.sh` and no
 empty.
 
 _On completion (before landing), run the host's close-the-books sweep._
+
+## Review history
+
+**2026-08-18 `/contractor review` — `needs-rework`.** Ground-check: 8 refs,
+0 unresolved. Cited spans match HEAD. Two must-fixes are in the plan’s
+own instructions, not the approach.
+
+### must-fix
+
+1. **Slice 2 step 1 says “Replace the two bullets” but the replacement
+   is a full step 4** (`plan` slice 2.1 vs `setup.md:31-36`). Pasting
+   as written duplicates `4. **Write the door.**`. Say “Replace step 4
+   (`:31-36`)” and keep the replacement as the whole step.
+
+2. **Done-when greps `the architect` against all of `SKILL.md` and
+   `verbs/`** (`plan` Done when). Spec lock 9 leaves station color in
+   the body; `SKILL.md:14` and `verbs/persona.md:18` keep “the
+   architect”. A correct fold fails that grep. Scope it the way slice
+   3 already does: the description string only (`assert "the architect"
+   not in s`). Drop `the architect` from the repo-wide stale-phrase
+   `rg`.
+
+### nice-to-have
+
+3. Guard classify uses `1. 2. 3.` in the same file as walk `1. … 5.`.
+   Letters or bullets on the classify list would make “resume at the
+   first unfinished *walk* step” harder to misread.
