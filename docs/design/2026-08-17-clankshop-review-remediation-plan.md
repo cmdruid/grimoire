@@ -2,7 +2,7 @@
 doctype: plans
 status: open
 created: 2026-08-17
-updated: 2026-08-17
+updated: 2026-08-18
 tags: [plan]
 ---
 
@@ -15,13 +15,17 @@ then tighten the trigger.
 
 Spec: `docs/design/2026-08-17-clankshop-review.md`
 
+Folded 2026-08-18 `/contractor review` (`needs-rework`, `ddba24d`).
+The two must-fixes and the classify-list nice-to-have are in the
+slices below; the write-back list is pruned.
+
 ## Global Constraints (verify vs HEAD before editing — the plan gate)
 
 - **Invariants:** patient-zero — do not run `/clankshop setup` or
   `/clankshop migrate` in this library and do not create `.handbook/`
   here. Walk steps stay numbered 1–5 (gather, seed, journal, door,
-  check). Classify / journal-probe / migrate-prefer / resume live in
-  the Guard, before the walk. Resume is `setup`’s job; `migrate` only
+  check). Classify lives in the Guard as `a.`/`b.`/`c.` (not a
+  second 1–3), before the walk. Resume is `setup`’s job; `migrate` only
   points at it. Do not inline `journal`’s procedure — at most name
   `/journal setup`. Do not add a `check-facts` script or extend
   `context.sh --check`. Do not bump `PACK.md` `version:`. Do not add
@@ -99,12 +103,12 @@ Findings 2 (as its own item) and 4 (facts script) stay out.
        **Guard:** resolve the project root first — a project directory the conversation
        references, else the working directory, else ask. Then classify *before any write*:
 
-       1. **Journal present?** If `/journal setup` is not available, stop: say so and do
+       a. **Journal present?** If `/journal setup` is not available, stop: say so and do
           not improvise a records layer. Write nothing.
-       2. **Inventory.** `scripts/migrate-scan.sh <root>` (facts). If `handbook=absent` and
+       b. **Inventory.** `scripts/migrate-scan.sh <root>` (facts). If `handbook=absent` and
           any of `docroot=`, `tracker-shaped=`, `records=present` fire, prefer `migrate` —
           show the human those keys and stop unless they confirm greenfield anyway.
-       3. **Existing `.handbook`?**
+       c. **Existing `.handbook`?**
           - Absent → continue the walk.
           - Present, and a `check` would be green (stamp, slots, door pointer, records
             layer) → already seeded. Stop. An upgrade the human asked for is a
@@ -112,8 +116,8 @@ Findings 2 (as its own item) and 4 (facts script) stay out.
             stamp line — not a re-seed, not this walk.
           - Present but `check` would not be green (missing stamp, leftover `<gate>` /
             `<trunk>`, no door pointer, records layer absent) → **resume**. Start at the
-            first unfinished walk step. Do not re-run `seed.sh` (it refuses). Do not
-            treat this as "already seeded."
+            first unfinished *walk* step (1–5). Do not re-run `seed.sh` (it refuses). Do
+            not treat this as "already seeded."
        ```
 
     2. **`setup.md` step 3** (`:26-30`). Replace:
@@ -196,8 +200,8 @@ Findings 2 (as its own item) and 4 (facts script) stay out.
   - Change: pin the door’s minimum bytes and the one resolution
     rule. Do not add a script. Do not paste a whole `AGENTS.md`.
 
-    1. **`setup.md` step 4** (`:31-36`). Replace the two bullets
-       with:
+    1. **`setup.md` step 4** (`:31-36`). Replace step 4
+       (`:31-36`) with:
 
        ```
        4. **Write the door.** Integrate into `<root>/AGENTS.md` (create it if absent; integrate,
@@ -302,46 +306,21 @@ slice. Finding 4’s script remains deferred. From the worktree:
 
 ```
 cd /Users/cscott/Repos/grimoire/.workstreams/grok && \
-  rg -n "If \`<root>/\.handbook\` already exists, stop|organic structure worth adopting|Run its standup|Set up and operate|the architect" \
+  rg -n "If \`<root>/\.handbook\` already exists, stop|organic structure worth adopting|Run its standup|Set up and operate" \
     skills/clankshop/SKILL.md skills/clankshop/verbs && \
   rg -n "\\*\\*resume\\*\\*|/journal setup|first line-start \`records-root:\`" \
     skills/clankshop/verbs && \
   test ! -e skills/clankshop/scripts/check-facts.sh && \
   test ! -e .handbook && \
-  python3 -c 'import re; t=open("skills/clankshop/SKILL.md").read(); s=re.search(r"^description:\s+\"(.*)\"\s*$",t,re.M).group(1); assert len(s)<=1024' && \
+  python3 -c 'import re; t=open("skills/clankshop/SKILL.md").read(); s=re.search(r"^description:\s+\"(.*)\"\s*$",t,re.M).group(1); assert "operate" not in s and "the architect" not in s; assert len(s)<=1024' && \
   skills/skill-builder/scripts/skills-lint.sh . 2>&1 | rg "^FAIL:"
 ```
 
 Expected: the stale-phrase grep is empty; resume / `/journal
 setup` / records-root resolver hit; no `check-facts.sh` and no
-`.handbook/` in this library; description ≤1024; lint `FAIL:`
-empty.
+`.handbook/` in this library; description has no `operate` / `the
+architect` and is ≤1024; lint `FAIL:` empty. Body station color
+(`SKILL.md:14`, `verbs/persona.md`) is allowed to keep “the
+architect”.
 
 _On completion (before landing), run the host's close-the-books sweep._
-
-## Review history
-
-**2026-08-18 `/contractor review` — `needs-rework`.** Ground-check: 8 refs,
-0 unresolved. Cited spans match HEAD. Two must-fixes are in the plan’s
-own instructions, not the approach.
-
-### must-fix
-
-1. **Slice 2 step 1 says “Replace the two bullets” but the replacement
-   is a full step 4** (`plan` slice 2.1 vs `setup.md:31-36`). Pasting
-   as written duplicates `4. **Write the door.**`. Say “Replace step 4
-   (`:31-36`)” and keep the replacement as the whole step.
-
-2. **Done-when greps `the architect` against all of `SKILL.md` and
-   `verbs/`** (`plan` Done when). Spec lock 9 leaves station color in
-   the body; `SKILL.md:14` and `verbs/persona.md:18` keep “the
-   architect”. A correct fold fails that grep. Scope it the way slice
-   3 already does: the description string only (`assert "the architect"
-   not in s`). Drop `the architect` from the repo-wide stale-phrase
-   `rg`.
-
-### nice-to-have
-
-3. Guard classify uses `1. 2. 3.` in the same file as walk `1. … 5.`.
-   Letters or bullets on the classify list would make “resume at the
-   first unfinished *walk* step” harder to misread.
