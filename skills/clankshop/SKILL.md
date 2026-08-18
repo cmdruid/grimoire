@@ -47,7 +47,8 @@ it; scripts compute facts, verbs own judgment.
 | migration preflight | `scripts/migrate-scan.sh` | brownfield inventory facts for `migrate` |
 | pack manifest | `PACK.md` beside this SKILL.md | the roster `install.sh --pack` resolves (`docs/spec/pack-format.md`, repo-root) |
 
-The records layer — `records.sh`, templates, `.records/` scaffolding — is deliberately **not**
-here: it belongs to `journal`, a required pack member; `setup` delegates records standup to
-it. The load rule, layout, and precedence rules live in the seed's own `README.md` — the
+The records layer — `records.sh` + the history ledger — is deliberately **not**
+here: it belongs to `journal`, a required pack member; `setup` delegates tool-layer
+standup to it. Journal creates no store directories and no templates. The load
+rule, layout, and precedence rules live in the seed's own `README.md` — the
 deployed handbook documents itself.

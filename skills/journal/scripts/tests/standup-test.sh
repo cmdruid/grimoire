@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# standup-test.sh — standup.sh end to end: scaffold on a bare repo, honor a declared
-# records-root, stay additive on a legacy root, and every advertised failure mode
-# actually fails (proven by breaking).
+# standup-test.sh — standup.sh end to end: tool layer on a bare repo, honor a
+# declared records-root, stay additive on a legacy root, and every advertised
+# failure mode actually fails (proven by breaking).
 set -eu
 DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILL="$(cd "$DIR/../.." && pwd)"
@@ -20,19 +20,20 @@ git init -q "$proj"
 expect "standup reports" "records: $proj/.records (journal)" "$OUT"
 expect "standup self-check green" "records check: OK (0 records)" "$OUT"
 
-for s in adr bugs design notes plans reports tickets trackers; do
-  [ -f "$proj/.records/$s/.gitkeep" ] && pass=$((pass + 1)) || { echo "FAIL: missing store $s" >&2; fail=$((fail + 1)); }
-done
-# templates: standup ships ONLY journal's commons/example (reports.md); every other
-# store's template is owner-carried and lazy-deployed by the skill that mints it —
-# a pre-deployed copy here would mean standup regressed into the template dump.
-[ -f "$proj/.records/templates/reports.md" ] && pass=$((pass + 1)) || { echo "FAIL: missing commons template reports.md" >&2; fail=$((fail + 1)); }
-for t in adr bugs design notes plans tickets trackers; do
-  [ ! -e "$proj/.records/templates/$t.md" ] && pass=$((pass + 1)) || { echo "FAIL: owner-carried template $t.md pre-deployed by standup" >&2; fail=$((fail + 1)); }
-done
 [ -x "$proj/.records/scripts/records.sh" ] && pass=$((pass + 1)) || { echo "FAIL: records.sh not executable" >&2; fail=$((fail + 1)); }
 [ -f "$proj/.records/history.tsv" ] && pass=$((pass + 1)) || { echo "FAIL: missing history.tsv" >&2; fail=$((fail + 1)); }
 expect "README stamped with the real date" "Stood up by journal on $(date +%Y-%m-%d)." "$proj/.records/README.md"
+
+# slim layer: no store dirs, no templates/, no deployed reports.md
+for s in adr bugs design notes plans reports tickets trackers templates; do
+  if [ -e "$proj/.records/$s" ]; then
+    echo "FAIL: standup created $s (tool layer must not)" >&2
+    fail=$((fail + 1))
+  else
+    pass=$((pass + 1))
+  fi
+done
+[ ! -e "$proj/.records/templates/reports.md" ] && pass=$((pass + 1)) || { echo "FAIL: standup deployed reports.md" >&2; fail=$((fail + 1)); }
 
 # --- declared records-root, additive on a legacy tree ---------------------------
 legacy="$TMP/legacy"
@@ -42,11 +43,36 @@ echo "pre-existing" > "$legacy/dev/records/keep.txt"
 expect "declared root honored" "records: $legacy/dev/records (journal)" "$OUT"
 expect "legacy content survives" "pre-existing" "$legacy/dev/records/keep.txt"
 [ -x "$legacy/dev/records/scripts/records.sh" ] && pass=$((pass + 1)) || { echo "FAIL: records.sh missing under declared root" >&2; fail=$((fail + 1)); }
+for s in adr bugs design notes plans reports tickets trackers templates; do
+  if [ -e "$legacy/dev/records/$s" ]; then
+    echo "FAIL: declared-root standup created $s" >&2
+    fail=$((fail + 1))
+  else
+    pass=$((pass + 1))
+  fi
+done
+
+# --- a home that merely exists (notes/ already there, no tool) is additive ------
+partial="$TMP/partial"
+mkdir -p "$partial/.records/notes"
+echo "kept" > "$partial/.records/notes/keep.txt"
+"$SKILL/scripts/standup.sh" "$partial" >"$OUT" 2>"$ERR"
+expect "partial home still stands up" "records: $partial/.records (journal)" "$OUT"
+expect "existing store survives" "kept" "$partial/.records/notes/keep.txt"
+[ -x "$partial/.records/scripts/records.sh" ] && pass=$((pass + 1)) || { echo "FAIL: records.sh missing on partial home" >&2; fail=$((fail + 1)); }
 
 # --- proven by breaking ----------------------------------------------------------
 rc=0; "$SKILL/scripts/standup.sh" "$proj" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "re-standup refused rc" "2" "$rc"
 expect "re-standup refusal message" "refusing" "$ERR"
+
+# templates/ alone is NOT already-stood-up
+tplonly="$TMP/tplonly"
+mkdir -p "$tplonly/.records/templates"
+echo "legacy" > "$tplonly/.records/templates/notes.md"
+"$SKILL/scripts/standup.sh" "$tplonly" >"$OUT" 2>"$ERR"
+expect "templates-only home is not refused" "records: $tplonly/.records (journal)" "$OUT"
+[ -x "$tplonly/.records/scripts/records.sh" ] && pass=$((pass + 1)) || { echo "FAIL: templates-only home did not get records.sh" >&2; fail=$((fail + 1)); }
 
 rc=0; "$SKILL/scripts/standup.sh" "$TMP/nosuchdir" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "bad target rc" "2" "$rc"

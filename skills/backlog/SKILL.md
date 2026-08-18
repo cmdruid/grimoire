@@ -82,6 +82,12 @@ is (or run the debrief if the intent is "capture everything that surfaced").
   then runs the host's cheap doc gate if it has one. A capture verb invoked **inside a sweep**
   (`debrief`) only writes — the sweep makes the single atomic multi-file commit.
 
+## Project templates
+
+- `bugs.md`
+- `tickets.md`
+- `trackers.md`
+
 ## Scope boundary + host conduct
 
 `backlog` files, escalates, sweeps, and keeps the trackers sharp. Defining the record format

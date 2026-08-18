@@ -18,10 +18,13 @@ workshop; report that and point at `setup` / `migrate` — nothing to check.
    a finding.
 4. **Links** — every relative `.md` link inside `.handbook/` resolves, and the door
    (`AGENTS.md`) exists and names `.handbook/README.md`.
-5. **Records** — resolve the records root: the first line-start `records-root:` in
-   `<root>/AGENTS.md` or `<root>/CLAUDE.md`, else `.records/`. Where
-   `<records-root>/scripts/records.sh` exists, run it `check`: front-matter
-   conformance and status↔ledger coherence are its facts. Missing → report the
-   records layer as absent (setup's step 3 unfinished), not as a pass.
+5. **Records** — resolve the agent-records home: the first line-start
+   `agent-records:` or `records-root:` in `<root>/AGENTS.md` or
+   `<root>/CLAUDE.md`, else `.records/`. A host that only declared
+   `agent-records:` must not be told the layer is absent at default
+   `.records/`. Where `<agent-records>/scripts/records.sh` exists, run
+   it `check`: front-matter conformance and status↔ledger coherence are
+   its facts. Missing → report the records layer as absent (setup's
+   step 3 unfinished), not as a pass.
 6. **Report** — one list: green items as one line, each finding as location + what's wrong.
    Fixes are ordinary routed work, not part of the check.

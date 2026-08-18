@@ -5,16 +5,15 @@ description: "The records-layer format authority — defines a project's `.recor
 
 # journal — the records format authority
 
-One skill: the **definition** of a project's records layer. It owns the stores under the records
-root (default `.records/`), the **record contract** (below — the one citable place), the
-**template convention** (records mint from owner-carried templates — below), and the deployed
-tool **`records.sh`** (query + lifecycle;
-sole writer of the `history.tsv` closure ledger). Journal stands records up on a bare repo by
-itself, and the workshop's `setup` delegates its records step here. Skills that save or track
-artifacts in the records layer — follow-up capture, debugger reports, auditor findings, workstream
-plan closures, blueprint plans — are **clients**: they cite the contract below instead of
-restating it, and at runtime they talk to the **deployed** `records.sh` (it travels with the
-records layer), never to this skill's bundled copy.
+One skill: the **definition** of a project's records layer. It owns the eight store *names*,
+the **record contract** (below), the **template convention** (writers carry templates; mint
+from a caller-supplied `--template` path), and the deployed tool **`records.sh`** (query +
+lifecycle; sole writer of the `history.tsv` closure ledger). `/journal setup` stands the
+**tool layer** — `records.sh`, empty `history.tsv`, README — and is never a floor for writers.
+The workshop's `setup` delegates its records step here. Writers state the in-package
+contract in their own package; they do not send the agent here for those bytes. At runtime
+they talk to the **deployed** `records.sh` when that file is executable, never to this
+skill's bundled copy.
 
 _Lineage: v1's `backlog` skill was this whole records instrument (renamed `journal` in v2); the
 follow-up workflow that ran on it (capture, debrief, tracker grooming) moved out to the v2
@@ -26,7 +25,8 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
   `notes`, `plans`, `reports`, `tickets`, `trackers` — each holding
   `YYYY-MM-DD-<slug>.md` records minted by `records.sh new`. No counters, no typed IDs, no
   stored index: querying is a live front-matter scan. `templates/`, `scripts/`, and
-  `history.tsv` are reserved (never scanned).
+  `history.tsv` are reserved (never scanned). Setup does not create store directories;
+  the skill that mints a store creates it.
 - **Micro-items are tracker lines, not records.** A tracker record's body holds one-line
   items in the contract's line form (below); detailed material — a bug repro, a durable fact —
   gets its own dated record, linked from a tracker line when it needs scheduling. Which
@@ -37,7 +37,7 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
   writer, never hand-edited. A tracker *line-item* completes per the contract's line form
   (below), not through the ledger.
 
-## The record contract (cite this section; never restate it)
+## The record contract
 
 `records.sh check` enforces front-matter, the status vocabulary (including ledger
 coherence), and record-link resolution. Tracker line form is a prose convention —
@@ -61,19 +61,18 @@ template → error), not by `check`.
       - [x] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md — 2026-08-17
 
   Completing a line is that rewrite + a `records.sh touch` of the tracker (no ledger line).
-- **Template convention**: `records.sh new <doctype>` mints from
-  `<records-root>/templates/<doctype>.md` (a contract-conformant record with `<title>`/`<date>`
-  slots) and errors, naming the missing path, when the store has no template. **The skill whose
-  verbs mint a store owns that store's template and lazy-deploys it** — copies its bundled
-  template into `<records-root>/templates/` when absent, before minting. Journal itself bundles
-  only `templates/reports.md` — the commons (several skills mint reports; no single owner),
-  doubling as the worked example of the contract — which `setup` deploys with the layer.
+- **Template convention**: `records.sh new <doctype> --template <resolved>` mints from
+  the caller-supplied path (usually `<agent-templates>/<skill>/<doctype>.md`). Omitting
+  `--template` still reads `$RR/templates/<doctype>.md` (brownfield). The minting skill
+  owns the bundled template and copies it to the **agent-templates home**, never to
+  the flat `.records/templates/<doctype>.md`. Journal's in-package `reports.md` is the
+  contract example only; setup copies nothing.
 
 ## Verb dispatch (read the file, then follow it)
 
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
-| `/journal setup` | `verbs/setup.md` | Stand up the records layer — stores, templates, `records.sh`, ledger (standalone, or as the workshop `setup`'s delegated records step) | "stand up the records", the workshop's records seam |
+| `/journal setup` | `verbs/setup.md` | Stand up the records **tool layer** — `records.sh`, empty ledger, README (standalone, or as the workshop `setup`'s delegated records step). No store directories, no templates. | "stand up the records", the workshop's records seam |
 | `/journal done <record>` | `verbs/done.md` | **Close** a record in place — disposition + note + the ledger line (or flip a tracker line-item) | "mark that done", "close out that plan" |
 | `/journal curate` | `verbs/curate.md` | **Substrate hygiene** — `check`, close what quietly finished, repair link rot, merge duplicates, propose prunes | "check the records", "tidy the stores" |
 
@@ -82,11 +81,16 @@ record, or store hygiene. Filing a follow-up is not journal's job (scope boundar
 
 ## Shared discipline (every verb relies on this — stated here once)
 
-- **Resolve the records root, then let `records.sh` own the facts.** The root is the project's
-  declared `records-root:` (front-door `AGENTS.md` declaration), else `.records/`. The deployed
-  tool is `<records-root>/scripts/records.sh` — invoke **it** for every date, path, and
-  conformance fact (`new`/`touch`/`done`/`list`/`history`/`prune-candidates`/`check`); never
-  guess a date, never hand-stamp front-matter, never write `history.tsv` by hand.
+- **Resolve the agent-records home, then let `records.sh` own the facts.** The home is
+  the first line-start `agent-records:` or `records-root:` in `AGENTS.md`, then
+  `CLAUDE.md`; else `.records/`. (`agent-records:` preferred; `records-root:` still
+  accepted so already-declared hosts do not break.) The deployed tool is
+  `<agent-records>/scripts/records.sh` — invoke **it** for every date, path, and
+  conformance fact (`new --template <resolved>` / `touch` / `done` / `list` /
+  `history` / `prune-candidates` / `check`); never guess a date, never hand-stamp
+  front-matter, never write `history.tsv` by hand. `done` / `curate` use this
+  same scan so a host that only declared `agent-records:` is not silently aimed
+  at `.records/`.
 - **Scripts compute facts; the verb prose decides.** Whether a record is really done and under
   which disposition, what merges with what — that judgment lives in the verb files. The scripts
   (`records.sh`, `scripts/standup.sh`, `scripts/scoped-commit.sh`) do only deterministic
@@ -109,6 +113,10 @@ record, or store hygiene. Filing a follow-up is not journal's job (scope boundar
   host's cheap doc gate if it has one. A verb invoked **inside a client's sweep** (a debrief)
   only writes — the sweep makes the single atomic multi-file commit.
 
+## Project templates
+
+none — `reports.md` is the contract example. Setup copies nothing.
+
 ## Scope boundary + host conduct
 
 `journal` defines the format, stands it up, closes records, and keeps the stores conformant.
@@ -118,7 +126,7 @@ member where installed), and what a captured signal *means* for the system is ju
 downstream still. Journal owns no judgment beyond its own formats.
 
 **Standalone by default, framework-aware when present.** Every verb works on any repo: the
-stores live under the records root, and no verb refuses or stalls for lack of a workshop.
+stores live under the agent-records home, and no verb refuses or stalls for lack of a workshop.
 On a workshop host the deployed handbook's routing applies downstream; elsewhere it is simply
 absent — never demand the workshop as a precondition.
 

@@ -19,16 +19,25 @@ mkdir -p "$proj"
 RS="$proj/.records/scripts/records.sh"
 today="$(date +%Y-%m-%d)"
 
-# Owner lazy-deploy, modeled: standup ships only journal's commons (reports.md); the
-# skills owning the other stores copy their templates in before minting (the SKILL.md
-# template convention). This fixture stands in for those owners — records.sh is the
-# subject here, and it mints from whatever contract-conformant template is deployed.
+# Brownfield omitted --template: standup no longer plants templates/, so the
+# fixture mkdir's the dest and drops contract-shaped files there. records.sh
+# is the subject; it mints from whatever path it is given (or $RR/templates/).
+mkdir -p "$proj/.records/templates"
 for t in plans notes trackers tickets; do
   printf -- '---\ndoctype: %s\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\n' "$t" \
     > "$proj/.records/templates/$t.md"
 done
 
-# --- new: minted from the template, slots filled, date-slug filename ------------
+# --- --template: path outside $RR is accepted -----------------------------------
+outside="$TMP/outside-plans.md"
+printf -- '---\ndoctype: plans\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\noutside\n' \
+  > "$outside"
+p_out="$("$RS" new plans --template "$outside" --title "From outside")"
+expect_eq "new --template outside \$RR" "$proj/.records/plans/$today-from-outside.md" "$p_out"
+expect "outside template body used" "outside" "$p_out"
+expect "outside template title filled" "# From outside" "$p_out"
+
+# omitted --template still reads $RR/templates/<doctype>.md (brownfield)
 p="$("$RS" new plans --title "Alpha: the first plan")"
 expect_eq "new prints the path" "$proj/.records/plans/$today-alpha-the-first-plan.md" "$p"
 expect "front-matter doctype" "doctype: plans" "$p"
@@ -73,7 +82,7 @@ expect_absent "disposition filter excludes" "consumed" "$OUT"
 expect "history grep matches" "consumed" "$OUT"
 
 "$RS" check >"$OUT"
-expect "check green after lifecycle" "records check: OK (3 records)" "$OUT"
+expect "check green after lifecycle" "records check: OK (4 records)" "$OUT"
 
 # --- proven by breaking -----------------------------------------------------------
 rc=0; "$RS" 'done' "$p" >"$OUT" 2>"$ERR" || rc=$?
@@ -91,7 +100,7 @@ rc=0; "$RS" new gizmos --title "No such store" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "unknown doctype rc" "2" "$rc"
 expect "unknown doctype names the template" "no template for doctype 'gizmos'" "$ERR"
 
-rc=0; "$RS" touch "$proj/.records/templates/reports.md" >"$OUT" 2>"$ERR" || rc=$?
+rc=0; "$RS" touch "$proj/.records/templates/notes.md" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "reserved path refused rc" "2" "$rc"
 expect "reserved path named" "reserved path" "$ERR"
 

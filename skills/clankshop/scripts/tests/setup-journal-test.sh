@@ -32,12 +32,10 @@ expect "records self-check green" "records check: OK (0 records)" "$OUT"
 expect "handbook load sets green" "load sets: OK" "$OUT"
 
 RS="$proj/.records/scripts/records.sh"
-# the follow-up member's lazy-deploy seam: standup ships only journal's commons
-# template, so backlog (which owns the trackers template) copies it in before the
-# first mint — the pack's template convention, exercised live
+# standup no longer plants templates/. Mint from the owner's bundled template
+# via --template (path may sit outside $RR).
 BACKLOG="$(cd "$SKILL/../backlog" && pwd)"
-cp "$BACKLOG/templates/trackers.md" "$proj/.records/templates/trackers.md"
-p="$("$RS" new trackers --title "Backlog")"
+p="$("$RS" new trackers --template "$BACKLOG/templates/trackers.md" --title "Backlog")"
 expect "workshop can mint a record" "# Backlog" "$p"
 "$RS" 'done' "$p" --as dropped --note "fixture teardown" >/dev/null
 "$RS" check >"$OUT"

@@ -36,11 +36,12 @@ c. **Existing `.handbook`?**
    — copies the template handbook to `<root>/.handbook`, fills the slots, writes the one
    install stamp (`Seeded from clankshop vX.Y on DATE` in `.handbook/README.md`), and
    self-checks the load sets. It refuses an existing `.handbook`.
-3. **Stand up the records layer — `/journal setup`** (a required pack member; the records
-   layer is its domain). Run `/journal setup` for `<root>`: the `.records/` stores,
-   templates, `records.sh`, and the history ledger are its deployed assets, not this
-   skill's. Do not inline journal's walk. If `journal` is not available, say so and
-   stop — the Guard should have caught this; write nothing further.
+3. **Stand up the records tool layer — `/journal setup`** (a required pack member; the
+   records layer is its domain). Run `/journal setup` for `<root>`: `records.sh`,
+   the empty history ledger, and the records README are its deployed assets, not
+   this skill's. Do not `mkdir` store directories or templates to "help." Do not
+   inline journal's walk. If `journal` is not available, say so and stop — the
+   Guard should have caught this; write nothing further.
 4. **Write the door.** Integrate into `<root>/AGENTS.md` (create it if absent; integrate,
    never clobber — existing content stays). Minimum bytes — not a template:
 
@@ -48,8 +49,9 @@ c. **Existing `.handbook`?**
      `.handbook/`; start there);
    - a thin routing table compiled from `core/ROUTING.md`'s dispatch rows (kind of
      work → lane). Detail stays in the handbook; the door only routes;
-   - `records-root: <rel>` at line start only when the records root is not
-     `.records/` (omit the line for the default).
+   - `agent-records: <rel>` at line start only when the records home is not
+     `.records/` (omit the line for the default). `records-root:` remains
+     accepted on already-declared hosts.
 
    Do not invent a third location. Do not rewrite unrelated existing content.
 5. **Validate**: run the `check` verb. Setup is complete only when it comes back green.

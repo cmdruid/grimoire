@@ -117,6 +117,14 @@ records layer and git, never from running the project's gates; the report follow
 skeleton with every claim cited; the anchor used is named; and the report was persisted only per
 *Persistence*.
 
+## Project templates
+
+- `briefing.md`
+- `status.md`
+- `subsystem.md`
+- `diagnostics.md`
+- `guide.md`
+
 ## Edges
 
 <!-- edges:analyst -->

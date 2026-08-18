@@ -1009,7 +1009,7 @@ This spec doubles as the plan. Sequencing is required
 the other writers). A separate contractor plan is not
 required unless a later flip changes a slice boundary.
 
-- [ ] **Slice 1: doctrine + skill-builder + journal tool-layer**
+- [x] **Slice 1: doctrine + skill-builder + journal tool-layer**
   <requires: —>
   - Paths: `skills/skill-builder/docs/DOCTRINE.md`;
     `skills/skill-builder/verbs/new.md`;

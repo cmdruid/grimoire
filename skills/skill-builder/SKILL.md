@@ -37,8 +37,11 @@ memory.
 - **`docs/BOUNDARY-AUDIT.md`** — the independence-auditing workflow `check` runs (the violation rubric,
   the routing-probe acceptance gate, the mechanical backstop it relies on).
 - **`scripts/skills-lint.sh`** — the mechanical gate: frontmatter limits, bundled-ref resolution,
-  script syntax, cross-skill ref checks, edge-block well-formedness. Takes a `<library-root>` argument
-  (default: the current directory) so it checks whatever library it's pointed at.
+  script syntax, cross-skill ref checks, edge-block well-formedness, journal-floor phrase
+  (fixture-only until the live floor is gone), project-templates heading. Takes a
+  `<library-root>` argument (default: the current directory) so it checks whatever
+  library it's pointed at. Red-proofs for the records-writer checks live in
+  `scripts/tests/lint-records-writer-test.sh`.
 ## Disposition (scored against its own doctrine)
 
 - **Self-init / home:** none — an **in-place steward**. It maintains the host library's own `skills/`

@@ -28,7 +28,21 @@ verb's job).
      **scratch-only**.
    - Is it a pure router/transport with no storage at all? → **pure mechanism**.
 
-3. **Write `SKILL.md`:**
+3. **Record-writer?** — ask, orthogonal to the tier: *will this skill write typed records
+   into the agent-records home?* Not automatically durable-home; notepad is the worked
+   example of a records-path client.
+   - **Yes** → scaffold, in `SKILL.md` (see `docs/DOCTRINE.md` § Record-writing skills):
+     - the inlined agent-records / agent-templates resolvers (default paths named
+       literally: `.records/…`, `.records/templates/<name>/…`);
+     - the five-key in-package contract (keys, status vocabulary, dated slug,
+       record-link form) — do not send the agent to another skill for those bytes;
+     - a no-floor sentence: missing `records.sh` is not an error; journal standup is
+       never a precondition;
+     - `## Project templates` (named lock-in files, or an explicit "none" if it writes
+       records but locks nothing in yet).
+   - **No** → do not add those sections.
+
+4. **Write `SKILL.md`:**
    - Frontmatter: `name`, and a `description:` that **routes on its own** — states only this skill's
      job/domain, names no sibling to defer/disambiguate/contrast (the self-scoping rule; router and
      fragment exceptions are documented in `docs/DOCTRINE.md`). Keep it ≤ ~700 chars (hard cap 1024);
@@ -47,7 +61,7 @@ verb's job).
      Fill in real types only where they're real; an honest all-`—` is a legitimate disposition for
      in-place-steward/scratch-only/pure-mechanism tiers (`docs/DOCTRINE.md` table).
 
-4. **Durable-home tier only — scaffold `init`:**
+5. **Durable-home tier only — scaffold `init`:**
    - Draft the new skill's own `<new-skill>/verbs/init.md`: an idempotent home-scaffold
      (create-if-absent for each store the skill
      owns; never touch existing content) **plus** front-door self-registration, modeled on the
@@ -63,14 +77,14 @@ verb's job).
      *inside* the same library that authors the doctrine: never register against that library's own
      real front-door; exercise against a throwaway fixture.
 
-5. **Other tiers:** no `init` verb. State the "no home" disposition in the skill's body (one sentence)
+6. **Other tiers:** no `init` verb. State the "no home" disposition in the skill's body (one sentence)
    so it's a recorded fact, not a silent gap.
 
-6. **Wire consumption:** add the skill to the host's install mechanism (however it lists/symlinks
+7. **Wire consumption:** add the skill to the host's install mechanism (however it lists/symlinks
    skills) and mention it in the library's own README/inventory, if one exists — `scripts/skills-lint.sh`
    check 4 flags a missing README mention.
 
-7. **Gate.** Run `scripts/skills-lint.sh` → `fails=0`. A fresh skill commonly WARNs on nothing if the
+8. **Gate.** Run `scripts/skills-lint.sh` → `fails=0`. A fresh skill commonly WARNs on nothing if the
    description and edges are well-formed; treat any FAIL as a scaffolding bug, not a thing to suppress.
 
 ## Done when

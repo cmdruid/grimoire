@@ -74,6 +74,17 @@
 #      `verbs/x/y.md`) or via a backticked directory citation that is a prefix
 #      of its path (`verbs/design/` covers `verbs/design/plan.md`) (FAIL --
 #      names the skill and the orphan file).
+#  12. Journal-floor phrase (FAIL). A non-exempt skill's .md matches the
+#      case-sensitive phrases `Requires a stood-up records layer` or
+#      `stop and point at `/journal setup``. Evidence: skill, file, line.
+#      Does not match a prohibition ("journal standup is never a
+#      precondition"). Journal, skill-builder, and pack faces are exempt.
+#      LIVE-TREE ACTIVATION DEFERRED: this check runs only when
+#      SKILLS_LINT_FLOOR=1 (fixture proofs). Enable on the live run after
+#      the backlog floor phrases are gone.
+#  13. Project-templates heading (FAIL). A skill that has templates/*.md
+#      must have a `## Project templates` heading in SKILL.md. A skill
+#      with no templates/ dir is out of scope. Pack faces are exempt.
 #
 # Pack-face exemption (clankshop v2): the one skill dir that carries a PACK.md
 # is the pack's FACE -- it composes the pack, so naming its members is its job,
@@ -532,6 +543,44 @@ for sk in "$skills_dir"/*/; do
     done <<< "$cited"
     [ "$covered" -eq 1 ] || fail "$name: $rel is not cited by any .md in this skill (orphan verb file)"
   done < <(find "$vdir" -name '*.md' -print0)
+done
+
+# ---- 12. journal-floor phrase (FAIL; live run deferred) -----------------------
+# Case-sensitive exact phrases. Exemptions: journal, skill-builder, pack faces.
+# Gated on SKILLS_LINT_FLOOR=1 until the live tree no longer carries the
+# backlog floor (slice 2). Prove red on a fixture before trusting green.
+if [ "${SKILLS_LINT_FLOOR:-}" = 1 ]; then
+  for sk in "$skills_dir"/*/; do
+    name="$(basename "$sk")"
+    case "$name" in journal|skill-builder) continue ;; esac
+    is_pack_face "$name" && continue
+    while IFS= read -r -d '' f; do
+      rel="${f#"$sk"}"
+      while IFS= read -r line; do
+        [ -n "$line" ] || continue
+        fail "$name: $rel:$line: journal-floor phrase"
+      done < <(grep -nF -e 'Requires a stood-up records layer' \
+                        -e 'stop and point at `/journal setup`' "$f" || true)
+    done < <(find "$sk" -name '*.md' -print0)
+  done
+fi
+
+# ---- 13. project-templates heading (FAIL) ------------------------------------
+# A skill that ships templates/*.md must declare ## Project templates.
+# Pack faces exempt (same as the independence checks).
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  is_pack_face "$name" && continue
+  has_tpl=0
+  for t in "$sk"/templates/*.md; do
+    [ -f "$t" ] || continue
+    has_tpl=1
+    break
+  done
+  [ "$has_tpl" -eq 1 ] || continue
+  if ! grep -q '^## Project templates' "$sk/SKILL.md" 2>/dev/null; then
+    fail "$name: templates/*.md present but SKILL.md has no ## Project templates heading"
+  fi
 done
 
 # ---- summary -----------------------------------------------------------------

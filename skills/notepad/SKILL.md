@@ -79,6 +79,10 @@ session scratch that must not persist.
   `note-mint.sh`, and let the caller commit. The caller is identified
   by being that sweep, not by a CLI switch. No `--no-commit` flag.
 
+## Project templates
+
+- `notes.md`
+
 ## Edges
 
 <!-- edges:notepad -->

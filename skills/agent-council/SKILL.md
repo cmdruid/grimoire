@@ -176,6 +176,10 @@ stop with the reason); cluster → review (or attempted) → re-cluster;
 ranked report shown and written to `RESULT.md`; every dropped or silent
 seat is in Seat notes.
 
+## Project templates
+
+none — `ballot.md` and `review.md` are package-only.
+
 ## Edges
 
 Scratch-only. The ranked report is a `review` baton (`RESULT.md`).

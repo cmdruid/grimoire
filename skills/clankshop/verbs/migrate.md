@@ -22,7 +22,8 @@ migration): everything below then writes and commits on the stream's branch and 
    a station chapter (doctrine folds into `core/` or a station `POLICY.md`), a record store,
    or *leave in place* — and show the human the whole table at once. **Nothing moves before
    the table is confirmed.** A legacy records root the project wants to keep (e.g. `dev/`) is
-   declared in place via the door's `records-root:` line, never bulk `git mv`'d.
+   declared in place via the door's `agent-records:` (or legacy `records-root:`)
+   line, never bulk `git mv`'d.
 
    The destination menu is the eight stores; classify by what the doc *is*:
 
@@ -48,9 +49,10 @@ migration): everything below then writes and commits on the stream's branch and 
 3. **Execute the mechanical rows.**
    - Seed the doctrine: `scripts/seed.sh <root> --gate '<gate>' --trunk '<trunk>'` (the two
      facts confirmed alongside the table).
-   - Stand up the records machinery via `/journal setup` (it owns `.records/` scaffolding,
-     templates, `records.sh`) — pointed at the declared records root. Do not inline
-     journal's walk.
+   - Stand up the records tool layer via `/journal setup` (it owns `records.sh` +
+     the ledger + README; it creates no store directories and no templates) —
+     pointed at the declared agent-records home (`agent-records:` preferred,
+     `records-root:` accepted, else `.records`). Do not inline journal's walk.
    - Move adopted records into their stores with `git mv` (history survives); keep original
      filenames — the path is the ID either way. Store directories must not collide with the
      records root's reserved paths (`templates/`, `scripts/`, `history.tsv`).
@@ -66,7 +68,7 @@ migration): everything below then writes and commits on the stream's branch and 
    the station `POLICY.md`s **below** the seeded preambles — integrated, deduplicated, linked
    (the precedence rule holds from day one). The door is written **into** the existing
    `AGENTS.md` to setup's minimum (pointer naming `.handbook/README.md`, thin dispatch
-   table, `records-root:` only when not `.records/`); existing content preserved.
+   table, `agent-records:` only when not `.records/`); existing content preserved.
 5. **Done means `check` is green.** Run the `check` verb; fix what it reports. One conformance
    regime, no grandfathering: after migration, `records.sh` sees everything.
 

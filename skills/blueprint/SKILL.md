@@ -351,6 +351,14 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
   no host paths baked in, travels as one unit wherever the skills are
   installed.
 
+## Project templates
+
+- `design.md`
+- `adr.md`
+- `spec.md`
+
+`founding.md` is package-only.
+
 ## Edges
 
 <!-- edges:blueprint -->

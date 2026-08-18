@@ -27,11 +27,11 @@ The v2 roster, by coupling tier (how much workshop a skill needs):
 | system | `clankshop` | the seed (handbook + `context.sh`) + `setup` / `migrate` / `check` / persona summons |
 | helper | `blueprint` | specification spine — ideation to argued spec; genesis (`new` / `deploy`) for a founding repo; never implementation plans |
 | helper | `contractor` | one job: roadmap / plan / runbook / review / build |
-| helper | `journal` | **the records format authority** — stores, the record contract, templates, `records.sh`, the history ledger; required (setup delegates records standup to it) |
-| helper | `backlog` | the follow-up lifecycle — capture by kind, tickets, debriefs, tracker grooming; a client of the deployed records layer |
+| helper | `journal` | **the records format authority** — the record contract, `records.sh`, the history ledger; required (setup delegates tool-layer standup to it) |
+| helper | `backlog` | the follow-up lifecycle — capture by kind, tickets, debriefs, tracker grooming |
 | helper | `notepad` | project memory — write, find, update, supersede, and drop durable facts in `notes/` |
 | helper | `workstream` | long-lived development streams — worktrees, queues, shipping |
-| helper | `auditor` | code-quality audits; drains findings into the records when a workshop is present |
+| helper | `auditor` | code-quality audits; pass reports land in the agent-records home |
 | helper | `debugger` | root-cause debugging anywhere; guided by the test station's diagnostics when present |
 | helper | `analyst` | reports and briefings for the developer — the records layer read back as prose, from a customizable template catalog |
 | utility | `checkpoint` | living session save-state: save/resume/done + compaction recovery |

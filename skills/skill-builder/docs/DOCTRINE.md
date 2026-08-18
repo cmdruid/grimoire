@@ -202,39 +202,51 @@ mechanism is not thereby a self-registering deployment of it.
 
 ## Front-door variables — one declaration, two readers
 
-Some values genuinely vary per host project. The canonical example is the **records root** — the
-directory typed records live under, default `.records/`: right for every fresh project, but a
-brownfield host may have years of history under another name. Hardcoding such a value everywhere
-turns the default into a constant; a **front-door variable** keeps it *a pointer with a safe
-default*.
+Some values genuinely vary per host project. The canonical example is the **agent-records
+home** — the directory typed records live under, default `.records/`: right for every fresh
+project, but a brownfield host may have years of history under another name. Hardcoding such a
+value everywhere turns the default into a constant; a **front-door variable** keeps it *a
+pointer with a safe default*.
 
 A front-door variable is **one line in the host project's front-door doc** (`AGENTS.md`, or
 `CLAUDE.md` where that is the front-door), at line start, kebab-case name:
 
-    records-root: dev
+    agent-records: dev
 
-One declaration mechanism serves both kinds of reader, with the same precedence rule (declared
-value if present, else the default):
+The records home also accepts the legacy synonym `records-root:` — first match of either name
+wins (`AGENTS.md` then `CLAUDE.md`). Beside it, the **agent-templates home** (schema, not
+instances) defaults to `<resolved-agent-records>/templates`. Declare `agent-templates:` only
+as an override — one `agent-records:` line moves both homes:
+
+    agent-templates: schemas
+
+Skill prose keeps naming each default path literally (`.records/plans/…`,
+`.records/templates/backlog/…`) — never `$RECORDS_ROOT/plans/…`.
+
+One declaration mechanism, same precedence (declared value if present, else the default).
+Three readers:
 
 - **Agents** need no mechanism at all: the front-door is always loaded, and front-door
-  instructions outrank skill defaults. Skill prose therefore keeps naming the default literally
-  (`.records/plans/…`, never `$RECORDS_ROOT/plans/…`) — an agent substitutes the declared root
-  when its front-door carries one. Zero rewording, zero indirection for the common case.
-- **Scripts** resolve it mechanically: scan the front-door docs for the first `^<name>:` match;
-  absent → the default. Each consuming script **inlines** the canonical resolver below
-  (self-contained packages — never source it from a sibling skill) and prints the resolved value
-  as a fact (`records-root=…`), so the agent sees which root the run used.
+  instructions outrank skill defaults. An agent substitutes the declared home when the
+  front-door carries one. Zero rewording, zero indirection for the common case.
+- **Mint/write scripts** take the resolved paths as arguments and **do not scan the front
+  door**. The verb resolves; the script never opens `AGENTS.md` / `CLAUDE.md`.
+- **State-analysis helpers** that must emit `agent-records=` without a verb (today
+  `workstream-git.sh`) inline the resolver and accept both records-declaration names.
+  Print the resolved value as a fact (`agent-records=…`) so the agent sees which home
+  the run used. Existing `records-root=` fact keys stay until that script is edited.
 
-The canonical resolver (bash-3.2 safe; adapt the variable name):
+The canonical records resolver (bash-3.2 safe; both declaration names):
 
-    # Front-door variable `records-root` (default `.records`) -- see the
-    # front-door-variables doctrine. Prints the resolved repo-relative path.
-    resolve_records_root() {
+    # Front-door variable `agent-records` (default `.records`; also accepts
+    # legacy `records-root:`) -- see the front-door-variables doctrine.
+    # Prints the resolved repo-relative path.
+    resolve_agent_records() {
       local root="$1" fd decl=""
       for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
         if [ -z "$decl" ] && [ -f "$fd" ]; then
-          decl="$(sed -n 's/^records-root:[[:space:]]*//p' "$fd" | head -n 1 \
-                  | sed 's/[[:space:]]*$//')"
+          decl="$(sed -n -E 's/^(agent-records|records-root):[[:space:]]*//p' "$fd" \
+                  | head -n 1 | sed 's/[[:space:]]*$//')"
         fi
       done
       printf '%s\n' "${decl:-.records}"
@@ -246,8 +258,69 @@ parses as declaration; the value is a repo-relative path (or plain token), never
 the **bar for adding one is high** — *prefer the simplest portable rule over a configurable one*
 still governs. A variable is justified only when the value truly varies per host (usually
 brownfield reality), the default is right for every fresh project (nobody *must* set it), and
-both readers consume it. A skills library that authors this doctrine never declares variables in
+the readers consume it. A skills library that authors this doctrine never declares variables in
 its own front-door (patient-zero, as with registration above).
+
+## Record-writing skills
+
+A skill that mints a typed record follows these rules. Portable — any skills library, not just
+this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them.
+
+1. **Destination.** A typed record is written under the agent-records home (resolver above).
+   Skill prose keeps naming the default path literally. Mint/write scripts take resolved
+   paths as arguments and do not scan the front door. State-analysis helpers that must emit
+   `agent-records=` without a verb inline the resolver and accept both declaration names.
+2. **Carry your templates; declare the lock-in set.** A skill that mints store `D` ships
+   a doctype template named `D.md` (five keys + `<title>` / `<date>`). Body scaffolds may
+   also live under `templates/`. A `## Project templates` list in `SKILL.md` names every
+   bundled file that is project-lock-in (copied to the agent-templates home). Files not
+   on the list are package-only. The review brief flags: a writer whose store has no
+   in-package doctype template; a list entry with no bundled file; a copy of a file the
+   list does not name.
+3. **Own-store standup.** On first write, `mkdir` that skill's store (and the agent-records
+   home directory if needed). Do not create a deployed `records.sh`, `history.tsv`, other
+   stores, the records README, or the *flat* `<agent-records>/templates/<doctype>.md`.
+   Creating `<agent-records>/templates/<skill>/` on first lock-in copy is required.
+4. **No floor.** Missing `records.sh` is not an error. Journal standup is never a
+   precondition. A description must not say the skill requires a stood-up records layer.
+   A verb must not refuse and send the operator to journal standup.
+5. **In-package contract.** The writer states the five keys (`doctype`, `status`, `created`,
+   `updated`, `tags`), the status vocabulary (`open` | `current` live; `done` | `dropped` |
+   `superseded` | `consumed` closed), the dated slug (`YYYY-MM-DD-<slug>.md`), and the
+   record-link form (`→ <store>/<file>.md`) in *its own* package. It does not send the
+   agent to another skill's `SKILL.md` for those bytes. Pack composition (the face /
+   runbook) still names journal as the format authority; leaves do not.
+6. **Opportunistic `records.sh`.** If `<agent-records>/scripts/records.sh` is executable, use
+   `new --template <resolved>` / `touch` / `done` / `list`. Otherwise write the same contract
+   shape from the resolved template. Resolution is the agent-templates rule (incumbent
+   skill-namespaced file, then legacy flat adopt for store-named lock-ins, else the
+   bundled copy). Never write a second copy at the *flat*
+   `<agent-records>/templates/<doctype>.md`.
+7. **Never hand-write `history.tsv`.** File-mode close rewrites `status:` (and `updated:`)
+   only. After a later journal standup, `records.sh check` will flag a closed record with
+   no ledger line. Repair is journal `curate`: rewrite `status:` back to `open`, then
+   `records.sh done`. `records.sh done` refuses an already-closing status — that is why
+   the writer must not pretend file-mode close is a ledger close.
+8. **Workshop stamp is orthogonal.** The one probe (`Seeded from clankshop` in
+   `.handbook/README.md`) still picks handbook, station context, and playbooks. It does
+   **not** pick the agent-records destination and does **not** decide whether a record is
+   minted. Do not create `.handbook/` as a records side effect. Do not run a workshop
+   onramp as a records side effect.
+
+The **agent-templates** resolution, per declared project template `<file>` (the verb
+resolves both homes and passes them in; the mint script never opens the front door):
+
+1. `<agent-templates>/<skill>/<file>` if present → use it (incumbent; never overwrite).
+2. Else, **only for store-named lock-ins** (the filename stem *is* the store: `notes.md`,
+   `bugs.md`, `tickets.md`, `trackers.md`, `plans.md`, `design.md`, `adr.md`,
+   `reports.md`): if `<agent-records>/templates/<doctype>.md` is present (legacy flat) →
+   copy that file to `<agent-templates>/<skill>/<file>`, then use the new path. Do not
+   delete the old file. Body scaffolds skip this step.
+3. Else copy the bundled `templates/<file>` to `<agent-templates>/<skill>/<file>`, then
+   use it.
+
+Package-only templates skip this resolver. They are read from the skill's own
+`templates/` and are never copied into the project.
 
 ## Corollaries (four testable rules)
 
@@ -264,7 +337,8 @@ its own front-door (patient-zero, as with registration above).
 **Name your floor.** Corollary 1 restated as an authoring discipline: when you scaffold a skill,
 state explicitly what it depends on to work — ideally *nothing* (no other skill's `init`, no composer
 present). If a real dependency exists, name it as a **typed edge** (`consumes: T`), never as an
-assumption baked silently into the skill's own procedure.
+assumption baked silently into the skill's own procedure. A writer that needs journal's *tool*
+names `consumes: records-tool` only when it *cannot* file-mode; the default is that it can.
 
 ## Authoring conventions
 

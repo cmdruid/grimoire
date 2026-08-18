@@ -145,6 +145,11 @@ completion where one applies.
   one exists.
 - **Three-fix stop:** stopped; architectural question named; no fourth patch.
 
+## Project templates
+
+- `reports.md`
+- `investigation.md`
+
 ## Boundaries
 
 - **An instrument, not a role.** The four-phase procedure is the tool; the operator (whoever the

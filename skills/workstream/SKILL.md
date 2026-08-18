@@ -209,6 +209,13 @@ Subcommands (each consuming verb file names the facts it reads):
 The skill also bundles `scripts/worktree-exclude.sh` (idempotent hand-off exclusion, used by
 `create`) and `scripts/worktree-teardown.sh` (the `close` mechanics).
 
+## Project templates
+
+- `plans.md`
+- `reports.md`
+
+Hand-off, compaction-anchor, coordinator, and `kind: workstream-template` intake files are package-only.
+
 ## On-demand doctrine
 
 **`flow.md`** — the agent orchestration: execution modes (`delegate`/`manual`), the autonomy rule,

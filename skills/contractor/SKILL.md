@@ -105,6 +105,12 @@ The artifact holds the job vocabulary (`status: open` / `current`, slice ids,
   sweep (workshop: the deployed debrief; standalone: the project's own).
   Do not name a sibling.
 
+## Project templates
+
+- `plans.md`
+- `plan.md`
+- `roadmap.md`
+
 ## Edges
 
 <!-- edges:contractor -->

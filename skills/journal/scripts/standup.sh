@@ -1,24 +1,24 @@
 #!/bin/sh
-# standup.sh — stand up the records layer in a target project (the mechanical half
-# of `journal setup`; judgment — resolving the root, reading a declared
-# records-root:, whether to commit — stays with the verb).
+# standup.sh — stand up the records *tool layer* in a target project (the
+# mechanical half of `journal setup`; judgment — resolving the root, reading
+# a declared agent-records: / records-root:, whether to commit — stays with
+# the verb).
 #
 #   standup.sh <target-root> [--records-root <rel>]
 #
-# Creates <target-root>/<records-root> (default .records): the eight store
-# directories, templates/ (journal's bundled commons/example templates only —
-# the skills that mint the other stores own and lazy-deploy their templates,
-# per the SKILL.md template convention), scripts/records.sh (the deployed
-# asset), and an empty history.tsv ledger. Additive and idempotent-safe:
-# it never overwrites an existing file, and it refuses a root that is already
-# stood up (templates/ or scripts/records.sh present — an upgrade is a diff, not
-# a re-standup). A records root that merely EXISTS (a legacy dev/ tree) is fine —
-# stores are added alongside what is there; converting legacy content is
-# migration's job, not standup's. Exit codes: 0 ok · 1 usage · 2 refused/failed.
+# Creates <target-root>/<records-root> (default .records): scripts/records.sh
+# (the deployed asset), an empty history.tsv ledger, and README.md if
+# absent. It does NOT create store directories, .gitkeep files, or
+# templates/ — the skill that mints a store creates that store; the first
+# lock-in copy creates <agent-templates>/<skill>/. Additive and
+# idempotent-safe: it never overwrites an existing file, and it refuses a
+# root that is already stood up (scripts/records.sh present — an upgrade is
+# a diff, not a re-standup). A home that merely EXISTS (a legacy path, or a
+# notepad-created .records/notes/ with no tool) is fine — the tool is
+# written beside what is there. Exit codes: 0 ok · 1 usage · 2 refused/failed.
 set -eu
 
 SKILL="$(cd "$(dirname "$0")/.." && pwd)"
-STORES="adr bugs design notes plans reports tickets trackers"
 
 usage() { echo "usage: standup.sh <target-root> [--records-root <rel>]" >&2; exit 1; }
 
@@ -33,24 +33,15 @@ while [ $# -gt 0 ]; do
 done
 
 [ -d "$root" ] || { echo "no such directory: $root" >&2; exit 2; }
-[ -d "$SKILL/templates" ] || { echo "templates missing beside this script: $SKILL/templates" >&2; exit 2; }
+[ -f "$SKILL/scripts/records.sh" ] || { echo "records.sh missing beside this script: $SKILL/scripts/records.sh" >&2; exit 2; }
 rr="$root/$rr_rel"
 
-if [ -e "$rr/templates" ] || [ -e "$rr/scripts/records.sh" ]; then
+if [ -e "$rr/scripts/records.sh" ]; then
   echo "refusing: $rr is already stood up (upgrade is a diff, not a re-standup)" >&2
   exit 2
 fi
 
-for s in $STORES; do
-  mkdir -p "$rr/$s"
-  # .gitkeep so the empty store survives a commit; invisible to store scans (*.md only)
-  [ -e "$rr/$s/.gitkeep" ] || : > "$rr/$s/.gitkeep"
-done
-
-mkdir -p "$rr/templates" "$rr/scripts"
-for t in "$SKILL/templates/"*.md; do
-  cp "$t" "$rr/templates/$(basename "$t")"
-done
+mkdir -p "$rr/scripts"
 cp "$SKILL/scripts/records.sh" "$rr/scripts/records.sh"
 chmod +x "$rr/scripts/records.sh"
 
@@ -65,9 +56,11 @@ records carrying the front-matter contract (doctype/status/created/updated/tags)
 \`scripts/records.sh\` is the query + lifecycle tool (\`list\`, \`new\`, \`touch\`,
 \`done\`, \`history\`, \`prune-candidates\`, \`check\`) and the sole writer of
 \`history.tsv\`, the closure ledger. \`templates/\`, \`scripts/\`, and
-\`history.tsv\` are reserved — not stores. Store templates arrive with the
-skills that mint them (\`records.sh new\` names the missing template if one
-hasn't been deployed yet).
+\`history.tsv\` are reserved — not stores.
+
+Stores appear when a skill first writes. Project templates live in the
+agent-templates home (default \`.records/templates/<skill>/\`) and arrive
+with the writer. Journal setup deploys this tool layer only.
 
 Stood up by journal on $(date +%Y-%m-%d).
 EOF

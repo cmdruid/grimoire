@@ -7,7 +7,7 @@
 #
 #   records.sh list [--type t] [--status s] [--tag g] [--since d] [--until d]
 #   records.sh show <path>
-#   records.sh new <doctype> --title "..."
+#   records.sh new <doctype> --title "..." [--template <path>]
 #   records.sh touch <path> [--status open|current]
 #   records.sh done <path> [--as done|dropped|superseded|consumed] [--note "..."]
 #   records.sh history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
@@ -32,7 +32,7 @@ usage() {
 usage: records.sh <command> [args]
   list    [--type t] [--status s] [--tag g] [--since d] [--until d]
   show    <path>
-  new     <doctype> --title "..."
+  new     <doctype> --title "..." [--template <path>]
   touch   <path> [--status open|current]
   done    <path> [--as done|dropped|superseded|consumed] [--note "..."]
   history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
@@ -159,14 +159,16 @@ cmd_new() {
   [ $# -ge 1 ] || usage
   doctype="$1"; shift
   title=""
+  tpl=""
   while [ $# -gt 0 ]; do
     case "$1" in
-      --title) [ $# -ge 2 ] || usage; title="$2"; shift 2 ;;
+      --title)    [ $# -ge 2 ] || usage; title="$2"; shift 2 ;;
+      --template) [ $# -ge 2 ] || usage; tpl="$2"; shift 2 ;;
       *) usage ;;
     esac
   done
   [ -n "$title" ] || usage
-  tpl="$RR/templates/$doctype.md"
+  [ -n "$tpl" ] || tpl="$RR/templates/$doctype.md"
   [ -f "$tpl" ] || err "no template for doctype '$doctype' (expected $tpl)"
   today="$(date +%Y-%m-%d)"
   slug="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' \
