@@ -16,7 +16,7 @@ stop.
 
 ## Gather
 
-1. `analyst-facts.sh health` — open bug records, stale records (`open` with old `updated:`),
+1. `analyst-facts.sh health <root>` — open bug records, stale records (`open` with old `updated:`),
    tracker debt, ledger cadence.
 2. **Prefer the project's own instruments.** If the project runs a code-quality audit, its
    latest audit reports are the authority on scored health — read them and **attribute** the

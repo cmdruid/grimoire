@@ -13,7 +13,7 @@ Written for someone who was away and needs to act — not a changelog, not a com
 
 1. **Resolve the span** and say which anchor you used (explicit → last persisted briefing →
    14 calendar days). Report the anchor in the output; never leave it implicit.
-2. `analyst-facts.sh span --since <anchor>` — closures in span, records touched, tracker
+2. `analyst-facts.sh span <root> --since <anchor>` — closures in span, records touched, tracker
    deltas, commit counts by area.
 3. **Read what the closures point at.** A ledger line is a fact; the story is in the closed
    record — the plan's goal, the debrief's findings, an ADR's decision. Read them, not just

@@ -11,7 +11,7 @@ waiting on a person.
 
 ## Gather
 
-1. `analyst-facts.sh status` — open records by store, tracker line counts, active streams,
+1. `analyst-facts.sh status <root>` — open records by store, tracker line counts, active streams,
    uncommitted/unlanded work.
 2. Read the **trackers** themselves. Their line text is the state; counts alone say nothing.
 3. For each in-flight item, find its **last movement** (record `updated:`, last commit touching

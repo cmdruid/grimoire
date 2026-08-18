@@ -13,7 +13,7 @@ wrong with it, and where it is heading. **State, not quality** — no score, no 
 
 1. **Resolve the subsystem** to concrete paths. If the name is ambiguous, ask rather than
    reporting on the wrong module.
-2. `analyst-facts.sh subsystem --path <paths>` — records referencing it, commit history and
+2. `analyst-facts.sh subsystem <root> --path <paths>` — records referencing it, commit history and
    churn, contributors.
 3. **Read the governing decisions** — the ADRs and design records that constrain it. These
    explain *why* it looks the way it does; without them a report describes shape without cause.

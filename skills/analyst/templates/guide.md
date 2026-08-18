@@ -18,7 +18,7 @@ instead, or point at the real documentation.
 
 1. **Resolve the topic** to concrete anchors: paths, docs, records. If nothing in the project
    anchors it, this is the wrong template — stop and say so.
-2. `analyst-facts.sh topic --path <paths>` — the records and code surface involved.
+2. `analyst-facts.sh topic <root> --path <paths>` — the records and code surface involved.
 3. **Read the project's own documentation first.** A guide that contradicts the project's
    README teaches a reader something they will have to unlearn.
 4. **Read the code.** Explain what it actually does, not what the docs claim. Where they differ,

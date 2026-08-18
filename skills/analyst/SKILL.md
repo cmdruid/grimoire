@@ -59,11 +59,15 @@ question's *intent* is not. Keep it cheap and inline — never spend a dispatch 
 
 ## The engine
 
-1. **Resolve the template** (above).
-2. **Gather facts** — run `scripts/analyst-facts.sh` for the facts the template's `inputs:`
-   names. It is read-only and prints `key=value` facts plus evidence; it never judges, and it
-   **never runs the project's gate or test commands**. Gate state comes from what the project
-   already recorded, or is reported unknown.
+1. **Resolve the template** (above). On a workshop host, run `scripts/analyst-deploy.sh <root>`
+   first if the catalog has never been deployed — it is idempotent, so running it when unsure
+   costs nothing.
+2. **Gather facts** — run `scripts/analyst-facts.sh`; **each template's Gather section names its
+   exact invocation** (every subcommand takes the project root as its first argument). It is
+   read-only and prints `key=value` facts plus evidence; it never judges, and it **never runs the
+   project's gate or test commands**. Gate state comes from what the project already recorded, or
+   is reported unknown. If the script is missing or errors, say so and gather what you can by
+   reading directly — degraded facts beat a stalled report.
 3. **Follow the links** — a ledger line is a closure *fact*; the substance is in the record it
    points at. Read what the facts point at, scaled to the template.
 4. **Curate and synthesize** — select what this developer needs, group it, and translate
@@ -84,8 +88,12 @@ state file.
 
 ## Persistence
 
-**Ephemeral by default.** Persist when the human asks — and **always when running headlessly**
-(a scheduled tick has no surviving context, so the record is the whole point).
+**Ephemeral by default.** Persist when the human asks — and **always when running headlessly**:
+no human is present to read the output, so the record is the whole point. Treat the run as
+headless when there is no interactive human in the loop to answer a question — a scheduled or
+cron-fired tick, a non-interactive harness invocation, or any run whose output goes nowhere a
+person will see it. When in doubt, persist: a spare record costs a line in a store, an
+evaporated briefing costs the whole run.
 
 To persist: mint with `records.sh new reports --title "…"`, then fill the minted skeleton — body
 **and** the `tags:` line, which must carry the template's token (`tags: [analyst, briefing]`).
