@@ -1,9 +1,10 @@
-# `deploy <file>` · project a founding spec into a new repository
+# `deploy <file>` · project a founding spec into a git repository
 
-Materialize only. Reads a founding-shaped working file and writes a **new**
-repository carrying three founding documents. Does not land onto a host
-trunk. Does not reshape the working file. The working file is **never
-committed**.
+Materialize only. Reads a founding-shaped working file and writes a git
+repository carrying three founding documents — a **new directory**, or
+**in place** in an existing non-git folder that does not already hold
+those documents. Does not land onto a host trunk. Does not reshape the
+working file. The working file is **never committed**.
 
 The environment probe's records-mint / output-home path does not apply
 (SKILL.md *Probe exemption*). Shape, leftover, and gap classification use
@@ -13,8 +14,12 @@ parser. Map H2 strings come from `templates/founding.md`.
 Patient-zero: never target this skill library's own `AGENTS.md`. Cwd dest
 requires `inside a repo` false, so a run from a checkout cannot land on it.
 
-Re-deploy is not a thing. Dest exists and is not empty → refuse. After a
-successful deploy the dest tree is the source of truth.
+Re-deploy is not a thing. Dest that already holds a deploy-owned path
+(`README.md`, `docs/ARCHITECTURE.md`, or an `AGENTS.md` that already
+carries a mapped H2) → refuse. After a successful deploy the dest tree
+is the source of truth. Other pre-existing files stay untracked and are not in the first
+commit. A pre-existing `AGENTS.md` with no mapped H2 is composed by
+**append** only (step 7).
 
 ## Procedure
 
@@ -70,24 +75,36 @@ Against a dest **candidate**:
    - `git -C <ancestor> rev-parse --is-inside-git-dir` is `true`;
    - `git -C <ancestor> rev-parse --is-bare-repository` is `true`.
 
-After dest exists (created or was empty), **re-run this test on dest
+After dest exists (created, empty, or in-place), **re-run this test on dest
 itself** immediately before `git init`.
 
-### 4. Empty (one definition)
+### 4. Empty and in-place (two predicates)
 
-A directory is empty iff every entry is a dotfile (`name` starts with `.`)
-or is the working spec file — **except** a `.git` entry (file or
-directory), which always refuses, even if git does not recognize it. Use
-this for suggestion legality, typed dest, and cwd dest.
+**Empty.** A directory is empty iff every entry is a dotfile (`name`
+starts with `.`) or is the working spec file — **except** a `.git` entry
+(file or directory), which always refuses, even if git does not recognize
+it.
+
+**In-place legal.** Dest exists as a directory, *Forbidden git context* is
+false, there is no `.git` entry, `README.md` is absent, `docs/ARCHITECTURE.md`
+is absent, and `AGENTS.md` is either absent or contains **none** of the
+AGENTS-fed mapped H2 strings (`Working conventions & layout`, `Declared
+verification command (intended, not proven)`). Pre-existing `docs/` or
+sibling files do not disqualify.
+
+Use both predicates for suggestion legality, typed dest, and cwd dest.
 
 ### 5. Destination — one prompt, once
 
 Always confirm; never create silently. Two options:
 
+**Use cwd.** Allowed when cwd is empty **or** in-place legal. Suggest this
+first when it is allowed — that is the in-folder genesis path.
+
 **Create a new directory.** Confirm the path. Suggestion: first legal
 candidate below, else no suggestion (ask for a path). A candidate is legal
-when *Forbidden git context* is false **and** it does not exist or is
-empty.
+when *Forbidden git context* is false **and** it does not exist, is empty,
+or is in-place legal.
 
 Walk, in order:
 
@@ -97,17 +114,18 @@ Walk, in order:
 
 Do not bake a host path into this walk.
 
-**Use cwd.** Allowed only if *Forbidden git context* is **false** for cwd
-and cwd is empty.
-
 **Refuse (do not prompt past these)** — typed dest **and** cwd dest:
 
 - Dest is inside a git repository — name the enclosing toplevel, stop.
-- Dest exists and is not empty. Never merge.
 - Dest exists as a file.
+- Dest exists, is not empty, and is not in-place legal — name the
+  colliding deploy-owned path (`README.md`, `docs/ARCHITECTURE.md`, or
+  `AGENTS.md` already carrying a mapped H2). Do not overwrite. Do not
+  merge those files.
 
-An existing **empty** directory that is not inside a repo is allowed (then
-`git init` inside it). Blank dest confirmation → nothing created.
+An existing **empty** or **in-place legal** directory that is not inside
+a repo is allowed (then `git init` inside it). Blank dest confirmation →
+nothing created.
 
 Project name = the dest directory's basename (resolved absolute path).
 That string lands in README / AGENTS / ARCHITECTURE titles and in the
@@ -145,8 +163,9 @@ confirm.
 ### 7. Materialize — lossless copy-through
 
 1. Create dest if needed. Track **every path this run creates** (dest
-   itself if created; `docs/`; the three project files; `.git` if this run
-   inits).
+   itself if created; `docs/` if this run created it; any of the three
+   project files this run created; `.git` if this run inits). A
+   pre-existing `docs/` or `AGENTS.md` is **not** run-owned.
 2. Write three **project** files: `README.md`, `AGENTS.md`, and
    `ARCHITECTURE.md` under dest `docs/`. `git init` also writes `.git`
    metadata — that is not a fourth project file. For each mapped H2 in **template/map
@@ -154,8 +173,14 @@ confirm.
    heading of that same H2 string; do not paraphrase. Two H2s that feed
    the same file concatenate in map order. Then, if that file has accepted
    gaps, one `## Open questions` section after those mapped sections.
-   Front-matter, working-file H1, and permitted chrome are omitted. Each
-   dest file's only title line is `# <project-name>`.
+   Front-matter, working-file H1, and permitted chrome are omitted.
+   - **New file:** its only title line is `# <project-name>`.
+   - **Pre-existing `AGENTS.md` (in-place compose):** keep the existing
+     H1 and body. Append the AGENTS-fed mapped sections (then Open
+     questions, if any) after that body. Do not add a second H1. Keep a
+     copy of the original bytes for rollback. `README.md` and
+     `docs/ARCHITECTURE.md` are never composed over — in-place legal
+     already refused if they exist.
 3. After README's mapped sections and its Open questions (if any), append
    one paragraph, not inside a copied body:
    `See [Architecture](docs/ARCHITECTURE.md).`
@@ -163,7 +188,8 @@ confirm.
    Use the user's `init.defaultBranch`; do not impose a branch name.
 5. First commit: **exactly** those three project paths. Message:
    `Add founding documents for <project-name>`. No attribution trailers.
-   Do not add `LICENSE` or `.gitignore`.
+   Do not add `LICENSE` or `.gitignore`. Pre-existing siblings stay
+   untracked.
 6. The working file is never staged and never in that commit. If dest is
    cwd, it may remain on disk as an untracked file.
 
@@ -175,11 +201,12 @@ delete-safety proof. Verify it before the delete prompt.
 
 On any failure from the first mutation through post-commit verification
 (including writing `docs/` or a project file), delete **only run-owned
-paths**. If this run created dest, remove dest entirely. If dest was a
-pre-existing empty directory, remove what this run wrote. Never delete a
-pre-existing `.git` we refused to accept (we never start in that case).
-Report the failure. Do not prompt to delete the working file. Retry is
-then possible.
+paths**. If this run created dest, remove dest entirely. If dest was
+pre-existing, remove what this run wrote and, if `AGENTS.md` was
+composed, restore the original bytes. Never delete a pre-existing
+`.git` we refused to accept (we never start in that case). Never delete
+pre-existing siblings or an existing `docs/` tree. Report the failure. Do not prompt to delete the working file.
+Retry is then possible.
 
 ### 9. Confirm-to-delete
 

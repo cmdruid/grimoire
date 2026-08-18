@@ -10,13 +10,19 @@ description: "Use when the user runs `/blueprint`, or asks to brainstorm, grill,
 argued specification (`spec`), and the cross-cutting `review` — an independent
 two-axis critique of a spec or design doc. Genesis is two verbs around that
 spine: `new` mints a founding-shaped working file; `grill`/`spec` fill it in
-place; `deploy` materializes a **new** repository. **Building is not
+place; `deploy` materializes a git repository (new directory, or in place
+in a non-git folder). **Building is not
 blueprint's job**, and neither is sequencing implementation. Trunk landing
-and the debrief sweep stay with the orchestrator. `deploy` materializes a new
-repository; it does not land onto a host trunk.
+and the debrief sweep stay with the orchestrator. `deploy` does not land
+onto a host trunk.
 
 This skill is **self-contained and uniquely named**: it depends on no other skill
 and collides with none.
+
+**Brief the human.** The conversation leads with the decision or the draft,
+not the machinery. "Here are two approaches; I recommend A because…" /
+"The spec is at `<path>`. Please read it before we sequence work."
+`founding-shaped`, `status: open`, and station names stay in the files.
 
 ## One environment probe (at entry)
 
@@ -64,7 +70,7 @@ to `status: current`.
 | `grill [doc]` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** | a draft / spec (or the conversation) → resolved decisions | design |
 | `spec [doc]` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) | conversation or draft → feature `design/` spec, **or** the named founding file | design |
 | `review <doc>` | two-axis critique; founding-shaped → six-H2 + leftover/gap rubric | a spec or design doc → a verdict (in context) | design |
-| `deploy <file>` | project a founding spec into a new repo + three founding docs | founding file → git repository | — |
+| `deploy <file>` | project a founding spec into a git repo + three founding docs (new dir or in-place) | founding file → git repository | — |
 
 `brainstorm → spec` is the linear spine; `grill` and `review` are primitives
 callable at any point. Bare `/blueprint` stays `brainstorm`. Genesis is
@@ -148,8 +154,9 @@ draft before asking anything; never start from a blank template.
    approach, open questions listed at the foot. Unresolved branches are
    *expected* here — `grill` or `spec` resolves them.
 
-Output: the draft design doc. Terminal step: hand to `grill`/`spec` (or stop — a
-draft is a legitimate resting state).
+Output: the draft design doc. Tell the human where it is. Stop if they
+need to read it; otherwise offer `grill` or `spec`. A draft is a
+legitimate resting state.
 
 ## grill `[doc]` — the interview primitive
 
@@ -227,8 +234,9 @@ promotion. Refuse the otherwise-case. They never scan cwd.
    `records.sh touch <spec> --status current`; the superseded spec, if any,
    closes `--as superseded` naming its successor).
 
-Output: the argued spec. Terminal step: **stop**. The accepted spec is the
-artifact. Implementation sequencing is a different job.
+Output: the argued spec. Tell the human where it is and that they should
+read it before anything is sequenced against it. Then **stop**.
+Implementation sequencing is a different job.
 
 ## review `<doc>` — the two-axis critique
 
@@ -346,7 +354,7 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 ## Edges
 
 <!-- edges:blueprint -->
-- produces: spec, founding-documents — argued specification; a fresh repo's three founding docs
-- handoff: spec, git-repository — the accepted spec is the feature baton; a fresh repo carrying three founding documents and no code is the genesis baton
+- produces: spec, founding-documents — argued specification; a repo's three founding docs
+- handoff: spec, git-repository — the accepted spec is the feature baton; a git repository carrying three founding documents is the genesis baton
 - consumes: — (conversation or a draft the user names)
 <!-- /edges:blueprint -->

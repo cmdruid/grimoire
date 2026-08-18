@@ -42,8 +42,8 @@ the spec from here.
 
 ## Genesis (a different arc)
 
-The feature-spec arc above still ends at the accepted spec. Genesis — no
-directory, no git, only an idea — is a different arc: `new` mints a
-founding-shaped working file, `grill` / `spec` fill its six map sections in
-place, `deploy` materializes a new repository. Do not run this arc on a
-feature spec.
+The feature-spec arc above still ends at the accepted spec. Genesis is a
+different arc: `new` mints a founding-shaped working file, `grill` / `spec`
+fill its six map sections in place, `deploy` materializes a git repository
+(a new directory, or in place in a non-git folder that does not already
+hold the founding docs). Do not run this arc on a feature spec.
