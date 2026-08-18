@@ -279,9 +279,12 @@ Records-mode uses `records.sh new --template <resolved>`
 and **never** writes `<agent-records>/templates/`.
 
 **`records.sh new` gains `--template <path>`.** Writers
-always pass the resolved project path. Omitting
-`--template` keeps today's `$RR/templates/$doctype.md`
-lookup so a brownfield home still mints.
+always pass the resolved project path. That path **may
+live outside the agent-records home** (default
+`.templates/<skill>/<file>`). Do not require a `$RR`
+prefix. Omitting `--template` keeps today's
+`$RR/templates/$doctype.md` lookup so a brownfield
+home still mints.
 
 ### The record-writer rule (doctrine)
 
@@ -424,13 +427,18 @@ independence checks.
 1. **Journal-floor phrase (FAIL).** A non-exempt
    skill's `.md` matches `Requires a stood-up records
    layer` or `stop and point at \`/journal setup\``.
-   Evidence: skill, file, line. The live backlog
-   Guard is the first plant. Do **not** match a
+   Evidence: skill, file, line. Match is
+   **case-sensitive** (the live Guard uses that
+   exact capitalization). Do **not** match a
    prohibition ("journal standup is never a
    precondition") — that is how `new` / doctrine
-   state the rule. The Verification grep uses these
-   same two phrases and the same exemptions
-   (`journal`, `skill-builder`, pack faces).
+   state the rule. Do not use `grep -i` (the
+   skill-review brief cites the floor in lowercase
+   as a finding description). The Verification grep
+   uses these same two phrases and the same
+   exemptions (`journal`, `skill-builder`, pack
+   faces). The live backlog Guard is the first
+   plant.
 2. **Project-templates heading (FAIL).** The skill
    has `templates/*.md` and `SKILL.md` has no heading
    `## Project templates`. Journal has `reports.md`
@@ -520,11 +528,35 @@ else `.records`) and passes the rel path to
 ledger + README; no store directories.
 
 `SKILL.md` still *defines* the eight store names and the
-contract. It no longer claims to create those directories.
-"Clients cite the contract" stays as pack-composition
-language in the body intro; client skills stop sending the
-agent there. `curate` already owns ledger-coherence repair;
-no new verb. File-mode closes are a curate input, not a
+five-key contract. It is rewritten so it no longer
+teaches the old mint:
+
+- **Template convention:** `records.sh new <doctype>
+  --template <resolved>` mints from the caller-supplied
+  path (usually
+  `<agent-templates>/<skill>/<doctype>.md`). Omitted
+  `--template` still reads
+  `$RR/templates/<doctype>.md` (brownfield). The
+  minting skill owns the bundled template and copies
+  it to the **agent-templates home**, never to
+  `.records/templates/`. Journal's in-package
+  `reports.md` is the contract example only; setup
+  copies nothing.
+- **Shared discipline resolver:** both names
+  (`agent-records:` preferred, `records-root:`
+  accepted, else `.records`). `done` / `curate` use
+  this scan so a host that only declared
+  `agent-records:` is not silently aimed at
+  `.records/`.
+- **Dispatch / intro:** setup stands the tool layer,
+  not "stores + templates." Drop "clients lazy-deploy
+  into `.records/templates/`" as citable contract.
+  Client skills state the in-package contract; they
+  do not send the agent here for those bytes.
+- **`## Project templates`:** explicit none.
+
+`curate` already owns ledger-coherence repair; no new
+verb. File-mode closes are a curate input, not a
 setup trigger.
 
 `scripts/tests/standup-test.sh` is rewritten against the
@@ -761,6 +793,14 @@ record. The pass report is:
   `/backlog bug` to promote one. Same
   drain-without-impersonation rule as workstream vs
   the Backlog tracker.
+- **`BOOTSTRAP.md` and the §12 GUIDE skeleton** still
+  say a workshop drain is "bugs records + tracker
+  lines" (live §2 `<drains>`, §7, §12). A pass
+  follows `GUIDE.md`. Rewrite those slots to: report
+  record + `/backlog bug` for defects; tracker lines
+  only when the tracker file already exists. Do not
+  leave a deployed GUIDE teaching `records.sh new
+  bugs`.
 - Tracker-line drain: only when the tracker file
   already exists. Else the report is the queue.
 
@@ -778,7 +818,9 @@ A host that only declares `agent-records:` must not be
 told the layer is absent at default `.records/`.
 Prose that says journal standup creates "stores,
 templates" is updated to the tool layer (scripts +
-ledger + README). Files: `verbs/check.md`,
+ledger + README). Files: `SKILL.md` (face blurb:
+records layer is `records.sh` + ledger, not
+"templates + scaffolding"), `verbs/check.md`,
 `verbs/setup.md`, `verbs/migrate.md`.
 
 `PACK.md` roster blurbs that call backlog "a client of
@@ -795,7 +837,7 @@ No `version:` bump (member set unchanged).
 | `skill-builder new` scaffold for record-writers | A new skill-builder verb |
 | `skills-lint.sh` journal-floor + Project-templates heading, with red-proofs | Lint that parses the project-templates *list* vs disk |
 | Skill-review brief Independence / Output shape | Renaming `.records/` or dropping `records-root:` |
-| Journal tool-layer standup; `records.sh --template` | Journal creating any store dir or `templates/` |
+| Journal tool-layer standup; `SKILL.md` contract rewrite; `records.sh --template` (path may be outside `$RR`) | Journal creating any store dir or `templates/` |
 | Backlog: drop the floor, `record-mint.sh`, project templates | Giving every writer a mint script |
 | Destination flip: workstream, blueprint, contractor, debugger, auditor, notepad (incl. verbs) | Debugger Phase 4 workshop gate; auditor rubric-home probe; auditor minting `bugs/` |
 | Each writer: bundled doctype template + `## Project templates` | Copying undeclared / skill-internal templates |
@@ -914,8 +956,9 @@ required unless a later flip changes a slice boundary.
     `skills/skill-builder` lint-check tests (or the
     existing prove-by-breaking fixture pattern);
     `skills/agent-council/briefs/skill-review.md`;
-    `skills/journal/SKILL.md` (incl. `## Project
-    templates` none);
+    `skills/journal/SKILL.md` (template convention,
+    both-names resolver, `## Project templates` none,
+    setup = tool layer);
     `skills/journal/verbs/setup.md`;
     `skills/journal/scripts/standup.sh`;
     `skills/journal/scripts/records.sh` (`--template`);
@@ -936,7 +979,10 @@ required unless a later flip changes a slice boundary.
     agent-templates checks. `setup.md` no longer says
     clients stop and point here. Standup test: no store
     dirs, no deployed `.records/templates/`.
-    `records.sh new --template` covered. Every
+    `records.sh new --template` covered (path outside
+    `$RR` accepted). Journal `SKILL.md` no longer
+    teaches `.records/templates/` lazy-deploy or a
+    `records-root:`-only scan. Every
     template-bearing skill (incl. journal none) has
     `## Project templates`. Check 2 live-green;
     check 1 fixture-red then fixture-green, not yet
@@ -965,6 +1011,8 @@ required unless a later flip changes a slice boundary.
     `skills/debugger/SKILL.md`,
     `templates/reports.md`;
     `skills/auditor/SKILL.md`,
+    `BOOTSTRAP.md` (drain slots + §12 GUIDE
+    skeleton: no `bugs` mint),
     `templates/reports.md`;
     `skills/notepad/SKILL.md`,
     `verbs/*.md`,
@@ -1060,3 +1108,20 @@ Independent `/blueprint review` pass 2, 2026-08-18
    layer.
 6. **low — `/journal check` is not a verb.** Folded:
    `records.sh check` / `/journal curate`.
+
+Independent `/blueprint review` pass 3, 2026-08-18
+(`needs-rework`). Must-fixes folded the same day.
+
+1. **high — Journal `SKILL.md` still taught the old
+   mint.** Folded: rewrite template convention to
+   `--template` + agent-templates home; both-names
+   resolver on Shared discipline; setup = tool
+   layer; `reports.md` example only.
+2. **high — Auditor `BOOTSTRAP.md` / GUIDE skeleton
+   still drained defects as `bugs` records.** Folded:
+   `BOOTSTRAP.md` on Slice 3; drain slots + §12
+   skeleton match "no `bugs` mint."
+3. **Notes folded:** `--template` path may be
+   outside `$RR`; check 1 is case-sensitive;
+   clankshop face `SKILL.md` drops "templates +
+   scaffolding."
