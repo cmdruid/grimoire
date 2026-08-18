@@ -276,3 +276,65 @@ last.
   stacking rather than land first. Divergence risk is currently zero (`main` has not moved since
   `e49acbc`), but it grows, and this stream has already turned the trunk red once from a
   worktree-only gate. Every commit continues to run the root-checkout gate.
+
+## Review history
+
+### 2026-08-18 — needs-rework
+
+Approach and structure are sound; every finding below is localized to *Mechanism*. This is a
+tight rework, not a redesign. Groundedness was checked by re-reading the code each claim rests
+on, not only by resolving paths — `Lock::default()` does set `version: LOCK_VERSION`, so the
+`init --project` payload claim holds, and `selected()` does ignore a skipped required member, so
+that claim holds too.
+
+**Must-fix**
+
+1. **`remove_atom` contradicts itself.** Its doc comment says "no lock involved" (line 188);
+   twelve lines later it "must refuse to unlink a member any installed pack's lock entry claims"
+   (line 197). The refusal *requires* reading the lock. Both cannot hold, and an implementer
+   following the signature would ship the version without the guard — the one that silently
+   breaks a pack. **Fix:** say it reads the lock read-only for the refcount check and never
+   writes it. That is consistent with `install_atom`, which also never writes one, and it is
+   what the guard actually needs.
+2. **`list` is specified two ways.** The verb table gives it "installed marks" (line 81), which
+   requires a target, but the scope-flag paragraph omits `list` from the verbs that take scope
+   flags (line 89). **Fix:** add `list` to that set, or drop the installed marks. Adding it is
+   better — a bare library listing with no notion of what is already installed is the weaker
+   verb.
+3. **The unknown-key guarantee is misattributed, and the naive implementation destroys data.**
+   The spec says "Unknown keys in an existing config are preserved — `config.rs` already
+   guarantees this." Verified: `Config.unknown` is **private** and populated only by
+   `config::load`. So the guarantee holds only if `init` does load → mutate `library` → save. An
+   implementer writing the obvious `Config { library: Some(p), ..Default::default() }` cannot
+   even compile it (private field), but `Config::default()` then assigning `library` compiles
+   fine and **silently erases every comment and unknown key in the user's config on save**.
+   **Fix:** specify the load-then-mutate-then-save sequence in *Mechanism*, and stop crediting
+   core with a guarantee that depends on the caller.
+4. **The exit-code table is incomplete, and the obvious mapping is wrong for one case.** Five
+   codes are defined; `CoreError`'s ten variants are never mapped onto them. Under the natural
+   reading (`Preflight → 3`, "blocked by preflight — a collision or a missing member"),
+   `remove <pack> --member <required>` reports a collision that does not exist:
+   `remove_optional_member` returns `CoreError::Preflight(1)` when refusing to remove a required
+   member, which is a **usage** error (2). **Fix:** add an explicit variant → code table, and
+   distinguish the refusal from a real preflight block.
+
+**Nice-to-have**
+
+5. **Substrate-skeptic: the new operation may be paying a debt instead of deleting it.**
+   `remove_atom` exists only because `install_atom` writes no lock entry, and it writes none
+   because "`install.sh` locks nothing for a bare skill install either." That is a limitation
+   inherited from the shell reference, not a property of the format — §3 says the lock records
+   "what is installed," and nothing there forbids an atom entry. Were atoms locked, `remove_atom`
+   would be unnecessary, reference counting would cover them for free, and `check` would notice a
+   broken atom instead of being blind to it. The spec should name this as an explicit
+   pay-the-debt (match the shell) vs design-around (lock atoms) choice rather than treating the
+   asymmetry as given. This is precisely the greenfield check the spec's own self-review owed and
+   did not deliver.
+6. **Library resolution for verbs is unstated.** `install`, `list`, and `check` need a library,
+   but the spec never says they reuse `main.rs`'s existing `--library` → config → cwd cascade.
+   The cwd fallback is defensible for the TUI and surprising for a verb: `grimoire list` in an
+   unrelated directory would list nothing rather than saying the library is unset.
+7. **`remove_atom`'s signature is heavier than its job.** It takes `&Library` where `owned_by`
+   needs only the source root; `&Path` is the lighter seam and avoids an enumeration the
+   operation does not perform.
+8. **`grimoire <verb> --help` is unspecified.**
