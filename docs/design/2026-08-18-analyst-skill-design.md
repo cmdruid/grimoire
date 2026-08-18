@@ -1,12 +1,20 @@
 ---
 doctype: design
-status: open
+status: current
 created: 2026-08-18
 updated: 2026-08-18
 tags: [spec]
 ---
 
 # `analyst` — reports and briefings for the developer — Spec
+
+**Shipped 2026-08-18** on `stream/feat` — subjects: `analyst: scaffold the skill engine and the
+five-template catalog`; `analyst: add the facts harness and its prove-by-breaking fixture suite`;
+`analyst: register in the pack manifest and library inventory`; `analyst: make the
+never-overwrite deploy mechanical, sharpen template descriptors`; `analyst: fix template
+invocations, wire deploy into the engine, define headless`; plus the two probe logs, the three
+backlog captures, and `journal: skip code blocks when checking record links` (BL-20, a trunk-red
+defect this stream's gate surfaced and fixed).
 
 _Spec weight (grilled 2026-08-18; reviewed `needs-rework` and reworked same day — see Review
 history). Building against this spec._
