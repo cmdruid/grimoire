@@ -18,8 +18,10 @@ Structural waste takes two forms:
    user input (world size, item count, frame count) is a latent performance cliff
    that will eventually be hit as the application scales.
 
-For real measurement, use the project's benchmark harness. Greps surface
-*candidates* only -- never file a PERF finding without a measurement.
+Greps surface *candidates* only. A PERF *finding* requires a measurement from a
+harness named in GUIDE or the decision-walk. If the host has no harness and no
+documented measure command, do not file a PERF finding; score from the structural
+greps and cap the score at 4 (a 5 still requires a number).
 
 ## Scoring anchors (1-5)
 
@@ -27,13 +29,14 @@ For real measurement, use the project's benchmark harness. Greps surface
   is O(n) in the relevant input size. The benchmark harness shows stable baselines
   across passes.
 - 4 -- One small per-iteration allocation exists (e.g., a collection in a hot
-  system) but is bounded and cheap; no asymptotic structural waste. Bench baseline
-  is stable.
+  system) but is bounded and cheap; no asymptotic structural waste. If a bench
+  exists, its baseline is stable.
 - 3 -- One clear structural issue: a data structure allocated inside a hot system
   that could be pre-allocated as a reusable resource; or a large-data clone inside
   a frequently-called task on every invocation. No O(n^2) scan.
 - 2 -- Multiple per-iteration allocations in hot systems; or a full data clone on
-  every major operation. The benchmark shows measurable regression from a prior pass.
+  every major operation. If a bench exists, it shows a measurable regression from
+  a prior pass.
 - 1 -- Structural O(n^2) over the primary data collection in the hottest path; or
   every iteration re-clones all loaded data. The application stutters at moderate
   scale.
@@ -54,9 +57,9 @@ For real measurement, use the project's benchmark harness. Greps surface
    clone is structural waste.
 4. Look for nested loops over the primary data collection. A loop-inside-a-loop
    that both iterate over the same large collection is an O(n^2) candidate.
-5. Never file a PERF finding without measuring. Run the benchmark harness and
-   compare to the recorded baseline. See the project's performance documentation
-   for the measurement procedure.
+5. If GUIDE or the decision-walk named a bench command, run it and compare to the
+   recorded baseline. If none exists, skip this step -- do not invent a harness.
+   Do not file a PERF finding without a measurement.
 6. Score against the anchors; use the lower anchor when two fit.
 7. Refute against Known false-positives before filing.
 
@@ -98,7 +101,8 @@ _(Empty until the audit blueprint's Select-exemplars step pins real units.)_
 the hottest module (proxy for data-copy vs pointer-copy ratio); record benchmark baseline
 (run the bench harness; do not guess the number). Report as:
 `hot-path allocs: N; hot-path clones: C; bench baseline: see logs/`.
-A PERF finding must cite a bench number or a profiler trace -- never file on grep output alone.>
+A PERF finding must cite a bench number or a profiler trace -- never file on grep output alone.
+If no bench, omit the finding and cap the score at 4.>
 
 ## Exemplars
 

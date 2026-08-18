@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, drain actionable findings. Standalone by default (rubric home confirmed once, default docs/audit/); on a workshop host the rubric is test-station doctrine and findings drain through the records layer (a reports record per pass, bugs records for defects, tracker lines for the rest). Use when the user runs `/auditor`, asks to audit/quality-check the codebase or a module, or to stand up the audit framework. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
+description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, drain actionable findings. Standalone by default (rubric home confirmed once, default docs/audit/); on a workshop host the rubric is test-station doctrine and findings drain through the records layer (a reports record per pass, bugs records for defects, tracker lines for the rest). Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
 ---
 
 # auditor — the code-quality audit driver
@@ -18,19 +18,21 @@ up anywhere.
 ## One environment probe (at entry)
 
 Does `<root>/.handbook/README.md` exist and carry the clankshop install stamp (a line matching
-`Seeded from clankshop`)? That single fact picks the homes; nothing else about the host is
-probed, and **no mode ever refuses or stalls for lack of a workshop** — standing one up is the
-human's separate decision (the clankshop onramps), never an audit side effect.
+`Seeded from clankshop`)? That fact picks the homes. On a workshop host, also read the
+declared `records-root:` (front-door `AGENTS.md`), else `.records/`. No mode ever refuses
+or stalls for lack of a workshop — standing one up is the human's separate decision
+(the clankshop onramps), never an audit side effect.
 
 - **Workshop present** → the rubric is guardian doctrine:
   `<root>/.handbook/test/workflows/audit/` (`GUIDE.md`, `rules/`, `metrics.sh`) — an
   on-demand workflow of the test station, invisible to the always-on load set. Before a pass,
   summon the station's context: `<root>/.handbook/scripts/context.sh test`. Deliverables drain
-  through the **records layer** (see *Deliverables*), rooted at the declared `records-root:`
-  (front-door `AGENTS.md` declaration), else `.records/`.
-- **Standalone** → the rubric home is **confirmed once at setup** (default `docs/audit/`);
-  pass reports are dated files in that home, and findings drain into the host's **own**
-  trackers where any exist. Skip every records-layer seam rather than stalling on it.
+  through the **records layer** (see *Deliverables*).
+- **Standalone** → the rubric home is **confirmed once at setup** (default `docs/audit/`).
+  Later modes detect `<home>/GUIDE.md`: workshop path first; else `docs/audit/GUIDE.md`;
+  else ask once (do not scan the repo). Pass reports are dated files in that home, and
+  findings drain into the host's **own** trackers where any exist. Skip every
+  records-layer seam rather than stalling on it.
 
 ## What this skill bundles
 
@@ -50,9 +52,10 @@ invariants). It is **not** a docs-system maintenance sweep. Different domain.
 - **`metrics`** — run the host's `metrics.sh`: print the report. No scoring.
 - **`check`** — run `metrics.sh --check`: the invariant gate (a non-zero count of the host's
   native-invariant smell is a P0 and fails).
-- **`<target>`** — a path scopes a pass to that target at its depth.
+- **`<target>`** — a path scopes a pass to that path. Look it up in GUIDE's targets table
+  for Deep / Mid / Light. If missing: Light unless the user named Deep.
 
-Every mode works on any repo. The non-`setup` modes need the rubric to exist — no rubric yet →
+Every mode works on any repo. The non-`setup` modes need `<home>/GUIDE.md` — missing →
 point at `setup` and stop.
 
 ## Deliverables — drain through the records layer (workshop) or plain files (standalone)
@@ -70,7 +73,7 @@ On a **workshop host**, per pass:
   findings are drained.
 - **Defects** — each detailed defect finding becomes a `bugs` record (repro + evidence), linked
   from the pass report.
-- **Everything actionable else** — one tracker line each, per journal's capture kinds: feature
+- **Everything actionable else** — one tracker line each, by kind: feature
   work / cleanup → **Backlog**; a project problem or risk → **Issues**; evidence the *rubric or
   framework itself* should change → **Feedback**. A line links its record
   (`[→ reports/… ]`) so the finding's evidence stays one hop away.
@@ -96,12 +99,12 @@ Follow the bundled `BOOTSTRAP.md`:
 3. **Author the rubric** — copy the bundled generic `rules/` into `<home>/rules/`, fill the
    `<language>` greps and `How to quantify` recipes, and add a rule file per
    `<native dimension>`, following the uniform rule-file shape in `BOOTSTRAP.md`.
-4. **Write the hub** — `<home>/GUIDE.md`: framing, the risk-weighted `<targets>` table, the
+4. **Write the hub** (from `BOOTSTRAP.md` §12) — `<home>/GUIDE.md`: framing, the risk-weighted `<targets>` table, the
    rubric index, scoring rules, the finding-entry shape, severity, drains.
-5. **Write `metrics.sh`** (`<home>/metrics.sh`, `BOOTSTRAP.md §8`) for the `<language>`; run it
+5. **Write `metrics.sh`** (`<home>/metrics.sh`, `BOOTSTRAP.md` §8 columns, copy §13 stub) for the `<language>`; run it
    for a baseline report; wire `--check` on the native invariant.
-6. **Wire + gate** — workshop: add the routing hook (`core/ROUTING.md` classifies "audit the
-   code" → this workflow) and a chore line in `test/POLICY.md` if the guardian should run it on
+6. **Wire + gate** — workshop: add the routing hook (`.handbook/core/ROUTING.md` classifies "audit the
+   code" → this workflow) and a chore line in `.handbook/test/POLICY.md` if the guardian should run it on
    cadence; standalone: one pointer from the host's doc index. Run the host's gate.
 7. **Baseline pass + select exemplars** — run a lean pass to seed the first pass report, then
    pin the score-5 `<exemplars>` in `GUIDE.md` and backfill calibrated examples
@@ -150,3 +153,8 @@ contracts (every 5 evidence-backed, false-positives refuted), one pass report re
 report closed `consumed`). For a **setup**: a rubric home that passes the host's gate, a
 baseline pass report, pinned exemplars, and the wiring hook (routing/chore line or doc-index
 pointer) in place.
+For **metrics**: `metrics.sh` printed its report; no scores filed.
+For **check**: show the script output. Exit 0 → stop. Non-zero → treat as a P0
+defect and drain it (workshop: a `bugs` record; standalone: the host tracker or a
+dated report), then stop. If `metrics.sh` has no `--check`, say so and stop — that
+is not a fail.

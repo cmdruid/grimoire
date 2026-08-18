@@ -19,11 +19,12 @@ fill**, marked `<like this>`.
 
 ## How to use this file
 
-- **Full setup:** read *Principles*, fill the *Slots*, then create the *Manifest* files using the
-  *Rule-file shape* and the per-file briefs. Wire the *Metrics script* and the *drains*.
+- **Full setup:** read *Principles*, fill the *Slots*, then copy the bundled `rules/`
+  (fill `<language>` slots; write only `<native dimensions>` from the *Rule-file shape*).
+  Author `GUIDE.md` and `metrics.sh` from §12 / §13. Wire the *drains*.
 - **Partial borrow:** the most valuable standalone borrow is the *Rule-file shape* (one uniform
-  contract per dimension) + the *Finding lifecycle* (a tracker that drains into your existing
-  trackers). Take those two and skip the rest.
+  contract per dimension) + the *Finding lifecycle* (a pass report that drains into the host's existing trackers,
+  or is the queue when the host has none). Take those two and skip the rest.
 - **Adapt to your stack:** the dimensions are language-neutral; only the **anti-pattern greps** and
   the **metrics recipes** are language-specific. Swap those; keep everything else.
 
@@ -114,7 +115,7 @@ stays `<gate>`-green.
 
 ## 5. The rubric -- 12 portable dimensions + your native ones
 
-Twelve language-neutral dimensions, each with a stable theme prefix (used for finding IDs). Score
+Twelve language-neutral dimensions, each with a stable theme prefix (the Dimension tag on a finding, not an ID). Score
 each **1-5** where 5 = matches the `<exemplars>`.
 
 | Dimension | Theme | Question it answers |
@@ -254,8 +255,8 @@ Answer these in order; the answers fill the *Slots* and shape the rubric:
 3. **What is the audit *for*?** -> hygiene (no gate, drain to trackers) vs release-gating (a hard
    P0 gate). This sets the severity model (§7).
 4. **Where does blast radius concentrate?** -> tag each `<target>` Deep / Mid / Light.
-5. **Which existing trackers absorb findings?** -> the `<drains>`. If the host has none, the audit's
-   tracker can own the work -- but prefer draining into an existing system.
+5. **Which existing trackers absorb findings?** -> the `<drains>`. If the host has none, the
+   pass report's own findings list is the queue.
 6. **What is the bar?** -> nominate `<exemplars>` (or defer to the *Select exemplars* step).
 
 ---
@@ -266,16 +267,13 @@ Answer these in order; the answers fill the *Slots* and shape the rubric:
 1. Fill the *Slots* (§2) via the *Decision walk* (§9); resolve `<home>` per the skill's entry
    probe (workshop: `.handbook/test/workflows/audit/`; standalone: confirm once, default
    `docs/audit/`).
-2. Write the `rules/<dimension>.md` files from the *Rule-file shape* (§6) -- the 12 portable
-   dimensions + your `<native dimensions>`, with `<language>` greps. (They reference `../GUIDE.md`
-   in backticks, since it does not exist yet.)
-3. Write `GUIDE.md` (`<home>`, the hub): framing, the risk-weighted `<targets>` table, the
-   rubric index (linking each `rules/` file), scoring rules, process, the finding-entry shape
-   (§7), severity, drains.
-4. Write `metrics.sh` (`<home>/metrics.sh`, §8); run it for a baseline report; wire `--check`
-   if you have an invariant to gate.
-5. Wire the rubric in -- workshop: a `core/ROUTING.md` row ("audit the code" -> this workflow)
-   and, if the guardian should run it on cadence, a chore line in `test/POLICY.md`; standalone:
+2. Copy the bundled generic `rules/` into `<home>/rules/`. Fill the `<language>` greps
+   and *How to quantify* recipes. Write only `<native dimensions>` from the *Rule-file
+   shape* (§6). (They reference `../GUIDE.md` in backticks, since it does not exist yet.)
+3. Write `GUIDE.md` from §12; fill the slots.
+4. Write `metrics.sh` from §13; run it for a baseline; wire `--check` if you have an invariant to gate.
+5. Wire the rubric in -- workshop: a `.handbook/core/ROUTING.md` row ("audit the code" -> this workflow)
+   and, if the guardian should run it on cadence, a chore line in `.handbook/test/POLICY.md`; standalone:
    one pointer from the host's doc index. Run `<gate>`.
 6. Run a **lean baseline pass** (one reader per Deep/Mid target) to produce the first pass
    report and prove the rubric is usable.
@@ -299,3 +297,139 @@ This blueprint is a snapshot of a living system; it drifts unless maintained. Up
 the system's *structure* changes -- a dimension added, the rule-file shape revised, the drain model
 flipped -- not for routine rule-content edits. Treat it as one more thing the host's doc-audit
 sweep checks, if the host has one.
+
+---
+
+## 12. GUIDE.md skeleton
+
+Copy into `<home>/GUIDE.md` and fill the slots. Do not invent extra stores.
+
+````markdown
+# <project> code-quality audit — GUIDE
+
+<one paragraph: hygiene vs release-gating, and what a 5 means here>
+
+## Targets (blast radius)
+
+| Target | Depth | Why |
+|---|---|---|
+| `<path>` | Deep / Mid / Light | `<blast-radius reason>` |
+
+## Rubric index
+
+| Dimension | File | Theme |
+|---|---|---|
+| Findability | `rules/findability.md` | `FND` |
+| Readability | `rules/readability.md` | `READ` |
+| Documentation | `rules/documentation.md` | `DOC` |
+| DRY | `rules/dry.md` | `DRY` |
+| God-files | `rules/god-files.md` | `GOD` |
+| Error Handling | `rules/error-handling.md` | `ERR` |
+| Type Safety | `rules/type-safety.md` | `TYPE` |
+| Security | `rules/security.md` | `SEC` |
+| Observability | `rules/observability.md` | `OBS` |
+| Performance | `rules/performance.md` | `PERF` |
+| Technical Debt | `rules/technical-debt.md` | `DEBT` |
+| Testing | `rules/testing.md` | `COV` |
+| `<native>` | `rules/<native>.md` | `<PREFIX>` |
+
+## Scoring
+
+- Score 1-5 per dimension. A 5 requires a metric or `file:line`.
+- When two anchors fit, use the lower one.
+- Refute each rule's known false-positives before filing.
+
+## Process
+
+1. Calibrate — read this file's exemplars; read each rule's anchors.
+2. Map / scope — Deep → Mid → Light, or honor a `<target>` arg
+   (lookup in the targets table; missing → Light unless the
+   user named Deep).
+3. Quantify — run `./metrics.sh`; quote the numbers in the pass report.
+4. Score — one dimension at a time against its rule file.
+5. Record — write the pass report (shape below).
+6. Drain — every actionable finding to a `<drain>`; then close the report.
+
+## Finding-entry shape
+
+### <short name>
+- Severity: P0–P3
+- Confidence: high / med / low
+- Effort: S / M / L
+- Dimension: `<PREFIX>`
+- Target: `<path>`
+- Location: `path:line` or `--`
+- Drained: `<drain link>` or `--`
+- Finding: <claim + metric or file:line>
+- Fix: <action>
+
+## Severity
+
+<hygiene: P0 = invariant/correctness; P1 = material quality; P2 = cleanup; P3 = polish.
+Or the release-gating model: P0 = release-blocking.>
+
+## Drains
+
+<workshop: bugs records + Backlog / Issues / Feedback tracker lines.
+standalone: the host's own trackers; if none, this report's findings list is the queue.>
+
+## Bench (optional)
+
+<command to measure PERF, or "none". If none, do not file PERF findings; cap PERF at 4.>
+
+## Exemplars (score-5 anchors)
+
+_Pin after the baseline pass. Until then, the written standard in each rule file is the bar._
+````
+
+---
+
+## 13. metrics.sh stub
+
+Copy into `<home>/metrics.sh`, fill `<language>` greps, `chmod +x`.
+Dependency-free (shell + the language's own grep-able source).
+Columns are presence proxies, not completeness. Quote the printed
+report in the pass report; this script keeps no state.
+
+```bash
+#!/usr/bin/env bash
+# <home>/metrics.sh — objective counts for the <project> audit.
+# Usage: metrics.sh [--check]
+# --check: exit 1 if the native-invariant smell count is non-zero.
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+# <language: set src= to the source glob, e.g. '$root/src'>
+src="${SRC:-$root}"
+
+# --- recipes (fill) ---
+# doc coverage: <language: module-header recipe> / <language: public-item recipe>
+headers=0; files=0; pub_doc=0; pub_all=0
+# structure
+over=0; largest=""; largest_n=0
+# robustness / debt / tests / invariant
+unchecked=0; debt=0; tests=0; invariant=0
+
+# <fill each counter from the rule-file How-to-quantify recipes>
+
+if [ "${1:-}" = "--check" ]; then
+  echo "invariant_smells=$invariant"
+  [ "$invariant" -eq 0 ]
+  exit $?
+fi
+
+cat <<EOF
+# Metrics
+
+| Column | Value |
+|---|---|
+| module-header coverage | $headers / $files |
+| public-item docs | $pub_doc / $pub_all |
+| files over threshold | $over (largest: $largest $largest_n) |
+| unchecked-error sites | $unchecked |
+| debt markers | $debt |
+| unit tests | $tests |
+| native-invariant smells | $invariant |
+EOF
+```
+
