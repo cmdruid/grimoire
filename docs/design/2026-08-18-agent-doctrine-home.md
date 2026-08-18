@@ -183,11 +183,30 @@ derive a loose `auditor → debugger` seam that is not real.
 
 ### 7. Lint — the mechanical floor (next free numbers after 13)
 
+**As built in S3** (two checks, not three — see the deviations below):
+
 | # | Label | Shape | FAILs when |
 |---|---|---|---|
-| 14 | `home not resolved` | FAIL-on-absence, **edge-gated** | a skill declaring a home-touching edge carries no member of that home's literal set in operative prose |
-| 15 | `off-home doctrine literal` | FAIL-on-presence, **unconditional** | any non-exempt skill's prose contains a known off-home literal (`docs/audit/`, `.handbook/test/workflows/…`, `.handbook/build/workflows/…`) outside its sanctioned retained-fallback context |
-| 16 | `bare handbook creation` | FAIL-on-presence, unconditional | a skill's prose directs creating `.handbook/` |
+| 14 | `doctrine home not resolved` | FAIL-on-absence, **edge-gated** | a skill declaring a `doctrine` edge carries no member of the literal set in operative prose |
+| 15 | `off-home doctrine literal` | FAIL-on-presence, **unconditional** | any non-exempt skill's prose contains a known off-home literal (`docs/audit/`, `.handbook/{test,build,design,review}/…`) |
+
+**Three deviations from this spec, decided during S3 on evidence:**
+
+1. **Check 16 (`bare handbook creation`) was DROPPED**, for the same reason the
+   hardcoded-default-path check was. The corpus contains exactly two handbook-creation lines
+   (`DOCTRINE.md:339`, `workstream/SKILL.md:100`) and **both are prohibitions** — "Do not
+   create `.handbook/`". There are zero directives to match, and a matcher would flag the two
+   places doing the right thing. Compliant and violating text differ only by a preceding
+   negation. The rule stays in doctrine prose and in the judgment tier.
+2. **Check 14 is scoped to the doctrine home only.** `doctrine` is the one coarse home-typed
+   edge, so it is the only home whose touchers are mechanically identifiable; records and
+   templates edges are artifact-specific (`spec`, `report`, `note`…). Records/templates
+   conformance stays with the existing records-writer checks plus the judgment tier. The
+   *standard* still covers all three homes (S2); only this instrument is narrower.
+3. **Check 15's exemption table is a seeded burn-down, not a permanent amnesty.** S3 lands
+   before S5, so an unconditional check would turn the gate red on skills not yet flipped.
+   The table is pre-populated with today's five and each entry is deleted as S5 flips that
+   skill; an empty table is the goal state, and the table itself tracks the remaining work.
 
 **Check 15 exists because check 14 alone is opt-in.** Check 14 only inspects skills that
 *voluntarily* declared an edge; a skill that hardcodes a path and never adds the edge line is
@@ -329,8 +348,10 @@ silent), plus two the earlier draft lacked:
   fenced block or a quotation/citation context must **still FAIL**. Without this, the false-pass
   path is unverified.
 - **Unconditional proof (check 15)** — a fixture with an off-home literal and **no declared
-  edge** must FAIL, proving the opt-in hole is actually closed; and an exempted
-  `(skill, literal)` pair must not fire.
+  edge** must FAIL, proving the opt-in hole is actually closed; an exempted skill must not
+  fire; and the canonical *default* path must never fire (it is required, conforming usage).
+- **Normalization proof (check 14)** — a conforming skill whose phrase literal wraps across a
+  line must **pass**. This is the live false-positive shape, not a hypothetical.
 
 **Not verifiable mechanically, and stated as such:** "carries the literal but the procedure
 still hardcodes" is the judgment tier's case (§11), not a lint case. The spec does not pretend
@@ -347,7 +368,7 @@ a fixture covers it.
 |---|---|---|---|
 | S1 | `records.sh` reserves `doctrine` (both arms) + the two-arm proof with independent red-proofs. **First — the substrate must tolerate the default before anything writes it.** | `journal` suite; each arm FAILs when individually reverted | `skills/journal/scripts/records.sh`, `skills/journal/scripts/tests/` |
 | S2 | The unified standard in DOCTRINE.md: third home + resolver, two-level access, scoped standup + incumbent-wins, the classification test incl. bundled-source, the resolution-literal **sets**, the prospective-variance caveat. | `skills-lint.sh` → `fails=0` | `skills/skill-builder/docs/DOCTRINE.md` |
-| S3 | Lint checks 14–16 + `lint-doctrine-consumer-test.sh` (red, green, negative-scope, anchoring, unconditional proofs); check 15's exemption table; wire into `run.sh`. | fixture FAILs on each planted breakage | `skills/skill-builder/scripts/skills-lint.sh`, `scripts/tests/` |
+| S3 | Lint checks 14–15 + `lint-doctrine-consumer-test.sh` (red, green, negative-scope, anchoring, normalization, unconditional proofs); check 15's seeded burn-down table; wire into `run.sh`. **DONE** — 10 proofs, each check verified by disabling it. | fixture FAILs on each planted breakage | `skills/skill-builder/scripts/skills-lint.sh`, `scripts/tests/` |
 | S4 | Extend the review brief's Output-shape axis to all three homes + the procedure-resolves question; wire through `skill-builder review`. | `skill-builder` suite | `skills/agent-council/briefs/skill-review.md`, `skills/skill-builder/verbs/review.md` |
 | S5 | Flip the five: `auditor`; `debugger` (playbook flips, stamp retained, **probe section restructured**); `workstream` **(station summon only — debrief routing and tracker gating stay)**; `blueprint`; `contractor`. | `skills-lint.sh`; resolution proof | the five skills' `SKILL.md` + `workstream/verbs/create.md` |
 | S6 | Folds: rule 8, `journal/SKILL.md`, **`standup.sh`'s generated README**, the home-vs-layer sentence. Full gate. | all four suites + `skills-lint.sh` | `skills/skill-builder/docs/DOCTRINE.md`, `skills/journal/SKILL.md`, `skills/journal/scripts/standup.sh` |
