@@ -17,9 +17,15 @@ open questions at the foot.
 > `2026-08-18-agent-doctrine-home.md`) because it rewrites the same six consumer skills
 > this feature would otherwise rewrite twice. Two sections below are **superseded by that
 > feature** and are kept only to record the reasoning: *The install stamp — split its two
-> jobs* (the probe half is dissolved by home resolution, not converted), and the `required:`
-> tier (revised to **optional** — once doctrine resolves to a home that exists bare,
-> handbook manages the layer richly rather than being load-bearing for it).
+> jobs* (the probe half is dissolved by home resolution, not converted).
+>
+> **Tier: `required:` (settled 2026-08-18, human — after a brief revision to `optional`).**
+> Pack tier and framework dependency are distinct claims and both hold: installing the pack
+> installs handbook and `/clankshop setup` hard-stops without it (a workshop cannot stand up
+> doctrine-less), while the `agent-doctrine` rule still resolves with no handbook installed
+> at all. `journal` is the exact precedent — `required:` in the manifest, yet `1707ede` made
+> record-writers work without its floor. **This also answers this draft's deferred question:**
+> `setup`'s Guard (a) extends to check handbook exactly as it checks journal.
 
 ## Problem
 
