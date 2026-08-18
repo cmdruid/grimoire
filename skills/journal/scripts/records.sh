@@ -61,16 +61,25 @@ resolve() {
     *) err "not under the records root ($RR): $abs" ;;
   esac
   case "$rel" in
-    templates/*|scripts/*|history.tsv) err "reserved path, not a record: $rel" ;;
+    templates/*|scripts/*|doctrine/*|history.tsv) err "reserved path, not a record: $rel" ;;
   esac
 }
 
 # stores: the top-level directories minus the reserved ones.
+#
+# `doctrine` is reserved because the agent-doctrine home defaults to
+# <agent-records>/doctrine -- living normative prose, not dated records. It
+# carries no record front-matter, so without this arm `check` FAILs on every
+# doctrine file and `list` emits empty-field rows for them. The name is fixed
+# rather than resolved: this script never scans the front door (front-door
+# variables doctrine -- write scripts take resolved paths as arguments), and a
+# fixed reserved name is the simplest portable rule. A host that declares
+# agent-doctrine elsewhere simply has no doctrine/ directory here.
 stores() {
   for d in "$RR"/*/; do
     [ -d "$d" ] || continue
     b="$(basename "$d")"
-    case "$b" in templates|scripts) continue ;; esac
+    case "$b" in templates|scripts|doctrine) continue ;; esac
     printf '%s\n' "$b"
   done
 }

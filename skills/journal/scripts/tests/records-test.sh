@@ -179,6 +179,44 @@ expect_absent "pruned record drops off the shortlist" "alpha-the-first-plan" "$O
 "$RS" check >"$OUT"
 expect "check green after prune (ledger line survives)" "records check: OK" "$OUT"
 
+# --- reserved `doctrine/` -------------------------------------------------------
+# The agent-doctrine home defaults to <agent-records>/doctrine: living normative
+# prose with no record front-matter. Two arms guard it and they are proven
+# INDEPENDENTLY on purpose -- a check-only proof passes a partial fix (patch
+# stores(), leave resolve() broken, and `check` still returns OK while `show`
+# happily cats the file). So stores() is proven via check/list, resolve() via
+# show/touch.
+mkdir -p "$proj/.records/doctrine/test/workflows"
+printf '# Diagnostics\n\nLiving normative prose. No front-matter, by design.\n' \
+  > "$proj/.records/doctrine/test/workflows/diagnostics.md"
+
+# arm 1 -- stores(): doctrine is not a store, so check stays green and list ignores it
+rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "doctrine dir keeps check green rc" "0" "$rc"
+expect "doctrine dir does not break check" "records check: OK" "$OUT"
+"$RS" list >"$OUT"
+expect_absent "doctrine file is not listed as a record" "doctrine/" "$OUT"
+
+# arm 2 -- resolve(): a doctrine path is refused as a record
+rc=0; "$RS" show doctrine/test/workflows/diagnostics.md >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "show refuses a doctrine path rc" "2" "$rc"
+expect "show names the reserved path" "reserved path, not a record" "$ERR"
+rc=0; "$RS" touch doctrine/test/workflows/diagnostics.md >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "touch refuses a doctrine path rc" "2" "$rc"
+expect "touch names the reserved path" "reserved path, not a record" "$ERR"
+
+# A doctrine doc may legitimately carry its own front-matter, which weakens
+# require_record's "not a record?" fallback. Note the rc assertions here can still
+# pass for the WRONG reason (require_record also rejects on the five-key contract),
+# so the MESSAGE assertions are the real discriminator: with the resolve() arm
+# reverted, `reserved path, not a record` disappears while the exit code does not
+# change. Verified by breaking -- reverting that arm turns these red.
+printf -- '---\ntitle: Diagnostics\nowner: test station\n---\n\n# Diagnostics\n\nProse.\n' \
+  > "$proj/.records/doctrine/test/workflows/stamped.md"
+rc=0; "$RS" touch doctrine/test/workflows/stamped.md >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "touch refuses front-mattered doctrine rc" "2" "$rc"
+expect "front-mattered doctrine named reserved" "reserved path, not a record" "$ERR"
+
 # malformed ledger: hand-written lines are a fact check reports
 echo "garbage line" >> "$proj/.records/history.tsv"
 rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
