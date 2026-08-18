@@ -78,7 +78,11 @@ pub fn enumerate_with(root: &Path, ignore: &Ignore) -> Result<Enumeration> {
     for path in manifests {
         match validate_one(root, &path, &skills, ignore) {
             Ok(pack) => {
-                if out.packs.iter().any(|p| p.manifest.name == pack.manifest.name) {
+                if out
+                    .packs
+                    .iter()
+                    .any(|p| p.manifest.name == pack.manifest.name)
+                {
                     out.issues.push(Issue {
                         manifest_path: path,
                         error: PackError::Shape(format!(
@@ -90,7 +94,10 @@ pub fn enumerate_with(root: &Path, ignore: &Ignore) -> Result<Enumeration> {
                     out.packs.push(pack);
                 }
             }
-            Err(error) => out.issues.push(Issue { manifest_path: path, error }),
+            Err(error) => out.issues.push(Issue {
+                manifest_path: path,
+                error,
+            }),
         }
     }
     Ok(out)
@@ -177,7 +184,8 @@ fn assert_nothing_nested(pack_dir: &Path, root: &Path, ignore: &Ignore) -> Resul
             let Ok(ft) = entry.file_type() else { continue };
             let base = entry.file_name();
             if ft.is_dir() {
-                if ignore.skips(root, &entry.path()) {
+                if ignore.skips(root, &entry.path()) || discovery::is_nested_checkout(&entry.path())
+                {
                     continue;
                 }
                 walk(&entry.path(), false, root, ignore)?;
@@ -218,11 +226,14 @@ fn find_stray_manifests(
         let Ok(ft) = entry.file_type() else { continue };
         let base = entry.file_name();
         if ft.is_dir() {
-            if ignore.skips(root, &entry.path()) {
+            if ignore.skips(root, &entry.path()) || discovery::is_nested_checkout(&entry.path()) {
                 continue;
             }
             find_stray_manifests(root, &entry.path(), depth + 1, ignore, manifests)?;
-        } else if ft.is_file() && base == "PACK.md" && depth > 0 && !manifests.contains(&entry.path())
+        } else if ft.is_file()
+            && base == "PACK.md"
+            && depth > 0
+            && !manifests.contains(&entry.path())
         {
             manifests.push(entry.path());
         }

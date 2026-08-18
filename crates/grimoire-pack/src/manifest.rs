@@ -95,8 +95,7 @@ impl Manifest {
             .map_err(|e| PackError::Manifest(format!("version: not semver: {e}")))?;
         let description =
             description.ok_or_else(|| PackError::Manifest("description: missing".into()))?;
-        let required =
-            required.ok_or_else(|| PackError::Manifest("required: missing".into()))?;
+        let required = required.ok_or_else(|| PackError::Manifest("required: missing".into()))?;
         let mut seen = std::collections::HashSet::new();
         for n in required.iter().chain(optional.iter()) {
             if !seen.insert(n.as_str()) {
@@ -138,7 +137,10 @@ mod tests {
         assert_eq!(m.required, vec!["alpha", "beta"]);
         assert_eq!(m.optional, vec!["gamma"]);
         assert_eq!(m.format, None);
-        assert_eq!(m.unknown, vec![("core".to_string(), "clank, alpha".to_string())]);
+        assert_eq!(
+            m.unknown,
+            vec![("core".to_string(), "clank, alpha".to_string())]
+        );
     }
 
     #[test]

@@ -21,7 +21,12 @@ pub struct Skill {
 }
 
 /// The priority directories scanned one level deep (Appendix B step 2).
-const PRIORITY_DIRS: &[&str] = &["skills", ".agents/skills", ".claude/skills", ".codex/skills"];
+const PRIORITY_DIRS: &[&str] = &[
+    "skills",
+    ".agents/skills",
+    ".claude/skills",
+    ".codex/skills",
+];
 
 /// Directory names skipped by every scan, at any depth (the built-in floor).
 const DEFAULT_IGNORED_DIRS: &[&str] = &[".git", "node_modules", "target"];
@@ -66,6 +71,21 @@ impl Ignore {
 
 pub fn is_skill_dir(dir: &Path) -> bool {
     dir.join("SKILL.md").is_file()
+}
+
+/// Is `dir` a separate checkout? A directory holding a `.git` entry belongs to
+/// another repository — a vendored clone or submodule (`.git` is a directory)
+/// or a **linked worktree** (`.git` is a *file* holding a `gitdir:` pointer).
+///
+/// Scans never descend into one. A linked worktree placed under the repository
+/// it belongs to is the sharp case: it carries a full copy of the tree, so
+/// without this rule every pack in it enumerates a second time — including a
+/// duplicate of the repository's own, which then wins or collides by scan
+/// order. This is a filesystem question, so it lives here rather than in the
+/// lexical [`Ignore`] predicate; the scan root itself is never tested (only
+/// directories a walk is about to descend into).
+pub fn is_nested_checkout(dir: &Path) -> bool {
+    dir.join(".git").exists()
 }
 
 /// `name:` from SKILL.md frontmatter, directory basename as fallback.
@@ -181,7 +201,7 @@ fn walk(
         return Ok(());
     }
     for child in children(dir)? {
-        if ignore.skips(root, &child) {
+        if ignore.skips(root, &child) || is_nested_checkout(&child) {
             continue;
         }
         walk(root, &child, depth + 1, ignore, found)?;

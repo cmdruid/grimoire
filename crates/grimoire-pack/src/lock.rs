@@ -242,9 +242,15 @@ mod tests {
         let t = tempfile::tempdir().unwrap();
         let path = t.path().join("grimoire.lock");
         std::fs::write(&path, r#"{"version": 2, "packs": {}}"#).unwrap();
-        assert!(matches!(read(&path), Err(crate::PackError::LockReadOnly(_))));
+        assert!(matches!(
+            read(&path),
+            Err(crate::PackError::LockReadOnly(_))
+        ));
         std::fs::write(&path, "not json").unwrap();
-        assert!(matches!(read(&path), Err(crate::PackError::LockReadOnly(_))));
+        assert!(matches!(
+            read(&path),
+            Err(crate::PackError::LockReadOnly(_))
+        ));
     }
 
     #[test]
@@ -258,9 +264,15 @@ mod tests {
                 "installedAt": "t", "skills": {"a": {"hash": "sha256:aa"}}}}}"#,
         )
         .unwrap();
-        assert!(matches!(read(&path), Err(crate::PackError::LockReadOnly(_))));
+        assert!(matches!(
+            read(&path),
+            Err(crate::PackError::LockReadOnly(_))
+        ));
         // absent top-level version: also unparseable-as-v1 -> read-only
         std::fs::write(&path, r#"{"packs": {}}"#).unwrap();
-        assert!(matches!(read(&path), Err(crate::PackError::LockReadOnly(_))));
+        assert!(matches!(
+            read(&path),
+            Err(crate::PackError::LockReadOnly(_))
+        ));
     }
 }

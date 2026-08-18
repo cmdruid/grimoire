@@ -123,5 +123,9 @@ fn symlinks_are_never_followed_by_enumeration() {
     .unwrap();
     let e = enumerate(t.path()).unwrap();
     assert_eq!(e.packs.len(), 1);
-    assert!(e.issues.is_empty(), "symlink produced issues: {:?}", e.issues);
+    assert!(
+        e.issues.is_empty(),
+        "symlink produced issues: {:?}",
+        e.issues
+    );
 }

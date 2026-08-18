@@ -57,6 +57,40 @@ fn ignored_trees_yield_neither_packs_nor_issues() {
 }
 
 #[test]
+fn nested_checkouts_are_not_this_repositorys_content() {
+    let t = tempfile::tempdir().unwrap();
+    let root = t.path();
+    faced_pack(root, "skills/real", "real", "member");
+    skill(root, "skills/member", "member");
+
+    // a vendored clone: `.git` is a DIRECTORY
+    faced_pack(root, "vendor/other-repo/skills/alpha", "alpha", "member");
+    fs::create_dir_all(root.join("vendor/other-repo/.git")).unwrap();
+
+    // a linked worktree: `.git` is a FILE holding a gitdir: pointer. This is
+    // the case that bit us — a worktree under the repo it belongs to carries a
+    // full copy of the tree, so its packs (including a duplicate of the repo's
+    // own) enumerate as if they were this repository's.
+    faced_pack(root, "worktrees/wt/skills/real", "real", "member");
+    skill(root, "worktrees/wt/skills/member", "member");
+    fs::write(root.join("worktrees/wt/.git"), "gitdir: /elsewhere/.git\n").unwrap();
+
+    let e = enumerate(root).unwrap();
+    let names: Vec<_> = e.packs.iter().map(|p| p.manifest.name.as_str()).collect();
+    assert_eq!(names, vec!["real"], "only this repository's own pack");
+    assert_eq!(
+        e.packs[0].manifest_path,
+        root.join("skills/real/PACK.md"),
+        "and it must be THIS tree's copy, not the worktree's"
+    );
+    assert!(
+        e.issues.is_empty(),
+        "no dup-name issue either: {:?}",
+        e.issues
+    );
+}
+
+#[test]
 fn ignoring_a_tree_does_not_hide_a_nested_manifest_elsewhere() {
     let t = tempfile::tempdir().unwrap();
     let root = t.path();
