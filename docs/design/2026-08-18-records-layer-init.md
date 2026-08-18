@@ -403,6 +403,7 @@ Package-only files stay in the skill and are never copied.
 | `auditor` | `reports.md` (add) | `reports.md` | rubric seed (`BOOTSTRAP.md`, `rules/`) is a different home |
 | `workstream` | `plans.md` (add), `reports.md` (add), hand-off, compaction-anchor, intake templates | `plans.md`, `reports.md` | hand-off, compaction-anchor, coordinator, `kind: workstream-template` intake files |
 | `journal` | `reports.md` | **none** | `reports.md` is the contract example. Setup copies nothing. |
+| `analyst` | `briefing.md`, `status.md`, `subsystem.md`, `diagnostics.md`, `guide.md` | those five (already deploys to `<agent-records>/templates/analyst/`) | — |
 
 A skill does not carry templates for stores it does not mint.
 Auditor and debugger do not carry `bugs.md` this unit
@@ -477,9 +478,10 @@ proves them red on fixtures, and **enables check 2
 on the live tree** only after heading-only edits
 land on **every** current `templates/*.md` skill:
 notepad, backlog, blueprint, contractor, debugger,
-workstream, journal (explicit none), and
+workstream, journal (explicit none),
 `agent-council` (explicit none — `ballot.md` /
-`review.md` are package-only). Check 1 stays
+`review.md` are package-only), and `analyst`
+(the five catalog files). Check 1 stays
 fixture-only until the end of slice 2, when the
 backlog floor phrases are gone; then it joins the
 live run. A live-tree `fails=0` after slice 1
@@ -615,16 +617,25 @@ That stays — the *mint*, not standup, creates the store.
 
 Carries `notes.md` and already file-mode mints. It does
 **not** already conform: today's `note-mint.sh` still
-lazy-deploys into `<agent-records>/templates/notes.md`
-when `records.sh` exists. Slice 3 updates the script
-(and `note-mint-test.sh`) to take both homes, resolve
-through the agent-templates rule, and never write
-the flat `<agent-records>/templates/notes.md`.
-Resolver prose in `SKILL.md`
-updates to both homes. Verbs (`write`, `supersede`,
-`drop`, `find`) pass both homes on `mint` and keep
-`stamp` as specified. `## Project templates` lists
-`notes.md`.
+lazy-deploys into the **flat**
+`<agent-records>/templates/notes.md` when `records.sh`
+exists. Slice 3 **migrates** that path to
+`<agent-records>/templates/notepad/notes.md`:
+
+- If the flat file exists and
+  `templates/notepad/notes.md` does not, copy flat →
+  skill dir (incumbent project customization), then
+  use the new path. Do not delete the flat file this
+  unit (a later curate can).
+- New deploys write only the skill-dir path.
+- `note-mint-test.sh` today asserts the flat copy
+  (`lazy-deploy copied template`); invert that
+  assertion to the nested dest.
+
+Also take both homes, resolve through the
+agent-templates rule, update resolver prose, and
+have verbs pass both homes on `mint`. `## Project
+templates` lists `notes.md`.
 
 ### Backlog (the pain)
 
@@ -834,6 +845,29 @@ record. The pass report is:
 - Tracker-line drain: only when the tracker file
   already exists. Else the report is the queue.
 
+### Analyst (landed on `main` 2026-08-18)
+
+Already deploys to
+`<agent-records>/templates/analyst/` via
+`scripts/analyst-deploy.sh` (never-overwrite, no
+floor). That dest **is** this unit's default. Still
+fold:
+
+- `## Project templates` lists the five catalog
+  files (Slice 1 heading; Slice 3 can fill the
+  names).
+- Both-names records resolver (`agent-records:` +
+  `records-root:`).
+- Persist path: `records.sh new reports --template
+  <resolved>` (it currently mints bare). File-mode
+  on a host with no tool.
+- Deploy when the records home exists, not only on
+  a workshop stamp (the script already keys on the
+  directory).
+
+Files: `SKILL.md`, `scripts/analyst-deploy.sh`,
+`scripts/analyst-facts.sh`, deploy/facts tests.
+
 ### Clankshop / PACK.md
 
 `setup` / `migrate` still delegate the tool-layer standup
@@ -1004,7 +1038,7 @@ required unless a later flip changes a slice boundary.
     `verbs/setup.md`, `verbs/migrate.md` (both-names
     resolver; journal standup = tool layer);
     heading-only `## Project templates` on
-    `skills/{notepad,backlog,blueprint,contractor,debugger,workstream,journal,agent-council}/SKILL.md`;
+    `skills/{notepad,backlog,blueprint,contractor,debugger,workstream,journal,agent-council,analyst}/SKILL.md`;
     optionally `skills/clankshop/PACK.md` roster blurbs.
   - Verify: lint `fails=0` on the live tree. Doctrine
     names both homes; `new` asks the record-writer
@@ -1053,7 +1087,11 @@ required unless a later flip changes a slice boundary.
     `verbs/*.md`,
     `scripts/note-mint.sh`,
     `scripts/tests/note-mint-test.sh`;
-    `skills/workstream/scripts/workstream-git.sh`.
+    `skills/workstream/scripts/workstream-git.sh`;
+    `skills/analyst/SKILL.md`,
+    `scripts/analyst-deploy.sh`,
+    `scripts/analyst-facts.sh`,
+    `scripts/tests/deploy-test.sh`.
   - Verify: grep gate empty under `skills/`. No
     writer confirms a `docs/` output home for a typed
     record. Workstream Host layout no longer says
@@ -1172,6 +1210,16 @@ top-level `.templates/`. `agent-templates:` is an
 override only. Flat
 `<agent-records>/templates/<doctype>.md` stays
 legacy adopt-only.
+
+Sync 2026-08-18: rebased onto `main` @ `cd8ae03`
+(21 incoming, no conflict). Folded: `analyst` already
+deploys to `templates/analyst/` — treat as the
+landed pattern; add to inventory + Slice 1 headings
++ Slice 3 resolver/`--template`. Explicit notepad
+**migrate** of flat `templates/notes.md` →
+`templates/notepad/notes.md`. Incoming
+`records.sh` code-block link-check is orthogonal;
+`--template` still lands on that file in Slice 1.
 
 Independent `/blueprint review` pass 4, 2026-08-18
 (`needs-rework` — one path-list miss). Folded the
