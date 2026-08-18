@@ -1,0 +1,18 @@
+[package]
+name = "skill-grimoire"
+version = "0.1.0"
+edition = "2021"
+description = "grimoire: a TUI for browsing a skills library and installing packs"
+license = "MIT OR Apache-2.0"
+
+# crates.io `grimoire` is taken, so the package is `skill-grimoire` while the
+# binary keeps the plain name (settled at (2), repo-restructure design).
+[[bin]]
+name = "grimoire"
+path = "src/main.rs"
+
+[dependencies]
+grimoire-core = { path = "../grimoire-core" }
+ratatui = "0.30.2"
+
+[dev-dependencies]
