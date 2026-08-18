@@ -17,6 +17,47 @@ pub struct Skill {
 /// The priority directories scanned one level deep (Appendix B step 2).
 const PRIORITY_DIRS: &[&str] = &["skills", ".agents/skills", ".claude/skills", ".codex/skills"];
 
+/// Directory names skipped by every scan, at any depth (the built-in floor).
+const DEFAULT_IGNORED_DIRS: &[&str] = &[".git", "node_modules", "target"];
+
+/// Which directories a scan must not descend into.
+///
+/// The default is the built-in floor above. A consumer adds repo-relative
+/// paths for trees that are structurally valid but are not the repository's
+/// own content — conformance fixtures, vendored clones, sample repos — so they
+/// neither enumerate as packs nor report issues.
+#[derive(Debug, Clone, Default)]
+pub struct Ignore {
+    rel_paths: Vec<PathBuf>,
+}
+
+impl Ignore {
+    /// The built-in floor only.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Also skip `path`, interpreted relative to the scan root.
+    pub fn with_path(mut self, path: impl Into<PathBuf>) -> Self {
+        self.rel_paths.push(path.into());
+        self
+    }
+
+    /// Should the scan skip `dir` (a path under `root`)? Lexical: no
+    /// canonicalization, consistent with the crate's symlink stance.
+    pub fn skips(&self, root: &Path, dir: &Path) -> bool {
+        if let Some(base) = dir.file_name() {
+            if DEFAULT_IGNORED_DIRS.iter().any(|d| base == *d) {
+                return true;
+            }
+        }
+        let Ok(rel) = dir.strip_prefix(root) else {
+            return false;
+        };
+        self.rel_paths.iter().any(|p| rel.starts_with(p))
+    }
+}
+
 pub fn is_skill_dir(dir: &Path) -> bool {
     dir.join("SKILL.md").is_file()
 }
@@ -52,6 +93,12 @@ pub fn skill_name(dir: &Path) -> String {
 }
 
 pub fn discover(root: &Path, full_depth: bool) -> Result<Vec<Skill>> {
+    discover_with(root, full_depth, &Ignore::new())
+}
+
+/// [`discover`], honoring consumer ignore rules — Appendix B leaves the
+/// recursive bound to implementations, and this is ours.
+pub fn discover_with(root: &Path, full_depth: bool, ignore: &Ignore) -> Result<Vec<Skill>> {
     let mut found: Vec<Skill> = Vec::new();
     if is_skill_dir(root) && !full_depth {
         push(&mut found, root);
@@ -59,7 +106,7 @@ pub fn discover(root: &Path, full_depth: bool) -> Result<Vec<Skill>> {
     }
     if !full_depth {
         for child in children(root)? {
-            if is_skill_dir(&child) {
+            if !ignore.skips(root, &child) && is_skill_dir(&child) {
                 push(&mut found, &child);
             }
         }
@@ -69,7 +116,7 @@ pub fn discover(root: &Path, full_depth: bool) -> Result<Vec<Skill>> {
                 continue;
             }
             for child in children(&dir)? {
-                if is_skill_dir(&child) {
+                if !ignore.skips(root, &child) && is_skill_dir(&child) {
                     push(&mut found, &child);
                 }
             }
@@ -79,7 +126,7 @@ pub fn discover(root: &Path, full_depth: bool) -> Result<Vec<Skill>> {
         }
     }
     // Full-depth (or shallow-found-nothing fallback): bounded recursive scan.
-    walk(root, 0, &mut found)?;
+    walk(root, root, 0, ignore, &mut found)?;
     Ok(found)
 }
 
@@ -112,7 +159,13 @@ fn children(dir: &Path) -> Result<Vec<PathBuf>> {
 // Conservative default; Appendix B leaves the fallback bound to implementations.
 pub const MAX_DEPTH: usize = 12;
 
-fn walk(dir: &Path, depth: usize, found: &mut Vec<Skill>) -> Result<()> {
+fn walk(
+    root: &Path,
+    dir: &Path,
+    depth: usize,
+    ignore: &Ignore,
+    found: &mut Vec<Skill>,
+) -> Result<()> {
     if depth > MAX_DEPTH {
         return Ok(());
     }
@@ -122,11 +175,10 @@ fn walk(dir: &Path, depth: usize, found: &mut Vec<Skill>) -> Result<()> {
         return Ok(());
     }
     for child in children(dir)? {
-        let base = child.file_name().unwrap_or_default();
-        if base == ".git" || base == "node_modules" || base == "target" {
+        if ignore.skips(root, &child) {
             continue;
         }
-        walk(&child, depth + 1, found)?;
+        walk(root, &child, depth + 1, ignore, found)?;
     }
     Ok(())
 }
@@ -145,6 +197,35 @@ mod tests {
             None => "no frontmatter here".to_string(),
         };
         fs::write(d.join("SKILL.md"), fm).unwrap();
+    }
+
+    #[test]
+    fn ignore_floor_covers_default_dirs_at_any_depth() {
+        let ig = Ignore::new();
+        let root = Path::new("/r");
+        assert!(ig.skips(root, Path::new("/r/.git")));
+        assert!(ig.skips(root, Path::new("/r/a/b/node_modules")));
+        assert!(ig.skips(root, Path::new("/r/crates/x/target")));
+        assert!(!ig.skips(root, Path::new("/r/skills/alpha")));
+    }
+
+    #[test]
+    fn ignore_rel_path_covers_the_dir_and_everything_below() {
+        let ig = Ignore::new().with_path("crates/grimoire-pack/tests/fixtures");
+        let root = Path::new("/r");
+        assert!(ig.skips(root, Path::new("/r/crates/grimoire-pack/tests/fixtures")));
+        assert!(ig.skips(
+            root,
+            Path::new("/r/crates/grimoire-pack/tests/fixtures/faced-valid/skills/alpha")
+        ));
+        assert!(!ig.skips(root, Path::new("/r/crates/grimoire-pack/tests")));
+        assert!(!ig.skips(root, Path::new("/r/skills/clankshop")));
+    }
+
+    #[test]
+    fn ignore_never_skips_outside_the_root() {
+        let ig = Ignore::new().with_path("fixtures");
+        assert!(!ig.skips(Path::new("/r"), Path::new("/elsewhere/fixtures")));
     }
 
     #[test]
@@ -173,6 +254,28 @@ mod tests {
         assert!(names.contains(&"noname".to_string()));
         assert!(names.contains(&"beta".to_string()));
         assert!(!names.contains(&"hidden".to_string()));
+    }
+
+    #[test]
+    fn full_depth_skips_ignored_trees() {
+        let t = tempfile::tempdir().unwrap();
+        skill(t.path(), "skills/real", Some("real"));
+        skill(t.path(), "tests/fixtures/sample/skills/fake", Some("fake"));
+        let ig = Ignore::new().with_path("tests/fixtures");
+        let names: Vec<_> = discover_with(t.path(), true, &ig)
+            .unwrap()
+            .into_iter()
+            .map(|s| s.name)
+            .collect();
+        assert!(names.contains(&"real".to_string()));
+        assert!(!names.contains(&"fake".to_string()));
+        // the default wrapper still sees both — behavior is unchanged there
+        let all: Vec<_> = discover(t.path(), true)
+            .unwrap()
+            .into_iter()
+            .map(|s| s.name)
+            .collect();
+        assert!(all.contains(&"fake".to_string()));
     }
 
     #[test]
