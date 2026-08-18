@@ -17,22 +17,29 @@ up anywhere.
 
 ## One environment probe (at entry)
 
-Does `<root>/.handbook/README.md` exist and carry the clankshop install stamp (a line matching
-`Seeded from clankshop`)? That fact picks the homes. On a workshop host, also read the
-declared `agent-records:` or `records-root:` (front-door `AGENTS.md`), else `.records/`.
-No mode ever refuses or stalls for lack of a workshop — standing one up is the human's
-separate decision (the clankshop onramps), never an audit side effect.
+The rubric is doctrine, so its home resolves like any other: the declared `agent-doctrine:`
+(front-door `AGENTS.md` then `CLAUDE.md`), else `<agent-records>/doctrine` (default
+`.records/doctrine/`). Resolving the home is not finding the rubric — resolve it, **then**
+detect `GUIDE.md`. No mode ever refuses or stalls for lack of a workshop — standing one up is
+the human's separate decision (the clankshop onramps), never an audit side effect.
 
-- **Workshop present** → the rubric is guardian doctrine:
-  `<root>/.handbook/test/workflows/audit/` (`GUIDE.md`, `rules/`, `metrics.sh`) — an
-  on-demand workflow of the test station, invisible to the always-on load set. Before a pass,
-  summon the station's context: `<root>/.handbook/scripts/context.sh test`. Deliverables drain
-  through the **records layer** (see *Deliverables*).
-- **Standalone** → the rubric home is **confirmed once at setup** (default `docs/audit/`).
-  Later modes detect `<home>/GUIDE.md`: workshop path first; else `docs/audit/GUIDE.md`;
-  else ask once (do not scan the repo). The pass report is still an agent-records
-  `reports/` record (file-mode if no tool). Findings stay in the report; promote a
-  defect with `/backlog bug`. Tracker lines only when the tracker file already exists.
+Detection order, first hit wins:
+
+1. **`<agent-doctrine>/test/workflows/audit/`** — the resolved home. The rubric is guardian
+   doctrine (`GUIDE.md`, `rules/`, `metrics.sh`): an on-demand workflow of the test station,
+   invisible to the always-on load set. Before a pass, summon the station's context with
+   `<agent-doctrine>/scripts/context.sh test` when that loader exists.
+2. **`docs/audit/GUIDE.md`** — the **legacy** home, still detected so rubrics already
+   deployed there keep working (the same courtesy `records-root:` gets alongside
+   `agent-records:`). Detected, never created fresh.
+3. Neither → ask once (do not scan the repo).
+
+`setup` stands the rubric up at the resolved home; **incumbent wins** — an existing rubric is
+never overwritten, since a re-run would otherwise destroy the host's accumulated calibration.
+
+Pass reports are agent-records `reports/` records on every host (file-mode if no tool).
+Findings stay in the report; promote a defect with `/backlog bug`. Tracker lines only when the
+tracker file already exists.
 
 ## What this skill bundles
 
@@ -89,7 +96,7 @@ Follow the bundled `BOOTSTRAP.md`:
    the `<native dimensions>` (the host's sacred invariants), the `<targets>` (Deep/Mid/Light by
    blast radius), the `<drains>` (records layer or the host's existing trackers), and the
    audit's purpose (hygiene vs release-gating → severity model).
-2. **Confirm the home** — workshop: `.handbook/test/workflows/audit/` (no confirmation needed —
+2. **Confirm the home** — resolved: `<agent-doctrine>/test/workflows/audit/` (no confirmation needed —
    doctrine has one home); standalone: propose `docs/audit/` and confirm once.
 3. **Author the rubric** — copy the bundled generic `rules/` into `<home>/rules/`, fill the
    `<language>` greps and `How to quantify` recipes, and add a rule file per
@@ -98,8 +105,8 @@ Follow the bundled `BOOTSTRAP.md`:
    rubric index, scoring rules, the finding-entry shape, severity, drains.
 5. **Write `metrics.sh`** (`<home>/metrics.sh`, `BOOTSTRAP.md` §8 columns, copy §13 stub) for the `<language>`; run it
    for a baseline report; wire `--check` on the native invariant.
-6. **Wire + gate** — workshop: add the routing hook (`.handbook/core/ROUTING.md` classifies "audit the
-   code" → this workflow) and a chore line in `.handbook/test/POLICY.md` if the guardian should run it on
+6. **Wire + gate** — workshop: add the routing hook (`<agent-doctrine>/core/ROUTING.md` classifies "audit the
+   code" → this workflow) and a chore line in `<agent-doctrine>/test/POLICY.md` if the guardian should run it on
    cadence; standalone: one pointer from the host's doc index. Run the host's gate.
 7. **Baseline pass + select exemplars** — run a lean pass to seed the first pass report, then
    pin the score-5 `<exemplars>` in `GUIDE.md` and backfill calibrated examples

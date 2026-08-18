@@ -145,7 +145,7 @@ fi
 # The whole point: check 14 could never see this skill.
 run_lint
 write_skill widget 'note — a captured fact' \
-  'The rubric lives at `docs/audit/GUIDE.md` on a standalone host.'
+  'Follow the lane at `.handbook/build/workflows/feature.md` when it exists.'
 lint
 if grep -q "FAIL: widget: .*$c15" "$OUT"; then
   pass=$((pass + 1))
@@ -168,13 +168,16 @@ else
   fail=$((fail + 1))
 fi
 
-# --- check 15: green — a burn-down-exempt skill still carries it --------------
+# --- check 15: green — a sanctioned legacy literal is not matched at all ------
+# `docs/audit/` is auditor's legacy home, kept so deployed rubrics keep working.
+# It is deliberately absent from the matched literals rather than excused by an
+# exemption -- excusing it would have blanketed that skill's real violations too.
 run_lint
-write_skill auditor 'note — a captured fact' \
-  'The rubric lives at `docs/audit/GUIDE.md` on a standalone host.'
+write_skill widget 'note — a captured fact' \
+  'Legacy rubrics at `docs/audit/GUIDE.md` are still detected.'
 lint
 if grep -q "$c15" "$OUT"; then
-  echo "FAIL: exempt skill matched check 15 (burn-down table not honored)" >&2
+  echo "FAIL: sanctioned legacy literal matched check 15 (must stay green)" >&2
   grep "$c15" "$OUT" >&2
   fail=$((fail + 1))
 else

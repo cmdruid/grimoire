@@ -82,6 +82,18 @@
 #  13. Project-templates heading (FAIL). A skill that has templates/*.md
 #      must have a `## Project templates` heading in SKILL.md. A skill
 #      with no templates/ dir is out of scope. Pack faces are exempt.
+#  14. Doctrine home not resolved (FAIL). A skill declaring a `doctrine` typed
+#      edge must carry a sanctioned agent-doctrine resolution literal. Fenced
+#      and indented blocks are stripped first (a quoted example must not
+#      satisfy it) and whitespace is normalized across newlines (the phrase
+#      members wrap in real skills; a line-based match would fail conforming
+#      ones). Edge-gated, so check 15 is the unconditional net beside it.
+#      skill-builder and pack faces are exempt.
+#  15. Off-home doctrine literal (FAIL). Any non-exempt skill's .md naming a
+#      `.handbook/{test,build,design,review}/` path -- doctrine that should be
+#      reached through the resolved home. Unconditional: this is what catches a
+#      skill that hardcodes and never declares an edge. No per-skill exemption
+#      table; `docs/audit/` is deliberately not matched (see the block comment).
 #
 # Pack-face exemption (clankshop v2): the one skill dir that carries a PACK.md
 # is the pack's FACE -- it composes the pack, so naming its members is its job,
@@ -632,11 +644,17 @@ done
 # This is the net that catches that, in check 12's shape (FAIL-on-presence of
 # fixed literals, name-based exemptions).
 #
-# The exemption table is a BURN-DOWN, not a permanent amnesty: it is
-# pre-populated with the literals that exist today, and each entry is removed as
-# its skill is flipped onto home resolution. An empty table is the goal state.
-# Pack faces are exempt already (clankshop legitimately owns the handbook), as is
-# skill-builder (this doctrine documents the literals it bans elsewhere).
+# There is NO exemption table. One was built as a burn-down while the consumers
+# were flipped, and it emptied -- so it is gone rather than left as dead code.
+# Pack faces are exempt (clankshop legitimately owns the handbook), as is
+# skill-builder (this doctrine documents the literals it bans elsewhere); that is
+# the same name-based exemption check 12 uses, and it is the whole of it.
+#
+# `docs/audit/` is deliberately NOT a matched literal. It is auditor-specific --
+# no other skill would write it -- so matching it caught nothing generalizable
+# while forcing an exemption broad enough to blanket that skill's real
+# violations. Auditor's legacy-home detection is sanctioned; the fix was to stop
+# calling it a violation, not to excuse it.
 #
 # NOT attempted: a check on the canonical DEFAULT path. Skill prose is required
 # to name default paths literally, so `.records/doctrine/...` in prose is
@@ -646,23 +664,16 @@ done
 # in the corpus are prohibitions ("Do not create `.handbook/`"), which a naive
 # matcher would flag as violations -- compliant and violating text differ only by
 # a preceding negation. That rule lives in doctrine prose and in skill review.
-offhome_exempt() { # offhome_exempt <skill>; 1 = still allowed to carry them
-  case "$1" in
-    auditor) return 0 ;;
-    *) return 1 ;;
-  esac
-}
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   case "$name" in skill-builder) continue ;; esac
   is_pack_face "$name" && continue
-  offhome_exempt "$name" && continue
   while IFS= read -r -d '' f; do
     rel="${f#"$sk"}"
     while IFS= read -r line; do
       [ -n "$line" ] || continue
       fail "$name: $rel:$line: off-home doctrine literal (resolve <agent-doctrine> instead)"
-    done < <(grep -nF -e 'docs/audit/' -e '`.handbook/test/' -e '`.handbook/build/' \
+    done < <(grep -nF -e '`.handbook/test/' -e '`.handbook/build/' \
                      -e '`.handbook/design/' -e '`.handbook/review/' "$f" || true)
   done < <(find "$sk" -name '*.md' -print0)
 done

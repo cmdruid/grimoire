@@ -9,7 +9,7 @@ is re-runnable each cycle. Drop this file into any project and an agent can **re
 whole system**, or **borrow a piece**.
 
 The rubric home is mode-dependent (see the skill's entry probe): on a clankshop workshop host it
-is `.handbook/test/workflows/audit/` (guardian doctrine, loaded on demand); standalone it is a
+is `<agent-doctrine>/test/workflows/audit/` (guardian doctrine, loaded on demand); standalone it is a
 directory confirmed once at setup (default `docs/audit/`). `<home>` below means that directory.
 
 It is a sibling to any companion dev-system blueprint (one that blueprints the surrounding deployed doc-system, if the host has one). This
@@ -99,7 +99,7 @@ One authored home (the rubric); deliverables drain per §3:
 
 ```
 <home>/               -- the rubric (hand-curated, source of truth)
-                         workshop: .handbook/test/workflows/audit/ · standalone: docs/audit/
+                         resolved: <agent-doctrine>/test/workflows/audit/ · legacy: docs/audit/
   GUIDE.md            -- the hub: framing, risk-weighted scope, the rubric index, scoring
                          rules, process, the finding-entry shape, severity, drains
   rules/              -- one file per dimension, all in the uniform shape (§6)
@@ -265,15 +265,15 @@ Answer these in order; the answers fill the *Slots* and shape the rubric:
 
 **Full setup** (leaves-before-index, so each commit stays `<gate>`-green):
 1. Fill the *Slots* (§2) via the *Decision walk* (§9); resolve `<home>` per the skill's entry
-   probe (workshop: `.handbook/test/workflows/audit/`; standalone: confirm once, default
+   probe (resolved: `<agent-doctrine>/test/workflows/audit/`; legacy: confirm once, default
    `docs/audit/`).
 2. Copy the bundled generic `rules/` into `<home>/rules/`. Fill the `<language>` greps
    and *How to quantify* recipes. Write only `<native dimensions>` from the *Rule-file
    shape* (§6). (They reference `../GUIDE.md` in backticks, since it does not exist yet.)
 3. Write `GUIDE.md` from §12; fill the slots.
 4. Write `metrics.sh` from §13; run it for a baseline; wire `--check` if you have an invariant to gate.
-5. Wire the rubric in -- workshop: a `.handbook/core/ROUTING.md` row ("audit the code" -> this workflow)
-   and, if the guardian should run it on cadence, a chore line in `.handbook/test/POLICY.md`; standalone:
+5. Wire the rubric in -- workshop: a `<agent-doctrine>/core/ROUTING.md` row ("audit the code" -> this workflow)
+   and, if the guardian should run it on cadence, a chore line in `<agent-doctrine>/test/POLICY.md`; standalone:
    one pointer from the host's doc index. Run `<gate>`.
 6. Run a **lean baseline pass** (one reader per Deep/Mid target) to produce the first pass
    report and prove the rubric is usable.
