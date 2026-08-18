@@ -1,14 +1,54 @@
 //! §3: the `grimoire.lock` sidecar. Tools are its only writers; unknown keys
 //! are preserved; a newer lock version (or an unparseable file) is read-only.
 //! The library takes `installedAt` as a caller-supplied string — no clock here.
+//!
+//! §3's scope resolution also lives here ([`scope_for`], [`lock_path`]): pure
+//! and lexical, with the user's home supplied by the caller, so it needs
+//! neither the filesystem nor the environment.
 
 use crate::{PackError, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub const LOCK_VERSION: u64 = 1;
 pub const LOCK_FILE: &str = "grimoire.lock";
+
+/// Spec §3: the two lock scopes. Global installs (the per-agent dirs under the
+/// user's home) share one lock at `~/.agents/grimoire.lock`; anything else is a
+/// project scope whose lock sits at the project root — the target's parent.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Scope {
+    Global,
+    Project,
+}
+
+/// The per-agent skill directories whose installs are the GLOBAL scope (§3).
+/// Distinct from discovery's priority dirs: these are install targets under
+/// `home`, not places skills are found inside a repository.
+const AGENT_DIRS: &[&str] = &[".agents", ".claude", ".codex", ".cursor"];
+
+/// Classify an install target. Pure and lexical: no I/O, no symlink
+/// resolution, no environment reads — `home` is supplied by the caller. A
+/// target that IS a recognized agent dir, or lies under one, is [`Scope::Global`].
+pub fn scope_for(target: &Path, home: &Path) -> Scope {
+    for agent in AGENT_DIRS {
+        if target.starts_with(home.join(agent)) {
+            return Scope::Global;
+        }
+    }
+    Scope::Project
+}
+
+/// Where `grimoire.lock` lives for an install into `target` (§3). Global:
+/// `<home>/.agents/grimoire.lock`. Project: beside the target dir, at the
+/// project root. A target with no parent locks in place rather than panicking.
+pub fn lock_path(target: &Path, home: &Path) -> PathBuf {
+    match scope_for(target, home) {
+        Scope::Global => home.join(".agents").join(LOCK_FILE),
+        Scope::Project => target.parent().unwrap_or(target).join(LOCK_FILE),
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SkillEntry {
@@ -125,6 +165,44 @@ mod tests {
             manifest: None,
             extra: Default::default(),
         }
+    }
+
+    #[test]
+    fn global_scope_for_every_agent_dir_and_below() {
+        let home = Path::new("/home/u");
+        for agent in [".agents", ".claude", ".codex", ".cursor"] {
+            let exact = home.join(agent);
+            assert_eq!(scope_for(&exact, home), Scope::Global, "{agent} itself");
+            let below = exact.join("skills");
+            assert_eq!(scope_for(&below, home), Scope::Global, "{agent}/skills");
+            assert_eq!(
+                lock_path(&below, home),
+                Path::new("/home/u/.agents/grimoire.lock")
+            );
+        }
+    }
+
+    #[test]
+    fn project_scope_locks_beside_the_target_dir() {
+        let home = Path::new("/home/u");
+        // not under HOME: a project install, however agent-shaped its path looks
+        let target = Path::new("/work/proj/.claude/skills");
+        assert_eq!(scope_for(target, home), Scope::Project);
+        assert_eq!(
+            lock_path(target, home),
+            Path::new("/work/proj/.claude/grimoire.lock")
+        );
+    }
+
+    #[test]
+    fn home_adjacent_but_not_agent_dir_is_project_scope() {
+        let home = Path::new("/home/u");
+        let target = home.join("scratch/skills");
+        assert_eq!(scope_for(&target, home), Scope::Project);
+        assert_eq!(
+            lock_path(&target, home),
+            Path::new("/home/u/scratch/grimoire.lock")
+        );
     }
 
     #[test]
