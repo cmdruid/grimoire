@@ -17,10 +17,11 @@ workshop; report that and point at `setup` / `migrate` — nothing to check.
    deliberate placeholder confirmed at setup is fine when the doc says so; a forgotten one is
    a finding.
 4. **Links** — every relative `.md` link inside `.handbook/` resolves, and the door
-   (`AGENTS.md`) exists and points at `.handbook/README.md`.
-5. **Records** — where the records layer is deployed (`records.sh` under the records root's
-   `scripts/`), run `records.sh check`: front-matter conformance and status↔ledger coherence
-   are its facts. No records layer → report it as absent (setup's step 3 unfinished), not as
-   a pass.
+   (`AGENTS.md`) exists and names `.handbook/README.md`.
+5. **Records** — resolve the records root: the first line-start `records-root:` in
+   `<root>/AGENTS.md` or `<root>/CLAUDE.md`, else `.records/`. Where
+   `<records-root>/scripts/records.sh` exists, run it `check`: front-matter
+   conformance and status↔ledger coherence are its facts. Missing → report the
+   records layer as absent (setup's step 3 unfinished), not as a pass.
 6. **Report** — one list: green items as one line, each finding as location + what's wrong.
    Fixes are ordinary routed work, not part of the check.

@@ -65,7 +65,8 @@ migration): everything below then writes and commits on the stream's branch and 
 4. **Perform the judgment merges.** Organic policy and convention docs fold into `core/` or
    the station `POLICY.md`s **below** the seeded preambles — integrated, deduplicated, linked
    (the precedence rule holds from day one). The door is written **into** the existing
-   `AGENTS.md`: pointer + thin routing table, existing content preserved.
+   `AGENTS.md` to setup's minimum (pointer naming `.handbook/README.md`, thin dispatch
+   table, `records-root:` only when not `.records/`); existing content preserved.
 5. **Done means `check` is green.** Run the `check` verb; fix what it reports. One conformance
    regime, no grandfathering: after migration, `records.sh` sees everything.
 

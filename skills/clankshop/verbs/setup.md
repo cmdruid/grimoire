@@ -42,11 +42,16 @@ c. **Existing `.handbook`?**
    skill's. Do not inline journal's walk. If `journal` is not available, say so and
    stop — the Guard should have caught this; write nothing further.
 4. **Write the door.** Integrate into `<root>/AGENTS.md` (create it if absent; integrate,
-   never clobber — existing content stays):
-   - a pointer: the workshop's doctrine lives in `.handbook/` — start at
-     `.handbook/README.md`;
-   - a thin routing table compiled from `core/ROUTING.md`'s dispatch rows (kind of work →
-     station or workflow). Detail stays in the handbook; the door only routes.
+   never clobber — existing content stays). Minimum bytes — not a template:
+
+   - a pointer that names `.handbook/README.md` (the workshop's doctrine lives in
+     `.handbook/`; start there);
+   - a thin routing table compiled from `core/ROUTING.md`'s dispatch rows (kind of
+     work → lane). Detail stays in the handbook; the door only routes;
+   - `records-root: <rel>` at line start only when the records root is not
+     `.records/` (omit the line for the default).
+
+   Do not invent a third location. Do not rewrite unrelated existing content.
 5. **Validate**: run the `check` verb. Setup is complete only when it comes back green.
 
 ## Notes
