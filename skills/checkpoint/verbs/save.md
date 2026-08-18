@@ -6,8 +6,9 @@ are this skill's flow.
 1. **Sanity-check the request, and resolve the target.** If the conversation has been short,
    contains no concrete work to checkpoint, or is purely Q&A with nothing to resume, push back —
    ask what specifically to preserve. Resolve the target per SKILL.md *Where it writes*. In a
-   git repo, read `scripts/save-guard.sh <dir>` (resolve `scripts/` from this skill's own base
-   directory) — one read emits every mechanical pre-save fact; the decisions stay here:
+   git repo, read `scripts/save-guard.sh <dir>` where `<dir>` **is** that resolved root
+   (resolve `scripts/` from this skill's own base directory) — one read emits every mechanical
+   pre-save fact; the decisions stay here:
    - **Stream guard** (SKILL.md *Two layers* refusal): `worktree_stream=true` **or**
      `inplace_branch_match=true` → this session's tree belongs to a workstream — **refuse and
      point to `/workstream save`**; do not write.

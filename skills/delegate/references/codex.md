@@ -88,11 +88,17 @@ work doesn't sweep in unrelated drift.
 
 - **Codex never commits.** It writes to the working tree; you review and commit. State this in every
   prompt, regardless of any project memory.
+- **Never `-C` / cwd a held tree.** A target is held when `<toplevel>/WORKSTREAM.md` exists, or a
+  `<toplevel>/.workstreams/*/WORKSTREAM.md` records `isolation: in-place` and its Coordinates
+  `branch:` equals `git -C <toplevel> branch --show-current`. If held → stop; the parent uses
+  mailbox or an isolated worktree. When the route *is* isolated worktree, `-C` / cwd **is** that
+  worktree's `<abs-path>`, never the held/target path.
 - **Always `--sandbox workspace-write`.** Never `--dangerously-bypass-approvals-and-sandbox` or
   `danger-full-access` unless the human explicitly says so.
 - **No `-m`/model pin unless the confirmed route named one.** Otherwise use Codex's configured default;
   don't guess model ids.
-- Worktree isolation is optional -- reach for it only for large or parallel runs, not by default.
+- Worktree isolation is **required** when the target is held (mailbox or isolated worktree). It is
+  optional only on an **unheld** target, and then only for large or parallel runs.
 
 ## Gotcha: the sandbox can't reach Docker/network
 

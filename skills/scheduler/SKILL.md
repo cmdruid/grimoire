@@ -1,6 +1,6 @@
 ---
 name: scheduler
-description: "Schedule recurring agent runs on this machine -- a cron job / background task that launches an agent harness (claude, codex) with a fixed prompt or an evolving prompt file. launchd on macOS (user LaunchAgents), cron on Linux; no hand-rolled daemon -- the OS supervisor fires a tick that runs one short-lived headless harness invocation. State is project-scoped in a self-gitignoring `.scheduler/` (job specs, logs, an overridable HEARTBEAT preamble). Use when the user wants something to run automatically, repeatedly, or on a schedule ('every morning', 'hourly', 'on weekdays'), or to list, check, test-fire, or remove such tasks. Keywords: cron, crontab, launchd, plist, daemon, background task, recurring, scheduled run, heartbeat."
+description: "Schedule recurring agent-harness runs on this machine (claude or codex) via launchd on macOS or cron on Linux. Each OS tick is one short-lived headless harness invocation. Use when the user wants a recurring agent run, or to list, check, test-fire, or remove one. Not ordinary OS cron unless a harness is the payload. Keywords: scheduled agent, heartbeat, recurring harness."
 ---
 
 # scheduler -- recurring agent runs via the OS supervisor
@@ -23,6 +23,7 @@ environments, locking) are exactly where hand-written jobs silently break.
 ```
 schedule.sh install <name> --schedule "<cron>" (--prompt "<text>" | --prompt-file <abs-path>)
                     [--harness claude|codex] [--cwd <dir>] [--harness-args "<flags>"]
+                    # existing <name> replaces the spec and the supervisor entry; logs stay
 schedule.sh uninstall <name>       # remove the job; logs are preserved
 schedule.sh list                   # every job in this project: schedule, runner, last run
 schedule.sh status [<name>]        # loaded state, recent runs + exit codes, log paths
@@ -63,9 +64,11 @@ task is worse than no task:
    stalls or dies at the first one. `tick` adds **no default**: pass the user's chosen stance
    explicitly via `--harness-args` (a pre-approved allowlist, a sandbox/read-only mode, or an
    explicitly-accepted bypass). Never pick a bypass for the user.
-3. **The right tool.** This skill's niche is *runs against this machine's state* (its
-   checkouts, credentials, files). For tasks that don't need this machine, a harness-native
-   cloud schedule (which runs with the laptop closed) is the better home -- offer it.
+3. **The right tool.** This skill's niche is *recurring agent-harness runs* against this
+   machine's state (its checkouts, credentials, files). Ordinary OS cron (backups, log
+   rotate, a non-harness script) is **when-not** — do not wrap it in a harness tick. For
+   tasks that don't need this machine, a harness-native cloud schedule (which runs with the
+   laptop closed) is the better home -- offer it.
 4. **Cost.** A scheduled agent spends tokens unattended. Say what the cadence implies and
    point at `status` as the check-in habit.
 
@@ -101,3 +104,11 @@ Read `.scheduler/logs/<name>.last` first (timestamp + exit code per run), then t
 `run <name>` fires the identical code path the schedule uses -- same spec, same preamble, same
 runner -- so a green `run` means the *job* is sound and remaining failures are environmental
 (load state, machine asleep, TCC).
+
+## Done when
+
+- **`install`:** the four confirmations (schedule+timezone, permission stance, right tool,
+  cost) ran **and** the script printed `installed:`. Nothing is installed without those
+  confirmations.
+- **`uninstall` / `list` / `status` / `run` / `convert`:** the script's printed facts, or a
+  clean refuse. Do not install on an unsupported platform.

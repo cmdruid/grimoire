@@ -83,8 +83,10 @@ stream-driving session uses its stream's save verb (*Scope*).
 Classify the trailing argument, then resolve the target:
 
 - **No argument** → the root `CHECKPOINT.md`. Resolve the root in order: (1) the project
-  directory the conversation references; (2) `./CHECKPOINT.md` in the cwd; (3) still unsure →
-  ask before generating.
+  directory the conversation references, if any; (2) else if that path (else cwd) is inside a
+  git repo → that `git rev-parse --show-toplevel`; (3) else if `./CHECKPOINT.md` exists in cwd
+  → that directory (the file's parent); (4) else ask before generating. Step (2) is the first
+  save in a git repo — the file need not exist yet. Step (3) is discovery, not a prerequisite.
 - **A path-like argument** (contains `/` or ends in `.md`) → that literal path, verbatim — the
   unmanaged escape hatch for a deliberate second checkpoint file. Unmanaged end to end: no
   anchor check, no lifecycle, `done <path>` rejected — and **only as fresh as its last save**:

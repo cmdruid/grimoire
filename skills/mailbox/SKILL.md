@@ -1,6 +1,6 @@
 ---
 name: mailbox
-description: "The worktree-safe TRANSPORT for a delegated file-work result -- the slot protocol that gets a sub-agent's artifact back safely. The sub-agent authors its result as text, writes it to a git-excluded scratch file (a 'mailbox slot'), and returns only a handle + one-line summary; the parent checks the tree for drift, then applies the patch (tokenless) or consumes the doc. Removes two hazards: a sub-agent editing a shared worktree silently corrupts it (its cwd may not be the tree you meant), and a pasted artifact paid through context repeatedly. Mailbox is HOW the artifact crosses back, not WHETHER to delegate. Harness-agnostic (Claude or Codex). Keywords: single-writer, worktree corruption, pass-by-reference, absolute slot path."
+description: "Use when a sub-agent must return a file-work artifact without writing the shared tree: mint a git-excluded mailbox slot, pass its absolute path, collect a handle + one-line summary, then apply the patch or consume the doc. Transport only — not whether to delegate. Keywords: mailbox slot, absolute slot path, pass-by-reference, tokenless apply."
 ---
 
 # mailbox -- out-of-band sub-agent handoff
@@ -24,8 +24,6 @@ the slot. Two payoffs, both load-bearing:
 Use when:
 - delegating file-work (plan / implement / remediate / test / review) and you want the result back
   **without** the delegate's exploration polluting your context;
-- **routing work to a different model** than the orchestrator (cheap for grunt work, strong for hard
-  reasoning) while keeping the orchestrator lean;
 - working in a **git worktree** where a sub-agent editing the tree directly would corrupt it.
 
 Don't use when:
@@ -191,3 +189,9 @@ capture home. All three edges are a *stated* empty (model §2.3), not an omissio
 - handoff: — (none; a slot is applied and gated by the parent, it doesn't terminate a workflow)
 - consumes: — (none; it reads the delegate's task description, not another skill's typed output)
 <!-- /edges:mailbox -->
+
+## Done when
+
+Slot minted; collected only after a completion return; tree snapshot matched; apply-or-consume
+finished; slot reaped on success or kept on refuse. Drift → tree preserved, no apply. Salvaged
+mid-task slot → dry-run / read skeptically, never trusted as a completion.

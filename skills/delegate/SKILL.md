@@ -1,6 +1,6 @@
 ---
 name: delegate
-description: "Use when about to do work a sub-agent could do, when choosing a model tier per build phase, or on explicit /delegate [task] -- the delegation front-door. Route work for speed, token cost, or context hygiene: offload grunt work to a cheaper model, keep your own context lean. Decide delegate-or-not, pick the mechanism (inline sub-agent / mailbox slot / Codex executor / parallel fan-out / isolated worktree), and confirm the route (which provider/model) with the human -- live cost/quota/availability is state you cannot see. Degrades to a fallback ladder (down to inline) on provider failure, so it runs safely in an autonomous loop. Harness-agnostic (Claude or Codex). Keywords: dispatch, byproducts, model routing, phase-to-tier."
+description: "Use when work is well-scoped, returns a checkable artifact or conclusion, and does not need your taste to produce — or on explicit /delegate [task]. Pick the mechanism (inline read-only, mailbox slot, Codex executor, parallel fan-out, isolated worktree), confirm the provider/model once, degrade to inline on provider failure. Keywords: /delegate, dispatch, byproducts, model routing."
 ---
 
 # delegate -- hand work to a sub-agent, keep the judgment
@@ -31,9 +31,9 @@ workflows*: a workflow skill may use `/delegate`; `/delegate` never says "use `/
 
 ## When to use
 
-Trigger whenever you're **about to do work yourself that a sub-agent could do**, or on an explicit
-`/delegate [task]`. No verbs -- with a task, assess and route it; with none, this is the ambient
-doctrine.
+Trigger when work is **well-scoped**, **returns a checkable artifact or conclusion**, and **does not
+need your taste to produce** — or on an explicit `/delegate [task]`. No verbs -- with a task, assess
+and route it; with none, this is the ambient doctrine.
 
 **Is it delegable?** All three must hold:
 - **well-scoped** -- you can state it self-contained, without your session history;
@@ -85,6 +85,11 @@ Judgment-heavy, ambiguous, or architectural work fails the third test -- do it i
 
 ## The decision tree -- pick the mechanism
 
+A target checkout is **held** when either (a) `<toplevel>/WORKSTREAM.md` exists, or (b) a
+`<toplevel>/.workstreams/*/WORKSTREAM.md` records `isolation: in-place` and its Coordinates
+`branch:` equals `git -C <toplevel> branch --show-current`. Codex (or any tree-writing executor)
+**must not** write a held tree.
+
 ```
 About to do work →
   Delegable? (well-scoped • returns a conclusion/artifact • you CHECK, don't PRODUCE)
@@ -92,28 +97,46 @@ About to do work →
     yes → What is the shape / payoff?
        ├─ read / analysis → a conclusion        → INLINE read-only sub-agent   (owned here)
        ├─ file-work, want it back clean,          → MAILBOX slot                (→ mailbox skill)
-       │   or worktree single-writer safety
+       │   or the target is held (single-writer)
        ├─ mechanical CODING → a diff             → CODEX executor              (references/codex.md)
+       │   only if the target is NOT held; else mailbox or isolated worktree
        ├─ N independent tasks at once            → PARALLEL fan-out            (owned here, below)
-       └─ delegate needs its own live build loop → ISOLATED worktree           (own branch; you merge)
+       └─ delegate needs its own live build loop → ISOLATED worktree           (walk below)
 ```
 
 - **Inline read-only sub-agent** -- for read/analysis grunt work that returns information, not a diff
   (broad searches, log triage, summarizing files). Cheapest dispatch; no slot needed. Craft a focused
   task that does **not** inherit your context; ask for a bounded summary.
-- **Mailbox slot** -- file-work you want back *without* polluting your context, or *safely in a worktree*
-  (the delegate is tree-read-only; only you write the tree). The artifact travels as a path you
-  `git apply`. See the **`mailbox`** skill for the protocol; don't re-document it.
-- **Codex executor** -- mechanical *coding* → a reviewable diff you gate and commit. See
-  **`references/codex.md`** (the `codex exec` invocation, granularity, review/trust discipline, the
-  sandbox-can't-reach-network gotcha).
+- **Mailbox slot** -- file-work you want back *without* polluting your context, or *safely when the
+  target is held* (the delegate is tree-read-only; only you write the tree). The artifact travels as a
+  path you `git apply`. See the **`mailbox`** skill for the protocol; don't re-document it. On a held
+  target this is also the path for mechanical coding you do not want in an isolated worktree.
+- **Codex executor** -- mechanical *coding* → a reviewable diff you gate and commit, **only when the
+  target is not held**. See **`references/codex.md`**. If the target is held, do not point `codex exec
+  -C` at it — mailbox or isolated worktree instead.
 - **Parallel fan-out** -- 2+ *independent* tasks (different files / subsystems / failures, no shared
   state). One read-only sub-agent per domain, all dispatched **concurrently in a single turn**, each
   with a self-contained prompt (no inherited context, no dependence on a sibling's result) and the
   bounded-summary return contract. You synthesize the results; if two tasks turn out to share
   state, they weren't independent -- run those sequentially instead.
-- **Isolated worktree** -- when the delegate needs its own live build/test (red-green) loop on its own
-  branch. Heaviest (compile/RAM); use when the local loop is worth it. You merge its branch.
+- **Isolated worktree** -- when the delegate needs its own live build/test (red-green) loop, or when
+  the target is held and a tree-writing executor must still run. Heaviest (compile/RAM). The walk
+  keys on the **target checkout** (`git rev-parse --show-toplevel` of the tree the artifact is for)
+  — it works on an unheld clone too. “Held” is only the Codex refuse above.
+
+  1. Slug the unit. Branch is `delegate/<slug>`. If that branch already exists → refuse and ask for
+     a new slug. Do not `-B`.
+  2. `<abs-path>` default is the sibling `<parent-of-target>/delegate-<slug>`. If that path exists
+     or is not writable → ask. Never a path inside the target.
+  3. Record **base** = `git -C <target> rev-parse HEAD`. Then
+     `git -C <target> worktree add <abs-path> -b delegate/<slug>`.
+  4. Dispatch with cwd = `<abs-path>`. The delegate may write and commit **there only**. Any
+     executor `-C` is `<abs-path>`.
+  5. You review `git -C <abs-path> log` + diff vs **base**, run the gate in that tree, then you
+     merge or cherry-pick into **target**. The delegate never merges into the target.
+  6. After land: `git -C <target> worktree remove <abs-path>`. If the worktree is dirty → refuse
+     remove and surface.
+
   The brief shape that has carried judgment-heavy sweeps cleanly: a **narrow, list-shaped brief**
   (the exact sites, the exact transform) plus an explicit **"flag same-pattern sites outside the
   brief — never silently expand scope"** clause; the flags come back as byproducts you triage.
@@ -144,11 +167,17 @@ Every delegation returns **three** compact things -- never the raw exploration:
      written rests on a wrong assumption. Escalate to a stronger model or a smaller re-scoped task --
      never a same-model retry of the unchanged dispatch (that treats a difficulty problem as if it
      were a transient provider hiccup).
-3. **Byproducts block** -- a small, structured list in `/backlog debrief`'s capture kinds, surfaced by
-   the delegate (it does a mini-debrief of its own slice):
-   - follow-up work → Backlog · defect noticed → bug record · project problem/risk → Issues ·
-     dev-experience observation → Feedback · **feedback about a skill itself → the skills' home
-     feedback channel, tagged by skill** (not a project tracker). **Empty is fine and explicit.**
+3. **Byproducts block** -- a small, structured list, surfaced by the delegate (it does a
+   mini-debrief of its own slice). The kinds live here:
+   - follow-up work
+   - defect
+   - project problem/risk
+   - dev-experience observation
+   - skill feedback (home channel, tagged by skill — not a project tracker)
+
+   **Empty is fine and explicit.** `/backlog debrief` is the workshop *drain* when that verb
+   exists; otherwise the project's own close-the-books sweep. Do not treat `/backlog` as the
+   vocabulary source.
 
 **Route on status, don't just relay it:**
 - **DONE** → proceed, but still re-establish trust from evidence (below) -- a self-reported DONE is not
@@ -156,15 +185,16 @@ Every delegation returns **three** compact things -- never the raw exploration:
 - **DONE_WITH_CONCERNS** → investigate the named doubt yourself before accepting; it is exactly the
   kind of specific, bounded claim worth five minutes of verification.
 - **NEEDS_CONTEXT** → re-dispatch with the missing piece filled in; log why the original prompt fell
-  short as a byproduct (an Issues/Feedback line) -- it improves the next prompt, not just this one.
+  short as a byproduct (a project problem/risk or a dev-experience observation) -- it improves the
+  next prompt, not just this one.
 - **BLOCKED** → escalate (bigger model / smaller task) on the first one or two; **three or more BLOCKED
   reports on re-scoped attempts of the same underlying task means the task or the plan itself is
   wrong, not the model** -- stop re-scoping and take it back to whoever owns the plan, the same
   "question the fundamentals, not the Nth attempt" shape `debugger` uses for a run of failed fixes.
 
 **Stash returned byproducts into your running capture notes immediately** (as you would your own
-discovered follow-ups) so they survive context compaction to the end-of-work `/backlog debrief`. They land
-back in your context by contract, so debrief needs no special handling.
+discovered follow-ups) so they survive context compaction to the host's close-the-books sweep. They
+land back in your context by contract, so that sweep needs no special handling.
 
 **Weak model = weak detector.** A cheap delegate spots fewer byproducts than you would. "Report anything
 that looked like a bug / follow-up / friction" is a low bar most models clear, but **byproduct-rich or
@@ -199,17 +229,21 @@ confirmed up front (a runtime error is knowable; next week's quota was not). Cla
   never block the whole loop on one failed dispatch.
 
 **Log every fallback as a byproduct** (route X failed → fell back to Y) in the return contract's
-byproducts block → ISSUES / FEEDBACK. A fallback is also a signal the confirmed route has gone stale and
-may need re-confirming -- the same observable fact, surfaced to whoever owns the route.
+byproducts block (a project problem/risk or a dev-experience observation). A fallback is also a
+signal the confirmed route has gone stale and may need re-confirming -- the same observable fact,
+surfaced to whoever owns the route.
 
 ## The spawn seam (the one harness-specific step)
 
 The protocol above is harness-neutral; only *how you spawn a sub-agent on the named model* differs.
 "Model" is an **opaque per-harness string** -- pass it to the spawn, never interpret it.
 
-- **Claude orchestrator** → native sub-agent (Task tool) with a model override; for coding, `codex exec`.
+- **Claude orchestrator** → native sub-agent (Task tool) with a model override. For coding: run the
+  held-tree check first. If the target is held → mailbox or isolated worktree; never `codex exec -C`
+  against the target. If the route is isolated worktree, `codex exec -C` is that worktree's
+  `<abs-path>`. If the target is unheld → `codex exec -C <target>` is allowed.
 - **Codex orchestrator** → no native model-routed sub-agent, so `codex exec --model <m>` subprocess **is**
-  the delegation primitive (for both analysis and coding).
+  the delegation primitive (for both analysis and coding), under the same held-tree refuse.
 
 ## Anti-patterns
 
@@ -222,8 +256,10 @@ The protocol above is harness-neutral; only *how you spawn a sub-agent on the na
 - **Trusting the self-report** -- accepting "tests pass" instead of running the gate yourself.
 - **Same-model retry of a BLOCKED task** -- re-running the identical dispatch and hoping for a
   different result. BLOCKED means the task or model doesn't fit; escalate or re-scope, don't repeat.
-- **Delegate edits a shared worktree** -- silent corruption (its cwd is the repo root, not the worktree).
-  Tree-read-only; it writes only its slot. You are the sole tree writer.
+- **Delegate edits a held / shared worktree** -- silent corruption (its cwd is often the repo root,
+  not the worktree you meant). A held target is mailbox (tree-read-only; it writes only its slot;
+  you apply) or an isolated worktree the dispatch owns. Isolated-worktree writes are allowed. You
+  remain the sole writer of the **target**.
 - **Delegating taste** -- judgment-heavy / ambiguous / architectural work needs your reasoning to
   *produce*, not just to check.
 
@@ -235,7 +271,7 @@ The protocol above is harness-neutral; only *how you spawn a sub-agent on the na
 | pick mechanism | inline sub-agent / mailbox slot / codex / parallel fan-out / isolated worktree |
 | route | compute checkable facts; **confirm the provider/model** with the human (once → session pref) |
 | dispatch | self-contained task, no inherited context; on the confirmed model |
-| return | deliverable (tiny) + status (DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED) + byproducts block (debrief taxonomy, empty OK); stash byproducts now |
+| return | deliverable (tiny) + status (DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED) + byproducts (follow-up / defect / problem-risk / observation / skill feedback; empty OK); stash now |
 | trust | re-establish from diff / gates / output -- never the self-report, even a DONE one |
 
 ## Edges
@@ -253,3 +289,9 @@ with no captured items to surface, the exact thing registration exists for. All 
 - handoff: — (none; delegate routes a task, it doesn't terminate a workflow expecting a landing step)
 - consumes: — (none; it reads the caller's task description, not another skill's typed output)
 <!-- /edges:delegate -->
+
+## Done when
+
+Mechanism picked; route confirmed or pre-confirmed; return contract received (deliverable +
+status + byproducts); trust re-established from evidence; byproducts stashed. If the route
+failed: fallback or floor named.

@@ -1,6 +1,6 @@
 ---
 name: notepad
-description: "Use when the user runs `/notepad`, asks to write down a project fact, look up or update existing notes, supersede a note that is no longer true, or drop a note with no successor. Keywords: note, notes, notepad, write this down, how does this work, project memory, capture this fact."
+description: "Use when the user runs `/notepad`, asks to write down a project fact, look up or update existing notes, supersede a note that is no longer true, or drop a note with no successor. Keywords: notepad, write this down, project memory, capture this fact."
 ---
 
 # notepad — project memory
@@ -47,11 +47,14 @@ session scratch that must not persist.
 - **`note-mint.sh` is the one minter.** Always call it (from this
   skill's own `scripts/`, never a host path). It uses deployed
   `records.sh` when that file is executable; otherwise it writes the
-  contract shape itself (`fill` + slug/collision matching the format
-  authority's `cmd_new`). Never write `history.tsv` by hand.
-- **Cite the record contract; do not restate it** (the format
-  authority's SKILL.md, *The record contract*): five front-matter keys,
-  status vocabulary, record-link form `→ <store>/<file>.md`.
+  contract shape itself (matching this package's `fill` +
+  slug/collision). Never write `history.tsv` by hand.
+- **The record contract (this package).** Front-matter keys:
+  `doctype`, `status`, `created`, `updated`, `tags`. Live statuses:
+  `open`, `current`. Closed statuses: `done`, `dropped`,
+  `superseded`, `consumed`. Record-link form:
+  `→ <store>/<file>.md`. Do not send the agent to another skill's
+  `SKILL.md`.
 - **Resolve the commit tree, then commit there.** `<root>` is
   `git rev-parse --show-toplevel` of the checkout that holds the notes
   you wrote — never a different clone, and never the repo's root
