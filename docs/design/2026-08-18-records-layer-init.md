@@ -1,6 +1,6 @@
 ---
 doctype: design
-status: open
+status: current
 created: 2026-08-18
 updated: 2026-08-18
 tags: [spec]
@@ -8,9 +8,10 @@ tags: [spec]
 
 # records-layer init — Spec
 
-Finalized for independent review 2026-08-18 on stream
-`grok`. Status stays `open` until that review and the
-human accept it.
+Accepted 2026-08-18 on stream `grok` after four
+independent `/blueprint review` passes. Human
+approved; this spec doubles as the plan. Next:
+execute Slice 1.
 
 Settled 2026-08-18 on stream `grok`. Human brief: pack skills that
 create records must write them to the project's **agent-records
