@@ -214,3 +214,28 @@ genesis winner (`blueprint`).
 | deploy this spec (founding file in cwd) | `blueprint` | `blueprint` |
 | deploy the workshop / set up the agent framework on this existing repo | `clankshop` | `clankshop` |
 | stand up the development system on this project | `clankshop` | `clankshop` |
+
+**2026-08-18 (analyst joins the pack, feat stream)** — new-skill routing battery
+(descriptions only; fresh cold-router sub-agent; 15-skill roster). **12/12 routed
+as expected, zero misroutes.** The boundary this battery exists to test is
+`analyst` vs `auditor` — informing vs judging — and it held in both directions:
+"how good is the code, score it" → `auditor`, "is this project healthy?" →
+`analyst`. The router named `analyst`'s "renders no quality score" clause as what
+tipped the vaguer health prompt, so that clause is load-bearing — do not trim it.
+Two mediums flag genuine prompt vagueness ("healthy", "what's blocked"), not
+description defects.
+
+| prompt | expects | pick |
+|---|---|---|
+| catch me up after two weeks away | `analyst` | `analyst` |
+| how good is the code in this repo? score it | `auditor` | `auditor` |
+| give me a report on the auth subsystem | `analyst` | `analyst` |
+| the test suite is failing — figure out why | `debugger` | `debugger` |
+| what's the state of things right now? what's blocked? | `analyst` | `analyst` (medium; runner-up `backlog`) |
+| walk me through how the plugin system works | `analyst` | `analyst` |
+| is this project healthy? | `analyst` | `analyst` (medium; runner-up `auditor`) |
+| close this plan record and log it | `journal` | `journal` |
+| write down that we should refactor the parser later | `backlog` | `backlog` |
+| audit the codebase for quality issues and file findings | `auditor` | `auditor` |
+| summarize what shipped last month | `analyst` | `analyst` |
+| explain how OAuth works (general concept) | none | none |
