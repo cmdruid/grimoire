@@ -14,6 +14,14 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-21 — mint scripts still emit `records-root=` on stdout
+- **source:** grok stream, records-layer init debrief (2026-08-18).
+- **status:** open
+- **body:** `note-mint.sh` and `record-mint.sh` still print `records-root=<path>` so existing
+  verb consumers keep working. Doctrine's new fact key is `agent-records=`. Rename on the
+  next edit of each script (same "until that script is edited" rule as `workstream-git.sh`,
+  which now prints both). Not blocking.
+
 ### BL-20 — `records.sh check` follows example links inside code blocks; the clankshop gate is red on `main`
 - **source:** `feat` stream, post-rebase full gate (2026-08-18). Reproduced on `main` @ `420488f`
   with no stream code involved — `bash skills/clankshop/scripts/tests/setup-journal-test.sh` →
