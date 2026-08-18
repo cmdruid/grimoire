@@ -31,7 +31,7 @@ pack manifest (`skills/clankshop/PACK.md`): the pack **face** (`clankshop`) carr
 handbook and the four **stations** — `design` (the architect), `build` (the foreman), `test` (the
 guardian), `review` (the admin) — with system verbs (`setup` / `migrate` / `check`) and persona
 summons; **helpers** — `blueprint` (specification spine), `contractor` (job lead), `journal` (the records format authority —
-the one required member), `backlog` (the follow-up lifecycle), `workstream` (development
+the one required member), `backlog` (the follow-up lifecycle), `notepad` (project memory), `workstream` (development
 streams), `auditor` (code-quality audits), `debugger` (root-cause diagnostics); **utilities** —
 `checkpoint`, `mailbox`, `delegate`, `scheduler`. `skill-builder` is a category of one: the
 **toolmaker** — it stewards the skills in this library themselves (scaffold new ones, audit
@@ -51,6 +51,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `journal` | the records format authority: eight typed stores + the record contract + `records.sh` + the history ledger; setup, done, substrate curate |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
+| `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |

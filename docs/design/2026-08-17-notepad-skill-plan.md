@@ -65,7 +65,7 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
 
 ## Slices
 
-- [ ] **Slice 1: mint without records.sh (the tracer)** <requires: —>
+- [x] **Slice 1: mint without records.sh (the tracer)** <requires: —>
 
   - Files:
     - Create: `skills/notepad/templates/notes.md` (copy of
@@ -126,7 +126,7 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
 
     Run: `cd <worktree> && /bin/bash skills/notepad/scripts/tests/run.sh`
 
-- [ ] **Slice 2: opportunistic records.sh** <requires: 1>
+- [x] **Slice 2: opportunistic records.sh** <requires: 1>
 
   - Files:
     - Modify: `skills/notepad/scripts/note-mint.sh`
@@ -174,7 +174,7 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
     Run: `cd <worktree> && /bin/bash skills/notepad/scripts/tests/run.sh`
     Expected: all previous plus the new cases pass.
 
-- [ ] **Slice 3: skill package (write / find / supersede / drop)** <requires: 2>
+- [x] **Slice 3: skill package (write / find / supersede / drop)** <requires: 2>
 
   - Files:
     - Create: `skills/notepad/SKILL.md`
@@ -221,7 +221,7 @@ Spec: `docs/design/2026-08-17-notepad-skill.md`
       closed-duplicate refuse, empty find, supersede-without-successor,
       drop. Do not add shell fixtures for those agent procedures.
 
-- [ ] **Slice 4: cutover + pack wiring** <requires: 3>
+- [x] **Slice 4: cutover + pack wiring** <requires: 3>
 
   - Files:
     - Delete: `skills/backlog/verbs/note.md`

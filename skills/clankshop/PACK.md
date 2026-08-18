@@ -1,9 +1,9 @@
 ---
 name: clankshop
-version: 2.2.0
+version: 2.3.0
 description: "An agentic workshop for a code project: doctrine, records, and routing deployed as four stations (design/build/test/review), with helpers for planning, records, follow-ups, streams, audits, and debugging."
 required: journal
-optional: auditor, backlog, blueprint, contractor, debugger, delegate, checkpoint, mailbox, scheduler, workstream
+optional: auditor, backlog, blueprint, contractor, debugger, delegate, checkpoint, mailbox, notepad, scheduler, workstream
 ---
 
 # clankshop — the workshop pack
@@ -29,6 +29,7 @@ The v2 roster, by coupling tier (how much workshop a skill needs):
 | helper | `contractor` | one job: roadmap / plan / runbook / review / build |
 | helper | `journal` | **the records format authority** — stores, the record contract, templates, `records.sh`, the history ledger; required (setup delegates records standup to it) |
 | helper | `backlog` | the follow-up lifecycle — capture by kind, tickets, debriefs, tracker grooming; a client of the deployed records layer |
+| helper | `notepad` | project memory — write, find, update, supersede, and drop durable facts in `notes/` |
 | helper | `workstream` | long-lived development streams — worktrees, queues, shipping |
 | helper | `auditor` | code-quality audits; drains findings into the records when a workshop is present |
 | helper | `debugger` | root-cause debugging anywhere; guided by the test station's diagnostics when present |
@@ -54,6 +55,7 @@ renames have landed. The Phase 6 split then stood `backlog` up as the follow-up 
 (the name re-minted — v1's `backlog` was the records instrument that became `journal`) and
 **retired the v1 `bug`/`task` capture proxies** — capture routes through `/backlog` directly.
 **2.2.0:** `blueprint`'s plan/roadmap verbs moved to `contractor`.
+**2.3.0:** `notepad` — project memory; `/backlog note` retired.
 
 **One library skill is deliberately not a member:** `skill-builder`, the toolmaker steward for
 the skills library itself — a maintainer's tool for whoever authors skills, not part of the

@@ -15,8 +15,10 @@ home; capture broadly and honestly, let the loop sift meaning later.
    - the conversation — follow-ups spoken but never filed, surprises, gotchas, dev-experience
      friction, facts worth persisting, open questions for the human.
 3. **Route each item by kind, write-only** — apply the matching capture verb's procedure
-   (`task`/`bug`/`issue`/`feedback`/`note`/`ticket`) with its commit step **skipped**; the
-   sweep commits once. Skip what is already recorded; a duplicate line is curation debt.
+   (`task`/`bug`/`issue`/`feedback`/`ticket`) with its commit step **skipped**; durable
+   facts go through notepad `write` write-only (print `path=` / `rel=`; this sweep
+   commits). The sweep commits once. Skip what is already recorded; a duplicate line is
+   curation debt.
 4. **Close what completed**: records this work finished get
    `records.sh done <path> [--as <disposition>] --note "<one line>"`; tracker line-items get
    the contract's completed form + `records.sh touch` (no ledger line for the line-item).

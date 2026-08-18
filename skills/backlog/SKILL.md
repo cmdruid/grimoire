@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: "The follow-up lifecycle over a project's records layer — capture by kind (`/backlog task|bug|issue|note|feedback` → tracker lines + dated records), `ticket` (escalate to the human), `debrief` (sweep a finished body of work; route every byproduct to its durable home), and tracker-side `curate` (groom the Backlog/Issues/Feedback trackers). Use when the user runs `/backlog ...`, files a follow-up, defect, fact, or observation, escalates to the human, sweeps finished work before a reset, or grooms the trackers. Requires a stood-up records layer — it guards rather than standing one up."
+description: "The follow-up lifecycle over a project's records layer — capture by kind (`/backlog task|bug|issue|feedback` → tracker lines + dated records), `ticket` (escalate to the human), `debrief` (sweep a finished body of work; route every byproduct to its durable home), and tracker-side `curate` (groom the Backlog/Issues/Feedback trackers). Use when the user runs `/backlog ...`, files a follow-up, defect, or observation, escalates to the human, sweeps finished work before a reset, or grooms the trackers. Requires a stood-up records layer — it guards rather than standing one up."
 ---
 
 # backlog — the follow-up lifecycle
@@ -39,7 +39,6 @@ selected, **read `verbs/<verb>.md` and follow it**; do not reconstruct a procedu
 | `/backlog bug` | `verbs/bug.md` | File a reproducible **defect** → a dated `bugs/` record (+ a tracker line when it needs scheduling) | "file a bug", "this is broken — repro" |
 | `/backlog issue` | `verbs/issue.md` | Capture a **project** problem/concern/limitation → an **Issues** tracker line | "known limitation", "architectural risk" |
 | `/backlog feedback` | `verbs/feedback.md` | Capture a **dev-experience** observation → a **Feedback** tracker line | "the gate is too slow", "docs heavy" |
-| `/backlog note` | `verbs/note.md` | Capture a durable **project fact** → a dated `notes/` record | "capture this fact", "write down how this works" |
 | `/backlog ticket` | `verbs/ticket.md` | **Escalate to the human** → a dated `tickets/` record (ask + context; resolution closes it) | "escalate this to me", "needs my sign-off" |
 | `/backlog debrief` | `verbs/debrief.md` | **Sweep** a finished body of work; route every byproduct to its home | "wrap up before I reset", "capture what surfaced" |
 | `/backlog curate` | `verbs/curate.md` | **Groom the trackers** — dedupe, sharpen, re-rank, flip stale line-items (hygiene, never draining) | "tidy the backlog", "reprioritize what's left" |
@@ -54,7 +53,7 @@ is (or run the debrief if the intent is "capture everything that surfaced").
   hand-stamp front-matter, never write `history.tsv` by hand (per the contract, `records.sh
   done` is its sole writer).
 - **Backlog owns its stores' templates and lazy-deploys them** (the contract's template
-  convention): before minting into `bugs`, `notes`, `tickets`, or `trackers`, copy this skill's
+  convention): before minting into `bugs`, `tickets`, or `trackers`, copy this skill's
   bundled `templates/<doctype>.md` into `<records-root>/templates/` when absent — the deployed
   copy is what `records.sh new` mints from, and it travels with the layer thereafter.
 - **The three canonical trackers**, found by title and created lazily on first capture
