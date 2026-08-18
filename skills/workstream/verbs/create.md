@@ -115,6 +115,10 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
        principle, toolbox, hard-won lessons, the template's own user/conventions block) into the hand-off body
        so the instance is self-contained; the per-unit sections (TL;DR, Queue state, What's been done)
        start blank.
+     - **`<debrief>`:** run the *Host layout* probe (`.handbook/README.md`
+       carries `Seeded from clankshop`?). Stamp present → write `/backlog debrief`.
+       Absent → write `the project's own close-the-books sweep (do not invoke /backlog)`.
+       Recycle re-applies this fill (it re-runs this step).
      Do NOT commit it; do NOT seed it on the root.
    - Make it ignored from inside the worktree — **idempotently** — by running this skill's bundled
      `scripts/worktree-exclude.sh <root>/.workstreams/<stream>` (resolve `scripts/` from the skill's

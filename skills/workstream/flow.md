@@ -282,14 +282,14 @@ hand-off's *Phase model map*). The three phases, each ending `save -> park -> re
 > (`/model <m>`), `/clear`, `/workstream load <stream>`."
 >
 > **BUILD** (build-model) — `/contractor build` when a contractor plan exists; otherwise the
-> host lane walks the spec's slices. Then `/backlog debrief` #1 (the
-> feature's follow-ups). Then act on *Ship cadence*: **at a landing point**, **save** (`Phase: ship`)
+> host lane walks the spec's slices. Then debrief #1 (the hand-off's filled `<debrief>`
+> command — `SKILL.md` *Host layout*; the feature's follow-ups). Then act on *Ship cadence*: **at a landing point**, **save** (`Phase: ship`)
 > -> park for the ship-model swap. **Between landing points**, **save** (`Phase: plan` for the *next*
 > feature) -> park for the plan-model swap. (Completed features still accumulate on the branch; only
 > SHIP lands.)
 >
-> **SHIP** (ship-model) — `/workstream ship` (land + advance the queue), *(if eventful)* `/backlog debrief`
-> #2. Under a deferred *Ship cadence* this one SHIP phase lands the **whole accumulated batch** (every
+> **SHIP** (ship-model) — `/workstream ship` (land + advance the queue), *(if eventful)* debrief
+> #2 (the hand-off's filled `<debrief>` command — `SKILL.md` *Host layout*). Under a deferred *Ship cadence* this one SHIP phase lands the **whole accumulated batch** (every
 > feature built since the last ship), not just one. Then **save** (`Phase: plan`) -> park for the
 > plan-model swap -> reset into the next feature's PLAN.
 
