@@ -1,6 +1,6 @@
 # ③ TUI v0.1 — Phase 1 implementation plan: grimoire-pack first-consumer additions
 
-**Status:** draft (2026-08-15). Phase 1 of `docs/design/2026-08-15-tui-v0.1-roadmap.md`
+**Status:** shipped (2026-08-15). Phase 1 of `docs/design/2026-08-15-tui-v0.1-roadmap.md`
 (sequencing 1→2→3→4; this phase blocks Phase 2's `grimoire-core`). Built on the `app`
 workstream branch. Spec: `docs/spec/pack-format.md` (draft 5, format 1).
 
@@ -392,11 +392,11 @@ after.
 
 ## Phase gate (the roadmap's Phase 1 exit criteria)
 
-- [ ] New unit tests green; **the pre-existing 36 tests green unmodified** (the compatibility
+- [x] New unit tests green; **the pre-existing 36 tests green unmodified** (the compatibility
       proof — a changed old test means the wrapper broke behavior).
-- [ ] `cargo test` and `cargo clippy --all-targets -- -D warnings` green **from the repo root**.
-- [ ] `tests/clankshop.rs` still pins the live pack, and now also pins 1-pack/0-issue
+- [x] `cargo test` and `cargo clippy --all-targets -- -D warnings` green **from the repo root**.
+- [x] `tests/clankshop.rs` still pins the live pack, and now also pins 1-pack/0-issue
       enumeration under the fixtures rule.
-- [ ] `install.sh` untouched (no shell-side change in this phase) and
+- [x] `install.sh` untouched (no shell-side change in this phase) and
       `skills/skill-builder/scripts/skills-lint.sh` unchanged at `fails=0`.
-- [ ] No spec edit in the diff.
+- [x] No spec edit in the diff.
