@@ -1,6 +1,6 @@
 ---
 template: diagnostics
-use-when: "How healthy is the project / project health snapshot / what's the state of the build, tests, and record hygiene. Facts about health, not a quality score."
+use-when: "Is the project healthy — are builds and tests passing, are defects and stale records piling up. Health and hygiene facts, never a quality score. For what WORK is in flight or blocked, use the status snapshot instead."
 inputs: audit-reports, bug-records, stale-records, trackers, gate-state
 ---
 

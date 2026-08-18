@@ -1,6 +1,6 @@
 ---
 template: status
-use-when: "Where do things stand right now / what's in flight / what's blocked. A snapshot of the present, with no time span."
+use-when: "What work is in flight, blocked, or queued right now. A snapshot of the present with no time span — about WORK and its blockers, not about build/test health (that is the health snapshot)."
 inputs: trackers, open-records, streams
 ---
 

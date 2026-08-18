@@ -40,9 +40,9 @@ EOF
 mkdir -p "$FIX/.records/scripts" "$FIX/.records/templates" "$FIX/.records/trackers"
 
 # Two closures in span, one long before it.
-mk_record plans   2026-08-10-planted-feature done      2026-08-10
-mk_record plans   2026-08-12-second-feature  done      2026-08-12
-mk_record plans   2026-01-05-ancient-work    done      2026-01-05
+mk_record plans   2026-08-10-planted-feature "done"      2026-08-10
+mk_record plans   2026-08-12-second-feature "done"      2026-08-12
+mk_record plans   2026-01-05-ancient-work "done"      2026-01-05
 # An open record inside the span, and a stale open one.
 mk_record design  2026-08-14-open-design     open      2026-08-14
 mk_record bugs    2026-02-01-stale-bug       open      2026-02-01

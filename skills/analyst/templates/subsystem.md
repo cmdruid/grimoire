@@ -1,6 +1,6 @@
 ---
 template: subsystem
-use-when: "What's the state of <a module, component, or domain> / report on <subsystem>. A deep-dive on one named part of the codebase."
+use-when: "Report on the current state and history of <a module, component, or domain> — for someone who already works here and needs its condition, decisions, and known problems. To TEACH the topic to a newcomer instead, use the guide."
 inputs: records, git, code
 ---
 

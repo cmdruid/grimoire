@@ -1,6 +1,6 @@
 ---
 template: guide
-use-when: "Introduce me to / walk me through / explain how <this project or a part of it> works. An orientation for someone new to the topic, anchored in this codebase."
+use-when: "Teach someone new how <this project, or a part of it> works, and how to use it. Orientation, not a state report. Only for topics anchored in this codebase — a general technical concept with no anchor here matches NOTHING in this catalog."
 inputs: records, docs, code
 ---
 

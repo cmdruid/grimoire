@@ -28,10 +28,11 @@ The live catalog is `<records-root>/templates/analyst/` when deployed, else this
 `templates/`. **Deployed wins** — a project customizes its reports by editing the deployed copy,
 and host-added templates join the catalog the same way.
 
-Deploy is **lazy**: on the first workshop-host run, copy any bundled template absent from the
-deployed directory. **Never overwrite a deployed file** — a customized template is the project's,
-and an upgrade is a judgment-assisted diff the human runs, not a silent replace. On a host with
-no records root, read the bundled templates in place; deploy nothing, refuse nothing.
+Deploy is **lazy** and mechanical: run `scripts/analyst-deploy.sh <root>` on the first
+workshop-host use. It copies only the bundled templates *absent* from the deployed directory and
+**never overwrites** — a customized template is the project's, and an upgrade of one is a
+judgment-assisted diff a human runs, never a silent replace. On a host with no records root it
+deploys nothing and reports so; read the bundled templates in place. It refuses nothing.
 
 Each template's front-matter carries `template:` (its token), `use-when:` (the routing
 descriptor), and `inputs:` (the facts it needs). Its body carries the gathering and synthesis

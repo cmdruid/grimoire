@@ -63,7 +63,6 @@ setup() {
   RR_REL="$(resolve_records_root "$ROOT")"
   RR="$ROOT/$RR_REL"
   LEDGER="$RR/history.tsv"
-  RECORDS_SH="$RR/scripts/records.sh"
   if [ -d "$RR" ]; then RECORDS_LAYER=present; else RECORDS_LAYER=absent; fi
   if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then GIT=present; else GIT=absent; fi
   echo "root=$ROOT"
