@@ -8,93 +8,193 @@ tags: [spec]
 
 # `analyst` — reports and briefings for the developer — Spec
 
-_Draft weight (brainstorm output, 2026-08-18): Problem/Goal argued, Approach sketched, open
-questions at the foot. `grill`/`spec` resolves them._
+_Spec weight (grilled 2026-08-18; all open branches resolved with the human). Awaiting the
+user-review gate._
 
 ## Problem
 
 The workshop's records layer is write-heavy and read-poor. A project accumulates a complete
 account of its own history — the `history.tsv` closure ledger, closed plans, debrief reports,
 ADRs, live trackers — but **nothing synthesizes that account for the developer**. Catching up
-("what happened here since I last looked?", "what's the state of subsystem X?", "what shipped
-this month and what's still open?") is manual archaeology across stores, git log, and trackers.
-Every existing pack member either writes the record (journal, backlog, workstream debriefs) or
-judges the code (auditor); no member reads the record back and *informs*.
+("what happened here since I last looked?", "what's the state of subsystem X?", "how does this
+project's auth flow work?") is manual archaeology across stores, git log, and trackers. Every
+existing pack member either writes the record (journal, backlog, workstream debriefs) or judges
+the code (auditor); no member reads the record back and *informs*.
 
 ## Goal
 
-`/analyst` produces **developer-facing briefings and reports**: a catch-up briefing over a time
-span, a shipped-work digest, a state-of-a-subsystem report — synthesized from the records layer
-plus git history, curated and translated into readable prose. The developer asks a question about
-their own project and gets an argued answer, not a pile of pointers.
+`/analyst` produces **developer-facing reports and briefings**, selected from a customizable
+template catalog: a span catch-up, a status snapshot, a subsystem deep-dive, a project health
+snapshot, a topic guide — synthesized from the records layer plus git history, curated and
+translated into readable prose. The developer asks a question about their own project and gets
+an argued answer, not a pile of pointers.
 
-## Decisions already settled (brainstorm, 2026-08-18)
+## Approach
 
-- **Name: `analyst`.** Trade-role register (contractor, auditor, debugger, analyst). Settled by
-  the human over `chronicler` (vetoed), herald/gazette/publisher/envoy (passed over).
-- **Audience: the developer.** Inward-facing intelligence. **Release engineering is out of
-  scope** — changelogs, release notes, version bumps, tagging are *user*-facing artifacts and a
-  possible later skill; analyst does not carry them.
-- **A new skill, not journal verbs.** Journal is the format authority; all its verbs are
-  substrate-side (setup/done/curate). Every consumer of the layer is deliberately a client (the
-  Phase 6 backlog split established exactly this boundary). Analyst is the first member that
-  reads the records layer to *synthesize*, and its judgment (audience, salience, translation) is
-  a different job from format authority. Folding it into journal would also bloat the pack's one
-  `required:` member with optional functionality.
-- **Routing line vs `auditor`:** **auditor judges** (scores code against a rubric, drains
-  findings); **analyst synthesizes and informs** (reports state and history, renders no quality
-  verdict). The `description:` must make "report on / brief me on the codebase" route to analyst
-  and "how good is this code" route to auditor.
+A **read-only, template-driven consumer** of the records layer + git. The skill body is a thin
+engine; the report kinds live in a **template catalog** (the agent-council briefs pattern,
+settled by the human 2026-08-18): each template is one file pairing a routing descriptor, a
+gathering/synthesis procedure, and an output skeleton. Adding a report kind is adding a
+template, not a verb.
 
-## Approach (sketch)
+**Alternatives rejected** (all settled 2026-08-18):
 
-A **read-only consumer** of the records layer + git, structured like the pack's other
-fact-then-judgment skills:
-
-1. **Span/scope facts, token-free.** A bundled script (the `workstream-git.sh` pattern) computes
-   the raw feed: ledger lines since an anchor (a date, a tag, the last briefing), closed records
-   in span, tracker deltas, commit counts by area. Facts, not verdicts.
-2. **Follow the links.** A ledger line is a closure fact; the substance lives in the closed
-   record (plan goal, debrief report, ADR). The analyst reads what the span's facts point at.
-3. **Curate + synthesize — the judgment step.** Select what the developer needs, group it, and
-   translate record-speak into a readable briefing. This step is why it is a skill and not a
-   `records.sh` subcommand.
-4. **Deliver.** In context by default; optionally persisted as a `reports/` record (the store
-   already exists and carries the contract) when the briefing is worth keeping.
-
-**Standalone degrade** (no workshop): fall back to git history + the project's own docs — weaker
-input, same synthesis job. No refusal, per the pack's standalone rule.
-
-**Alternatives rejected:** journal verbs (boundary — above); a `records.sh report` subcommand
-(steps 3–4 need judgment, not templating); folding into auditor (different job: informing vs
-judging — and auditor is rubric-calibrated, analyst is question-shaped).
+- **Journal verbs.** Journal is the format authority; all its verbs are substrate-side
+  (setup/done/curate), and every consumer of the layer is deliberately a client — the Phase 6
+  backlog split established exactly this boundary. Analyst's judgment (audience, salience,
+  translation) is a different job, and folding it in would bloat the pack's one `required:`
+  member with optional functionality.
+- **A `records.sh report` subcommand.** Curation + translation need judgment, not templating.
+- **Folding into auditor.** Different job: **auditor judges** (scores against a rubric, drains
+  findings); **analyst synthesizes and informs** (renders no quality verdict). This line is
+  load-bearing for routing (see *Boundaries*).
+- **Verb-per-report-kind surface.** Rejected for the template catalog — a fixed verb set makes
+  every new report kind a SKILL.md change; the catalog makes it a dropped-in file.
+- **Release engineering scope** (changelogs, release notes, tags — the original `chronicler`
+  sketch). Out of scope: those are *user*-facing maintained artifacts and a possible later
+  skill; analyst's audience is the developer. (Name `chronicler` vetoed; `analyst` settled.)
 
 ## Mechanism
 
-_To be argued at spec weight — see open questions._
+### Surface
+
+```
+/analyst <template-token> [args]     # direct pick: briefing | status | subsystem | diagnostics | guide
+/analyst <free text>                 # classified inline against the catalog's descriptors
+```
+
+**Classification is inline judgment against deployed descriptors** (settled 2026-08-18 over a
+dispatched classifier prompt): each template's front-matter carries a one-line `use-when:`
+descriptor; the resident agent matches free text against the catalog and **asks when ambiguous**
+— never guesses between two plausible templates. (Divergence from agent-council noted
+deliberately: council classifies a *target file's kind*, which is mechanically detectable, so it
+uses a script; a free-text *question* is not mechanically classifiable, so analyst's classifier
+is honest judgment, kept cheap and inline.)
+
+### Template catalog (v1)
+
+One file per kind. Front-matter: `template:` (token), `use-when:` (routing descriptor),
+`inputs:` (which stores/facts feed it). Body: gathering + synthesis instructions, then the
+output skeleton (contract-conformant so a persisted copy drops into `reports/` unchanged).
+
+| token | shape | inputs | line |
+|---|---|---|---|
+| `briefing` | span catch-up: shipped, changed, open/blocked since an anchor | ledger span + closed records + tracker deltas + commit summary | the flagship |
+| `status` | now-snapshot: in-flight, open/blocked, tracker state | trackers + open records + active streams | no span |
+| `subsystem` | deep-dive: state of a named module/domain | records + git + **code as grounding** | no quality verdict |
+| `diagnostics` | **project health snapshot**: build/test/gate state, open bugs records, stale records, tracker debt | mechanical health facts | facts only — no rubric scoring (auditor's), no root-causing (debugger's) |
+| `guide` | introduces a topic: a subsystem, the project itself, a convention it uses | records + docs + code as grounding | **project-anchored only** — general-concept tutoring is out of scope |
+
+(Diagnostics = health-snapshot scope and guide = project-anchored both settled 2026-08-18.)
+
+### Deployment & customization
+
+- **Lazy-deploy to `<records-root>/templates/analyst/`** on first workshop-host use (settled
+  2026-08-18): the deployed copies are the live catalog, exposed so the project can customize
+  them — tune a template's emphasis, sections, even its `use-when:` routing. **Deployed wins;
+  bundled is the fallback.** Upgrades never overwrite a deployed copy (judgment-assisted diff,
+  the handbook-seed rule).
+- **Host-added templates** land in the same directory and enter the catalog scan — extensibility
+  and customization are one mechanism.
+- **Journal seam:** `templates/` in the records root is journal's territory as format authority.
+  This spec extends the convention: *a skill may own a namespaced template set under
+  `templates/<skill>/`*. The build must check journal's contract wording doesn't contradict this
+  and add the one-line extension where the convention is documented.
+- **Standalone host** (no records root): read the bundled templates in place — no deploy, no
+  refusal, per the pack's standalone rule.
+
+### The engine (per invocation)
+
+1. **Resolve the template** — explicit token, or inline classification vs the deployed catalog's
+   descriptors; ambiguous → ask.
+2. **Gather facts, token-free.** A bundled `scripts/analyst-facts.sh` (the `workstream-git.sh`
+   pattern: read-only, `key=value` facts + evidence, never verdicts) computes the raw feed the
+   template's `inputs:` names: ledger lines in span, closed/open record lists, tracker deltas,
+   commit counts by area, gate/test status where cheaply obtainable.
+3. **Follow the links.** A ledger line is a closure fact; the substance lives in the record it
+   points at (plan goal, debrief report, ADR). Read what the span's facts point at — scaled to
+   the template (a status snapshot reads trackers; a guide reads the named domain's docs + code).
+4. **Curate + synthesize — the judgment step.** Select what the developer needs, group it,
+   translate record-speak into readable prose per the template's instructions, into its output
+   skeleton. Claims cite their sources (record paths, `file:line`) — a briefing is checkable,
+   not vibes.
+5. **Deliver.** In context by default; persist per the policy below.
+
+**Span anchor (`briefing`)** (settled 2026-08-18): an explicit span wins ("since Monday",
+"since v0.3"); absent, anchor to the **last persisted briefing record** if one exists, else a
+stated **default window (~14 days)**. No hidden state file — the anchor actually used is always
+named in the output.
+
+**Persistence** (settled 2026-08-18): **ephemeral by default, opt-in persist** — a report lands
+in `reports/` (minted via `records.sh new reports`, tagged with its template token) when the
+human asks, and **always when run headlessly** (a scheduler tick has no surviving context, so
+persisting is the point). Standalone host: the project's own docs home, confirmed once.
+
+**Depth dial:** default inline. For a large span or a broad subsystem, fan out read-only readers
+per the session's confirmed delegation route (facts stay single-location; readers return bounded
+summaries). Never an editing subagent — analyst is read-only except for minting a `reports/`
+record and the lazy template deploy.
+
+### Boundaries (routing-critical)
+
+- **auditor judges, analyst informs.** "How good is this code / score it" → auditor. "Report on
+  / brief me on / what's the state of" → analyst. Analyst never scores against a rubric and
+  never renders quality verdicts — including inside `diagnostics` (health *facts*) and
+  `subsystem` (state, not quality).
+- **debugger root-causes.** `diagnostics` may *surface* "test X failing since Tuesday"; chasing
+  why is a hand-off to debugger.
+- **backlog captures, analyst reads.** Analyst consumes trackers; it never writes tracker lines.
+- **guide is project-anchored.** General-concept explainers ("explain OAuth") are out of scope.
+
+### Pack registration
+
+**Helper tier** in `skills/clankshop/PACK.md` `optional:` (settled 2026-08-18) — a records-layer
+client with real workshop seams, standalone-degradable, alongside auditor/backlog. Manifest
+member-set change ⇒ minor version bump per PACK.md's versioning rule.
+
+### Edges (sketch for the build)
+
+- produces: report — a briefing/report, in context or as a `reports/` record tagged by template
+- handoff: — (none; a report informs, it doesn't start a workflow)
+- consumes: records layer (ledger, stores, trackers) + git history; template catalog (own)
 
 ## Verification
 
-_To be argued at spec weight. Candidates: fixture records tree with a planted span → briefing
-must surface the planted closures and open items; routing probe for the auditor boundary;
-standalone-host degrade exercised on a bare repo fixture._
+- **Fixture records tree, planted span** (the pack's fixture-harness pattern,
+  `skills/clankshop/scripts/tests/`): a temp-dir records layer with known closures, open
+  trackers, and a ledger; `briefing` over a planted anchor must surface the planted closures AND
+  the open/blocked items; `status` must reflect the tracker state. **Prove by breaking**: remove
+  a planted closure from the fixture and confirm the check that asserts its presence fails.
+- **`analyst-facts.sh` proven by breaking** per grimoire gate doctrine (no check trusted until
+  it FAILs on deliberately-broken input; portable ERE — no `\b`).
+- **Routing probe** (skill-builder's boundary-audit discipline): description probes for
+  "brief me on the codebase" → analyst, "how good is this code" → auditor; plus a
+  classifier probe — sample free-text asks route to the right template token or to an ask.
+- **Standalone degrade**: a bare repo fixture (no records root) — analyst runs from git history
+  + bundled templates, no deploy attempted, no refusal.
+- **Deploy semantics**: first workshop run deploys the catalog; a customized deployed template
+  wins over the bundled copy; re-run never overwrites.
+- **Lint gate**: `skills/skill-builder/scripts/skills-lint.sh` green over the new skill;
+  `## Edges` block parses.
 
-## Open questions (for `grill`)
+## Slices
 
-1. **Verb set.** Candidates: `brief` (catch-up over a span), `report` (deep-dive on a named
-   subsystem/topic), `status` (trackers-now snapshot). One verb with modes, or several?
-2. **Inputs beyond closures.** Does a briefing include *open/blocked* items (trackers, open
-   records) alongside shipped work? (Leaning yes — a catch-up without "what's still open" is
-   half a briefing.)
-3. **Span anchors.** What does "since X" resolve from — date, git ref, last persisted briefing,
-   `history.tsv` position? Does analyst remember its last run, and where?
-4. **Artifact policy.** When does a briefing persist as a `reports/` record vs stay in context?
-   Who decides (flag, size, human ask)?
-5. **Pack tier.** Helper or utility in `PACK.md`? (Consumes the records layer like backlog —
-   probably helper — but degrades standalone.)
-6. **Depth dial / delegation.** Fan-out readers over stores for a large span (the route exists);
-   when is that warranted?
-7. **Code-reading scope.** Is a "state of subsystem X" report records-only, or does analyst also
-   read the code itself? (Code-reading widens the auditor collision and the job — needs a line.)
-8. **Scheduler seam.** A recurring briefing ("Monday morning catch-up") via `scheduler` is an
-   obvious composition — in scope to document, or leave emergent?
+_Stub — sequencing is the build's job; recorded here because the spec doubles as the small
+feature's plan._
+
+1. `skill-builder new` scaffold + SKILL.md engine (surface, classifier, engine steps, boundaries).
+2. Template catalog ×5 (`templates/`), descriptors tuned for the classifier probe.
+3. `scripts/analyst-facts.sh` + prove-by-breaking fixture.
+4. Deploy/lazy-deploy mechanics + standalone degrade; journal convention seam note.
+5. Fixture-harness verification tests; routing + classifier probes logged.
+6. `PACK.md` registration (helper, version bump) + `README.md` inventory line.
+
+## Decision log
+
+All settled 2026-08-18 with the human (workstream `feat`, brainstorm → grill): name `analyst`
+(over chronicler/herald/gazette/publisher/envoy); developer audience, releases out of scope;
+new skill over journal verbs; template-catalog architecture (agent-council pattern); inline
+classifier vs deployed descriptors; v1 catalog of five (briefing / status / subsystem /
+diagnostics=health-snapshot / guide=project-anchored); lazy-deploy to
+`templates/analyst/` for per-project customization, deployed-wins; span anchor last-briefing-
+else-window; ephemeral-with-opt-in persistence (headless always persists); helper tier.
