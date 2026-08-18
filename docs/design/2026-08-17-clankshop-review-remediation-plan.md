@@ -1,12 +1,15 @@
 ---
 doctype: plans
-status: open
+status: current
 created: 2026-08-17
 updated: 2026-08-18
 tags: [plan]
 ---
 
 # clankshop review remediation — Implementation Plan
+
+Walked 2026-08-18 on `stream/grok` — slices 1–3 verified, lint
+`fails=0`. Finding 4's check script remains deferred.
 
 Tracer-bullet: slice 1 is the setup entry an agent actually follows (Guard
 before any write) — the must-fix resume/refuse-cleanly hole plus the
@@ -87,7 +90,7 @@ Findings 2 (as its own item) and 4 (facts script) stay out.
 
 ## Slices
 
-- [ ] **Slice 1: setup entry (the tracer)** <requires: —>
+- [x] **Slice 1: setup entry (the tracer)** <requires: —>
 
   - Files: Modify `skills/clankshop/verbs/setup.md`,
     `skills/clankshop/verbs/migrate.md`
@@ -191,7 +194,7 @@ Findings 2 (as its own item) and 4 (facts script) stay out.
     points at setup; lint `fails=0`; clankshop line is only the
     symlink WARN. Walk headings `1.` … `5.` still present.
 
-- [ ] **Slice 2: door contract + records-root** <requires: 1>
+- [x] **Slice 2: door contract + records-root** <requires: 1>
 
   - Files: Modify `skills/clankshop/verbs/setup.md`,
     `skills/clankshop/verbs/migrate.md`,
@@ -268,7 +271,7 @@ Findings 2 (as its own item) and 4 (facts script) stay out.
     Expected: setup minimum and check resolver hit; “under the
     records root's” gone; no `check-facts.sh`; lint `FAIL:` empty.
 
-- [ ] **Slice 3: trigger** <requires: —> (parallel with 1)
+- [x] **Slice 3: trigger** <requires: —> (parallel with 1)
 
   - Files: Modify `skills/clankshop/SKILL.md` (frontmatter
     `description:` only)
