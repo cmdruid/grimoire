@@ -214,14 +214,30 @@ A front-door variable is **one line in the host project's front-door doc** (`AGE
     agent-records: dev
 
 The records home also accepts the legacy synonym `records-root:` — first match of either name
-wins (`AGENTS.md` then `CLAUDE.md`). Beside it, the **agent-templates home** (schema, not
-instances) defaults to `<resolved-agent-records>/templates`. Declare `agent-templates:` only
-as an override — one `agent-records:` line moves both homes:
+wins (`AGENTS.md` then `CLAUDE.md`). Beside it sit two siblings, each defaulting *under* the
+resolved records home, so **one `agent-records:` line moves all three**:
+
+- the **agent-templates home** (schema, not instances) defaults to
+  `<resolved-agent-records>/templates`;
+- the **agent-doctrine home** (living normative prose — see *Doctrine-touching skills* below)
+  defaults to `<resolved-agent-records>/doctrine`.
+
+Declare either only as an override:
 
     agent-templates: schemas
+    agent-doctrine: .handbook
 
 Skill prose keeps naming each default path literally (`.records/plans/…`,
-`.records/templates/backlog/…`) — never `$RECORDS_ROOT/plans/…`.
+`.records/templates/backlog/…`, `.records/doctrine/audit/…`) — never
+`$RECORDS_ROOT/plans/…`.
+
+**A note on the doctrine home's justification, so a later reader can re-weigh it.** The bar
+below demands the value *truly vary per host*. For `agent-records` that was established
+brownfield reality. For `agent-doctrine` it is partly **prospective**: the concrete variance
+case is a project that centralizes its doctrine somewhere conventional (`.handbook`) and
+declares it. The other two legs — a default right for every fresh project, and readers that
+consume it — hold today. Stated rather than asserted; if the variance never materializes, the
+variable is carried by consistency with its siblings.
 
 One declaration mechanism, same precedence (declared value if present, else the default).
 Three readers:
@@ -250,6 +266,22 @@ The canonical records resolver (bash-3.2 safe; both declaration names):
         fi
       done
       printf '%s\n' "${decl:-.records}"
+    }
+
+The sibling homes resolve the same way, falling back *through* it (same precedence, same
+front-door order, bash-3.2 safe). Substitute `agent-templates`/`templates` or
+`agent-doctrine`/`doctrine`:
+
+    # Front-door variable `agent-doctrine` (default `<agent-records>/doctrine`).
+    resolve_agent_doctrine() {
+      local root="$1" fd decl=""
+      for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
+        if [ -z "$decl" ] && [ -f "$fd" ]; then
+          decl="$(sed -n -E 's/^agent-doctrine:[[:space:]]*//p' "$fd" \
+                  | head -n 1 | sed 's/[[:space:]]*$//')"
+        fi
+      done
+      printf '%s\n' "${decl:-$(resolve_agent_records "$root")/doctrine}"
     }
 
 Rules of the road: **declare once** — first match wins; when *documenting* a variable (this doc,
@@ -321,6 +353,84 @@ resolves both homes and passes them in; the mint script never opens the front do
 
 Package-only templates skip this resolver. They are read from the skill's own
 `templates/` and are never copied into the project.
+
+## Doctrine-touching skills
+
+A skill that reads **or writes** project doctrine follows these rules. Portable — any skills
+library. Reading counts: you must resolve a path to read from it, so a reader that hardcodes a
+doctrine path is exactly as wrong as a writer that does.
+
+1. **Which home.** Three destinations, one test:
+
+   > **Records** are dated, typed, closeable instances → `<agent-records>`.
+   > **Templates** are the schemas instances mint from → `<agent-templates>`.
+   > **Doctrine** is living, normative, undated, and never closes → `<agent-doctrine>`.
+
+   Doctrine: an audit rubric, a diagnostics playbook, a build lane, a station chapter. Not
+   doctrine: a spec (a dated `design/` record), a captured project fact, an audit *report*.
+
+   **The test classifies where a thing LANDS, not where it ships from.** A skill's own
+   bundled `templates/`- or seed-style content is package-only until deployed; the same bytes
+   are package content in the skill and host doctrine once copied. Classify the destination.
+
+2. **Two-level access.** Resolving the home is not finding the artifact. Resolve the home,
+   *then* test for the specific file. Present → use it; absent → **degrade exactly as the
+   skill degrades with no doctrine at all**. Never treat home-exists as artifact-exists: a
+   doctrine home containing no chapters must make a consumer fall back, not fail.
+
+3. **Standup — the derived default only, and incumbent wins.** On first write a skill may
+   `mkdir` its own subdirectory, and the home itself **only when the home is the derived
+   default**. Never create an *explicitly declared* home that is absent — that declaration
+   names territory the project has assigned to something else, and materializing it is how a
+   skill ends up fabricating another tool's layout. An absent declared home degrades per rule
+   2.
+
+   Doctrine is **copy-bundled-then-customized**, not mint-and-accumulate: a skill seeds
+   generic content, then the host edits it in place and keeps editing it for years. So
+   doctrine standup follows the **agent-templates** semantics — *if present → use it, never
+   overwrite* — not the records semantics. **A re-run must never clobber host
+   customizations.** This is the rule that actually matters for doctrine; get it wrong and a
+   second `setup` silently destroys accumulated project judgment.
+
+4. **No floor.** A missing tool is never an error. No other skill's standup is a
+   precondition. A description must not claim a deployed layer is required, and a verb must
+   not refuse and send the operator away to stand one up.
+
+5. **Use a sanctioned resolution literal.** Each home has a **small fixed set** of accepted
+   phrasings; a conforming skill contains a member verbatim. For home `H` (one of
+   `agent-records`, `agent-templates`, `agent-doctrine`), the set is:
+
+       <H>                 <- the angle-bracket path form; PREFER THIS
+       the H home
+       declared `H:`
+
+   **Prefer the angle-bracket form.** It is a single token, so it cannot straddle a line
+   wrap — and these documents wrap near 95 columns, so a multi-word literal frequently
+   breaks across lines. A checker matching the phrase members **must normalize whitespace
+   across newlines first**, or it will FAIL conforming skills purely on where their text
+   happened to wrap. That failure mode is not hypothetical: a live skill writes "the" at the
+   end of one line and "agent-records home." at the start of the next.
+
+   **Why a set and not one blessed sentence.** All three members were derived from what
+   conforming skills already say, not invented. One writes "under the agent-records home
+   (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
+   `.records/`)"; another writes "declared `agent-records:` or `records-root:` (front-door
+   `AGENTS.md`), else `.records/`"; several write only `<agent-records>/design/`. All
+   resolve correctly. A single blessed sentence would fail most of them, and no one sentence
+   fits a setup walk, a probe section, and a host-layout table without contortion. The set is
+   greppable and bounded; adding a member is a deliberate edit *here*, never a free-form
+   reword at the call site.
+
+6. **Declare the edge.** `produces: doctrine` / `consumes: doctrine` in the `## Edges` block,
+   per the typed-edge mechanics above.
+
+**What the mechanical gate can and cannot prove.** The lint checks omission (an edge declared
+with no sanctioned literal) and known-bad literals (an off-home path in prose). It **cannot**
+prove that a skill's *procedure* resolves the home — a skill may carry the literal while its
+operative steps name a fixed path, and no text match distinguishes that from correct usage.
+That question belongs to skill review, as judgment. Claim the floor, not the ceiling: an
+absence-shaped check cannot even report a `file:line`, because there is no line where a
+missing sentence lives.
 
 ## Corollaries (four testable rules)
 

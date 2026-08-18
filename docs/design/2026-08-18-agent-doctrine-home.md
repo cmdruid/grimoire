@@ -157,10 +157,23 @@ survive contact with the target files.** Three findings:
   host-layout section — three different voices and altitudes.
 
 So the standard defines a **small fixed set of acceptable resolution literals** per home, and
-the lint matches any member of the set. Precedent is exact: check 12 already matches two
-distinct fixed phrases in one `grep -nF -e … -e …` (`skills-lint.sh:556-557`). S2 authors the
-set; S4 uses members of it verbatim; adding a member is a deliberate edit to the standard, not
-a free-form reword.
+the lint matches any member. Precedent is exact: check 12 already matches two distinct fixed
+phrases in one `grep -nF -e … -e …` (`skills-lint.sh:556-557`).
+
+**Authored and empirically validated in S2** — the set has **three** members per home `H`:
+`<H>` (the angle-bracket path form), `the H home`, and ``declared `H:` ``. Two findings from
+testing it against the nine records-touching skills:
+
+- **The angle-bracket form is the strongest member and matches 9 of 9.** Prefer it. It is a
+  single token, so it cannot straddle a line wrap.
+- **The phrase members require whitespace normalization across newlines.** These documents
+  wrap near 95 columns, and a live skill (`analyst:104`) has "the" ending one line and
+  "agent-records home." beginning the next. A naive line-based `grep -F` would FAIL a
+  conforming skill purely on where its text wrapped. **Check 14 must normalize before
+  matching** — this is a hard requirement, not a nicety.
+
+All nine records-touching skills conform under the validated set, using *different* members —
+which is the drift the set exists to absorb, confirmed live rather than assumed.
 
 ### 6. Declaration — typed edges
 
@@ -183,12 +196,18 @@ invisible to it. Check 12 proves the lint can scan every skill unconditionally
 net using check 12's exact shape plus a `(skill, literal)` exemption table — and §8 already
 enumerates every sanctioned retained literal, so the table writes itself from this document.
 
-**Check 14 must be anchored.** It combines the three riskiest properties — exact literal,
-unanchored prose, FAIL-on-absence — so a copy-edit breaks the gate for a conforming skill
-(false positive), and a skill could satisfy it by merely *quoting* the literal in a Folds note,
-a citation, or a fenced example (false pass). Therefore check 14 **matches only outside fenced
-and indented blocks** and treats quotation/citation context as non-satisfying. Normalization
-precedent: check 10 (`skills-lint.sh:504,508`).
+**Check 14 must be anchored *and* whitespace-normalized.** It combines the three riskiest
+properties — exact literal, unanchored prose, FAIL-on-absence — so a copy-edit breaks the gate
+for a conforming skill (false positive), and a skill could satisfy it by merely *quoting* the
+literal in a Folds note, a citation, or a fenced example (false pass). Therefore check 14
+**matches only outside fenced and indented blocks** and treats quotation/citation context as
+non-satisfying.
+
+**Normalization is mandatory, not optional** (established empirically in S2 — see §5): the
+phrase members wrap across lines in real skills today, so a line-based match would FAIL
+conforming skills. Normalize whitespace across newlines before matching. Precedent: check 10
+(`skills-lint.sh:504,508`). Preferring the angle-bracket member sidesteps the issue entirely
+for skills that adopt it, but the check must still handle the phrase members correctly.
 
 Note this reinstates fence handling for a *different* reason than the one that died with the
 dropped hardcoded-path check — that rebuttal applied to that check, not to this one.
