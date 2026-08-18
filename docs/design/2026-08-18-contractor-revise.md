@@ -258,11 +258,12 @@ or `deferred` in Review history.
    - Do **not** mint a successor record.
 7. **Thrash brake.** If the **same finding** (same
    location + same assertion) was already `resolved`
-   by a prior `revise` and has come back as must-fix
-   on a later `review`, do not silently fold it a
-   second time — ask the human. The first return is
-   the brake. Two folds without agreement is a
-   disagreement, not a missing edit.
+   or `rejected` by a prior `revise` and has come
+   back as must-fix on a later `review`, do not
+   silently fold or silently re-reject — ask the
+   human. The first return is the brake. Two
+   treatments without agreement is a disagreement,
+   not a missing edit.
 8. **Stop.** One sentence the human can act on, then
    the path, then the offer: run `/contractor review`
    on the amended artifact, or waive and `build`. Do
@@ -473,3 +474,11 @@ Nice-to-have:
   the spec send-back (recommended: yes).
   - resolved — park the spec-aimed item; rest of batch
     may proceed after acknowledge; item stays open.
+
+- **F7** (re-review, approve-with-changes) — thrash brake
+  covered only a prior `resolved` coming back. A prior
+  `rejected` re-filed as must-fix is the same
+  disagreement.
+  - resolved — brake now covers `resolved` or
+    `rejected`; first return asks, no silent fold or
+    re-reject.
