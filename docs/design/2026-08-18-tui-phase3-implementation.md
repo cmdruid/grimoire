@@ -123,15 +123,42 @@ The spec wins, on two grounds:
 No migration burden: v0.1 has not shipped, and the only lock in the wild is the user's stray
 `~/.claude/grimoire.lock` from a pre-fix global-scope bug, already noted as theirs to delete.
 
+## Progress
+
+- [x] **Task 1** — spike + worker seam + terminal custody (`915850c`). Two failure modes found
+      and closed; both proven by breaking. **Finding: no async runtime is needed** — see the
+      note under Task 1. The app crate skeleton came with it, so Task 3 is now `AppEnv` + flags
+      only. *Visual half outstanding: a human must run `examples/spike.rs`.*
+- [x] **Task 2** — core corrections 2a + 2b (`6711103`). Four checks proven by breaking.
+      **Finding: `install.sh` had no executable coverage** — `parity.rs` asserted core matched
+      the shell without ever running it, so 2b would have left one rule with two
+      implementations and one untested. It now runs the shell.
+- [ ] Tasks 3–8.
+
 ## Tasks
 
-**Task 1 — the spike: ratatui + event loop, verified visually in isolation.** The roadmap makes this
-Task 1 explicitly, as the phase's real unknown. Prove three things: a redraw loop that stays
-responsive while a blocking core op runs on a worker; a clean shutdown path; and **terminal restore
-on panic** (a panic hook that leaves raw mode, or the classic v0.1 embarrassment ships). Decide the
-transport here — `tokio::task::spawn_blocking` + an mpsc channel of events, or a plain
-`std::thread` + channel. tokio is an app-side dependency; `grimoire-core`'s boundary test forbids it
-in core, and that is intended.
+**Task 1 — the spike: ratatui + event loop, verified visually in isolation.** ✅ `915850c`.
+
+**Transport decided: one worker thread, two `std::sync::mpsc` channels, a 50ms `event::poll`
+timeout — and no async runtime.** Core is synchronous, the UI is modal (one pack installs at a
+time), so at most one operation is ever in flight; `tokio::spawn_blocking` would be the same
+thread with a runtime attached. **This contradicts the roadmap's surviving line "the TUI still
+runs ratatui over a tokio event loop"** — a leftover from the pre-Phase-2 async posture, whose
+stated rationale (`skill`'s async surface) that same amendment already removed. Flagged for the
+owner as a dependency-policy call, per the `skill` precedent.
+
+Two failure modes found and closed, in `src/worker.rs` and `src/ui.rs`:
+
+- **A panicking job must not take the worker with it.** `catch_unwind` turns it into an ordinary
+  `Outcome::Panicked` event and the worker accepts the next job.
+- **`catch_unwind` does not suppress the panic *hook*.** `ratatui::init` installs a hook that
+  restores the terminal, so a *caught* worker panic would still have left raw mode and the
+  alternate screen — a live render loop drawing into the user's normal shell. `ui::init` replaces
+  it with a thread-aware hook that restores only for the thread owning the terminal.
+
+Proven by breaking: removing `catch_unwind` fails `tests/worker.rs`; removing the thread guard
+fails `tests/panic_hook.rs`. The visual claim — does it *stay responsive* — is what
+`examples/spike.rs` is for, and needs a human at a terminal.
 
 **Task 2 — core corrections.** Independent of Task 1; ordered second only because the spike carries
 the risk. Both land as one gate-green commit.
