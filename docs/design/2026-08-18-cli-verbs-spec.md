@@ -440,3 +440,37 @@ push-backs, no parked decision branches.
 7. `resolved` — signature takes `&Path` (the source root) instead of `&Library`.
 8. `resolved` — added a `--help` section covering per-verb help, resolved before scope or
    library so it works where the command itself would fail.
+
+### 2026-08-18 — approve-with-changes (delta re-review)
+
+Delta pass over Review history + what changed. All eight prior findings confirmed genuinely
+resolved, not merely marked: F1's contract now reads as one statement, F3's sequence is stated as
+a requirement with a red-proof behind it, and F4's table covers all ten `CoreError` variants
+(checked against `lib.rs:32-57` — none invented, none missed). The `remove.rs:131` citation
+resolves exactly to the required-member refusal it claims.
+
+Safe to sequence against once F9 lands. F9 is a hole the fold itself opened.
+
+**Must-fix**
+
+9. **`remove --skill` needs a library, and *Library resolution* does not list it.** F7 changed
+   `remove_atom`'s signature to take `source: &Path` — the library root the link must point into
+   — so an atom removal cannot resolve ownership without a library. But the new section names
+   only `install`, `list`, and `check`. Following it as written, `remove --skill` has no library
+   to derive `source` from. (`remove <pack>` genuinely does not need one: `plan_remove` reads
+   `entry.source` out of the lock.) **Fix:** add `remove --skill` to the verbs requiring library
+   resolution, and say explicitly that the pack form does not.
+
+**Nice-to-have**
+
+10. **`AtomRemoval`'s states are described twice and enumerated never.** One sentence gives
+    "removed, absent, or foreign"; the refcount paragraph adds "retained" separately. That is
+    four variants the implementer must assemble from two places. Enumerate them once. While
+    there: the exit-code table says "`Preflight` **from `install`**" without settling whether
+    `install_atom` counts — it does (it returns `Preflight(1)` on a blocking disposition), and a
+    blocked atom install should exit 3 like any other.
+11. **Per-verb `--help` invalidates an existing test's assumption.** `args.rs`'s
+    `version_and_help_short_circuit` asserts `--help` short-circuits wherever it appears; once
+    `grimoire install --help` must print *install's* help, the parser can no longer return on the
+    first `--help` it sees. Worth naming in *Slices* C2 so it reads as expected work rather than
+    a regression.
