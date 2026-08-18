@@ -221,7 +221,7 @@ Do not run `review`. Do not start sequencing.
 
 ## Slices
 
-- [ ] **Slice 1: add `revise` and close the loop**
+- [x] **Slice 1: add `revise` and close the loop**
   <requires: —>
   - Paths: `skills/blueprint/SKILL.md`;
     `skills/blueprint/verbs/revise.md` (new).

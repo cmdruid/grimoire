@@ -1,14 +1,15 @@
 ---
 name: blueprint
-description: "Use when the user runs `/blueprint`, or asks to brainstorm, grill, or write a spec for a feature or design; or when starting a new project / new repository from scratch (`new`, `deploy`, founding spec, no repo yet). Turns an idea into an argued specification. grill is the interview primitive until every decision branch resolves. review critiques a spec or design doc (soundness + groundedness). Does not write roadmaps or implementation plans and does not build. For a one-line patch, skip it (fix on the trunk)."
+description: "Use when the user runs `/blueprint`, or asks to brainstorm, grill, or write a spec for a feature or design; or when starting a new project / new repository from scratch (`new`, `deploy`, founding spec, no repo yet); or to apply review findings or amend a needs-rework spec. Turns an idea into an argued specification. grill is the interview primitive until every decision branch resolves. review critiques a spec or design doc (soundness + groundedness). Does not write roadmaps or implementation plans and does not build. For a one-line patch, skip it (fix on the trunk)."
 ---
 
 # blueprint — the specification spine
 
 `/blueprint <verb> [args]` runs the specification spine: divergent ideation
 (`brainstorm`), the interview that resolves every open decision (`grill`), the
-argued specification (`spec`), and the cross-cutting `review` — an independent
-two-axis critique of a spec or design doc. Genesis is two verbs around that
+argued specification (`spec`), the cross-cutting `review` — an independent
+two-axis critique of a spec or design doc — and `revise`, the fold back from
+a `needs-rework` verdict. Genesis is two verbs around that
 spine: `new` mints a founding-shaped working file; `grill`/`spec` fill it in
 place; `deploy` materializes a git repository (new directory, or in place
 in a non-git folder). **Building is not
@@ -22,6 +23,7 @@ and collides with none.
 **Brief the human.** The conversation leads with the decision or the draft,
 not the machinery. "Here are two approaches; I recommend A because…" /
 "The spec is at `<path>`. Please read it before we sequence work."
+After `revise`, one ask, then wait — same as after `spec` / `review`.
 `founding-shaped`, `status: open`, and station names stay in the files.
 
 ## One environment probe (at entry)
@@ -71,7 +73,16 @@ to `status: current`.
 | `grill [doc]` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** | a draft / spec (or the conversation) → resolved decisions | design |
 | `spec [doc]` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) | conversation or draft → feature `design/` spec, **or** the named founding file | design |
 | `review <doc>` | two-axis critique; founding-shaped → six-H2 + leftover/gap rubric | a spec or design doc → a verdict (in context) | design |
+| `revise [<findings>] [<artifact>]` | fold review findings into the spec | a findings baton + spec → amended spec | design |
 | `deploy <file>` | project a founding spec into a git repo + three founding docs (new dir or in-place) | founding file → git repository | — |
+
+```
+spec  →  review  →  approve              →  (host sequences)
+                 →  approve-with-changes →  host, or revise if asked
+                 →  needs-rework         →  revise  →  review  →  …
+```
+
+Each arrow is a stop. No verb invokes the next.
 
 `brainstorm → spec` is the linear spine; `grill` and `review` are primitives
 callable at any point. Bare `/blueprint` stays `brainstorm`. Genesis is
@@ -80,9 +91,9 @@ at the accepted spec (the spec doubles as its plan — slices live **in**
 `templates/spec.md`, not a separate job artifact). For a **patch**, blueprint
 is not used at all.
 
-`new` lives in `verbs/new.md` and `deploy` in `verbs/deploy.md` — read the
-verb file and follow it. `grill` / `spec` / `review` / `brainstorm` stay
-inline and gain a founding-shaped branch below.
+`new` lives in `verbs/new.md`, `deploy` in `verbs/deploy.md`, and `revise`
+in `verbs/revise.md` — read the verb file and follow it. `grill` / `spec` /
+`review` / `brainstorm` stay inline and gain a founding-shaped branch below.
 
 ## Founding-shaped
 
@@ -91,8 +102,8 @@ structural H2 set is exactly the six map strings in `templates/founding.md`,
 each appearing once. That template owns the H2 strings; if they drift, the
 template wins. A duplicate mapped H2 or an extra unmapped H2 fails the shape.
 
-**Parser** (one grammar; founding `grill` / `spec` / `review` and `deploy`
-share it):
+**Parser** (one grammar; founding `grill` / `spec` / `review` / `revise`
+and `deploy` share it):
 
 1. **Front-matter.** If the file begins with a line `---`, YAML through the
    next line that is only `---`. `tags:` is a YAML sequence; `founding` is
@@ -243,9 +254,10 @@ Implementation sequencing is a different job.
 
 Independent second-set-of-eyes on a **spec or design doc** — distinct from the
 self-review baked into `spec` (the author checking their own work; this verb is
-not the author). Artifact-free: findings + a verdict in context, no file
-written (except a `needs-rework` write-back). It reviews **documents, not
-diffs** — a code change is the host's code-review tooling.
+not the author). Findings + a verdict in context. Every verdict writes a dated
+stamp into the artifact's Review history; `needs-rework` also writes the
+finding list. It reviews **documents, not diffs** — a code change is the
+host's code-review tooling.
 
 This verb reviews **specs and design docs only** (an ADR written from `spec`
 counts). A sequenced plan, multi-phase map, or conductor is the wrong artifact
@@ -286,51 +298,38 @@ for this review — refuse it.
 4. **Report the verdict, in context**: `approve` / `approve-with-changes` /
    `needs-rework`; findings ranked by severity, each as location → what's wrong
    → why it matters → a concrete fix, must-fix separated from nice-to-have; a
-   confidence note on anything unsure — never a guess presented as fact. **A
-   blocking verdict is a durable fact about the artifact, not session
-   chatter:** on `needs-rework`, also write the finding list into the artifact
-   itself (a dated "Review history" section the owner prunes on resolution).
-   An approve verdict changes nothing and stays in context.
+   confidence note on anything unsure — never a guess presented as fact.
+   **Every verdict is a durable fact about the artifact:** write a dated stamp
+   into the artifact's `## Review history` (create the section if missing):
+
+   ```
+   ### YYYY-MM-DD — needs-rework | approve | approve-with-changes
+   ```
+
+   `needs-rework` still carries the finding list under the stamp (must-fix
+   separated from nice-to-have). `approve` and `approve-with-changes` may
+   be a stamp-only line. This is a write-back, not a new verdict word. The
+   owner may prune a fully resolved dated block after a later `approve`.
 
 Depth dial (default off): for a high-stakes artifact, dispatch a few
 **read-only** subagents in parallel — each a distinct lens, one a skeptic
 trying to *refute* the doc's central claim — and synthesize. Never an editing
 subagent.
 
-Terminal step: hand the verdict to whoever owns the artifact — `review`
-changes nothing itself (except the `needs-rework` write-back).
+Terminal step: hand the verdict to whoever owns the artifact and **stop**.
 
-## Acting on review feedback — yours, a human's, or an external reviewer's
+## After the verdict
 
-`review` hands a verdict to the artifact's owner and stops. The receiving side
-is its own discipline, the same whether the feedback came from
-`/blueprint review`, a human, or an external tool:
-
-1. **Verify before implementing — feedback is a claim, not a decision.**
-   Re-check it against the actual code/doc (the grounding gate's posture): a
-   reviewer's confident claim can still be wrong. Implementing an unverified
-   claim just relocates the error. This applies with full force to **folding a
-   finding into the artifact**: a fold is itself unverified content that
-   bypasses the grounding gate the artifact's own claims passed through —
-   re-ground a fold like any inherited claim, or mark it
-   `(unverified — check at build)` (observed: a fold's confident nice-to-have
-   claim was transcribed as fact and falsified at build).
-2. **No performative agreement.** Don't thank or agree before actually
-   checking; state findings and actions plainly.
-3. **One unclear item holds up the whole batch** — clarify all ambiguous items
-   before implementing any.
-4. **Grep before generalizing** — a "make this configurable" suggestion gets a
-   usage check first; unneeded generality is YAGNI regardless of how reasonable
-   it sounds.
-5. **Push back with reasoning when the feedback is wrong** — disagreement is a
-   legitimate outcome; state the evidence.
+`review` hands the verdict to the artifact's owner and stops. The owner
+folds a `needs-rework` (or an `approve-with-changes` they want applied)
+with `revise` (`verbs/revise.md`). This verb does not amend.
 
 ## State between verbs = the artifacts
 
 There is no separate blueprint state file. Each verb consumes the previous
 verb's artifact by path: `brainstorm`'s draft → `spec` argues it — and each
-doc's front-matter `status` tracks its lifecycle. `grill` and `review` are the
-exceptions: primitives that consume a design artifact and write no new one.
+doc's front-matter `status` tracks its lifecycle. `grill` and `review` write
+no new file; `revise` amends the named artifact in place.
 
 ## Composition (the orchestrator owns building, landing, capture)
 
@@ -346,8 +345,8 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 
 - A self-contained skill directory: `SKILL.md` + `templates/` (`spec.md`,
   `adr.md`, `founding.md` — the bundled body shapes) + `verbs/new.md` +
-  `verbs/deploy.md` + `scripts/ground-check.sh` (the re-grounding
-  fact-checker) + `docs/ideal-use.md` (a worked arc).
+  `verbs/deploy.md` + `verbs/revise.md` + `scripts/ground-check.sh` (the
+  re-grounding fact-checker) + `docs/ideal-use.md` (a worked arc).
 - **Portable:** no workshop dependency (the one probe degrades to standalone),
   no host paths baked in, travels as one unit wherever the skills are
   installed.
@@ -365,5 +364,5 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 <!-- edges:blueprint -->
 - produces: spec, founding-documents — argued specification; a repo's three founding docs
 - handoff: spec, git-repository — the accepted spec is the feature baton; a git repository carrying three founding documents is the genesis baton
-- consumes: — (conversation or a draft the user names)
+- consumes: review — a findings baton (council RESULT.md or Review history); also a conversation or a draft the user names
 <!-- /edges:blueprint -->
