@@ -14,6 +14,22 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-23 — check 14's coverage is 2 of 5, because most skills have no `## Edges` block
+- **source:** feat stream, front-door-homes build, S5 (2026-08-18).
+- **status:** open
+- **body:** `skills-lint.sh` check 14 (doctrine home not resolved) is **edge-gated** — it only
+  inspects skills declaring a `doctrine` typed edge. Of the five consumers flipped onto home
+  resolution, only `blueprint` and `contractor` had an `## Edges` block to declare it in;
+  `auditor`, `debugger`, and `workstream` have none, so check 14 cannot fire on them at all.
+  Check 15 (unconditional, off-home literals) still covers those three, and the review brief's
+  Home-resolution axis covers the semantic half — but the mechanical floor is thinner than it
+  looks from the check's description. **Deliberately not fixed in that feature** (human,
+  2026-08-18): authoring three edge blocks is BL-17's territory with its own blast radius, and
+  bolting it on would have repeated scope creep the feature had already pulled back twice.
+- **fix sketch:** resolve BL-17 (require an `## Edges` block), then re-check that all five
+  flipped consumers declare `doctrine`. Prove by breaking: plant a hardcoded doctrine path in a
+  skill with an edge block and confirm check 14 fires on it.
+
 ### BL-22 — `records.sh new` performs no reserved-name check
 - **source:** feat stream, agent-doctrine spec review round 2 (2026-08-18).
 - **status:** open
@@ -99,9 +115,12 @@ one-line resolution; delete only when the reason it existed is gone.
   `--tag` (repeatable) to `records.sh new`, and a `<tags>` slot to the doctype templates that want
   one. Low risk, contained to journal's own tool.
 
-### BL-17 — the lint gate does not require an `## Edges` block, and four skills have none
+### BL-17 — the lint gate does not require an `## Edges` block, and SEVEN skills have none
 - **source:** `analyst` build (2026-08-18, `feat` stream) — noticed while choosing coarse edge
-  types to match against existing ones.
+  types to match against existing ones. **Recount 2026-08-18 (front-door-homes build):** the
+  real number is **seven**, not four — `auditor`, `backlog`, `clankshop`, `debugger`,
+  `journal`, `scheduler`, `workstream`. This now blocks lint coverage, not just tidiness: see
+  [[BL-23]].
 - **status:** open
 - **body:** `docs/DOCTRINE.md` says typed edges are **"required of every portable skill"** (an
   all-empty block being a *stated* disposition, not an omission), and `skill-builder new` scaffolds

@@ -205,10 +205,19 @@ derive a loose `auditor → debugger` seam that is not real.
    templates edges are artifact-specific (`spec`, `report`, `note`…). Records/templates
    conformance stays with the existing records-writer checks plus the judgment tier. The
    *standard* still covers all three homes (S2); only this instrument is narrower.
-3. **Check 15's exemption table is a seeded burn-down, not a permanent amnesty.** S3 lands
-   before S5, so an unconditional check would turn the gate red on skills not yet flipped.
-   The table is pre-populated with today's five and each entry is deleted as S5 flips that
-   skill; an empty table is the goal state, and the table itself tracks the remaining work.
+3. **Check 15's exemption table was a seeded burn-down — and is now GONE.** S3 landed before
+   S5, so an unconditional check would have turned the gate red on skills not yet flipped;
+   the table was pre-populated and each entry deleted as S5 flipped that skill. It emptied,
+   and rather than leave dead code the mechanism was removed outright (human, 2026-08-18:
+   *fix the locations rather than exempt them*).
+
+   The last entry would have been `auditor`, whose `docs/audit/` legacy home is sanctioned.
+   Keeping it exposed a defect: a **per-skill** exemption (which is what was built, coarser
+   than the `(skill, literal)` pairs specified here) also blanketed that skill's *real*
+   `.handbook/…` violations — coverage that looked like enforcement and wasn't. The fix was
+   not a finer exemption but **removing `docs/audit/` from the matched literals**: it is
+   auditor-specific, so it caught nothing generalizable while costing the blanket. Check 15
+   now matches only `.handbook/{test,build,design,review}/` and has check 12's exact shape.
 
 **Check 15 exists because check 14 alone is opt-in.** Check 14 only inspects skills that
 *voluntarily* declared an edge; a skill that hardcodes a path and never adds the edge line is
@@ -368,12 +377,12 @@ a fixture covers it.
 
 | id | does | verify | paths |
 |---|---|---|---|
-| S1 | `records.sh` reserves `doctrine` (both arms) + the two-arm proof with independent red-proofs. **First — the substrate must tolerate the default before anything writes it.** | `journal` suite; each arm FAILs when individually reverted | `skills/journal/scripts/records.sh`, `skills/journal/scripts/tests/` |
-| S2 | The unified standard in DOCTRINE.md: third home + resolver, two-level access, scoped standup + incumbent-wins, the classification test incl. bundled-source, the resolution-literal **sets**, the prospective-variance caveat. | `skills-lint.sh` → `fails=0` | `skills/skill-builder/docs/DOCTRINE.md` |
+| S1 | `records.sh` reserves `doctrine` (both arms) + the two-arm proof with independent red-proofs. **First — the substrate must tolerate the default before anything writes it.**  **DONE** (`a340fc1`) | `journal` suite; each arm FAILs when individually reverted | `skills/journal/scripts/records.sh`, `skills/journal/scripts/tests/` |
+| S2 | The unified standard in DOCTRINE.md: third home + resolver, two-level access, scoped standup + incumbent-wins, the classification test incl. bundled-source, the resolution-literal **sets**, the prospective-variance caveat.  **DONE** (`1b58bbd`) | `skills-lint.sh` → `fails=0` | `skills/skill-builder/docs/DOCTRINE.md` |
 | S3 | Lint checks 14–15 + `lint-doctrine-consumer-test.sh` (red, green, negative-scope, anchoring, normalization, unconditional proofs); check 15's seeded burn-down table; wire into `run.sh`. **DONE** — 10 proofs, each check verified by disabling it. | fixture FAILs on each planted breakage | `skills/skill-builder/scripts/skills-lint.sh`, `scripts/tests/` |
-| S4 | Extend the review brief's Output-shape axis to all three homes + the procedure-resolves question; wire through `skill-builder review`. | `skill-builder` suite | `skills/agent-council/briefs/skill-review.md`, `skills/skill-builder/verbs/review.md` |
-| S5 | Flip the five: `auditor`; `debugger` (playbook flips, stamp retained, **probe section restructured**); `workstream` **(station summon only — debrief routing and tracker gating stay)**; `blueprint`; `contractor`. | `skills-lint.sh`; resolution proof | the five skills' `SKILL.md` + `workstream/verbs/create.md` |
-| S6 | Folds: rule 8, `journal/SKILL.md`, **`standup.sh`'s generated README**, the home-vs-layer sentence. Full gate. | all four suites + `skills-lint.sh` | `skills/skill-builder/docs/DOCTRINE.md`, `skills/journal/SKILL.md`, `skills/journal/scripts/standup.sh` |
+| S4 | Extend the review brief's Output-shape axis to all three homes + the procedure-resolves question; wire through `skill-builder review`.  **DONE** (`c061be2`) | `skill-builder` suite | `skills/agent-council/briefs/skill-review.md`, `skills/skill-builder/verbs/review.md` |
+| S5 | Flip the five: `auditor`; `debugger` (playbook flips, stamp retained, **probe section restructured**); `workstream` **(station summon only — debrief routing and tracker gating stay)**; `blueprint`; `contractor`.  **DONE** (`3f8e7e9`, `59a45c2`) | `skills-lint.sh`; resolution proof | the five skills' `SKILL.md` + `workstream/verbs/create.md` |
+| S6 | Folds: rule 8, `journal/SKILL.md`, **`standup.sh`'s generated README**, the home-vs-layer sentence. Full gate.  **DONE** (`99baa47`) | all four suites + `skills-lint.sh` | `skills/skill-builder/docs/DOCTRINE.md`, `skills/journal/SKILL.md`, `skills/journal/scripts/standup.sh` |
 
 Sequencing: S1 first; S2 before S3 (checks grep literals the standard defines); S3/S4 before S5
 (both tiers exist before the skills they judge); S6 last.
