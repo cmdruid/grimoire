@@ -8,26 +8,34 @@ tags: [plan]
 
 # workstream review remediation — Implementation Plan
 
-Tracer-bullet: slice 1 is the template `ship` → `recycle` loop an
-agent actually follows — the two must-fixes plus the draft/WIP
-split that makes the loop executable. Later slices close the
-resume, status, and host-fork holes.
+Tracer-bullet: slice 1 is the template `ship` → (reset ritual) →
+`recycle` loop an agent actually follows — the two must-fixes plus
+the draft/WIP split, with `ship` still a primitive. Later slices
+close the resume, status, and host-fork holes.
 
 Spec: `docs/design/2026-08-17-workstream-review.md`
+
+Folded 2026-08-17 `/contractor review` (`needs-rework`, `cf1dac4`).
+The four must-fixes and four nice-to-haves are in the slices
+below; the write-back list is pruned.
 
 ## Global Constraints (verify vs HEAD before editing — the plan gate)
 
 - **Invariants:** one session drives one stream. Verbs stay
-  primitives; do not merge `recycle` into `ship`. Helper scripts
-  stay facts-not-verdicts — do not add a `recycle-ready` verdict
-  flag. Do not invent a `/workstream coordinator` verb. Do not
-  run `/clankshop setup` in this library. Do not write findings
-  back as a second `WORKSTREAM.md` anywhere except Coordinates
-  `this hand-off:`.
+  primitives; do not merge `recycle` into `ship`. `ship` step 3
+  *skips* queue-advance and the next-plan draft for
+  `source-kind: template`; it does **not** invoke `recycle`.
+  `recycle` is the flow’s next action *after* the reset ritual
+  (`flow.md` Scenario A). Helper scripts stay facts-not-verdicts
+  — do not add a `recycle-ready` verdict flag. Do not invent a
+  `/workstream coordinator` verb. Do not run `/clankshop setup`
+  in this library. Do not write findings back as a second
+  `WORKSTREAM.md` anywhere except Coordinates `this hand-off:`.
 - **Live-API gotchas:** re-read each cited span against
   `<worktree>` HEAD before editing. Load-bearing wraps:
   `skills/workstream/verbs/ship.md:147-155` (queue advance +
-  draft), `:88-95` (`landing: pr` already defers step 3).
+  draft), `:158-164` (step 5 reset ritual + “drafted next plan”),
+  `:88-95` (`landing: pr` already defers step 3 — leave it).
   `skills/workstream/verbs/recycle.md:24-28` (dirty guard),
   `:38-45` (regenerate path).
   `skills/workstream/verbs/load.md:41-44` (Confident launch).
@@ -37,9 +45,11 @@ Spec: `docs/design/2026-08-17-workstream-review.md`
   `skills/workstream/verbs/status.md:1-4`.
   `skills/workstream/SKILL.md:144-146` (“No remote.”).
   `skills/workstream/templates/workstream-handoff.md:142-174`
-  (Loop routine `/backlog debrief`).
+  (Loop routine), `:145-146` (ship “drafts the next plan”),
+  `:180-183` (template/intake “refuses if dirty”).
   `skills/workstream/flow.md:102-126` (Confident launch),
-  `:273-285` (manual-mode `/backlog debrief`).
+  `:210-214` (Scenario A ship drafts), `:273-285` (manual-mode
+  `/backlog debrief`), `:293-295` (delegate-mode ship drafts).
 - **Coexisting work:** this branch is `stream/grok` in
   `/Users/cscott/Repos/grimoire/.workstreams/grok`. Sibling
   `feat` does not own workstream. Root checkout dirt (blueprint +
@@ -52,24 +62,27 @@ Spec: `docs/design/2026-08-17-workstream-review.md`
   add a pack version bump. Do not run `check` Pass 2
   (`docs/BOUNDARY-AUDIT.md`).
 - Every slice’s requirements implicitly include this section and
-  the spec’s receiving locks.
+  the spec’s receiving locks. Spec lock 1’s “hand back to
+  recycle” means the *flow’s* next action after a template ship,
+  not an in-procedure call.
 
 ## File map
 
-| Path | Responsibility |
-|---|---|
-| `skills/workstream/verbs/ship.md` | Template skip of procedure step 3 |
-| `skills/workstream/verbs/recycle.md` | Hand-off path + refuse-on-WIP |
-| `skills/workstream/SKILL.md` | “No remote.” bullet only |
-| `skills/workstream/verbs/load.md` | First-load confirm of `unconfirmed` |
-| `skills/workstream/flow.md` | Confident-launch sentinel; debrief host fork |
-| `skills/workstream/verbs/park.md` | `unpark` gathers `inplace-state` |
-| `skills/workstream/verbs/status.md` | Resolve `<root>` |
-| `skills/workstream/templates/workstream-handoff.md` | `<debrief>` placeholder |
-| `skills/workstream/verbs/create.md` | Fill `<debrief>` from the install-stamp probe |
-| `skills/workstream/verbs/close.md` | Eventful-close debrief host fork |
+| Path | Responsibility | Slice |
+|---|---|---|
+| `skills/workstream/verbs/ship.md` | Template skip of procedure step 3; step 5 save parenthetical | 1 |
+| `skills/workstream/verbs/recycle.md` | Hand-off path + refuse-on-WIP | 1 |
+| `skills/workstream/SKILL.md` | “No remote.” bullet only | 1 |
+| `skills/workstream/flow.md` | Scenario A / delegate draft skip (1); Confident-launch sentinel (2); debrief host fork (5) | 1, 2, 5 |
+| `skills/workstream/templates/workstream-handoff.md` | Loop-routine draft parenthetical (1); `<debrief>` placeholder (5) | 1, 5 |
+| `skills/workstream/verbs/load.md` | First-load confirm of `unconfirmed` | 2 |
+| `skills/workstream/verbs/park.md` | `unpark` gathers `inplace-state` | 3 |
+| `skills/workstream/verbs/status.md` | Resolve `<root>` | 4 |
+| `skills/workstream/verbs/create.md` | Fill `<debrief>` from the install-stamp probe | 5 |
+| `skills/workstream/verbs/close.md` | Eventful-close debrief host fork | 5 |
 
-No other files. Do not touch `scripts/`.
+No other files. Do not touch `scripts/`. `flow.md` and the hand-off
+template are shared by slices 1 and 5 — that is why 5 requires 1.
 
 ## Coverage
 
@@ -86,28 +99,26 @@ No other files. Do not touch `scripts/`.
 
 ## Slices
 
-- [ ] **Slice 1: template ship → recycle (the tracer)** <requires: —>
+- [ ] **Slice 1: template ship skip + recycle path (the tracer)** <requires: —>
 
   - Files: Modify `skills/workstream/verbs/ship.md`,
     `skills/workstream/verbs/recycle.md`,
-    `skills/workstream/SKILL.md`
+    `skills/workstream/SKILL.md`,
+    `skills/workstream/flow.md`,
+    `skills/workstream/templates/workstream-handoff.md`
   - Findings: 1, 2, 3 (+ Notes “No remote.”)
-  - Change: three surgical replacements. Do not rewrite Landing.
-    Do not add a script.
+  - Change: do not rewrite Landing. Do not add a script. Do not
+    make `ship` invoke `recycle`.
 
-    1. **`ship.md` procedure step 3** (`:147-155`). After the
-       current first sentence (“Advance the queue — hand-off only
-       …”), insert this branch *before* the queue-advance /
-       draft sentences, and keep the existing `manual` skip as a
-       nested case of the plan-bound path:
+    1. **`ship.md` procedure step 3** (`:147-155`). **Replace**
+       those lines (do not insert in front of them) with:
 
        ```
        3. **Advance the queue — hand-off only** (the ledger row already rode the branch in step 1).
           **If Coordinates `source-kind: template`:** do not invent a next queue item and do not
-          draft a next plan. Mark the landed unit done in the hand-off (TL;DR / What's been done)
-          and hand back to `recycle` (`verbs/recycle.md`) — that is this archetype's advance.
-          (`landing: pr` already defers this step until the PR merges; template is a second skip.
-          Either reason is enough — do not draft in either case.)
+          draft a next plan. Mark the landed unit done in the hand-off (TL;DR / What's been done).
+          Leave step 5's reset ritual in place; `recycle` is the *flow's* next action after that
+          ritual (`flow.md` Scenario A), not something this step calls.
           **Otherwise** (plan / roadmap / brief): in the (ignored) worktree hand-off, mark
           **all landed features** done and set the next queue item current.
           Then **draft** the next feature's implementation plan from the queue source into the host's plans
@@ -119,11 +130,61 @@ No other files. Do not touch `scripts/`.
           instead and PLAN starts the draft fresh.
        ```
 
-       Leave steps 1, 2, 4, 5 and the whole Landing section
+       Leave steps 1, 2, 4 and the whole Landing section
        untouched, including the existing `landing: pr` bullet
-       (`:88-95`).
+       (`:88-95`) — that bullet remains the only pr-deferral.
+       Do not mention `landing: pr` in this step.
 
-    2. **`recycle.md` step 2** (`:24-28`). Replace the refuse
+    2. **`ship.md` step 5 parenthetical** (`:158-161`). Replace
+       `(advanced queue + drafted next plan)` with
+       `(plan-bound: advanced queue + drafted next plan; template: landed unit marked done, no draft)`.
+       Leave the rest of step 5 (hand back to the reset ritual)
+       unchanged.
+
+    3. **`flow.md` Scenario A** (`:210-214`). Replace the ship
+       bullet with:
+
+       ```
+       - **`ship` — only at a landing point.** Lands **every accumulated feature** + their debrief commits.
+         For plan / roadmap / brief: advances the queue and drafts the next plan into the working tree
+         (uncommitted — it persists on disk across the reset; **in `manual` mode `ship` skips this draft** —
+         the next PLAN session authors it). For `source-kind: template`: do not advance a queue and do not
+         draft. After the reset ritual (`save` → reset → `load`) the next action is `recycle`
+         (`verbs/recycle.md`) — `ship` does not invoke it.
+       ```
+
+       Also in `flow.md:293-295` (manual-mode contrast), replace
+       `In \`delegate\` mode \`ship\` drafts the next feature's plan into
+       the working tree` with
+       `In \`delegate\` mode on a plan / roadmap / brief stream, \`ship\` drafts
+       the next feature's plan into the working tree (\`source-kind: template\` never drafts)`.
+
+    4. **Handoff Loop-routine parenthetical**
+       (`templates/workstream-handoff.md:145-146`). Replace
+
+       ```
+         (lands every accumulated feature + advances the queue, drafts the next plan into the working tree —
+         except in `manual` mode, where the next PLAN session drafts it)
+       ```
+
+       with
+
+       ```
+         (lands every accumulated feature; plan-bound: advances the queue and drafts the next plan —
+         except in `manual` mode, where the next PLAN session drafts it; template: no queue-advance,
+         no draft — after the reset ritual, `/workstream recycle`)
+       ```
+
+       Also replace the template/intake refuse line
+       (`:182-183`) so the bundled hand-off does not re-teach
+       the old `dirty` guard:
+
+       ```
+         (worktree persists). `recycle` refuses if `wip_tracked=true` or `ahead>0` —
+         `ship` or discard first. A lone `drafted_next_plan` is deleted, not a refuse.
+       ```
+
+    5. **`recycle.md` step 2** (`:24-28`). Replace the refuse
        condition with:
 
        ```
@@ -132,14 +193,15 @@ No other files. Do not touch `scripts/`.
           unshipped), STOP: the current unit isn't resolved. Direct the user to **`ship`** it (if done) or
           discard it explicitly (a `git -C <worktree> reset --hard` / checkout is the user's call — recycle
           never destroys work silently). Do **not** key on `dirty=true`: an untracked plans draft is
-          expected dirt (`drafted_next_plan`, `wip_tracked=false`). If that is the only dirt, **delete the
-          draft** (it is uncommitted; recycle's job is a blank unit) and continue. Do not ask. Only a
+          expected dirt (`drafted_next_plan`, `wip_tracked=false`). If that is the only dirt, **delete
+          each path listed in `drafted_next_plan`** (comma-separated; uncommitted; recycle's job is a
+          blank unit) and continue. Do not ask. Do not `rm` a guessed plans glob. Only a
           fully-shipped tree with no real WIP may recycle.
        ```
 
        Leave the in-place custody paragraph that follows.
 
-    3. **`recycle.md` step 4** (`:38-45`). Replace the opening
+    6. **`recycle.md` step 4** (`:38-45`). Replace the opening
        “Regenerate `<worktree>/WORKSTREAM.md` exactly as …” with
        a verify-then-write, same discipline as `save.md`:
 
@@ -158,7 +220,7 @@ No other files. Do not touch `scripts/`.
        `<worktree>/WORKSTREAM.md` as a path recipe. The in-place
        paragraph in step 2 already names the real path.
 
-    4. **`SKILL.md` “No remote.”** (`:144-146`). Replace the
+    7. **`SKILL.md` “No remote.”** (`:144-146`). Replace the
        three-line bullet with:
 
        ```
@@ -174,23 +236,33 @@ No other files. Do not touch `scripts/`.
 
     ```
     cd /Users/cscott/Repos/grimoire/.workstreams/grok && \
-      rg -n "source-kind: template" skills/workstream/verbs/ship.md && \
+      rg -n "source-kind: template" skills/workstream/verbs/ship.md skills/workstream/flow.md && \
+      rg -n "hand back to \`recycle\`|hand back to recycle" skills/workstream/verbs/ship.md ; \
+      rg -n "ship does not invoke|does not invoke it" skills/workstream/verbs/ship.md skills/workstream/flow.md && \
       rg -n "Regenerate \`<worktree>/WORKSTREAM.md\`" skills/workstream/verbs/recycle.md ; \
-      rg -n "this hand-off:" skills/workstream/verbs/recycle.md && \
-      rg -n "Do \*\*not\*\* key on \`dirty=true\`|wip_tracked=true" skills/workstream/verbs/recycle.md && \
+      rg -n "The file you write MUST equal" skills/workstream/verbs/recycle.md && \
+      rg -n "each path listed in \`drafted_next_plan\`" skills/workstream/verbs/recycle.md && \
+      rg -n "refuses if the tree is dirty" skills/workstream/templates/workstream-handoff.md ; \
+      rg -n "refuses if \`wip_tracked=true\`" skills/workstream/templates/workstream-handoff.md && \
+      rg -n "template: landed unit marked done, no draft" skills/workstream/verbs/ship.md && \
       rg -n "^\- \*\*No remote\.\*\*" skills/workstream/SKILL.md ; \
       rg -n "Land locally onto" skills/workstream/SKILL.md && \
       skills/skill-builder/scripts/skills-lint.sh . 2>&1 | rg "FAIL:|workstream:"
     ```
 
-    Expected: `ship.md` hits `source-kind: template`; recycle
-    “Regenerate `<worktree>/WORKSTREAM.md`” is empty; `this
-    hand-off:` and the `wip_tracked` / not-`dirty` phrases hit;
+    Expected: `source-kind: template` hits `ship.md` and
+    `flow.md`; `ship.md` has no “hand back to recycle”; the
+    “does not invoke” phrase hits; recycle
+    “Regenerate `<worktree>/WORKSTREAM.md`” is empty;
+    `The file you write MUST equal`, `drafted_next_plan` path
+    delete, and the step-5 template parenthetical all hit;
+    hand-off “refuses if the tree is dirty” is gone and
+    `wip_tracked=true` refuse hits;
     `SKILL.md` “No remote.” heading is gone and “Land locally”
     hits; lint `fails=0`; workstream line is only the symlink
     WARN.
 
-- [ ] **Slice 2: first-load confirm** <requires: —> (parallel with 3, 4)
+- [ ] **Slice 2: first-load confirm** <requires: 1> (parallel with 3, 4 once 1 has landed)
 
   - Files: Modify `skills/workstream/verbs/load.md`,
     `skills/workstream/flow.md`
@@ -225,7 +297,9 @@ No other files. Do not touch `scripts/`.
        is the hole seed-only `create` documented and `load` must close.
        ```
 
-       Do not otherwise rewrite Confident launch.
+       Do not otherwise rewrite Confident launch. If slice 1
+       already landed, this insert sits next to the Scenario A
+       edit — different region; do not revert slice 1.
 
   - Verify:
 
@@ -322,7 +396,9 @@ No other files. Do not touch `scripts/`.
   - Change: do **not** rewrite `SKILL.md` *Host layout* or the
     already-qualified Scope capture lines. The workshop bullet
     staying `/backlog debrief` is correct — that *is* the
-    workshop path.
+    workshop path. Requires 1 because this slice edits
+    `flow.md` and the hand-off template after slice 1’s
+    Scenario A / Loop-routine draft edits — do not revert those.
 
     1. **Handoff template — introduce `<debrief>`.** In
        `templates/workstream-handoff.md`, replace every
@@ -331,17 +407,23 @@ No other files. Do not touch `scripts/`.
        Loop-routine hits and two Phase-map hits. After the
        Coordinates block (or at the top of Loop routine), add
        one gloss so a reader of an unfilled template is not
-       stuck:
+       stuck. **Do not put the characters `/backlog debrief`
+       anywhere in this template** (the slice-5 verify greps
+       that exact string):
 
        ```
        `<debrief>` is filled at `create` / `recycle` from the host probe
-       (`SKILL.md` *Host layout*): workshop → `/backlog debrief`; else →
-       `the project's own close-the-books sweep (do not invoke /backlog)`.
+       (`SKILL.md` *Host layout*): workshop → the workshop backlog
+       debrief verb; else → the project's own close-the-books sweep
+       (do not invoke the workshop backlog verb).
        ```
+
+       Keep slice 1’s Loop-routine draft parenthetical.
 
     2. **`create.md` step 6** — in the hand-off fill list
        (Coordinates / Stream-queue bullets, around `:100-117`),
-       add a sibling bullet:
+       add a sibling bullet. This file *may* name the workshop
+       command — it is the filler, not the template:
 
        ```
        - **`<debrief>`:** run the *Host layout* probe (`.handbook/README.md`
@@ -352,7 +434,8 @@ No other files. Do not touch `scripts/`.
 
        Do not change seed-only / unattended behavior otherwise.
 
-    3. **`flow.md`.** Two sites:
+    3. **`flow.md`.** Two sites (do not touch slice 1’s
+       Scenario A / `:293-295` wording):
        - Manual-mode BUILD / SHIP (`:278`, `:284`): replace
          `/backlog debrief` with
          `debrief` and add “(the hand-off’s filled `<debrief>`
@@ -375,14 +458,17 @@ No other files. Do not touch `scripts/`.
       rg -n "Host layout" skills/workstream/verbs/create.md && \
       rg -n "/backlog debrief" skills/workstream/flow.md skills/workstream/verbs/close.md ; \
       rg -n "/backlog debrief" skills/workstream/SKILL.md && \
+      rg -n "source-kind: template" skills/workstream/flow.md && \
       skills/skill-builder/scripts/skills-lint.sh . 2>&1 | rg "^FAIL:"
     ```
 
-    Expected: first grep (template `/backlog debrief`) empty;
-    `<debrief>` hits the template and `create.md`; `flow.md` and
-    `close.md` no longer contain `/backlog debrief`; `SKILL.md`
-    still contains it (workshop bullet + Scope, correctly);
-    `FAIL:` empty.
+    Expected: first grep (template `/backlog debrief`) empty
+    — the gloss must not reintroduce it; `<debrief>` hits the
+    template and `create.md`; `flow.md` and `close.md` no
+    longer contain `/backlog debrief`; `SKILL.md` still
+    contains it (workshop bullet + Scope, correctly); slice 1’s
+    `source-kind: template` in `flow.md` still hits; `FAIL:`
+    empty.
 
 ## Done when
 
@@ -391,9 +477,12 @@ worktree:
 
 ```
 cd /Users/cscott/Repos/grimoire/.workstreams/grok && \
-  rg -n "source-kind: template" skills/workstream/verbs/ship.md && \
+  rg -n "source-kind: template" skills/workstream/verbs/ship.md skills/workstream/flow.md && \
+  rg -n "hand back to \`recycle\`|hand back to recycle" skills/workstream/verbs/ship.md ; \
   rg -n "Regenerate \`<worktree>/WORKSTREAM.md\`" skills/workstream/verbs/recycle.md ; \
-  rg -n "Do \*\*not\*\* key on \`dirty=true\`" skills/workstream/verbs/recycle.md && \
+  rg -n "The file you write MUST equal" skills/workstream/verbs/recycle.md && \
+  rg -n "each path listed in \`drafted_next_plan\`" skills/workstream/verbs/recycle.md && \
+  rg -n "refuses if the tree is dirty" skills/workstream/templates/workstream-handoff.md ; \
   rg -n "unconfirmed" skills/workstream/verbs/load.md && \
   rg -n "inplace-state" skills/workstream/verbs/park.md && \
   python3 -c '
@@ -406,82 +495,14 @@ assert "inplace-state" in t.split("## \`unpark\`",1)[1]
   skills/skill-builder/scripts/skills-lint.sh . 2>&1 | rg "^FAIL:"
 ```
 
-Expected: `ship.md` has the template branch; recycle no longer
-says `Regenerate <worktree>/WORKSTREAM.md`; the not-`dirty`
-phrase, `unconfirmed` in `load.md`, `unpark`’s `inplace-state`,
-and status’s Resolve-root all hit; template `/backlog debrief`
-and `SKILL.md` “No remote.” heading are empty; lint `FAIL:`
-empty. The workstream symlink WARN remains.
+Expected: `ship.md` and `flow.md` have the template skip;
+`ship.md` does not say “hand back to recycle”; recycle no
+longer says `Regenerate <worktree>/WORKSTREAM.md` and does
+say `The file you write MUST equal` plus per-path draft
+delete; hand-off no longer says recycle refuses if dirty;
+`unconfirmed` in `load.md`, `unpark`’s
+`inplace-state`, and status’s Resolve-root all hit; template
+`/backlog debrief` and `SKILL.md` “No remote.” heading are
+empty; lint `FAIL:` empty. The workstream symlink WARN remains.
 
 _On completion (before landing), run the host's close-the-books sweep._
-
-## Review history
-
-**2026-08-17 — `/contractor review`: `needs-rework`.** Ground-check clean
-(`checked=13`). Blocking findings below; prune this section when they
-are resolved.
-
-### must-fix
-
-1. **Slice 1 makes `ship` call `recycle`.** Location: slice 1 change 1
-   (`ship.md` step 3, proposed “hand back to `recycle`”). `ship.md:158-164`
-   (left untouched) still hands back to the reset ritual. The plan’s own
-   invariant says verbs stay primitives — do not merge `recycle` into
-   `ship`. Spec lock 1’s “hand back to recycle” is the *flow’s* next
-   action after a template ship, not an in-procedure call. As written,
-   an agent recycles mid-`ship` and then still runs step 5 (save /
-   reset), or skips recycle because step 5 wins. Fix: step 3 only
-   *skips* queue-advance and the next-plan draft for
-   `source-kind: template`. Step 5 stays the reset ritual; `flow.md`
-   names `recycle` as the next action after that ritual for a template
-   stream.
-
-2. **Slice 1 does not update the other “ship drafts” sites.** Location:
-   slice 1 Files (only `ship.md` / `recycle.md` / `SKILL.md`). Live
-   claims that survive the slice: `flow.md:210-214` (Scenario A: ship
-   “advances the queue … and drafts the next plan”; only `manual`
-   skips), `ship.md:158-161` (“pre-reset `save` (advanced queue +
-   drafted next plan)”),
-   `templates/workstream-handoff.md:145-146` (same parenthetical).
-   `flow.md` is already in context at every loop entry — an agent will
-   still draft. Fix: add those three sites to slice 1 (or a tight
-   follow-on in the same slice). Template skip = no draft, no
-   “advanced queue” in the save parenthetical.
-
-3. **Slice 1 change recipe is insert *and* replace.** Location: slice 1
-   change 1 prose (`:98-102`) vs the fenced step-3 block (`:104-120`).
-   “Insert this branch after the current first sentence” plus a
-   complete new `3.` block duplicates the numbered step if followed
-   literally. Fix: say **replace** `ship.md:147-155` with the fenced
-   block. Drop the insert sentence.
-
-4. **Slice 5 cannot pass its own verify.** Location: slice 5 change 1
-   gloss (`:336-340`) vs verify (`:373`) and Done when (`:404`). The
-   gloss contains the string `/backlog debrief`. The verify requires
-   that string absent from the template. A correct fold fails the
-   slice. Fix: write the gloss without that exact command string
-   (e.g. “the workshop backlog debrief verb”), or change the verify to
-   accept the gloss and require the Loop-routine / Phase-map *command*
-   hits gone.
-
-### nice-to-have
-
-5. **`landing: pr` parenthetical is unimplemented in the Otherwise
-   branch.** Location: slice 1 change 1. “Either reason is enough”
-   lives only inside the template `if`. Plan-bound + `landing: pr`
-   still hits Otherwise and would advance/draft, fighting
-   `ship.md:88-95`. Drop the pr sentence from the template branch;
-   leave deferral in the Landing tail.
-
-6. **Slice 1 verify `this hand-off:` is already green.** Location:
-   slice 1 verify (`:179`). `recycle.md:33` already contains that
-   phrase. A no-op slice 4-path-fix still passes. Grep for `The file
-   you write MUST equal` instead.
-
-7. **Slice 5 `<requires: 1>` is not a blocking edge.** create /
-   template / flow / close do not need the ship/recycle edits.
-   Parallel-eligible.
-
-8. **“Delete the draft” should name the paths.** Location: slice 1
-   change 2. `drafted_next_plan` can be a comma-separated list.
-   Delete each listed path; do not `rm` a guessed plans glob.
