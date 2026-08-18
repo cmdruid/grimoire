@@ -88,23 +88,26 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 
 Workstream is **self-contained**: its own state is `.workstreams/<stream>/` (hand-offs, registry)
 plus ordinary git branches and worktrees, and **every verb works on any repo** — no workshop
-install is a precondition, and no verb ever refuses or stalls for lack of one. One probe decides
-where the durable records land: does the project's `.handbook/README.md` carry the clankshop
-install stamp (`Seeded from clankshop`)?
+install is a precondition, and no verb ever refuses or stalls for lack of one. One probe
+decides handbook / station / playbook context: does the project's `.handbook/README.md` carry
+the clankshop install stamp (`Seeded from clankshop`)? The **agent-records destination is
+not stamped**.
 
-- **Workshop host** (stamp present): the records layer is deployed — plans live in the
-  `plans/` store, shipped units close through `records.sh done` (the `history.tsv` ledger line)
-  plus an optional `reports/` record tagged `debrief`, queue items are **Backlog** tracker
-  lines, and debriefs route through `/backlog debrief`. The records root is the declared
-  `records-root:` (front-door `AGENTS.md` declaration), else `.records/`; the deployed tool is
-  `<records-root>/scripts/records.sh` — invoke it for every record fact, never hand-stamp. At
-  loop entry (`create`/`load`), **summon the build station's context**
-  (`.handbook/scripts/context.sh build`) — the stream works the build station.
-- **Any other host**: use the project's **own** conventions for the same artifacts — its
-  existing records/docs layout — and **skip the records-layer seams** (`records.sh`, the
-  ledger, tracker lines) instead of stalling on them. Do not create `.handbook/` or
-  `.records/` on a host that doesn't have them, and never route to the clankshop onramps:
-  standing the workshop up is the human's separate decision, not a stream's precondition.
+- **Workshop host** (stamp present): summon the build station
+  (`.handbook/scripts/context.sh build`). Filled `<debrief>` is `/backlog debrief`. Queue
+  items are **Backlog** tracker lines only when that tracker file already exists.
+- **Any other host**: no handbook summon. Filled `<debrief>` is the project's own
+  close-the-books sweep (do not invoke `/backlog`). Do not create `.handbook/`. Never
+  route to the clankshop onramps.
+- **Records (every host).** Workstream-owned records — seeded / drafted `plans/` files,
+  ship-time plan closes, optional debrief `reports/` — land under the agent-records home
+  (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
+  `.records/`). Resolve lock-in templates via the agent-templates rule; pass
+  `records.sh new --template <resolved>` when the tool exists; else file-mode fill from
+  the resolved `plans.md` / `reports.md`. Never write the flat
+  `<agent-records>/templates/<doctype>.md`. File-mode close stamps `status:` only.
+  Do not mint a Backlog tracker. Tracker-line completion runs only when that tracker
+  file already exists.
 
 ## Discipline (applies to EVERY verb — non-negotiable)
 

@@ -84,11 +84,11 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    `git -C <root> worktree add -b stream/<stream> <root>/.workstreams/<stream> <target>`.
 5. **Seed the plan on the branch** (plan-bound, *new untracked plan file* only; `create` makes no root
    commit). If the source is an already-tracked doc, skip. If it's a new untracked plan file, move it
-   into the worktree under the host's plans home — `<records-root>/plans/` on a workshop host (ensure
-   it carries the front-matter contract; mint via `records.sh new plans` + fill if it lacks one), the
-   project's own plans location elsewhere — including from any default output dir the host doc-linter
-   forbids. Run the host's doc-linter from the worktree, then commit it **on the stream branch** (it
-   rides to `<target>` at first ship): `git -C <worktree> add <plans-home>/<basename> &&
+   into the worktree under `<agent-records>/plans/` on every host (ensure it carries the
+   front-matter contract: `records.sh new plans --template <resolved>` + fill if the tool
+   exists; else file-mode fill from the resolved `plans.md`). Run the host's doc-linter from
+   the worktree, then commit it **on the stream branch** (it rides to `<target>` at first
+   ship): `git -C <worktree> add <plans-home>/<basename> &&
    git -C <worktree> commit -m "Seed stream/<stream>: plan" -- <plans-home>/<basename>`.
    Brief / unplanned mode: nothing to seed. Template mode: nothing to seed on the branch either — the template
    is an external tracked doc; its durable doctrine is **embedded** into the hand-off in step 6 (and

@@ -6,10 +6,10 @@ description: "Use when the user runs `/notepad`, asks to write down a project fa
 # notepad — project memory
 
 One skill: take, find, update, supersede, and drop durable project facts.
-Notes live at `<records-root>/notes/` (declared `records-root:` else
-`.records/notes`). This skill creates that directory. It does not stand
-up the rest of the records layer and does not refuse when `records.sh`
-is missing.
+Notes live at `<agent-records>/notes/` (declared `agent-records:` or
+legacy `records-root:`, else `.records/notes`). This skill creates that
+directory. It does not stand up the rest of the records layer and does
+not refuse when `records.sh` is missing.
 
 This `SKILL.md` is a **thin router**: it dispatches and states the
 discipline every verb shares **once**. Each verb's procedure lives in
@@ -39,16 +39,20 @@ session scratch that must not persist.
 
 ## Shared discipline (every verb relies on this — stated here once)
 
-- **Resolve the records root** (doctrine resolver, inlined): first
-  `^records-root:` in the host `AGENTS.md`, then `CLAUDE.md`, else
-  `.records`. Pass the resolved path into every
-  `scripts/note-mint.sh` call. The script does not scan the front-door.
+- **Resolve both homes** (doctrine resolver, inlined): agent-records
+  home is first `^agent-records:` or `^records-root:` in `AGENTS.md`,
+  then `CLAUDE.md`, else `.records`. Agent-templates home is first
+  `^agent-templates:` in those files, else `<agent-records>/templates`.
+  Pass both into every `scripts/note-mint.sh` mint call. The script
+  does not scan the front door.
 - **One fact per note** (the path is the ID).
 - **`note-mint.sh` is the one minter.** Always call it (from this
-  skill's own `scripts/`, never a host path). It uses deployed
-  `records.sh` when that file is executable; otherwise it writes the
-  contract shape itself (matching this package's `fill` +
-  slug/collision). Never write `history.tsv` by hand.
+  skill's own `scripts/`, never a host path). Signature:
+  `mint <agent-records> <agent-templates> <title>`. It uses deployed
+  `records.sh` when that file is executable (`new --template
+  <resolved>`); otherwise it writes the contract shape itself. Never
+  write `history.tsv` by hand. Never write the flat
+  `<agent-records>/templates/notes.md`.
 - **The record contract (this package).** Front-matter keys:
   `doctype`, `status`, `created`, `updated`, `tags`. Live statuses:
   `open`, `current`. Closed statuses: `done`, `dropped`,

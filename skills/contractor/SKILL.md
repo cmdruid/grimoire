@@ -24,23 +24,21 @@ line matching `Seeded from clankshop`)? That single fact picks the homes and
 context; nothing else is probed, and no verb ever refuses or stalls for lack of
 a workshop.
 
-- **Workshop present** → artifacts are records in the `plans/` store, minted
-  with the deployed `<records-root>/scripts/records.sh new plans --title "…"`
-  (the records root is the declared `records-root:`, else `.records/`).
-  **Contractor owns this store's template and lazy-deploys it**: before
-  minting, copy `templates/plans.md` into `<records-root>/templates/plans.md`
-  when absent. That shell is the `plans` doctype. After minting, the verb
-  **fills the body** from `templates/plan.md` or `templates/roadmap.md` (or a
-  runbook conductor list) and sets `tags:` to exactly one of `[plan]`,
-  `[roadmap]`, `[runbook]`. Never deploy `plan.md` or `roadmap.md` *as*
-  `plans.md`. **Summon the build station** for every contractor verb
+- **Workshop present** → summon the build station
   (`.handbook/scripts/context.sh build`).
-- **Standalone** → confirm an **output home** once (default `docs/`); artifacts
-  are the bundled body scaffolds copied whole (`templates/plan.md`,
-  `templates/roadmap.md` — they carry the same front-matter vocabulary, so a
-  later migration adopts them unchanged). A runbook is a new file in that home
-  with `tags: [runbook]`. The project's own design docs and READMEs stand in
-  for station context.
+- **Standalone** → the project's own design docs and READMEs stand in for
+  station context.
+
+**Destination is not stamped.** `roadmap` / `plan` / `runbook` land in
+`<agent-records>/plans/` on every host (first `agent-records:` or
+`records-root:` in `AGENTS.md` then `CLAUDE.md`, else `.records/`), with
+`tags:` exactly one of `[plan]`, `[roadmap]`, `[runbook]`. Resolve
+`plans.md` via the agent-templates rule; `records.sh new --template
+<resolved>` when the tool exists; else file-mode from that path. Then
+fill the body from the resolved `plan.md` / `roadmap.md` / runbook
+conductor. Never write the flat
+`<agent-records>/templates/<doctype>.md`. Never deploy `plan.md` or
+`roadmap.md` *as* `plans.md`.
 
 **Status vocabulary** (the records contract): a working draft is `status: open`;
 the accepted, living job artifact is promoted to `status: current` (one per
@@ -81,13 +79,9 @@ The artifact holds the job vocabulary (`status: open` / `current`, slice ids,
   — resolve it from this skill's own base directory, never a host path.
 - **An approved spec is the input.** Missing → ask. A spec with open decision
   branches is not approved — send those branches back to a grill on the spec.
-- **Land it** (minting verbs: `roadmap`, `plan`, `runbook`) per the probe
-  above. Workshop: mint the shell, then overwrite `tags:` and the body.
-  Standalone: write `<output-home>/<stem>.md`. Stem = a slug of the title
-  (lowercase, hyphens, no punctuation) with a `-plan` / `-roadmap` /
-  `-runbook` suffix if the slug does not already end in that word. Title
-  missing or stem empty → ask once. Existing file → ask for a different
-  stem; do not overwrite.
+- **Land it** (minting verbs: `roadmap`, `plan`, `runbook`) under
+  `<agent-records>/plans/` per the destination rule above. Mint the
+  shell, then overwrite `tags:` and the body. Title missing → ask once.
 
 ## Hard seams
 
@@ -114,7 +108,7 @@ The artifact holds the job vocabulary (`status: open` / `current`, slice ids,
 ## Edges
 
 <!-- edges:contractor -->
-- produces: plan, roadmap, runbook — job artifacts in plans/ (workshop) or the output home
+- produces: plan, roadmap, runbook — job artifacts in `<agent-records>/plans/`
 - handoff: — (build executes in-place; ship is not this skill)
 - consumes: spec — an approved specification the user names
 <!-- /edges:contractor -->

@@ -27,7 +27,7 @@ that phase can be built. The roadmap never carries task-level detail.
 4. **Land it** per SKILL.md *Shared discipline*. Workshop: mint
    `records.sh new plans --title "<Track> — Roadmap"`, then set `tags: [roadmap]`
    and replace the body with the roadmap scaffold filled in. Standalone:
-   fill `templates/roadmap.md` into the named file in the output home
+   fill `templates/roadmap.md` into the named file in `<agent-records>/plans/`
    (SKILL.md *Shared discipline*). Flip `status: current` while the map
    governs the track.
 

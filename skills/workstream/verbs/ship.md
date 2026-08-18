@@ -108,32 +108,31 @@ independent of what the root has checked out. Never hand-commit these records to
 
 1. **Commit the shipping records on the branch — BEFORE landing.** These are doc-only, so gate them
    with the host's fast doc-linter (from the worktree), not the full gate. A shipped unit's durable
-   trace is a **history-ledger entry plus an optional debrief report** (the records layer's closure
-   model); on a **workshop host** (the records layer is deployed) it is written with the deployed
-   tool — `<records-root>/scripts/records.sh` — never by hand:
+   trace is a **plan close plus an optional debrief report**, under the agent-records home on
+   every host. If `<agent-records>/scripts/records.sh` is executable, use it (`done` /
+   `new --template <resolved>`); else file-mode stamp of `status:` / `updated:` only — do
+   not write `history.tsv`. Ledger commit path only when `history.tsv` was actually written.
    - **Close each accumulated feature's plan record in place.** For **each** feature completed
      since the last ship (one under `per-stage`; possibly several under `milestone`/`per-track`)
      whose plan lives in the `plans/` store, run (in the worktree)
-     `records.sh done plans/<its-plan>.md --note "shipped: <feature subjects>"` — the status flips
-     in place (a closed record never moves; there is no archive) and the one ledger line lands in
-     `history.tsv`. **Reference the feature's commits by subject line, NOT by sha** in the note and
-     any narrative: Landing (step 2) rebases this branch *after* these records are written, which
-     rewrites every sha but **preserves subjects** (subject-refs survived two contention rebases
-     with zero fixups). Commit the flip and the ledger together:
-     `git -C <worktree> add <plan> <records-root>/history.tsv && git -C <worktree> commit -m
-     "Record <slug> shipped" -- <plan> <records-root>/history.tsv`. A feature with **no** plan
-     record (a roadmap row built directly) is completed by its roadmap ledger-row advance below —
-     never mint a record just to close it.
+     `records.sh done plans/<its-plan>.md --note "shipped: <feature subjects>"` when the tool
+     exists; else rewrite `status:` / `updated:` on the plan file. **Reference the feature's
+     commits by subject line, NOT by sha** in the note and any narrative: Landing (step 2)
+     rebases this branch *after* these records are written, which rewrites every sha but
+     **preserves subjects**. Commit the flip and, when written, the ledger together:
+     `git -C <worktree> add <plan> [<agent-records>/history.tsv] && git -C <worktree> commit -m
+     "Record <slug> shipped" -- <plan> [<agent-records>/history.tsv]`. A feature with **no**
+     plan record (a roadmap row built directly) is completed by its roadmap ledger-row
+     advance below — never mint a record just to close it.
    - **A debrief report when the unit warrants narrative** — implementation surprises, follow-on
-     context a future reader needs beyond the ledger line: `records.sh new reports --title "…"`,
-     tag it `debrief`, write findings-first, commit it on the branch. A routine unit needs no
-     report; the ledger line is the trace.
-   - **Complete the queue item's tracker line** (workshop hosts): if the shipped feature traces to
-     a **Backlog** tracker line, flip its `[ ]` → `[x]` (append the completion date) and
-     `records.sh touch <tracker>` — committed on the branch, landing atomically with the ship. On
-     any **other host** (SKILL.md *Host layout*) this seam maps to the project's own records/tracker
-     conventions: record the shipped unit and mark the item done there, in that layout's format —
-     the trace is the requirement, the ledger is the framework's.
+     context a future reader needs beyond the ledger line: resolve `reports.md` via the
+     agent-templates rule; `records.sh new reports --template <resolved>` when the tool
+     exists; else file-mode from that path. Tag it `debrief`, write findings-first, commit
+     it on the branch. A routine unit needs no report.
+   - **Complete the queue item's tracker line** only when that tracker file already exists:
+     flip `[ ]` → `[x]` (append the completion date) and opportunistic `records.sh touch`
+     (or file-mode stamp). Else record the ship in the plan close / hand-off / the
+     project's own tracker layout. Do not mint a Backlog tracker.
    - If the queue is tracked in a roadmap doc, update its ledger/queue row for this stream and commit
      it on the branch too: `git -C <worktree> commit -m "Roadmap: <stream> shipped <feature>" -- <roadmap-path>`.
      (At `sync` this may additively conflict with a sibling stream's row — resolve "keep both". The
@@ -151,10 +150,10 @@ independent of what the root has checked out. Never hand-commit these records to
    ritual (`flow.md` Scenario A), not something this step calls.
    **Otherwise** (plan / roadmap / brief): in the (ignored) worktree hand-off, mark
    **all landed features** done and set the next queue item current.
-   Then **draft** the next feature's implementation plan from the queue source into the host's plans
-   home (workshop: mint it with `records.sh new plans --title "…"` so the front-matter contract is
-   stamped; elsewhere the project's own plans location) — a working-tree draft: it rides the *next*
-   ship; do not commit it now. Do not start the next
+   Then **draft** the next feature's implementation plan from the queue source into
+   `<agent-records>/plans/` (resolve `plans.md` via the agent-templates rule;
+   `records.sh new --template <resolved>` when the tool exists; else file-mode fill) —
+   a working-tree draft: it rides the *next* ship; do not commit it now. Do not start the next
    feature automatically. **In `manual` mode, skip this draft** — plan-authoring belongs to the next
    PLAN session on the plan-model (`flow.md` -> *Manual mode: the phase loop*); set `Phase: plan`
    instead and PLAN starts the draft fresh.

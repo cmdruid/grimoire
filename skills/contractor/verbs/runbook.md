@@ -13,7 +13,7 @@ existing phase-plan paths — never task-level work invented here.
    spec is refused ("that is not a job conductor input").
 2. **From a plan:** emit a `plans/` record (workshop:
    `records.sh new plans --title "Runbook: <plan title>"`, then
-   `tags: [runbook]`) or a file in the standalone output home. Body: ordered
+   `tags: [runbook]`) or a file in `<agent-records>/plans/`. Body: ordered
    steps copied from the plan's slices — command/gate/path only, no approach
    essay. Each step names the slice id it came from.
 3. **From a roadmap:** refuse unless **every** unblocked phase already has a
@@ -34,4 +34,4 @@ existing phase-plan paths — never task-level work invented here.
 
 Land it per SKILL.md *Shared discipline*. Workshop: mint the shell, set
 `tags: [runbook]`, fill the conductor body. Standalone: write the
-`tags: [runbook]` conductor into the named file in the output home.
+`tags: [runbook]` conductor into the named file in `<agent-records>/plans/`.

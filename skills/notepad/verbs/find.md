@@ -3,12 +3,12 @@
 Look up what is already written. Default visibility is **live** (`open`
 and `current`). Do not mint. Do not commit.
 
-1. Resolve the records root (SKILL.md doctrine resolver).
+1. Resolve both homes (SKILL.md).
 2. If the operator asked for a closed or all notes, honor that; otherwise
    live only.
-3. If `<records-root>/scripts/records.sh` is executable: `records.sh
+3. If `<agent-records>/scripts/records.sh` is executable: `records.sh
    list --type notes` with `--status open` / `--status current` (or the
-   requested status). Else scan `<records-root>/notes/*.md` and filter
+   requested status). Else scan `<agent-records>/notes/*.md` and filter
    on `status:`.
 4. Print enough to cite a path: relative path + title. For a single
    retrieve, show the body.

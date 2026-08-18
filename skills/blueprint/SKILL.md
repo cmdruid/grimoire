@@ -31,22 +31,23 @@ line matching `Seeded from clankshop`)? That single fact picks the homes and
 context; nothing else is probed, and no verb ever refuses or stalls for lack of
 a workshop.
 
-- **Workshop present** → artifacts are records: specs and design docs in the
-  `design/` store, ADRs in `adr/` — minted with the deployed
-  `<records-root>/scripts/records.sh new <store> --title "…"` (the front-matter
-  contract is stamped at write time; the records root is the declared
-  `records-root:`, else `.records/`). **Blueprint owns these stores' templates
-  and lazy-deploys them** (the records contract's template convention): before
-  minting, copy the bundled template into
-  `<records-root>/templates/<doctype>.md` when absent — `templates/spec.md` →
-  `design.md`, `templates/adr.md` → `adr.md` (the templates carry the contract
-  front-matter plus the `<title>`/`<date>` mint slots; body sections are the
-  authoring scaffold). **Summon the design station** for every blueprint verb
+- **Workshop present** → summon the design station
   (`.handbook/scripts/context.sh design`).
-- **Standalone** → confirm an **output home** once (default `docs/`); artifacts
-  are the bundled `templates/` copied whole (they carry the same front-matter
-  vocabulary, so a later migration adopts them unchanged). The project's own
-  design docs and READMEs stand in for station context.
+- **Standalone** → the project's own design docs and READMEs stand in for
+  station context.
+
+**Destination is not stamped.** Feature `spec` / `brainstorm` / ADR artifacts
+land in `<agent-records>/design/` and `<agent-records>/adr/` on every host
+(first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`,
+else `.records/`). Resolve `design.md` / `adr.md` via the agent-templates
+rule; `records.sh new --template <resolved>` when the tool exists; else
+file-mode from that path. Then fill the body from the resolved `spec.md`
+(or the ADR body). Never write the flat
+`<agent-records>/templates/<doctype>.md`. Status promotion:
+`records.sh touch --status current` when the tool exists; else file-mode
+stamp. Closure through `records.sh done` when the tool exists; else
+file-mode stamp. Founding-shaped `grill` / `spec` stay on the named file
+(no records mint). `new` / `deploy` unchanged.
 
 **Probe exemption.** The records-mint / output-home path above applies to
 `brainstorm`, feature `spec`, and ADRs. It does **not** apply to `new` or

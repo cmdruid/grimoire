@@ -25,11 +25,17 @@ Does `<root>/.handbook/README.md` exist and carry the clankshop install stamp (a
 `Seeded from clankshop`)? That single fact picks the homes; nothing else is probed.
 
 - **Workshop present** → consult `.handbook/test/workflows/diagnostics.md` when that file exists
-  (symptom → first moves; a miss is a playbook gap — the test station tends that playbook). The
-  durable report is a `reports` record (*Report Format*). Records root is the declared
-  `records-root:`, else `.records/`.
+  (symptom → first moves; a miss is a playbook gap — the test station tends that playbook).
+  Phase 4 remains workshop-gated.
 - **Unstamped** → emit `unstamped`, point at the clankshop onramps, and investigate through
-  Phase 3 plus the conversational report only. No report mint. Do not enter Phase 4.
+  Phase 3. Do not enter Phase 4.
+
+The report is a record on every host, under the agent-records home (first
+`agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
+`.records/`). Resolve `reports.md` via the agent-templates rule;
+`records.sh new --template <resolved>` when the tool exists; else file-mode
+from that path plus the resolved `investigation.md` body. Never write the
+flat `<agent-records>/templates/<doctype>.md`. Do not mint `bugs/`.
 
 ## When to Use
 
@@ -123,22 +129,22 @@ and the proposed fix (not yet applied). Stop for confirm. After Phase 4, add how
 If Phase 4 hit the three-fix threshold, say so explicitly and name the architectural question
 instead of a fix.
 
-**Workshop present:** the durable record is a reports record. Mint it with
-`<records-root>/scripts/records.sh new reports --title "<investigation title>"` — the tool owns
-naming and front-matter (`.records/reports/YYYY-MM-DD-<slug>.md`, doctype/status/created stamped,
-collisions suffixed automatically; never hand-stamp) — then fill the body from this skill's
-`templates/investigation.md` (the body scaffold: reproduction, root cause, evidence,
-fix + verification, then a keyed `#### <key> — <title>` heading per actionable finding a
-downstream debrief/curate pass reads; keys match `[a-z0-9-]+`, unique within the report). Close
-it `consumed` (`records.sh done`) when its substance lands somewhere durable, and link it from a
-tracker line only when one exists. Commit it trunk-side, scoped, alongside the linked entry's
-completion where one applies.
+**Every host:** the durable record is a reports record under the agent-records
+home. Resolve `reports.md` via the agent-templates rule; `records.sh new
+reports --template <resolved> --title "<investigation title>"` when the tool
+exists; else file-mode from that path. Fill the body from the resolved
+`investigation.md` (reproduction, root cause, evidence, fix + verification,
+then a keyed `#### <key> — <title>` heading per actionable finding; keys
+match `[a-z0-9-]+`, unique within the report). Close it `consumed`
+(`records.sh done` when the tool exists; else file-mode stamp) when its
+substance lands somewhere durable, and link it from a tracker line only
+when one exists.
 
 ## Done when
 
 - **Ticket-owned refuse:** stopped with the open-ticket fact.
-- **Unstamped:** conversational report of reproduction, root cause, evidence, and proposed fix.
-  No mint. No Phase 4.
+- **Unstamped:** reports record minted (file-mode if no tool); conversational
+  report of reproduction, root cause, evidence, and proposed fix. No Phase 4.
 - **Human declined the fix:** the report stands; no Phase 4.
 - **Workshop, fix landed:** failing test + one fix + verified + landed; reports record filled;
   closed `consumed` when its substance has a durable home; linked from a tracker line only when

@@ -45,9 +45,10 @@ trap 'rm -rf "$TMP"' EXIT
 
 # --- slice 1: no records.sh ---
 RR="$TMP/bare"
+AT="$RR/templates"
 mkdir -p "$RR"
 
-OUT="$(/bin/bash "$MINT" mint "$RR" "Alpha fact")"
+OUT="$(/bin/bash "$MINT" mint "$RR" "$AT" "Alpha fact")"
 expect_eq "mint mode=file" "file" "$(kv mode "$OUT")"
 expect_eq "mint rel" "notes/$today-alpha-fact.md" "$(kv rel "$OUT")"
 path="$(kv path "$OUT")"
@@ -59,19 +60,20 @@ expect_match "updated today" "^updated: $today$" "$(cat "$path")"
 expect_match "filled title" '^# Alpha fact$' "$(cat "$path")"
 expect_absent "no history.tsv after mint" "$RR/history.tsv"
 expect_absent "no scripts/ after mint" "$RR/scripts"
-expect_absent "no templates/ after mint" "$RR/templates"
+expect_eq "nested dest copied" "1" "$([ -f "$AT/notepad/notes.md" ] && echo 1 || echo 0)"
+expect_absent "no flat templates/notes.md" "$RR/templates/notes.md"
 
-OUT2="$(/bin/bash "$MINT" mint "$RR" "Alpha fact")"
+OUT2="$(/bin/bash "$MINT" mint "$RR" "$AT" "Alpha fact")"
 expect_eq "collision rel" "notes/$today-alpha-fact-2.md" "$(kv rel "$OUT2")"
 expect_eq "collision mode" "file" "$(kv mode "$OUT2")"
 
-if /bin/bash "$MINT" mint "$RR" "" >/dev/null 2>&1; then
+if /bin/bash "$MINT" mint "$RR" "$AT" "" >/dev/null 2>&1; then
   echo "FAIL: empty title — expected non-zero" >&2
   fail=$((fail + 1))
 else
   pass=$((pass + 1))
 fi
-if /bin/bash "$MINT" mint "$RR" "???" >/dev/null 2>&1; then
+if /bin/bash "$MINT" mint "$RR" "$AT" "???" >/dev/null 2>&1; then
   echo "FAIL: punctuation-only title — expected non-zero" >&2
   fail=$((fail + 1))
 else
@@ -91,15 +93,18 @@ expect_absent "stamp created no history.tsv" "$RR/history.tsv"
 # --- slice 2: opportunistic records.sh ---
 if [ -f "$JOURNAL_RS" ]; then
   RR2="$TMP/with-rs"
-  mkdir -p "$RR2/scripts" "$RR2/templates"
+  AT2="$RR2/templates"
+  mkdir -p "$RR2/scripts"
   cp "$JOURNAL_RS" "$RR2/scripts/records.sh"
   chmod +x "$RR2/scripts/records.sh"
-  cp "$SKILL/templates/notes.md" "$RR2/templates/notes.md"
+  : > "$RR2/history.tsv"
 
-  OUT3="$(/bin/bash "$MINT" mint "$RR2" "Via records")"
+  OUT3="$(/bin/bash "$MINT" mint "$RR2" "$AT2" "Via records")"
   expect_eq "records mode" "records" "$(kv mode "$OUT3")"
   rpath="$(kv path "$OUT3")"
   expect_eq "records path exists" "1" "$([ -f "$rpath" ] && echo 1 || echo 0)"
+  expect_eq "records nested dest" "1" "$([ -f "$AT2/notepad/notes.md" ] && echo 1 || echo 0)"
+  expect_absent "records no flat notes.md" "$RR2/templates/notes.md"
   if /bin/sh "$RR2/scripts/records.sh" check >/dev/null 2>&1; then
     pass=$((pass + 1))
   else
@@ -108,12 +113,15 @@ if [ -f "$JOURNAL_RS" ]; then
   fi
 
   RR3="$TMP/rs-no-tpl"
+  AT3="$RR3/templates"
   mkdir -p "$RR3/scripts"
   cp "$JOURNAL_RS" "$RR3/scripts/records.sh"
   chmod +x "$RR3/scripts/records.sh"
-  OUT4="$(/bin/bash "$MINT" mint "$RR3" "Lazy deploy")"
-  expect_eq "lazy-deploy mode" "records" "$(kv mode "$OUT4")"
-  expect_eq "lazy-deploy copied template" "1" "$([ -f "$RR3/templates/notes.md" ] && echo 1 || echo 0)"
+  : > "$RR3/history.tsv"
+  OUT4="$(/bin/bash "$MINT" mint "$RR3" "$AT3" "Nested dest")"
+  expect_eq "nested-dest mode" "records" "$(kv mode "$OUT4")"
+  expect_eq "nested dest copied" "1" "$([ -f "$AT3/notepad/notes.md" ] && echo 1 || echo 0)"
+  expect_absent "no flat lazy-deploy" "$RR3/templates/notes.md"
 
   STAMP_RS="$(/bin/bash "$MINT" stamp "$RR2" "$rpath" --status superseded)"
   expect_eq "stamp records mode" "records" "$(kv mode "$STAMP_RS")"

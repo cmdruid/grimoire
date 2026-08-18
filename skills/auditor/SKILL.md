@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, drain actionable findings. Standalone by default (rubric home confirmed once, default docs/audit/); on a workshop host the rubric is test-station doctrine and findings drain through the records layer (a reports record per pass, bugs records for defects, tracker lines for the rest). Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
+description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, drain actionable findings. Standalone by default (rubric home confirmed once, default docs/audit/); on a workshop host the rubric is test-station doctrine. Pass reports land in the agent-records home; defects stay in the report and promote via the host's bug-filing lane. Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
 ---
 
 # auditor — the code-quality audit driver
@@ -19,9 +19,9 @@ up anywhere.
 
 Does `<root>/.handbook/README.md` exist and carry the clankshop install stamp (a line matching
 `Seeded from clankshop`)? That fact picks the homes. On a workshop host, also read the
-declared `records-root:` (front-door `AGENTS.md`), else `.records/`. No mode ever refuses
-or stalls for lack of a workshop — standing one up is the human's separate decision
-(the clankshop onramps), never an audit side effect.
+declared `agent-records:` or `records-root:` (front-door `AGENTS.md`), else `.records/`.
+No mode ever refuses or stalls for lack of a workshop — standing one up is the human's
+separate decision (the clankshop onramps), never an audit side effect.
 
 - **Workshop present** → the rubric is guardian doctrine:
   `<root>/.handbook/test/workflows/audit/` (`GUIDE.md`, `rules/`, `metrics.sh`) — an
@@ -30,9 +30,9 @@ or stalls for lack of a workshop — standing one up is the human's separate dec
   through the **records layer** (see *Deliverables*).
 - **Standalone** → the rubric home is **confirmed once at setup** (default `docs/audit/`).
   Later modes detect `<home>/GUIDE.md`: workshop path first; else `docs/audit/GUIDE.md`;
-  else ask once (do not scan the repo). Pass reports are dated files in that home, and
-  findings drain into the host's **own** trackers where any exist. Skip every
-  records-layer seam rather than stalling on it.
+  else ask once (do not scan the repo). The pass report is still an agent-records
+  `reports/` record (file-mode if no tool). Findings stay in the report; promote a
+  defect with `/backlog bug`. Tracker lines only when the tracker file already exists.
 
 ## What this skill bundles
 
@@ -64,23 +64,18 @@ The audit stages nothing in a home of its own: **no living findings tracker, no 
 sequential finding IDs, no resolved-findings archive**. The path is the ID and the records
 layer (or the dated report file) is the memory.
 
-On a **workshop host**, per pass:
+**Every host**, per pass:
 
-- **The pass report** — one `reports` record (`records.sh new reports --title "Audit: <scope>"`,
-  tagged `audit`): the scorecard, the quoted `metrics.sh` numbers, and every finding with its
-  evidence. The reports store *is* the trend history
-  (`records.sh list --type reports --tag audit`). Close it `consumed` once its actionable
-  findings are drained.
-- **Defects** — each detailed defect finding becomes a `bugs` record (repro + evidence), linked
-  from the pass report.
-- **Everything actionable else** — one tracker line each, by kind: feature
-  work / cleanup → **Backlog**; a project problem or risk → **Issues**; evidence the *rubric or
-  framework itself* should change → **Feedback**. A line links its record
-  (`[→ reports/… ]`) so the finding's evidence stays one hop away.
-
-**Standalone**, per pass: one dated report file in the rubric home
-(`<home>/YYYY-MM-DD-audit-<scope>.md`, same content shape); findings graduate into the host's
-existing trackers, or — when the host has none — the report's own findings list is the queue.
+- **The pass report** — one `reports` record under the agent-records home, tagged
+  `audit`. Resolve `reports.md` via the agent-templates rule;
+  `records.sh new reports --template <resolved> --title "Audit: <scope>"` when
+  the tool exists; else file-mode from that path. Never write the flat
+  `<agent-records>/templates/reports.md`. The reports store *is* the trend
+  history. Close it `consumed` once its actionable findings are drained
+  (`records.sh done` when the tool exists; else file-mode stamp).
+- **Defects stay in the report.** Do not mint `bugs/`. Promote a defect with
+  `/backlog bug`. Tracker lines only when the tracker file already exists;
+  else the report is the queue.
 
 Either way the drain discipline holds: the audit **surfaces and prioritizes**; the host's
 trackers **own and schedule** the work. No parallel work queue. Drained findings, over time,
@@ -145,16 +140,21 @@ Follow the host's `GUIDE.md` → *Process*; in brief:
 `rules/` are an authored distillation — update them by hand when a dimension's *method*
 changes. There is no mirror to re-sync.
 
+## Project templates
+
+- `reports.md`
+
 ## Done when
 
 For a **pass**: reproducible `metrics.sh` numbers, targets scored against the `rules/`
 contracts (every 5 evidence-backed, false-positives refuted), one pass report recorded, and
-**every** actionable finding drained to its home (workshop: bugs records + tracker lines, the
-report closed `consumed`). For a **setup**: a rubric home that passes the host's gate, a
+**every** actionable finding drained (report record + `/backlog bug` for defects;
+tracker lines only when the tracker file exists; the report closed `consumed`).
+For a **setup**: a rubric home that passes the host's gate, a
 baseline pass report, pinned exemplars, and the wiring hook (routing/chore line or doc-index
 pointer) in place.
 For **metrics**: `metrics.sh` printed its report; no scores filed.
 For **check**: show the script output. Exit 0 → stop. Non-zero → treat as a P0
-defect and drain it (workshop: a `bugs` record; standalone: the host tracker or a
-dated report), then stop. If `metrics.sh` has no `--check`, say so and stop — that
+defect and drain it (stay in the report; `/backlog bug` to promote), then stop.
+If `metrics.sh` has no `--check`, say so and stop — that
 is not a fail.

@@ -66,7 +66,7 @@ Decide these before reconstructing. They are what make the generic framework you
 | `<language>` | The implementation language -> drives the anti-pattern greps + metrics recipes. | Rust / TypeScript / Python |
 | `<native dimensions>` | The host's sacred invariants, each promoted to a scored dimension atop the 12 portable ones. | "Determinism" (worldgen pure in `(seed, pos)`); "AI-boundary" |
 | `<targets>` | The audited units, each tagged Deep / Mid / Light by blast radius. | `voxel/`, `content/` (Deep); `ai/` (Mid); `config.rs` (Light) |
-| `<drains>` | The host's **existing** capture homes a finding graduates into -- never a parallel queue. | workshop: bugs records + Backlog/Issues/Feedback tracker lines (via the records layer); standalone: the host's own tracker files |
+| `<drains>` | The host's **existing** capture homes a finding graduates into -- never a parallel queue. | report record + `/backlog bug` for defects; tracker lines only when the tracker file already exists |
 | `<exemplars>` | The in-repo files a score of 5 is measured against (often one library file + one service/system file). | filled by the *Select exemplars* step |
 | `<gate>` | The host's quality command the audit run must satisfy. | `./tests/scripts/ci.sh` |
 
@@ -81,8 +81,8 @@ The system splits cleanly by how often each part changes.
   metric-computation tool). Re-read each pass; revised only when the *method* changes, not when
   findings do. Hand-curated doctrine.
 - **Per-pass deliverables -- drained, never stored by the audit.** Each pass produces one
-  **pass report** (a `reports` record on a workshop host, tagged `audit`; a dated file in
-  `<home>` standalone) holding the scorecard, the quoted metrics, and every finding with
+  **pass report** (a `reports` record under the agent-records home, tagged `audit`)
+  holding the scorecard, the quoted metrics, and every finding with
   evidence -- then every actionable finding **drains** to its `<drain>` and the report closes.
   The sequence of pass reports *is* the trend history; there is no separate findings tracker,
   log directory, or CSV to tend.
@@ -106,8 +106,8 @@ One authored home (the rubric); deliverables drain per §3:
   metrics.sh          -- the <language> objective-metrics script (§8)
 ```
 
-Standalone, dated pass reports (`YYYY-MM-DD-audit-<scope>.md`) accumulate beside the rubric in
-`<home>`; on a workshop host they are `reports` records and never live here. Dependency
+Pass reports are `reports` records under the agent-records home and never live
+in `<home>`. Dependency
 direction: `GUIDE` -> `rules/`. Build leaves before indexes (rules before GUIDE) so each commit
 stays `<gate>`-green.
 
@@ -203,16 +203,16 @@ path is the ID, and a finding is cited as `<report-path>` + its heading.
   Confidence (high/med/low); Effort (S/M/L); Dimension; Target; Location (`path:line` or
   `--`); Drained (a link/line reference into a `<drain>`, or `--` while open); Finding (with
   the metric/`file:line` evidence); Fix.
-- **Drain -- by kind, at pass end.** A **defect** becomes a bug capture (workshop: a `bugs`
-  record linked from the report; standalone: the host's defect tracker). **Feature work /
-  cleanup** becomes a backlog item (workshop: a **Backlog** tracker line). A **project problem
-  or risk** becomes an **Issues** line. Evidence the *rubric or framework itself* should change
-  -- not the project's code -- becomes a **Feedback** line, the improvement loop's intake.
-  Backfill each finding's `Drained:` field as it graduates. There is **no parallel work
-  queue** -- the audit surfaces, the host trackers schedule.
+- **Drain -- by kind, at pass end.** A **defect** stays in the report; promote it with
+  `/backlog bug`. **Feature work / cleanup** becomes a Backlog tracker line only when
+  that tracker file already exists. A **project problem or risk** becomes an Issues
+  line the same way. Evidence the *rubric or framework itself* should change becomes
+  a Feedback line. Else the report is the queue. Backfill each finding's `Drained:`
+  field as it graduates. There is **no parallel work queue** -- the audit surfaces,
+  the host trackers schedule. Do not mint `bugs/`.
 - **Close the report.** Once every actionable finding is drained, close the pass report
-  (workshop: `records.sh done <report> --as consumed --note "findings drained"`); the ledger
-  keeps the trace. Standalone, the dated file simply stands as the pass's record.
+  (`records.sh done <report> --as consumed --note "findings drained"` when the tool
+  exists; else file-mode stamp).
 
 Severity is **scaled to the audit's purpose**. For an ongoing-hygiene audit (no release gate): P0 =
 a correctness / invariant violation to fix before relying on the code; P1 = a material quality gap;
@@ -370,8 +370,8 @@ Or the release-gating model: P0 = release-blocking.>
 
 ## Drains
 
-<workshop: bugs records + Backlog / Issues / Feedback tracker lines.
-standalone: the host's own trackers; if none, this report's findings list is the queue.>
+<report record + `/backlog bug` for defects; tracker lines only when the
+tracker file already exists; else this report's findings list is the queue.>
 
 ## Bench (optional)
 

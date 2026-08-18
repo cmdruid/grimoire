@@ -23,13 +23,14 @@
 # character classes -- never `\b` (a GNU extension that matches nothing on BSD).
 set -euo pipefail
 
-# Front-door variable `records-root` (default `.records`).
+# Front-door variable `agent-records` (default `.records`; also accepts
+# legacy `records-root:`).
 resolve_records_root() {
   local root="$1" fd decl=""
   for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
     if [ -z "$decl" ] && [ -f "$fd" ]; then
-      decl="$(sed -n 's/^records-root:[[:space:]]*//p' "$fd" | head -n 1 \
-              | sed 's/[[:space:]]*$//')"
+      decl="$(sed -n -E 's/^(agent-records|records-root):[[:space:]]*//p' "$fd" \
+              | head -n 1 | sed 's/[[:space:]]*$//')"
     fi
   done
   printf '%s\n' "${decl:-.records}"

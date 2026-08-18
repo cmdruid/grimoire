@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 # note-mint.sh — mint or stamp a notes/ record. Facts only.
-#   note-mint.sh mint  <records-root> <title>
-#   note-mint.sh stamp <records-root> <abs-path> [--status <status>] [--note "<text>"]
+#   note-mint.sh mint  <agent-records> <agent-templates> <title>
+#   note-mint.sh stamp <agent-records> <abs-path> [--status <status>] [--note "<text>"]
 #
-# Uses <records-root>/scripts/records.sh when that file is executable;
-# otherwise writes the contract shape itself. Never decides update-vs-mint
-# or whether to commit. Never writes history.tsv by hand.
+# Uses <agent-records>/scripts/records.sh when that file is executable
+# (`new --template <resolved>`); otherwise writes the contract shape itself.
+# Resolves notes.md through the agent-templates rule. Never decides
+# update-vs-mint or whether to commit. Never writes history.tsv by hand.
+# Never writes the flat <agent-records>/templates/notes.md.
 set -euo pipefail
 
 usage() {
-  echo "usage: note-mint.sh mint  <records-root> <title>" >&2
-  echo "       note-mint.sh stamp <records-root> <abs-path> [--status <status>] [--note \"<text>\"]" >&2
+  echo "usage: note-mint.sh mint  <agent-records> <agent-templates> <title>" >&2
+  echo "       note-mint.sh stamp <agent-records> <abs-path> [--status <status>] [--note \"<text>\"]" >&2
   exit 2
 }
 
@@ -19,9 +21,9 @@ err() { echo "note-mint.sh: $*" >&2; exit 2; }
 is_closing() { case "$1" in done|dropped|superseded|consumed) return 0 ;; *) return 1 ;; esac; }
 
 SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SKILL_NAME="notepad"
 BUNDLED_TPL="$SKILL_DIR/templates/notes.md"
 
-# fill <template> <dest> <title> <date> — same literal substitution as records.sh
 fill() {
   TITLE="$3" DATE="$4" awk '
     {
@@ -52,7 +54,6 @@ emit() {
 }
 
 file_stamp() {
-  # file_stamp <abs> <today> [<status>]
   tmp="$1.tmp"
   awk -v today="$2" -v st="${3:-}" '
     BEGIN { infm = 0; fmdone = 0 }
@@ -73,25 +74,43 @@ has_records() {
   [ -x "$1/scripts/records.sh" ]
 }
 
+# resolve_notes_template <agent-records> <agent-templates>
+resolve_notes_template() {
+  local rr="$1" at="$2"
+  local dest="$at/$SKILL_NAME/notes.md"
+  local flat="$rr/templates/notes.md"
+  [ -f "$BUNDLED_TPL" ] || err "bundled template missing: $BUNDLED_TPL"
+  if [ -f "$dest" ]; then
+    printf '%s\n' "$dest"
+    return 0
+  fi
+  mkdir -p "$(dirname "$dest")"
+  if [ -f "$flat" ]; then
+    cp "$flat" "$dest"
+  else
+    cp "$BUNDLED_TPL" "$dest"
+  fi
+  printf '%s\n' "$dest"
+}
+
 cmd_mint() {
-  [ $# -ge 2 ] || usage
-  rr="$1"; title="$2"
+  [ $# -ge 3 ] || usage
+  rr="$1"; at="$2"; title="$3"
   [ -n "$title" ] || err "empty title"
   [ -d "$rr" ] || mkdir -p "$rr"
+  [ -d "$at" ] || mkdir -p "$at"
   rr="$(abs_dir "$rr")"
+  at="$(abs_dir "$at")"
+
+  tpl="$(resolve_notes_template "$rr" "$at")"
 
   if has_records "$rr"; then
-    if [ ! -f "$rr/templates/notes.md" ]; then
-      mkdir -p "$rr/templates"
-      cp "$BUNDLED_TPL" "$rr/templates/notes.md"
-    fi
-    path="$("$rr/scripts/records.sh" new notes --title "$title")"
+    path="$("$rr/scripts/records.sh" new notes --template "$tpl" --title "$title")"
     rel="${path#"$rr"/}"
     emit "$rr" "$path" "$rel" "records"
     return 0
   fi
 
-  [ -f "$BUNDLED_TPL" ] || err "bundled template missing: $BUNDLED_TPL"
   slug="$(slug_of "$title")"
   [ -n "$slug" ] || err "title yields an empty slug: $title"
   today="$(date +%Y-%m-%d)"
@@ -100,7 +119,7 @@ cmd_mint() {
   path="$base.md"
   n=2
   while [ -e "$path" ]; do path="$base-$n.md"; n=$((n + 1)); done
-  fill "$BUNDLED_TPL" "$path" "$title" "$today"
+  fill "$tpl" "$path" "$title" "$today"
   rel="${path#"$rr"/}"
   emit "$rr" "$path" "$rel" "file"
 }
@@ -117,7 +136,7 @@ cmd_stamp() {
       *) usage ;;
     esac
   done
-  [ -d "$rr" ] || err "records-root not a directory: $rr"
+  [ -d "$rr" ] || err "agent-records home not a directory: $rr"
   rr="$(abs_dir "$rr")"
   [ -f "$path" ] || err "no such file: $path"
 

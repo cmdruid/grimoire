@@ -3,13 +3,13 @@
 The fact died. There is no replacement. A successor means `supersede`,
 not this verb.
 
-1. Resolve the records root (SKILL.md doctrine resolver). Locate
-   `scripts/note-mint.sh` from this skill's own directory.
+1. Resolve both homes (SKILL.md). Locate `scripts/note-mint.sh` from
+   this skill's own directory.
 2. Identify the note. If the operator does not say **what changed**,
    refuse.
 3. Write one body sentence saying what changed (the fact is no longer
    true, and why).
-4. Close: `note-mint.sh stamp <records-root> <abs-path> --status dropped
+4. Close: `note-mint.sh stamp <agent-records> <abs-path> --status dropped
    --note "<what changed>"`.
 5. Do not mint a replacement.
 6. **Commit** per SKILL.md: standalone →

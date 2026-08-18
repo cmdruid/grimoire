@@ -1062,7 +1062,7 @@ required unless a later flip changes a slice boundary.
     chars and names no sibling. `## Project templates`
     lists the three doctypes. Check 1 enabled on the
     live run; lint `fails=0`.
-- [ ] **Slice 3: destination flip for the other writers**
+- [x] **Slice 3: destination flip for the other writers**
   <requires: 2>
   - Paths: `skills/workstream/SKILL.md`,
     `verbs/create.md`, `verbs/ship.md`,

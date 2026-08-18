@@ -24,7 +24,7 @@ kind is dropping in a file.
 
 ## Catalog
 
-The live catalog is `<records-root>/templates/analyst/` when deployed, else this skill's bundled
+The live catalog is `<agent-records>/templates/analyst/` when deployed, else this skill's bundled
 `templates/`. **Deployed wins** — a project customizes its reports by editing the deployed copy,
 and host-added templates join the catalog the same way.
 
@@ -95,10 +95,13 @@ cron-fired tick, a non-interactive harness invocation, or any run whose output g
 person will see it. When in doubt, persist: a spare record costs a line in a store, an
 evaporated briefing costs the whole run.
 
-To persist: mint with `records.sh new reports --title "…"`, then fill the minted skeleton — body
+To persist: resolve `reports.md` via the agent-templates rule; mint with
+`records.sh new reports --template <resolved> --title "…"` when the tool
+exists; else file-mode from that path. Then fill the minted skeleton — body
 **and** the `tags:` line, which must carry the template's token (`tags: [analyst, briefing]`).
 The mint tool sets no tags; filling them is what lets the next briefing find this one as its
-anchor. On a host with no records layer, write to the project's own docs home, confirmed once.
+anchor. On a host with no records tool, file-mode still writes under the
+agent-records home.
 
 ## Anti-patterns
 
