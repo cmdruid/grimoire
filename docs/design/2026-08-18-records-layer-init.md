@@ -187,7 +187,8 @@ verbs pass only those names.
 | Front-door declaration | `agent-records: <rel>` preferred |
 | Legacy declaration | `records-root: <rel>` still accepted |
 | Resolver | first `^agent-records:` or `^records-root:` in `AGENTS.md`, then `CLAUDE.md`; else `.records` |
-| Script argument | the resolved path (scripts do not scan the front door) |
+| Verb / mint-script argument | the resolved path (mint scripts do not scan the front door) |
+| State-analysis helper | may inline the resolver (both declaration names); print `agent-records=` |
 | Script fact key | `agent-records=` on new or touched scripts; existing `records-root=` is fine until that script is edited |
 
 Why this name: "agent" says who writes here; "home" is this
@@ -215,7 +216,8 @@ Schema, not instances. Same shape as the agent-records home.
 | Front-door declaration | `agent-templates: <rel>` |
 | Legacy declaration | none (new). Flat `.records/templates/<doctype>.md` is a brownfield *source*, not an alias |
 | Resolver | first `^agent-templates:` in `AGENTS.md`, then `CLAUDE.md`; else `.templates` |
-| Script argument | the resolved path (scripts do not scan the front door) |
+| Verb / mint-script argument | the resolved path (mint scripts do not scan the front door) |
+| State-analysis helper | n/a this unit (no helper keys off the templates home) |
 | Script fact key | `agent-templates=` |
 
 No second front-door variable beyond this one. The default is
@@ -226,12 +228,31 @@ project template creates `<agent-templates>/<skill>/`.
 
 **Resolution, per declared project template `<file>`:**
 
+The **verb** resolves both homes (inlined front-door
+scan) and passes them into the mint script. The mint
+script never opens `AGENTS.md` / `CLAUDE.md`.
+
 1. `<agent-templates>/<skill>/<file>` if present → use it
    (incumbent; never overwrite).
-2. Else `<agent-records>/templates/<doctype>.md` if present
-   (legacy flat, `records.sh` shape) → copy that file to
+2. Else, **only for store-named lock-ins** (the
+   filename stem *is* the store: `notes.md`, `bugs.md`,
+   `tickets.md`, `trackers.md`, `plans.md`, `design.md`,
+   `adr.md`, `reports.md`): if
+   `<agent-records>/templates/<doctype>.md` is present
+   (legacy flat) → copy that file to
    `<agent-templates>/<skill>/<file>`, then use the new
    path. Do not delete the old file this unit.
+   **Body scaffolds skip this step** (`spec.md`,
+   `plan.md`, `roadmap.md`, `investigation.md`) — they
+   have no legacy flat name.
+   **Blueprint one-time adopt:** if
+   `<agent-records>/templates/design.md` exists, adopt
+   it as `design.md`. If only
+   `<agent-records>/templates/spec.md` exists (today's
+   lazy-deploy: `spec.md` → `design.md`), adopt that
+   file as **`spec.md`** (the body), not as the new
+   `design.md` shell. Do not overwrite a project
+   `spec.md` with stock after that adopt.
 3. Else copy the bundled `templates/<file>` to
    `<agent-templates>/<skill>/<file>`, then use it.
 
@@ -239,12 +260,21 @@ Package-only templates skip this resolver. They are read
 from the skill's own `templates/` and are never copied
 into the project.
 
+**Mint-script signatures** (both homes are arguments):
+
+```
+note-mint.sh   mint  <agent-records> <agent-templates> <title>
+record-mint.sh mint  <agent-records> <agent-templates> <doctype> <title>
+```
+
+`stamp` keeps `<agent-records> <abs-path>` (no template).
+Records-mode uses `records.sh new --template <resolved>`
+and **never** writes `<agent-records>/templates/`.
+
 **`records.sh new` gains `--template <path>`.** Writers
 always pass the resolved project path. Omitting
 `--template` keeps today's `$RR/templates/$doctype.md`
-lookup so a brownfield home still mints. Writers in this
-unit never copy into `.records/templates/` — that path is
-legacy input only.
+lookup so a brownfield home still mints.
 
 ### The record-writer rule (doctrine)
 
@@ -255,9 +285,13 @@ pack). Rules:
 
 1. **Destination.** A typed record is written under the
    agent-records home (resolver above). Skill prose keeps
-   naming the default path literally. Scripts take the
-   resolved path as an argument and do not scan the front
-   door (same split as notepad).
+   naming the default path literally. **Mint/write
+   scripts** take resolved paths as arguments and do not
+   scan the front door. **State-analysis helpers** that
+   must emit `agent-records=` without a verb (today
+   `workstream-git.sh`) inline the resolver and accept
+   both declaration names. Doctrine's two-readers
+   paragraph is rewritten to this split.
 2. **Carry your templates; declare the lock-in set.** A skill
    that mints store `D` bundles `templates/D.md` (five keys +
    `<title>` / `<date>`). Body scaffolds may also live in
@@ -391,13 +425,17 @@ same as today's independence checks.
 **Activation (so slice 1 does not maroon the live
 tree at FAIL):** slice 1 implements both checks,
 proves them red on fixtures, and **enables check 2
-on the live tree** after adding `## Project
-templates` headings (lists from the inventory; no
-behavior change). Check 1 stays fixture-only until
-the end of slice 2, when the backlog floor phrases
-are gone; then it joins the live run. A live-tree
-`fails=0` after slice 1 includes check 2 and
-excludes check 1. After slice 2 it includes both.
+on the live tree** only after heading-only edits
+land on **every** current `templates/*.md` skill:
+notepad, backlog, blueprint, contractor, debugger,
+workstream, journal (explicit none), and
+`agent-council` (explicit none — `ballot.md` /
+`review.md` are package-only). Check 1 stays
+fixture-only until the end of slice 2, when the
+backlog floor phrases are gone; then it joins the
+live run. A live-tree `fails=0` after slice 1
+includes check 2 and excludes check 1. After slice 2
+it includes both.
 
 List-vs-disk (a listed file missing from `templates/`)
 and "copied a file the list does not name" stay on
@@ -478,6 +516,15 @@ already exists.
 (required by writers in this unit; omitted → today's
 `$RR/templates/$doctype.md`). Tests cover both arms.
 
+`skills/clankshop/scripts/tests/setup-journal-test.sh`
+currently `cp`s `trackers.md` into
+`.records/templates/` (the directory standup plants
+today). Slice 1 updates that fixture: `mkdir -p` is
+not enough after standup stops creating `templates/`
+— pass `--template` to `records.sh new` (or
+`mkdir -p` the dest dir before the `cp`). Do not
+assume standup still plants `templates/`.
+
 `description:` stays setup / done / curate / the contract.
 Journal does not become optional in the pack
 (`PACK.md` `required: journal` stays — the workshop's
@@ -488,11 +535,15 @@ That stays — the *mint*, not standup, creates the store.
 
 ### Notepad
 
-Already conforms (carries `notes.md`, own-store, no floor).
-Resolver prose updates to agent-records + agent-templates.
-`## Project templates` lists `notes.md`. `note-mint.sh`
-resolves that file through the agent-templates rule
-before mint/stamp. No other behavior change.
+Carries `notes.md` and already file-mode mints. It does
+**not** already conform: today's `note-mint.sh` still
+lazy-deploys into `<agent-records>/templates/notes.md`
+when `records.sh` exists. Slice 3 updates the script
+(and `note-mint-test.sh`) to take both homes, resolve
+through the agent-templates rule, and never write
+`.records/templates/`. Resolver prose in `SKILL.md`
+updates to both homes. `## Project templates` lists
+`notes.md`.
 
 ### Backlog (the pain)
 
@@ -510,7 +561,7 @@ Drop the floor:
   copy of `note-mint.sh`:
 
   ```
-  record-mint.sh mint  <agent-records> <doctype> <title>
+  record-mint.sh mint  <agent-records> <agent-templates> <doctype> <title>
   record-mint.sh stamp <agent-records> <abs-path> [--status <status>] [--note "<text>"]
   ```
 
@@ -579,6 +630,11 @@ skip and do not create `.records/`" to:
   when `history.tsv` was actually written.
 - Next-plan draft (delegate mode): same destination,
   same opportunistic mint.
+- `scripts/workstream-git.sh` `resolve_records_root`
+  today scans `^records-root:` only. Update it to the
+  both-names resolver and print `agent-records=`. A
+  host that declares only `agent-records:` must not
+  send `drafted_next_plan` at the default `.records`.
 
 Workstream does not grow a mint script this unit unless
 file-mode plan fill turns out to be more than a template
@@ -694,7 +750,9 @@ No `version:` bump (member set unchanged).
 | Backlog: drop the floor, `record-mint.sh`, project templates | Giving every writer a mint script |
 | Destination flip: workstream, blueprint, contractor, debugger, auditor, notepad resolver | Debugger Phase 4 workshop gate; auditor rubric-home probe |
 | Each writer: bundled doctype template + `## Project templates` | Copying undeclared / skill-internal templates |
-| Clankshop / PACK.md roster wording (no version bump) | Making journal optional in the pack; moving `records.sh` out of `scripts/` |
+| Clankshop / PACK.md roster wording (no version bump); `setup-journal-test.sh` `--template` | Making journal optional in the pack; moving `records.sh` out of `scripts/` |
+| `workstream-git.sh` both-names resolver | — |
+| `note-mint.sh` both-homes signature; never write `.records/templates/` | — |
 | Brownfield adopt of `.records/templates/<doctype>.md` into the agent-templates home | Deleting legacy `.records/templates/` this unit |
 
 ### Out of scope (recap)
@@ -748,7 +806,9 @@ No `version:` bump (member set unchanged).
 - `cd <worktree> && skills/backlog/scripts/tests/run.sh`
   (new): file-mode mint, records-mode mint, no
   `history.tsv` on file-mode close, missing template
-  errors.
+  errors. Red-proof the absence: plant a
+  `history.tsv` write on the file-mode close path,
+  demand the test FAIL, then remove the plant.
 - Each writer in the inventory table has
   `templates/<doctype>.md` on disk for every store it
   mints.
@@ -808,6 +868,9 @@ required unless a later flip changes a slice boundary.
     `skills/journal/scripts/records.sh` (`--template`);
     `skills/journal/scripts/tests/standup-test.sh`;
     `skills/journal/scripts/tests/records-test.sh`;
+    `skills/clankshop/scripts/tests/setup-journal-test.sh`;
+    heading-only `## Project templates` on
+    `skills/{notepad,backlog,blueprint,contractor,debugger,workstream,journal,agent-council}/SKILL.md`;
     optionally `skills/clankshop/PACK.md` roster blurbs.
   - Verify: lint `fails=0` on the live tree. Doctrine
     names both homes; `new` asks the record-writer
@@ -847,7 +910,10 @@ required unless a later flip changes a slice boundary.
     `templates/reports.md`;
     `skills/auditor/SKILL.md`,
     `templates/reports.md`;
-    `skills/notepad/SKILL.md` (resolver wording only).
+    `skills/notepad/SKILL.md`,
+    `scripts/note-mint.sh`,
+    `scripts/tests/note-mint-test.sh`;
+    `skills/workstream/scripts/workstream-git.sh`.
   - Verify: grep gate empty under `skills/`. No
     writer confirms a `docs/` output home for a typed
     record. Workstream Host layout no longer says
@@ -872,3 +938,37 @@ required unless a later flip changes a slice boundary.
 | Copy every document-creating template | Not every bundled file is a project schema; the skill declares the set |
 | A `templates/lock-in` manifest | Second roster; `SKILL.md` is the declaration |
 | Lint that parses the project-templates list | Fragile; review owns list-vs-disk and undeclared copies |
+
+## Review history
+
+Independent `/blueprint review` 2026-08-18 (`needs-rework`).
+Must-fixes folded the same day. Owner prunes this
+section when the next review is clean.
+
+1. **high — Slice 1 Paths omitted heading-only edits.**
+   Folded: every current `templates/*.md` skill
+   (incl. `agent-council` none) is on the Slice 1
+   path list; check 2 enables only after those
+   headings land.
+2. **high — Mint scripts cannot apply the
+   agent-templates rule.** Folded: both homes are
+   arguments; verbs scan, mint scripts do not;
+   notepad `note-mint.sh` is a Slice 3 behavior
+   change, not wording-only; records-mode never
+   writes `.records/templates/`.
+3. **mid — `setup-journal-test.sh` assumes standup
+   plants `templates/`.** Folded: file is on Slice 1;
+   fixture uses `--template` (or `mkdir -p` before
+   `cp`).
+4. **mid — `workstream-git.sh` scans `records-root:`
+   only.** Folded: both-names resolver; script on
+   Slice 3; doctrine two-readers paragraph split
+   (mint scripts take paths; state-analysis helpers
+   inline the resolver).
+5. **mid — Legacy adopt had no file→doctype map.**
+   Folded: step 2 is store-named lock-ins only;
+   body scaffolds skip; blueprint `spec.md`→`design.md`
+   is a one-time adopt of the body, not the shell.
+6. **low — File-mode no-`history.tsv` lacked a
+   red-proof.** Folded: plant a write, demand red,
+   remove the plant.
