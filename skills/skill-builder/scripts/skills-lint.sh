@@ -576,6 +576,97 @@ for sk in "$skills_dir"/*/; do
   fi
 done
 
+# ---- 14. doctrine home not resolved (FAIL) -----------------------------------
+# A skill declaring a `doctrine` typed edge must carry a sanctioned resolution
+# literal (front-door-variables doctrine -> "Use a sanctioned resolution
+# literal"). Three members; the angle-bracket form is preferred because it is a
+# single token and cannot straddle a line wrap.
+#
+# Two deliberate properties, both learned the hard way:
+#   * NORMALIZE whitespace across newlines before matching. These bodies wrap
+#     near 95 columns and the phrase members demonstrably break across lines in
+#     the live tree, so a line-based grep would FAIL conforming skills purely on
+#     where their text happened to wrap.
+#   * STRIP fenced and indented blocks first, so a skill cannot satisfy the
+#     check by merely quoting the literal inside an example.
+#
+# Scope: the doctrine home only. `doctrine` is the one coarse home-typed edge,
+# so it is the only home whose touchers can be identified mechanically; records
+# and templates conformance is already carried by the records-writer checks and,
+# for the semantic half, by skill review. Exemptions: skill-builder (authors this
+# doctrine), pack faces.
+strip_code() { # strip fenced and indented blocks, then flatten whitespace
+  awk '
+    /^[[:space:]]*(```|~~~)/ { fence = !fence; next }
+    fence                    { next }
+    /^(    |\t)/             { next }
+    { print }
+  ' "$1" | tr '\n' ' ' | tr -s ' '
+}
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  case "$name" in skill-builder) continue ;; esac
+  is_pack_face "$name" && continue
+  [ -f "$sk/SKILL.md" ] || continue
+  edges="$(sed -n '/<!-- edges:/,/edges:.* -->/p' "$sk/SKILL.md")"
+  case "$edges" in
+    *doctrine*) ;;
+    *) continue ;;
+  esac
+  found=0
+  while IFS= read -r -d '' f; do
+    if strip_code "$f" | grep -qF -e '<agent-doctrine>' \
+                                 -e 'the agent-doctrine home' \
+                                 -e 'declared `agent-doctrine:`'; then
+      found=1
+      break
+    fi
+  done < <(find "$sk" -name '*.md' -print0)
+  [ "$found" -eq 1 ] || \
+    fail "$name: declares a doctrine edge but carries no sanctioned agent-doctrine resolution literal"
+done
+
+# ---- 15. off-home doctrine literal (FAIL) ------------------------------------
+# Unconditional by design: check 14 is edge-gated, so a skill that hardcodes a
+# doctrine path and simply never declares the edge would be invisible to it.
+# This is the net that catches that, in check 12's shape (FAIL-on-presence of
+# fixed literals, name-based exemptions).
+#
+# The exemption table is a BURN-DOWN, not a permanent amnesty: it is
+# pre-populated with the literals that exist today, and each entry is removed as
+# its skill is flipped onto home resolution. An empty table is the goal state.
+# Pack faces are exempt already (clankshop legitimately owns the handbook), as is
+# skill-builder (this doctrine documents the literals it bans elsewhere).
+#
+# NOT attempted: a check on the canonical DEFAULT path. Skill prose is required
+# to name default paths literally, so `.records/doctrine/...` in prose is
+# conforming usage, and a hardcoded default is textually identical to a
+# documented one. Only OFF-home literals are decidable. For the same reason there
+# is no check on "prose that directs creating .handbook/": the only occurrences
+# in the corpus are prohibitions ("Do not create `.handbook/`"), which a naive
+# matcher would flag as violations -- compliant and violating text differ only by
+# a preceding negation. That rule lives in doctrine prose and in skill review.
+offhome_exempt() { # offhome_exempt <skill>; 1 = still allowed to carry them
+  case "$1" in
+    auditor|debugger|workstream|blueprint|contractor) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  case "$name" in skill-builder) continue ;; esac
+  is_pack_face "$name" && continue
+  offhome_exempt "$name" && continue
+  while IFS= read -r -d '' f; do
+    rel="${f#"$sk"}"
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      fail "$name: $rel:$line: off-home doctrine literal (resolve <agent-doctrine> instead)"
+    done < <(grep -nF -e 'docs/audit/' -e '`.handbook/test/' -e '`.handbook/build/' \
+                     -e '`.handbook/design/' -e '`.handbook/review/' "$f" || true)
+  done < <(find "$sk" -name '*.md' -print0)
+done
+
 # ---- summary -----------------------------------------------------------------
 echo "fails=$fails warns=$warns"
 [ "$fails" -eq 0 ] || exit 1
