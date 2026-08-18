@@ -139,10 +139,9 @@ coupled to the reset**, not to each task or verb (`sync` and `ship` do not save)
 **`/workstream save`** — never `/checkpoint`: this file IS the stream's checkpoint, and a
 competing root `CHECKPOINT.md` corrupts the resume path (`/checkpoint` refuses here for that
 reason).
-**Every seam-status message leads with the anchor line** `WORKSTREAM <stream> — hand-off: <abs
-path to this file>` (`/checkpoint`'s anchor-line technique) — repeated, salient state a compaction
-summarizer reliably keeps, covering the
-case where this file was last read long before the compaction.
+The hand-off file's first heading carries its absolute path (`/checkpoint`'s
+anchor-line technique). Speak that path at `save` / `load` / Recovery — not
+as a prefix on ordinary status replies.
 
 **Reset ritual** (whether Scenario A *lands* depends on *Ship cadence* above):
 - **Feature complete, at a landing point (`per-stage` / a milestone / track end):** `<debrief>`

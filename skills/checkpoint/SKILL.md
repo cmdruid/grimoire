@@ -109,12 +109,14 @@ ignore mechanism*, fed by `scripts/save-guard.sh`.
 ## Unprompted behaviors (the during-the-session rules — no invocation needed)
 
 - **First save early**: once the session is demonstrably mid-work, create the checkpoint — the
-  window before the first save has no compaction protection.
-- **Refresh at the checkpoint moments**: before a deliberate reset; at each work-unit
-  completion; on a context-pressure warning (save now, recommend a reset).
-- **Anchor-line repetition**: while a checkpoint is live, lead every substantial status message
-  with `CHECKPOINT — file: <absolute path>` — repeated, salient state a compaction summarizer
-  reliably keeps, so even a lossy summary points back at the file.
+  window before the first save has no compaction protection. One first save; do not refresh
+  it on the next reply.
+- **Refresh at the checkpoint moments**: before a deliberate reset; at a work-unit
+  completion (a human-visible milestone — see Lifecycle in `references/disciplines.md`,
+  not every slice or status update); on a context-pressure warning (save now, recommend a
+  reset).
+- **Anchor-line repetition**: the path lives in the file. Speak it at `save` / `resume` /
+  Recovery, not as a prefix on ordinary replies (`references/disciplines.md`).
 - **Compaction summary detected → stop and run Recovery** (`references/disciplines.md`).
 
 ## Done when

@@ -31,8 +31,11 @@ not "when I'm done"; before the first save there is no compaction protection, an
 window is why the first save is prescribed early. Refreshed at **checkpoint moments**:
 (1) before a deliberate reset, (2) at a work-unit completion — bounding staleness to one
 in-flight unit should compaction strike, (3) on a context-pressure warning — save proactively
-**and recommend a reset**; beat the compactor to a clean checkpoint. Never consumed by resume;
-ended only by `done`. **Presence = work in flight**, with two qualified states: a file the
+**and recommend a reset**; beat the compactor to a clean checkpoint. A **work-unit** is a
+human-visible milestone that would be expensive to reconstruct (a finished feature, an
+accepted plan, the end of a working session). A contractor slice, a file edit, a review
+pass, or a status reply is not a work-unit — refreshing there is chatter, not protection.
+Never consumed by resume; ended only by `done`. **Presence = work in flight**, with two qualified states: a file the
 durable trail contradicts is **stale** (the file is intent, disk is truth — trust disk, refresh
 the file **via `save`**, never inside a resume), and a file describing work that has since
 landed is a **forgotten `done`** (resume detects this and proposes `done` rather than resuming
@@ -72,9 +75,10 @@ the file/summary for intent."
 
 ## Two techniques the disciplines cite
 
-- **Anchor-line repetition** (the anchor-line technique) — a session working under a checkpoint
-  leads every substantial status message with `CHECKPOINT — file: <absolute path>`: repeated,
-  salient state a compaction summarizer reliably keeps, so even a lossy summary points back at
-  the file.
+- **Anchor-line repetition** (the anchor-line technique) — the save-state file itself
+  carries its absolute path in the first heading (or an equally early, unique line) so a
+  compaction summarizer that keeps headings can still find it. Speak that path to the
+  human only at a seam: `save`, `resume`, Recovery, or when they ask where the
+  save-state lives. Ordinary status replies do not open with it.
 - **Context-pressure cue** — a harness context-low warning is Lifecycle checkpoint moment (3),
   not a separate rule: save now, recommend a reset.
