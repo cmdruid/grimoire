@@ -14,6 +14,25 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-20 — `records.sh check` follows example links inside code blocks; the clankshop gate is red on `main`
+- **source:** `feat` stream, post-rebase full gate (2026-08-18). Reproduced on `main` @ `420488f`
+  with no stream code involved — `bash skills/clankshop/scripts/tests/setup-journal-test.sh` →
+  `FAIL: trackers/<date>-backlog.md — broken link → notes/2026-08-01-fact.md`.
+- **status:** open — **the trunk's clankshop suite is currently failing**; this is not a
+  regression from any stream.
+- **body:** `skills/backlog/templates/trackers.md` illustrates the tracker-line format with two
+  four-space-indented example lines (a markdown indented code block) that contain a path-shaped
+  token, `notes/2026-08-01-fact.md`. `records.sh check`'s link checker extracts link targets
+  without skipping code blocks — indented or fenced — so it treats the *example* as a real
+  reference and reports it broken the moment a record is minted from that template. The
+  `setup-journal-test` fixture mints exactly that record, so the suite goes red.
+  **Candidate fix (preferred):** teach the link checker to skip code blocks — a checker should
+  never follow an illustrative path, and this will recur for any template that shows a
+  path-shaped example. **Alternative:** make the template's example non-path-shaped, which
+  treats the symptom and leaves the checker wrong. Prove whichever fix by breaking it: plant a
+  real broken link outside a code block and confirm the checker still catches it, so the
+  code-block skip cannot become a blanket amnesty.
+
 ### BL-19 — a skill-owned deployed template set is a new convention with no doctrine home
 - **source:** `analyst` build (2026-08-18, `feat` stream); named in
   `docs/design/2026-08-18-analyst-skill-design.md` and **deliberately deferred by the human** so
