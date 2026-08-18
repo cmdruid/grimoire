@@ -189,6 +189,40 @@ feature's plan._
 5. Fixture-harness verification tests; routing + classifier probes logged.
 6. `PACK.md` registration (helper, version bump) + `README.md` inventory line.
 
+## Review history
+
+**2026-08-18 — `/blueprint review`, 3-lens fan-out (skeptic / groundedness / soundness) + ground-check: `needs-rework`.**
+Ground-check clean (3/3 refs resolve); groundedness clean (every repo claim verified). Must-fix
+findings, merged and ranked (owner prunes on resolution):
+
+1. **Persistence/anchor mechanism doesn't exist as described** (soundness; verified against
+   `records.sh`): `new` takes only `--title` — nothing can tag a minted record, so "tagged with
+   its template token" is unachievable as written and the last-persisted-briefing anchor lookup
+   (`list --tag`) can never match. Resolve: analyst fills the minted skeleton (body **and**
+   `tags:` line) — the same write minting already implies; file records.sh's no-tag-at-mint gap
+   as a journal backlog item.
+2. **`diagnostics`/auditor hole** (skeptic): auditor already computes gate state
+   (`metrics.sh --check`) and positions audit `reports/` records as the health-trend history.
+   Spec must state whether `diagnostics` re-derives or consumes auditor's artifacts, and declare
+   it in Edges.
+3. **Verification coverage gaps** (soundness): `subsystem`/`diagnostics`/`guide` have zero named
+   coverage (including the guard-style "no verdicts"/"project-anchored only" claims); the two
+   span-anchor fallback tiers and all three persistence branches are untested.
+4. **Problem claim overstated** (skeptic): `clankshop check`, `workstream status`,
+   `backlog debrief` all read-state-and-inform; narrow the claim to "no member synthesizes the
+   records layer into cited, narrative, cross-span prose."
+5. **"Hand-off to debugger" collides with typed-edge vocabulary** (soundness): Boundaries says
+   hand-off; Edges declares `handoff: —`. Reword Boundaries to avoid the load-bearing term.
+6. **Journal-contract extension is a real new convention, punted to build** (soundness +
+   skeptic): flat doctype-mint templates vs a deployed multi-file catalog are different animals
+   (debugger's bundled `investigation.md` is quietly a third variant); needs a real contract
+   subsection settled now, not a one-line note at build.
+
+Nice-to-have (fold selectively): classifier zero-match/empty-catalog fallbacks; depth dial
+underspecified (cut or pin); "~14 days" imprecise; Edges `consumes:` line not lint-parseable as
+written; "read-only" headline qualified late; helper-tier = roster-table label + `optional:`
+list (two edits); inline classifier has no deterministic test (probe only).
+
 ## Decision log
 
 All settled 2026-08-18 with the human (workstream `feat`, brainstorm → grill): name `analyst`
