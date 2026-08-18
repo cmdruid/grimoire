@@ -87,7 +87,7 @@ pub fn plan_remove(target: &Target, pack: &str) -> Result<RemovePlan> {
 ///
 /// Ownership means *either* holds: a link we created satisfies both while the
 /// library is in place, and only the literal one once it is gone.
-fn owned_by(link: &Path, source: &Path) -> bool {
+pub(crate) fn owned_by(link: &Path, source: &Path) -> bool {
     let canonical_source = std::fs::canonicalize(source).unwrap_or_else(|_| source.to_path_buf());
     let canonical_match = std::fs::canonicalize(link)
         .map(|resolved| resolved.starts_with(&canonical_source))

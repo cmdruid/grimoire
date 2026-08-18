@@ -168,7 +168,13 @@ lock_path() {
   case "$target" in
     "$HOME"/.claude/*|"$HOME"/.agents/*|"$HOME"/.codex/*|"$HOME"/.cursor/*)
       printf '%s/.agents/grimoire.lock\n' "$HOME" ;;
-    *) printf '%s/grimoire.lock\n' "$(dirname "$target")" ;;
+    *)
+      parent="$(CDPATH='' cd "$(dirname "$target")" && pwd)"
+      case "$(basename "$parent")" in
+        .agents|.claude|.codex|.cursor) project_root="$(dirname "$parent")" ;;
+        *)                              project_root="$parent" ;;
+      esac
+      printf '%s/grimoire.lock\n' "$project_root" ;;
   esac
 }
 

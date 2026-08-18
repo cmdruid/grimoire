@@ -16,8 +16,8 @@ fn install_list_check_remove_at_project_scope() {
     assert_eq!(target.skills_dir, sb.project().join(".claude/skills"));
     assert_eq!(
         target.lock_path,
-        sb.project().join(".claude/grimoire.lock"),
-        "§3: a project install locks beside the agent dir (install.sh's `dirname $target`)"
+        sb.project().join("grimoire.lock"),
+        "§3: a project install locks at the project root"
     );
 
     install_alpha(&sb, &target, Vec::new());

@@ -202,6 +202,79 @@ fn reinstalling_surfaces_the_version_and_source_facts() {
     assert_eq!(replacing.dropped, ["gamma"]);
 }
 
+/// §5: "members no longer listed are removed". `ReplacePlan` computed `dropped`
+/// from the start; nothing acted on it, so a dropped member kept its link while
+/// vanishing from the lock — surfacing later as a loose skill nobody owned.
+///
+/// Break the unlink loop in `install::install` and this goes red on the link.
+#[test]
+fn reinstalling_unlinks_members_the_new_release_dropped() {
+    let sb = Sandbox::new();
+    let target = sb.global_target("claude-code");
+    install_alpha(&sb, &target, Vec::new());
+    assert!(
+        target.skills_dir.join("gamma").exists(),
+        "precondition: the optional member installed"
+    );
+
+    // The new release no longer lists `gamma`.
+    sb.write_manifest("alpha", "1.1.0", "the alpha pack", "beta", None);
+    let outcome = install_alpha(&sb, &target, Vec::new());
+
+    assert_eq!(outcome.dropped, ["gamma"], "the drop must be reported");
+    assert!(
+        std::fs::symlink_metadata(target.skills_dir.join("gamma")).is_err(),
+        "§5: a member the new release does not list must not keep its link"
+    );
+    let installed = inventory::inventory(&target).unwrap();
+    let entry = &installed.packs[0].entry;
+    assert!(!entry.skills.contains_key("gamma"), "nor its lock entry");
+    assert!(
+        entry.skills.contains_key("beta"),
+        "the surviving member stays"
+    );
+}
+
+/// The other half of §5's clause — "**subject to the reference count**". A
+/// dropped member another installed pack still lists must survive, or a
+/// reinstall of one pack silently breaks a different one.
+///
+/// Break the `held_elsewhere` guard and this goes red.
+#[test]
+fn a_dropped_member_survives_if_another_pack_still_holds_it() {
+    let sb = Sandbox::new();
+    // `delta` requires `gamma` — the member `alpha` is about to drop.
+    sb.write_skill("delta", "a second pack face");
+    sb.write_manifest("delta", "2.0.0", "the delta pack", "gamma", None);
+
+    let target = sb.global_target("claude-code");
+    let library = sb.library();
+    install_alpha(&sb, &target, Vec::new());
+    install::install(install::InstallRequest {
+        library: &library,
+        pack: "delta",
+        target: &target,
+        installed_at: sb.timestamp(),
+        source_ref: None,
+        skip_optional: Vec::new(),
+    })
+    .expect("install delta");
+
+    // `alpha` drops `gamma`; `delta` still requires it.
+    sb.write_manifest("alpha", "1.1.0", "the alpha pack", "beta", None);
+    let outcome = install_alpha(&sb, &target, Vec::new());
+
+    assert!(
+        outcome.dropped.is_empty(),
+        "a refcounted member is not dropped: {:?}",
+        outcome.dropped
+    );
+    assert!(
+        target.skills_dir.join("gamma").exists(),
+        "§5's reference count must protect a member another pack still lists"
+    );
+}
+
 #[test]
 fn a_shared_member_is_refcounted_at_pack_altitude() {
     let sb = Sandbox::new();

@@ -176,6 +176,10 @@ pub struct InstallRequest<'a> {
 pub struct InstallOutcome {
     pub linked: Vec<(String, PathBuf)>,
     pub already_present: Vec<String>,
+    /// §5 reinstall: members the previous release listed and this one does not,
+    /// unlinked here. Reported rather than done silently — a reinstall that
+    /// quietly removes skills is exactly what §5's "never silent" is about.
+    pub dropped: Vec<String>,
     /// §5 step 4: the face is where any pack setup lives. We surface it; we
     /// never execute anything on the pack's behalf.
     pub face: Option<PathBuf>,
@@ -236,6 +240,13 @@ pub fn install(req: InstallRequest<'_>) -> Result<InstallOutcome> {
         }
     };
 
+    // What the previous release of this pack had installed, captured BEFORE the
+    // insert below overwrites the entry (§5's reinstall replace).
+    let previous = existing
+        .as_ref()
+        .and_then(|l| l.packs.get(&pack.name))
+        .map(|e| (e.skills.keys().cloned().collect::<Vec<_>>(), e.source.clone()));
+
     // 4. Commit: one entry for a fully installed pack.
     let mut skills = BTreeMap::new();
     for m in &selected {
@@ -275,6 +286,42 @@ pub fn install(req: InstallRequest<'_>) -> Result<InstallOutcome> {
     if let Err(e) = write_lock(&lock_data, &req.target.lock_path) {
         rollback(&created);
         return Err(e);
+    }
+
+    // 5. §5's reinstall clause: "members no longer listed are removed (subject
+    //    to the reference count)". Deliberately AFTER the lock write, which is
+    //    §5's commit point — unlinking first would need the staging that §5
+    //    requires for rollback, and this crate does not stage. The cost of that
+    //    ordering is bounded: a crash in between leaves links the new lock does
+    //    not claim, which `inventory` already reports as loose. Before, that was
+    //    not a crash window but the guaranteed outcome of every reinstall.
+    if let Some((previously_installed, previous_source)) = previous {
+        let previous_source = PathBuf::from(previous_source);
+        for member in previously_installed {
+            if selected.iter().any(|m| m.name == member) {
+                continue;
+            }
+            // Refcount at pack altitude, against the NEW lock state (§5).
+            let held_elsewhere = lock_data
+                .packs
+                .iter()
+                .any(|(name, e)| name != &pack.name && e.skills.contains_key(&member));
+            if held_elsewhere {
+                continue;
+            }
+            let link = req.target.skills_dir.join(&member);
+            let is_symlink = std::fs::symlink_metadata(&link)
+                .map(|m| m.file_type().is_symlink())
+                .unwrap_or(false);
+            // Ownership, as `remove` applies it: a link that does not point into
+            // the source we installed from is another tool's to keep.
+            if is_symlink
+                && crate::remove::owned_by(&link, &previous_source)
+                && std::fs::remove_file(&link).is_ok()
+            {
+                outcome.dropped.push(member);
+            }
+        }
     }
 
     outcome.face = pack.faced.then(|| pack.dir.clone());

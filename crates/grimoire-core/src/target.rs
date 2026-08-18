@@ -92,7 +92,7 @@ mod tests {
     }
 
     #[test]
-    fn project_target_locks_beside_the_agent_dir() {
+    fn project_target_locks_at_the_project_root() {
         let home = Path::new("/home/u");
         let env = AgentEnv::rooted(home);
         let t = Target::project(
@@ -102,9 +102,9 @@ mod tests {
         );
         assert_eq!(t.scope, Scope::Project);
         assert_eq!(t.skills_dir, Path::new("/work/proj/.claude/skills"));
-        // install.sh does `dirname "$target"` (lock_dir), so parity puts the
-        // lock beside the agent dir, not at the repo root.
-        assert_eq!(t.lock_path, Path::new("/work/proj/.claude/grimoire.lock"));
+        // §3: `<project-root>/grimoire.lock`. install.sh computes the same root
+        // from its `--target` alone (tests/parity.rs pins the pair).
+        assert_eq!(t.lock_path, Path::new("/work/proj/grimoire.lock"));
     }
 
     #[test]
@@ -117,7 +117,28 @@ mod tests {
             home,
         );
         assert_eq!(t.skills_dir, Path::new("/work/proj/.agents/skills"));
-        assert_eq!(t.lock_path, Path::new("/work/proj/.agents/grimoire.lock"));
+        assert_eq!(t.lock_path, Path::new("/work/proj/grimoire.lock"));
+    }
+
+    /// The §5 consequence of D5, at `Target` altitude: two agents installed into
+    /// one project resolve to the SAME lock, so reference counting can see
+    /// across them. Per-agent-dir locks made that silently impossible.
+    #[test]
+    fn two_agents_in_one_project_share_one_lock() {
+        let home = Path::new("/home/u");
+        let env = AgentEnv::rooted(home);
+        let root = Path::new("/work/proj");
+        let claude = Target::project(&agents::get(&env, "claude-code").unwrap(), root, home);
+        let codex = Target::project(&agents::get(&env, "codex").unwrap(), root, home);
+
+        assert_ne!(
+            claude.skills_dir, codex.skills_dir,
+            "the two agents link into different dirs"
+        );
+        assert_eq!(
+            claude.lock_path, codex.lock_path,
+            "...but share one project lock, or §5's refcount cannot span them"
+        );
     }
 
     #[test]
@@ -132,9 +153,6 @@ mod tests {
             home,
         );
         assert_eq!(t.scope, Scope::Project);
-        assert_eq!(
-            t.lock_path,
-            Path::new("/home/u/work/proj/.claude/grimoire.lock")
-        );
+        assert_eq!(t.lock_path, Path::new("/home/u/work/proj/grimoire.lock"));
     }
 }

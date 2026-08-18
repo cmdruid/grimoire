@@ -7,7 +7,56 @@
 
 mod sandbox;
 
+use std::path::Path;
+use std::process::Command;
+
 use sandbox::{install_alpha, Sandbox};
+
+/// §3's project-lock rule now has **two** implementations — `lock::project_root`
+/// and `install.sh`'s `write_lock` — and a rule implemented twice drifts unless
+/// something executes both. Every other test in this file asserts that core's
+/// semantics *match* `install.sh`'s; none of them ever ran the shell. This one
+/// does, and compares where it puts the lock against where `Target` says it is.
+#[test]
+fn install_sh_and_core_agree_on_the_project_lock_location() {
+    let sb = Sandbox::new();
+    // install.sh installs from the tree it lives in, so it has to run from
+    // inside the fixture library.
+    let script = sb.library_root().join("install.sh");
+    std::fs::copy(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../install.sh"),
+        &script,
+    )
+    .expect("install.sh is two levels up from this crate");
+
+    let target = sb.project_target("claude-code");
+    let out = Command::new("bash")
+        .arg(&script)
+        .args(["--pack", "alpha", "--target"])
+        .arg(&target.skills_dir)
+        .env("HOME", sb.home())
+        .output()
+        .expect("bash runs install.sh");
+    assert!(
+        out.status.success(),
+        "install.sh failed:\n{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+
+    assert!(
+        target.lock_path.is_file(),
+        "install.sh must write the project lock where core reads it ({})\nstdout: {}",
+        target.lock_path.display(),
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let beside_agent_dir = sb.project().join(".claude/grimoire.lock");
+    assert!(
+        !beside_agent_dir.exists(),
+        "the pre-D5 location must stay empty — a lock at {} is invisible to the \
+         other agent dirs in this project",
+        beside_agent_dir.display()
+    );
+}
 
 #[test]
 fn an_edit_in_the_library_is_live_through_the_installed_path() {

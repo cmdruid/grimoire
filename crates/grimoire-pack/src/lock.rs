@@ -41,12 +41,37 @@ pub fn scope_for(target: &Path, home: &Path) -> Scope {
 }
 
 /// Where `grimoire.lock` lives for an install into `target` (§3). Global:
-/// `<home>/.agents/grimoire.lock`. Project: beside the target dir, at the
-/// project root. A target with no parent locks in place rather than panicking.
+/// `<home>/.agents/grimoire.lock`. Project: `<project-root>/grimoire.lock`.
 pub fn lock_path(target: &Path, home: &Path) -> PathBuf {
     match scope_for(target, home) {
         Scope::Global => home.join(".agents").join(LOCK_FILE),
-        Scope::Project => target.parent().unwrap_or(target).join(LOCK_FILE),
+        Scope::Project => project_root(target).join(LOCK_FILE),
+    }
+}
+
+/// The project a target belongs to — §3's project lock lives at its root.
+///
+/// Lexical, and derived from the target alone because `install.sh` knows only
+/// `--target <skills-dir>` and must compute the same answer. A target inside a
+/// recognized agent dir (`<root>/.claude/skills`) belongs to the project at
+/// `<root>`, so `.claude/skills` and `.agents/skills` in one project share ONE
+/// lock. That sharing is the point: §5 reference-counts "in the same scope", and
+/// a lock per agent dir would let one pack's removal unlink a member another
+/// pack still holds. It also matches global scope, where all four agent dirs
+/// already share `<home>/.agents/grimoire.lock`.
+///
+/// A target that is not agent-shaped locks beside itself, and a target with no
+/// parent locks in place rather than panicking.
+fn project_root(target: &Path) -> PathBuf {
+    let parent = target.parent().unwrap_or(target);
+    let inside_agent_dir = parent
+        .file_name()
+        .and_then(|n| n.to_str())
+        .is_some_and(|n| AGENT_DIRS.contains(&n));
+    if inside_agent_dir {
+        parent.parent().unwrap_or(parent).to_path_buf()
+    } else {
+        parent.to_path_buf()
     }
 }
 
@@ -183,14 +208,48 @@ mod tests {
     }
 
     #[test]
-    fn project_scope_locks_beside_the_target_dir() {
+    fn project_scope_locks_at_the_project_root() {
         let home = Path::new("/home/u");
         // not under HOME: a project install, however agent-shaped its path looks
         let target = Path::new("/work/proj/.claude/skills");
         assert_eq!(scope_for(target, home), Scope::Project);
         assert_eq!(
             lock_path(target, home),
-            Path::new("/work/proj/.claude/grimoire.lock")
+            Path::new("/work/proj/grimoire.lock"),
+            "§3: the project lock lives at the project root, not beside the agent dir"
+        );
+    }
+
+    /// The invariant the root-level lock exists to provide: one project, one
+    /// lock, whichever agent dir received the links — mirroring global scope,
+    /// where all four agent dirs already share `<home>/.agents/grimoire.lock`.
+    ///
+    /// Without it §5's reference counting is scoped per agent dir, so removing a
+    /// pack installed into `.claude/skills` cannot see that a pack in
+    /// `.agents/skills` still references a shared member, and unlinks it anyway.
+    #[test]
+    fn every_agent_dir_in_one_project_shares_one_lock() {
+        let home = Path::new("/home/u");
+        let root = Path::new("/work/proj");
+        for agent in [".agents", ".claude", ".codex", ".cursor"] {
+            let target = root.join(agent).join("skills");
+            assert_eq!(scope_for(&target, home), Scope::Project, "{agent}");
+            assert_eq!(
+                lock_path(&target, home),
+                root.join(LOCK_FILE),
+                "{agent} must lock at the project root"
+            );
+        }
+    }
+
+    /// A target that is not agent-shaped keeps the old behavior: lock beside it.
+    #[test]
+    fn a_non_agent_shaped_target_locks_beside_itself() {
+        let home = Path::new("/home/u");
+        let target = Path::new("/work/proj/skills");
+        assert_eq!(
+            lock_path(target, home),
+            Path::new("/work/proj/grimoire.lock")
         );
     }
 
