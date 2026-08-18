@@ -239,3 +239,24 @@ description defects.
 | audit the codebase for quality issues and file findings | `auditor` | `auditor` |
 | summarize what shipped last month | `analyst` | `analyst` |
 | explain how OAuth works (general concept) | none | none |
+
+**2026-08-18 (analyst template classifier, feat stream)** — a second battery for
+`analyst`'s *inline* classifier (free text → template token). Unlike a routing
+probe this tests a judgment the skill makes at runtime, so it is probe-tested,
+not unit-tested — the honest cost of classifying intent rather than file-kind.
+Run twice against the same 12 prompts, before and after sharpening the
+`use-when:` descriptors. **Both ASK and NO-MATCH outcomes are passes** — the
+skill is specified to ask when two kinds are plausible and to name another home
+when none fit.
+
+| prompt | v1 descriptors | after sharpening |
+|---|---|---|
+| tell me about the rendering pipeline | ASK (subsystem/guide) | `subsystem` |
+| what's the state of the project? | `status` (medium) | ASK (work-vs-health genuinely unstated) |
+| explain TCP vs UDP | NO-MATCH (inferred) | NO-MATCH (explicit in descriptor) |
+| the other 9 prompts | correct, high | correct, high |
+
+The sharpening moved two `status`/`diagnostics` and `subsystem`/`guide` collisions
+off implicit overlap: each descriptor now names the sibling case it is *not*, and
+`guide` states the no-anchor exclusion outright. The residual ambiguities are
+properties of the prompts, not the descriptors — the classifier asks, as specified.
