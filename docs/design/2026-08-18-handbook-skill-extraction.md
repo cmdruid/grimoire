@@ -401,6 +401,150 @@ Built against `main` @ `ce7e758` + branch `11ef5d8`. Verified at spec time, not 
 - `PACK.md` at `2.4.0`, `required: journal`.
 - `skills-lint.sh` baseline `fails=0 warns=22`.
 
+## Status: PARKED (2026-08-18)
+
+**Parked behind the path-consolidation feature.** This spec's central unresolved question — *where
+does the seed land* — turned out to be downstream of a larger one: the front door carries three
+path variables (`agent-records`, `agent-templates`, `agent-doctrine`) where two have no independent
+variance case, and `.records/` hosts three directories it must explicitly exclude
+(`records.sh:64,82`). Consolidating to two homes (a records file-cabinet + one "everything else"
+home) changes this feature's answer, so it is specced first and this one resumes behind it.
+
+**The findings below are path-independent** — they apply to the extraction whatever the doctrine
+home ends up being. Do not re-derive them on resume.
+
 ## Review history
 
-_(none yet — an independent `/blueprint review` is recommended before sequencing.)_
+### 2026-08-18 — needs-rework (×3: soundness, groundedness, skeptic)
+
+Three independent lenses, three different attack angles, unanimous verdict. Consolidated and
+deduplicated; the reviewer that found each is noted where it matters.
+
+**MUST-FIX — feasibility (proven, not argued)**
+
+1. **`seed.sh` breaks on the move.** `seed.sh:54` reads the stamp version from `$SKILL/PACK.md`,
+   and `PACK.md` stays on the face. Groundedness performed the move in a scratch copy: `seed.sh`
+   exits 2 and leaves `_Seeded from clankshop v<version> on <date>._` unfilled. M1's "unchanged by
+   the move" is true of one of the script's two sibling resolutions and silent about the one that
+   breaks. **This hides an unmade decision:** once handbook owns the seed and the stamp format,
+   where does the version come from? Reaching `../clankshop/PACK.md` is the cross-package reach M1
+   forbids elsewhere; giving handbook its own version changes the string rule 8's three policy
+   probes grep. Recommended: the face passes `--version` alongside `--gate`/`--trunk`.
+   *(Consequence: "this spec touches the stamp not at all" is **false** — it breaks the stamp's
+   production path. Rule 8 governs stamp consumers; nobody has adjudicated stamp ownership.)*
+2. **Two more clankshop suites go red.** `face-test.sh:27,33,37-43` (script list, bundled-seed
+   `--check`, v1-vocabulary scan) and `setup-journal-test.sh:22` all exercise the moving assets.
+   "Clankshop suite green minus the moved suite" is unachievable as written. `setup-journal-test.sh`
+   should resolve a `HANDBOOK=` sibling exactly as it already resolves `JOURNAL=` at `:10`.
+3. **The moved `seed-test.sh` cannot be green unedited** — `:37` reads `$SKILL/PACK.md` the same
+   way; same root cause as #1.
+
+**MUST-FIX — verification that cannot do its job**
+
+4. **The links arm has no world in which it can be green.** `grep -rn "](" seed/` returns **zero** —
+   the seed contains no markdown links. So there is nothing to repoint for the red-proof, and the
+   "other arms still pass" anti-partial-fix device is *vacuous* for that arm: a scanner flagging
+   every link it finds would pass all four verification rows. Needs a green control (inject a valid
+   link, assert it is not reported) before a red-proof means anything. The arm is also syntactically
+   undefined — inline vs reference-style, anchors, out-of-handbook targets.
+5. **"M6 is load-bearing" has no executable subject.** There is no runnable `agent-doctrine`
+   resolver anywhere in `skills/`; `resolve_agent_doctrine()` exists only as a reference snippet at
+   `DOCTRINE.md:275-285`, `skills-lint.sh:632` greps skill *prose*, and all consumers are prose
+   rules. The row the spec calls its headline proof degrades to the grep its own Verification
+   section forbids. The S1 lesson was applied to the `--check` arms and only nominally to the
+   cross-layer claim.
+6. **The new arms make the bundled seed un-self-checkable.** The seed legitimately carries ~20
+   literal `<gate>`/`<trunk>` placeholders and an unfilled stamp; `context.sh --check` running green
+   *against `seed/` itself* is a contracted property (`face-test.sh:32-34`, `README.md:94`). A slots
+   arm destroys it. Also: `seed.sh`'s slot args are **optional** and its last line self-checks, so
+   `seed.sh <root>` with no flags would exit 2 on a successful seed. And the stamp arm as specified
+   passes on the *unfilled* template, so it is weaker than it reads.
+7. **Widening a *deployed* `context.sh` silently degrades existing installs.** `context.sh` is a
+   per-project copy frozen at seed time. Delegating `check` steps 2–4 to it means an older copy
+   returns `load sets: OK` and the stamp/slots/links coverage vanishes with **no error** — `check`
+   reports green on a workshop it no longer validated. Needs a capability probe with prose fallback.
+
+**MUST-FIX — design decisions left unmade**
+
+8. **`handbook` will not be a pack face, and loses exemptions that currently cover this content.**
+   `skills-lint.sh:118-123` derives `is_pack_face()` from the presence of `PACK.md`. Check 15
+   (`:641-679`) FAILs unconditionally on `` `.handbook/test/ ``-style literals, exempting only
+   `skill-builder` and faces — its own header says *"clankshop legitimately owns the handbook."*
+   After extraction the skill that legitimately owns it is `handbook`, which has no `PACK.md`.
+   Check 14 would also require the doctrine authority to carry a resolution literal it never uses.
+   M8's "`install.sh`: no change — verified" checked one machine surface and missed this one.
+9. **`/handbook setup` vs Doctrine-touching rule 3.** Rule 3 permits creating the home *"only when
+   the home is the derived default"* and *"never create an explicitly declared home that is
+   absent."* Creating `.handbook` is neither. The doctrine authority appears to violate the portable
+   doctrine on day one. *(Dissolves if the home becomes the derived default — see PARKED note.)*
+10. **`curate` is not implementable as written.** How does a deployed project locate "the current
+    bundled seed"? What is the diff unit, given accreted content below seeded preambles is
+    *expected*, so nearly every file diverges on a healthy install? `ABSENT` is directionless — it
+    reads identically for an untaken upgrade and for healthy project accretion.
+11. **The seeded-vs-foreign boundary is undefined.** `auditor:108-109` writes its rubric to
+    `<agent-doctrine>/test/workflows/audit/` and wires `core/ROUTING.md` + `test/POLICY.md` — it
+    deposits *into* the station tree by design. `curate` would report every foreign artifact as
+    drift forever. Needs journal's reserved-entries rule applied to doctrine. **Path-independent:
+    true wherever the tree lives.**
+12. **M6 had no idempotency or conflict rule**, and `check` 4b asserting the literal `.handbook`
+    converts a front-door *variable* into a constant. *(Moot if M6 is deleted.)*
+
+**Scope — both non-soundness reviewers converged independently**
+
+13. **This should be two features.** The atomic core (move + SKILL.md + setup verb + narrowing +
+    routing gate) genuinely cannot be split. But S5 (declaration), S4 (`--check` widening), and S6
+    (`curate`) are independent additions bolted onto it — each would work on the face unmoved. The
+    honest split: **(1) lifecycle + wiring**, closing both problems with demonstrated consequences,
+    ~3 slices; **(2) the extraction**, closing the one problem with no stated cost.
+14. **Problem 2 has no stated cost.** *"The face is the assembler; it should not also be the
+    doctrine layer's implementation"* is asserted with no consequence attached, and no package-size
+    or one-job principle in `DOCTRINE.md` grounds it. On the repo's evidence it is aesthetic.
+15. **The strongest counter-alternative is missing:** *add `curate` to the face and skip the move
+    entirely.* That closes Problems 1 and 3 at near-zero risk. The "Authority without extraction"
+    bullet rejects a documentation-only strawman, not this.
+
+**Problem 3 was under-stated, not over-stated** *(skeptic tried to refute it and failed)*
+
+16. `/auditor setup` on a deployed workshop does not merely fail to find doctrine — per
+    Doctrine-touching rule 3 it will **create a second doctrine tree** at `.records/doctrine/`
+    beside the real one and wire routing into files the handbook's `check` never reads. That is
+    active layout fragmentation, not graceful degradation. Concretely lost today on every seeded
+    project: design-station summon (`blueprint:38`), build-station summon (`contractor:29`),
+    `workstream`'s feature lane (`flow.md:56`), `debugger`'s diagnostics playbook (`SKILL.md:31`).
+
+**Corrections to this spec's own Grounding**
+
+17. **"6 readers" is 5 consumer skills + the lint gate** — `skills-lint.sh:632` greps prose, it does
+    not resolve the variable. "0 writers of the declaration" **verified TRUE** by exhaustive grep.
+18. **`1707ede` is misattributed twice** — it is *"docs: close records-layer init spec (shipped)"*,
+    touching only a design doc, zero changes under `skills/`. Both substantive claims are true
+    (`setup.md:39-44`; rule 4 at `DOCTRINE.md:316-318`); the SHA is wrong.
+19. **The `.handbook`-vs-default-home verdict was right for the wrong reason.** The migration-burden
+    argument rested on an unenumerated population — confirmed by the human as **one deployed
+    workshop, theirs**. The real argument the section failed to make: `.handbook/README.md` is baked
+    into the stamp probe contract at four sites (`DOCTRINE.md:337` + the three policy probes).
+20. **`warns ≤ 22` fails by construction** — lint check 4 warns per-skill for not being wired into
+    `~/.claude/skills` and not appearing in `README.md`'s inventory, so a new skill adds ≥1 warn
+    (2 between S2 and S7). Budget the expected warns or scope the row to `fails=0`.
+21. **M8's fold list is incomplete** — also stale on landing: `README.md:30,50,94`, `AGENTS.md:12`,
+    `PACK.md:27`, `migrate.md:77`, `clankshop/SKILL.md:23`, `lint-exemption-test.sh`.
+
+**Substrate the greenfield check missed** *(the biggest one, and the seed of the parking decision)*
+
+22. **The copy-projection seed model itself.** `curate` exists *entirely* because 16 chapter files
+    are **copied** into the project at setup. A design that kept bundled doctrine in the installed
+    skill and had `context.sh` compose bundled chapters with a project-local delta would have no
+    drift, no seed-diff, no `curate`, no stamp version, and no unfulfilled upgrade promise —
+    Problem 1 would dissolve rather than earn a verb. Probably still "pay it" (the seed is meant to
+    be edited in place), but the spec never named it.
+23. **Slot substitution** — the permanent slots arm guards a substrate choice (string-substituting
+    two facts into 16 files at copy time) the spec never questions.
+24. **Name-based lint exemptions** — `is_pack_face` is a proxy for "owns the doctrine layer," and
+    the extraction is precisely the event that breaks the proxy.
+
+**Verified TRUE and not to be re-checked on resume:** all five consumer `agent-doctrine` readers;
+0 writers repo-wide; `setup.md` Guard (a) / step 3 / step 4 behavior; `check.md:21-28` records
+delegation; `migrate.md:50` vs `:52`; `context.sh --check` load-sets-only; `install.sh:96-98,151`
+parsing (Decision 9 holds); `PACK.md` 2.4.0; `persona.md:14`; `DOCTRINE.md:228,236,61` and rule 8
+verbatim; the 8/3/2 stamp census; `seed/` = 16 files; six per-skill `lib.sh` copies; lint baseline
+`fails=0 warns=22`; clankshop suite currently all-green.
