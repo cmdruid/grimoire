@@ -29,6 +29,22 @@ templates it actually names. Do not tour the rest of any repo.
   names the lock-in set; every listed file exists in the package; the
   skill does not copy a file the list does not name. Project copies land
   under `<agent-templates>/<skill>/`.
+- **Home resolution** — for each of the three front-door homes the skill
+  touches (`<agent-records>`, `<agent-templates>`, `<agent-doctrine>`),
+  **reading counts as touching**. Three questions the lint cannot answer,
+  which is why they are yours:
+  - Does the **operative procedure** resolve the home, or does the skill
+    merely carry a resolution literal somewhere while its actual steps
+    name a fixed path? A skill can satisfy the mechanical check and still
+    hardcode throughout. That gap is a finding.
+  - Does it test for the **specific artifact** after resolving the home,
+    and degrade when absent — or does it treat home-exists as
+    artifact-exists and break?
+  - If it stands doctrine up, does it **leave an incumbent alone**?
+    Doctrine is copy-then-customize; a re-run that overwrites host edits
+    destroys accumulated project judgment. Creating an explicitly
+    *declared* home that is absent is also a finding — that path is
+    someone else's territory.
 
 ## Do not
 

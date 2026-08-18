@@ -74,6 +74,13 @@ library root)`.
 Do **not** run `check` Pass 2 (`docs/BOUNDARY-AUDIT.md`). Do not
 edit `verbs/check.md`.
 
+**The lint is a floor, not a verdict.** For the front-door homes it
+proves only that a sanctioned resolution literal is present and that no
+known off-home literal is; it cannot see whether the skill's operative
+procedure actually resolves. A clean Pass 1 is therefore not evidence of
+home conformance — that judgment is Pass 2's, on the brief's axis. Never
+report lint-green as "resolves its homes correctly."
+
 ## Pass 2 — same-session judgment
 
 Read the resolved brief in full. Judge only on the axes it
