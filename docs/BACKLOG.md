@@ -16,7 +16,9 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-21 — mint scripts still emit `records-root=` on stdout
 - **source:** grok stream, records-layer init debrief (2026-08-18).
-- **status:** open
+- **status:** done (2026-08-18) — both minters now print `agent-records=` and keep
+  `records-root=` as a compat line (same pair as `workstream-git.sh`). Proven in
+  `note-mint-test.sh` / `record-mint-test.sh`.
 - **body:** `note-mint.sh` and `record-mint.sh` still print `records-root=<path>` so existing
   verb consumers keep working. Doctrine's new fact key is `agent-records=`. Rename on the
   next edit of each script (same "until that script is edited" rule as `workstream-git.sh`,

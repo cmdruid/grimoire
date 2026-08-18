@@ -47,6 +47,7 @@ fill() {
 abs_dir() { (cd "$1" && pwd); }
 
 emit() {
+  printf 'agent-records=%s\n' "$1"
   printf 'records-root=%s\n' "$1"
   printf 'path=%s\n' "$2"
   printf 'rel=%s\n' "$3"
