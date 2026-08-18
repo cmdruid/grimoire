@@ -358,7 +358,9 @@ one-line resolution; delete only when the reason it existed is gone.
 - **source:** `analyst` spec review (2026-08-18, `feat` stream) — the soundness reviewer caught a
   spec mechanism that the tool could not actually perform; verified against
   `skills/journal/scripts/records.sh`.
-- **status:** open
+- **status:** done (2026-08-18) — `new` accepts repeatable `--tag`; the
+  `<tags>` slot fills `tags: [a, b]` (omitted → `[]`). Proven in
+  `records-test.sh`. File-mode minters substitute the same slot empty.
 - **body:** `records.sh new <doctype> --title "…"` accepts **only** `--title`, and the bundled
   `templates/reports.md` hardcodes `tags: []` with no tag slot; `touch` sets only `--status`. So no
   freshly-minted record can be tagged through the tool — any skill that wants a queryable tag on a

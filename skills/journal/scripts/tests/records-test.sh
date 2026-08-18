@@ -26,11 +26,11 @@ today="$(date +%Y-%m-%d)"
 # that block is exactly what `new` copies into the minted record -- so a
 # front-matter-only discriminator would swallow all three as records and FAIL
 # check on `created: <date>`. The dated-filename conjunct is what excludes them,
-# with no reserved name anywhere.
+# with no reserved name anywhere. `<tags>` is the --tag slot (omit → []).
 TPL="$proj/.records/templates"
 mkdir -p "$TPL"
 for t in plans notes trackers; do
-  printf -- '---\ndoctype: %s\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\n' "$t" \
+  printf -- '---\ndoctype: %s\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: [<tags>]\n---\n\n# <title>\n' "$t" \
     > "$TPL/$t.md"
 done
 
@@ -51,6 +51,14 @@ expect "front-matter created stamped" "created: $today" "$p"
 expect "title slot filled" "# Alpha: the first plan" "$p"
 expect_absent "no unfilled date slot" "<date>" "$p"
 expect_absent "no unfilled title slot" "<title>" "$p"
+expect "no --tag leaves empty list" "tags: []" "$p"
+
+p_tag="$("$RS" new notes --template "$TPL/notes.md" --title "Tagged fact" --tag alpha --tag hot)"
+expect "repeatable --tag writes list" "tags: [alpha, hot]" "$p_tag"
+"$RS" list --tag hot >"$OUT"
+expect "list --tag matches minted tags" "tagged-fact" "$OUT"
+rc=0; "$RS" new notes --template "$TPL/notes.md" --title "Empty tag" --tag "" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "empty --tag refuses" "2" "$rc"
 
 p2="$("$RS" new plans --template "$TPL/plans.md" --title "Alpha: the first plan")"
 expect_eq "colliding slug gets a suffix" "$proj/.records/plans/$today-alpha-the-first-plan-2.md" "$p2"
@@ -87,7 +95,7 @@ expect_absent "disposition filter excludes" "consumed" "$OUT"
 expect "history grep matches" "consumed" "$OUT"
 
 "$RS" check >"$OUT"
-expect "check green after lifecycle" "records check: OK (4 records)" "$OUT"
+expect "check green after lifecycle" "records check: OK (5 records)" "$OUT"
 
 # --- proven by breaking -----------------------------------------------------------
 rc=0; "$RS" 'done' "$p" >"$OUT" 2>"$ERR" || rc=$?

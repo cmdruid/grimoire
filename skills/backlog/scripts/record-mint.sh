@@ -24,7 +24,7 @@ SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SKILL_NAME="backlog"
 
 fill() {
-  TITLE="$3" DATE="$4" awk '
+  TITLE="$3" DATE="$4" TAGS="${5:-}" awk '
     {
       line = $0
       out = ""
@@ -36,6 +36,12 @@ fill() {
       out = ""
       while ((i = index(line, "<date>")) > 0) {
         out = out substr(line, 1, i - 1) ENVIRON["DATE"]
+        line = substr(line, i + 6)
+      }
+      line = out line
+      out = ""
+      while ((i = index(line, "<tags>")) > 0) {
+        out = out substr(line, 1, i - 1) ENVIRON["TAGS"]
         line = substr(line, i + 6)
       }
       print out line

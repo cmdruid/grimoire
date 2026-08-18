@@ -96,13 +96,12 @@ person will see it. When in doubt, persist: a spare record costs a line in a sto
 evaporated briefing costs the whole run.
 
 To persist: resolve `reports.md` via the agent-templates rule; mint with
-`records.sh new reports --template <resolved> --title "…"` when the tool
-exists; else file-mode from that path, naming the file `YYYY-MM-DD-<slug>.md`
-(the record shape). Then fill the minted skeleton — body
-**and** the `tags:` line, which must carry the template's token (`tags: [analyst, briefing]`).
-The mint tool sets no tags; filling them is what lets the next briefing find this one as its
-anchor. On a host with no records tool, file-mode still writes under the
-agent-records home.
+`records.sh new reports --template <resolved> --title "…" --tag analyst --tag briefing`
+when the tool exists; else file-mode from that path, naming the file
+`YYYY-MM-DD-<slug>.md` (the record shape) and write
+`tags: [analyst, briefing]` yourself. The tags let the next briefing find
+this one as its anchor. On a host with no records tool, file-mode still
+writes under the agent-records home.
 
 ## Anti-patterns
 

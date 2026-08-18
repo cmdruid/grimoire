@@ -3,7 +3,7 @@ doctype: bugs
 status: open
 created: <date>
 updated: <date>
-tags: []
+tags: [<tags>]
 ---
 
 # <title>

@@ -7,7 +7,7 @@
 #
 #   records.sh list [--type t] [--status s] [--tag g] [--since d] [--until d]
 #   records.sh show <path>
-#   records.sh new <doctype> --title "..." --template <path>
+#   records.sh new <doctype> --title "..." --template <path> [--tag t]...
 #   records.sh touch <path> [--status open|current]
 #   records.sh done <path> [--as done|dropped|superseded|consumed] [--note "..."]
 #   records.sh history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
@@ -36,7 +36,7 @@ usage() {
 usage: records.sh <command> [args]
   list    [--type t] [--status s] [--tag g] [--since d] [--until d]
   show    <path>
-  new     <doctype> --title "..." --template <path>
+  new     <doctype> --title "..." --template <path> [--tag t]...
   touch   <path> [--status open|current]
   done    <path> [--as done|dropped|superseded|consumed] [--note "..."]
   history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
@@ -151,7 +151,7 @@ cmd_show() {
 # fill <template> <dest> <title> <date>: literal slot substitution (no regex —
 # a title may carry any punctuation; same technique as the seed's subst).
 fill() {
-  TITLE="$3" DATE="$4" awk '
+  TITLE="$3" DATE="$4" TAGS="${5:-}" awk '
     {
       line = $0
       out = ""
@@ -165,6 +165,12 @@ fill() {
         out = out substr(line, 1, i - 1) ENVIRON["DATE"]
         line = substr(line, i + 6)
       }
+      line = out line
+      out = ""
+      while ((i = index(line, "<tags>")) > 0) {
+        out = out substr(line, 1, i - 1) ENVIRON["TAGS"]
+        line = substr(line, i + 6)
+      }
       print out line
     }
   ' "$1" > "$2"
@@ -175,10 +181,16 @@ cmd_new() {
   doctype="$1"; shift
   title=""
   tpl=""
+  tags=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --title)    [ $# -ge 2 ] || usage; title="$2"; shift 2 ;;
       --template) [ $# -ge 2 ] || usage; tpl="$2"; shift 2 ;;
+      --tag)
+        [ $# -ge 2 ] || usage
+        [ -n "$2" ] || err "empty --tag"
+        if [ -n "$tags" ]; then tags="$tags, $2"; else tags="$2"; fi
+        shift 2 ;;
       *) usage ;;
     esac
   done
@@ -197,7 +209,7 @@ cmd_new() {
   path="$base.md"
   n=2
   while [ -e "$path" ]; do path="$base-$n.md"; n=$((n + 1)); done
-  fill "$tpl" "$path" "$title" "$today"
+  fill "$tpl" "$path" "$title" "$today" "$tags"
   printf '%s\n' "$path"
 }
 
