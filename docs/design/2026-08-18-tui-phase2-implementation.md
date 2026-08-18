@@ -1,56 +1,88 @@
 # ③ TUI v0.1 — Phase 2 implementation plan: `grimoire-core` (operations, no UI)
 
-**Status:** draft (2026-08-18). Phase 2 of `docs/design/2026-08-15-tui-v0.1-roadmap.md`
-(sequencing 1→2→3→4; blocks Phase 3's TUI). Built on the `app` workstream branch.
-Spec: `docs/spec/pack-format.md` (draft 5, format 1). Predecessor:
-`docs/design/2026-08-15-tui-phase1-implementation.md` (shipped — `Scope`/`lock_path`/`Ignore`
-are the surface this phase consumes).
+**Status:** draft (2026-08-18, revision 2 — see *Revision note*). Phase 2 of
+`docs/design/2026-08-15-tui-v0.1-roadmap.md` (sequencing 1→2→3→4; blocks Phase 3's TUI). Built on
+the `app` workstream branch. Spec: `docs/spec/pack-format.md` (draft 5, format 1). Predecessor:
+`docs/design/2026-08-15-tui-phase1-implementation.md` (shipped — `Scope`/`lock_path`/`Ignore` are
+the surface this phase consumes).
 
 ## Goal
 
-Every v0.1 operation callable, and integration-tested, from plain async Rust: open a local
-library, model scopes and agents, install/remove atoms and packs with `install.sh`'s symlink
-semantics and the spec's transaction, list what is installed, and check for drift — with no
-rendering, no TTY assumption, and no UI crate anywhere in the dependency tree.
+Every v0.1 operation callable, and integration-tested, from plain Rust: open a local library,
+model scopes and agents, install/remove atoms and packs with `install.sh`'s symlink semantics and
+the spec's transaction, list what is installed, and check for drift — with no rendering, no TTY
+assumption, and no UI crate anywhere in the dependency tree.
+
+## Revision note (what changed and why)
+
+Revision 1 planned to depend on `skill` `=0.8.3` for its agent registry. Revision 2 **vendors a
+four-target agent table and drops the dependency entirely**, on the owner's decision (2026-08-18)
+after the grounding below. Two roadmap *Cross-cutting foundations* are amended as a consequence —
+Task 13 records the amendment so the roadmap and this plan cannot disagree.
 
 ## Grounded findings (2026-08-18, read against the pinned reading clone)
 
-The roadmap flagged one Phase 2 risk as "`skill` 0.8.3 API friction at the wrapping seam."
-Read against the source, it is sharper than friction — it decides the crate's shape, so it is
-recorded here before any task.
+### Finding 1 — `skill`'s installer cannot implement this repo's install
 
-**`skill::SkillManager::install_skill` cannot implement this repo's install.** For a local
-source it *copies* the tree, and the copy is the canonical content:
+For a local source it *copies* the tree, and the copy becomes the canonical content:
 
-| Evidence (`repos/skill-rs/skill/src/…`) | Consequence for us |
+| Evidence (`repos/skill-rs/skill/src/…`) | Consequence |
 |---|---|
-| `installer/install.rs:103-141` — symlink mode does `clean_and_create(canonical_dir)` → `writer.write(canonical)` → symlink *agent dir → canonical* | The canonical dir is a **copy**, not the library. Edits in the clone stop being live — the dogfood property `install.sh` exists to preserve ("the clone stays canonical, edits here are live immediately", `install.sh:16`) |
+| `installer/install.rs:103-141` — symlink mode does `clean_and_create(canonical_dir)` → `writer.write(canonical)` → symlink *agent dir → canonical* | The canonical dir is a **copy**, not the library. Edits in the clone stop being live — the dogfood property `install.sh` exists to preserve (`install.sh:16`) |
 | `installer/fs.rs:69-90` — `copy_directory` **dereferences** symlinks while copying | A library tree that is itself symlinked (this machine's `~/.agents/skills` → clone) materializes as detached bytes |
 | `installer/install.rs:115` — `clean_and_create` wipes the destination first | Collisions resolve by **silent destruction**; spec §5 requires resolution that "MUST NOT be silent" and replaced content "staged, not destroyed" |
-| `agents/builtin.rs:26-74` — `Env` is private and captured from the **process** environment at registry build | Global agent dirs cannot be redirected per-call; hermetic tests cannot use `AgentRegistry::with_defaults()` |
-| `installer/*` never calls `lock.rs`/`local_lock.rs` | Upstream's installer maintains **no** ecosystem lock; lock upkeep is `skills-cli`-side. Nothing is lost by owning the link step |
+| `installer/*` never calls `lock.rs`/`local_lock.rs` | Upstream's installer maintains **no** ecosystem lock; that upkeep is `skills-cli`-side. Nothing is lost by owning the link step |
 
-This confirms rather than contradicts the binding docs: the umbrella already specifies
-"install choreography **reassembled from `skill`'s public pieces**"
-(`docs/design/2026-08-07-grimoire-repurpose-design.md` §4), and the roadmap repeats it. So:
+So the install choreography was always going to be ours — which is what the umbrella already
+specified: "install choreography **reassembled from `skill`'s public pieces**"
+(`docs/design/2026-08-07-grimoire-repurpose-design.md` §4).
 
-> **`grimoire-core` owns the link/transaction layer; `skill` supplies the agent model.**
-> We depend on `skill` `=0.8.3` for the one thing it has and we cannot faithfully reproduce —
-> the curated registry of ~30 agents' skills-dir layouts plus async detection
-> (`AgentRegistry`, `detect_installed`, `AgentConfig`) — and we link members ourselves,
-> `install.sh`-style, into the target scope's skills dir.
+### Finding 2 — the only piece left to import was an agent table, and it does not fit
 
-Every roadmap decision survives intact: `skill` stays pinned and in the tree, its async
-surface still justifies tokio, `skill` types still never cross our public API (they are
-confined to `agents.rs`), and `install.sh` parity — the property Phase 4's gate depends on
-("a full dogfood session replacing `install.sh` for machine installs") — is preserved.
+After Finding 1, the sole remaining use for the dependency was `AgentRegistry` — 47 agents
+(`agents/builtin.rs`, 529 lines) plus async detection. Three facts killed it:
 
-**Reference semantics we are porting** (`install.sh:197-275`, spec §5): preflight the whole
-member set (missing member; collision = a non-symlink at the destination, or a symlink whose
-**physically resolved** target differs from the source — `install.sh:210-221`); link every
-member; roll back this run's links on any link failure; commit the lock last. Remove deletes
-only links that point **into the library** (`install.sh:253-262`), refcounted at pack altitude
-(spec §5).
+- **A pin defeats the dependency's own value.** Upstream shipped `v0.4.4`→`v0.8.3` — five
+  breaking-capable `0.x` minors — between 2026-03-13 and 2026-04-22, and has published nothing
+  since (commits continue; last 2026-08-07). Pinned `=0.8.3`, the table freezes, which is the one
+  thing we wanted from it; unpinned, we absorb `0.x` churn for a data structure. Authorship in the
+  window our (shallow) reading clone holds is 55 of 68 commits by one author.
+- **47 agents contradict our own spec.** Phase 1 shipped
+  `grimoire_pack::lock::AGENT_DIRS = [".agents", ".claude", ".codex", ".cursor"]` as §3's
+  global-scope classification. An install target under any of upstream's other 43 agents
+  classifies as `Scope::Project`, putting the lock in the wrong place. Importing 47 rows would
+  have created an incoherence *inside our own system*, surfacing somewhere around Task 6.
+- **The dependency is not small.** Even with `default-features = false` (which drops only
+  `reqwest`), `skill` carries 13 direct non-optional deps — `regex`, `serde_yml`, `sha2`, `url`,
+  `urlencoding`, `tempfile`, `dirs`, `pathdiff`, `tracing`, `tokio`, … — to obtain a path table.
+
+**Decision:** vendor the four targets §3 already recognizes, faithful to upstream's rows
+(below), and depend on nothing. This is the roadmap's documented "vendor/fork fallback" exercised
+early and cheaply rather than kept hypothetical. Should remote sources land post-v0.1, `skill`'s
+git/GitHub/well-known providers become attractive again — that reintroduction stays a deliberate,
+separate decision.
+
+### The vendored table (ported from `agents/builtin.rs`, verbatim in behavior)
+
+| id | project skills dir | global skills dir | detect paths | env override |
+|---|---|---|---|---|
+| `claude-code` | `.claude/skills` | `<claude>/skills` | `<claude>` | `CLAUDE_CONFIG_DIR`, else `~/.claude` |
+| `codex` | `.agents/skills` | `<codex>/skills` | `<codex>`, `/etc/codex` | `CODEX_HOME`, else `~/.codex` |
+| `cursor` | `.agents/skills` | `~/.cursor/skills` | `~/.cursor` | — |
+| `universal` | `.agents/skills` | `~/.agents/skills` | `~/.agents` | — |
+
+`.agents/skills` is the ecosystem's universal dir (upstream's `UNIVERSAL_SKILLS_DIR`,
+`types.rs:297`); three of the four rows use it at *project* scope while keeping an agent-specific
+*global* dir — that asymmetry is upstream's, and it is deliberate, so we carry it. The four global
+dirs are exactly `AGENT_DIRS`, which is the coherence Finding 2 demanded.
+
+### Reference semantics being ported
+
+`install.sh:197-275` and spec §5: preflight the whole member set (missing member; collision = a
+non-symlink at the destination, or a symlink whose **physically resolved** target differs from the
+source — `install.sh:210-221`); link every member; roll back this run's links on any link failure;
+commit the lock last. Remove deletes only links pointing **into the library**
+(`install.sh:253-262`), refcounted at pack altitude (§5).
 
 ## Global constraints (re-verified at HEAD, not inherited)
 
@@ -58,30 +90,29 @@ only links that point **into the library** (`install.sh:253-262`), refcounted at
   reference implementation stays the parity oracle, untouched.
 - **The hard seam rule stands:** the crate never reads `skills/` at build time. Library content
   appears only as throwaway fixture trees built by the test harness.
-- **`skill` types never cross the public API.** `skill::{AgentConfig, AgentId, AgentRegistry}`
-  appear **only** inside `src/agents.rs`; everything public is our own domain type. This is what
-  keeps the documented vendor/fork escape hatch real.
-- **Clockless and homeless, like `grimoire-pack`.** The crate never calls `now()`, never reads
-  `$HOME`, and never reads the process environment: `home`, `installed_at`, and the agent set
-  are **parameters**. This is the only way the integration tests are hermetic, and it matches
-  the stance Phase 1 already set (`scope_for(target, home)`).
-- **`grimoire-pack` is blocking; core is async.** Its walks are recursive `std::fs`. Every call
-  into it from an async fn goes through `tokio::task::spawn_blocking` — never inline in the
-  event loop (Phase 3 renders while these run).
-- **No UI crate in the dependency tree.** Enforced by a test, not by intention (Task 12).
-- **Reuse `grimoire_pack::lock::Scope`** — do not mint a third scope enum (the crate already
-  owns §3's; `skill::InstallScope` is upstream's and stays inside `agents.rs`, unused since we
-  do not call their installer).
+- **Zero new third-party dependencies.** Deps are `grimoire-pack` (path), `semver`, `thiserror` —
+  all already in the workspace via `grimoire-pack`; `tempfile` for dev. **No `tokio`, no `skill`.**
+  Enforced by a test (Task 12), because a dependency floor nobody checks is a wish.
+- **Synchronous.** `grimoire-pack` is blocking `std::fs`; with `skill` gone there is no async
+  surface left to accommodate, so core ops are plain sync functions. Keeping the responsiveness
+  Phase 3 needs is the *TUI's* job: it runs core ops off the render thread (a `spawn_blocking` or
+  a worker thread), which is where the concurrency belongs anyway. See Task 13's amendment.
+- **Clockless and homeless, like `grimoire-pack`.** The crate never calls `now()` and never reads
+  the process environment: `home`, the env overrides, and `installed_at` are **parameters**. One
+  clearly-marked constructor (`AgentEnv::from_process`) reads the environment for the *binary's*
+  convenience and is never called by an operation. This is what makes the integration tests
+  hermetic, and it matches Phase 1's stance (`scope_for(target, home)`).
+- **Reuse `grimoire_pack::lock::Scope`** — do not mint a second scope enum.
 - **Ecosystem per-skill locks are not written** (`skills-lock.json`, `~/.agents/.skill-lock.json`).
   Spec §3 makes them "the untouched per-skill authority"; `install.sh` writes neither; upstream's
   installer writes neither. Deliberate deferral, recorded — not an oversight.
 - **A partially-linked pack must never mint a lock entry.** Spec §3: "A pack's lock state is one
-  bit." The lock write is the commit point and happens after every link succeeds.
+  bit." The lock write is the commit point, after every link succeeds.
 
 ## Task 1 — crate skeleton, error type, dependency floor
 
-`crates/grimoire-core/` joins the workspace by the existing `members = ["crates/*"]` glob (no
-root manifest edit).
+`crates/grimoire-core/` joins the workspace by the existing `members = ["crates/*"]` glob (no root
+manifest edit).
 
 ```toml
 [package]
@@ -93,16 +124,11 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 grimoire-pack = { path = "../grimoire-pack" }
-skill = "=0.8.3"                                    # agent registry + detection ONLY (see findings)
-semver = "1"                                        # `Manifest.version` is `semver::Version` —
-                                                    # naming it in our own API needs the dep
-tokio = { version = "1", features = ["fs", "process", "rt", "macros"] }
-time = { version = "0.3", features = ["formatting", "parsing"] }
+semver = "1"        # `Manifest.version` is `semver::Version`; naming it in our API needs the dep
 thiserror = "1"
 
 [dev-dependencies]
 tempfile = "3"
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 ```
 
 ```rust
@@ -115,6 +141,7 @@ pub mod inventory;
 pub mod library;
 pub mod remove;
 pub mod target;
+pub mod time;      // the validated RFC3339 newtype — no `time` CRATE, see Task 6
 
 #[derive(Debug, thiserror::Error)]
 pub enum CoreError {
@@ -122,155 +149,134 @@ pub enum CoreError {
     Io { path: PathBuf, #[source] source: std::io::Error },
     #[error("pack error: {0}")]
     Pack(#[from] grimoire_pack::PackError),
-    #[error("agent backend error: {0}")]      // skill's error, stringified at the seam —
-    Agent(String),                            // never re-exported as a type
     #[error("no pack named {0} in this library")]
     UnknownPack(String),
     #[error("preflight failed: {0} blocking finding(s)")]
     Preflight(usize),
-    #[error("lock is read-only: {0}")]        // spec §3: version > 1, or unparseable
+    #[error("lock is read-only: {0}")]      // spec §3: version > 1, or unparseable
     LockReadOnly(String),
+    #[error("malformed timestamp: {0}")]
+    Timestamp(String),
+    #[error("malformed config at {path}: {reason}")]
+    Config { path: PathBuf, reason: String },
 }
 
 pub type Result<T> = std::result::Result<T, CoreError>;
 ```
 
-**Verify:** `cargo build -p grimoire-core` green; `cargo tree -p grimoire-core | grep -Ei
-'ratatui|crossterm|termion' ` empty (Task 12 pins this as a test).
+**Verify:** `cargo build -p grimoire-core` green; `cargo tree -p grimoire-core --depth 1` shows
+only `grimoire-pack`, `semver`, `thiserror` (Task 12 pins this as a test).
 
 ## Task 2 — `Target`: the scope/agent-resolved destination
 
-`src/target.rs`. A `Target` is "where an operation happens": one scope, one agent's skills dir,
-one lock path. Pure — construction does no I/O.
+`src/target.rs`. A `Target` is "where an operation happens": one scope, one agent's skills dir, one
+lock path. Pure — construction does no I/O.
 
 ```rust
 pub use grimoire_pack::lock::Scope;   // §3's two scopes; do not redefine
 
-/// One resolved install destination: an agent's skills dir at a scope, plus
-/// the §3 lock that governs it. Pure and lexical — `home` is a parameter.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Target {
     pub agent: crate::agents::Agent,
     pub scope: Scope,
-    /// Where member links are created: the agent's skills dir at this scope.
+    /// Where member links are created.
     pub skills_dir: PathBuf,
     /// Where `grimoire.lock` lives for this destination (spec §3).
     pub lock_path: PathBuf,
 }
 
 impl Target {
-    /// Global: the agent's own global skills dir (None ⇒ unsupported for this agent).
-    pub fn global(agent: &Agent, home: &Path) -> Option<Self>;
-    /// Project: `<project>/<agent.project_skills_dir>` (e.g. `.claude/skills`).
+    /// Global: the agent's own global skills dir.
+    pub fn global(agent: &Agent, home: &Path) -> Self;
+    /// Project: `<project_root>/<agent.project_skills_dir>`.
     pub fn project(agent: &Agent, project_root: &Path, home: &Path) -> Self;
 }
 ```
 
-Both constructors derive `lock_path` through `grimoire_pack::lock::lock_path(&skills_dir, home)`
-— Phase 1's helper is the single §3 authority, and routing every scope decision through it is
-what keeps core and `install.sh` from drifting.
+Both derive `lock_path` through `grimoire_pack::lock::lock_path(&skills_dir, home)` — Phase 1's
+helper is the single §3 authority, and routing every scope decision through it is what keeps core
+and `install.sh` from drifting.
 
-**Tests** (`mod tests`, red-first):
-
-```rust
-#[test]
-fn global_target_locks_in_the_shared_agents_lock() {
-    let home = Path::new("/home/u");
-    let agent = Agent::fixture("claude", "/home/u/.claude/skills", ".claude/skills");
-    let t = Target::global(&agent, home).unwrap();
-    assert_eq!(t.scope, Scope::Global);
-    assert_eq!(t.lock_path, Path::new("/home/u/.agents/grimoire.lock"));
-}
-
-#[test]
-fn project_target_locks_beside_the_agent_dir() {
-    let home = Path::new("/home/u");
-    let agent = Agent::fixture("claude", "/home/u/.claude/skills", ".claude/skills");
-    let t = Target::project(&agent, Path::new("/work/proj"), home);
-    assert_eq!(t.scope, Scope::Project);
-    assert_eq!(t.skills_dir, Path::new("/work/proj/.claude/skills"));
-    assert_eq!(t.lock_path, Path::new("/work/proj/.claude/grimoire.lock"));
-}
-
-#[test]
-fn a_project_under_home_is_still_project_scope() {
-    // the §3 rule is "under a recognized agent dir in HOME", not "under HOME"
-    let home = Path::new("/home/u");
-    let agent = Agent::fixture("claude", "/home/u/.claude/skills", ".claude/skills");
-    let t = Target::project(&agent, &home.join("work/proj"), home);
-    assert_eq!(t.scope, Scope::Project);
-}
-```
+**Tests** (red-first): a global `claude-code` target locks at `<home>/.agents/grimoire.lock` (§3's
+"global installs share one lock" — note it is **not** `<home>/.claude/grimoire.lock`); a project
+target at `/work/proj` locks at `/work/proj/.claude/grimoire.lock`; a project *inside* home is
+still `Scope::Project` (the §3 rule is "under a recognized agent dir", not "under home"); every
+one of the four vendored agents produces a `Scope::Global` global target — the regression test for
+Finding 2's incoherence.
 
 **Verify:** `cargo test -p grimoire-core target::` green (red first).
 
-## Task 3 — `Agent` / `Agents`: the model, with `skill` confined
+## Task 3 — `agents`: the vendored table
 
-`src/agents.rs`. The **only** module that names a `skill` type.
+`src/agents.rs`. Data plus two pure functions; the env is a parameter.
 
 ```rust
-/// One agent harness, as this crate models it. Owns no `skill` types.
+/// The environment the agent table resolves against. A PARAMETER — the crate
+/// never reads the process environment during an operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Agent {
-    pub id: String,               // "claude", "codex", …
-    pub display_name: String,
-    /// Project-relative skills dir, e.g. `.claude/skills`.
-    pub project_skills_dir: PathBuf,
-    /// Absolute global skills dir; `None` ⇒ this agent has no global scope.
-    pub global_skills_dir: Option<PathBuf>,
-    /// Probed at detection time; `false` for a fixture agent.
-    pub detected: bool,
+pub struct AgentEnv {
+    pub home: PathBuf,
+    /// `$CLAUDE_CONFIG_DIR`, else `<home>/.claude`.
+    pub claude: PathBuf,
+    /// `$CODEX_HOME`, else `<home>/.codex`.
+    pub codex: PathBuf,
 }
 
-/// The agent set an operation runs against.
-#[derive(Debug, Clone, Default)]
-pub struct Agents(Vec<Agent>);
+impl AgentEnv {
+    /// Every path derived from one root. THE test constructor.
+    pub fn rooted(home: impl Into<PathBuf>) -> Self;
+    /// Reads `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME`. For the BINARY only —
+    /// no operation calls this. Empty values count as unset (xdg-basedir
+    /// behavior, ported from upstream's `env_override`).
+    pub fn from_process() -> Self;
+}
 
-impl Agents {
-    /// PRODUCTION path: upstream's curated registry + async detection.
-    /// The one place `skill` is touched; resolves against the PROCESS
-    /// environment (upstream's `Env` is private), so tests never call it.
-    pub async fn detect() -> Result<Self> { /* AgentRegistry::with_defaults() → map → Agent */ }
-
-    /// TEST/injection path: an explicit set, e.g. rooted in a temp dir.
-    pub fn from_agents(agents: Vec<Agent>) -> Self;
-
-    pub fn detected(&self) -> impl Iterator<Item = &Agent>;
-    pub fn get(&self, id: &str) -> Option<&Agent>;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Agent {
+    pub id: String,                       // "claude-code", "codex", "cursor", "universal"
+    pub display_name: String,
+    pub project_skills_dir: PathBuf,      // relative, e.g. `.claude/skills`
+    pub global_skills_dir: PathBuf,       // absolute, resolved against AgentEnv
+    detect_paths: Vec<PathBuf>,
 }
 
 impl Agent {
-    /// Injection constructor for tests and callers that know their layout.
-    /// Plain `pub`, NOT `#[cfg(test)]`: the integration tests in `tests/` are a
-    /// separate crate, where a `cfg(test)` item does not exist.
-    pub fn fixture(id: &str, global: impl Into<PathBuf>, project: impl Into<PathBuf>) -> Self;
+    /// Existence probe — sync, best-effort, short-circuiting. Never errors:
+    /// an unreadable path is "not installed" (upstream swallows probe
+    /// failures the same way).
+    pub fn detected(&self) -> bool;
+    /// Does this agent install into the universal `.agents/skills` at project scope?
+    pub fn is_universal(&self) -> bool;
 }
+
+/// The four targets spec §3 recognizes, resolved against `env`. Pure.
+pub fn table(env: &AgentEnv) -> Vec<Agent>;
+pub fn get(env: &AgentEnv, id: &str) -> Option<Agent>;
 ```
 
-`detect()` maps `AgentConfig { name, display_name, skills_dir, global_skills_dir, detect_paths }`
-→ `Agent`, marking `detected` from `AgentRegistry::detect_installed().await`. `skill`'s error
-is stringified into `CoreError::Agent` at this boundary.
+Rows exactly as tabulated in *The vendored table* above. Each row carries a `// upstream:
+agents/builtin.rs:<line>` comment naming its source, so a future re-check against upstream is a
+diff rather than an investigation.
 
-**Test:** a mapping test over a hand-built `skill::AgentConfig` (its fields are public), asserting
-`detected=false` and exact path carry-over. Detection against the real environment is **not**
-asserted (it is the machine's, not ours) — an `#[ignore]`d smoke test records that `detect()`
-returns a non-empty set on a developer machine.
+**Tests:** `table(&AgentEnv::rooted("/home/u"))` yields the four expected global dirs; the four
+global dirs each classify `Scope::Global` under `grimoire_pack::lock::scope_for` (the coherence
+invariant — a fifth agent added later without a matching `AGENT_DIRS` entry fails here, which is
+the point); `AgentEnv::rooted` overrides propagate (a `claude` override moves both the global dir
+and the detect path); `detected()` is true for an existing fixture dir and false for an absent
+one; `from_process` is **not** exercised by any test.
 
-**Verify:** `cargo test -p grimoire-core agents::` green; `grep -rn "skill::" src/ | grep -v
-"^src/agents.rs"` empty — the seam, proven mechanically.
+**Verify:** `cargo test -p grimoire-core agents::` green (red first).
 
 ## Task 4 — `Library`: the local source
 
-`src/library.rs`. Wraps `grimoire-pack` enumeration behind `spawn_blocking`, with the ignore
-rules Phase 1 built.
+`src/library.rs`. Wraps `grimoire-pack` enumeration with the ignore rules Phase 1 built.
 
 ```rust
-/// A local library clone: this repo, or any Vercel-format skills tree.
 #[derive(Debug, Clone)]
 pub struct Library { root: PathBuf, ignore: grimoire_pack::discovery::Ignore }
 
-/// A pack as the app renders it: manifest facts + the resolved member set.
-/// Members are FLAT and their pack-dependence is opaque (brainstorm, binding).
+/// A pack as the app renders it. Members are FLAT and their pack-dependence
+/// is opaque to the app (brainstorm decision, binding).
 #[derive(Debug, Clone)]
 pub struct LibraryPack {
     pub name: String,
@@ -278,22 +284,21 @@ pub struct LibraryPack {
     pub description: String,
     pub faced: bool,
     pub dir: PathBuf,
-    pub members: Vec<Member>,     // face first (implicit member), then required, then optional
+    pub members: Vec<Member>,   // face first (implicit), then required, then optional
 }
 
 #[derive(Debug, Clone)]
 pub struct Member { pub name: String, pub dir: PathBuf, pub required: bool, pub is_face: bool }
 
+pub struct LibraryView { pub packs: Vec<LibraryPack>, pub loose: Vec<Member>, pub issues: Vec<String> }
+
 impl Library {
-    /// Default ignore rules: the built-in floor plus this repo's own fixture
-    /// and vendor trees, so a grimoire clone enumerates its real content.
+    /// Default ignore rules: the built-in floor plus this repo's fixture and
+    /// vendor trees, so a grimoire clone enumerates its real content.
     pub fn open(root: impl Into<PathBuf>) -> Self;
     pub fn with_ignore(root: impl Into<PathBuf>, ignore: Ignore) -> Self;
-
-    pub async fn packs(&self) -> Result<Vec<LibraryPack>>;       // + issues, see below
-    pub async fn loose_skills(&self) -> Result<Vec<Member>>;     // discovered skills in no pack
-    pub async fn enumerate(&self) -> Result<LibraryView>;        // packs + loose + issues, one walk
-    pub fn resolve_pack(&self, name: &str) -> ...                // by manifest `name:`, not dir
+    pub fn enumerate(&self) -> Result<LibraryView>;      // one walk
+    pub fn resolve_pack(&self, name: &str) -> Result<LibraryPack>;   // by manifest `name:`
 }
 ```
 
@@ -303,83 +308,92 @@ default; a **faceless** pack resolves its members but is flagged — §3 require
 manifest into the lock for a faceless install, which Task 6 handles (unlike `install.sh`, which
 refuses).
 
-`LibraryView` carries `issues: Vec<String>` (rendered from `grimoire_pack::pack::Issue`, whose
-`PackError` is not `Clone` — a recorded Phase 1 limit; core renders to strings rather than
-re-exporting a non-`Clone` type into app state Phase 3 will want to clone).
+`issues` are rendered to `String` from `grimoire_pack::pack::Issue`, whose `PackError` is not
+`Clone` (a recorded Phase 1 limit) — Phase 3 will want to clone app state, so the non-`Clone` type
+stops here.
 
-**Tests:** hermetic, against a fixture library built by the harness (Task 11): a faced pack with
-one required + one optional member and one loose skill enumerates as 1 pack / 3 members / 1 loose;
-face-name ≠ pack-name is an issue, not a pack; an ignored subtree contributes nothing.
+**Tests:** hermetic, against the Task 11 fixture library — a faced pack with one required + one
+optional member and one loose skill enumerates as 1 pack / 3 members / 1 loose; face-name ≠
+pack-name is an issue, not a pack; an ignored subtree contributes nothing.
 
 **Verify:** `cargo test -p grimoire-core library::` green (red first).
 
-## Task 5 — install preflight: the plan, computed without touching disk state
+## Task 5 — install preflight: the plan, computed without mutating anything
 
-`src/install.rs`, part 1. Preflight is pure inspection returning **data** — the TUI (Phase 3)
-renders it and asks for confirmation; nothing mutates yet.
+`src/install.rs`, part 1. Preflight returns **data**; the TUI renders it and asks. Nothing mutates.
 
 ```rust
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MemberDisposition {
-    /// Nothing at the destination — link it.
     Fresh,
-    /// A symlink already resolving to this exact source (physical compare) — no-op.
+    /// A symlink already resolving to this exact source (physical compare).
     AlreadyInstalled,
-    /// Destination occupied by something else. Blocking by default (spec §5:
-    /// resolution MUST NOT be silent); the face is never adoptable.
+    /// Occupied by something else. Blocking by default (§5: resolution MUST
+    /// NOT be silent); the face is never adoptable.
     Collision { at: PathBuf, points_to: Option<PathBuf>, adoptable: bool },
-    /// The member does not exist in the library.
     Missing,
 }
 
-#[derive(Debug, Clone)]
 pub struct InstallPlan {
     pub pack: String,
     pub target: Target,
     pub members: Vec<(Member, MemberDisposition)>,
-    /// Present ⇒ this is a reinstall/upgrade of an existing lock entry (§5).
+    /// Present ⇒ reinstall/upgrade of an existing lock entry (§5).
     pub replacing: Option<ReplacePlan>,
 }
 
 impl InstallPlan {
     pub fn blocking(&self) -> impl Iterator<Item = &(Member, MemberDisposition)>;
-    pub fn is_installable(&self) -> bool;   // no Missing, no un-resolved Collision
+    pub fn is_installable(&self) -> bool;
 }
 
-pub async fn preflight(lib: &Library, pack: &str, target: &Target) -> Result<InstallPlan>;
+pub fn preflight(lib: &Library, pack: &str, target: &Target) -> Result<InstallPlan>;
 ```
 
 The collision predicate is `install.sh:210-221`'s, ported: `symlink_metadata` says symlink →
-compare `canonicalize(link)` against `canonicalize(source)`; equal ⇒ `AlreadyInstalled`
-(a chain through an intermediate symlink is the same install, not a collision); unequal ⇒
-`Collision`. Anything else existing ⇒ `Collision { points_to: None }`. Spec §5's hash-based
-predicate is the *scope-wide* rule; at v0.1 the destination-level check above is what
-`install.sh` enforces and what the dogfood loop needs — the hash comparison enters `check`
-(Task 9), and the gap is recorded in *Deferred* below.
+compare `canonicalize(link)` against `canonicalize(source)`; equal ⇒ `AlreadyInstalled` (a chain
+through an intermediate symlink is the same install, not a collision); unequal ⇒ `Collision`.
+Anything else existing ⇒ `Collision { points_to: None }`. Spec §5's hash-based predicate is the
+*scope-wide* rule; v0.1 enforces the destination-level check `install.sh` uses, and the gap is
+recorded under *Deferred*.
 
-`ReplacePlan` covers §5's reinstall/upgrade: members added by the new release, members dropped
-(subject to Task 8's refcount), version moving **backward** or `source` changing — each surfaced
-as a fact the caller must see, never silent.
+`ReplacePlan` covers §5's reinstall/upgrade: members added, members dropped (subject to Task 8's
+refcount), version moving **backward** or `source` changing — each a fact the caller must see.
 
-**Tests:** fresh tree ⇒ all `Fresh`; pre-linked member ⇒ `AlreadyInstalled`; a regular directory
-at the destination ⇒ blocking `Collision`; a symlink to a *different* source ⇒ blocking
-`Collision`; a link reached through an intermediate symlink ⇒ `AlreadyInstalled`, not a collision.
+**Tests:** fresh ⇒ all `Fresh`; pre-linked ⇒ `AlreadyInstalled`; a directory at the destination ⇒
+blocking `Collision`; a symlink to a different source ⇒ blocking `Collision`; a link reached
+through an intermediate symlink ⇒ `AlreadyInstalled`, not a collision.
 
 **Verify:** `cargo test -p grimoire-core install::preflight` green (red first).
 
 ## Task 6 — install execute: the transaction
 
-`src/install.rs`, part 2. Spec §5's four steps, with the rollback discipline.
+`src/install.rs`, part 2, plus `src/time.rs`.
+
+The crate stays clockless, so the caller supplies the timestamp — and to keep the dependency floor
+at zero, it arrives as a validated newtype rather than a `time::OffsetDateTime`:
 
 ```rust
-/// The caller supplies the clock (the crate is clockless, like grimoire-pack)
-/// and the git ref when it knows one.
+// src/time.rs
+/// An RFC3339 UTC instant in exactly the shape `install.sh` writes
+/// (`date -u +%Y-%m-%dT%H:%M:%SZ`) — validated lexically, no date math and
+/// no dependency. The BINARY decides how it obtains one.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Timestamp(String);
+
+impl Timestamp {
+    pub fn parse(s: &str) -> Result<Self>;   // shape + range check on each field
+    pub fn as_str(&self) -> &str;
+}
+```
+
+```rust
 pub struct InstallRequest<'a> {
     pub library: &'a Library,
     pub pack: &'a str,
     pub target: &'a Target,
-    pub installed_at: time::OffsetDateTime,
-    pub source_ref: Option<String>,
+    pub installed_at: crate::time::Timestamp,
+    pub source_ref: Option<String>,     // caller-supplied; core never runs git
     /// Optional members the user deselected (§5: an optional member absent
     /// from the lock stays uninstalled).
     pub skip_optional: Vec<String>,
@@ -388,11 +402,11 @@ pub struct InstallRequest<'a> {
 pub struct InstallOutcome {
     pub linked: Vec<(String, PathBuf)>,
     pub already_present: Vec<String>,
-    /// §5 step 4: the face to point the user at. We surface it; we never execute it.
+    /// §5 step 4: the face to point the user at. We surface it; never execute it.
     pub face: Option<PathBuf>,
 }
 
-pub async fn install(req: InstallRequest<'_>) -> Result<InstallOutcome>;
+pub fn install(req: InstallRequest<'_>) -> Result<InstallOutcome>;
 ```
 
 Sequence, aborting into rollback at any failure before the lock write:
@@ -400,109 +414,104 @@ Sequence, aborting into rollback at any failure before the lock write:
 1. `preflight` → if `!is_installable()`, `Err(CoreError::Preflight(n))` with **no** filesystem
    change (`install.sh:223-226`'s "no partial install").
 2. `create_dir_all(target.skills_dir)`, then link each non-`AlreadyInstalled` member
-   (`tokio::fs::symlink`), pushing every link created onto a `created: Vec<PathBuf>`.
-   Any link error ⇒ remove exactly `created` (this run's links only — never a pre-existing one)
-   and return the error. (`tokio::fs::symlink` is unix-only upstream; v0.1 targets unix, as does
-   the bash reference implementation. Windows is out of scope, not overlooked.)
-3. Read the lock via `grimoire_pack::lock::read` (`Ok(None)` ⇒ fresh `Lock::default()`).
-   A lock with `version > 1` or unparseable ⇒ **`CoreError::LockReadOnly`, after rolling back
-   the links** — spec §3 forbids rewriting it, and a linked-but-unlocked pack is exactly the
-   "silently plausible partial pack" §5 tells tools to avoid.
+   (`std::os::unix::fs::symlink`), pushing every created link onto `created: Vec<PathBuf>`. Any
+   link error ⇒ remove exactly `created` (this run's links only, never a pre-existing one) and
+   return the error. Unix-only, as is the bash reference implementation; Windows is out of v0.1
+   scope, not overlooked.
+3. Read the lock via `grimoire_pack::lock::read` (`Ok(None)` ⇒ `Lock::default()`). `version > 1`
+   or unparseable ⇒ **`CoreError::LockReadOnly` after rolling back the links** — §3 forbids
+   rewriting it, and a linked-but-unlocked pack is exactly the "silently plausible partial pack"
+   §5 tells tools to avoid.
 4. Insert one `PackEntry { version, source: library root, r#ref, installed_at, skills, manifest }`
-   — `skills` keyed by member name, each `SkillEntry { hash: member_hash(dir), required }` where
-   `required` is the classification **at install time** (§3), and `manifest` populated **only for
-   a faceless pack** (§3's caching requirement). Other packs' entries and unknown keys are
-   preserved by construction (we mutate the read `Lock`, and `grimoire-pack`'s types carry
-   `extra`). `grimoire_pack::lock::write` commits — the transaction's commit point.
+   — `skills` keyed by member name, each `SkillEntry { hash: member_hash(dir), required }` with
+   `required` recording the classification **at install time** (§3), and `manifest` populated
+   **only for a faceless pack** (§3's caching requirement). Other packs' entries and unknown keys
+   survive because we mutate the lock we read and `grimoire-pack`'s types carry `extra`.
+   `grimoire_pack::lock::write` commits — the transaction's commit point.
 5. Return the face path for the caller to surface (§5 step 4). **Never execute anything.**
 
 Atom (single loose skill) install is the same machinery with a one-member set and **no** lock
-entry — an atom is not a pack and `install.sh` locks nothing for it.
+entry — an atom is not a pack, and `install.sh` locks nothing for it.
 
-**Tests:** happy path (links land, lock entry matches the fixture's hashes, face returned);
-`installed_at` round-trips as RFC3339; a lock at `version: 2` ⇒ `LockReadOnly` **and the tree is
-unchanged** (the rollback is asserted, not assumed); a mid-flight link failure (destination made
-unwritable, or a member removed between preflight and link) leaves zero new links and no lock
-entry; a second install of the same pack is idempotent; installing a *second* pack preserves the
-first's entry and any unknown top-level lock keys.
+**Tests:** happy path (links land, lock entry matches fixture hashes, face returned);
+`Timestamp::parse` rejects `2026-08-18 12:00:00` and `2026-13-01T00:00:00Z`, accepts
+`install.sh`'s exact shape; a lock at `version: 2` ⇒ `LockReadOnly` **and the tree is unchanged**
+(rollback asserted, not assumed); a mid-flight link failure leaves zero new links and no lock
+entry; re-install is idempotent; installing a second pack preserves the first's entry and any
+unknown top-level lock keys.
 
 **Verify:** `cargo test -p grimoire-core install::` green (red first).
 
 ## Task 7 — inventory: what is installed here
 
-`src/inventory.rs`. The read the library screen and the project screen both need.
+`src/inventory.rs`.
 
 ```rust
 pub struct InstalledPack { pub name: String, pub entry: PackEntry, pub dir_present: bool }
-pub struct Inventory {
-    pub packs: Vec<InstalledPack>,        // from the target scope's lock
-    pub loose: Vec<InstalledMember>,      // links in skills_dir owned by no lock entry
-}
-pub async fn inventory(target: &Target) -> Result<Inventory>;
+pub struct Inventory { pub packs: Vec<InstalledPack>, pub loose: Vec<InstalledMember> }
+pub fn inventory(target: &Target) -> Result<Inventory>;
 ```
 
-Reads the scope's lock plus the actual entries in `target.skills_dir` (a link is "ours" when it
+Reads the scope's lock plus the real entries in `target.skills_dir` (a link is "ours" when it
 resolves into a known library; unresolvable links are reported, not hidden). §3's read rule —
 project shadows global per pack name — is applied by the **caller** composing two `Target`s;
-`inventory` answers for exactly one scope, which is what §3's "every operation targets exactly
-one scope" requires.
+`inventory` answers for exactly one scope, which is what §3's "every operation targets exactly one
+scope" requires.
 
 **Verify:** `cargo test -p grimoire-core inventory::` green.
 
 ## Task 8 — remove: refcounted at pack altitude
 
-`src/remove.rs`. Spec §5's remove, plus `install.sh`'s ownership rule.
+`src/remove.rs`.
 
 ```rust
 pub struct RemovePlan {
     pub pack: String,
-    pub unlink: Vec<(String, PathBuf)>,          // unreferenced by any other pack in this scope
-    pub retained: Vec<(String, String)>,         // (member, still required by pack X)
-    pub foreign: Vec<(String, PathBuf)>,         // link points outside the library — never touched
+    pub unlink: Vec<(String, PathBuf)>,     // unreferenced by any other pack in this scope
+    pub retained: Vec<(String, String)>,    // (member, still required by pack X)
+    pub foreign: Vec<(String, PathBuf)>,    // points outside the library — never touched
     /// §5: setup artifacts may persist; relay the face's guidance BEFORE deleting.
     pub face_warning: Option<PathBuf>,
 }
 
-pub async fn plan_remove(target: &Target, pack: &str) -> Result<RemovePlan>;
-pub async fn remove(target: &Target, plan: &RemovePlan) -> Result<()>;
-pub async fn remove_optional_member(target: &Target, pack: &str, member: &str) -> Result<()>;
+pub fn plan_remove(target: &Target, pack: &str) -> Result<RemovePlan>;
+pub fn remove(target: &Target, plan: &RemovePlan) -> Result<()>;
+pub fn remove_optional_member(target: &Target, pack: &str, member: &str) -> Result<()>;
 ```
 
-Refcount: a member is unlinked only when **no other pack entry in the same scope's lock** lists
-it (§5's "reference counting at pack altitude"). `foreign` ports `install.sh:255-259` — a link
-that does not point into a library is another tool's, and we skip it with a fact. Optional-member
+A member is unlinked only when **no other pack entry in the same scope's lock** lists it (§5's
+"reference counting at pack altitude"). `foreign` ports `install.sh:255-259`. Optional-member
 removal drops the member entry and leaves no other trace (§5); the pack entry stays.
 
-**Tests:** two packs sharing a member ⇒ removing one retains the member and keeps the other's
-entry intact; removing the second unlinks it; a hand-placed foreign link is reported and left on
-disk; optional-member removal leaves the pack installed with the member gone from the lock;
+**Tests:** two packs sharing a member ⇒ removing one retains the member and the other's entry;
+removing the second unlinks it; a hand-placed foreign link is reported and left on disk;
+optional-member removal leaves the pack installed with the member gone from the lock;
 `face_warning` is populated before anything is deleted.
 
 **Verify:** `cargo test -p grimoire-core remove::` green (red first).
 
 ## Task 9 — check: facts, not verdicts
 
-`src/check.rs`. Spec §5's table verbatim, plus enumeration issues from Task 4.
+`src/check.rs`. Spec §5's table verbatim, plus Task 4's enumeration issues.
 
 ```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Finding {
-    RequiredMemberMissing { pack: String, member: String },        // broken
+    RequiredMemberMissing { pack: String, member: String },                        // broken
     MemberMoved { pack: String, member: String, locked: String, actual: String },  // re-pin/reinstall
-    OptionalMemberAbsent { pack: String, member: String },         // fine — never drift
-    OrphanedPack { pack: String },                                 // installed manifest gone
-    SharedMemberDisagreement { member: String, packs: Vec<String> },// §5 shared members
+    OptionalMemberAbsent { pack: String, member: String },                         // fine
+    OrphanedPack { pack: String },                                                 // manifest gone
+    SharedMemberDisagreement { member: String, packs: Vec<String> },               // §5
 }
 pub struct CheckReport { pub findings: Vec<Finding>, pub library_issues: Vec<String> }
-pub async fn check(lib: &Library, target: &Target) -> Result<CheckReport>;
+pub fn check(lib: &Library, target: &Target) -> Result<CheckReport>;
 ```
 
-Local only — no network, no source (spec §5). Hashes recompute through
-`grimoire_pack::hash::member_hash` (Appendix A) inside `spawn_blocking`. A faced pack consults the
-**installed** `PACK.md`; a faceless pack consults the manifest cached in the lock (§3).
+Local only — no network, no source (§5). Hashes recompute through
+`grimoire_pack::hash::member_hash` (Appendix A). A faced pack consults the **installed** `PACK.md`;
+a faceless pack consults the manifest cached in the lock (§3).
 
-**Tests:** clean install ⇒ empty findings; delete a required member ⇒ `RequiredMemberMissing`;
-edit a member's bytes ⇒ `MemberMoved` with both hashes; delete an optional member ⇒
+**Tests:** clean install ⇒ empty; delete a required member ⇒ `RequiredMemberMissing`; edit a
+member's bytes ⇒ `MemberMoved` with both hashes; delete an optional member ⇒
 `OptionalMemberAbsent` only; remove the pack dir ⇒ `OrphanedPack`; two packs locking different
 hashes for one shared member ⇒ `SharedMemberDisagreement`.
 
@@ -519,93 +528,116 @@ pub struct Config { pub library: Option<PathBuf> }
 /// `<config_home>/grimoire/config.toml`. `config_home` is a PARAMETER
 /// (the crate reads no environment); the binary passes XDG's.
 pub fn config_path(config_home: &Path) -> PathBuf;
-pub async fn load(config_home: &Path) -> Result<Config>;   // absent file ⇒ Config::default()
-pub async fn save(config_home: &Path, cfg: &Config) -> Result<()>;
+pub fn load(config_home: &Path) -> Result<Config>;   // absent file ⇒ default
+pub fn save(config_home: &Path, cfg: &Config) -> Result<()>;
 ```
 
-Format: TOML, hand-editable, unknown keys ignored (the format's own posture). Parsing is a
-hand-rolled two-key reader rather than a new `toml` + `serde` dependency pair — v0.1 has exactly
-one key, and the dependency policy is deliberate about weight. If a second structured key
-appears, adopt `toml` then.
+TOML, hand-editable, unknown keys ignored and preserved. Parsed by a hand-rolled single-key reader
+rather than adding `toml` + `serde` — v0.1 has exactly one key and the dependency floor is now an
+invariant. When a second structured key appears, adopt `toml` then.
 
-**Tests:** absent file ⇒ default; round-trip; unknown key preserved-and-ignored; a malformed file
-is an error, not a panic.
+**Tests:** absent ⇒ default; round-trip; unknown key ignored **and still present after `save`**; a
+malformed file is `CoreError::Config`, not a panic.
 
 **Verify:** `cargo test -p grimoire-core config::` green.
 
 ## Task 11 — the sandbox harness + both workflows end-to-end
 
-`crates/grimoire-core/tests/`. This is the phase gate's evidence, so the harness comes with it.
+`crates/grimoire-core/tests/`. The phase gate's evidence, so the harness ships with it.
 
-`tests/sandbox.rs` (module shared by the integration tests) builds a throwaway world in one
-`tempfile::TempDir`:
+`tests/sandbox.rs` builds a throwaway world in one `tempfile::TempDir`:
 
 ```
 <tmp>/library/skills/{alpha/SKILL.md+PACK.md, beta/SKILL.md, gamma/SKILL.md, loose/SKILL.md}
-<tmp>/home/{.agents/, .claude/skills/}          # a FAKE home — never the developer's
-<tmp>/project/                                   # a fake project root
+<tmp>/home/{.agents/, .claude/skills/, .codex/, .cursor/}   # a FAKE home
+<tmp>/project/                                               # a fake project root
 ```
 
-with `Agents::from_agents(vec![Agent::fixture("claude", "<tmp>/home/.claude/skills",
-".claude/skills")])` — never `Agents::detect()`, which would resolve against the real machine.
+with `AgentEnv::rooted("<tmp>/home")` — never `AgentEnv::from_process()`, which would resolve
+against the developer's real machine.
 
 - `tests/workflow_library.rs` — **workflow (a)**: enumerate → preflight → install a pack at
-  **global** scope → inventory lists it → check is clean → remove → tree and lock return to their
+  **global** scope → inventory lists it → check clean → remove → tree and lock return to their
   pre-install state.
-- `tests/workflow_project.rs` — **workflow (b)**: the same at **project** scope, asserting the
-  lock lands at `<project>/.claude/grimoire.lock` (§3) and that a global install of the same pack
-  is untouched by the project remove (scope isolation — §3's "exactly one scope").
-- `tests/parity.rs` — the install-shape parity assertions against `install.sh`'s semantics:
-  every installed member is a **symlink** (not a copy) resolving into the library, so an edit to
-  a library file is visible through the installed path. This is the dogfood property Phase 4's
-  gate depends on; asserting it here is what stops a future refactor from quietly reintroducing
-  copy semantics.
+- `tests/workflow_project.rs` — **workflow (b)**: the same at **project** scope, asserting the lock
+  lands at `<project>/.claude/grimoire.lock` (§3) and that a global install of the same pack is
+  untouched by the project remove (scope isolation — §3's "exactly one scope").
+- `tests/parity.rs` — install-shape parity with `install.sh`: every installed member is a
+  **symlink** resolving into the library, so editing a library file is visible through the
+  installed path. This is the dogfood property Phase 4's gate depends on; asserting it here is
+  what stops a future refactor from quietly reintroducing copy semantics.
 
-**Prove by breaking** (house rule — a check nobody has seen fail is not evidence): with the
-refcount in Task 8 disabled, `workflow_*`'s shared-member assertion must go red; with the
-rollback in Task 6 short-circuited, the mid-flight failure test must go red; with the collision
-predicate weakened to a bare `exists()`, the intermediate-symlink case must go red. Record the
-three observed failures in the ship's commit message, then restore.
+**Prove by breaking** (house rule — a check nobody has seen fail is not evidence): with Task 8's
+refcount disabled, the shared-member assertion must go red; with Task 6's rollback
+short-circuited, the mid-flight failure test must go red; with the collision predicate weakened to
+a bare `exists()`, the intermediate-symlink case must go red. Record the three observed failures
+in the ship's commit message, then restore.
 
-**Verify:** `cargo test -p grimoire-core --tests` green; the three break-tests observed red then
-restored.
+**Verify:** `cargo test -p grimoire-core --tests` green; three break-tests observed red, restored.
 
-## Task 12 — boundary tests, docs, roadmap status
+## Task 12 — boundary tests
 
-- `tests/boundary.rs`: (a) no UI crate in the dependency tree — parse `cargo metadata` output and
-  assert nothing named `ratatui`/`crossterm`/`termion` appears among `grimoire-core`'s transitive
-  deps; (b) `skill` containment — assert no `src/*.rs` other than `agents.rs` mentions `skill::`.
-  Both are the crate's architectural invariants, so they are tests, not comments.
-- Module docs: `lib.rs` states the crate's contract (async, clockless, homeless, no UI, `skill`
-  confined to `agents.rs`); `install.rs` names the spec sections it implements and the
-  `install.sh` lines it ports.
-- Flip Phase 2's roadmap entry to shipped with a one-paragraph summary, matching Phase 1's
-  precedent (`docs/design/2026-08-15-tui-v0.1-roadmap.md:46-52`).
+`tests/boundary.rs`. The crate's architectural invariants are tests, not comments:
+
+- **Dependency floor:** parse `cargo metadata` and assert `grimoire-core`'s transitive deps contain
+  no `skill`, no `tokio`, and nothing named `ratatui`/`crossterm`/`termion`. Finding 2's decision
+  is only durable if a re-introduction fails the suite.
+- **No environment reads in operations:** assert no `src/*.rs` other than `agents.rs` mentions
+  `std::env`, and that `agents.rs`'s only use is inside `from_process`.
+
+**Verify:** `cargo test -p grimoire-core --test boundary` green; each assertion observed failing
+against a deliberately-broken variant (add `tokio` to the manifest; add an `std::env::var` call).
+
+## Task 13 — roadmap amendment + docs
+
+The vendoring decision contradicts two of the roadmap's *Cross-cutting foundations* as written, so
+amend them in the same commit that lands the crate — a plan and its roadmap must not disagree:
+
+- **Async posture** ("`grimoire-core` adopts tokio and exposes async operations"): amend to
+  "`grimoire-core` is synchronous; the TUI runs core operations off its render thread. The original
+  rationale — `skill`'s async surface — no longer applies, `skill` having been dropped
+  (2026-08-18)." The ratatui/tokio event loop in Phase 3 is **unaffected**.
+- **Dependency policy** ("`skill` pinned `=0.8.3`; vendor/fork is the documented fallback"): amend
+  to record that the fallback was **taken** for v0.1 — the four-target table is vendored, `skill`
+  is not a dependency — and that remote sources would be the deliberate occasion to reconsider.
+- Keep **Seam types** as-is: it now holds trivially.
+- Module docs: `lib.rs` states the contract (sync, clockless, homeless, no UI, zero third-party
+  deps beyond the workspace's); `agents.rs` names upstream as the table's provenance with the
+  per-row line references; `install.rs` names the spec sections it implements and the `install.sh`
+  lines it ports.
+- Flip Phase 2's roadmap entry to shipped with a one-paragraph summary, per Phase 1's precedent
+  (`docs/design/2026-08-15-tui-v0.1-roadmap.md:46-52`).
 
 ## Deferred (recorded, not forgotten)
 
 - **Scope-wide hash collision predicate** (§5's "already installed in the target scope with
-  different content"): v0.1 uses the destination-level predicate `install.sh` enforces. The
-  scope-wide version needs an installed-content index; `check` (Task 9) already computes the
-  hashes it would need, so this is a later composition, not new machinery.
-- **Interactive adopt/replace** (§5): `MemberDisposition::Collision.adoptable` carries the flag,
-  but v0.1 aborts rather than resolving — resolution is a TUI interaction (Phase 3+), and the
-  spec only forbids doing it *silently*.
+  different content"): v0.1 uses the destination-level predicate `install.sh` enforces. `check`
+  already computes the hashes the scope-wide version needs — a later composition, not new
+  machinery.
+- **Interactive adopt/replace** (§5): `Collision.adoptable` carries the flag; v0.1 aborts rather
+  than resolving. Resolution is a TUI interaction (Phase 3+); the spec only forbids doing it
+  *silently*.
+- **Agents beyond the four** §3 recognizes: adding one is a table row **plus** an `AGENT_DIRS`
+  entry in `grimoire-pack` — Task 3's coherence test fails loudly if only one side is edited.
 - **Ecosystem per-skill lock upkeep** — see Global constraints.
-- **Remote sources, search, upgrade-from-source** — outside v0.1 by the brainstorm.
+- **Remote sources, search, upgrade-from-source** — outside v0.1 by the brainstorm; the natural
+  occasion to reconsider `skill`.
 
 ## Phase gate (the roadmap's Phase 2 exit criteria)
 
-- [ ] Sandboxed integration tests cover **both** workflows end-to-end (discover → install → list
-      → check → remove) against throwaway fixture trees, with a fake home — no test reads or
-      writes the developer's real agent dirs.
-- [ ] **No UI crate in `grimoire-core`'s dependency tree**, asserted by `tests/boundary.rs`.
-- [ ] `skill` types confined to `agents.rs`, asserted by `tests/boundary.rs`.
+- [ ] Sandboxed integration tests cover **both** workflows end-to-end (discover → install → list →
+      check → remove) against throwaway fixture trees with a fake home — no test reads or writes
+      the developer's real agent dirs.
+- [ ] **No UI crate, no `tokio`, no `skill`** in `grimoire-core`'s dependency tree, asserted by
+      `tests/boundary.rs` and each assertion observed failing when deliberately broken.
+- [ ] The four vendored agents all classify `Scope::Global` under `grimoire_pack::lock::scope_for`
+      (Finding 2's coherence invariant).
 - [ ] Workspace suite green and `cargo clippy --all-targets -- -D warnings` clean **from the repo
-      root**, and — the standing rule of this stream, because this is repo-scanning code — the
-      suite also run **in the root checkout** before the land, not only in the worktree.
+      root**, and — this stream's standing rule, because this is repo-scanning code — the suite
+      also run **in the root checkout** before the land, not only in the worktree.
 - [ ] Phase 1's 48 tests green **unmodified** (this phase adds a crate; it changes none of
       `grimoire-pack`'s behavior).
 - [ ] Three prove-by-breaking failures observed and recorded (Task 11).
+- [ ] Roadmap's *Cross-cutting foundations* amended in the same commit range (Task 13).
 - [ ] `install.sh` untouched, no spec edit in the diff, and
       `skills/skill-builder/scripts/skills-lint.sh` unchanged at `fails=0`.
