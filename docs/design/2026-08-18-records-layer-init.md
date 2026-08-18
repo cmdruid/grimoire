@@ -1,6 +1,6 @@
 ---
 doctype: design
-status: current
+status: done
 created: 2026-08-18
 updated: 2026-08-18
 tags: [spec]
@@ -8,10 +8,16 @@ tags: [spec]
 
 # records-layer init — Spec
 
+Shipped 2026-08-18 on stream `grok`: records-layer
+execute slice 1; backlog writes without a journal
+floor; flip writers onto the agent-records home;
+BL-21 capture. File-mode close — no ledger on this
+host.
+
 Accepted 2026-08-18 on stream `grok` after four
 independent `/blueprint review` passes. Human
-approved; this spec doubles as the plan. Next:
-execute Slice 1.
+approved; this spec doubles as the plan. Slices
+1–3 executed.
 
 Settled 2026-08-18 on stream `grok`. Human brief: pack skills that
 create records must write them to the project's **agent-records
