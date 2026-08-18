@@ -2,9 +2,10 @@
 
 Independent second-set-of-eyes on a **job** artifact — distinct from the
 self-review baked into `plan` (the author checking their own work; this verb is
-not the author). Artifact-free: findings + a verdict in context, no file
-written (except a `needs-rework` write-back). It reviews **documents, not
-diffs** — a code change is the host's code-review tooling.
+not the author). Findings + a verdict in context. Every verdict writes a dated
+stamp into the artifact's Review history; `needs-rework` also writes the
+finding list. It reviews **documents, not diffs** — a code change is the
+host's code-review tooling.
 
 This verb reviews **roadmap / plan / runbook only**. A spec or design doc is
 the wrong review verb — refuse it.
@@ -48,33 +49,28 @@ the wrong review verb — refuse it.
    `approve` / `approve-with-changes` / `needs-rework`. Findings ranked by
    severity, each as location → what's wrong → why it matters → a concrete
    fix, must-fix separated from nice-to-have; a confidence note on anything
-   unsure — never a guess presented as fact. **A blocking verdict is a
-   durable fact about the artifact, not session chatter:** on `needs-rework`,
-   also write the finding list into the artifact itself (a dated "Review
-   history" section the owner prunes on resolution). An approve verdict
-   changes nothing and stays in context.
+   unsure — never a guess presented as fact. **Every verdict is a durable
+   fact about the artifact:** write a dated stamp into the artifact's
+   `## Review history` (create the section if missing):
+
+   ```
+   ### YYYY-MM-DD — needs-rework | approve | approve-with-changes
+   ```
+
+   `needs-rework` still carries the finding list under the stamp (must-fix
+   separated from nice-to-have). `approve` and `approve-with-changes` may
+   be a stamp-only line. This is a write-back, not a new verdict word. The
+   owner may prune a fully resolved dated block after a later `approve`.
 
 Depth dial (default off): for a high-stakes artifact, dispatch a few
 **read-only** subagents in parallel — each a distinct lens, one a skeptic
 trying to *refute* the doc's central claim — and synthesize. Never an editing
 subagent.
 
-Terminal step: hand the verdict to whoever owns the artifact — `review`
-changes nothing itself (except the `needs-rework` write-back).
+Terminal step: hand the verdict to whoever owns the artifact and **stop**.
 
-## Acting on review feedback — yours, a human's, or an external reviewer's
+## After the verdict
 
-`review` hands a verdict to the artifact's owner and stops. The receiving side
-is its own discipline:
-
-1. **Verify before implementing — feedback is a claim, not a decision.**
-   Re-check it against the actual code/doc. A fold is itself unverified content
-   — re-ground it like any inherited claim, or mark it
-   `(unverified — check at build)`.
-2. **No performative agreement.** State findings and actions plainly.
-3. **One unclear item holds up the whole batch** — clarify all ambiguous items
-   before implementing any.
-4. **Grep before generalizing** — a "make this configurable" suggestion gets a
-   usage check first; unneeded generality is YAGNI.
-5. **Push back with reasoning when the feedback is wrong** — disagreement is a
-   legitimate outcome; state the evidence.
+`review` hands the verdict to the artifact's owner and stops. The owner
+folds a `needs-rework` (or an `approve-with-changes` they want applied)
+with `revise` (`verbs/revise.md`). This verb does not amend.

@@ -11,10 +11,15 @@ A raw **roadmap** is not an input. Compile a runbook first.
 1. **Resolve input:** a **plan** or a **runbook**. A raw **roadmap** → refuse;
    tell the caller to `runbook` it first (describe the artifact type, do not
    name a sibling skill). A spec → refuse (that is not a job to walk).
-2. **Every plan that will be walked** must have passed `review` or the human
-   must waive it. If unknown, run `review` on that plan first. For a runbook:
-   also run the conductor completeness check (`verbs/runbook.md` step 4); that
-   check **does not** replace plan review.
+2. **Walk a plan only when its latest Review history stamp is `approve`
+   or `approve-with-changes`, or the human waives explicitly.** The latest
+   stamp is the most recently dated `### YYYY-MM-DD — <verdict>` heading.
+   A latest stamp of `needs-rework` is a **refuse** — tell the caller to
+   `revise` or to waive. Open vs closed items under that stamp do not
+   change this. No stamp at all → unknown; run `review` on that plan
+   first. For a runbook: also run the conductor completeness check
+   (`verbs/runbook.md` step 4); that check **does not** replace plan
+   review.
 3. **Plan:** walk slices in declared order. Per slice: do it yourself **or**
    write a self-contained brief and use the host's delegation mechanism. After
    each slice: the slice's verify command (for you). Do not narrate every

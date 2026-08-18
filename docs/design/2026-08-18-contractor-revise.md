@@ -394,7 +394,7 @@ discipline: the file without a citation would FAIL).
 This spec doubles as the plan. One slice: the verb
 plus the loop wiring. Sequencing is not required.
 
-- [ ] **Slice 1: add `revise` and close the loop**
+- [x] **Slice 1: add `revise` and close the loop**
   <requires: —>
   - Paths: `skills/contractor/SKILL.md`;
     `skills/contractor/verbs/revise.md` (new);
