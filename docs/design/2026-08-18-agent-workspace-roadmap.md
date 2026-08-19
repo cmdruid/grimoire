@@ -40,9 +40,11 @@ Phases 3 and 4 are parallel-eligible with each other.
 ```
 
 - **Phase 1 blocks 3 and 4** — both need `agent-workspace` to exist.
-- **Phase 2 blocks one *option* inside Phase 3**, not Phase 3 itself: until contractor's verbs are
-  fixed, `records.sh:180`'s template fallback is load-bearing shipped surface and cannot be deleted.
-- **Nothing blocks Phase 2.** It is small and independent; do it whenever.
+- **Phase 2 blocked one *option* inside Phase 3**, not Phase 3 itself: until contractor's verbs were
+  fixed, `records.sh:180`'s template fallback was load-bearing shipped surface and could not be
+  deleted. **Discharged 2026-08-19** — no live caller reaches it, and lint check 17 keeps it that
+  way, so Phase 3 may take the deletion.
+- **Nothing blocked Phase 2.** It was small and independent; shipped 2026-08-19.
 
 ## Cross-cutting foundations
 
@@ -97,7 +99,14 @@ Two process lessons, paid for with five review lenses across two rounds. They ap
   (`DOCTRINE.md:226-228` publishes the declaration being retired); its required mitigation is
   removing that example in the same change.
 
-## Phase 2 — BL-25: contractor's `--template` drift   *requires: —*
+## Phase 2 — BL-25: contractor's `--template` drift   *requires: —*   **SHIPPED 2026-08-19**
+
+> Landed by `stream/feat` in four slices. **Gate met in full:** the three verbs mint via
+> `--template <resolved>` · all eight suites green · `skills-lint.sh` `fails=0 warns=22` ·
+> the fallback cut out of a fixture copy of `records.sh`, showing `--template` survives and the
+> bare form hard-errors. A mechanical census (now standing as **lint check 17**) found a
+> **fourth** carrier BL-25 never named — `debugger/templates/investigation.md:3` — flipped in the
+> same batch. **Unblocks Phase 3's option to delete `records.sh:180`.**
 
 - **Goal:** bring `contractor`'s `plan` / `roadmap` / `runbook` verbs back to the
   `records.sh new --template <resolved>` form its own `SKILL.md:38` prescribes.
@@ -116,7 +125,10 @@ Two process lessons, paid for with five review lenses across two rounds. They ap
 - **Gate:** all eight suites green; check 16 extended to `agent-templates` and red-proofed; a
   brownfield fixture carrying a legacy-flat `templates/` survivor still passes `records.sh check`.
 - **Risks:** **this is the half that failed three censuses.** The retired variable is a *tool
-  contract*, not prose. Deleting `records.sh:180`'s fallback is only safe after Phase 2.
+  contract*, not prose. Deleting `records.sh:180`'s fallback was gated on Phase 2, which shipped
+  2026-08-19 — the deletion is now unblocked, and check 17 is what keeps a new bare caller from
+  re-arming it. Note check 17's census found a carrier BL-25 missed: **let the lint enumerate
+  Phase 3's carriers too**, per the same lesson.
   De-reserving `templates/` breaks brownfield hosts whose legacy-flat files persist **by design**
   (`DOCTRINE.md:362` — "do not delete the old file"), so the demotion may have to stay conditional.
   Its draft carries seven verified inherited findings — read them before scoping.

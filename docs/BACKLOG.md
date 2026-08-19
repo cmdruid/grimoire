@@ -111,7 +111,12 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-25 — `contractor`'s job verbs drifted from the `--template` form its own SKILL.md prescribes
 - **source:** feat stream, workspace-consolidation review round 2 (2026-08-18).
-- **status:** open
+- **status:** **done (2026-08-19)** — roadmap Phase 2. The three verbs mint via
+  `--template <resolved>`; **lint check 17** now FAILs on any bare mint, and journal's
+  `records-test.sh` cuts the fallback out of a fixture copy of `records.sh` to show the prescribed
+  form survives and the bare form hard-errors. The census turned up a **fourth** carrier this
+  entry never named — `debugger/templates/investigation.md:3` — flipped in the same batch.
+  The fallback is now provably reachable only by a bare mint, so 3b may delete it.
 - **body:** `contractor/SKILL.md:38` prescribes minting via the agent-templates rule —
   `records.sh new --template <resolved>`. But `verbs/plan.md:62`, `verbs/roadmap.md:28`, and
   `verbs/runbook.md:15` all call `records.sh new plans --title "…"` **bare**, relying on
