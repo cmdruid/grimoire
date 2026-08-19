@@ -7,7 +7,7 @@
 #   a `key=value` summary block, then one TSV line per candidate markdown doc:
 #     path <TAB> created <TAB> updated <TAB> lines <TAB> first-heading
 # Dates come from git where available (%as of first/last commit touching the path), else `-`.
-# Skips: .git, .handbook, .records, node_modules, target, vendor, dist, hidden dirs.
+# Skips: .git, .dev, .handbook, .records, node_modules, target, vendor, dist, hidden dirs.
 # Exit codes: 0 ok · 1 usage · 2 bad root.
 set -eu
 
@@ -21,6 +21,12 @@ git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1 && in_git=true
 
 echo "root=$root"
 echo "git=$in_git"
+# Two probes, both required, and neither is redundant. This script runs BEFORE any door
+# exists, so it cannot resolve `agent-workspace:` — it can only test the DEFAULT home. The
+# legacy probe is therefore the only thing that detects a pre-relocation workshop, and a host
+# that declared a non-default workspace reports `workspace=absent` here; the verb resolves the
+# door and re-tests. Both keys answer *is a workshop assembled*, not *does the home exist*.
+[ -e "$root/.dev/doctrine" ] && echo "workspace=present" || echo "workspace=absent"
 [ -e "$root/.handbook" ] && echo "handbook=present" || echo "handbook=absent"
 [ -e "$root/.records" ]  && echo "records=present"  || echo "records=absent"
 for door in AGENTS.md CLAUDE.md; do

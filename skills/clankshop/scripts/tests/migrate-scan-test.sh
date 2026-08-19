@@ -31,7 +31,34 @@ expect "doc row with git date" "dev/notes/plan.md	$(date +%Y-%m-%d)" "$OUT"
 expect "doc row heading" "# Old plan" "$OUT"
 expect_absent "non-md files not inventoried" "src/main.rs" "$OUT"
 
+expect "workspace absent on a bare project" "workspace=absent" "$OUT"
+
 rc=0; "$SKILL/scripts/migrate-scan.sh" "$TMP/nosuchdir" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "bad root rc" "2" "$rc"
+
+# --- the dual probe: two keys, neither redundant -------------------------------
+# The scan runs BEFORE any door exists, so it can only test the DEFAULT workspace. The
+# legacy key is therefore the only thing that can see a pre-relocation workshop.
+
+# a relocated (post-flip) workshop
+post="$TMP/post"; mkdir -p "$post/.dev/doctrine"
+"$SKILL/scripts/migrate-scan.sh" "$post" >"$OUT" 2>"$ERR"
+expect "relocated workshop detected" "workspace=present" "$OUT"
+expect "relocated workshop has no legacy tree" "handbook=absent" "$OUT"
+
+# a pre-relocation workshop: the NEW key alone would call this greenfield
+pre="$TMP/pre"; mkdir -p "$pre/.handbook"
+"$SKILL/scripts/migrate-scan.sh" "$pre" >"$OUT" 2>"$ERR"
+expect "pre-relocation workshop seen by the legacy probe" "handbook=present" "$OUT"
+expect "pre-relocation workshop absent from the new probe" "workspace=absent" "$OUT"
+
+# a coincident legacy host (records at `dev/`, doctrine at `dev/doctrine/`): the scan cannot
+# resolve the door, so BOTH keys read absent. This is why the keys are preflight facts and the
+# verb re-tests after resolving `agent-workspace:` — asserted so the limitation stays visible.
+coin="$TMP/coin"; mkdir -p "$coin/dev/doctrine"
+printf '# Door\nagent-workspace: dev\n' > "$coin/AGENTS.md"
+"$SKILL/scripts/migrate-scan.sh" "$coin" >"$OUT" 2>"$ERR"
+expect "declared non-default workspace is invisible to the preflight" "workspace=absent" "$OUT"
+expect "…and so is the legacy key" "handbook=absent" "$OUT"
 
 report "migrate-scan-test"

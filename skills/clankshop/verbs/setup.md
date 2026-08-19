@@ -1,6 +1,6 @@
 # `setup` — greenfield bootstrap
 
-Stand up the workshop on a project that has none: project the seed handbook, stand up the
+Stand up the workshop on a project that has none: project the seed doctrine, stand up the
 records layer (via `journal`), write the door, validate. Facts come from scripts and
 inspection; the few real decisions are confirmed with the human, once.
 
@@ -9,11 +9,18 @@ references, else the working directory, else ask. Then classify *before any writ
 
 a. **Journal present?** If `/journal setup` is not available, stop: say so and do
    not improvise a records layer. Write nothing.
-b. **Inventory.** `scripts/migrate-scan.sh <root>` (facts). If `handbook=absent` and
-   any of `docroot=`, `tracker-shaped=`, `records=present` fire, prefer `migrate` —
-   show the human those keys and stop unless they confirm greenfield anyway.
-c. **Existing `.handbook`?**
-   - Absent → continue the walk.
+b. **Inventory.** `scripts/migrate-scan.sh <root>` (facts). If both `workspace=absent`
+   and `handbook=absent`, and any of `docroot=`, `tracker-shaped=`, `records=present`
+   fire, prefer `migrate` — show the human those keys and stop unless they confirm
+   greenfield anyway.
+c. **Existing doctrine home?** Test the resolved `<agent-workspace>/doctrine`, **and**
+   legacy `.handbook/` — the scan can only probe the default workspace, so a host that
+   declared a non-default one reports `workspace=absent` regardless. A present
+   `.handbook/` is a **pre-relocation** workshop: it is assembled, so this is not
+   greenfield. Do not seed beside it (`seed.sh` refuses); the move is
+   `git mv .handbook <agent-workspace>/doctrine`, then resume at the first unfinished
+   walk step.
+   - Both absent → continue the walk.
    - Present, and a `check` would be green (stamp, slots, door pointer, records
      layer) → already seeded. Stop. An upgrade the human asked for is a
      judgment-assisted diff against the current seed, anchored by the README
@@ -31,11 +38,13 @@ c. **Existing `.handbook`?**
    - `<gate>`: the project's one gate command. Propose it from inspection (test runner, build
      manifest, CI config); confirm with the human. A brand-new project with no gate yet gets a
      placeholder confirmed as such — the guardian fills it when one exists.
-2. **Project the seed** (mechanics are scripted):
-   `scripts/seed.sh <root> --gate '<gate>' --trunk '<trunk>'`
-   — copies the template handbook to `<root>/.handbook`, fills the slots, writes the one
-   install stamp (`Seeded from clankshop vX.Y on DATE` in `.handbook/README.md`), and
-   self-checks the load sets. It refuses an existing `.handbook`.
+2. **Project the seed** (mechanics are scripted). Resolve `<agent-workspace>` from the door
+   first (default `.dev`) and pass it in — the script never scans the front door:
+   `scripts/seed.sh <root> --workspace '<agent-workspace>' --gate '<gate>' --trunk '<trunk>'`
+   — copies the template doctrine to `<root>/<agent-workspace>/doctrine`, fills the slots,
+   writes the one install stamp (`Seeded from clankshop vX.Y on DATE` in
+   `<agent-workspace>/doctrine/README.md`), and self-checks the load sets. It refuses an
+   existing doctrine home **and** a legacy `.handbook/`. Omit `--workspace` for the default.
 3. **Stand up the records tool layer — `/journal setup`** (a required pack member; the
    records layer is its domain). Run `/journal setup` for `<root>`: `records.sh`,
    the empty history ledger, and the records README are its deployed assets, not
@@ -45,20 +54,23 @@ c. **Existing `.handbook`?**
 4. **Write the door.** Integrate into `<root>/AGENTS.md` (create it if absent; integrate,
    never clobber — existing content stays). Minimum bytes — not a template:
 
-   - a pointer that names `.handbook/README.md` (the workshop's doctrine lives in
-     `.handbook/`; start there);
+   - a pointer that names `<agent-workspace>/doctrine/README.md` (the workshop's doctrine
+     lives in `<agent-workspace>/doctrine/`, by default `.dev/doctrine/`; start there);
    - a thin routing table compiled from `core/ROUTING.md`'s dispatch rows (kind of
-     work → lane). Detail stays in the handbook; the door only routes;
+     work → lane). Detail stays in the doctrine home; the door only routes;
    - `agent-records: <rel>` at line start only when the records home is not
      `.records/` (omit the line for the default). `records-root:` remains
      accepted on already-declared hosts.
+   - `agent-workspace: <rel>` at line start only when the workspace is not `.dev`
+     (omit the line for the default — that is the point of the default, and a line
+     restating it is a no-op the lint flags).
 
    Do not invent a third location. Do not rewrite unrelated existing content.
 5. **Validate**: run the `check` verb. Setup is complete only when it comes back green.
 
 ## Notes
 
-- The handbook is the **project's** document from this moment: project specifics accrete below
-  the seeded preambles; upgrades diff against the current seed rather than re-projecting.
+- The doctrine home is the **project's** document from this moment: project specifics accrete
+  below the seeded preambles; upgrades diff against the current seed rather than re-projecting.
 - Nothing here writes outside `<root>`; commits (if the human wants them) are scoped to the
-  paths written (`.handbook/`, `.records/`, `AGENTS.md`).
+  paths written (`<agent-workspace>/doctrine/`, `.records/`, `AGENTS.md`).

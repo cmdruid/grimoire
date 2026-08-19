@@ -8,7 +8,8 @@ human. Work that emerges is routed normally afterwards.
 ## The walk
 
 1. Resolve the project root (conversation → cwd → ask).
-2. Load the station's context: `<root>/.handbook/scripts/context.sh <persona>` — the shared
+2. Load the station's context: `<root>/<agent-workspace>/doctrine/scripts/context.sh
+   <persona>` (default `.dev/doctrine/scripts/context.sh`) — the shared
    core plus the station's `POLICY.md`, whose preamble **is** the persona: identity and
    standing judgments in second person. Read it as yourself.
    - **No workshop deployed?** Fall back to this skill's seed (`seed/scripts/context.sh
