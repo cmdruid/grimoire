@@ -42,9 +42,9 @@ is (or run the debrief if the intent is "capture everything that surfaced").
 ## Shared discipline (every verb relies on this — stated here once)
 
 - **Resolve both homes, then mint.** Agent-records home: first line-start `agent-records:`
-  or `records-root:` in `AGENTS.md`, then `CLAUDE.md`; else `.records`. Agent-templates
-  home: first `agent-templates:` in those files; else `<agent-records>/templates`. Pass
-  both into every `scripts/record-mint.sh` call. The script does not scan the front door.
+  or `records-root:` in `AGENTS.md`, then `CLAUDE.md`; else `.records`. Templates home:
+  `<agent-workspace>/templates` (declared `agent-workspace:`, else `.dev`). Pass both
+  into every `scripts/record-mint.sh` call. The script does not scan the front door.
 - **In-package contract.** Front-matter keys: `doctype`, `status`, `created`, `updated`,
   `tags`. Live statuses: `open`, `current`. Closed: `done`, `dropped`, `superseded`,
   `consumed`. Dated slug `YYYY-MM-DD-<slug>.md`. Record-link form: `→ <dir>/<file>.md`.
@@ -60,7 +60,7 @@ is (or run the debrief if the intent is "capture everything that surfaced").
   `<agent-records>/<doctype>/*.md` and honor live vs closing `status:`. Find a tracker
   by its H1 title among live `trackers/` records.
 - **The three canonical trackers**, found by title and created lazily on first capture
-  (`record-mint.sh mint <agent-records> <agent-templates> trackers "<Title>"`): **Backlog**
+  (`record-mint.sh mint <agent-records> <templates-home> trackers "<Title>"`): **Backlog**
   (things to build), **Issues** (project problems/concerns), **Feedback** (dev-experience
   observations). **Incumbent-schema guard:** if a tracker's existing items follow a legacy
   per-item shape the migration never normalized, don't silently mix a second schema into

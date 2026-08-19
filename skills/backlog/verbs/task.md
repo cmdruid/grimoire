@@ -7,7 +7,7 @@ sentence, cold-actionable.
 2. **Find or create the Backlog tracker**: if `records.sh` is executable,
    `records.sh list --type trackers` and match the title `Backlog`; else scan
    live `<agent-records>/trackers/*.md` by H1. When absent,
-   `scripts/record-mint.sh mint <agent-records> <agent-templates> trackers "Backlog"`.
+   `scripts/record-mint.sh mint <agent-records> <templates-home> trackers "Backlog"`.
 3. **Append one line** under `## Items`, newest last, in the contract's live tracker-line
    form: `- [ ] <date> — <the item, one sentence, concrete enough to act on cold>`
    (date from `date +%Y-%m-%d`, never guessed). Link a related record with

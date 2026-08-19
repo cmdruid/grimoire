@@ -9,7 +9,7 @@ fact. No successor → refuse; that is `drop`.
 3. **Successor required.** If none exists and none will be minted,
    STOP and point at `/notepad drop`.
 4. Mint the replacement
-   (`note-mint.sh mint <agent-records> <agent-templates> "<headline>"`)
+   (`note-mint.sh mint <agent-records> <templates-home> "<headline>"`)
    or confirm the successor path already exists. Fill the new body.
 5. On the **old** note's body, append one contract record-link:
    `→ notes/<successor-file>.md`.

@@ -179,9 +179,9 @@ expect "subsystem BREAK: absent path reported false" "path_exists[src/nonexisten
 expect "catalog: reports nothing deployed yet" "deployed=false" "$OUT"
 expect "catalog: lists briefing as bundled"    "briefing	bundled" "$OUT"
 
-mkdir -p "$FIX/.records/templates/analyst"
-cp "$HERE/../../templates/briefing.md" "$FIX/.records/templates/analyst/briefing.md"
-cat > "$FIX/.records/templates/analyst/house-style.md" <<'EOF'
+mkdir -p "$FIX/.dev/templates/analyst"
+cp "$HERE/../../templates/briefing.md" "$FIX/.dev/templates/analyst/briefing.md"
+cat > "$FIX/.dev/templates/analyst/house-style.md" <<'EOF'
 ---
 template: house-style
 use-when: "A project-local report kind."

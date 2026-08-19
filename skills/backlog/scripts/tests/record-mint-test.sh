@@ -95,7 +95,18 @@ fi
 expect_match "file-mode close status" '^status: done$' "$(cat "$path")"
 expect_absent "file-mode close no history.tsv" "$RR/history.tsv"
 
-# --- with records.sh: --template from agent-templates path --------------------
+# previous-home adopt: skill-namespaced file under records → templates home
+RRP="$TMP/prev-home"
+TH="$TMP/ws/templates"
+mkdir -p "$RRP/templates/backlog"
+printf -- '---\ndoctype: trackers\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\nprevious-home\n\n## Items\n' \
+  > "$RRP/templates/backlog/trackers.md"
+OUTP="$(/bin/bash "$MINT" mint "$RRP" "$TH" trackers "Backlog")"
+expect_eq "prev-home dest" "1" "$([ -f "$TH/backlog/trackers.md" ] && echo 1 || echo 0)"
+expect_match "prev-home body adopted" 'previous-home' "$(cat "$(kv path "$OUTP")")"
+expect_eq "prev-home left in place" "1" "$([ -f "$RRP/templates/backlog/trackers.md" ] && echo 1 || echo 0)"
+
+# --- with records.sh: --template from the templates home --------------------
 if [ -f "$JOURNAL_RS" ]; then
   RR2="$TMP/with-rs"
   AT2="$RR2/templates"

@@ -24,7 +24,7 @@ kind is dropping in a file.
 
 ## Catalog
 
-The live catalog is `<agent-records>/templates/analyst/` when deployed, else this skill's bundled
+The live catalog is `<agent-workspace>/templates/analyst/` when deployed, else this skill's bundled
 `templates/`. **Deployed wins** — a project customizes its reports by editing the deployed copy,
 and host-added templates join the catalog the same way.
 
@@ -95,7 +95,7 @@ cron-fired tick, a non-interactive harness invocation, or any run whose output g
 person will see it. When in doubt, persist: a spare record costs a line in a store, an
 evaporated briefing costs the whole run.
 
-To persist: resolve `reports.md` via the agent-templates rule; mint with
+To persist: resolve `reports.md` via the project-templates rule; mint with
 `records.sh new reports --template <resolved> --title "…" --tag analyst --tag briefing`
 when the tool exists; else file-mode from that path, naming the file
 `YYYY-MM-DD-<slug>.md` (the record shape) and write

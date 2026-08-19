@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # note-mint.sh — mint or stamp a notes/ record. Facts only.
-#   note-mint.sh mint  <agent-records> <agent-templates> <title>
+#   note-mint.sh mint  <agent-records> <templates-home> <title>
 #   note-mint.sh stamp <agent-records> <abs-path> [--status <status>] [--note "<text>"]
 #
 # Uses <agent-records>/scripts/records.sh when that file is executable
 # (`new --template <resolved>`); otherwise writes the contract shape itself.
-# Resolves notes.md through the agent-templates rule. Never decides
+# Resolves notes.md through the project-templates rule. Never decides
 # update-vs-mint or whether to commit. Never writes history.tsv by hand.
 # Never writes the flat <agent-records>/templates/notes.md.
 set -euo pipefail
 
 usage() {
-  echo "usage: note-mint.sh mint  <agent-records> <agent-templates> <title>" >&2
+  echo "usage: note-mint.sh mint  <agent-records> <templates-home> <title>" >&2
   echo "       note-mint.sh stamp <agent-records> <abs-path> [--status <status>] [--note \"<text>\"]" >&2
   exit 2
 }
@@ -81,10 +81,11 @@ has_records() {
   [ -x "$1/scripts/records.sh" ]
 }
 
-# resolve_notes_template <agent-records> <agent-templates>
+# resolve_notes_template <agent-records> <templates-home>
 resolve_notes_template() {
   local rr="$1" at="$2"
   local dest="$at/$SKILL_NAME/notes.md"
+  local prev="$rr/templates/$SKILL_NAME/notes.md"
   local flat="$rr/templates/notes.md"
   [ -f "$BUNDLED_TPL" ] || err "bundled template missing: $BUNDLED_TPL"
   if [ -f "$dest" ]; then
@@ -92,7 +93,9 @@ resolve_notes_template() {
     return 0
   fi
   mkdir -p "$(dirname "$dest")"
-  if [ -f "$flat" ]; then
+  if [ -f "$prev" ]; then
+    cp "$prev" "$dest"
+  elif [ -f "$flat" ]; then
     cp "$flat" "$dest"
   else
     cp "$BUNDLED_TPL" "$dest"

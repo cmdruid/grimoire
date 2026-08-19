@@ -214,26 +214,24 @@ A front-door variable is **one line in the host project's front-door doc** (`AGE
     agent-records: dev
 
 The records home also accepts the legacy synonym `records-root:` — first match of either name
-wins (`AGENTS.md` then `CLAUDE.md`). Beside it sits one sibling defaulting *under* the resolved
-records home, so **one `agent-records:` line moves both**:
+wins (`AGENTS.md` then `CLAUDE.md`).
 
-- the **agent-templates home** (schema, not instances) defaults to
-  `<resolved-agent-records>/templates`.
-
-Declare it only as an override:
-
-    agent-templates: schemas
-
-A third variable stands on its own root rather than under the records home:
+A second variable stands on its own root:
 
     agent-workspace: .dev
 
-The **agent-workspace home** is where a project's development environment lives — today its
-doctrine (living normative prose — see *Doctrine-touching skills* below), at the fixed subpath
-`<agent-workspace>/doctrine`. Default `.dev`. Declare it only as an override; there is **no**
-legacy synonym, because the variable is new and has no prior declarations to honor. A declared
-value of `.` is forbidden — it would place doctrine at `./doctrine`, colliding with real project
-directories.
+The **agent-workspace home** is where a project's development environment lives — doctrine
+(living normative prose — see *Doctrine-touching skills* below) at the fixed subpath
+`<agent-workspace>/doctrine`, and **project templates** (schemas, not instances) at the
+fixed subpath `<agent-workspace>/templates`. Default `.dev`. Declare it only as an
+override; there is **no** legacy synonym. A declared value of `.` is forbidden — it would
+place doctrine at `./doctrine`, colliding with real project directories.
+
+**`agent-templates` is retired.** It was a third variable that defaulted *inside* the
+records home (`<agent-records>/templates`). No host ever declared it. Templates now
+resolve at `<agent-workspace>/templates`, the same way doctrine resolves at
+`<agent-workspace>/doctrine` — one `agent-workspace:` line moves both. Do not restore
+the variable; do not declare `agent-templates:` on a front door.
 
 **The doctrine home is a fixed subpath, not a variable of its own.** It was one — retired into
 `<agent-workspace>/doctrine` because it had no demonstrated variance case, and because
@@ -251,7 +249,7 @@ consistency cost is small because the rule just below requires default paths wri
 so the mapping is stated wherever it is used and learned once.
 
 Skill prose keeps naming each default path literally (`.records/plans/…`,
-`.records/templates/backlog/…`, `.dev/doctrine/test/workflows/audit/…`) — never
+`.dev/templates/backlog/…`, `.dev/doctrine/test/workflows/audit/…`) — never
 `$RECORDS_ROOT/plans/…`.
 
 **A note on `agent-workspace`'s justification, so a later reader can re-weigh it.** The bar
@@ -295,26 +293,12 @@ The canonical records resolver (bash-3.2 safe; both declaration names):
       printf '%s\n' "${decl:-.records}"
     }
 
-The **agent-templates** home resolves the same way, falling back *through* it (same precedence,
-same front-door order, bash-3.2 safe):
-
-    # Front-door variable `agent-templates` (default `<agent-records>/templates`).
-    resolve_agent_templates() {
-      local root="$1" fd decl=""
-      for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-        if [ -z "$decl" ] && [ -f "$fd" ]; then
-          decl="$(sed -n -E 's/^agent-templates:[[:space:]]*//p' "$fd" \
-                  | head -n 1 | sed 's/[[:space:]]*$//')"
-        fi
-      done
-      printf '%s\n' "${decl:-$(resolve_agent_records "$root")/templates}"
-    }
-
 The **agent-workspace** home uses the same mechanism but a **flat default** — it does not fall
 back through another home, and it accepts only its own name:
 
     # Front-door variable `agent-workspace` (default `.dev`). The doctrine home is
-    # the fixed subpath `<agent-workspace>/doctrine`.
+    # the fixed subpath `<agent-workspace>/doctrine`. Templates are
+    # `<agent-workspace>/templates`.
     resolve_agent_workspace() {
       local root="$1" fd decl=""
       for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
@@ -324,6 +308,11 @@ back through another home, and it accepts only its own name:
         fi
       done
       printf '%s\n' "${decl:-.dev}"
+    }
+
+    # Templates home: fixed subpath, not a variable.
+    resolve_templates_home() {
+      printf '%s/templates\n' "$(resolve_agent_workspace "$1")"
     }
 
 Rules of the road: **declare once** — first match wins; when *documenting* a variable (this doc,
@@ -347,14 +336,14 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
 2. **Carry your templates; declare the lock-in set.** A skill that mints store `D` ships
    a doctype template named `D.md` (five keys + `<title>` / `<date>`). Body scaffolds may
    also live under `templates/`. A `## Project templates` list in `SKILL.md` names every
-   bundled file that is project-lock-in (copied to the agent-templates home). Files not
+   bundled file that is project-lock-in (copied to `<agent-workspace>/templates/<skill>/`). Files not
    on the list are package-only. The review brief flags: a writer whose store has no
    in-package doctype template; a list entry with no bundled file; a copy of a file the
    list does not name.
 3. **Own-store standup.** On first write, `mkdir` that skill's store (and the agent-records
    home directory if needed). Do not create a deployed `records.sh`, `history.tsv`, other
    stores, the records README, or the *flat* `<agent-records>/templates/<doctype>.md`.
-   Creating `<agent-records>/templates/<skill>/` on first lock-in copy is required.
+   Creating `<agent-workspace>/templates/<skill>/` on first lock-in copy is required.
 4. **No floor.** Missing `records.sh` is not an error. Journal standup is never a
    precondition. A description must not say the skill requires a stood-up records layer.
    A verb must not refuse and send the operator to journal standup.
@@ -366,9 +355,10 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    runbook) still names journal as the format authority; leaves do not.
 6. **Opportunistic `records.sh`.** If `<agent-records>/scripts/records.sh` is executable, use
    `new --template <resolved>` / `touch` / `done` / `list`. Otherwise write the same contract
-   shape from the resolved template. Resolution is the agent-templates rule (incumbent
-   skill-namespaced file, then legacy flat adopt for store-named lock-ins, else the
-   bundled copy). Never write a second copy at the *flat*
+   shape from the resolved template. Resolution is the **project-templates rule**
+   (incumbent skill-namespaced file at the workspace, then previous-home adopt,
+   then legacy flat adopt for store-named lock-ins, else the bundled copy).
+   Never write a second copy at the *flat*
    `<agent-records>/templates/<doctype>.md`.
 7. **Never hand-write `history.tsv`.** File-mode close rewrites `status:` (and `updated:`)
    only. After a later journal standup, `records.sh check` will flag a closed record with
@@ -401,19 +391,22 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    defect this rule was written after, and the tempting cleanup is to conflate them again in
    the other direction.
 
-The **agent-templates** resolution, per declared project template `<file>` (the verb
-resolves both homes and passes them in; the mint script never opens the front door):
+The **project-templates** resolution, per declared project template `<file>` (the verb
+resolves the records home and the templates home and passes them in; the mint script
+never opens the front door):
 
-1. `<agent-templates>/<skill>/<file>` if present → use it (incumbent; never overwrite).
-2. Else, **only for store-named lock-ins** (the filename stem *is* the store: `notes.md`,
+1. `<agent-workspace>/templates/<skill>/<file>` present → use it (incumbent; never overwrite).
+2. Else `<agent-records>/templates/<skill>/<file>` present (the *previous* home) →
+   copy to the new path, then use it. Do not delete the old file. Applies to every
+   lock-in, not only store-named ones.
+3. Else, **only for store-named lock-ins** (the filename stem *is* the store: `notes.md`,
    `bugs.md`, `tickets.md`, `trackers.md`, `plans.md`, `specs.md`, `adr.md`,
-   `reports.md` — the *conventional* set, not an enforced taxonomy: `records.sh` owns no
-   directory names, so a project may mint any store its writers need): if
+   `reports.md` — the *conventional* set, not an enforced taxonomy): if
    `<agent-records>/templates/<doctype>.md` is present (legacy flat) →
-   copy that file to `<agent-templates>/<skill>/<file>`, then use the new path. Do not
-   delete the old file. Body scaffolds skip this step.
-3. Else copy the bundled `templates/<file>` to `<agent-templates>/<skill>/<file>`, then
-   use it.
+   copy that file to `<agent-workspace>/templates/<skill>/<file>`, then use the new
+   path. Do not delete the old file. Body scaffolds skip this step.
+4. Else copy the bundled `templates/<file>` to
+   `<agent-workspace>/templates/<skill>/<file>`, then use it.
 
 Package-only templates skip this resolver. They are read from the skill's own
 `templates/` and are never copied into the project.
@@ -427,7 +420,8 @@ doctrine path is exactly as wrong as a writer that does.
 1. **Which home.** Three destinations, one test:
 
    > **Records** are dated, typed, closeable instances → `<agent-records>`.
-   > **Templates** are the schemas instances mint from → `<agent-templates>`.
+   > **Templates** are the schemas instances mint from →
+   > `<agent-workspace>/templates`.
    > **Doctrine** is living, normative, undated, and never closes →
    > `<agent-workspace>/doctrine`.
 
@@ -461,7 +455,7 @@ doctrine path is exactly as wrong as a writer that does.
 
    Doctrine is **copy-bundled-then-customized**, not mint-and-accumulate: a skill seeds
    generic content, then the host edits it in place and keeps editing it for years. So
-   doctrine standup follows the **agent-templates** semantics — *if present → use it, never
+   doctrine standup follows the **project-templates** semantics — *if present → use it, never
    overwrite* — not the records semantics. **A re-run must never clobber host
    customizations.** This is the rule that actually matters for doctrine; get it wrong and a
    second `setup` silently destroys accumulated project judgment.
@@ -472,7 +466,7 @@ doctrine path is exactly as wrong as a writer that does.
 
 5. **Use a sanctioned resolution literal.** Each home has a **small fixed set** of accepted
    phrasings; a conforming skill contains a member verbatim. For home `H` (one of
-   `agent-records`, `agent-templates`, `agent-workspace`), the set is:
+   `agent-records`, `agent-workspace`), the set is:
 
        <H>                 <- the angle-bracket path form; PREFER THIS
        the H home

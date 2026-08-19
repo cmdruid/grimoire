@@ -35,13 +35,13 @@ one.
 `<agent-records>/plans/` on every host (first `agent-records:` or
 `records-root:` in `AGENTS.md` then `CLAUDE.md`, else `.records/`), with
 `tags:` exactly one of `[plan]`, `[roadmap]`, `[runbook]`. Resolve
-`plans.md` via the agent-templates rule; `records.sh new plans --template
+`plans.md` via the project-templates rule; `records.sh new plans --template
 <resolved>` when the tool exists; else file-mode from that path, naming the
 file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the
 tool will not see it. Then
 fill the body from the resolved `plan.md` / `roadmap.md` / runbook
 conductor. Never write the flat
-`<agent-records>/templates/<doctype>.md`. Never deploy `plan.md` or
+`<agent-workspace>/templates/<doctype>.md`. Never deploy `plan.md` or
 `roadmap.md` *as* `plans.md`.
 
 **Status vocabulary** (the records contract): a working draft is `status: open`;

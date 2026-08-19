@@ -10,7 +10,7 @@
 # (the deployed asset), an empty history.tsv ledger, and README.md if
 # absent. It does NOT create store directories, .gitkeep files, or
 # templates/ — the skill that mints a store creates that store; the first
-# lock-in copy creates <agent-templates>/<skill>/. Additive and
+# lock-in copy creates <templates-home>/<skill>/. Additive and
 # idempotent-safe: it never overwrites an existing file, and it refuses a
 # root that is already stood up (scripts/records.sh present — an upgrade is
 # a diff, not a re-standup). A home that merely EXISTS (a legacy path, or a
@@ -63,8 +63,8 @@ only the directories it needs for its own work, so the tool crawls this root at
 any depth instead of matching a list of store names. Nothing here needs
 reserving — a file that is not a dated record declaring a doctype simply is not
 a record, which is why this home can be shared with other homes. Project
-templates live in the agent-templates home (default
-\`.records/templates/<skill>/\`) and arrive with the writer that mints them;
+templates live at \`<agent-workspace>/templates/<skill>/\` (default
+\`.dev/templates/<skill>/\`) and arrive with the writer that mints them;
 they are undated, so they are not records. Project **doctrine** resolves
 through the agent-workspace home (default \`.dev/doctrine/\`). Journal setup
 deploys this tool layer only.

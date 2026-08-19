@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # record-mint.sh — mint or stamp a backlog store record. Facts only.
-#   record-mint.sh mint  <agent-records> <agent-templates> <doctype> <title>
+#   record-mint.sh mint  <agent-records> <templates-home> <doctype> <title>
 #   record-mint.sh stamp <agent-records> <abs-path> [--status <status>] [--note "<text>"]
 #
 # Uses <agent-records>/scripts/records.sh when that file is executable
 # (`new --template <resolved>`); otherwise writes the contract shape itself.
-# Resolves each declared project template through the agent-templates rule.
+# Resolves each declared project template through the project-templates rule.
 # Never decides update-vs-mint or whether to commit. Never writes history.tsv
 # by hand. Never writes the flat <agent-records>/templates/<doctype>.md.
 set -euo pipefail
 
 usage() {
-  echo "usage: record-mint.sh mint  <agent-records> <agent-templates> <doctype> <title>" >&2
+  echo "usage: record-mint.sh mint  <agent-records> <templates-home> <doctype> <title>" >&2
   echo "       record-mint.sh stamp <agent-records> <abs-path> [--status <status>] [--note \"<text>\"]" >&2
   exit 2
 }
@@ -80,14 +80,15 @@ has_records() {
   [ -x "$1/scripts/records.sh" ]
 }
 
-# resolve_template <agent-records> <agent-templates> <doctype>
+# resolve_template <agent-records> <templates-home> <doctype>
 # Prints the resolved project template path. Copies (never overwrites) per
-# the agent-templates rule. Errors if the bundled file is missing.
+# the project-templates rule. Errors if the bundled file is missing.
 resolve_template() {
   local rr="$1" at="$2" doctype="$3"
   local file="${doctype}.md"
   local dest="$at/$SKILL_NAME/$file"
   local bundled="$SKILL_DIR/templates/$file"
+  local prev="$rr/templates/$SKILL_NAME/$file"
   local flat="$rr/templates/$file"
 
   [ -f "$bundled" ] || err "no bundled template for doctype '$doctype' (expected $bundled)"
@@ -97,7 +98,9 @@ resolve_template() {
     return 0
   fi
   mkdir -p "$(dirname "$dest")"
-  if [ -f "$flat" ]; then
+  if [ -f "$prev" ]; then
+    cp "$prev" "$dest"
+  elif [ -f "$flat" ]; then
     cp "$flat" "$dest"
   else
     cp "$bundled" "$dest"

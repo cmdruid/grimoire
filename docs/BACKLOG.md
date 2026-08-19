@@ -52,7 +52,9 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-34 — one simple spec, then a hard cut
 - **source:** feat stream, 3b post-mortem (2026-08-19, human direction).
-- **status:** open
+- **status:** partly done (2026-08-19, grok stream) — `agent-templates` retired as a
+  variable; templates resolve at `<agent-workspace>/templates`. Items 3–5 (clankshop
+  layout, lint 12–17, document-paths) still ride with BL-36.
 - **the spec:** a few lines, not a doctrine chapter. Two variables, two roots, no home nested in
   another:
   - `<agent-records>` — default `.records/` — dated, typed, closeable instances.
@@ -214,7 +216,10 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-26 — `skill-builder new` will keep minting skills that carry retired path variables
 - **source:** feat stream, workspace-consolidation review round 2 (2026-08-18).
-- **status:** **partly done (2026-08-18)** — feature 3a's S6 added the `agent-workspace`
+- **status:** done (2026-08-19, grok stream) — `new.md` now inlines the records resolver and
+  the templates home as `<agent-workspace>/templates/<name>/`. Check 16 bans the retired
+  `agent-templates` literal.
+- **was:** **partly done (2026-08-18)** — feature 3a's S6 added the `agent-workspace`
   resolver to `new.md`'s list, so a newly scaffolded doctrine-touching skill is no longer born
   failing check 16. The `agent-templates` half stays open for **3b**.
 - **body:** `skills/skill-builder/verbs/new.md:35-36` tells the scaffolder to inline "the

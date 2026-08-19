@@ -6,7 +6,7 @@ write-only arm**.
 
 1. Resolve both homes (SKILL.md). Locate `scripts/bug-mint.sh` from this
    skill's own directory.
-2. **Mint**: `scripts/bug-mint.sh mint <agent-records> <agent-templates>
+2. **Mint**: `scripts/bug-mint.sh mint <agent-records> <templates-home>
    "<symptom, specific>"`. Fill Repro, Expected vs actual (paste the real
    error/trace in full), and Notes so a fresh session can reproduce it
    from the record alone.

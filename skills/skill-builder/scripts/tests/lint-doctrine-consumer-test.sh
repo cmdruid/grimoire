@@ -271,6 +271,19 @@ write_skill widget 'note — a captured fact' \
 lint
 expect_absent "check 16a is silent on a flipped skill" "$c16a" "$OUT"
 
+c16a2='occurrence(s) of the retired `agent-templates` literal'
+run_lint
+write_skill widget 'note — a captured fact' \
+  'Resolve `agent-templates:` from the front door, else `<agent-records>/templates`.'
+lint
+expect "check 16a2 FAILs on the retired templates literal" "$c16a2" "$OUT"
+
+run_lint
+write_skill widget 'note — a captured fact' \
+  'Resolve `<agent-workspace>/templates` before copying a lock-in.'
+lint
+expect_absent "check 16a2 is silent on a flipped templates path" "$c16a2" "$OUT"
+
 # --- check 16a: it reads .sh, and it counts COMMENTS --------------------------
 # The two journal carriers are comment-only occurrences inside a shell script.
 # A textual absence guard cannot tell a comment from code, and must not try: if

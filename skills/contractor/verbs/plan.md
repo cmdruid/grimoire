@@ -59,7 +59,7 @@ unsettled, stop and send those branches back.
    list gaps), placeholder scan, type/name consistency. Add a slice for any
    uncovered requirement.
 7. **Land it** per SKILL.md *Shared discipline*. Resolve `plans.md` via the
-   agent-templates rule, then mint `records.sh new plans --template <resolved>
+   project-templates rule, then mint `records.sh new plans --template <resolved>
    --title "<title> — Implementation Plan"` when the tool exists; else
    file-mode from that same resolved path into the agent-records `plans/` home
    (SKILL.md destination rule), naming the file `YYYY-MM-DD-<slug>.md` (the

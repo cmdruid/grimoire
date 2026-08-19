@@ -56,7 +56,7 @@ same way, just without the shortcut.
 
 The report is a record on every host, under the agent-records home (first
 `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
-`.records/`). Resolve `reports.md` via the agent-templates rule;
+`.records/`). Resolve `reports.md` via the project-templates rule;
 `records.sh new reports --template <resolved>` when the tool exists; else
 file-mode from that path plus the resolved `investigation.md` body, naming
 the file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the
@@ -78,11 +78,11 @@ flat `<agent-records>/templates/<doctype>.md`.
 
 - **Resolve both homes.** Agent-records home: first line-start `agent-records:`
   or `records-root:` in `AGENTS.md`, then `CLAUDE.md`; else `.records`.
-  Agent-templates home: first `agent-templates:` in those files; else
-  `<agent-records>/templates`. Pass both into every `scripts/bug-mint.sh`
+  Templates home: `<agent-workspace>/templates` (declared
+  `agent-workspace:`, else `.dev`). Pass both into every `scripts/bug-mint.sh`
   call. The script does not scan the front door.
 - **`bug-mint.sh` is the one minter for `file`.** Always call it (from this
-  skill's own `scripts/`). Signature: `mint <agent-records> <agent-templates>
+  skill's own `scripts/`). Signature: `mint <agent-records> <templates-home>
   <title>`. It uses deployed `records.sh` when that file is executable
   (`new bugs --template <resolved> --title "…"`); otherwise it writes the
   contract shape (file-mode under `bugs/`). Never write `history.tsv` by
@@ -190,7 +190,7 @@ If Phase 4 hit the three-fix threshold, say so explicitly and name the architect
 instead of a fix.
 
 **Every host:** the durable record is a reports record under the agent-records
-home. Resolve `reports.md` via the agent-templates rule; `records.sh new
+home. Resolve `reports.md` via the project-templates rule; `records.sh new
 reports --template <resolved> --title "<investigation title>"` when the tool
 exists; else file-mode from that path, naming the file `YYYY-MM-DD-<slug>.md`
 (the record shape). Fill the body from the resolved

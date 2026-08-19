@@ -28,9 +28,10 @@ templates it actually names. Do not tour the rest of any repo.
   `templates/<doctype>.md` in the package. A `## Project templates` list
   names the lock-in set; every listed file exists in the package; the
   skill does not copy a file the list does not name. Project copies land
-  under `<agent-templates>/<skill>/`.
-- **Home resolution** — for each of the three front-door homes the skill
-  touches (`<agent-records>`, `<agent-templates>`, `<agent-workspace>`),
+  under `<agent-workspace>/templates/<skill>/`.
+- **Home resolution** — for each home the skill touches
+  (`<agent-records>`, `<agent-workspace>`, and the templates subpath
+  `<agent-workspace>/templates`),
   **reading counts as touching**. Three questions the lint cannot answer,
   which is why they are yours:
   - Does the **operative procedure** resolve the home, or does the skill

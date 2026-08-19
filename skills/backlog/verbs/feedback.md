@@ -9,7 +9,7 @@ downstream.
 2. **Find or create the Feedback tracker**: if `records.sh` is executable,
    `records.sh list --type trackers`, title `Feedback`; else scan live
    `<agent-records>/trackers/*.md` by H1. When absent,
-   `scripts/record-mint.sh mint <agent-records> <agent-templates> trackers "Feedback"`.
+   `scripts/record-mint.sh mint <agent-records> <templates-home> trackers "Feedback"`.
 3. **Append one line** under `## Items`, newest last, in the contract's live tracker-line
    form: `- [ ] <date> — [<surface, e.g. the skill or gate name>] <the observation, one sentence>`.
 4. **Stamp**: `scripts/record-mint.sh stamp <agent-records> <tracker-path>`.

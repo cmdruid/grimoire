@@ -76,11 +76,11 @@ layer (or the dated report file) is the memory.
 **Every host**, per pass:
 
 - **The pass report** — one `reports` record under the agent-records home, tagged
-  `audit`. Resolve `reports.md` via the agent-templates rule;
+  `audit`. Resolve `reports.md` via the project-templates rule;
   `records.sh new reports --template <resolved> --title "Audit: <scope>"` when
   the tool exists; else file-mode from that path, naming the file
   `YYYY-MM-DD-<slug>.md` (the record shape). Never write the flat
-  `<agent-records>/templates/reports.md`. The reports store *is* the trend
+  `<agent-workspace>/templates/reports.md`. The reports store *is* the trend
   history. Close it `consumed` once its actionable findings are drained
   (`records.sh done` when the tool exists; else file-mode stamp).
 - **Defects stay in the report.** Do not mint `bugs/`. Promote a defect via

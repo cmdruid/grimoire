@@ -768,6 +768,22 @@ for sk in "$skills_dir"/*/; do
   done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
 done
 
+# Arm (a2): retired `agent-templates` literal. Same exemption and roll-up
+# as (a). Templates resolve at `<agent-workspace>/templates`.
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  case "$name" in skill-builder) continue ;; esac
+  is_pack_face "$name" && continue
+  while IFS= read -r -d '' f; do
+    rel="${f#"$sk"}"
+    hits="$(grep -nE 'agent[-_]templates|AGENT_TEMPLATES' "$f" | cut -d: -f1 | tr '\n' ',' \
+            | sed 's/,$//' || true)"
+    [ -n "$hits" ] || continue
+    n="$(printf '%s' "$hits" | tr ',' '\n' | grep -c . || true)"
+    fail "$name: $rel: $n occurrence(s) of the retired \`agent-templates\` literal (line(s) $hits) -- resolve <agent-workspace>/templates instead"
+  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
+done
+
 # Arms (b) and (c): the front door itself. Same precedence as every front-door
 # resolver -- AGENTS.md then CLAUDE.md, first declaration wins.
 for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
@@ -787,12 +803,12 @@ for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
 done
 
 # ---- 17. bare `records.sh new` mint (FAIL) -----------------------------------
-# A minting skill must pass `--template <resolved>` (the agent-templates rule).
+# A minting skill must pass `--template <resolved>` (the project-templates rule).
 # `--template` is REQUIRED by `records.sh new`: the tool knows no taxonomy, so it
 # cannot guess a template path from a doctype name, and the flat
 # `$RR/templates/<doctype>.md` fallback it once had is gone. A bare call
 # therefore hard-errors at runtime AND skips the lock-in copy into
-# `<agent-templates>/<skill>/`. This check is what turns that runtime failure
+# `<agent-workspace>/templates/<skill>/`. This check is what turns that runtime failure
 # into a lint failure, so it is caught while authoring rather than mid-verb.
 #
 # DECIDABILITY: two shapes are invocations. (a) a backticked span
@@ -839,7 +855,7 @@ for sk in "$skills_dir"/*/; do
       esac
       case "$span" in *--title*) ;; *) continue ;; esac
       case "$span" in *--template*) continue ;; esac
-      fail "$name: $rel: bare mint ${span} -- pass \`--template <resolved>\` (the agent-templates rule)"
+      fail "$name: $rel: bare mint ${span} -- pass \`--template <resolved>\` (the project-templates rule)"
     done < <(strip_code "$f" | grep -o '`[^`]*`' || true)
   done < <(find "$sk" -name '*.md' -print0)
 done

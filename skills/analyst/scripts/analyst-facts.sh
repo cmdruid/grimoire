@@ -36,6 +36,17 @@ resolve_records_root() {
   printf '%s\n' "${decl:-.records}"
 }
 
+resolve_workspace() {
+  local root="$1" fd decl=""
+  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
+    if [ -z "$decl" ] && [ -f "$fd" ]; then
+      decl="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$fd" \
+              | head -n 1 | sed 's/[[:space:]]*$//')"
+    fi
+  done
+  printf '%s\n' "${decl:-.dev}"
+}
+
 usage() {
   cat >&2 <<'EOF'
 usage: analyst-facts.sh <subcommand> <root> [options]
@@ -310,7 +321,7 @@ EOF
 
 cmd_catalog() {
   setup "$@"
-  local deployed="$RR/templates/analyst"
+  local deployed="$ROOT/$(resolve_workspace "$ROOT")/templates/analyst"
   local bundled
   bundled="$(cd "$(dirname "$0")/../templates" && pwd)"
   echo "bundled_dir=$bundled"

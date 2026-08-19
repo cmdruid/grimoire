@@ -18,7 +18,7 @@ in an `adr` record.
    update it. Tell the operator to `/notepad supersede` (same subject,
    new claim) or `/notepad write` a distinct fact.
 5. Otherwise mint:
-   `note-mint.sh mint <agent-records> <agent-templates> "<headline>"`,
+   `note-mint.sh mint <agent-records> <templates-home> "<headline>"`,
    then fill the body. Prefer one fact per note.
 6. **Commit** per SKILL.md: standalone →
    `scripts/scoped-commit.sh <root> "Notepad: write — <slug>" <paths…>`;

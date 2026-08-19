@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # analyst-deploy.sh <root> — lazily deploy the bundled template catalog.
 #
-# Copies any bundled template ABSENT from <records-root>/templates/analyst/.
+# Copies any bundled template ABSENT from
+# <agent-workspace>/templates/analyst/. Adopts a previous-home copy at
+# <agent-records>/templates/analyst/ when the new dest is empty.
 # Never overwrites: a deployed template is the project's, customized or not, and
 # silently replacing it would discard the customization this deploy exists to
 # enable. An upgrade of a customized template is a judgment-assisted diff a human
@@ -23,14 +25,27 @@ resolve_records_root() {
   printf '%s\n' "${decl:-.records}"
 }
 
+resolve_workspace() {
+  local root="$1" fd decl=""
+  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
+    if [ -z "$decl" ] && [ -f "$fd" ]; then
+      decl="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$fd" \
+              | head -n 1 | sed 's/[[:space:]]*$//')"
+    fi
+  done
+  printf '%s\n' "${decl:-.dev}"
+}
+
 ROOT="${1:-}"
 [ -n "$ROOT" ] || { echo "usage: analyst-deploy.sh <root>" >&2; exit 1; }
 [ -d "$ROOT" ] || { echo "analyst-deploy.sh: no such directory: $ROOT" >&2; exit 2; }
 ROOT="$(cd "$ROOT" && pwd)"
 
 RR="$ROOT/$(resolve_records_root "$ROOT")"
+WS="$ROOT/$(resolve_workspace "$ROOT")"
 BUNDLED="$(cd "$(dirname "$0")/../templates" && pwd)"
-DEST="$RR/templates/analyst"
+DEST="$WS/templates/analyst"
+PREV="$RR/templates/analyst"
 
 if [ ! -d "$RR" ]; then
   echo "records_layer=absent"
@@ -40,6 +55,13 @@ if [ ! -d "$RR" ]; then
 fi
 
 mkdir -p "$DEST"
+if [ -d "$PREV" ] && [ "$PREV" != "$DEST" ]; then
+  for f in "$PREV"/*.md; do
+    [ -f "$f" ] || continue
+    base="$(basename "$f")"
+    [ -e "$DEST/$base" ] || cp "$f" "$DEST/$base"
+  done
+fi
 
 deployed=0 kept=0
 for f in "$BUNDLED"/*.md; do

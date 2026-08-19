@@ -75,16 +75,15 @@ template → error), not by `check`.
   Completing a line is that rewrite + a `records.sh touch` of the tracker (no ledger line).
 - **Template convention**: `records.sh new <doctype> --template <resolved>`
   `[--tag t]...` mints from the caller-supplied path (usually
-  `<agent-templates>/<skill>/<doctype>.md`). `--template` is **required** —
-  the tool knows no taxonomy, so it cannot guess a template location from a
-  doctype name, and there is no flat fallback. Repeatable `--tag` fills the
-  template's `<tags>` slot (`tags: [a, b]`; omitted → `tags: []`). The
-  minting skill owns the bundled template and copies it to the
-  **agent-templates home**, never to the flat
-  `<agent-records>/templates/<doctype>.md`. That home commonly sits *under*
-  the records root; templates are undated, so the discriminator leaves them
-  alone. Journal's in-package `reports.md` is the contract example only;
-  setup copies nothing.
+  `<agent-workspace>/templates/<skill>/<doctype>.md`). `--template` is
+  **required** — the tool knows no taxonomy, so it cannot guess a template
+  location from a doctype name, and there is no flat fallback. Repeatable
+  `--tag` fills the template's `<tags>` slot (`tags: [a, b]`; omitted →
+  `tags: []`). The minting skill owns the bundled template and copies it to
+  `<agent-workspace>/templates/<skill>/`, never to the flat
+  `<agent-records>/templates/<doctype>.md`. Templates are undated, so the
+  discriminator leaves them alone wherever they sit. Journal's in-package
+  `reports.md` is the contract example only; setup copies nothing.
 
 ## Verb dispatch (read the file, then follow it)
 
