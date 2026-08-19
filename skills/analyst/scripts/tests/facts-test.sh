@@ -110,6 +110,31 @@ sed -i.bak 's/^status: open/status: done/' "$FIX/.records/design/2026-08-14-open
 expect "status BREAK: open count drops"     "open_records=2"          "$OUT"
 sed -i.bak 's/^status: done/status: open/' "$FIX/.records/design/2026-08-14-open-design.md"
 
+# --- reserved names are not records (BL-28) -----------------------------------
+# `each_record`'s carve-out must match `records.sh`'s reserved set. It drifted
+# once by omitting `doctrine/`, so a LEGACY host (doctrine still parked under the
+# records home, pre-`agent-workspace`) had its doctrine chapters counted as open
+# records here but not by `records.sh`. The three reserved directories are
+# planted with a record-shaped, `status: open` file each: if any is scanned, the
+# open count moves.
+for reserved in doctrine templates scripts; do
+  mkdir -p "$FIX/.records/$reserved"
+  cat > "$FIX/.records/$reserved/planted.md" <<'EOF'
+---
+doctype: design
+status: open
+created: 2026-08-01
+updated: 2026-08-01
+tags: []
+---
+
+# Planted under a reserved name
+EOF
+done
+"$FACTS" status "$FIX" > "$OUT" 2>&1
+expect "reserved: doctrine/templates/scripts are not records" "open_records=3" "$OUT"
+expect_absent "reserved: no planted file is listed"           "planted"        "$OUT"
+
 # --- health ------------------------------------------------------------------
 
 "$FACTS" health "$FIX" > "$OUT" 2>&1

@@ -73,12 +73,15 @@ setup() {
   echo "git=$GIT"
 }
 
-# Records-root-relative store scan. `templates/`, `scripts/`, `history.tsv` are
-# reserved (journal's contract) and never counted as records.
+# Records-root-relative store scan. `templates/`, `scripts/`, `doctrine/` and
+# `history.tsv` are reserved (journal's contract) and never counted as records.
+# This list MUST match `records.sh`'s own reserved set (`stores()` and the
+# reserved-path guard) -- it drifted once by omitting `doctrine/`, which made a
+# legacy host's doctrine files count as records here but not there (BL-28).
 each_record() {
   [ "$RECORDS_LAYER" = present ] || return 0
   find "$RR" -type f -name '*.md' 2>/dev/null \
-    | grep -v -e "^$RR/templates/" -e "^$RR/scripts/" || true
+    | grep -v -e "^$RR/templates/" -e "^$RR/scripts/" -e "^$RR/doctrine/" || true
 }
 
 # front_matter_field <file> <field>
