@@ -1,6 +1,6 @@
 ---
 name: debugger
-description: "Root-cause a bug, test failure, build break, or unexpected behavior before proposing any fix -- never patch a symptom. Reproduce it, read the actual error/stack trace in full, trace data flow backward to its origin, form one testable hypothesis, verify it with the smallest possible change, then fix the root cause. If three or more minimal fixes fail to resolve it, stop and question whether the architecture itself is the problem before attempting a fourth patch -- that pattern means a different problem than the one being treated. Use when a test fails, a bug is reported, behavior is unexpected, a build breaks, or a fix is about to be proposed before the cause is actually understood."
+description: "Root-cause a bug, test failure, build break, or unexpected behavior before proposing any fix -- never patch a symptom. Reproduce it, read the actual error/stack trace in full, trace data flow backward to its origin, form one testable hypothesis, verify it with the smallest possible change, then fix the root cause. If three or more minimal fixes fail, stop and question whether the architecture itself is the problem. Also capture a standing repro (`/debugger file`, capture the repro, this is broken — capture) without investigating. Use when a test fails, a bug is reported, behavior is unexpected, a build breaks, a fix is about to be proposed before the cause is understood, or a repro needs filing."
 ---
 
 # debugger -- root-cause before you patch
@@ -12,12 +12,25 @@ Investigate a reported or observed failure to its **root cause** before writing 
 investigate, whether the verdict warrants a fix, when to stop. The discipline runs anywhere;
 the probe below adds the playbook and the durable report when a workshop is present.
 
-**Inputs and refusals.** It accepts a **routed report or a live symptom** — a filed bug report is
-welcome input when one exists, never a required floor; it **never enumerates the `bugs/` store**
-looking for work (a store is not a queue). If the routed report or its linked bug points at an
-open `tickets/` record, refuse with that fact — a ticket owns the item until it resolves. Follow
-the links; on a workshop host, `records.sh list --type tickets --status open` is the lookup. No
-link → continue. A live symptom with no routed report is not this refuse.
+This `SKILL.md` is a **thin router** for the file / investigate fork. A file
+invocation reads `verbs/file.md`. Bare investigate stays here (Phases 1–4).
+
+## Verb dispatch (read the file, then follow it)
+
+| Invocation | Verb file | Does | Trigger |
+|---|---|---|---|
+| `/debugger file` | `verbs/file.md` | Capture a standing repro → a dated `bugs` record. Do not investigate. | file / repro / "capture the repro" / "this is broken — capture" |
+| `/debugger` | (this file, Phases 1–4) | Root-cause investigation | symptom / root-cause / "why is this failing" |
+
+**Utterance rule.** A prompt that matches file / repro / "capture the repro" /
+"this is broken — capture" (including the invocation `/debugger file`) reads
+`verbs/file.md` and does **not** enter Phases 1–4. Bare `/debugger` and
+symptom / root-cause / "why is this failing" language is today's Phases 1–4.
+Do not ask which; do not investigate a file trigger.
+
+**Inputs.** It accepts a **routed report or a live symptom** — a filed bug
+report is welcome input when one exists, never a required floor; it **never
+enumerates doctype `bugs`** looking for work (a doctype is not a queue).
 
 ## Two environment probes (at entry)
 
@@ -48,11 +61,12 @@ The report is a record on every host, under the agent-records home (first
 file-mode from that path plus the resolved `investigation.md` body, naming
 the file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the
 tool will not see it. Never write the
-flat `<agent-records>/templates/<doctype>.md`. Do not mint `bugs/`.
+flat `<agent-records>/templates/<doctype>.md`.
 
 ## When to Use
 
 - A test fails, a build breaks, or behavior is wrong or unexpected.
+- A standing repro needs filing without investigation (`/debugger file`).
 - A fix is about to be proposed before the failure is actually understood.
 - **Especially** under time pressure, when "just one quick fix" seems obvious, or after a fix already
   didn't work -- these are exactly the conditions that make guessing tempting and systematic
@@ -60,11 +74,44 @@ flat `<agent-records>/templates/<doctype>.md`. Do not mint `bugs/`.
 - NOT a scheduled code-quality pass and NOT a doc-ergonomics pass -- this is triggered by a specific
   symptom, not a broad scoring sweep.
 
+## Shared discipline (`file` and the report mint)
+
+- **Resolve both homes.** Agent-records home: first line-start `agent-records:`
+  or `records-root:` in `AGENTS.md`, then `CLAUDE.md`; else `.records`.
+  Agent-templates home: first `agent-templates:` in those files; else
+  `<agent-records>/templates`. Pass both into every `scripts/bug-mint.sh`
+  call. The script does not scan the front door.
+- **`bug-mint.sh` is the one minter for `file`.** Always call it (from this
+  skill's own `scripts/`). Signature: `mint <agent-records> <agent-templates>
+  <title>`. It uses deployed `records.sh` when that file is executable
+  (`new bugs --template <resolved> --title "…"`); otherwise it writes the
+  contract shape (file-mode under `bugs/`). Never write `history.tsv` by
+  hand. Never write the flat `<agent-records>/templates/bugs.md`. Never open
+  a `trackers/` path.
+- **Resolve the commit tree, then commit there.** `<root>` is
+  `git rev-parse --show-toplevel` of the checkout that holds the record you
+  wrote — never a different clone, and never the repo's root checkout from
+  inside a stream worktree. Non-git → STOP. `<branch>` is
+  `git -C <root> branch --show-current`. Then, in order: empty `<branch>`
+  (detached HEAD) → STOP. `<root>/WORKSTREAM.md` exists and its Coordinates
+  `branch:` equals `<branch>` → this tree is a worktree stream; commit here.
+  A `<root>/.workstreams/*/WORKSTREAM.md` records `isolation: in-place` and
+  Coordinates `branch:` equals `<branch>` → this tree is an in-place stream
+  holding the root; commit here. `<branch>` matches `stream/*` or
+  `feature/*` → STOP (a work branch this session does not hold). Otherwise
+  commit here (the current trunk — never hardcode `main`).
+- **Pathspec-atomic commit** via `scripts/scoped-commit.sh <root> "<msg>"
+  <paths…>`. Never `git add -A`, never `commit -a`, never leave staged work
+  in the root index across steps. No `Co-Authored-By` trailer.
+- **`file` always commits itself.** There is no write-only arm.
+
 ## The Iron Rule
 
-**No fix without root-cause investigation first.** A fix proposed before Phase 1 is complete is a
-guess, not a fix -- even when it happens to work, because you won't know *why* it worked or whether it
-also broke something else.
+**No fix without root-cause investigation first.** Investigate path only —
+`/debugger file` is capture and does not enter these phases. A fix proposed
+before Phase 1 is complete is a guess, not a fix -- even when it happens to
+work, because you won't know *why* it worked or whether it also broke
+something else.
 
 ## Mutation policy
 
@@ -156,7 +203,7 @@ when one exists.
 
 ## Done when
 
-- **Ticket-owned refuse:** stopped with the open-ticket fact.
+- **`file`:** that verb file's Done when.
 - **Unstamped:** reports record minted (file-mode if no tool); conversational
   report of reproduction, root cause, evidence, and proposed fix. No Phase 4.
 - **Human declined the fix:** the report stands; no Phase 4.
@@ -169,13 +216,14 @@ when one exists.
 
 - `reports.md`
 - `investigation.md`
+- `bugs.md`
 
 ## Edges
 
 <!-- edges:debugger -->
-- produces: report — an investigation record
+- produces: report, bug — investigation record; filed repro record
 - handoff: — (none; the operator owns the fix)
-- consumes: — (none; a live symptom or a routed report the caller names)
+- consumes: bug — investigation accepts a routed file
 <!-- /edges:debugger -->
 
 ## Boundaries
