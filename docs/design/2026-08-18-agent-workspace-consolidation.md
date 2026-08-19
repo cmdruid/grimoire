@@ -1,14 +1,49 @@
 ---
 doctype: design
-status: open
+status: done
 created: 2026-08-18
-updated: 2026-08-18
+updated: 2026-08-19
 tags: [spec]
 ---
 
 # `agent-workspace`, part 1 — the doctrine home — Spec
 
 `stream/feat` **feature 3a**. Grounded against `main` @ `ce7e758` + branch `de9a250`.
+
+> **SHIPPED 2026-08-19.** Built in six slices, in the specified order, each gated. Commit
+> subjects (not shas — the land rebases): *doctrine: retire agent-doctrine into
+> agent-workspace/doctrine (S1)* · *lint: add check 16 (retired-literal absence + workspace
+> declaration guards) (S2)* · *clankshop: seed doctrine into <workspace>/doctrine, refuse a
+> pre-relocation host (S3)* · *clankshop: verbs and preflight resolve the workspace home;
+> migrate gains the adopt row (S4)* · *flip the twelve agent-doctrine carriers to
+> agent-workspace/doctrine (S5)* · *promote check 16 to FAIL, narrow check 14, close BL-26,
+> fold remaining prose (S6)*.
+>
+> **Two spec defects surfaced at build**, both the same class the reviews kept finding — an edit
+> surface enumerated by *intent* rather than by *consequence* — and both fixed by applying this
+> spec's own staging remedy rather than a new one:
+> 1. **Check 15's new `.records/doctrine/` literal was specified to land in S2 as a FAIL**, but
+>    the literal was live in five consumer skills until S5, so the trunk gate would have been red
+>    for the entire S2–S5 window. Round 3's MUST-FIX #3 identified exactly this hazard for check
+>    16 and gave it a WARN carve-out; the same reasoning was never applied to check 15. Built
+>    staged: WARN in S2, promoted to FAIL in S6 alongside check 16.
+> 2. **S3's relocation breaks `setup-journal-test.sh`**, a file the Slices table assigns to S4 —
+>    so S3 could not have landed green as written. Its path was repointed in S3; S4's substantive
+>    work stayed in S4.
+>
+> Recorded as **BL-29**. Byproducts **BL-30** (the `.`-guard gained a second enforcer in
+> `seed.sh` with no single owner — a Decision 13 question) and **BL-31** (the seed's prose still
+> calls itself "the handbook"; the census covered path literals only) are open.
+>
+> **Verification, all red-proofed by disabling the check:** check 16's three arms, check 15's new
+> literal, check 14's narrowing, `seed.sh`'s dual refuse arm (removing the legacy arm
+> demonstrably builds a second doctrine tree beside the live one), `migrate-scan`'s dual probe.
+> The promotion row ran one fixture against S2's lint (`exit=0`) and S6's (`exit=1`).
+> Problem 3 closes on a default host as specified: `seed.sh` wrote `.dev/doctrine/`, the door
+> declares nothing, and all five consumers name `.dev/doctrine/`.
+>
+> **The census was independently reproduced by check 16 itself** — 12 non-exempt files, 32
+> occurrences, every line matching M5. Four review rounds could not get that right by hand.
 
 > **Scope was split on 2026-08-18** after two review rounds (five lenses, both rounds
 > `needs-rework`). The design survived every pass; what repeatedly failed was **edit-surface
