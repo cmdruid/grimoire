@@ -14,6 +14,22 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-33 — "prove a new check by breaking it" does not say to verify the break applied
+- **source:** feat stream, BL-25 build (2026-08-19). Second occurrence in two sessions.
+- **status:** open
+- **body:** `skill-builder/docs/DOCTRINE.md:545-551` requires a new check to FAIL on
+  deliberately-broken input, and warns that a clean first run proves nothing. It does not close the
+  next hole: **a break that silently fails to apply produces a clean run too**, and the two are
+  indistinguishable from the suite's output. Hit twice now — feature 3a had a red-proof whose break
+  didn't apply and showed green-on-"broken" input; BL-25's check-17 proof had a `perl -0pi`
+  substitution whose escaping was wrong, replaced nothing, and left the suite green. Both were
+  caught only by separately counting occurrences before and after.
+- **fix sketch:** extend that bullet — a break must be **asserted**, not assumed: count the target
+  occurrences before and after the mutation and fail loudly on 0 replacements (the BL-25 proof uses
+  a Python `assert s.count(old) == 1` for exactly this), and restore from a backup afterward,
+  confirming byte-identity. Route via `/skill-builder distill`, which owns DOCTRINE.md's upkeep —
+  this is a distilled practice lesson, not a one-off edit.
+
 ### BL-32 — five skills prescribe `records.sh new --template <resolved>` with no doctype — an invalid invocation
 - **source:** feat stream, BL-25 build (2026-08-19).
 - **status:** open
