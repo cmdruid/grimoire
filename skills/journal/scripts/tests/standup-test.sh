@@ -24,6 +24,14 @@ expect "standup self-check green" "records check: OK (0 records)" "$OUT"
 [ -f "$proj/.records/history.tsv" ] && pass=$((pass + 1)) || { echo "FAIL: missing history.tsv" >&2; fail=$((fail + 1)); }
 expect "README stamped with the real date" "Stood up by journal on $(date +%Y-%m-%d)." "$proj/.records/README.md"
 
+# The seeded README must not re-assert the pre-`agent-workspace` layout. Doctrine
+# stopped defaulting under the records home when that variable shipped; the README
+# kept saying it did, so every project seeded since was told the wrong home.
+expect "README sends doctrine to the agent-workspace home" \
+  ".dev/doctrine/" "$proj/.records/README.md"
+expect_absent "README does not park doctrine under the records home" \
+  "project doctrine) default" "$proj/.records/README.md"
+
 # slim layer: no store dirs, no templates/, no deployed reports.md
 for s in adr bugs design notes plans reports tickets trackers templates; do
   if [ -e "$proj/.records/$s" ]; then

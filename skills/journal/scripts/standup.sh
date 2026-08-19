@@ -57,8 +57,10 @@ records carrying the front-matter contract (doctype/status/created/updated/tags)
 \`done\`, \`history\`, \`prune-candidates\`, \`check\`) and the sole writer of
 \`history.tsv\`, the closure ledger. \`templates/\`, \`scripts/\`,
 \`doctrine/\`, and \`history.tsv\` are reserved — not stores. This directory is
-the records *home*; sibling homes (project templates, project doctrine) default
-underneath it without being part of the records layer.
+the records *home*. Project templates default underneath it without being part
+of the records layer; project **doctrine does not** — it resolves through the
+agent-workspace home (default \`.dev/doctrine/\`). A \`doctrine/\` directory here
+is a legacy layout, which is why the name stays reserved.
 
 Stores appear when a skill first writes. Project templates live in the
 agent-templates home (default \`.records/templates/<skill>/\`) and arrive
