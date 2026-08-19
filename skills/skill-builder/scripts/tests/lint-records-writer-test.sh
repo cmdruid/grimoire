@@ -194,4 +194,26 @@ else
   pass=$((pass + 1))
 fi
 
+# BL-35: `new --<flag>` (doctype dropped) is never valid — no --title needed.
+c17_flag='new --flag'
+write_skill "${tpl_head}Workshop: mint \`records.sh new --template <resolved>\`."
+run_lint
+if grep -q "FAIL: widget: SKILL.md: $c17_flag" "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: planted BL-32 spelling (new --template, no doctype) did not FAIL check 17" >&2
+  cat "$OUT" >&2
+  fail=$((fail + 1))
+fi
+
+write_skill "${tpl_head}Dated records minted by \`records.sh new\` are sortable."
+run_lint
+if grep -q "$c17_flag" "$OUT"; then
+  echo "FAIL: prose naming the tool matched the new --flag arm" >&2
+  grep "$c17_flag" "$OUT" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+
 report "lint-records-writer-test"

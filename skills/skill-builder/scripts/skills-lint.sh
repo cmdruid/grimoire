@@ -111,14 +111,19 @@
 #      (FAIL always); and a front-door `agent-workspace:` restating the current
 #      default (WARN always -- advisory by design). Unconditional in SCOPE, not
 #      severity: unlike 14 it is not edge-gated and reads .sh as well as .md,
-#      comments included.
-#  17. Bare `records.sh new` mint (FAIL). A backticked invocation carrying
-#      `records.sh new` and `--title` but no `--template` -- `--template` is
-#      required, so the call hard-errors at runtime, and it skips the lock-in
-#      copy. Whitespace-normalized
-#      (real invocations wrap mid-span) and fence-stripped (a quoted example
-#      must not trip it). Prose naming the tool without `--title` is out of
-#      scope. skill-builder and pack faces are exempt.
+#      comments included. Authoring-time half only — `seed.sh` is the runtime
+#      half that sees a consuming project's resolved `--workspace` (BL-30).
+#  17. Bare `records.sh new` mint (FAIL). Two arms: (a) a backticked
+#      invocation carrying `records.sh new` and `--title` but no
+#      `--template`; (b) `records.sh new` immediately followed by a
+#      flag (`new --<anything>` is never valid — the doctype is the
+#      first positional). `--template` is required, so a bare call
+#      hard-errors at runtime and skips the lock-in copy. Arm (b)
+#      catches the BL-32 shape that arm (a) cannot see (no `--title`).
+#      Whitespace-normalized (real invocations wrap mid-span) and
+#      fence-stripped. Prose naming the tool without `--title` and
+#      without a following flag is out of scope. skill-builder and
+#      pack faces are exempt.
 #
 # Pack-face exemption (clankshop v2): the one skill dir that carries a PACK.md
 # is the pack's FACE -- it composes the pack, so naming its members is its job,
@@ -790,11 +795,13 @@ done
 # `<agent-templates>/<skill>/`. This check is what turns that runtime failure
 # into a lint failure, so it is caught while authoring rather than mid-verb.
 #
-# DECIDABILITY: an invocation is a backticked span containing `records.sh new`
-# and `--title` (the mint form -- a doctype and a title are what a real mint
-# needs). Prose merely NAMING the tool ("records minted by `records.sh new`")
-# carries no `--title` and is correctly out of scope; so is the deliberate
-# documentation of the brownfield form, which discusses `--template` by name.
+# DECIDABILITY: two shapes are invocations. (a) a backticked span
+# containing `records.sh new` and `--title` (the mint form). (b) the
+# first token after `new` starts with `--` (`new --<flag>` is never
+# valid, with or without `--title`). Prose merely NAMING the tool
+# ("records minted by `records.sh new`") carries neither and is
+# correctly out of scope; so is the deliberate documentation of the
+# brownfield form, which discusses `--template` by name.
 #
 # Reuses check 14's `strip_code`, for the same two reasons and a third:
 #   * a quoted example inside a fence must not TRIP the check (the inverse of
@@ -816,6 +823,20 @@ for sk in "$skills_dir"/*/; do
     rel="${f#"$sk"}"
     while IFS= read -r span; do
       case "$span" in *'records.sh new'*) ;; *) continue ;; esac
+      tok="$(printf '%s\n' "$span" | awk '
+        {
+          s = $0
+          sub(/.*records\.sh new[[:space:]]+/, "", s)
+          sub(/`.*/, "", s)
+          n = split(s, a, /[[:space:]]+/)
+          if (n >= 1) print a[1]
+        }')"
+      case "$tok" in
+        --*)
+          fail "$name: $rel: new --flag ${span} -- doctype is the first positional (\`records.sh new <doctype> ...\`)"
+          continue
+          ;;
+      esac
       case "$span" in *--title*) ;; *) continue ;; esac
       case "$span" in *--template*) continue ;; esac
       fail "$name: $rel: bare mint ${span} -- pass \`--template <resolved>\` (the agent-templates rule)"
