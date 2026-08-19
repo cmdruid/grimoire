@@ -293,3 +293,61 @@ found and folded before any cut existed:
 An **independent** pass is still recommended before sequencing — this spec's subject has failed
 four consecutive censuses, and a self-administered review structurally cannot catch what the author
 did not think to check.
+
+### 2026-08-19 — needs-rework (independent: grok, headless, read-only)
+
+Single-seat independent review (the human chose one seat over a three-family council). 17 claims,
+8 high. **Every load-bearing claim was re-verified against the tree by the orchestrator before
+being accepted** — all held.
+
+**Must-fix**
+
+1. **Self-contradiction on `analyst`.** Problem says "the draft listed `analyst` as a *literal*
+   carrier; it is not one," but `analyst/SKILL.md:98` reads "resolve `reports.md` via the
+   agent-templates rule" — a literal — and this spec's own Verification lists `analyst` among the
+   ten measured skills. The bullet refuted a claim the draft never made, and got the fact wrong.
+   Fix: `analyst` is a **mixed** carrier (literal at `SKILL.md:98`; arrangement at `SKILL.md:27`
+   and in both scripts).
+2. **Check 16 arm (a) → 0 cannot prove the goal.** It measures *literal absence*, so it cannot
+   distinguish "repointed to `<agent-workspace>/templates`" from "literal deleted, live path still
+   on the records home." `analyst/SKILL.md:27` — "The live catalog is
+   `<agent-records>/templates/analyst/`" — is exactly that shape and is invisible to the check.
+   Fix: add a **positive** assertion that every live destination names `<agent-workspace>/templates`.
+3. **Extending arm (a)'s regex without a new FAIL string** makes a templates hit report as a
+   "retired `agent-doctrine` literal … resolve `<agent-workspace>/doctrine` instead"
+   (`skills-lint.sh:756-760`). Fix: freeze a templates-specific message (or a second arm) plus its
+   assertion.
+4. **The `mkdir -p` sentence is wrong, not "deliberately unchanged."** `record-mint.sh:108`
+   (`[ -d "$at" ] || mkdir -p "$at"`) currently materializes a directory under the **records** home,
+   which the record-writing rules sanction. After the flip it materializes one under the
+   **workspace**, which `DOCTRINE.md:451-455` permits only to `clankshop`. Fix: resolve who may
+   create the workspace home on first lock-in, and what a mint does when it is absent.
+5. **`DOCTRINE.md:357` is unowned** — "Creating `<agent-records>/templates/<skill>/` on first
+   lock-in copy is required" must re-anchor to the workspace. Not named in Mechanism or S2.
+6. **The `:217-225` deletion span is too wide.** `:216-218` carries the `records-root:` legacy
+   synonym, which must survive. Narrow to the sibling-home sentence onward.
+7. **`analyst-deploy.sh`'s degrade path breaks.** Its early exit keys on `records_layer=absent`
+   (`:34-40`), but after the flip the destination is the workspace. Fix: specify the post-flip
+   degrade and dest-absent test.
+8. **The arrangement census is still not a checkable set.** "Never name the variable" is false of
+   both mint scripts (`record-mint.sh:3`), and "six test files" is wrong — four are pure
+   arrangement. Fix: S0 emits a `file:line` list splitting mixed from pure; that list *is* the
+   expected output.
+
+**Also fix**
+
+- `journal/SKILL.md:71-72` still documents omitting `--template` as a live brownfield read —
+  directly contradicted by decision 2, and named by no slice.
+- `standup.sh:59-64`'s seeded README states the retired architecture ("sibling homes … default
+  underneath it"). It **also** still claims *project doctrine* defaults under the records home —
+  stale since Phase 1 shipped, i.e. a pre-existing residue this feature should sweep.
+- "Finding 7" dangles: the numbered findings lived in the draft this spec replaced. Define the
+  hazard inline. Related: `journal` is **not** a templates writer (`standup.sh` creates no
+  `templates/`), so the hazard's phrasing is wrong.
+- Check 17's test never asserts the rule-name phrase (`lint-records-writer-test.sh:122` is
+  `c17='bare mint'`), so S1 cannot verify the rename there as claimed.
+- C1's probe misses a host that *declared* `agent-templates:` elsewhere; "no host has ever
+  declared" is uncited. Either cite the survey or state the accepted loss.
+- S2 can land green with `verbs/new.md` unfixed — its verify cannot see the file (C4). Put the
+  hand-check in S2's verify column.
+- `DOCTRINE.md:412` is a constraint on the resolver, not an instruction to hosts. Re-word the cite.
