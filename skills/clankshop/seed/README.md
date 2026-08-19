@@ -1,4 +1,4 @@
-# The handbook — how this project works
+# The doctrine home — how this project works
 
 Doctrine for the workshop: policy and procedure — always *how we work*, never *what we are
 building* (that lives in the design spec, `.records/design/`). Readable by humans and agents
@@ -15,7 +15,7 @@ a standing area of work with its own doctrine and its own persona:
 | `design` | the architect | design and specification — the spec the code is measured against |
 | `build` | the foreman | planning and development — workflows, worktrees, development resources |
 | `test` | the guardian | testing and gating prior to release — fixtures, CI/CD, diagnostics |
-| `review` | the admin | upkeep after each cycle — records, handbook, door, improvement loop |
+| `review` | the admin | upkeep after each cycle — records, doctrine, door, improvement loop |
 
 **The flow of a change:** work enters at the door (`AGENTS.md` routes it); `core/ROUTING.md`
 classifies it; **design** shapes anything with a design decision at stake; **build** plans and
@@ -35,7 +35,7 @@ Persona names are accepted as station aliases (`architect` → `design`).
 ## Layout
 
 ```
-.handbook/
+.dev/doctrine/      # the default; a declared `agent-workspace:` moves the parent
   README.md         # this file — orientation; outside every load set
   core/             # every station loads this — the shared floor
     POLICY.md       #   workshop-wide standing judgments

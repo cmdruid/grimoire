@@ -24,7 +24,7 @@ The v2 roster, by coupling tier (how much workshop a skill needs):
 
 | tier | skill | is |
 |---|---|---|
-| system | `clankshop` | the seed (handbook + `context.sh`) + `setup` / `migrate` / `check` / persona summons |
+| system | `clankshop` | the seed (doctrine + `context.sh`) + `setup` / `migrate` / `check` / persona summons |
 | helper | `blueprint` | specification spine — ideation to argued spec; genesis (`new` / `deploy`) for a founding repo; never implementation plans |
 | helper | `contractor` | one job: roadmap / plan / runbook / review / build |
 | helper | `journal` | **the records format authority** — the record contract, `records.sh`, the history ledger; required (setup delegates tool-layer standup to it) |

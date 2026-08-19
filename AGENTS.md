@@ -20,12 +20,13 @@ records format authority and the one required member, `backlog` the follow-up li
 toolmaker and stays outside the pack. See `README.md` for the full inventory.
 
 A consuming project gets the workshop **deployed**, not copied: `/clankshop setup` (or `migrate`)
-seeds **`.handbook/`** (the project's own doctrine — README with the load rules and the one
-install stamp line, `core/`, the four station chapters, `scripts/context.sh`), stands up
-**`.records/`** via `journal` (eight typed stores + `records.sh` + the `history.tsv` closure
-ledger), and writes the **`AGENTS.md` door** (a thin routing table plus the handbook pointer).
-Once seeded, all three are the **project's** documents — upgrades are a judgment-assisted diff
-against the current seed. The deployed handbook documents its own layout; `README.md`
+seeds **`<agent-workspace>/doctrine/`** (by default `.dev/doctrine/` — the project's own
+doctrine: README with the load rules and the one install stamp line, `core/`, the four station
+chapters, `scripts/context.sh`), stands up **`.records/`** via `journal` (eight typed stores +
+`records.sh` + the `history.tsv` closure ledger), and writes the **`AGENTS.md` door** (a thin
+routing table plus the doctrine pointer). Once seeded, all three are the **project's**
+documents — upgrades are a judgment-assisted diff against the current seed. The deployed
+doctrine home documents its own layout; `README.md`
 (*Storage convention*) has the short version.
 
 ## Design philosophy

@@ -104,7 +104,8 @@ answered by a single stamp probe; keep them apart.
   governs exactly two things: filled `<debrief>` is `/backlog debrief` when stamped, else the
   project's own close-the-books sweep (do not invoke `/backlog`); and queue items are
   **Backlog** tracker lines only when stamped *and* that tracker file already exists.
-- The **agent-records destination is not stamped**. On any host: do not create `.handbook/`,
+- The **agent-records destination is not stamped**. On any host: do not create the doctrine
+  home,
   and never route to the clankshop onramps.
 - **Records (every host).** Workstream-owned records — seeded / drafted `plans/` files,
   ship-time plan closes, optional debrief `reports/` — land under the agent-records home

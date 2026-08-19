@@ -79,7 +79,7 @@ fi
 # --- check 14: green — angle-bracket member -----------------------------------
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'The playbook lives at `<agent-doctrine>/test/workflows/diagnostics.md`.'
+  'The playbook lives at `<agent-workspace>/doctrine/test/workflows/diagnostics.md`.'
 lint
 if grep -q "$c14" "$OUT"; then
   echo "FAIL: angle-bracket literal still matched check 14 (must stay green)" >&2
@@ -95,7 +95,7 @@ fi
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
   'The report is written under the
-agent-doctrine home, resolved per the front-door doctrine.'
+agent-workspace home, resolved per the front-door doctrine.'
 lint
 if grep -q "$c14" "$OUT"; then
   echo "FAIL: wrapped phrase literal matched check 14 (normalization is broken)" >&2
@@ -111,7 +111,7 @@ write_skill widget 'doctrine — the diagnostics playbook' \
   'Other skills resolve it like so:
 
 ```
-the agent-doctrine home
+the agent-workspace home
 ```
 
 but this skill just reads a fixed path.'
@@ -129,7 +129,7 @@ run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
   'Example only:
 
-    <agent-doctrine>/test/workflows/diagnostics.md
+    <agent-workspace>/doctrine/test/workflows/diagnostics.md
 
 but this skill just reads a fixed path.'
 lint
@@ -211,19 +211,18 @@ else
   pass=$((pass + 1))
 fi
 
-# --- check 15: WARN — `.records/doctrine/` is newly decidable ------------------
+# --- check 15: FAIL — `.records/doctrine/` is newly decidable ------------------
 # This literal used to be excluded as "a home's canonical default". Once doctrine
 # resolves through <agent-workspace>/doctrine it is nobody's default, so it
-# becomes decidable -- the strongest guard the retirement buys. It lands WARN
-# while the consumers still carry it in their resolution prose.
-# RED-PROOF: the fixture carrying it must be reported.
+# becomes decidable -- the strongest guard the retirement buys. It shipped WARN
+# while the consumers were being flipped and is now FAIL.
+# RED-PROOF: the fixture carrying it must FAIL.
 run_lint
 write_skill widget 'note — a captured fact' \
   'The rubric sits at `.records/doctrine/test/workflows/audit/GUIDE.md`.'
 lint
-expect "check 15 warns on the stale doctrine default" "$c15b" "$OUT"
-expect_absent "check 15 does not FAIL on the stale default yet" \
-  "FAIL: widget: SKILL.md:1:\`.records/doctrine/" "$OUT"
+expect "check 15 FAILs on the stale doctrine default" "FAIL: widget: " "$OUT"
+expect "check 15 names the stale default" "$c15b" "$OUT"
 
 # green control: remove the literal -> silent.
 run_lint
@@ -239,17 +238,31 @@ write_skill widget 'doctrine — the diagnostics playbook' \
 lint
 expect_absent "check 14 accepts the agent-workspace angle-bracket member" "$c14" "$OUT"
 
-# --- check 16a: WARN — the retired literal anywhere under a skill --------------
-# RED-PROOF: reintroduce the retired literal into a fixture skill -> reported.
+# --- check 14: NARROWED — the retired family no longer satisfies it -----------
+# RED-PROOF for the narrowing. This exact fixture PASSED check 14 transitionally,
+# while the consumers were being flipped. It must not any more: otherwise a skill
+# could satisfy check 14 with the very literal check 16 bans.
+run_lint
+write_skill widget 'doctrine — the diagnostics playbook' \
+  'The playbook lives at `<agent-doctrine>/test/workflows/diagnostics.md`.'
+lint
+expect "check 14 rejects the retired angle-bracket member" "FAIL: widget: $c14" "$OUT"
+expect "…and check 16 independently FAILs the same fixture" "$c16a" "$OUT"
+
+# --- check 16a: FAIL — the retired literal anywhere under a skill -------------
+# THE RETIREMENT PROOF. It shipped WARN while the twelve carriers were flipped and
+# is now promoted, so a reintroduction is a hard gate failure rather than noise.
+# RED-PROOF: reintroduce the retired literal into a fixture skill -> lint FAILs.
 # Note this fixture declares NO doctrine edge: check 16 is unconditional in
 # scope, so unlike check 14 it still sees the skill.
 run_lint
 write_skill widget 'note — a captured fact' \
   'Resolve `agent-doctrine:` from the front door before reading the playbook.'
 lint
-expect "check 16a warns on the retired literal in a .md" "$c16a" "$OUT"
-expect "check 16a reports it as a WARN, not a FAIL (staged)" \
-  "WARN: widget: SKILL.md: 1 occurrence(s)" "$OUT"
+expect "check 16a FAILs on the retired literal in a .md" "$c16a" "$OUT"
+expect "check 16a reports it as a FAIL, not a WARN (promoted)" \
+  "FAIL: widget: SKILL.md: 1 occurrence(s)" "$OUT"
+expect_absent "check 16a no longer warns" "WARN: widget: SKILL.md: 1 occurrence(s)" "$OUT"
 
 # green control: no retired literal -> silent.
 run_lint

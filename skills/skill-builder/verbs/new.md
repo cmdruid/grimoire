@@ -33,7 +33,9 @@ verb's job).
    example of a records-path client.
    - **Yes** → scaffold, in `SKILL.md` (see `docs/DOCTRINE.md` § Record-writing skills):
      - the inlined agent-records / agent-templates resolvers (default paths named
-       literally: `.records/…`, `.records/templates/<name>/…`);
+       literally: `.records/…`, `.records/templates/<name>/…`); and, for a skill that
+       reads or writes doctrine, the agent-workspace resolver — the doctrine home is
+       `<agent-workspace>/doctrine`, default `.dev/doctrine/…`;
      - the five-key in-package contract (keys, status vocabulary, dated slug,
        record-link form) — do not send the agent to another skill for those bytes;
      - a no-floor sentence: missing `records.sh` is not an error; journal standup is

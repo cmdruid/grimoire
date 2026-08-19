@@ -88,22 +88,22 @@
 #      satisfy it) and whitespace is normalized across newlines (the phrase
 #      members wrap in real skills; a line-based match would fail conforming
 #      ones). Edge-gated, so check 15 is the unconditional net beside it.
-#      skill-builder and pack faces are exempt. TRANSITIONAL: accepts both the
-#      `agent-workspace` and the retired `agent-doctrine` literal families
-#      while the consumers are flipped; narrowed to `agent-workspace` only once
-#      that flip lands.
+#      skill-builder and pack faces are exempt. NARROWED: the retired
+#      `agent-doctrine` family is no longer accepted -- the consumers are
+#      flipped, so accepting it would let a regression back in silently.
 #  15. Off-home doctrine literal. Any non-exempt skill's .md naming a
 #      `.handbook/{test,build,design,review}/` path -- doctrine that should be
 #      reached through the resolved home (FAIL). Unconditional: this is what
 #      catches a skill that hardcodes and never declares an edge. No per-skill
 #      exemption table; `docs/audit/` is deliberately not matched (see the
-#      block comment). `.records/doctrine/` joins the matched set once doctrine
-#      stops defaulting under the records home -- it lands WARN while the
-#      consumers still carry it, and is promoted to FAIL with check 16.
+#      block comment). `.records/doctrine/` is also matched (FAIL): it stopped
+#      being any home's default when doctrine moved under `<agent-workspace>`,
+#      which is what made it decidable.
 #  16. Retired doctrine variable + workspace declaration guards. Three arms,
 #      three severities, staged PER ARM (see the block comment): the retired
-#      `agent-doctrine` literal anywhere under a non-exempt skill (WARN now,
-#      FAIL once the carriers are flipped); a front-door `agent-workspace: .`
+#      `agent-doctrine` literal anywhere under a non-exempt skill (FAIL -- the
+#      carriers are flipped, so this is the standing retirement guard); a
+#      front-door `agent-workspace: .`
 #      (FAIL always); and a front-door `agent-workspace:` restating the current
 #      default (WARN always -- advisory by design). Unconditional in SCOPE, not
 #      severity: unlike 14 it is not edge-gated and reads .sh as well as .md,
@@ -640,19 +640,14 @@ for sk in "$skills_dir"/*/; do
     *) continue ;;
   esac
   found=0
-  # TRANSITIONAL: both literal families are accepted while the consumers are
-  # flipped from the retired `agent-doctrine` variable to `agent-workspace`.
-  # Same treatment check 14 has taken before, for the same reason -- narrowing
-  # first would redden the gate on every not-yet-flipped consumer. The
-  # `agent-doctrine` arm is dropped once that flip lands; check 16's absence
-  # arm is what proves the retirement actually happened.
+  # NARROWED: the retired `agent-doctrine` family was accepted transitionally
+  # while the consumers were flipped, and is not accepted any more. Check 16's
+  # absence arm proves no carrier still uses it; leaving the family here would
+  # let a skill satisfy this check with the literal that check 16 bans.
   while IFS= read -r -d '' f; do
     if strip_code "$f" | grep -qF -e '<agent-workspace>' \
                                  -e 'the agent-workspace home' \
-                                 -e 'declared `agent-workspace:`' \
-                                 -e '<agent-doctrine>' \
-                                 -e 'the agent-doctrine home' \
-                                 -e 'declared `agent-doctrine:`'; then
+                                 -e 'declared `agent-workspace:`'; then
       found=1
       break
     fi
@@ -691,11 +686,9 @@ done
 # `.records/doctrine/` USED to be excluded by exactly that argument, and no
 # longer is: once doctrine resolves through `<agent-workspace>/doctrine`, that
 # path stops being any home's default, so it becomes decidable and is the
-# strongest guard this retirement buys. It is staged -- WARN while the consumers
-# still carry it in their resolution prose, FAIL once they are flipped -- for the
-# same reason check 16's absence arm is staged: the literal is live in five
-# consumer skills today, and failing on it here would redden the trunk gate for
-# the whole flip window.
+# strongest guard this retirement buys. It shipped WARN while the five consumer
+# skills still carried it in their resolution prose, and is now FAIL -- they are
+# flipped, so any reappearance is a regression, not a leftover.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   case "$name" in skill-builder) continue ;; esac
@@ -709,7 +702,7 @@ for sk in "$skills_dir"/*/; do
                      -e '`.handbook/design/' -e '`.handbook/review/' "$f" || true)
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      warn "$name: $rel:$line: stale doctrine default \`.records/doctrine/\` (resolve <agent-workspace>/doctrine instead) [FAIL once the consumers are flipped]"
+      fail "$name: $rel:$line: stale doctrine default \`.records/doctrine/\` (resolve <agent-workspace>/doctrine instead)"
     done < <(grep -nF -e '`.records/doctrine/' "$f" || true)
   done < <(find "$sk" -name '*.md' -print0)
 done
@@ -719,10 +712,11 @@ done
 # a transitional population; staging the other two would be cargo-culting the
 # carve-out.
 #
-#   a. retired-literal absence -- WARN now, FAIL once the carriers are flipped.
-#      The carriers are live today; failing here would redden the trunk gate for
-#      the whole flip window. Mirrors check 14's transitional treatment above,
-#      for the same reason.
+#   a. retired-literal absence -- FAIL. It shipped WARN while the twelve
+#      carriers were being flipped (failing then would have reddened the trunk
+#      gate for the whole window) and is now promoted: the flip is complete, so
+#      any occurrence is a regression. THIS ARM IS THE RETIREMENT PROOF -- it is
+#      what makes "the variable is retired" a verifiable fact.
 #   b. `agent-workspace: .` forbidden -- FAIL from the start. The variable is
 #      NEW, so nothing can have declared it before this change: there is no
 #      population to protect and no reason to soften it. `.` would place doctrine
@@ -744,8 +738,8 @@ done
 # and 15 use.
 #
 # Arm (a) reports ONE line per file, with the occurrence count and line numbers,
-# rather than one per occurrence: the flip sweeps whole files, so a per-file
-# roll-up is the actionable unit and keeps a transitional WARN band readable.
+# rather than one per occurrence: a regression is fixed file-at-a-time, so the
+# per-file roll-up is the actionable unit.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   case "$name" in skill-builder) continue ;; esac
@@ -756,7 +750,7 @@ for sk in "$skills_dir"/*/; do
             | sed 's/,$//' || true)"
     [ -n "$hits" ] || continue
     n="$(printf '%s' "$hits" | tr ',' '\n' | grep -c . || true)"
-    warn "$name: $rel: $n occurrence(s) of the retired \`agent-doctrine\` literal (line(s) $hits) -- resolve <agent-workspace>/doctrine instead [FAIL once the carriers are flipped]"
+    fail "$name: $rel: $n occurrence(s) of the retired \`agent-doctrine\` literal (line(s) $hits) -- resolve <agent-workspace>/doctrine instead"
   done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
 done
 

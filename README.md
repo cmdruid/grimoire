@@ -47,7 +47,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `backlog` | the follow-up lifecycle: capture by kind, tickets, debrief sweeps, tracker grooming — a client of the records layer (guards when none) |
 | `blueprint` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
 | `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
-| `clankshop` | the workshop face: seed handbook + the four stations; `setup` / `migrate` / `check`, and persona summons for hat-on discussion |
+| `clankshop` | the workshop face: seed doctrine + the four stations; `setup` / `migrate` / `check`, and persona summons for hat-on discussion |
 | `contractor` | one job lead — roadmap, plan, runbook, review, revise, build; never ships; never writes a spec |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
@@ -70,14 +70,16 @@ former role skills had already merged into the face
 ### Storage convention: what a deployed project carries
 
 A project the workshop is deployed onto carries three surfaces, filtered from a direct code read
-the way `.github/` is. **`.handbook/`** holds the project's own doctrine — a README (load rules +
-the one install stamp line), `core/`, the four station chapters, and `scripts/context.sh` —
-seeded from the pack face and locally grown thereafter. **`.records/`** holds the work products:
+the way `.github/` is. **`<agent-workspace>/doctrine/`** (by default `.dev/doctrine/`) holds
+the project's own doctrine — a README (load rules + the one install stamp line), `core/`, the
+four station chapters, and `scripts/context.sh` — seeded from the pack face and locally grown
+thereafter. **`.records/`** holds the work products:
 eight typed stores (`adr`, `bugs`, `design`, `notes`, `plans`, `reports`, `tickets`, `trackers`)
 plus `records.sh`, templates, and the `history.tsv` closure ledger — the format is `journal`'s
 (store templates arrive with the skills that mint them; `journal` ships the commons).
-**`AGENTS.md`** is the door: a thin routing table plus the handbook pointer. Once seeded, all
-three are the project's documents; the deployed handbook and records READMEs document their own
+**`AGENTS.md`** is the door: a thin routing table plus the doctrine pointer, and the one place
+`agent-workspace:` / `agent-records:` are declared when they are not the defaults. Once seeded,
+all three are the project's documents; the deployed doctrine and records READMEs document their own
 layout.
 
 Session checkpoints stay **gitignored scratch** (root `CHECKPOINT.md`, steward `checkpoint`) —
@@ -91,7 +93,8 @@ transactionally, and records the install in the sidecar `grimoire.lock` beside t
 
 - **`clankshop`** (`skills/clankshop/PACK.md`) — the skills above (minus `agent-council`
   and `skill-builder`) as one agentic workshop: the composition lives with the face — the seed
-  handbook in `skills/clankshop/seed/` (mirroring a deployed `.handbook/` exactly) and the
+  doctrine in `skills/clankshop/seed/` (mirroring a deployed `<agent-workspace>/doctrine/`
+  exactly) and the
   coupling-tier roster in the manifest itself.
 
 ## Repo layout

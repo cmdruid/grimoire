@@ -1,6 +1,6 @@
-# Doc audit — keep the handbook true and lean
+# Doc audit — keep the doctrine home true and lean
 
-The review station's periodic sweep of the handbook (and the door). Scan → diagnose → adjust;
+The review station's periodic sweep of this doctrine home (and the door). Scan → diagnose → adjust;
 mechanical facts first, judgment second. Run it when doctrine has churned, when a load set
 feels heavy, or on the review station's own cadence.
 
@@ -8,7 +8,7 @@ feels heavy, or on the review station's own cadence.
 
 1. `context.sh --check` — every station's load set resolves. Red here is a defect; fix before
    any judgment pass.
-2. Link walk: every relative `.md` link in `.handbook/` and the door resolves to a real file.
+2. Link walk: every relative `.md` link in this doctrine home and the door resolves to a real file.
 3. Stamp present: the README's seed stamp line is intact (it is the workshop's version anchor).
 
 ## Judgment pass
