@@ -28,8 +28,8 @@ expect "journal stands the records up" "records: $proj/.records (journal)" "$OUT
 expect "records self-check green" "records check: OK (0 records)" "$OUT"
 
 # step 5: the check verb's two script facts, against the same deployed project
-"$proj/.handbook/scripts/context.sh" --check >"$OUT" 2>"$ERR"
-expect "handbook load sets green" "load sets: OK" "$OUT"
+"$proj/.dev/doctrine/scripts/context.sh" --check >"$OUT" 2>"$ERR"
+expect "doctrine load sets green" "load sets: OK" "$OUT"
 
 RS="$proj/.records/scripts/records.sh"
 # standup no longer plants templates/. Mint from the owner's bundled template

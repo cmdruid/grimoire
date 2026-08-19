@@ -1,8 +1,9 @@
 #!/bin/sh
-# context.sh — render a station's load set on demand (the handbook's one deployed tool).
+# context.sh — render a station's load set on demand (the doctrine home's one deployed tool).
 #
 #   context.sh <station|persona>          render the load set: each file prefixed by a
-#                                         `===> <path>` header (paths relative to .handbook/)
+#                                         `===> <path>` header (paths relative to the
+#                                         doctrine home, default `.dev/doctrine/`)
 #   context.sh <station|persona> --list   the reading list only (paths, in load order)
 #   context.sh --check                    contract test: every station's load set resolves
 #
