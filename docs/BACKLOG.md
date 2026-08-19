@@ -14,6 +14,33 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-34 — one simple spec, then a hard cut
+- **source:** feat stream, 3b post-mortem (2026-08-19, human direction).
+- **status:** open
+- **the spec:** a few lines, not a doctrine chapter. Two variables, two roots, no home nested in
+  another:
+  - `<agent-records>` — default `.records/` — dated, typed, closeable instances.
+  - `<agent-workspace>` — default `.dev/` — `doctrine/` (living, normative) and `templates/` (schemas).
+  Retire `agent-templates` as a variable; it becomes the fixed subpath `<agent-workspace>/templates`.
+- **duplication is fine.** Skills stay independent and each carries its own copy of the resolver.
+  That is the accepted price of independence, not debt. `skill-builder` holds the spec and enforces
+  compliance — that is the single source of truth, and the lint is how copies are kept honest.
+- **what actually gets cut (the point of the exercise):** the pack is in **alpha**, so legacy
+  invariants and callbacks to past doctrine are deleted rather than carried —
+  `records.sh:182`'s flat-template fallback; `records.sh:64,84`'s `templates` carve-out (templates
+  leave the records home entirely); the legacy-flat adopt rung and the previous-home probe;
+  `standup.sh`/`analyst` paths still anchored at `<agent-records>/templates`; and `DOCTRINE.md`'s
+  accumulated hedging, including the `mkdir` owner-exception paragraph whose closing clause reads as
+  revoking the grant three lines above it.
+- **why 3b failed and this doesn't:** 3b *preserved* every legacy path while renaming, so a path
+  change cost 27 files, seven slices and two migration fixtures. Deleting is cheap; the census
+  problem largely evaporates once there is nothing to keep compatible.
+- **absorbs:** the `agent-templates` retirement (3b, dropped), BL-28's unresolved ownership half,
+  BL-19's deferred calibrate pass, BL-33 (break-verification doctrine).
+- **open question for the human:** the doctrine and project memory record legacy hosts with records
+  at `dev/` (`/clankshop migrate declare-in-place`). Cutting legacy invariants drops support for
+  them. Confirm before the cut.
+
 ### BL-33 — "prove a new check by breaking it" does not say to verify the break applied
 - **source:** feat stream, BL-25 build (2026-08-19). Second occurrence in two sessions.
 - **status:** open
@@ -97,7 +124,11 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-28 — `analyst-facts.sh` carries a second, drifted copy of the reserved-name carve-out
 - **source:** feat stream, workspace-consolidation review round 2 (2026-08-18).
-- **status:** open
+- **status:** done (2026-08-19, `f2c5c8f`) — `doctrine/` added to `each_record`'s carve-out, with a
+  comment pinning it to `records.sh`'s set. Red-proofed: removing the new arm reddens two new
+  `facts-test.sh` assertions that plant a `status: open` record in each reserved directory. The
+  **ownership** half of the fix sketch is deliberately NOT resolved — two copies still exist by
+  contract; that is now in scope for BL-34.
 - **body:** `skills/journal/scripts/records.sh:64,82` is not the only place the reserved-name list
   lives. `skills/analyst/scripts/analyst-facts.sh:76-81` independently filters
   `grep -v -e "^$RR/templates/" -e "^$RR/scripts/"` — and **omits `doctrine/`**, so analyst already

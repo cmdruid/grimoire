@@ -1,12 +1,27 @@
 ---
 doctype: design
-status: open
+status: dropped
 created: 2026-08-18
 updated: 2026-08-19
 tags: [spec]
 ---
 
 # `agent-workspace`, part 2 — the templates home — Spec
+
+> **DROPPED 2026-08-19 — superseded by BL-34 (the simple spec + hard cut).**
+>
+> This spec solved the wrong problem. It *preserved* every legacy path while renaming a variable —
+> adopt ladders, a brownfield probe, a carve-out kept for compat — which is how a path change came
+> to cost 27 files and seven slices. The pack is in **alpha**: there is no migration to protect, so
+> the legacy branches get deleted, not carried. That makes the templates move cheap and turns most
+> of this document into scaffolding for a problem we don't have.
+>
+> **Kept only as evidence** for BL-34, and for one transferable lesson: the value question
+> ("is this worth its cost?") belongs *before* the argued spec, not after the review.
+>
+> **What shipped instead:** `f2c5c8f` BL-28 (analyst's drifted carve-out), `1901d71` the seeded
+> README's doctrine home (wrong since Phase 1), and the `checkpoint` suite's mode bit — three real
+> defects that were hiding inside the refactor.
 
 `stream/feat` **feature 3b**; roadmap **Phase 3**
 (`docs/design/2026-08-18-agent-workspace-roadmap.md`). Split out of
