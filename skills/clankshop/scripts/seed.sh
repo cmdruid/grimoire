@@ -37,9 +37,12 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# Argument validation, not a front-door guard: check 16 owns the *declaration* guards, but a
-# lint cannot protect this invocation. `.` would seed into `./doctrine`, colliding with a real
-# project directory; an absolute path escapes the target root entirely.
+# Runtime half of check 16's declaration guards (BL-30). Check 16 reads the
+# front door of *this* library; a consuming project's `setup` is not linted.
+# The verb resolves `agent-workspace:` and passes it here, so this script is
+# the one enforcer that actually sees the value. `.` would seed into
+# `./doctrine`, colliding with a real project directory; an absolute path
+# escapes the target root. Check 16 remains the authoring-time half.
 case "$ws" in
   .|"") echo "refusing: --workspace '.' would place doctrine at ./doctrine" >&2; exit 2 ;;
   /*)   echo "refusing: --workspace must be repo-relative, got: $ws" >&2; exit 2 ;;
@@ -61,7 +64,7 @@ cp -R "$SEED" "$hb"
 chmod +x "$hb/scripts/context.sh"
 
 # Literal slot substitution (no regex — a gate command may carry any punctuation).
-subst() { # subst <needle> <replacement> — applied to every .md under the new handbook
+subst() { # subst <needle> <replacement> — applied to every .md under the new doctrine home
   find "$hb" -name '*.md' -type f | while IFS= read -r f; do
     NEEDLE="$1" REPL="$2" awk '{
       out = ""; line = $0

@@ -339,7 +339,7 @@ no new file; `revise` amends the named artifact in place.
 
 - **Standalone** — the user runs the spine; the host's build lane consumes the
   accepted spec. The close-the-books sweep is the project's own convention.
-- **Workshop routing** — the handbook's routing walk dispatches design-at-stake
+- **Workshop routing** — the doctrine's routing walk dispatches design-at-stake
   work here. The orchestrator / host lane consumes the spec.
 
 Do not name a successor skill. Feature composition ends at the accepted

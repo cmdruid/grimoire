@@ -145,7 +145,7 @@ downstream still. Journal owns no judgment beyond its own formats.
 
 **Standalone by default, framework-aware when present.** Every verb works on any repo: the
 stores live under the agent-records home, and no verb refuses or stalls for lack of a workshop.
-On a workshop host the deployed handbook's routing applies downstream; elsewhere it is simply
+On a workshop host the deployed doctrine's routing applies downstream; elsewhere it is simply
 absent — never demand the workshop as a precondition.
 
 ## Edges

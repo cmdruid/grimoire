@@ -158,7 +158,7 @@ changes. There is no mirror to re-sync.
 <!-- edges:auditor -->
 - produces: report — a pass report tagged audit
 - handoff: — (none; findings drain through the host's capture lane)
-- consumes: — (none; it reads project code and the host rubric)
+- consumes: doctrine — station rubric when a workshop is present
 <!-- /edges:auditor -->
 
 ## Done when

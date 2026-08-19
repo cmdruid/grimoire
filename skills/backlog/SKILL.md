@@ -101,12 +101,12 @@ is (or run the debrief if the intent is "capture everything that surfaced").
 
 `backlog` files, sweeps, grooms, and promotes among Backlog / Issues / Feedback. The format
 authority owns the contract definition and the tool layer; this skill writes without waiting
-for that tool. Performing the work belongs elsewhere; the workshop's handbook owns that
+for that tool. Performing the work belongs elsewhere; the workshop's doctrine owns that
 composition where one is deployed.
 
 **Standalone by default, framework-aware when present.** Every verb works on any repo —
 no workshop and no journal standup is a precondition. On a workshop host the deployed
-handbook's routing applies downstream; elsewhere it is simply absent.
+doctrine's routing applies downstream; elsewhere it is simply absent.
 
 ## Done when
 

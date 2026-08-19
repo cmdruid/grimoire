@@ -223,7 +223,7 @@ when one exists.
 <!-- edges:debugger -->
 - produces: report, bug — investigation record; filed repro record
 - handoff: — (none; the operator owns the fix)
-- consumes: bug — investigation accepts a routed file
+- consumes: bug, doctrine — a routed file; station diagnostics when present
 <!-- /edges:debugger -->
 
 ## Boundaries

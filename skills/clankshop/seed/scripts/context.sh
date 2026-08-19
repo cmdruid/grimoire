@@ -13,7 +13,7 @@
 # Agent-facing: plain deterministic output, no color; errors on stderr.
 set -eu
 
-HB="$(cd "$(dirname "$0")/.." && pwd)"
+DH="$(cd "$(dirname "$0")/.." && pwd)"
 STATIONS="design build test review"
 CORE_ORDER="POLICY.md INVARIANTS.md GOTCHAS.md ROUTING.md"
 
@@ -33,7 +33,7 @@ station_for() {
   esac
 }
 
-load_set() { # stdout: the load-order paths for station $1, relative to the handbook root
+load_set() { # stdout: the load-order paths for station $1, relative to the doctrine home
   for f in $CORE_ORDER; do echo "core/$f"; done
   echo "$1/POLICY.md"
 }
@@ -42,7 +42,7 @@ check_all() {
   rc=0
   for st in $STATIONS; do
     for rel in $(load_set "$st"); do
-      [ -f "$HB/$rel" ] || { echo "missing: $rel (station: $st)" >&2; rc=2; }
+      [ -f "$DH/$rel" ] || { echo "missing: $rel (station: $st)" >&2; rc=2; }
     done
   done
   [ "$rc" -eq 0 ] && echo "load sets: OK ($STATIONS)"
@@ -67,9 +67,9 @@ fi
 
 rc=0
 for rel in $(load_set "$st"); do
-  if [ -f "$HB/$rel" ]; then
+  if [ -f "$DH/$rel" ]; then
     printf '===> %s\n' "$rel"
-    cat "$HB/$rel"
+    cat "$DH/$rel"
     echo
   else
     echo "missing: $rel" >&2
