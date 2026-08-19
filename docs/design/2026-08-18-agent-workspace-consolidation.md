@@ -64,7 +64,10 @@ One new front-door variable; one retired:
       templates/                   (templates stay put until feature 3b)
       history.tsv
 
-**`records.sh` is untouched by this feature**, and so is its reserved-name list. An earlier draft
+**`records.sh`'s behavior and reserved-name list are untouched by this feature.** (S5 edits two
+`agent-doctrine` **comments** in `records.sh` and `records-test.sh` — the census requires it and
+check 16 would flag them. No code, no reserved list, no `:180`. "Untouched" below means
+behaviorally untouched; see Decision 4 and Decision 11.) An earlier draft
 moved the tool; `records.sh:26` derives its root from its own install location
 (`RR="$(cd "$(dirname "$0")/.." && pwd)"`, and its `:5` header says so), so moving it repoints the
 entire records layer. It stays beside the layer it serves. The reserved list keeps **all four**
@@ -239,23 +242,30 @@ station-shaped subpaths are unchanged.
 
     grep -rlE 'agent[-_]doctrine|AGENT_DOCTRINE' skills/ | sort
 
-Output at `dd40010`, checked in here as the artifact (15 files):
+Output at `dd40010`, checked in here as the artifact — **15 files, 54 occurrences.** The line lists
+are **exhaustive, not first-hit locators**; regenerate with the same expression per file:
 
-    skills/agent-council/briefs/skill-review.md          :33
-    skills/auditor/BOOTSTRAP.md                          :12,102,268,275,276
-    skills/auditor/SKILL.md                              :20
-    skills/blueprint/SKILL.md                            :32
-    skills/contractor/SKILL.md                           :23
-    skills/debugger/SKILL.md                             :28
-    skills/journal/SKILL.md                              :29
-    skills/journal/scripts/records.sh                    :70   (comment)
-    skills/journal/scripts/tests/records-test.sh         :183  (comment)
-    skills/skill-builder/docs/DOCTRINE.md                (multiple)
-    skills/skill-builder/scripts/skills-lint.sh          :632  (check-14 detector pattern)
+    skills/agent-council/briefs/skill-review.md          33
+    skills/auditor/BOOTSTRAP.md                          12,102,268,275,276
+    skills/auditor/SKILL.md                              20,28,31,99,108,109
+    skills/blueprint/SKILL.md                            31,32,38,39,369
+    skills/contractor/SKILL.md                           22,23,29,30,125
+    skills/debugger/SKILL.md                             28,31
+    skills/journal/SKILL.md                              29
+    skills/journal/scripts/records.sh                    70,77          (comments)
+    skills/journal/scripts/tests/records-test.sh         183            (comment)
+    skills/skill-builder/docs/DOCTRINE.md                222,228,236,273,275,276,280,340,381,415
+    skills/skill-builder/scripts/skills-lint.sh          86,630,631,632,638,675
     skills/skill-builder/scripts/tests/lint-doctrine-consumer-test.sh
-    skills/workstream/SKILL.md                           :96
-    skills/workstream/flow.md                            :56
-    skills/workstream/verbs/sync.md                      :100
+                                                         52,70,86,102,120,192
+    skills/workstream/SKILL.md                           96,99
+    skills/workstream/flow.md                            56
+    skills/workstream/verbs/sync.md                      100
+
+**S5 sweeps whole files, not the lines above.** The list exists so a slice can be checked for
+coverage and so check 16's green can be predicted — not as an edit worklist. An earlier version of
+this block cited one line per file, which read as a locator set and would have invited
+line-targeted edits that leave siblings behind (`auditor/SKILL.md` alone has six).
 
 **Corrected in round 3 (the prior census had the right count and the wrong membership).**
 `workstream/verbs/create.md` was in and is **out** — it carries zero occurrences of the term; what
@@ -333,13 +343,26 @@ construction" is scoped to the default layout.)
   **"Unconditional" describes its *scope*, not its severity** — unlike check 14 it is not
   edge-gated, so it sees every skill and every file type. Its severity is staged across two slices:
 
-  **Check 16 lands transitionally, exactly as check 14 does.** S2 installs it before S5 flips the
-  carriers, so in every legal ordering the check would be red against real, not-yet-migrated files
-  for the whole S2–S5 window. It therefore ships **WARN-only** in S2, carrying the census as its
-  known-carrier list, and **S6 promotes it to FAIL** after S5 has emptied that list — with the
-  red-proof that the promoted check FAILs a fixture carrying the retired literal. This mirrors
-  check 14's "accept both literal families transitionally, narrow in S6" treatment and for the same
-  reason: the trunk gate stays green across the rollout.
+  **Severity is staged PER ARM, not for the check as a whole.** Only one of the three arms has a
+  transitional population; staging the other two would be cargo-culting the carve-out.
+
+  | arm | S2 | S6 | why |
+  |---|---|---|---|
+  | retired-literal absence | **WARN** | **FAIL** | the 15 carriers are still unflipped until S5; failing here would redden the trunk gate for the whole S2–S5 window |
+  | `agent-workspace: .` forbidden | **FAIL** | FAIL | the variable is **new** — nothing can have declared it before this feature, so there is no population to protect and no reason to soften it |
+  | default-valued no-op warning | **WARN** | WARN | advisory by design: a deliberate `.dev` declaration is legal, so this arm never fails |
+
+  The absence arm mirrors check 14's "accept both literal families transitionally, narrow in S6"
+  treatment, for the same reason: the trunk gate stays green across the rollout. S6's promotion
+  carries its own red-proof — a fixture carrying the retired literal must **FAIL** under the
+  promoted check and only **WARN** under the S2 one, so the promotion is shown to do work.
+- **BL-26 — `skill-builder/verbs/new.md:35` (S6 tail).** It tells the scaffolder to inline "the
+  agent-records / agent-templates resolvers (default paths named literally)". It does **not** name
+  `agent-doctrine`, so this feature's exposure is narrower than BL-26's full scope: the fix here is
+  to add `agent-workspace` to that resolver list so newly scaffolded skills resolve the doctrine
+  home the new way. The `agent-templates` half stays for **3b** to retire. Small, and it belongs
+  with S6's tightening — otherwise the check installed in S2/S6 starts failing skills that
+  `new.md` itself told the author to write.
 - **Check 15 keeps its `.handbook/<station>/` literals — do NOT rewrite them.** Check 15's own
   rationale (`skills-lint.sh:660-666`) rules out matching *default* paths: prose is required to name
   defaults literally, so a hardcoded default is textually identical to a documented one; only
@@ -366,8 +389,8 @@ while the table carried `script` on seven of fourteen rows. The rows were sound;
 | what | how it is proven | kind |
 |---|---|---|
 | **`agent-doctrine` is retired** | check 16 (promoted to FAIL in S6): no occurrence of `agent-doctrine` under `skills/` outside the exemptions, `.sh` and comments included; **red-proof:** reintroduce the literal into a fixture skill → lint **FAILs** | lint |
-| **check 16's census is exhaustive** | after S5, `grep -rlE 'agent[-_]doctrine' skills/` returns **only** the exemptions; **red-proof:** the pre-S5 tree returns the 15-file census, so the assertion demonstrably distinguishes done from not-done | lint |
-| **the flip is positive, not just absent** | check 16 proves the old literal is *gone*; it cannot distinguish "repointed to `<agent-workspace>`" from "silently deleted". So: each of the 15 carriers names `<agent-workspace>` (or `.dev/doctrine`) at the site the old literal occupied; **red-proof:** delete the replacement in a fixture carrier → the assertion FAILs while check 16 still passes (this is precisely the gap it covers) | lint |
+| **check 16's promotion does work** | a fixture carrying the retired literal **WARNs** under S2's check and **FAILs** under S6's; **red-proof:** run the same fixture both ways — identical input, different verdict, so the promotion is not cosmetic | lint |
+| **the flip is positive, not just absent** | check 16 proves the old literal is *gone*; it cannot distinguish "repointed to `<agent-workspace>`" from "silently deleted". **S5 build-time check, not a standing gate:** for each of the 12 carriers it flips, confirm the site that held the old literal now names `<agent-workspace>` (or `.dev/doctrine`). **Red-proof:** in a fixture, delete a replacement instead of repointing it → this check reports the carrier while check 16 still passes, which is exactly the gap it covers. *Deliberately **not** lint:* a standing check would have to carry the frozen census as data and would rot the moment a skill is added or renamed | agent |
 | check 14 keeps teeth | fixture skill declaring a `doctrine` edge with no sanctioned literal → check 14 **FAILs — this is the red-proof**; green control: add the `<agent-workspace>` literal → passes | lint |
 | check 15 gains a guard | fixture carrying `.records/doctrine/test/` → check 15 **FAILs — this is the red-proof**; green control: remove it → passes | lint |
 | **declaration guards fire** (M1) | `agent-workspace: .` → rejected and reported; `agent-workspace: .dev` on a host whose records are at `dev/` → flagged as a probable no-op; **red-proof:** remove each guard in turn → the fixture declaring the bad value passes silently | lint |
@@ -392,7 +415,7 @@ while the table carried `script` on seven of fourteen rows. The rows were sound;
 | **S2** | Lint: **new check 16** (absence, `.sh` + comments included, **WARN-only here**) carrying M1's two declaration guards; check 14's set tracks rule 5 **accepting both literal families transitionally**; check 15 gains `.records/doctrine/` | the lint rows, each red-proofed; **lint stays green** (check 16 warns, does not fail, until S6) | `skills/skill-builder/scripts/skills-lint.sh`, `scripts/tests/lint-doctrine-consumer-test.sh` |
 | **S3** | Seed relocation: `seed.sh --workspace` + **dual refuse arm**, `context.sh:2,:5` literals, stamp path | `context.sh`, seed-refuses, stamp rows | `skills/clankshop/{scripts/seed.sh,seed/}`, `scripts/tests/seed-test.sh` |
 | **S4** | clankshop verbs + `migrate-scan.sh` dual probe + `migrate.md`'s adopt row | clankshop suite; migrate-scan + legacy-host rows | `skills/clankshop/{verbs/*,SKILL.md}`, `scripts/migrate-scan.sh`, `scripts/tests/{setup-journal,migrate-scan,face}-test.sh` |
-| **S5** | Flip the **12 remaining** `agent-doctrine` carriers (M5's census minus the 3 handled in S1/S2) + rule 8's stamp literal + `create.md`'s stamp probe | Problem-3, policy-probe, declared-but-absent, positive-flip rows | the 5 `SKILL.md`s, `auditor/BOOTSTRAP.md`, `workstream/{flow.md,verbs/sync.md}`, **`journal/{SKILL.md, scripts/records.sh, scripts/tests/records-test.sh}`**, `agent-council/briefs/skill-review.md`; plus `workstream/verbs/create.md` (**stamp literal only** — not an `agent-doctrine` carrier) |
+| **S5** | Flip the **12 remaining** `agent-doctrine` carriers (M5's census minus the 3 handled in S1/S2) + rule 8's stamp literal + `create.md`'s stamp probe | Problem-3, policy-probe, declared-but-absent, positive-flip rows | the five consumer `SKILL.md`s (`auditor`, `blueprint`, `contractor`, `debugger`, `workstream` — note the census holds **six** `SKILL.md`s; journal's is listed separately below and is not double-counted), `auditor/BOOTSTRAP.md`, `workstream/{flow.md,verbs/sync.md}`, **`journal/{SKILL.md, scripts/records.sh, scripts/tests/records-test.sh}`**, `agent-council/briefs/skill-review.md`; plus `workstream/verbs/create.md` (**stamp literal only** — not an `agent-doctrine` carrier) |
 | **S6** | **Promote check 16 WARN→FAIL** and narrow check 14 to `<agent-workspace>` only; **BL-26** — `skill-builder/verbs/new.md` stops prescribing the retired resolver; roster/prose folds; remaining `.handbook` literals | check-16 promotion + check-14 narrowing red-proofs; lint `fails=0`; **all eight** suites | `skills-lint.sh`, **`skill-builder/verbs/new.md`**, `README.md`, `AGENTS.md`, `PACK.md` (*roster prose — carries no `.handbook` literal*), `clankshop/seed/README.md`, `seed/review/workflows/doc-audit.md`, `workstream/templates/*` |
 
 **Ordering.** S1 first — it defines the literals every later slice writes. S2 lands **permissively**:
@@ -401,11 +424,17 @@ check 14 accepts both literal families and check 16 ships WARN-only, so the gate
 S5** — narrowing check 14 and promoting check 16 to FAIL — each with its own red-proof. That is the
 real constraint: *S6 tightens only after S5*, not a must-land-together pair.
 
-Full constraint set: **S1 → S2 → S3 → S4 → S5 → S6.** Spelled out, the non-obvious edges are
-*S3 before S4* (the verbs point at what the seed writes), *S5 after S3*, and — **added in round 3** —
-**S5 after S4**: S5's own "declared-but-absent workspace" verification row exercises `clankshop
-setup`'s owner exception, which S4 builds. Without that edge, S1,S2,S3,**S5,S4**,S6 satisfies every
-stated constraint and runs S5's verification against machinery that does not exist yet.
+**Shipping order: S1 → S2 → S3 → S4 → S5 → S6.** Only four of those edges are *required*; the rest
+is a chosen sequence, and the distinction matters if a slice has to be resequenced later.
+
+- **Required:** S1 first (it defines the literals every later slice writes) · **S3 before S4** (the
+  verbs point at what the seed writes) · **S5 after S3** · **S5 after S4** *(added round 3 —
+  S5's "declared-but-absent workspace" row exercises `clankshop setup`'s owner exception, which S4
+  builds; without this edge S1,S2,S3,**S5,S4**,S6 satisfies every stated constraint and runs S5's
+  verification against machinery that does not exist yet)* · **S6 after S5** (it tightens what S5
+  emptied).
+- **Chosen, not required:** S2's position relative to S3/S4. Check 16 has no interaction with
+  `seed.sh` or `migrate-scan.sh`; S2 sits early only so the gate is watching during the moves.
 
 ## Greenfield check
 
@@ -442,7 +471,8 @@ Settled by the human 2026-08-18 unless noted. **Do not re-litigate.**
    forced" is scoped to RECORDS only** — a pre-flip `.handbook/` workshop *does* need a physical
    rename (M3), and a legacy coincident host *does* need to add a declaration (M6). Neither is a
    no-op.
-4. **`records.sh` is untouched by this feature** *(reversed 2026-08-18 after review)* — it derives
+4. **`records.sh` is behaviorally untouched by this feature** *(reversed 2026-08-18 after review;
+   scoped in round 3 — S5 edits its `agent-doctrine` comments at `:70,77`, nothing else)* — it derives
    its root from its own install location. Its reserved list keeps all four names.
 5. **`.handbook/` becomes `<agent-workspace>/doctrine/`**; `context.sh` stays nested inside it.
 6. **Atomic retirement of `agent-doctrine`, no fallback window.** *Risk consciously accepted* — see
@@ -680,7 +710,7 @@ time inside the very census the split was drawn around.
 |---|---|---|
 | F1 | Census wrong in composition | **resolved** — M5 now carries the generating command + its checked-in output; membership corrected (`create.md` out, `records-test.sh` in); comment-counts-as-carrier rule stated once and applied uniformly |
 | F2 | Two journal carriers in no slice | **resolved** — both added to S5's `paths`; Decision 11 amended to record that editing their comments is not an `agent-templates` violation |
-| F3 | Check 16 red for the S2–S5 window | **resolved** — check 16 ships **WARN-only** in S2 and is promoted to FAIL in S6, mirroring check 14's transitional treatment; both promotions carry red-proofs |
+| F3 | Check 16 red for the S2–S5 window | **resolved** — check 16's absence arm ships **WARN-only** in S2 and is promoted to FAIL in S6, mirroring check 14's transitional treatment. *(Round 4 corrected this entry twice: the original fold staged the whole check rather than the one arm with a transitional population, and claimed a promotion red-proof it had not written.)* |
 | F4 | "every row is lint or agent" false | **resolved** — Verification intro now names three kinds and records why the surviving `script` rows are sound; the historical round-2 bullet is left as written (reviewer prose is not rewritten) |
 | F5 | S4→S5 ordering unstated | **resolved** — full constraint chain spelled out, with the S5-after-S4 edge and the counter-example ordering it excludes |
 | F6, F12 | `.dev` no-op typo; `.` guard unowned | **resolved** — both folded into one mechanism: M1's two declaration guards, owned by check 16 (Decision 13), with a prose warning at M6's adopt row and a red-proofed Verification row |
@@ -699,5 +729,45 @@ time inside the very census the split was drawn around.
 | D3 | Cheap-fix framing | **resolved (human, 2026-08-18)** — the Approach now states outright that the one-line fix *does* close Problem 3, and that the remainder is a consistency investment rather than a correctness fix |
 
 **Not folded, by design:** the design itself, the naming table, and Decisions 1–5 and 7–10 were not
-challenged in round 3 and are untouched. `status:` stays `open` — the fold is unverified content
-authored by the reviewing session, so it wants a delta pass or a human waive before sequencing.
+challenged in round 3 and are untouched.
+
+### 2026-08-18 — needs-rework → folded (round 4: narrow delta pass over round 3's fold)
+
+A **single** lens, scoped to the changed surface only — the generated census, slice coverage, the
+check-16 staging, the four new Verification rows, the ordering edges, and an audit of round 3's own
+dispositions. Commissioned because a fold is unverified content authored by the session that
+reviewed it. It found four must-fix, **three of them defects the round-3 fold itself introduced.**
+
+**Confirmed clean, independently:** the census matches a freshly-run `grep` exactly — same 15 files,
+both correction claims verified by opening the files; **all 15 map to exactly one slice** (3 in
+S1/S2, 12 in S5 — the arithmetic checks); no ordering cycle; and of round 3's 20 dispositions,
+**18 upheld, 2 overstated, 0 false**.
+
+**MUST-FIX, all folded in the same pass:**
+
+1. **`records.sh` "untouched" survived in two places** — the Approach and Decision 4 — after only
+   Decision 11 was scoped. Flatly contradicted by S5 editing its comments. *Fixed:* all three now
+   say **behaviorally** untouched and name the comment edits at `:70,77`.
+2. **Check 16's staging was applied to the whole check**, sweeping in the `agent-workspace: .`
+   guard, which M1 and Decision 8 call *forbidden* and the Verification row calls *rejected*. The
+   variable is new — nothing can have declared it — so that arm has no transitional population and
+   no reason to soften. *Fixed:* severity is now staged **per arm**, in a table: absence
+   WARN→FAIL, `.` FAIL throughout, no-op warning advisory always.
+3. **"check 16's census is exhaustive" was circular** — its red-proof restated how the census was
+   generated, and it duplicated the row above it. *Fixed:* replaced with a row that proves the
+   **promotion** does work (same fixture WARNs under S2's check, FAILs under S6's).
+4. **"the flip is positive, not just absent" claimed `kind: lint` for a check specified nowhere** —
+   the exact failure class round 2 killed (a row asserted against a mechanism that does not exist),
+   reintroduced by the fix for round 3's F7. *Fixed:* reclassified `agent`, scoped as an **S5
+   build-time check**, with the reason a standing lint would be wrong (it would carry the frozen
+   census as data and rot on the next skill added).
+
+**Nice-to-have, also folded:** the census line lists were first-hit locators reading as exhaustive
+(`auditor/SKILL.md` alone has six) — now **exhaustive, 54 occurrences**, with an explicit note that
+S5 sweeps whole files; "the 5 `SKILL.md`s" named explicitly against a census holding six; the
+ordering split into **required** edges versus chosen sequence; and BL-26 given its mechanism detail
+(`new.md:35` does not name `agent-doctrine`, so this feature's exposure is narrower than BL-26's
+full scope — the `agent-templates` half stays for 3b).
+
+`status:` stays `open`. Round 4's own fold is one round newer than its review — the same condition
+that justified commissioning it, now one level down and with a much smaller surface.
