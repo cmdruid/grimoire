@@ -14,6 +14,59 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-28 — `analyst-facts.sh` carries a second, drifted copy of the reserved-name carve-out
+- **source:** feat stream, workspace-consolidation review round 2 (2026-08-18).
+- **status:** open
+- **body:** `skills/journal/scripts/records.sh:64,82` is not the only place the reserved-name list
+  lives. `skills/analyst/scripts/analyst-facts.sh:76-81` independently filters
+  `grep -v -e "^$RR/templates/" -e "^$RR/scripts/"` — and **omits `doctrine/`**, so analyst already
+  scans `.records/doctrine/` as if it were a store. Two copies, one already drifted, is why the
+  spec's framing of the carve-out as living in a single place was wrong.
+- **fix sketch:** decide whether the list has one owner (journal, exposed via `records.sh`) or is
+  duplicated by contract. Feature 3b touches `analyst-facts.sh` anyway — fold it there, or fix
+  standalone. Prove by breaking: plant a front-matter-less file in each reserved dir and confirm
+  both tools skip it.
+
+### BL-27 — `standup.sh` creates a **declared** records home, which Doctrine-touching rule 3 forbids
+- **source:** feat stream, workspace-consolidation review round 2 (2026-08-18).
+- **status:** open
+- **body:** `skills/journal/scripts/standup.sh:44` runs `mkdir -p "$rr/scripts"` regardless of
+  whether `$rr` was *derived* or *declared*. `DOCTRINE.md` rule 3 permits creating a home "only when
+  the home is the derived default" and says "never create an explicitly declared home that is
+  absent." The incumbent tool does not obey the rule the doctrine publishes. Surfaced while
+  specifying the same branch for the workspace home — feature 3a resolves the *doctrine* side by
+  adding an **owner exception** to rule 3 (the skill that assembles a home may create it even when
+  declared); this entry is the records side, which 3a does not touch.
+- **fix sketch:** once 3a's owner exception lands, confirm `journal` qualifies as the records home's
+  assembler and that the rule's wording covers it — or change `standup.sh` to refuse a declared,
+  absent home. Do not fix before 3a; the rule it must satisfy is being edited.
+
+### BL-26 — `skill-builder new` will keep minting skills that carry retired path variables
+- **source:** feat stream, workspace-consolidation review round 2 (2026-08-18).
+- **status:** open
+- **body:** `skills/skill-builder/verbs/new.md:35-36` tells the scaffolder to inline "the
+  agent-records / **agent-templates** resolvers (default paths named literally)". Feature 3b retires
+  `agent-templates`; feature 3a retires `agent-doctrine`. Until `new.md` is updated, every skill
+  scaffolded after those land is born carrying a retired variable — forward debt that grows with
+  each new skill, and the new lint check 16 (3a) would FAIL them on creation.
+- **fix sketch:** update `new.md`'s resolver list as the **last** step of 3a and again after 3b, so
+  the scaffolder never prescribes a variable that no longer resolves. Cheap; easy to forget because
+  it is a *producer* of violations rather than a carrier of one.
+
+### BL-25 — `contractor`'s job verbs drifted from the `--template` form its own SKILL.md prescribes
+- **source:** feat stream, workspace-consolidation review round 2 (2026-08-18).
+- **status:** open
+- **body:** `contractor/SKILL.md:38` prescribes minting via the agent-templates rule —
+  `records.sh new --template <resolved>`. But `verbs/plan.md:62`, `verbs/roadmap.md:28`, and
+  `verbs/runbook.md:15` all call `records.sh new plans --title "…"` **bare**, relying on
+  `records.sh:180`'s fallback (`tpl="$RR/templates/$doctype.md"`) to find `contractor/templates/plans.md`.
+  Discovered because a draft proposed deleting that fallback on the claim that "both real callers
+  always pass `--template`" — false, and the three bare callers would have hard-errored.
+- **fix sketch:** convert the three verbs to the prescribed `--template <resolved>` form. This is a
+  **precondition** for feature 3b's option to delete the fallback — until it lands, that fallback is
+  load-bearing shipped surface. Prove by breaking: delete the fallback on a fixture and confirm the
+  three verbs error before the fix, and pass after.
+
 ### BL-24 — the doctrine has no principle for when a skill is "too big", and payload isn't counted
 - **source:** feat stream, workspace-consolidation spec discussion (2026-08-18).
 - **status:** open
