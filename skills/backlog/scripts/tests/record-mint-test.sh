@@ -48,26 +48,26 @@ RR="$TMP/bare"
 AT="$RR/templates"
 mkdir -p "$RR"
 
-OUT="$(/bin/bash "$MINT" mint "$RR" "$AT" bugs "Alpha crash")"
+OUT="$(/bin/bash "$MINT" mint "$RR" "$AT" trackers "Alpha crash")"
 rr_abs="$(cd "$RR" && pwd)"
 expect_eq "mint agent-records" "$rr_abs" "$(kv agent-records "$OUT")"
 expect_eq "mint records-root compat" "$rr_abs" "$(kv records-root "$OUT")"
 expect_eq "mint mode=file" "file" "$(kv mode "$OUT")"
-expect_eq "mint rel" "bugs/$today-alpha-crash.md" "$(kv rel "$OUT")"
+expect_eq "mint rel" "trackers/$today-alpha-crash.md" "$(kv rel "$OUT")"
 path="$(kv path "$OUT")"
 expect_eq "mint path exists" "1" "$([ -f "$path" ] && echo 1 || echo 0)"
-expect_match "doctype" '^doctype: bugs$' "$(cat "$path")"
+expect_match "doctype" '^doctype: trackers$' "$(cat "$path")"
 expect_match "status open" '^status: open$' "$(cat "$path")"
 expect_match "created today" "^created: $today$" "$(cat "$path")"
 expect_match "updated today" "^updated: $today$" "$(cat "$path")"
 expect_match "filled title" '^# Alpha crash$' "$(cat "$path")"
-expect_eq "nested dest copied" "1" "$([ -f "$AT/backlog/bugs.md" ] && echo 1 || echo 0)"
-expect_absent "no flat templates/bugs.md" "$RR/templates/bugs.md"
+expect_eq "nested dest copied" "1" "$([ -f "$AT/backlog/trackers.md" ] && echo 1 || echo 0)"
+expect_absent "no flat templates/trackers.md" "$RR/templates/trackers.md"
 expect_absent "no history.tsv after mint" "$RR/history.tsv"
 expect_absent "no scripts/ after mint" "$RR/scripts"
 
-OUT2="$(/bin/bash "$MINT" mint "$RR" "$AT" bugs "Alpha crash")"
-expect_eq "collision rel" "bugs/$today-alpha-crash-2.md" "$(kv rel "$OUT2")"
+OUT2="$(/bin/bash "$MINT" mint "$RR" "$AT" trackers "Alpha crash")"
+expect_eq "collision rel" "trackers/$today-alpha-crash-2.md" "$(kv rel "$OUT2")"
 
 if /bin/bash "$MINT" mint "$RR" "$AT" gizmos "Nope" >/dev/null 2>&1; then
   echo "FAIL: missing doctype template — expected non-zero" >&2
@@ -78,6 +78,13 @@ fi
 
 if /bin/bash "$MINT" mint "$RR" "$AT" tickets "Need the key" >/dev/null 2>&1; then
   echo "FAIL: tickets mint — expected non-zero" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+
+if /bin/bash "$MINT" mint "$RR" "$AT" bugs "Alpha crash" >/dev/null 2>&1; then
+  echo "FAIL: bugs mint — expected non-zero" >&2
   fail=$((fail + 1))
 else
   pass=$((pass + 1))

@@ -20,7 +20,7 @@ below.
 
 | change | lane | entry point |
 |---|---|---|
-| reproducible defect | build/workflows/bug.md | root-cause first (`/debugger` where installed) |
+| reproducible defect | build/workflows/bug.md | file via `/debugger file`, then root-cause (`/debugger`) |
 | self-contained fix | build/workflows/patch.md | by hand, on `<trunk>` |
 | new capability / design at stake | build/workflows/feature.md | design station, then `/blueprint` (spec); sequencing only if needed (`/contractor plan`); stream still ships |
 | unknown feasibility | build/workflows/spike.md | by hand, timeboxed |

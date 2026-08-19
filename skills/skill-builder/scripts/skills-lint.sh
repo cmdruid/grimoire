@@ -402,7 +402,7 @@ rm -f "$edge_types"
 # every blank line) so a wrapped multi-line roster still counts as one unit but
 # two unrelated pointers elsewhere in the same file never merge -- a real false
 # positive this check hit on its first run against this very tree (workstream's
-# `/backlog bug`, `/backlog task`, and an unrelated `/backlog debrief` ~80 lines
+# `/backlog task` and an unrelated `/backlog debrief` ~80 lines
 # away are three separate legitimate pointers, not a roster). WARN per (skill,
 # sibling) pair with 3+ DISTINCT verbs in the SAME paragraph.
 roster="$(mktemp "${TMPDIR:-/tmp}/skills-lint-roster.XXXXXX")"

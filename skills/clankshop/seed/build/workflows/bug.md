@@ -14,7 +14,9 @@ runs the same discipline.
 
 ## The walk
 
-1. File the defect first: a `bugs/` record with the reproduction, linked from a tracker entry.
+1. File the defect first via `/debugger file`. Do not file-and-link in one
+   step. A tracker entry is a later `/backlog task` when the defect needs
+   scheduling (INV-8).
 2. Reproduce it. No fix before a reproduction; a flaky reproduction is itself a finding.
 3. Read the actual error in full — the stack trace, the log line, the failing assertion.
 4. Trace the data flow backward from the failure to its origin; check `core/GOTCHAS.md` again
