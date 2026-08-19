@@ -2,7 +2,7 @@
 doctype: plans
 status: current
 created: 2026-08-18
-updated: 2026-08-18
+updated: 2026-08-19
 tags: [roadmap]
 ---
 
@@ -71,7 +71,14 @@ Two process lessons, paid for with five review lenses across two rounds. They ap
    shell scripts, when agent-run verb prose calls it too. In this library, a `.md` file issuing a
    command is a caller with the same standing as a `.sh` file.
 
-## Phase 1 — `agent-doctrine` → `<agent-workspace>/doctrine`   *requires: —*
+## Phase 1 — `agent-doctrine` → `<agent-workspace>/doctrine`   *requires: —*   **SHIPPED 2026-08-19**
+
+> Landed by `stream/feat` in six slices. **Gate met in full:** six slices landed · all eight
+> suites green · `skills-lint.sh` `fails=0 warns=22` · check 16 red-proofed on a fixture carrying
+> the retired literal · Problem-3 proof green on a default-layout fixture declaring nothing.
+> Spec (now `status: done`): `docs/design/2026-08-18-agent-workspace-consolidation.md`.
+> **Unblocks Phase 3 (3b, templates home) and Phase 4.** Follow-ups: BL-29/30/31; BL-26's
+> doctrine half is closed, its `agent-templates` half stays with Phase 3.
 
 - **Goal:** introduce `agent-workspace`, retire `agent-doctrine` into it, and close the live
   regression where five consumer skills read a variable that nothing writes.
