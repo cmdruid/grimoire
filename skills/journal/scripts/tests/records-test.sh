@@ -180,8 +180,9 @@ expect_absent "pruned record drops off the shortlist" "alpha-the-first-plan" "$O
 expect "check green after prune (ledger line survives)" "records check: OK" "$OUT"
 
 # --- reserved `doctrine/` -------------------------------------------------------
-# The agent-doctrine home defaults to <agent-records>/doctrine: living normative
-# prose with no record front-matter. Two arms guard it and they are proven
+# A host whose agent-workspace and agent-records homes coincide keeps its
+# doctrine at <agent-records>/doctrine: living normative prose with no record
+# front-matter. Two arms guard it and they are proven
 # INDEPENDENTLY on purpose -- a check-only proof passes a partial fix (patch
 # stores(), leave resolve() broken, and `check` still returns OK while `show`
 # happily cats the file). So stores() is proven via check/list, resolve() via

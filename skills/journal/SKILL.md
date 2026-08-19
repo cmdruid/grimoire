@@ -26,8 +26,11 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
   `YYYY-MM-DD-<slug>.md` records minted by `records.sh new`. No counters, no typed IDs, no
   stored index: querying is a live front-matter scan. `templates/`, `scripts/`,
   `doctrine/`, and `history.tsv` are reserved (never scanned) — the records **home** is a
-  directory that may host sibling homes (`<agent-templates>`, `<agent-doctrine>` default
-  under it), while the records **layer** is the eight typed stores. Setup does not create
+  directory that may host a sibling home (`<agent-templates>` defaults under it) and, on a
+  host whose workspace and records homes **coincide**, a `doctrine/` tree that is not this
+  layer's — doctrine proper lives at `<agent-workspace>/doctrine` (by default
+  `.dev/doctrine/`), outside this home entirely; the records **layer** is the eight typed
+  stores. Setup does not create
   store directories;
   the skill that mints a store creates it.
 - **Micro-items are tracker lines, not records.** A tracker record's body holds one-line

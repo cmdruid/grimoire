@@ -67,14 +67,16 @@ resolve() {
 
 # stores: the top-level directories minus the reserved ones.
 #
-# `doctrine` is reserved because the agent-doctrine home defaults to
-# <agent-records>/doctrine -- living normative prose, not dated records. It
+# `doctrine` is reserved because a host whose agent-workspace and agent-records
+# homes coincide keeps its doctrine at <agent-records>/doctrine -- living
+# normative prose, not dated records. (It was also the doctrine home's own
+# default before that home moved under <agent-workspace>.) It
 # carries no record front-matter, so without this arm `check` FAILs on every
 # doctrine file and `list` emits empty-field rows for them. The name is fixed
 # rather than resolved: this script never scans the front door (front-door
 # variables doctrine -- write scripts take resolved paths as arguments), and a
-# fixed reserved name is the simplest portable rule. A host that declares
-# agent-doctrine elsewhere simply has no doctrine/ directory here.
+# fixed reserved name is the simplest portable rule. A host whose workspace
+# sits elsewhere -- the default -- simply has no doctrine/ directory here.
 stores() {
   for d in "$RR"/*/; do
     [ -d "$d" ] || continue

@@ -30,7 +30,7 @@ templates it actually names. Do not tour the rest of any repo.
   skill does not copy a file the list does not name. Project copies land
   under `<agent-templates>/<skill>/`.
 - **Home resolution** — for each of the three front-door homes the skill
-  touches (`<agent-records>`, `<agent-templates>`, `<agent-doctrine>`),
+  touches (`<agent-records>`, `<agent-templates>`, `<agent-workspace>`),
   **reading counts as touching**. Three questions the lint cannot answer,
   which is why they are yours:
   - Does the **operative procedure** resolve the home, or does the skill

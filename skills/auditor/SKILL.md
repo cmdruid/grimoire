@@ -17,18 +17,20 @@ up anywhere.
 
 ## One environment probe (at entry)
 
-The rubric is doctrine, so its home resolves like any other: the declared `agent-doctrine:`
-(front-door `AGENTS.md` then `CLAUDE.md`), else `<agent-records>/doctrine` (default
-`.records/doctrine/`). Resolving the home is not finding the rubric — resolve it, **then**
+The rubric is doctrine, so its home resolves like any other: the doctrine home is the fixed
+subpath `<agent-workspace>/doctrine`, and `<agent-workspace>` is the declared
+`agent-workspace:` (front-door `AGENTS.md` then `CLAUDE.md`), else `.dev` — so by default
+`.dev/doctrine/`. Resolving the home is not finding the rubric — resolve it, **then**
 detect `GUIDE.md`. No mode ever refuses or stalls for lack of a workshop — standing one up is
 the human's separate decision (the clankshop onramps), never an audit side effect.
 
 Detection order, first hit wins:
 
-1. **`<agent-doctrine>/test/workflows/audit/`** — the resolved home. The rubric is guardian
+1. **`<agent-workspace>/doctrine/test/workflows/audit/`** — the resolved home (by default
+   `.dev/doctrine/test/workflows/audit/`). The rubric is guardian
    doctrine (`GUIDE.md`, `rules/`, `metrics.sh`): an on-demand workflow of the test station,
    invisible to the always-on load set. Before a pass, summon the station's context with
-   `<agent-doctrine>/scripts/context.sh test` when that loader exists.
+   `<agent-workspace>/doctrine/scripts/context.sh test` when that loader exists.
 2. **`docs/audit/GUIDE.md`** — the **legacy** home, still detected so rubrics already
    deployed there keep working (the same courtesy `records-root:` gets alongside
    `agent-records:`). Detected, never created fresh.
@@ -96,7 +98,7 @@ Follow the bundled `BOOTSTRAP.md`:
    the `<native dimensions>` (the host's sacred invariants), the `<targets>` (Deep/Mid/Light by
    blast radius), the `<drains>` (records layer or the host's existing trackers), and the
    audit's purpose (hygiene vs release-gating → severity model).
-2. **Confirm the home** — resolved: `<agent-doctrine>/test/workflows/audit/` (no confirmation needed —
+2. **Confirm the home** — resolved: `<agent-workspace>/doctrine/test/workflows/audit/` (no confirmation needed —
    doctrine has one home); standalone: propose `docs/audit/` and confirm once.
 3. **Author the rubric** — copy the bundled generic `rules/` into `<home>/rules/`, fill the
    `<language>` greps and `How to quantify` recipes, and add a rule file per
@@ -105,8 +107,8 @@ Follow the bundled `BOOTSTRAP.md`:
    rubric index, scoring rules, the finding-entry shape, severity, drains.
 5. **Write `metrics.sh`** (`<home>/metrics.sh`, `BOOTSTRAP.md` §8 columns, copy §13 stub) for the `<language>`; run it
    for a baseline report; wire `--check` on the native invariant.
-6. **Wire + gate** — workshop: add the routing hook (`<agent-doctrine>/core/ROUTING.md` classifies "audit the
-   code" → this workflow) and a chore line in `<agent-doctrine>/test/POLICY.md` if the guardian should run it on
+6. **Wire + gate** — workshop: add the routing hook (`<agent-workspace>/doctrine/core/ROUTING.md` classifies "audit the
+   code" → this workflow) and a chore line in `<agent-workspace>/doctrine/test/POLICY.md` if the guardian should run it on
    cadence; standalone: one pointer from the host's doc index. Run the host's gate.
 7. **Baseline pass + select exemplars** — run a lean pass to seed the first pass report, then
    pin the score-5 `<exemplars>` in `GUIDE.md` and backfill calibrated examples

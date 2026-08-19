@@ -93,13 +93,14 @@ independent questions** — a *location* question and a *policy* question. They 
 answered by a single stamp probe; keep them apart.
 
 - **Where does doctrine live?** The build lane and station context are doctrine, so they sit
-  under the **agent-doctrine home**: declared `agent-doctrine:` (front-door `AGENTS.md` then
-  `CLAUDE.md`), else `<agent-records>/doctrine` (default `.records/doctrine/`). Resolve the
+  at `<agent-workspace>/doctrine`: declared `agent-workspace:` (front-door `AGENTS.md` then
+  `CLAUDE.md`), else `.dev` — by default `.dev/doctrine/`. Resolve the
   home, **then** test for the artifact: summon the build station with
-  `<agent-doctrine>/scripts/context.sh build` **when that loader exists**; absent → no summon,
+  `<agent-workspace>/doctrine/scripts/context.sh build` **when that loader exists**; absent → no summon,
   and the plan template's own structure stands in. **This never gates a verb.**
 - **Is a workshop assembled here?** The install stamp (`Seeded from clankshop` in
-  `<root>/.handbook/README.md`) answers a *policy* question, not a location one, and still
+  `<root>/<agent-workspace>/doctrine/README.md`) answers a *policy* question, not a location
+  one, and still
   governs exactly two things: filled `<debrief>` is `/backlog debrief` when stamped, else the
   project's own close-the-books sweep (do not invoke `/backlog`); and queue items are
   **Backlog** tracker lines only when stamped *and* that tracker file already exists.

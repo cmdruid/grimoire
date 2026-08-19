@@ -24,11 +24,11 @@ link → continue. A live symptom with no routed report is not this refuse.
 Two independent questions. They were previously answered by one probe, which conflated a
 **location** question with a **policy** one — keep them apart.
 
-**Where does doctrine live?** The diagnostics playbook is doctrine, so it sits under the
-**agent-doctrine home**: the declared `agent-doctrine:` (front-door `AGENTS.md` then
-`CLAUDE.md`), else `<agent-records>/doctrine` (default `.records/doctrine/`). Resolving the
+**Where does doctrine live?** The diagnostics playbook is doctrine, so it sits at
+`<agent-workspace>/doctrine`: the declared `agent-workspace:` (front-door `AGENTS.md` then
+`CLAUDE.md`), else `.dev` — by default `.dev/doctrine/`. Resolving the
 home is not finding the playbook — resolve it, **then** test for the file. Consult
-`<agent-doctrine>/test/workflows/diagnostics.md` **when that file exists** (symptom → first
+`<agent-workspace>/doctrine/test/workflows/diagnostics.md` **when that file exists** (symptom → first
 moves; a miss is a playbook gap — the test station tends that playbook). Absent → investigate
 without it. **This probe never gates a phase**; a project with no playbook is investigated the
 same way, just without the shortcut.
@@ -37,7 +37,7 @@ same way, just without the shortcut.
 
 - the human confirms the root cause and that a fix should land (see Phase 4), **and**
 - the project carries the clankshop install stamp — a line matching `Seeded from clankshop` in
-  `<root>/.handbook/README.md`.
+  `<root>/<agent-workspace>/doctrine/README.md` (by default `.dev/doctrine/README.md`).
 
 **Unstamped** → emit `unstamped`, and investigate through Phase 3. Do not enter Phase 4.
 

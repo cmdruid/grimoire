@@ -19,15 +19,15 @@ and collides with none.
 
 ## One environment probe (at entry)
 
-Station context is doctrine, so it lives under the **agent-doctrine home**: the
-declared `agent-doctrine:` (front-door `AGENTS.md` then `CLAUDE.md`), else
-`<agent-records>/doctrine` (default `.records/doctrine/`). Resolving the home is
+Station context is doctrine, so it lives at `<agent-workspace>/doctrine`: the
+declared `agent-workspace:` (front-door `AGENTS.md` then `CLAUDE.md`), else
+`.dev` — by default `.dev/doctrine/`. Resolving the home is
 not finding the artifact — resolve it, **then** test for the build station's
 loader. Nothing else is probed, and no verb ever refuses or stalls for lack of
 one.
 
-- **`<agent-doctrine>/scripts/context.sh` present** → summon the build station
-  (`<agent-doctrine>/scripts/context.sh build`).
+- **`<agent-workspace>/doctrine/scripts/context.sh` present** → summon the build station
+  (`<agent-workspace>/doctrine/scripts/context.sh build`).
 - **Absent** → the project's own design docs and READMEs stand in for
   station context.
 
@@ -122,5 +122,5 @@ The artifact holds the job vocabulary (`status: open` / `current`, slice ids,
 <!-- edges:contractor -->
 - produces: plan, roadmap, runbook — job artifacts in `<agent-records>/plans/`
 - handoff: — (build executes in-place; ship is not this skill)
-- consumes: spec, review, doctrine — an approved specification, a findings baton (council RESULT.md or Review history), or station context read from the agent-doctrine home
+- consumes: spec, review, doctrine — an approved specification, a findings baton (council RESULT.md or Review history), or station context read from the agent-workspace home
 <!-- /edges:contractor -->
