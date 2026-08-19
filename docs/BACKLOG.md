@@ -14,6 +14,26 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-24 — the doctrine has no principle for when a skill is "too big", and payload isn't counted
+- **source:** feat stream, workspace-consolidation spec discussion (2026-08-18).
+- **status:** open
+- **body:** Splitting `clankshop` was proposed three times in one session — extract the doctrine
+  layer as `handbook`; then extract the management verbs as `foreman`. Every review that checked
+  found **no principle in `DOCTRINE.md` grounding the concern** (the skeptic lens: *"on the evidence
+  in the repo, Problem 2 is aesthetic"*; the nearest hits are about self-contained examples and
+  boundary scoping, `:86-128`). That is a **doctrine gap, not a refuted instinct** — there is
+  nothing to test the concern against, so it keeps returning.
+  Measurement then inverted the premise: `clankshop` has the **smallest `SKILL.md` in the pack**
+  (54 lines vs blueprint 370, workstream 233, journal 139) and 4 verbs (vs workstream 9,
+  contractor 6) — while carrying the **most files** (31; 16 are `seed/`, 9 are `scripts/`).
+  So there are two distinct sizes and the library names neither: the **surface** an agent loads to
+  route and operate (`SKILL.md` + verbs), and the **payload** it carries to deploy (seed content,
+  scripts). Coupling lives in surface; splitting by role moves payload without reducing it.
+- **fix sketch:** a `/skill-builder calibrate` pass folding a surface-vs-payload distinction into
+  `DOCTRINE.md` — what each is, which one a split actually relieves, and any rough bound worth
+  stating. Then the next "this skill feels big" has something to test against. Note the decision
+  this came from: everything stays in `clankshop` (2026-08-18, human, on the measurement).
+
 ### BL-23 — check 14's coverage is 2 of 5, because most skills have no `## Edges` block
 - **source:** feat stream, front-door-homes build, S5 (2026-08-18).
 - **status:** open

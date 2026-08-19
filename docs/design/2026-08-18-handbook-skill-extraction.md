@@ -1,6 +1,6 @@
 ---
 doctype: design
-status: open
+status: superseded
 created: 2026-08-18
 updated: 2026-08-18
 tags: [spec]
@@ -401,17 +401,42 @@ Built against `main` @ `ce7e758` + branch `11ef5d8`. Verified at spec time, not 
 - `PACK.md` at `2.4.0`, `required: journal`.
 - `skills-lint.sh` baseline `fails=0 warns=22`.
 
-## Status: PARKED (2026-08-18)
+## Status: SUPERSEDED — the extraction is not happening (2026-08-18)
 
-**Parked behind the path-consolidation feature.** This spec's central unresolved question — *where
-does the seed land* — turned out to be downstream of a larger one: the front door carries three
-path variables (`agent-records`, `agent-templates`, `agent-doctrine`) where two have no independent
-variance case, and `.records/` hosts three directories it must explicitly exclude
-(`records.sh:64,82`). Consolidating to two homes (a records file-cabinet + one "everything else"
-home) changes this feature's answer, so it is specced first and this one resumes behind it.
+**Decision (human, 2026-08-18): no `handbook` skill. Everything stays in `clankshop`.** This spec is
+closed, not parked. Successors: `2026-08-18-agent-workspace-consolidation.md` (which absorbed its
+Problem 3) and a future `/clankshop curate` feature (which inherits its Problem 1). Kept for the
+findings below, which cost three review rounds to produce.
 
-**The findings below are path-independent** — they apply to the extraction whatever the doctrine
-home ends up being. Do not re-derive them on resume.
+**All three of its justifying problems resolved without it:**
+
+- **Problem 3 (nothing declares the doctrine home) — absorbed.** The two-home consolidation puts
+  the seed at the *default* workspace path (`.dev/doctrine/`), so a default-layout host declares
+  nothing and its consumers still resolve it. There is no declaration left to forget.
+- **Problem 2 (the face carries layer mechanics) — refuted by measurement.** Every review that
+  checked found no doctrine grounding it (*"on the evidence in the repo, aesthetic"*). Then the
+  numbers inverted the premise: `clankshop` has the **smallest `SKILL.md` in the pack** (54 lines;
+  blueprint 370, workstream 233, journal 139) and 4 verbs (workstream 9, contractor 6). Its 31 files
+  are **payload** (16 `seed/`, 9 `scripts/`), which any owner must carry — splitting moves payload
+  without reducing it. Captured as **BL-24** (the doctrine names neither size).
+- **Problem 1 (no lifecycle) — survives, and moves to the face.** The promise at
+  `clankshop/SKILL.md:23` + `setup.md:19` that upgrades are *"a judgment-assisted diff against the
+  current seed"* is still unkept by any verb. It becomes **`/clankshop curate`**, mirroring
+  `/journal curate` — 4 verbs to 5, still the smallest surface in the pack.
+
+**Why the extraction was the expensive way to get there.** Five of the must-fix findings below were
+consequences of *the move itself*, not of the lifecycle gap, and all five evaporate by not moving:
+the proven `seed.sh`/`PACK.md` break (#1), the two red test suites (#2), the un-greenable moved
+`seed-test.sh` (#3), the lost pack-face lint exemptions (#8), and the Doctrine-touching rule-3
+violation (#9). Not moving also keeps `PACK.md` at `2.4.0` — no member-set change, so the
+ID-bearing version bump that has already collided twice never happens.
+
+**Five findings survive and belong to `/clankshop curate`** — do not re-derive them: #4 (the links
+`--check` arm has no world in which it can be green), #6 (the slots arm breaks `seed.sh`'s own
+self-check and the bundled seed's in-place `--check`), #7 (widening a *deployed* `context.sh`
+silently degrades existing installs), #10 (`curate` is not implementable as written — bundle
+location, diff unit, directionless `ABSENT`), #11 (the seeded-vs-foreign boundary: `auditor`
+deposits into the station tree by design).
 
 ## Review history
 
