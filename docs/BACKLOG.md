@@ -14,6 +14,25 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-32 — five skills prescribe `records.sh new --template <resolved>` with no doctype — an invalid invocation
+- **source:** feat stream, BL-25 build (2026-08-19).
+- **status:** open
+- **body:** `records.sh new` takes the doctype as its **first positional** (`records.sh new
+  <doctype> --title "…" [--template <path>]`). Five skills write the shorthand
+  `records.sh new --template <resolved>` with the doctype dropped:
+  `blueprint/SKILL.md:47`, `contractor/SKILL.md:38`, `debugger/SKILL.md:47`,
+  `workstream/SKILL.md:114`, `workstream/verbs/ship.md:155`. Run literally it does not degrade —
+  it parses `--template` **as** the doctype and exits on usage (verified against a stood-up
+  fixture). The conforming spelling already exists elsewhere in the same corpus
+  (`analyst/SKILL.md:99`, `auditor/SKILL.md:80`, `debugger/SKILL.md:144`), so this is drift within
+  the prescription, not an undecided convention.
+- **why it survived BL-25:** lint check 17 keys on a span carrying **`--title`** — that is what
+  makes an invocation decidable from prose merely naming the tool. These five spans carry no
+  `--title`, so they sit exactly in its blind spot. Distinct defect, distinct guard.
+- **fix sketch:** insert the doctype in all five. A second check-17 arm could FAIL a span whose
+  first token after `records.sh new` starts with `--`; that rule is narrow and has no
+  prose-ambiguity problem, so it is cheap. Prove by breaking, as ever.
+
 ### BL-31 — the seed's prose still calls the doctrine home "the handbook"
 - **source:** feat stream, feature 3a build (2026-08-18).
 - **status:** open
