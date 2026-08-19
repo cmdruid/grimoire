@@ -76,6 +76,13 @@ else
   pass=$((pass + 1))
 fi
 
+if /bin/bash "$MINT" mint "$RR" "$AT" tickets "Need the key" >/dev/null 2>&1; then
+  echo "FAIL: tickets mint — expected non-zero" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+
 # file-mode close must not create history.tsv
 /bin/bash "$MINT" stamp "$RR" "$path" --status "done" --note "fixed" >/dev/null
 expect_match "file-mode close status" '^status: done$' "$(cat "$path")"
@@ -90,12 +97,12 @@ if [ -f "$JOURNAL_RS" ]; then
   chmod +x "$RR2/scripts/records.sh"
   : > "$RR2/history.tsv"
 
-  OUT3="$(/bin/bash "$MINT" mint "$RR2" "$AT2" tickets "Need the key")"
+  OUT3="$(/bin/bash "$MINT" mint "$RR2" "$AT2" trackers "Need the key")"
   expect_eq "records mode" "records" "$(kv mode "$OUT3")"
   rpath="$(kv path "$OUT3")"
   expect_eq "records path exists" "1" "$([ -f "$rpath" ] && echo 1 || echo 0)"
-  expect_eq "records nested dest" "1" "$([ -f "$AT2/backlog/tickets.md" ] && echo 1 || echo 0)"
-  expect_absent "records no flat tickets.md" "$RR2/templates/tickets.md"
+  expect_eq "records nested dest" "1" "$([ -f "$AT2/backlog/trackers.md" ] && echo 1 || echo 0)"
+  expect_absent "records no flat trackers.md" "$RR2/templates/trackers.md"
   if /bin/sh "$RR2/scripts/records.sh" check >/dev/null 2>&1; then
     pass=$((pass + 1))
   else

@@ -110,6 +110,7 @@ cmd_mint() {
   rr="$1"; at="$2"; doctype="$3"; title="$4"
   [ -n "$title" ] || err "empty title"
   [ -n "$doctype" ] || err "empty doctype"
+  [ "$doctype" != "tickets" ] || err "this package no longer mints doctype 'tickets'"
   [ -d "$rr" ] || mkdir -p "$rr"
   [ -d "$at" ] || mkdir -p "$at"
   rr="$(abs_dir "$rr")"

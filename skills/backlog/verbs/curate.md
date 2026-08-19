@@ -3,7 +3,7 @@
 Keep the trackers actionable: a tracker whose lines are stale, vague, or duplicated stops
 being trusted, and an untrusted tracker stops being used. Curation is **hygiene, never
 draining**: it may merge, sharpen, re-rank, and flip; it never decides what a signal *means*
-for the system — that judgment lives downstream. This is the workflow's half of curation —
+for the system — that judgment is `promote`. This is the workflow's half of curation —
 record-level hygiene (contract conformance, link rot, prune proposals) is the format
 authority's half, not this verb's.
 
@@ -15,9 +15,9 @@ authority's half, not this verb's.
    still append last), complete lines that finished without ceremony to the contract's
    completed tracker-line form, and drop lines that no longer apply (strike or delete — the
    tracker body is not a ledger). `scripts/record-mint.sh stamp` every tracker edited.
-3. **Graduate what outgrew its line**: an item that now needs the human becomes a `ticket`
-   (`verbs/ticket.md` — link the line to the record); detail that outgrew one sentence gets a
-   dated record, linked from the line.
+3. **An item that needs the human** becomes an Issue line `needs human: …` (same remainder
+   as `debrief`). Detail that outgrew one sentence is sharpened or split into two lines —
+   never minted as a dated record from this verb.
 4. **One scoped commit** over everything touched
    (`scripts/scoped-commit.sh <root> "Backlog: curate" <paths…>`) when standalone; write-only
    inside a larger sweep.
@@ -25,4 +25,4 @@ authority's half, not this verb's.
 ## Done when
 
 - Each tracker walked; edits touched; standalone scoped commit landed (or write-only inside
-  a larger sweep).
+  a larger sweep); no dated record minted.

@@ -1,17 +1,16 @@
 ---
 name: backlog
-description: "The follow-up lifecycle over a project's records layer — capture by kind (`/backlog task|bug|issue|feedback` → tracker lines + dated records), `ticket` (escalate to the human), `debrief` (sweep a finished body of work; route every byproduct to its durable home), and tracker-side `curate` (groom the Backlog/Issues/Feedback trackers). Use when the user runs `/backlog ...`, files a follow-up, defect, or observation, escalates to the human, sweeps finished work before a reset, or grooms the trackers."
+description: "The follow-up lifecycle over a project's records layer — file by kind (`/backlog task|bug|issue|feedback` → tracker lines + dated records), `promote` (Issues / Feedback → Backlog), `debrief` (sweep a finished body of work onto the three trackers), and `curate` (groom the trackers). Use when the user runs `/backlog ...`, files a follow-up, defect, or observation, sweeps finished work before a reset, grooms the trackers, or promotes Issues/Feedback into things to build."
 ---
 
 # backlog — the follow-up lifecycle
 
-One skill: the loop that keeps follow-ups from evaporating — **debrief** a finished body of
-work, **file** each item by kind, **curate** the trackers so they stay actionable. It writes
-under the agent-records home and carries its own contract. Missing `records.sh` is not an
-error; journal standup is never a precondition. When the tool is present it is used
-opportunistically. **It captures; it never drains** — what a captured signal means for the
-system is judged downstream, and draining trackers into scheduled work is deliberately out
-of scope.
+One skill: the loop that keeps follow-ups from evaporating — **file** each item onto the
+three trackers, **debrief** a finished body of work, **promote** Issues and Feedback into
+things to build, **curate** so the trackers stay actionable. It writes under the
+agent-records home and carries its own contract. Missing `records.sh` is not an error;
+journal standup is never a precondition. When the tool is present it is used
+opportunistically.
 
 _Lineage: the name is re-minted. v1's `backlog` skill was the whole records instrument (renamed
 `journal` in v2); this `backlog` is the tracker workflow only, named for the capital-B
@@ -29,9 +28,12 @@ selected, **read `verbs/<verb>.md` and follow it**; do not reconstruct a procedu
 | `/backlog bug` | `verbs/bug.md` | File a reproducible **defect** → a dated `bugs/` record (+ a tracker line when it needs scheduling) | "file a bug", "this is broken — repro" |
 | `/backlog issue` | `verbs/issue.md` | Capture a **project** problem/concern/limitation → an **Issues** tracker line | "known limitation", "architectural risk" |
 | `/backlog feedback` | `verbs/feedback.md` | Capture a **dev-experience** observation → a **Feedback** tracker line | "the gate is too slow", "docs heavy" |
-| `/backlog ticket` | `verbs/ticket.md` | **Escalate to the human** → a dated `tickets/` record (ask + context; resolution closes it) | "escalate this to me", "needs my sign-off" |
-| `/backlog debrief` | `verbs/debrief.md` | **Sweep** a finished body of work; route every byproduct to its home | "wrap up before I reset", "capture what surfaced" |
+| `/backlog promote` | `verbs/promote.md` | Judgment drain: Issues / Feedback → Backlog tasks | "promote that issue", "drain Issues into the backlog" |
+| `/backlog debrief` | `verbs/debrief.md` | **Sweep** a finished body of work; route every byproduct onto the three trackers | "wrap up before I reset", "capture what surfaced" |
 | `/backlog curate` | `verbs/curate.md` | **Groom the trackers** — dedupe, sharpen, re-rank, flip stale line-items (hygiene, never draining) | "tidy the backlog", "reprioritize what's left" |
+
+**ticket is not a verb here.** An ask that must survive a reset is an Issue line
+`needs human: <the ask, one sentence>` — file it with `/backlog issue`.
 
 **No default lane.** `/backlog` with no recognized verb is ambiguous — ask which kind the item
 is (or run the debrief if the intent is "capture everything that surfaced").
@@ -44,14 +46,14 @@ is (or run the debrief if the intent is "capture everything that surfaced").
   both into every `scripts/record-mint.sh` call. The script does not scan the front door.
 - **In-package contract.** Front-matter keys: `doctype`, `status`, `created`, `updated`,
   `tags`. Live statuses: `open`, `current`. Closed: `done`, `dropped`, `superseded`,
-  `consumed`. Dated slug `YYYY-MM-DD-<slug>.md`. Record-link form: `→ <store>/<file>.md`.
-  Tracker-line form under `## Items`, newest last (same optional ` → <store>/<file>.md`
+  `consumed`. Dated slug `YYYY-MM-DD-<slug>.md`. Record-link form: `→ <dir>/<file>.md`.
+  Tracker-line form under `## Items`, newest last (same optional ` → <dir>/<file>.md`
   before the completion date). Do not send the agent to another skill for those bytes.
 - **`record-mint.sh` is the one minter.** Always call it (from this skill's own `scripts/`).
   It uses deployed `records.sh` when that file is executable (`new --template <resolved>`);
   otherwise it writes the contract shape (file-mode). Never write `history.tsv` by hand.
   Never write the flat `<agent-records>/templates/<doctype>.md`. File-mode close rewrites
-  `status:` / `updated:` only.
+  `status:` / `updated:` only. Minting doctype `tickets` from this package is a hard error.
 - **List without the tool.** When `records.sh` is missing, scan
   `<agent-records>/<doctype>/*.md` and honor live vs closing `status:`. Find a tracker
   by its H1 title among live `trackers/` records.
@@ -83,24 +85,24 @@ is (or run the debrief if the intent is "capture everything that surfaced").
 ## Project templates
 
 - `bugs.md`
-- `tickets.md`
 - `trackers.md`
 
 ## Edges
 
 <!-- edges:backlog -->
-- produces: record — bugs/, tickets/, tracker records, and tracker lines
-- handoff: — (none; it captures, it never drains)
-- consumes: record — debrief and curate read existing records
+- produces: record — tracker records and tracker lines; doctype
+  `bugs` while `verbs/bug.md` still exists
+- handoff: record — promote drains Issues/Feedback onto Backlog
+- consumes: record — debrief, curate, and promote read existing
+  tracker lines
 <!-- /edges:backlog -->
 
 ## Scope boundary + host conduct
 
-`backlog` files, escalates, sweeps, and keeps the trackers sharp. The format authority
-owns the contract definition and the tool layer; this skill writes without waiting for
-that tool. Draining the captured signal into doctrine, routing work, and the development
-itself each belong to another skill; the workshop's handbook owns that composition where
-one is deployed.
+`backlog` files, sweeps, grooms, and promotes among Backlog / Issues / Feedback. The format
+authority owns the contract definition and the tool layer; this skill writes without waiting
+for that tool. Performing the work belongs elsewhere; the workshop's handbook owns that
+composition where one is deployed.
 
 **Standalone by default, framework-aware when present.** Every verb works on any repo —
 no workshop and no journal standup is a precondition. On a workshop host the deployed
@@ -108,6 +110,7 @@ handbook's routing applies downstream; elsewhere it is simply absent.
 
 ## Done when
 
+- **ticket:** refused; pointed at an Issue leftover line. Did not mint a tickets record.
 - **No recognized verb:** asked which kind the item is (or whether the intent is a debrief);
   did not file.
 - **A verb ran:** that verb file's Done when.

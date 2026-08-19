@@ -9,7 +9,7 @@ tags: [<tags>]
 # <title>
 
 A long-lived tracker: micro-items live as lines in this body, one per line.
-Live and completed (same optional ` → <store>/<file>.md` before the completion
+Live and completed (same optional ` → <dir>/<file>.md` before the completion
 date) — cite the format authority's tracker-line form; do not invent a shorter
 flip:
 
