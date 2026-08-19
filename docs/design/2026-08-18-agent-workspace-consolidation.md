@@ -421,3 +421,135 @@ verbs call `records.sh new plans --title` bare and would hard-error.
 
 _A delta re-review is recommended before sequencing: this is a scope change plus a fold, authored by
 the spec's own author._
+
+### 2026-08-18 — needs-rework (round 3: the delta re-review — soundness, groundedness, skeptic, disposition audit)
+
+Four lenses. Three returned `needs-rework`, one `approve-with-changes`. **The design is not the
+problem and was not challenged** — the architecture, the split, and the decision log survived a
+fourth pass. What failed, for the fourth consecutive round, is **edit-surface enumeration** — this
+time inside the very census the split was drawn around.
+
+**MUST-FIX**
+
+1. **The 15-file census is wrong in composition** (groundedness; re-verified by the orchestrator).
+   `grep -rlE 'agent[-_]doctrine' skills/` returns 15 files — but not these 15.
+   `workstream/verbs/create.md` has **zero** occurrences of the term; what sits at its `:118` is a
+   `.handbook/README.md` stamp literal, which belongs to M3's list, not M5's. And
+   `journal/scripts/tests/records-test.sh:183` **is** a carrier (`# The agent-doctrine home defaults
+   to <agent-records>/doctrine`), omitted — while `records.sh:70`, a structurally identical
+   comment-only occurrence, is counted. The count is coincidentally right; the membership is not.
+   *Fix:* correct the membership, state the comment-only inclusion rule explicitly and apply it
+   consistently, and **paste the generated census into this spec as a checked-in artifact** — the
+   roadmap's standing discipline #1 ("generate the census; do not assert it") is what four rounds of
+   asserting it have now cost.
+2. **Two carriers are in no slice's `paths`, so check 16 fails forever** (soundness + disposition
+   audit, converged; widened from one file to two by the corrected census).
+   `journal/scripts/records.sh` and `journal/scripts/tests/records-test.sh` are both under
+   `skills/journal/` — neither is exempt (exemptions are `skill-builder` + pack faces) and check 16's
+   glob explicitly includes `scripts/**/*.sh`. Nothing in S1–S6 ever edits them, so the unconditional
+   absence check can never go green — directly contradicting the Verification table's `fails=0`
+   baseline row and S6's gate. *Fix:* add both to a slice's `paths`.
+3. **Check 16 lands in S2 but polices carriers not flipped until S5, with no transitional carve-out**
+   (soundness). Check 14 is given exactly such a carve-out, for exactly this reason ("so the gate
+   does not go red on `blueprint`/`contractor` during S3–S5"), narrowed later in S6. Check 16 gets
+   none, and every ordering the spec permits puts S2 before S5 — so the trunk lint gate is red for
+   the whole window. *Fix:* give check 16 the same transitional carve-out narrowed in S6, or state
+   explicitly that lint may be red on trunk between S2 and S5.
+4. **The Verification section's governing sentence is false** (disposition audit). Line 289 states
+   *"every row below is a **lint** or **agent** proof, and says which"* — the table's `kind` column
+   carries `script` on **seven of fourteen** rows. The Review history above repeats the claim. The
+   rows themselves are fine (they test real shipped tools, unlike the vacuous rows round 2 killed);
+   it is the claim that is wrong. *Fix:* name three kinds, in both places.
+5. **Missing ordering constraint: S4 before S5** (soundness). S5's "declared-but-absent workspace"
+   verification row exercises `clankshop setup`'s owner exception — machinery M6 assigns to **S4**.
+   The stated constraints ("S3 before S4; S5 after S3") permit S1,S2,S3,**S5,S4**,S6, which runs that
+   row against something not yet built. *Fix:* add "S5 after S4".
+6. **The `.dev` no-op typo trap** (skeptic). M6 *mandates* that a legacy coincident host add
+   `agent-workspace: dev` (undotted). `agent-workspace: .dev` is one keystroke away, syntactically
+   valid, and a **silent no-op** — it restates the default, and the host degrades exactly as Problem 3
+   describes, now via the prescribed fix rather than the bug. M1 guards `agent-workspace: .` but not
+   this, which sits directly on the migration path this spec requires walking. *Fix:* flag a declared
+   value equal to the current default in the `migrate.md` adopt row and/or check 16.
+7. **Verification of the flagship claim is negative-only for two-thirds of the census** (soundness).
+   Check 16 proves the old literal is *gone*; it cannot distinguish "correctly repointed to
+   `<agent-workspace>`" from "reference silently deleted." `auditor/BOOTSTRAP.md` (five call sites),
+   `workstream/flow.md`, `workstream/verbs/sync.md`, `journal/SKILL.md`, and
+   `agent-council/briefs/skill-review.md` carry no positive check at all. *Fix:* add a row asserting
+   the correct new literal is *present* in the remaining carriers.
+8. **BL-26 is never acknowledged** (disposition audit). The roadmap names it a Phase 1 tail step —
+   *"until it is updated each phase keeps producing violations of the check it just installed"* — and
+   this spec names every other roadmap foundation (check 16, the rule-3 owner exception) but not this
+   one. *Fix:* cover it in a slice or explicitly defer it in the Decision log.
+9. **Four off-by-one stamp-literal citations** (groundedness; all four re-opened and confirmed):
+   `debugger:39`→`:40`, `workstream/SKILL.md:101`→`:102`, `workstream/verbs/create.md:119`→`:118`,
+   `persona.md:12`→`:11`. The last points at unrelated prose about station personas. `DOCTRINE.md:337`
+   in the same family is exact, so this is a local batch error, not a uniform offset.
+
+**NICE-TO-HAVE**
+
+10. Line 84 cites `(M7)` for the legacy-host declaration step, which is specified in **M6** — the
+    Greenfield check at line 343 attributes it correctly, so this is a slip, not a reading.
+11. The `red-proof:` label is applied inconsistently: in the check-14 and check-15 rows it marks the
+    *pass* clause rather than the *fail* one; the "legacy host must declare" row omits the label
+    entirely. Both rows do contain a genuine red demonstration — the labelling weakens a discipline
+    this doc otherwise prides itself on.
+12. `agent-workspace: .` is forbidden and "reject it and report" (M1, Decision 8) with no assigned
+    owner and no verification row — and the spec itself notes nothing mechanically resolves a
+    front-door variable outside three state-analysis helpers.
+13. S5's `does` overclaims "flip all 15" when three of the fifteen are handled in S1/S2.
+14. The Ordering paragraph asserts a red-proof for S6's narrowing of check 14 with no corresponding
+    Verification-table row.
+15. `context.sh:2` carries the bare word "handbook", not a `.handbook/` literal (confirmed: that file
+    holds exactly one `.handbook` occurrence, at `:5`). Both lines still need the rename; the
+    description overstates what is at `:2`.
+16. S6's `paths` lists `clankshop/PACK.md` under "remaining `.handbook` literals", but that file
+    carries none — only the bare word in a roster line. Clarify which clause covers it, or drop it.
+17. **Adjacent, not a defect in this spec:** `clankshop/verbs/migrate.md:58` states the records
+    reserved-path set as three names, omitting `doctrine/` — a second drifted copy of the list BL-28
+    already tracks for `analyst-facts.sh`. Worth a BL-28 addendum.
+
+**Referred to the human — these touch settled decisions and are not folded unilaterally**
+
+- **A one-cycle deprecation shim for `agent-doctrine:`** (skeptic). Decision 6 settles the *atomic*
+  retirement with the risk consciously accepted on a population-of-one basis. The skeptic does not
+  dispute the population — it corroborated it (no `.handbook` tree exists anywhere else on this
+  machine) — but observes that Decision 8 forbids a legacy alias for the **new** variable and never
+  considered a deprecation shim for the **retired** one, which is a different, cheaper, precedented
+  mitigation (`records-root:` carries exactly this shape at negligible cost). A new option, not a
+  re-litigation — but the human's call.
+- **The variance circularity** (skeptic, its sharpest finding). `agent-doctrine` is retired for having
+  a "partly prospective" variance case; `agent-workspace` is defended as clearing that bar because a
+  legacy coincident host must declare it — **a case this spec's own default choice creates**. Applying
+  the same test evenly is uncomfortable for the new variable. The strongest counter, which the spec
+  does not currently make, is that records/doctrine coincidence-vs-separation is a genuine
+  host-independent axis and the legacy host is merely its one available instance. *Fix either way:*
+  make that argument, or drop the "clears the bar" sentence and defend the variable on architecture
+  grounds. Decisions 1–2 stand regardless.
+- **What the cheap fix concretely fails to close** (skeptic, Front 1). Decisions 1–2 are settled and
+  are **not** reopened here. The separable, foldable ask: the doc rejects the one-line fix on a
+  forward-looking claim ("the next feature to touch a path home re-opens this design") that names no
+  such feature, while itself designating that one line as the abandonment fallback. State plainly what
+  survives the cheap fix, or frame the remainder as a consistency investment rather than a
+  correctness fix.
+
+**Confirmed sound — recorded so a fifth round does not re-derive it**
+
+- ~50 citations opened and verified exact: `DOCTRINE.md`'s full rule set (1/3/5/6/8 plus `:217-223`,
+  `:226-228`, `:230-232`, `:236`, `:337`), `records.sh:5,26,64,70,82,180`, `context.sh:15,16`,
+  `seed.sh:31`, `skills-lint.sh:118-123,618-639,632,660-666`, the five consumer resolution literals,
+  `auditor/BOOTSTRAP.md:12,102,268,275,276`, `flow.md:56`, `sync.md:100`, `journal/SKILL.md:29`,
+  `skill-review.md:33`, `migrate.md:24-26`, and the naming archaeology.
+- **"5 readers, 0 writers" independently re-verified** — the only `.sh` hit repo-wide is
+  `skills-lint.sh:632`, the check-14 *detector*, not a writer.
+- Seed layout claims all confirmed: workflows are station-scoped, no top-level `workflows/` exists,
+  `test/workflows/audit/` is not seeded, and `.dev` / `agent-workspace` are unclaimed in the repo and
+  in `.gitignore`.
+- **The `.handbook` literal census is complete** (regenerated by the orchestrator): all 25 live
+  carriers under `skills/` + `README.md` + `AGENTS.md` map to a slice's `paths`. The other edit
+  surface is sound.
+- Six of the seven round-2 dispositions genuinely **executed** in the text (only #4 above is false).
+  The "no-op" / "no `git mv`" claim that was overstated last round is now consistent across the
+  Approach, M3, M6, Decision 3, and the Greenfield check.
+- Two skeptic attacks **failed**, and the spec's position holds: the install stamp and the
+  reserved-name list are pre-existing debt the doc identifies, prices, and defers rather than hides.
+- `skills-lint.sh` baseline re-run at `fails=0 warns=22`, matching the Grounding claim.
