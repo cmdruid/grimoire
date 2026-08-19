@@ -214,30 +214,57 @@ A front-door variable is **one line in the host project's front-door doc** (`AGE
     agent-records: dev
 
 The records home also accepts the legacy synonym `records-root:` — first match of either name
-wins (`AGENTS.md` then `CLAUDE.md`). Beside it sit two siblings, each defaulting *under* the
-resolved records home, so **one `agent-records:` line moves all three**:
+wins (`AGENTS.md` then `CLAUDE.md`). Beside it sits one sibling defaulting *under* the resolved
+records home, so **one `agent-records:` line moves both**:
 
 - the **agent-templates home** (schema, not instances) defaults to
-  `<resolved-agent-records>/templates`;
-- the **agent-doctrine home** (living normative prose — see *Doctrine-touching skills* below)
-  defaults to `<resolved-agent-records>/doctrine`.
+  `<resolved-agent-records>/templates`.
 
-Declare either only as an override:
+Declare it only as an override:
 
     agent-templates: schemas
-    agent-doctrine: .handbook
+
+A third variable stands on its own root rather than under the records home:
+
+    agent-workspace: .dev
+
+The **agent-workspace home** is where a project's development environment lives — today its
+doctrine (living normative prose — see *Doctrine-touching skills* below), at the fixed subpath
+`<agent-workspace>/doctrine`. Default `.dev`. Declare it only as an override; there is **no**
+legacy synonym, because the variable is new and has no prior declarations to honor. A declared
+value of `.` is forbidden — it would place doctrine at `./doctrine`, colliding with real project
+directories.
+
+**The doctrine home is a fixed subpath, not a variable of its own.** It was one — retired into
+`<agent-workspace>/doctrine` because it had no demonstrated variance case, and because
+defaulting it *inside* the records home forced that layer to disown a subdirectory it did not
+own. A host that wants its development environment somewhere else moves the whole workspace in
+one line.
+
+**`agent-workspace` does not echo `.dev`, and that is deliberate — do not "fix" it.**
+`agent-records` → `.records` echoes; this pair does not. The **variable** names the concept
+precisely, for the prose that has to explain what the home is *for*; the **directory** stays
+short and legible for a literal that appears at depth —
+`.dev/doctrine/test/workflows/audit/GUIDE.md` reads where
+`.workspace/doctrine/test/workflows/audit/GUIDE.md` stutters against `workflows/`. The
+consistency cost is small because the rule just below requires default paths written literally,
+so the mapping is stated wherever it is used and learned once.
 
 Skill prose keeps naming each default path literally (`.records/plans/…`,
-`.records/templates/backlog/…`, `.records/doctrine/audit/…`) — never
+`.records/templates/backlog/…`, `.dev/doctrine/test/workflows/audit/…`) — never
 `$RECORDS_ROOT/plans/…`.
 
-**A note on the doctrine home's justification, so a later reader can re-weigh it.** The bar
+**A note on `agent-workspace`'s justification, so a later reader can re-weigh it.** The bar
 below demands the value *truly vary per host*. For `agent-records` that was established
-brownfield reality. For `agent-doctrine` it is partly **prospective**: the concrete variance
-case is a project that centralizes its doctrine somewhere conventional (`.handbook`) and
-declares it. The other two legs — a default right for every fresh project, and readers that
-consume it — hold today. Stated rather than asserted; if the variance never materializes, the
-variable is carried by consistency with its siblings.
+brownfield reality. For `agent-workspace` it is **not** an evidence claim, and should not be
+dressed as one: the single live variance case — a legacy host whose records already sit at
+`dev/`, declaring `agent-workspace: dev` so the two homes keep coinciding — exists *because*
+this doctrine chose `.dev` as the default. A variance case a design manufactures is migration
+friction, not demonstrated host variance. The variable is carried on **architecture** instead:
+the front door should express where the development environment lives as one declaration, and a
+host that wants it elsewhere should not have to fork the library. That is a design position,
+held openly. The other two legs — a default right for every fresh project, and readers that
+consume it — hold today.
 
 One declaration mechanism, same precedence (declared value if present, else the default).
 Three readers:
@@ -268,20 +295,35 @@ The canonical records resolver (bash-3.2 safe; both declaration names):
       printf '%s\n' "${decl:-.records}"
     }
 
-The sibling homes resolve the same way, falling back *through* it (same precedence, same
-front-door order, bash-3.2 safe). Substitute `agent-templates`/`templates` or
-`agent-doctrine`/`doctrine`:
+The **agent-templates** home resolves the same way, falling back *through* it (same precedence,
+same front-door order, bash-3.2 safe):
 
-    # Front-door variable `agent-doctrine` (default `<agent-records>/doctrine`).
-    resolve_agent_doctrine() {
+    # Front-door variable `agent-templates` (default `<agent-records>/templates`).
+    resolve_agent_templates() {
       local root="$1" fd decl=""
       for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
         if [ -z "$decl" ] && [ -f "$fd" ]; then
-          decl="$(sed -n -E 's/^agent-doctrine:[[:space:]]*//p' "$fd" \
+          decl="$(sed -n -E 's/^agent-templates:[[:space:]]*//p' "$fd" \
                   | head -n 1 | sed 's/[[:space:]]*$//')"
         fi
       done
-      printf '%s\n' "${decl:-$(resolve_agent_records "$root")/doctrine}"
+      printf '%s\n' "${decl:-$(resolve_agent_records "$root")/templates}"
+    }
+
+The **agent-workspace** home uses the same mechanism but a **flat default** — it does not fall
+back through another home, and it accepts only its own name:
+
+    # Front-door variable `agent-workspace` (default `.dev`). The doctrine home is
+    # the fixed subpath `<agent-workspace>/doctrine`.
+    resolve_agent_workspace() {
+      local root="$1" fd decl=""
+      for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
+        if [ -z "$decl" ] && [ -f "$fd" ]; then
+          decl="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$fd" \
+                  | head -n 1 | sed 's/[[:space:]]*$//')"
+        fi
+      done
+      printf '%s\n' "${decl:-.dev}"
     }
 
 Rules of the road: **declare once** — first match wins; when *documenting* a variable (this doc,
@@ -334,13 +376,19 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    `records.sh done`. `records.sh done` refuses an already-closing status — that is why
    the writer must not pretend file-mode close is a ledger close.
 8. **Workshop stamp is orthogonal — and no longer picks any home.** The probe
-   (`Seeded from clankshop` in `.handbook/README.md`) answers one question: *is a workshop
-   assembled here?* That is a **policy** question — may this project's workshop-specific
-   lanes run — not a location one. Station context, playbooks, and lanes are doctrine and
-   resolve through `<agent-doctrine>`; records resolve through `<agent-records>`. The stamp
-   picks **neither**, and does not decide whether a record is minted. Do not create
-   `.handbook/` as a side effect of anything. Do not run a workshop onramp as a side
-   effect.
+   (`Seeded from clankshop` in `<agent-workspace>/doctrine/README.md`, default
+   `.dev/doctrine/README.md`) answers one question: *is a workshop assembled here?* That is
+   a **policy** question — may this project's workshop-specific lanes run — not a location
+   one. Station context, playbooks, and lanes are doctrine and resolve through
+   `<agent-workspace>/doctrine`; records resolve through `<agent-records>`. The stamp picks
+   **neither**, and does not decide whether a record is minted. Do not create the doctrine
+   home as a side effect of anything. Do not run a workshop onramp as a side effect.
+
+   **The probe now costs a resolution first.** Because the stamp lives inside the workspace,
+   a prober must resolve `<agent-workspace>` before it can locate the file — so what this
+   rule calls a simple probe is a resolve-then-test, the same shape as rule 2's two-level
+   access. That does not convert it into a location question: the resolution buys you the
+   path, not the answer.
 
    **The stamp still has legitimate consumers — do not "finish the migration" by deleting
    them.** A skill may keep probing it for a genuine *policy* decision, and two do today:
@@ -378,7 +426,8 @@ doctrine path is exactly as wrong as a writer that does.
 
    > **Records** are dated, typed, closeable instances → `<agent-records>`.
    > **Templates** are the schemas instances mint from → `<agent-templates>`.
-   > **Doctrine** is living, normative, undated, and never closes → `<agent-doctrine>`.
+   > **Doctrine** is living, normative, undated, and never closes →
+   > `<agent-workspace>/doctrine`.
 
    Doctrine: an audit rubric, a diagnostics playbook, a build lane, a station chapter. Not
    doctrine: a spec (a dated `design/` record), a captured project fact, an audit *report*.
@@ -399,6 +448,15 @@ doctrine path is exactly as wrong as a writer that does.
    skill ends up fabricating another tool's layout. An absent declared home degrades per rule
    2.
 
+   **Owner exception — the skill that assembles a home may create it even when declared.**
+   `clankshop` assembles the workspace; `journal` assembles the records layer. For those two,
+   building the home *is* the job, and a host that writes `agent-workspace: .workspace` is
+   asking for it to be built there — not warning the assembler off. **Every other skill
+   resolves, tests, and degrades per rule 2 — never `mkdir`.** Without this exception the
+   paragraph above reads as a universal prohibition that would forbid `clankshop setup` from
+   seeding into a declared home at all, and would forbid what records standup already does
+   today.
+
    Doctrine is **copy-bundled-then-customized**, not mint-and-accumulate: a skill seeds
    generic content, then the host edits it in place and keeps editing it for years. So
    doctrine standup follows the **agent-templates** semantics — *if present → use it, never
@@ -412,7 +470,7 @@ doctrine path is exactly as wrong as a writer that does.
 
 5. **Use a sanctioned resolution literal.** Each home has a **small fixed set** of accepted
    phrasings; a conforming skill contains a member verbatim. For home `H` (one of
-   `agent-records`, `agent-templates`, `agent-doctrine`), the set is:
+   `agent-records`, `agent-templates`, `agent-workspace`), the set is:
 
        <H>                 <- the angle-bracket path form; PREFER THIS
        the H home
@@ -436,7 +494,9 @@ doctrine path is exactly as wrong as a writer that does.
    reword at the call site.
 
 6. **Declare the edge.** `produces: doctrine` / `consumes: doctrine` in the `## Edges` block,
-   per the typed-edge mechanics above.
+   per the typed-edge mechanics above. **The edge type stays `doctrine` — it does not become
+   `workspace`.** An edge names the *kind of thing* carried, not the home it happens to
+   resolve through.
 
 **What the mechanical gate can and cannot prove.** The lint checks omission (an edge declared
 with no sanctioned literal) and known-bad literals (an off-home path in prose). It **cannot**
