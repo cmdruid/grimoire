@@ -9,7 +9,10 @@ client that owns the trackers, not here.
    contract violations before anything cosmetic (a record `check` can't parse is invisible to
    every scan).
 2. **Records**: `records.sh list --type <doctype>` per doctype (the scan is a crawl filtered
-   on front-matter, not a walk of store directories) — close records that quietly finished
+   on front-matter, not a walk of store directories). Clear every `check` **WARN** first — a
+   record-shaped filename the discriminator rejected is a file someone meant as a record and the
+   tool cannot see; it is invisible to every step below until its front-matter is fixed. Then
+   close records that quietly finished
    (`/journal done`, right disposition), repair broken `→` links, and merge duplicate notes
    (survivor absorbs; loser closed `superseded`, note naming it).
 3. **Propose prunes, don't execute them unasked**: closed records past the project's prune

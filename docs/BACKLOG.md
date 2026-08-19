@@ -14,6 +14,42 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-36 — the `clankshop` refactor is deferred; two BL-34 items ride with it
+- **source:** feat stream, BL-34 items 1–2 ship (2026-08-19). Human decision.
+- **status:** open (deliberately deferred, not blocked)
+- **body:** BL-34's item 3 (drop the "handbook" idea, integrate `<agent-workspace>` with
+  `doctrine/` + `spec/` + `workflow/`, un-nest the six workflow files) is **deferred** — clankshop
+  is due a large refactor of its own and this work would be redone. Two things wait on it and
+  should NOT be attempted before it:
+  - **Item 4** — lint checks 12–17 (~246 lines) and their two test suites (~540 lines). They police
+    the doctrine/records-home placement convention that item 3 replaces; deleting them now would
+    drop enforcement of a convention still in force.
+  - **Item 5** — the document-paths simplification, which depends on the workspace layout item 3
+    settles.
+- **the naming question, still unresolved:** the human wants `<agent-workspace>/spec/` *and* the
+  records doctype `specs` (now live as of BL-34 item 2). Near-identical names in different homes.
+  It did NOT bite during the rename — `blueprint/templates/design.md` was deleted rather than
+  renamed to `specs.md`, so no `specs.md`/`spec.md` pair was created — but the workspace-side half
+  is still open and belongs to item 3.
+
+### BL-35 — lint check 17 cannot catch the BL-32 shape it was supposed to prevent
+- **source:** feat stream, BL-34 items 1–2 ship (2026-08-19).
+- **status:** open
+- **body:** check 17 flags a bare `records.sh new` mint by keying on a span carrying **`--title`** —
+  that is what makes an invocation decidable from prose merely naming the tool. BL-32's four bad
+  invocations (`records.sh new --template <resolved>`, doctype positional dropped) carry no
+  `--title`, so the check was blind to every one of them; they were found by hand-enumeration
+  instead, twice, a session apart. BL-32's *instances* are now fixed, but nothing stops a
+  recurrence.
+- **fix sketch:** add an arm that flags a backticked span containing `records.sh new` immediately
+  followed by a flag rather than a doctype word — decidable without `--title`, since
+  `new --<anything>` is never valid. Red-proof it by planting the exact BL-32 spelling and
+  asserting the check FAILs (and that the break applied).
+- **note:** this is the second time check 17's `--title` key has let a real defect through
+  (BL-25 was the first). The key is load-bearing for decidability; the fix should add an arm,
+  not loosen it.
+
+
 ### BL-34 — one simple spec, then a hard cut
 - **source:** feat stream, 3b post-mortem (2026-08-19, human direction).
 - **status:** open
