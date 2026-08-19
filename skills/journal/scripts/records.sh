@@ -7,19 +7,23 @@
 #
 #   records.sh list [--type t] [--status s] [--tag g] [--since d] [--until d]
 #   records.sh show <path>
-#   records.sh new <doctype> --title "..." [--template <path>]
+#   records.sh new <doctype> --title "..." --template <path>
 #   records.sh touch <path> [--status open|current]
 #   records.sh done <path> [--as done|dropped|superseded|consumed] [--note "..."]
 #   records.sh history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
 #   records.sh prune-candidates [--until d]
 #   records.sh check
 #
-# Stores are the top-level directories at the records root; `templates/`, `scripts/`,
-# and `history.tsv` are reserved and never scanned. `list`/`history` emit TSV —
-# grep/awk-friendly, no parser needed. Querying is a live scan (no stored index).
-# Closure is in place: `done` sets the closing status and appends the one ledger
-# line to history.tsv — the ledger's sole writer. Filenames from `new` are
-# YYYY-MM-DD-<slug>.md — the path is the ID.
+# A file is a RECORD iff it is named YYYY-MM-DD-<slug>.md AND carries a
+# front-matter block that declares a doctype. That is the whole discriminator:
+# the tool crawls the root at any depth and knows no store names, so directory
+# layout is the caller's business and a root shared with other homes (doctrine,
+# templates, scripts) needs no reserved names — those files are simply not
+# records. The authoritative doctype is the front-matter key, never the parent
+# directory. `list`/`history` emit TSV — grep/awk-friendly, no parser needed.
+# Querying is a live scan (no stored index). Closure is in place: `done` sets the
+# closing status and appends the one ledger line to history.tsv — the ledger's
+# sole writer. The path is the ID.
 # Exit codes: 0 ok · 1 usage · 2 error / check failure.
 set -eu
 
@@ -32,7 +36,7 @@ usage() {
 usage: records.sh <command> [args]
   list    [--type t] [--status s] [--tag g] [--since d] [--until d]
   show    <path>
-  new     <doctype> --title "..." [--template <path>]
+  new     <doctype> --title "..." --template <path>
   touch   <path> [--status open|current]
   done    <path> [--as done|dropped|superseded|consumed] [--note "..."]
   history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
@@ -60,38 +64,38 @@ resolve() {
     "$RR"/*) rel="${abs#"$RR"/}" ;;
     *) err "not under the records root ($RR): $abs" ;;
   esac
-  case "$rel" in
-    templates/*|scripts/*|doctrine/*|history.tsv) err "reserved path, not a record: $rel" ;;
-  esac
+  is_record "$abs" || err "not a record: $rel"
 }
 
-# stores: the top-level directories minus the reserved ones.
+# is_record <abs>: THE discriminator, and the only one. Two conjuncts:
 #
-# `doctrine` is reserved because a host whose agent-workspace and agent-records
-# homes coincide keeps its doctrine at <agent-records>/doctrine -- living
-# normative prose, not dated records. (It was also the doctrine home's own
-# default before that home moved under <agent-workspace>.) It
-# carries no record front-matter, so without this arm `check` FAILs on every
-# doctrine file and `list` emits empty-field rows for them. The name is fixed
-# rather than resolved: this script never scans the front door (front-door
-# variables doctrine -- write scripts take resolved paths as arguments), and a
-# fixed reserved name is the simplest portable rule. A host whose workspace
-# sits elsewhere -- the default -- simply has no doctrine/ directory here.
-stores() {
-  for d in "$RR"/*/; do
-    [ -d "$d" ] || continue
-    b="$(basename "$d")"
-    case "$b" in templates|scripts|doctrine) continue ;; esac
-    printf '%s\n' "$b"
-  done
+#   1. the record shape -- YYYY-MM-DD-<slug>.md, which is what `new` mints and
+#      what makes the path an ID;
+#   2. a front-matter block DECLARING a doctype.
+#
+# Neither alone is enough. Front-matter alone would swallow the record
+# TEMPLATES, which necessarily carry a doctype block (that block is what `new`
+# copies into the minted record) -- and templates share this root whenever a
+# host points its workspace and records homes at the same directory. The shape
+# alone would swallow any dated prose file. Together they need no reserved
+# names: doctrine pages, templates, and scripts fail one conjunct or the other,
+# so a shared root is legal and the directory layout is the caller's business.
+is_record() {
+  case "${1##*/}" in
+    [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md) ;;
+    *) return 1 ;;
+  esac
+  head -1 "$1" | grep -qx -- '---' || return 1
+  [ -n "$(fm_field "$1" doctype)" ]
 }
 
-# records: records-root-relative paths of every store record, one per line.
+# records: records-root-relative paths of every record, one per line. A crawl at
+# any depth -- this tool knows no store names (a skill creates only the
+# directories it needs, so the set is open-ended and unknown here).
 records() {
-  stores | while IFS= read -r s; do
-    find "$RR/$s" -name '*.md' -type f | sort | while IFS= read -r f; do
-      printf '%s\n' "${f#"$RR"/}"
-    done
+  find "$RR" -type f -name '*.md' | sort | while IFS= read -r f; do
+    is_record "$f" || continue
+    printf '%s\n' "${f#"$RR"/}"
   done
 }
 
@@ -179,8 +183,11 @@ cmd_new() {
     esac
   done
   [ -n "$title" ] || usage
-  [ -n "$tpl" ] || tpl="$RR/templates/$doctype.md"
-  [ -f "$tpl" ] || err "no template for doctype '$doctype' (expected $tpl)"
+  # --template is required: a writer resolves its own template path and passes
+  # it. There is no flat fallback to look up -- the tool no longer knows a
+  # taxonomy, so it cannot guess a template location from a doctype name.
+  [ -n "$tpl" ] || err "--template is required (records.sh new <doctype> --title ... --template <path>)"
+  [ -f "$tpl" ] || err "no template for doctype '$doctype': $tpl"
   today="$(date +%Y-%m-%d)"
   slug="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' \
           | sed -e 's/[^a-z0-9]\{1,\}/-/g' -e 's/^-\{1,\}//' -e 's/-\{1,\}$//')"
@@ -325,10 +332,11 @@ cmd_check() {
   count=0
   while IFS= read -r rel; do
     count=$((count + 1))
-    store="${rel%%/*}"
-    # per-record contract: front-matter present, five keys, enum status,
-    # ISO dates, doctype matching the store directory.
-    findings="$(awk -v store="$store" '
+    # per-record contract: front-matter present, five keys, enum status, ISO
+    # dates. The doctype is NOT checked against the parent directory -- the
+    # front-matter key is the authority and the directory is the caller's
+    # business, so there is no second copy of the fact to disagree with.
+    findings="$(awk '
       BEGIN { infm = 0; fmdone = 0 }
       NR == 1 { if ($0 == "---") { infm = 1; next } else { print "no front-matter block"; exit } }
       infm && $0 == "---" { infm = 0; fmdone = 1; next }
@@ -344,8 +352,6 @@ cmd_check() {
         if (!fmdone) { print "unterminated front-matter block"; exit }
         split("doctype status created updated tags", keys, " ")
         for (i in keys) if (!(keys[i] in fm)) print "missing key: " keys[i]
-        if (("doctype" in fm) && fm["doctype"] != store)
-          print "doctype '\''" fm["doctype"] "'\'' does not match store '\''" store "'\''"
         if (("status" in fm) && fm["status"] !~ /^(open|current|done|dropped|superseded|consumed)$/)
           print "status not in the contract: " fm["status"]
         if (("created" in fm) && fm["created"] !~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/)
@@ -407,13 +413,23 @@ LINKS
       fails=$((fails + 1))
     fi
   fi
-  # open-ticket visibility: tickets await a human, so the check surfaces them.
-  open_tickets=0
-  while IFS= read -r rel; do
-    case "$rel" in tickets/*) ;; *) continue ;; esac
-    is_closing "$(fm_field "$RR/$rel" status)" || open_tickets=$((open_tickets + 1))
-  done < "$tmp"
-  echo "open tickets: $open_tickets"
+  # WARN tier: a file wearing the record SHAPE that the discriminator rejects.
+  # This is the one thing a crawl loses that a path-based scan had -- inside a
+  # known store, a file with broken front-matter was a FAIL; under the crawl it
+  # simply is not seen. So look for the shape and say so. A warning does not
+  # fail the check: the file may legitimately not be a record.
+  shaped="$(mktemp "${TMPDIR:-/tmp}/records-shaped.XXXXXX")"
+  trap 'rm -f "$tmp" "$shaped"' EXIT
+  find "$RR" -type f -name '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md' | sort > "$shaped"
+  warns=0
+  while IFS= read -r f; do
+    is_record "$f" && continue
+    echo "WARN: ${f#"$RR"/} — record-shaped filename, but no front-matter declaring a doctype" >&2
+    warns=$((warns + 1))
+  done < "$shaped"
+  if [ "$warns" -gt 0 ]; then
+    echo "records check: $warns record-shaped file(s) not recognized as records" >&2
+  fi
   if [ "$fails" -gt 0 ]; then
     echo "records check: FAIL ($fails of $count records/ledger)" >&2
     exit 2

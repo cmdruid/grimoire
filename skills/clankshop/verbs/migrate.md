@@ -42,7 +42,9 @@ migration): everything below then writes and commits on the stream's branch and 
    like the migration was performed. (Lint check 16 flags a default-valued declaration for
    this reason; this row is the warning at the point of use.)
 
-   The destination menu is the eight stores; classify by what the doc *is*:
+   The destination menu below is the **conventional** set, not a fixed taxonomy — journal
+   owns no directory names, and a project may mint any directory a writer needs. Classify by
+   what the doc *is*:
 
    | legacy artifact | store |
    |---|---|
@@ -72,12 +74,17 @@ migration): everything below then writes and commits on the stream's branch and 
      the ledger + README; it creates no store directories and no templates) —
      pointed at the declared agent-records home (`agent-records:` preferred,
      `records-root:` accepted, else `.records`). Do not inline journal's walk.
-   - Move adopted records into their stores with `git mv` (history survives); keep original
-     filenames — the path is the ID either way. Store directories must not collide with the
-     records root's reserved paths (`templates/`, `scripts/`, `history.tsv`).
+   - Move adopted records into their stores with `git mv` (history survives), renaming each
+     to the record shape **`YYYY-MM-DD-<slug>.md`** — a file that does not wear that shape is
+     not a record and the tool will not see it (`records.sh check` reports the near-misses it
+     finds, so run it after the moves and clear every WARN). Date it from the doc's own
+     `created`/first commit, not today. No directory name is reserved: a store may sit
+     anywhere under the root, at any depth, including alongside a shared `templates/`,
+     `scripts/`, or `doctrine/` tree.
    - Backfill front-matter on every adopted record — the full five-key contract
-     (`doctype`/`status`/`created`/`updated`/`tags`): `doctype` from the destination store
-     (`check` enforces the match), `created`/`updated` from `git log`, `status` flagged for
+     (`doctype`/`status`/`created`/`updated`/`tags`): `doctype` naming what the doc *is* —
+     the front-matter key is the authority and need not match the directory, and a record
+     missing it is not a record at all — `created`/`updated` from `git log`, `status` flagged for
      judgment where ambiguous. **Backfill only the non-closing statuses** (`open`, or
      `current` for a living spec): a hand-written closing status would fail `check`'s
      status↔ledger coherence (closed record, no ledger line). A record that is genuinely

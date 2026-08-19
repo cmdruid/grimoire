@@ -73,15 +73,22 @@ setup() {
   echo "git=$GIT"
 }
 
-# Records-root-relative store scan. `templates/`, `scripts/`, `doctrine/` and
-# `history.tsv` are reserved (journal's contract) and never counted as records.
-# This list MUST match `records.sh`'s own reserved set (`stores()` and the
-# reserved-path guard) -- it drifted once by omitting `doctrine/`, which made a
-# legacy host's doctrine files count as records here but not there (BL-28).
+# Records-root crawl, at any depth. A file is a record iff it is named
+# YYYY-MM-DD-<slug>.md AND carries front-matter declaring a doctype -- journal's
+# discriminator, and the only one. There is no reserved-name list to keep in
+# step any more: doctrine pages, templates and scripts fail one conjunct or the
+# other, so a records home shared with other homes needs no carve-out here.
+# This MUST stay in step with `records.sh`'s `is_record()`; as a denylist it
+# drifted once by omitting `doctrine/` (BL-28), which is why it is now the same
+# positive test rather than a second copy of an exclusion set.
 each_record() {
   [ "$RECORDS_LAYER" = present ] || return 0
-  find "$RR" -type f -name '*.md' 2>/dev/null \
-    | grep -v -e "^$RR/templates/" -e "^$RR/scripts/" -e "^$RR/doctrine/" || true
+  find "$RR" -type f -name '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md' 2>/dev/null \
+    | while IFS= read -r f; do
+        head -1 "$f" | grep -qx -- '---' || continue
+        [ -n "$(fm_field "$f" doctype)" ] || continue
+        printf '%s\n' "$f"
+      done
 }
 
 # front_matter_field <file> <field>

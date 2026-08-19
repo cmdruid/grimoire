@@ -32,16 +32,11 @@ expect "README sends doctrine to the agent-workspace home" \
 expect_absent "README does not park doctrine under the records home" \
   "project doctrine) default" "$proj/.records/README.md"
 
-# slim layer: no store dirs, no templates/, no deployed reports.md
-for s in adr bugs design notes plans reports tickets trackers templates; do
-  if [ -e "$proj/.records/$s" ]; then
-    echo "FAIL: standup created $s (tool layer must not)" >&2
-    fail=$((fail + 1))
-  else
-    pass=$((pass + 1))
-  fi
-done
-[ ! -e "$proj/.records/templates/reports.md" ] && pass=$((pass + 1)) || { echo "FAIL: standup deployed reports.md" >&2; fail=$((fail + 1)); }
+# Slim layer: the tool layer and nothing else. Asserted EXHAUSTIVELY rather than
+# against a list of store names -- there is no fixed taxonomy left to enumerate,
+# and a whitelist also catches anything new that creeps in.
+actual="$(cd "$proj/.records" && ls -A | sort | tr '\n' ' ')"
+expect_eq "standup creates only the tool layer" "README.md history.tsv scripts " "$actual"
 
 # --- declared records-root, additive on a legacy tree ---------------------------
 legacy="$TMP/legacy"
@@ -51,14 +46,9 @@ echo "pre-existing" > "$legacy/dev/records/keep.txt"
 expect "declared root honored" "records: $legacy/dev/records (journal)" "$OUT"
 expect "legacy content survives" "pre-existing" "$legacy/dev/records/keep.txt"
 [ -x "$legacy/dev/records/scripts/records.sh" ] && pass=$((pass + 1)) || { echo "FAIL: records.sh missing under declared root" >&2; fail=$((fail + 1)); }
-for s in adr bugs design notes plans reports tickets trackers templates; do
-  if [ -e "$legacy/dev/records/$s" ]; then
-    echo "FAIL: declared-root standup created $s" >&2
-    fail=$((fail + 1))
-  else
-    pass=$((pass + 1))
-  fi
-done
+actual="$(cd "$legacy/dev/records" && ls -A | sort | tr '\n' ' ')"
+expect_eq "declared-root standup creates only the tool layer" \
+  "README.md history.tsv keep.txt scripts " "$actual"
 
 # --- a home that merely exists (notes/ already there, no tool) is additive ------
 partial="$TMP/partial"

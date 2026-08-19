@@ -51,20 +51,23 @@ if [ ! -e "$rr/README.md" ]; then
   cat > "$rr/README.md" <<EOF
 # Records
 
-Records accumulated during development. Each store directory holds markdown
-records carrying the front-matter contract (doctype/status/created/updated/tags);
-\`scripts/records.sh\` is the query + lifecycle tool (\`list\`, \`new\`, \`touch\`,
-\`done\`, \`history\`, \`prune-candidates\`, \`check\`) and the sole writer of
-\`history.tsv\`, the closure ledger. \`templates/\`, \`scripts/\`,
-\`doctrine/\`, and \`history.tsv\` are reserved — not stores. This directory is
-the records *home*. Project templates default underneath it without being part
-of the records layer; project **doctrine does not** — it resolves through the
-agent-workspace home (default \`.dev/doctrine/\`). A \`doctrine/\` directory here
-is a legacy layout, which is why the name stays reserved.
+Records accumulated during development. A **record** is a markdown file named
+\`YYYY-MM-DD-<slug>.md\` carrying the front-matter contract
+(doctype/status/created/updated/tags). \`scripts/records.sh\` is the query +
+lifecycle tool (\`list\`, \`new\`, \`touch\`, \`done\`, \`history\`,
+\`prune-candidates\`, \`check\`) and the sole writer of \`history.tsv\`, the
+closure ledger.
 
-Stores appear when a skill first writes. Project templates live in the
-agent-templates home (default \`.records/templates/<skill>/\`) and arrive
-with the writer. Journal setup deploys this tool layer only.
+The directory layout under this root is the writers' business: a skill creates
+only the directories it needs for its own work, so the tool crawls this root at
+any depth instead of matching a list of store names. Nothing here needs
+reserving — a file that is not a dated record declaring a doctype simply is not
+a record, which is why this home can be shared with other homes. Project
+templates live in the agent-templates home (default
+\`.records/templates/<skill>/\`) and arrive with the writer that mints them;
+they are undated, so they are not records. Project **doctrine** resolves
+through the agent-workspace home (default \`.dev/doctrine/\`). Journal setup
+deploys this tool layer only.
 
 Stood up by journal on $(date +%Y-%m-%d).
 EOF

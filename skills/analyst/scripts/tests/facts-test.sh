@@ -55,7 +55,7 @@ printf '%s\n' \
   "2026-01-05	done	plans/2026-01-05-ancient-work.md	plans	out of span" \
   > "$FIX/.records/history.tsv"
 
-cat > "$FIX/.records/trackers/backlog.md" <<'EOF'
+cat > "$FIX/.records/trackers/2026-08-14-backlog.md" <<'EOF'
 ---
 doctype: trackers
 status: current
@@ -102,7 +102,7 @@ printf '%s\n' "2026-08-10	done	plans/2026-08-10-planted-feature.md	plans	planted
 # Open: the design record, the stale bug, and the audit report.
 expect "status: counts open records"        "open_records=3"          "$OUT"
 expect "status: lists the open design"      "2026-08-14-open-design"  "$OUT"
-expect "status: counts tracker lines"       "trackers/backlog.md	2"  "$OUT"
+expect "status: counts tracker lines"       "trackers/2026-08-14-backlog.md	2"  "$OUT"
 
 # BREAK: close the open design — the open count must drop.
 sed -i.bak 's/^status: open/status: done/' "$FIX/.records/design/2026-08-14-open-design.md"
@@ -110,16 +110,17 @@ sed -i.bak 's/^status: open/status: done/' "$FIX/.records/design/2026-08-14-open
 expect "status BREAK: open count drops"     "open_records=2"          "$OUT"
 sed -i.bak 's/^status: done/status: open/' "$FIX/.records/design/2026-08-14-open-design.md"
 
-# --- reserved names are not records (BL-28) -----------------------------------
-# `each_record`'s carve-out must match `records.sh`'s reserved set. It drifted
-# once by omitting `doctrine/`, so a LEGACY host (doctrine still parked under the
-# records home, pre-`agent-workspace`) had its doctrine chapters counted as open
-# records here but not by `records.sh`. The three reserved directories are
-# planted with a record-shaped, `status: open` file each: if any is scanned, the
-# open count moves.
-for reserved in doctrine templates scripts; do
-  mkdir -p "$FIX/.records/$reserved"
-  cat > "$FIX/.records/$reserved/planted.md" <<'EOF'
+# --- a shared records home holds non-records (was BL-28) ----------------------
+# `each_record` must agree with `records.sh`'s discriminator. As a denylist it
+# drifted once by omitting `doctrine/`, so a host with doctrine under the records
+# home had its chapters counted as open records here but not by `records.sh`.
+# Both sides are now the same positive test, so there is no list to drift. The
+# three directories are planted with an undated, otherwise contract-shaped
+# `status: open` file each -- exactly what a template or a doctrine page looks
+# like. If any is scanned, the open count moves.
+for shared in doctrine templates scripts; do
+  mkdir -p "$FIX/.records/$shared"
+  cat > "$FIX/.records/$shared/planted.md" <<'EOF'
 ---
 doctype: design
 status: open
@@ -128,12 +129,23 @@ updated: 2026-08-01
 tags: []
 ---
 
-# Planted under a reserved name
+# Planted in a home shared with the records root
 EOF
 done
 "$FACTS" status "$FIX" > "$OUT" 2>&1
-expect "reserved: doctrine/templates/scripts are not records" "open_records=3" "$OUT"
-expect_absent "reserved: no planted file is listed"           "planted"        "$OUT"
+expect "shared home: doctrine/templates/scripts are not records" "open_records=3" "$OUT"
+expect_absent "shared home: no planted file is listed"           "planted"        "$OUT"
+
+# Red-proof the conjunct that does the work: date the SAME file and it becomes a
+# record. Without this, the assertion above would also pass if each_record were
+# broken outright (a scan that finds nothing excludes everything).
+mv "$FIX/.records/templates/planted.md" "$FIX/.records/templates/2026-08-01-planted.md"
+[ -f "$FIX/.records/templates/2026-08-01-planted.md" ] || { echo "FAIL: rename fixture not applied" >&2; exit 1; }
+"$FACTS" status "$FIX" > "$OUT" 2>&1
+expect "shared home: dating the same file makes it a record" "open_records=4" "$OUT"
+mv "$FIX/.records/templates/2026-08-01-planted.md" "$FIX/.records/templates/planted.md"
+"$FACTS" status "$FIX" > "$OUT" 2>&1
+expect "shared home: undating it again restores the count" "open_records=3" "$OUT"
 
 # --- health ------------------------------------------------------------------
 

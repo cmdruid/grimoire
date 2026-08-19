@@ -1,14 +1,15 @@
 ---
 name: journal
-description: "The records-layer format authority — defines a project's `.records/`: the eight typed stores (adr, bugs, design, notes, plans, reports, tickets, trackers), the record front-matter contract, the template convention, and the deployed `records.sh` tool (query + lifecycle + the `history.tsv` closure ledger). Verbs: `setup` (stand up the records layer — standalone, or as the workshop's delegated records seam), `done` (close a record in place: disposition + ledger line), `curate` (substrate hygiene: contract check, link rot, duplicate merge, prune proposals). Use when the user runs `/journal ...`, stands up the records layer, closes a record, asks about the record format/contract, or tidies the stores."
+description: "The records-layer format authority — defines a project's `.records/`: what makes a file a record (a dated filename plus front-matter declaring its doctype), the record front-matter contract, the template convention, and the deployed `records.sh` tool (query + lifecycle + the `history.tsv` closure ledger). Verbs: `setup` (stand up the records layer — standalone, or as the workshop's delegated records seam), `done` (close a record in place: disposition + ledger line), `curate` (substrate hygiene: contract check, link rot, duplicate merge, prune proposals). Use when the user runs `/journal ...`, stands up the records layer, closes a record, asks about the record format/contract, or tidies the stores."
 ---
 
 # journal — the records format authority
 
-One skill: the **definition** of a project's records layer. It owns the eight store *names*,
-the **record contract** (below), the **template convention** (writers carry templates; mint
-from a caller-supplied `--template` path), and the deployed tool **`records.sh`** (query +
-lifecycle; sole writer of the `history.tsv` closure ledger). `/journal setup` stands the
+One skill: the **definition** of a project's records layer. It owns the **discriminator**
+(what makes a file a record — below), the **record contract** (below), the **template
+convention** (writers carry templates; mint from a caller-supplied `--template` path), and the
+deployed tool **`records.sh`** (query + lifecycle; sole writer of the `history.tsv` closure
+ledger). It owns **no directory names** — see the ownership rule below. `/journal setup` stands the
 **tool layer** — `records.sh`, empty `history.tsv`, README — and is never a floor for writers.
 The workshop's `setup` delegates its records step here. Writers state the in-package
 contract in their own package; they do not send the agent here for those bytes. At runtime
@@ -21,18 +22,21 @@ follow-up workflow that ran on it (capture, debrief, tracker grooming) moved out
 
 The layer's shape (the deployed `.records/README.md` restates it in-project):
 
-- **Stores are directories; the path is the ID.** Eight stores — `adr`, `bugs`, `design`,
-  `notes`, `plans`, `reports`, `tickets`, `trackers` — each holding
-  `YYYY-MM-DD-<slug>.md` records minted by `records.sh new`. No counters, no typed IDs, no
-  stored index: querying is a live front-matter scan. `templates/`, `scripts/`,
-  `doctrine/`, and `history.tsv` are reserved (never scanned) — the records **home** is a
-  directory that may host a sibling home (`<agent-templates>` defaults under it) and, on a
-  host whose workspace and records homes **coincide**, a `doctrine/` tree that is not this
-  layer's — doctrine proper lives at `<agent-workspace>/doctrine` (by default
-  `.dev/doctrine/`), outside this home entirely; the records **layer** is the eight typed
-  stores. Setup does not create
-  store directories;
-  the skill that mints a store creates it.
+- **A file is a record iff it is named `YYYY-MM-DD-<slug>.md` AND carries front-matter
+  declaring a `doctype`.** That is the whole discriminator, and the path is the ID. Both
+  conjuncts earn their place: front-matter alone would swallow the record *templates*, which
+  necessarily carry a doctype block (it is what `new` copies into the minted record); the
+  dated shape alone would swallow any dated prose file. No counters, no typed IDs, no stored
+  index — querying is a live scan, crawling the root at **any depth**.
+- **Nothing is reserved, and no directory name is owned.** A skill creates only the
+  directories it needs for its own work, so the set under the root is open-ended and unknown
+  to this tool: it crawls rather than matching a list. `templates/`, `scripts/`, a
+  `doctrine/` tree — none need reserving, because their files fail one conjunct or the other
+  and simply are not records. This is what lets the records home be **shared** with another
+  home: a host may point `<agent-workspace>` and `<agent-records>` at the same directory
+  without a carve-out. The **authoritative doctype is the front-matter key**, never the
+  parent directory — there is no second copy of the fact to disagree with. Setup creates no
+  directories at all; the skill that mints into one creates it.
 - **Micro-items are tracker lines, not records.** A tracker record's body holds one-line
   items in the contract's line form (below); detailed material — a bug repro, a durable fact —
   gets its own dated record, linked from a tracker line when it needs scheduling. Which
@@ -51,28 +55,32 @@ coherence), and record-link resolution. Tracker line form is a prose convention 
 template → error), not by `check`.
 
 - **Front-matter: five keys**, between `---` delimiters at the top of every record —
-  `doctype` (must equal the store directory name), `status`, `created`, `updated` (both
-  ISO `YYYY-MM-DD`), `tags`.
+  `doctype` (the record's type, and the authority on it), `status`, `created`, `updated`
+  (both ISO `YYYY-MM-DD`), `tags`. A missing or empty `doctype` means the file is not a
+  record at all; `check` reports it as a **WARN** when the filename wears the record shape,
+  so a malformed record is surfaced rather than silently skipped by the crawl.
 - **Status vocabulary**: `open` | `current` while live; `done` | `dropped` | `superseded` |
   `consumed` to close. A closing status **requires** a matching `history.tsv` ledger line
   (`check` flags a hand-closed record); the ledger line is six tab-separated fields — date,
   disposition, records-root-relative path, doctype, title, note — written only by
   `records.sh done`.
-- **Record links**: `→ <store>/<file>.md`, resolved against the records root; `check` flags
-  rot.
+- **Record links**: `→ <dir>/<file>.md` — the record's records-root-relative path, whatever
+  directory its writer put it in; `check` flags rot.
 - **Tracker line form**: under `## Items`, newest last. Live and completed (same optional
-  ` → <store>/<file>.md` before the completion date):
+  ` → <dir>/<file>.md` before the completion date):
 
       - [ ] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md
       - [x] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md — 2026-08-17
 
   Completing a line is that rewrite + a `records.sh touch` of the tracker (no ledger line).
 - **Template convention**: `records.sh new <doctype> --template <resolved>` mints from
-  the caller-supplied path (usually `<agent-templates>/<skill>/<doctype>.md`). Omitting
-  `--template` still reads `$RR/templates/<doctype>.md` (brownfield). The minting skill
-  owns the bundled template and copies it to the **agent-templates home**, never to
-  the flat `.records/templates/<doctype>.md`. Journal's in-package `reports.md` is the
-  contract example only; setup copies nothing.
+  the caller-supplied path (usually `<agent-templates>/<skill>/<doctype>.md`).
+  `--template` is **required** — the tool knows no taxonomy, so it cannot guess a template
+  location from a doctype name, and there is no flat fallback. The minting skill owns the
+  bundled template and copies it to the **agent-templates home**, never to the flat
+  `<agent-records>/templates/<doctype>.md`. That home commonly sits *under* the records
+  root; templates are undated, so the discriminator leaves them alone. Journal's in-package
+  `reports.md` is the contract example only; setup copies nothing.
 
 ## Verb dispatch (read the file, then follow it)
 

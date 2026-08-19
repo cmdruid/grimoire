@@ -19,13 +19,19 @@ mkdir -p "$proj"
 RS="$proj/.records/scripts/records.sh"
 today="$(date +%Y-%m-%d)"
 
-# Brownfield omitted --template: standup no longer plants templates/, so the
-# fixture mkdir's the dest and drops contract-shaped files there. records.sh
-# is the subject; it mints from whatever path it is given (or $RR/templates/).
-mkdir -p "$proj/.records/templates"
-for t in plans notes trackers tickets; do
+# Templates belong at <agent-workspace>/templates. This fixture plants them
+# UNDER the records root on purpose: that is the coinciding-roots host the
+# two-roots spec legalizes, and it is the case the discriminator must survive.
+# They are contract-shaped -- a real doctype and unfilled <date> slots, because
+# that block is exactly what `new` copies into the minted record -- so a
+# front-matter-only discriminator would swallow all three as records and FAIL
+# check on `created: <date>`. The dated-filename conjunct is what excludes them,
+# with no reserved name anywhere.
+TPL="$proj/.records/templates"
+mkdir -p "$TPL"
+for t in plans notes trackers; do
   printf -- '---\ndoctype: %s\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\n' "$t" \
-    > "$proj/.records/templates/$t.md"
+    > "$TPL/$t.md"
 done
 
 # --- --template: path outside $RR is accepted -----------------------------------
@@ -37,8 +43,7 @@ expect_eq "new --template outside \$RR" "$proj/.records/plans/$today-from-outsid
 expect "outside template body used" "outside" "$p_out"
 expect "outside template title filled" "# From outside" "$p_out"
 
-# omitted --template still reads $RR/templates/<doctype>.md (brownfield)
-p="$("$RS" new plans --title "Alpha: the first plan")"
+p="$("$RS" new plans --template "$TPL/plans.md" --title "Alpha: the first plan")"
 expect_eq "new prints the path" "$proj/.records/plans/$today-alpha-the-first-plan.md" "$p"
 expect "front-matter doctype" "doctype: plans" "$p"
 expect "front-matter status open" "status: open" "$p"
@@ -47,11 +52,11 @@ expect "title slot filled" "# Alpha: the first plan" "$p"
 expect_absent "no unfilled date slot" "<date>" "$p"
 expect_absent "no unfilled title slot" "<title>" "$p"
 
-p2="$("$RS" new plans --title "Alpha: the first plan")"
+p2="$("$RS" new plans --template "$TPL/plans.md" --title "Alpha: the first plan")"
 expect_eq "colliding slug gets a suffix" "$proj/.records/plans/$today-alpha-the-first-plan-2.md" "$p2"
 
 # --- list: TSV row + filters -----------------------------------------------------
-"$RS" new notes --title "A fact" >/dev/null
+"$RS" new notes --template "$TPL/notes.md" --title "A fact" >/dev/null
 "$RS" list >"$OUT"
 expect "list row is TSV" "plans/$today-alpha-the-first-plan.md	plans	open	$today" "$OUT"
 "$RS" list --type notes >"$OUT"
@@ -96,13 +101,22 @@ expect "closing via touch routed to done" "closing status goes through 'done'" "
 rc=0; "$RS" 'done' "$p2" --as wontfix >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "unknown disposition rc" "2" "$rc"
 
-rc=0; "$RS" new gizmos --title "No such store" >"$OUT" 2>"$ERR" || rc=$?
-expect_eq "unknown doctype rc" "2" "$rc"
-expect "unknown doctype names the template" "no template for doctype 'gizmos'" "$ERR"
+rc=0; "$RS" new gizmos --template "$TPL/gizmos.md" --title "No such store" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "missing template file rc" "2" "$rc"
+expect "missing template names the doctype" "no template for doctype 'gizmos'" "$ERR"
 
-rc=0; "$RS" touch "$proj/.records/templates/notes.md" >"$OUT" 2>"$ERR" || rc=$?
-expect_eq "reserved path refused rc" "2" "$rc"
-expect "reserved path named" "reserved path" "$ERR"
+# --template is mandatory: the tool knows no taxonomy, so it cannot guess a
+# template location from a doctype name. There is no flat fallback to lean on.
+rc=0; "$RS" new plans --title "No template given" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "bare mint rc" "2" "$rc"
+expect "bare mint names the missing flag" "--template is required" "$ERR"
+expect_absent "bare mint minted nothing" "no-template-given" "$OUT"
+
+# A template sharing the records root is not a record: it declares a doctype but
+# wears no date, so it fails the shape conjunct.
+rc=0; "$RS" touch "$TPL/notes.md" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "template refused as a record rc" "2" "$rc"
+expect "template named not-a-record" "not a record: templates/notes.md" "$ERR"
 
 rc=0; "$RS" show "plans/nope.md" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "missing record rc" "2" "$rc"
@@ -113,7 +127,10 @@ printf -- '---\ndoctype: bugs\nstatus: bogus\ncreated: 2026-8-1\n---\n# Broken\n
 rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "broken front-matter check rc" "2" "$rc"
 expect "check flags missing key" "missing key: updated" "$ERR"
-expect "check flags store mismatch" "does not match store 'notes'" "$ERR"
+# The doctype is NOT cross-checked against the parent directory any more: the
+# front-matter key is the authority and the directory is the caller's business,
+# so `doctype: bugs` living under notes/ is not a finding.
+expect_absent "no doctype-vs-directory finding" "does not match store" "$ERR"
 expect "check flags bad status" "status not in the contract: bogus" "$ERR"
 expect "check flags bad date" "created is not YYYY-MM-DD: 2026-8-1" "$ERR"
 rm "$bad"
@@ -127,7 +144,7 @@ expect "check names the coherence break" "closing status 'done' but no history.t
 rm "$sneaky"
 
 # --- record links: `→ <store>/<file>.md` must resolve (link-rot detection) --------
-tr_rec="$("$RS" new trackers --title "Backlog")"
+tr_rec="$("$RS" new trackers --template "$TPL/trackers.md" --title "Backlog")"
 note_rel="$("$RS" list --type notes | head -1 | cut -f1)"
 printf -- '- [ ] %s — wire the alpha [→ %s]\n' "$today" "$note_rel" >> "$tr_rec"
 printf -- '- [ ] %s — prose example, unchecked [→ path/to/linked-record.md]\n' "$today" >> "$tr_rec"
@@ -155,15 +172,40 @@ expect_eq "real rot still caught alongside examples" "2" "$rc"
 expect "check still names the real broken link" "broken link → notes/never-existed-either.md" "$ERR"
 sed -i.bak '/rotted-again/d' "$tr_rec" && rm -f "$tr_rec.bak"
 
-# --- open-ticket visibility: check surfaces the count both ways -------------------
-"$RS" check >"$OUT"
-expect "no tickets reports zero" "open tickets: 0" "$OUT"
-tk="$("$RS" new tickets --title "Need the API key")"
-"$RS" check >"$OUT"
-expect "open ticket surfaces in check" "open tickets: 1" "$OUT"
+# --- WARN tier: record-shaped files the discriminator rejects ---------------------
+# The one thing crawling loses. A path-based scan FAILed a malformed record it
+# found inside a known store; the crawl does not see such a file at all. So
+# `check` hunts the record SHAPE and reports what it cannot accept -- reported,
+# never silent, and never a failure, because the file may legitimately not be a
+# record.
+"$RS" check >"$OUT" 2>"$ERR"
+expect_absent "a clean root warns about nothing" "WARN:" "$ERR"
+
+orphan="$proj/.records/notes/$today-orphan.md"
+printf '# Orphan\n\nHand-written, never minted.\n' > "$orphan"
+[ -f "$orphan" ] || { echo "FAIL: orphan fixture was not applied" >&2; exit 1; }
+rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "a shaped non-record does not fail the check" "0" "$rc"
+expect "shaped non-record warns" "WARN: notes/$today-orphan.md" "$ERR"
+expect "the warning explains the miss" "no front-matter declaring a doctype" "$ERR"
+
+# front-matter present but declaring no type: the (b) half of the discriminator
+typeless="$proj/.records/notes/$today-typeless.md"
+printf -- '---\nstatus: open\ncreated: %s\n---\n# Typeless\n' "$today" > "$typeless"
+[ -f "$typeless" ] || { echo "FAIL: typeless fixture was not applied" >&2; exit 1; }
+rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "a typeless shaped file does not fail the check" "0" "$rc"
+expect "typeless file warns too" "WARN: notes/$today-typeless.md" "$ERR"
+expect "both shaped misses are counted" "2 record-shaped file(s) not recognized" "$ERR"
+expect_absent "a warned file is not counted as a record" "typeless" "$OUT"
+
+rm "$orphan" "$typeless"
+"$RS" check >"$OUT" 2>"$ERR"
+expect_absent "warnings clear once the files go" "WARN:" "$ERR"
+
+# a closed-then-reopened record, for the prune shortlist below
+tk="$("$RS" new notes --template "$TPL/notes.md" --title "Need the API key")"
 "$RS" 'done' "$tk" --note "key provided" >/dev/null
-"$RS" check >"$OUT"
-expect "closed ticket leaves the count" "open tickets: 0" "$OUT"
 
 # --- prune-candidates: still-existing × still-closed × ledger-dated ---------------
 "$RS" prune-candidates >"$OUT"
@@ -179,44 +221,44 @@ expect_absent "pruned record drops off the shortlist" "alpha-the-first-plan" "$O
 "$RS" check >"$OUT"
 expect "check green after prune (ledger line survives)" "records check: OK" "$OUT"
 
-# --- reserved `doctrine/` -------------------------------------------------------
-# A host whose agent-workspace and agent-records homes coincide keeps its
-# doctrine at <agent-records>/doctrine: living normative prose with no record
-# front-matter. Two arms guard it and they are proven
-# INDEPENDENTLY on purpose -- a check-only proof passes a partial fix (patch
-# stores(), leave resolve() broken, and `check` still returns OK while `show`
-# happily cats the file). So stores() is proven via check/list, resolve() via
-# show/touch.
+# --- the coinciding-roots host: doctrine sharing the records root ---------------
+# A host that points <agent-workspace> and <agent-records> at the same directory
+# keeps its doctrine under this root: living normative prose, not dated records.
+# There is no reserved name for it any more -- doctrine simply fails the
+# discriminator. Both arms are proven INDEPENDENTLY on purpose: a check-only
+# proof would pass a partial fix (fix the crawl, leave resolve() open, and
+# `check` returns OK while `show` happily cats the file). So the crawl is proven
+# via check/list, resolve() via show/touch.
 mkdir -p "$proj/.records/doctrine/test/workflows"
 printf '# Diagnostics\n\nLiving normative prose. No front-matter, by design.\n' \
   > "$proj/.records/doctrine/test/workflows/diagnostics.md"
 
-# arm 1 -- stores(): doctrine is not a store, so check stays green and list ignores it
+# arm 1 -- the crawl: doctrine is not a record, so check stays green and list ignores it
 rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "doctrine dir keeps check green rc" "0" "$rc"
 expect "doctrine dir does not break check" "records check: OK" "$OUT"
 "$RS" list >"$OUT"
 expect_absent "doctrine file is not listed as a record" "doctrine/" "$OUT"
+expect_absent "undated doctrine prose does not even warn" "diagnostics.md" "$ERR"
 
 # arm 2 -- resolve(): a doctrine path is refused as a record
 rc=0; "$RS" show doctrine/test/workflows/diagnostics.md >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "show refuses a doctrine path rc" "2" "$rc"
-expect "show names the reserved path" "reserved path, not a record" "$ERR"
+expect "show names it not-a-record" "not a record: doctrine/test/workflows/diagnostics.md" "$ERR"
 rc=0; "$RS" touch doctrine/test/workflows/diagnostics.md >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "touch refuses a doctrine path rc" "2" "$rc"
-expect "touch names the reserved path" "reserved path, not a record" "$ERR"
+expect "touch names it not-a-record" "not a record: doctrine/test/workflows/diagnostics.md" "$ERR"
 
-# A doctrine doc may legitimately carry its own front-matter, which weakens
-# require_record's "not a record?" fallback. Note the rc assertions here can still
-# pass for the WRONG reason (require_record also rejects on the five-key contract),
-# so the MESSAGE assertions are the real discriminator: with the resolve() arm
-# reverted, `reserved path, not a record` disappears while the exit code does not
-# change. Verified by breaking -- reverting that arm turns these red.
+# A doctrine page may legitimately carry front-matter of its own -- a title, an
+# owner -- which is why mere front-matter cannot be the discriminator. It
+# declares no doctype, so it is still not a record. The MESSAGE assertion is the
+# real proof here: the rc alone would also be produced by the five-key contract
+# check, so it can pass for the wrong reason.
 printf -- '---\ntitle: Diagnostics\nowner: test station\n---\n\n# Diagnostics\n\nProse.\n' \
   > "$proj/.records/doctrine/test/workflows/stamped.md"
 rc=0; "$RS" touch doctrine/test/workflows/stamped.md >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "touch refuses front-mattered doctrine rc" "2" "$rc"
-expect "front-mattered doctrine named reserved" "reserved path, not a record" "$ERR"
+expect "front-mattered doctrine named not-a-record" "not a record: doctrine/test/workflows/stamped.md" "$ERR"
 
 # malformed ledger: hand-written lines are a fact check reports
 echo "garbage line" >> "$proj/.records/history.tsv"
@@ -224,23 +266,22 @@ rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "malformed ledger check rc" "2" "$rc"
 expect "check counts ledger fields" "1 fields (want 6)" "$ERR"
 
-# --- the flat-templates fallback is load-bearing ONLY for a bare mint (BL-25) --
-# `cmd_new`'s `[ -n "$tpl" ] || tpl="$RR/templates/$doctype.md"` is brownfield
-# compatibility, not an interface. Every writer is supposed to resolve its
-# template through the agent-templates rule and pass `--template <resolved>`;
-# omitting it silently leans on this flat legacy path instead.
+# --- the dated-shape conjunct is load-bearing, proven by removing it ------------
+# The discriminator is "named YYYY-MM-DD-<slug>.md AND carrying front-matter
+# that declares a doctype". Front-matter alone is NOT enough, and the reason is
+# not hypothetical: a record template necessarily carries a doctype block (that
+# block is what `new` copies into the minted record), and templates share this
+# root on any host whose workspace and records homes coincide.
 #
-# Deleting the fallback is the decisive experiment, so run it: mutate a COPY of
-# the script (in a second fixture project, so its self-derived $RR still
-# resolves) and observe both forms. `--template` must keep working; the bare
-# form must hard-error. That second half is the fact BL-25 rests on -- the three
-# contractor verbs really would have broken, so the fallback could not be
-# deleted before they were flipped.
+# So run the decisive experiment: mutate a COPY of the script (in a second
+# fixture project, so its self-derived $RR still resolves) to drop the shape
+# conjunct, degrading the rule to front-matter-declaring-a-doctype, and watch
+# the template get swallowed.
 #
 # The `assert applied` step is not ceremony: a "break" that silently fails to
 # apply leaves the suite green on unbroken input, which is indistinguishable
 # from a passing proof.
-proj2="$TMP/proj-nofallback"
+proj2="$TMP/proj-noshape"
 mkdir -p "$proj2"
 "$SKILL/scripts/standup.sh" "$proj2" >/dev/null
 RS2="$proj2/.records/scripts/records.sh"
@@ -248,24 +289,26 @@ mkdir -p "$proj2/.records/templates"
 printf -- '---\ndoctype: plans\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\n' \
   > "$proj2/.records/templates/plans.md"
 
-fallback='[ -n "$tpl" ] || tpl="$RR/templates/$doctype.md"'
-before="$(grep -cF -- "$fallback" "$RS2" || true)"
-expect_eq "fallback present before the cut" "1" "$before"
-grep -vF -- "$fallback" "$RS2" > "$RS2.cut" && mv "$RS2.cut" "$RS2"
+# baseline: the UNBROKEN script is green on this exact fixture, so any change
+# below is the conjunct's doing and not the fixture's.
+rc=0; "$RS2" check >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "unbroken script is green with a template under the root" "0" "$rc"
+expect_absent "the template is not a record" "templates/plans.md" "$OUT"
+
+shape='[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md) ;;'
+before="$(grep -cF -- "$shape" "$RS2" || true)"
+expect_eq "shape conjunct present before the cut" "1" "$before"
+awk -v s="$shape" '{ if (index($0, s)) print "    *) ;;"; else print }' "$RS2" > "$RS2.cut"
+mv "$RS2.cut" "$RS2"
 chmod +x "$RS2"
-after="$(grep -cF -- "$fallback" "$RS2" || true)"
-expect_eq "fallback gone after the cut" "0" "$after"
+after="$(grep -cF -- "$shape" "$RS2" || true)"
+expect_eq "shape conjunct gone after the cut" "0" "$after"
 
-# The prescribed form is unaffected -- it never consulted the fallback.
-resolved="$proj2/.records/templates/plans.md"
-rc=0; p_nf="$("$RS2" new plans --template "$resolved" --title "Survives the cut")" || rc=$?
-expect_eq "--template mints with no fallback" "0" "$rc"
-expect_eq "--template path" "$proj2/.records/plans/$today-survives-the-cut.md" "$p_nf"
-expect "--template front-matter filled" "# Survives the cut" "$p_nf"
-
-# The bare form dies -- proving it was leaning on the fallback all along.
-rc=0; "$RS2" new plans --title "Dies with the cut" >"$OUT" 2>"$ERR" || rc=$?
-expect_eq "bare mint errors with no fallback" "2" "$rc"
-expect "bare mint names the missing template" "no template for doctype 'plans'" "$ERR"
+# With the shape gone, the rule is "declares a doctype" -- and the template
+# declares one, so it is swallowed as a record and fails on its unfilled slot.
+rc=0; "$RS2" check >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "template swallowed once the shape conjunct goes" "2" "$rc"
+expect "swallowed template fails on the unfilled date slot" "created is not YYYY-MM-DD: <date>" "$ERR"
+expect "and it is named as the offender" "templates/plans.md" "$ERR"
 
 report "records-test"

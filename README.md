@@ -51,7 +51,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `contractor` | one job lead — roadmap, plan, runbook, review, revise, build; never ships; never writes a spec |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
-| `journal` | the records format authority: eight typed stores + the record contract + `records.sh` + the history ledger; setup, done, substrate curate |
+| `journal` | the records format authority: the record discriminator + contract + `records.sh` + the history ledger; setup, done, substrate curate |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
@@ -74,9 +74,10 @@ the way `.github/` is. **`<agent-workspace>/doctrine/`** (by default `.dev/doctr
 the project's own doctrine — a README (load rules + the one install stamp line), `core/`, the
 four station chapters, and `scripts/context.sh` — seeded from the pack face and locally grown
 thereafter. **`.records/`** holds the work products:
-eight typed stores (`adr`, `bugs`, `design`, `notes`, `plans`, `reports`, `tickets`, `trackers`)
-plus `records.sh`, templates, and the `history.tsv` closure ledger — the format is `journal`'s
-(store templates arrive with the skills that mint them; `journal` ships the commons).
+dated, typed records (`YYYY-MM-DD-<slug>.md` carrying front-matter that declares a `doctype`)
+in whatever directories their writers mint, plus `records.sh` and the `history.tsv` closure
+ledger — the format is `journal`'s (templates arrive with the skills that mint them;
+`journal` ships the commons).
 **`AGENTS.md`** is the door: a thin routing table plus the doctrine pointer, and the one place
 `agent-workspace:` / `agent-records:` are declared when they are not the defaults. Once seeded,
 all three are the project's documents; the deployed doctrine and records READMEs document their own
