@@ -11,11 +11,13 @@ existing phase-plan paths — never task-level work invented here.
 
 1. **Resolve input:** a **plan** path or a **roadmap** path. Missing → ask. A
    spec is refused ("that is not a job conductor input").
-2. **From a plan:** emit a `plans/` record (workshop:
-   `records.sh new plans --title "Runbook: <plan title>"`, then
-   `tags: [runbook]`) or a file in `<agent-records>/plans/`. Body: ordered
-   steps copied from the plan's slices — command/gate/path only, no approach
-   essay. Each step names the slice id it came from.
+2. **From a plan:** emit a `plans/` record. Resolve `plans.md` via the
+   agent-templates rule, then mint `records.sh new plans --template <resolved>
+   --title "Runbook: <plan title>"` when the tool exists; else file-mode from
+   that same resolved path into `<agent-records>/plans/`. Either way set
+   `tags: [runbook]`. Body: ordered steps copied from the plan's slices —
+   command/gate/path only, no approach essay. Each step names the slice id it
+   came from.
 3. **From a roadmap:** refuse unless **every** unblocked phase already has a
    **plan path** (a written plan record). If any phase lacks a plan, stop and
    tell the caller to `plan` that phase first — `runbook` does not write plans;

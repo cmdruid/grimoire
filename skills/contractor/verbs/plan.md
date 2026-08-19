@@ -58,11 +58,13 @@ unsettled, stop and send those branches back.
 6. **Self-review** — spec→plan coverage (every requirement maps to a slice —
    list gaps), placeholder scan, type/name consistency. Add a slice for any
    uncovered requirement.
-7. **Land it** per SKILL.md *Shared discipline* and `templates/plan.md`.
-   Workshop: mint `records.sh new plans --title "<title> — Implementation Plan"`,
-   then set `tags: [plan]` and replace the body with the plan scaffold filled
-   in. Standalone: fill `templates/plan.md` into the named file in the
-   agent-records `plans/` home (SKILL.md destination rule).
+7. **Land it** per SKILL.md *Shared discipline*. Resolve `plans.md` via the
+   agent-templates rule, then mint `records.sh new plans --template <resolved>
+   --title "<title> — Implementation Plan"` when the tool exists; else
+   file-mode from that same resolved path into the agent-records `plans/` home
+   (SKILL.md destination rule). Either way set `tags: [plan]` and replace the
+   body with the plan scaffold filled in from the resolved `plan.md` (bundled
+   shape: `templates/plan.md`).
 
 Output: the implementation plan. Tell the human where it is and what you
 need (read it, waive review, or change it). Then **stop**. The next verb
