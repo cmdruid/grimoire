@@ -540,6 +540,15 @@ names `consumes: records-tool` only when it *cannot* file-mode; the default is t
   job).
 - **Gate every change:** `scripts/skills-lint.sh` — frontmatter limits, bundled-ref resolution,
   script syntax, cross-skill refs, edge-block well-formedness. Fix every `FAIL:`.
+- **Two sizes, not one.** A skill's **surface** is what an agent loads to route and operate
+  (`SKILL.md` + verbs). Its **payload** is what it carries to deploy (seed content, scripts,
+  templates). Coupling lives in the surface. Splitting by role that only moves payload does
+  not shrink what the agent loads, and is not grounded by "this skill feels big." Measure
+  both before proposing a split.
+- **A slice names every file it breaks.** When sequencing work, a slice's `paths` include
+  every file its own change reddens — not only the files it means to edit. An edit surface
+  enumerated by intent rather than consequence is how a green-on-its-own slice fails the
+  trunk gate.
 - **Never restate a sibling's verb set (or any roster) in a skill body.** Point at the
   runbook/ownership index instead — an inlined roster rots silently the day the sibling grows a
   verb, and only *description*-level cross-refs have a lint backstop; body-level re-documentation
@@ -547,10 +556,13 @@ names `consumes: records-tool` only when it *cannot* file-mode; the default is t
 - **Prove a new check by breaking it.** A check you just wrote — a test assertion, a lint rule, a
   reference sweep — is not trusted until it has FAILED on deliberately-broken input (plant the ref,
   demand red, then fix the plant). A clean first run proves nothing: the check may be matching
-  nothing at all. Concrete portable-regex trap this rule has caught: **never use `\b` in
-  `grep -E`/`git grep -E` patterns meant to be portable** — it is a GNU extension; macOS/BSD ERE
-  treats it as matching *nothing*, so the whole alternative silently never fires and the sweep
-  reports clean over live refs. Use plain substrings or explicit character-class boundaries.
+  nothing at all. **A break that silently fails to apply produces the same clean run** — count the
+  target occurrences before and after the mutation and fail loudly on zero replacements; restore
+  from a backup and confirm byte-identity. Concrete portable-regex trap this rule has caught:
+  **never use `\b` in `grep -E`/`git grep -E` patterns meant to be portable** — it is a GNU
+  extension; macOS/BSD ERE treats it as matching *nothing*, so the whole alternative silently
+  never fires and the sweep reports clean over live refs. Use plain substrings or explicit
+  character-class boundaries.
 
 ## References
 

@@ -34,7 +34,7 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-35 — lint check 17 cannot catch the BL-32 shape it was supposed to prevent
 - **source:** feat stream, BL-34 items 1–2 ship (2026-08-19).
-- **status:** open
+- **status:** done (2026-08-19, grok stream) — check 17 gained a `new --flag` arm. Planted `records.sh new --template <resolved>` FAILs; prose naming the tool still does not. Proven in `lint-records-writer-test.sh`.
 - **body:** check 17 flags a bare `records.sh new` mint by keying on a span carrying **`--title`** —
   that is what makes an invocation decidable from prose merely naming the tool. BL-32's four bad
   invocations (`records.sh new --template <resolved>`, doctype positional dropped) carry no
@@ -86,7 +86,7 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-33 — "prove a new check by breaking it" does not say to verify the break applied
 - **source:** feat stream, BL-25 build (2026-08-19). Second occurrence in two sessions.
-- **status:** open
+- **status:** done (2026-08-19, grok stream) — the prove-by-breaking bullet now requires counting occurrences before/after the mutation and failing on zero replacements.
 - **body:** `skill-builder/docs/DOCTRINE.md:545-551` requires a new check to FAIL on
   deliberately-broken input, and warns that a clean first run proves nothing. It does not close the
   next hole: **a break that silently fails to apply produces a clean run too**, and the two are
@@ -124,7 +124,7 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-31 — the seed's prose still calls the doctrine home "the handbook"
 - **source:** feat stream, feature 3a build (2026-08-18).
-- **status:** open
+- **status:** done (2026-08-19, grok stream) — seed POLICY + context.sh `HB`→`DH`; backlog/journal/blueprint "handbook" → "doctrine". `.handbook/` path literals for the legacy tree stay.
 - **body:** 3a's census was of `.handbook` **path literals**, and every one of those is now
   flipped. What it did not cover is the **bare word**: a deployed doctrine home still describes
   itself as "the handbook" in `skills/clankshop/seed/review/POLICY.md` (5×),
@@ -139,7 +139,7 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-30 — `seed.sh` validates `--workspace`; nothing validates the door that feeds it
 - **source:** feat stream, feature 3a build (2026-08-18).
-- **status:** open
+- **status:** done (2026-08-19, grok stream) — kept both halves, now owned: check 16 is authoring-time; `seed.sh` is the runtime half that sees a consuming `--workspace`. Documented in both.
 - **body:** 3a's Decision 13 assigns both declaration guards to lint check 16, which reads the
   **front door**. That is right for the library's own gate, but a consuming project's `setup`
   run is not linted: the verb resolves `agent-workspace:` from the door and passes it to
@@ -153,7 +153,7 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-29 — two slices in 3a's spec would have reddened the trunk gate as written
 - **source:** feat stream, feature 3a build (2026-08-18).
-- **status:** open (process finding — no code fix pending)
+- **status:** done (2026-08-19, grok stream) — lesson folded into `DOCTRINE.md` authoring conventions: a slice names every file it breaks.
 - **body:** Two ordering defects survived four review rounds and were caught only at build time.
   (1) **Check 15's new `.records/doctrine/` literal** was specified to land in S2 as a FAIL, but
   the literal was live in five consumer skills until S5 — it would have failed the trunk gate for
@@ -200,7 +200,7 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-27 — `standup.sh` creates a **declared** records home, which Doctrine-touching rule 3 forbids
 - **source:** feat stream, workspace-consolidation review round 2 (2026-08-18).
-- **status:** open
+- **status:** done (2026-08-19, grok stream) — 3a's owner exception landed: journal assembles the records home and may create a declared one. `standup.sh` now matches doctrine; no script change.
 - **body:** `skills/journal/scripts/standup.sh:44` runs `mkdir -p "$rr/scripts"` regardless of
   whether `$rr` was *derived* or *declared*. `DOCTRINE.md` rule 3 permits creating a home "only when
   the home is the derived default" and says "never create an explicitly declared home that is
@@ -247,7 +247,7 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-24 — the doctrine has no principle for when a skill is "too big", and payload isn't counted
 - **source:** feat stream, workspace-consolidation spec discussion (2026-08-18).
-- **status:** open
+- **status:** done (2026-08-19, grok stream) — surface-vs-payload folded into `DOCTRINE.md` authoring conventions. The "keep everything in clankshop" decision stands.
 - **body:** Splitting `clankshop` was proposed three times in one session — extract the doctrine
   layer as `handbook`; then extract the management verbs as `foreman`. Every review that checked
   found **no principle in `DOCTRINE.md` grounding the concern** (the skeptic lens: *"on the evidence
@@ -267,7 +267,7 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-23 — check 14's coverage is 2 of 5, because most skills have no `## Edges` block
 - **source:** feat stream, front-door-homes build, S5 (2026-08-18).
-- **status:** open
+- **status:** done (2026-08-19, grok stream) — BL-17 shipped the missing blocks; auditor/debugger/workstream now `consumes: doctrine`. Check 14 can fire on all five flipped consumers.
 - **body:** `skills-lint.sh` check 14 (doctrine home not resolved) is **edge-gated** — it only
   inspects skills declaring a `doctrine` typed edge. Of the five consumers flipped onto home
   resolution, only `blueprint` and `contractor` had an `## Edges` block to declare it in;
@@ -398,7 +398,8 @@ one-line resolution; delete only when the reason it existed is gone.
 ### BL-13 — `routing-targets` emitter only matches bare backticked `/name` tokens in column-0 rows
 - **source:** front-door architecture final review (2026-07-27,
   `docs/design/2026-07-26-front-door-architecture.md`).
-- **status:** open — first real-world run (atelier migration, 2026-07-27) passed: all 7 targets in
+- **status:** dropped (2026-08-19, grok stream) — **moot.** `foreman` and `foreman-health.sh` are retired; there is no `routing-targets` emitter left.
+- **was:** open — first real-world run (atelier migration, 2026-07-27) passed: all 7 targets in
   the stamped door were bare backticked tokens, extracted correctly. The verbed/indented gap
   remains latent.
 - **body:** the `routing-targets` emitter in `skills/foreman/scripts/foreman-health.sh` only
@@ -435,12 +436,7 @@ one-line resolution; delete only when the reason it existed is gone.
 - **source:** atelier dogfood (2026-07-27) — the host's `skill:foreman` stamp went stale within
   hours because grimoire itself advanced; refreshed once mid-session, stale again by the next
   grimoire commit touching the skill dir.
-- **status:** open. Lean: the **judgment-table fix** — teach `verbs/check.md`'s `stale-stamp` row
-  that on a fast-moving skills-root (a library clone under active development) a stale stamp is
-  informational unless the skill's *contract* (its `description:` or `## Edges`) changed since the
-  stamped sha; only a contract change warrants a re-register. Alternative (heavier): stamp against
-  a tagged version instead of the skill dir's last commit — a mechanism change touching every
-  skill's self-registration.
+- **status:** dropped (2026-08-19, grok stream) — **moot.** `foreman` is retired; there is no `stale-stamp` check left to teach. `built-against` on workstream cheat sheets is a different, live mechanism.
 - **body:** `built-against` records the skill directory's last commit sha; every commit to a skill
   in the library re-flags every deployed host's block for that skill. On an actively developed
   library this turns `/foreman check`'s `stale-stamp` fact from drift signal into a permanent nag,
@@ -449,7 +445,7 @@ one-line resolution; delete only when the reason it existed is gone.
 ### BL-12 — harness-compaction spike methodology + doctrine candidates from the survival work
 - **source:** compaction-survival spike + implementation (2026-07-24,
   `docs/design/2026-07-24-workstream-compaction-survival.md`); debrief sweep 2026-07-25.
-- **status:** open
+- **status:** partly done (2026-08-19, grok stream) — doctrine candidates already live in workstream `flow.md` Scenario C. Methodology half still rides with BL-10 (deferred).
 - **body:** two durable byproducts of the spike, parked here so they outlive the design doc's
   evidence section. **(1) Reusable methodology:** the spike validated skill-text behavior under a
   *context event* (compaction) with a planted-token fixture — a throwaway repo with a queue of
@@ -509,7 +505,7 @@ one-line resolution; delete only when the reason it existed is gone.
 ### BL-9 — `skill-builder` exists now: BL-5/BL-6/BL-7 have a concrete owner, still unresolved
 - **source:** Phase 7 capstone (2026-07-19), debrief on landing
   `docs/design/2026-07-19-phase7-skill-builder.md`.
-- **status:** open
+- **status:** done (2026-08-19, grok stream) — BL-6 and BL-7 shipped earlier; BL-5 is moot (`foreman` retired). Owner exists; no remaining first-task from this entry.
 - **body:** Phase 7 built the `skill-builder` skill (`new`/`check`/`distill`) that BL-5, BL-6, and BL-7
   each named as their *future* natural home — that skill is real now, but Phase 7 deliberately did
   **not** use it to fix any of the three (scope discipline: the capstone's deliverable was the skill +
@@ -599,7 +595,7 @@ one-line resolution; delete only when the reason it existed is gone.
 ### BL-5 — keep skills-lint.sh check 8 and foreman-health.sh derive-seams parsers in sync
 - **source:** Phase 4 `/foreman` re-scope (2026-07-19);
   `docs/design/2026-07-19-phase4-foreman-rescope.md` §4.2, §9.
-- **status:** open
+- **status:** dropped (2026-08-19, grok stream) — **moot.** `foreman-health.sh` is gone; only the lint parser remains, so there is nothing left to keep in sync.
 - **body:** `skills/skill-builder/scripts/skills-lint.sh` check 8 (grimoire's dev-time gate, moved into
   `skill-builder`'s bundle at Phase 7) and
   `skills/foreman/scripts/foreman-health.sh derive-seams` (the shipped runtime composer) both parse the
@@ -639,7 +635,7 @@ one-line resolution; delete only when the reason it existed is gone.
 ### BL-3 — block-splicing helpers must avoid multi-line `awk -v` (BSD/macOS portability)
 - **source:** Phase 1 pilot A4 (2026-07-18); `docs/design/2026-07-18-phase1-pilot-acceptance.md`;
   commit `4b32a2b`.
-- **status:** open
+- **status:** done (2026-08-19, grok stream) — constraint is carried: `skills-lint.sh` documents BSD-safe no multi-line `awk -v`; live `-v` uses are single-line scalars.
 - **body:** `skills/backlog/scripts/register-route.sh` splices a skill's route block into a front-door
   doc. The first cut passed the multi-line block via `awk -v blk=…`; **BSD/macOS awk rejects a newline
   in a `-v` value** (`awk: newline in string`) and the script aborted before writing (fail-safe, but
@@ -683,7 +679,8 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-2 — the body-roster sweep was targeted, not exhaustive
 - **source:** boundary body audit (2026-07-18); commits `0380885`, `689309f`, `da76945`.
-- **status:** partially done (2026-07-23) — BL-1's check 9 landed and, run against the current
+- **status:** done (2026-08-19, grok stream) — check 9 still reports zero rosters. One-pass grep of every `skills/*/SKILL.md` for prose verb-set / `/foreman` / `/architect` roster shapes: none. Remaining BL-1 gap (prose-listed roster with no backticks) stays a manual scan, not a second lint.
+- **was:** partially done (2026-07-23) — BL-1's check 9 landed and, run against the current
   12-skill tree, reports **zero** enumerated-roster findings (`warns=11`, unchanged) — an exhaustive
   sweep for the backticked-per-verb-token shape, for free, every gate run from now on. Still open for
   the shape check 9 can't see: a prose-listed roster or a restated protocol/seam narrative (rubric
