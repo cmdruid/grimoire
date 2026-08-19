@@ -28,7 +28,7 @@ The v2 roster, by coupling tier (how much workshop a skill needs):
 | helper | `blueprint` | specification spine — ideation to argued spec; genesis (`new` / `deploy`) for a founding repo; never implementation plans |
 | helper | `contractor` | one job: roadmap / plan / runbook / review / build |
 | helper | `journal` | **the records format authority** — the record contract, `records.sh`, the history ledger; required (setup delegates tool-layer standup to it) |
-| helper | `backlog` | the follow-up lifecycle — capture by kind, tickets, debriefs, tracker grooming |
+| helper | `backlog` | the follow-up lifecycle — file, promote, debrief, and curate the three trackers |
 | helper | `notepad` | project memory — write, find, update, supersede, and drop durable facts in `notes/` |
 | helper | `workstream` | long-lived development streams — worktrees, queues, shipping |
 | helper | `auditor` | code-quality audits; pass reports land in the agent-records home |

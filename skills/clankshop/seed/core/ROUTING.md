@@ -14,10 +14,9 @@ below.
    lane. More than one phase, or a decision worth an ADR → a roadmap first, then a plan and
    build per phase.
 5. **A design decision at stake anywhere above** → the design station shapes that piece first;
-   build plans against the settled spec, never against an open question.
-6. **At dispatch, check for escalation:** a decision, sign-off, ambiguity, or access call only
-   the human can make → a ticket (the records root's `tickets/` store) with a recommended
-   answer, before the work starts.
+   build plans against the settled spec, never against an open question. A call only the
+   human can make is asked in the conversation when a human is present; if it must survive
+   a reset, debrief/curate files `needs human:`.
 
 | change | lane | entry point |
 |---|---|---|

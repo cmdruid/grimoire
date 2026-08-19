@@ -66,7 +66,7 @@ Decide these before reconstructing. They are what make the generic framework you
 | `<language>` | The implementation language -> drives the anti-pattern greps + metrics recipes. | Rust / TypeScript / Python |
 | `<native dimensions>` | The host's sacred invariants, each promoted to a scored dimension atop the 12 portable ones. | "Determinism" (worldgen pure in `(seed, pos)`); "AI-boundary" |
 | `<targets>` | The audited units, each tagged Deep / Mid / Light by blast radius. | `voxel/`, `content/` (Deep); `ai/` (Mid); `config.rs` (Light) |
-| `<drains>` | The host's **existing** capture homes a finding graduates into -- never a parallel queue. | report record + `/backlog bug` for defects; tracker lines only when the tracker file already exists |
+| `<drains>` | The host's **existing** capture homes a finding graduates into -- never a parallel queue. | report record + the host's bug-filing lane for defects; tracker lines only when the tracker file already exists |
 | `<exemplars>` | The in-repo files a score of 5 is measured against (often one library file + one service/system file). | filled by the *Select exemplars* step |
 | `<gate>` | The host's quality command the audit run must satisfy. | `./tests/scripts/ci.sh` |
 
@@ -203,8 +203,8 @@ path is the ID, and a finding is cited as `<report-path>` + its heading.
   Confidence (high/med/low); Effort (S/M/L); Dimension; Target; Location (`path:line` or
   `--`); Drained (a link/line reference into a `<drain>`, or `--` while open); Finding (with
   the metric/`file:line` evidence); Fix.
-- **Drain -- by kind, at pass end.** A **defect** stays in the report; promote it with
-  `/backlog bug`. **Feature work / cleanup** becomes a Backlog tracker line only when
+- **Drain -- by kind, at pass end.** A **defect** stays in the report; promote it via
+  the host's bug-filing lane. **Feature work / cleanup** becomes a Backlog tracker line only when
   that tracker file already exists. A **project problem or risk** becomes an Issues
   line the same way. Evidence the *rubric or framework itself* should change becomes
   a Feedback line. Else the report is the queue. Backfill each finding's `Drained:`
@@ -370,7 +370,7 @@ Or the release-gating model: P0 = release-blocking.>
 
 ## Drains
 
-<report record + `/backlog bug` for defects; tracker lines only when the
+<report record + the host's bug-filing lane for defects; tracker lines only when the
 tracker file already exists; else this report's findings list is the queue.>
 
 ## Bench (optional)

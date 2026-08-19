@@ -330,7 +330,7 @@ redundant:
   it at the feature-completion seam ("ship was eventful — worth a second debrief?").
 
 **Eventful ship** = `ship` required conflict resolution, hit a contention reject-and-retry, took
-multiple syncs, or otherwise surfaced friction/learnings worth an Issues/Feedback line or a `bug` capture. A
+multiple syncs, or otherwise surfaced friction/learnings worth an Issues/Feedback line, a Backlog `file repro:` remainder, or the host's bug-filing lane. A
 clean ff-merge with no conflicts -> no second debrief. **A contentious conflict band-aid makes a ship
 eventful** — distinct from process friction: it's risky *code* now on the trunk. The band-aid is
 captured **at the moment** of resolution (the `REVIEW(conflict):` marker + `[conflict band-aid]` friction

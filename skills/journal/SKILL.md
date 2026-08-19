@@ -138,9 +138,9 @@ none — `reports.md` is the contract example. Setup copies nothing.
 ## Scope boundary + host conduct
 
 `journal` defines the format, stands it up, closes records, and keeps the stores conformant.
-The follow-up **workflow** that runs on the layer — capturing items by kind, escalating to the
-human, sweeping finished work, grooming the trackers — is a client's job (the pack's `backlog`
-member where installed), and what a captured signal *means* for the system is judged further
+The follow-up **workflow** that runs on the layer — capturing items by kind, sweeping finished
+work, grooming and promoting the trackers — is a client's job (the pack's `backlog` member
+where installed), and what a captured signal *means* for the system is judged further
 downstream still. Journal owns no judgment beyond its own formats.
 
 **Standalone by default, framework-aware when present.** Every verb works on any repo: the
@@ -151,7 +151,7 @@ absent — never demand the workshop as a precondition.
 ## Edges
 
 <!-- edges:journal -->
-- produces: record — the eight stores, the record contract, and deployed records.sh
+- produces: record — the record contract and deployed records.sh
 - handoff: — (none; writers consume the tool, journal does not terminate a workflow)
 - consumes: — (none; it defines the format)
 <!-- /edges:journal -->

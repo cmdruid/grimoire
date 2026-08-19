@@ -35,7 +35,7 @@ is the harm this rule exists to prevent. Two consequences follow, keyed on *what
 
 - **You never spawn a stream for your own work.** When in-stream work surfaces something that *would
   be* its own stream — a tangent, a debug bug, the next roadmap track — you **capture or surface it;
-  you never stand it up to drive**: a **defect** → `/backlog bug`; **feature work** → `/backlog task`
+  you never stand it up to drive**: a **defect** → the host's bug-filing lane; **feature work** → `/backlog task`
   (a **Backlog** tracker line) — on a non-workshop host, the project's own tracker instead (*Host layout*);
   the **next track / a new stream** → name it at a seam and hand it to the human/coordinator. Plain
   `create` *enters the loop*, so standing up a stream to drive is a **coordinator-only**,

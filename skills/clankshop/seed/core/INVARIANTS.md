@@ -14,7 +14,7 @@ INV-2: Completion means landed on `<trunk>`, not gate-green — the record is cl
 ## Git discipline
 
 INV-3: Stage and commit scoped to exactly the paths you wrote — never `git add -A`.
-INV-4: Small shared-state edits — record captures, closures, ticket updates — are pathspec-scoped commits on the `<trunk>` checkout, wherever the working session lives.
+INV-4: Small shared-state edits — record captures, closures — are pathspec-scoped commits on the `<trunk>` checkout, wherever the working session lives.
 INV-5: In a shared worktree the main session is the sole writer of the tree — a delegated sub-agent authors its result out-of-band and hands it back; it never edits the tree directly.
 INV-6: In a linked worktree, file ops take absolute worktree paths and commands take `git -C <worktree>` — a bare `cd` does not persist across tool calls, so relying on it silently edits the root checkout.
 

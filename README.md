@@ -44,7 +44,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `agent-council` | three-family review panel: independent Claude, Grok, and Codex opinions on a skill package, clustered and ranked by agreement; standalone, outside every pack |
 | `analyst` | reports and briefings for the developer: catch-ups, status, subsystem and health snapshots, guides — synthesized from the records layer and git, from a customizable template catalog |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
-| `backlog` | the follow-up lifecycle: capture by kind, tickets, debrief sweeps, tracker grooming — a client of the records layer (guards when none) |
+| `backlog` | the follow-up lifecycle: file, promote, debrief, and curate the three trackers — a client of the records layer (guards when none) |
 | `blueprint` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
 | `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
 | `clankshop` | the workshop face: seed doctrine + the four stations; `setup` / `migrate` / `check`, and persona summons for hat-on discussion |

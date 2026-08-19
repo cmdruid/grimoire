@@ -40,8 +40,8 @@ Detection order, first hit wins:
 never overwritten, since a re-run would otherwise destroy the host's accumulated calibration.
 
 Pass reports are agent-records `reports/` records on every host (file-mode if no tool).
-Findings stay in the report; promote a defect with `/backlog bug`. Tracker lines only when the
-tracker file already exists.
+Findings stay in the report; promote a defect via the host's bug-filing lane. If no
+lane exists, stay in the report. Tracker lines only when the tracker file already exists.
 
 ## What this skill bundles
 
@@ -83,9 +83,9 @@ layer (or the dated report file) is the memory.
   `<agent-records>/templates/reports.md`. The reports store *is* the trend
   history. Close it `consumed` once its actionable findings are drained
   (`records.sh done` when the tool exists; else file-mode stamp).
-- **Defects stay in the report.** Do not mint `bugs/`. Promote a defect with
-  `/backlog bug`. Tracker lines only when the tracker file already exists;
-  else the report is the queue.
+- **Defects stay in the report.** Do not mint `bugs/`. Promote a defect via
+  the host's bug-filing lane. If no lane exists, stay in the report. Tracker
+  lines only when the tracker file already exists; else the report is the queue.
 
 Either way the drain discipline holds: the audit **surfaces and prioritizes**; the host's
 trackers **own and schedule** the work. No parallel work queue. Drained findings, over time,
@@ -138,9 +138,8 @@ Follow the host's `GUIDE.md` → *Process*; in brief:
 
 ## Relationship to neighboring skills
 
-- A drained *defect* graduates via the host's bug-filing lane (`/backlog bug` on a workshop
-  host); a *feature* finding via its backlog capture (`/backlog task`); else the host's own
-  equivalent.
+- A drained *defect* graduates via the host's bug-filing lane; a *feature* finding via
+  its backlog capture (`/backlog task`); else the host's own equivalent.
 - If the host has a **heavier, parallelized audit workflow** (score → adversarially verify →
   synthesize), reach for it when a single-reader pass isn't thorough enough.
 
@@ -166,13 +165,13 @@ changes. There is no mirror to re-sync.
 
 For a **pass**: reproducible `metrics.sh` numbers, targets scored against the `rules/`
 contracts (every 5 evidence-backed, false-positives refuted), one pass report recorded, and
-**every** actionable finding drained (report record + `/backlog bug` for defects;
-tracker lines only when the tracker file exists; the report closed `consumed`).
+**every** actionable finding drained (report record + the host's bug-filing lane for
+defects; tracker lines only when the tracker file exists; the report closed `consumed`).
 For a **setup**: a rubric home that passes the host's gate, a
 baseline pass report, pinned exemplars, and the wiring hook (routing/chore line or doc-index
 pointer) in place.
 For **metrics**: `metrics.sh` printed its report; no scores filed.
 For **check**: show the script output. Exit 0 → stop. Non-zero → treat as a P0
-defect and drain it (stay in the report; `/backlog bug` to promote), then stop.
+defect and drain it (stay in the report; host's bug-filing lane to promote), then stop.
 If `metrics.sh` has no `--check`, say so and stop — that
 is not a fail.

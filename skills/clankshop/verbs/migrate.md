@@ -54,7 +54,7 @@ migration): everything below then writes and commits on the stream's branch and 
    | durable how-it-works notes, shared memory | `notes` |
    | feature/implementation plans, roadmaps | `plans` |
    | investigation writeups, postmortems, audits | `reports` |
-   | open asks awaiting a human | `tickets` |
+   | open asks awaiting a human | *leave in place* |
    | hand-rolled TODO/backlog/issues lists | `trackers` |
 
    **A legacy tracker file** maps to a `trackers/` record: its actionable entries become the
