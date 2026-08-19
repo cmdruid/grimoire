@@ -14,6 +14,52 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-31 — the seed's prose still calls the doctrine home "the handbook"
+- **source:** feat stream, feature 3a build (2026-08-18).
+- **status:** open
+- **body:** 3a's census was of `.handbook` **path literals**, and every one of those is now
+  flipped. What it did not cover is the **bare word**: a deployed doctrine home still describes
+  itself as "the handbook" in `skills/clankshop/seed/review/POLICY.md` (5×),
+  `skills/clankshop/seed/scripts/context.sh:36`, plus `skills/backlog/SKILL.md:94,99`,
+  `skills/blueprint/SKILL.md:340`, and `skills/journal/SKILL.md:136`. The loader also still
+  names its root variable `HB`. Nothing is broken — the paths all resolve — but a project whose
+  doctrine lives at `.dev/doctrine/` reads doctrine that calls itself something else.
+- **fix sketch:** one prose sweep for the bare word, plus `HB` → `DH` in `context.sh`. Cheap and
+  mechanical; deliberately deferred out of 3a so the slice boundaries stayed checkable against
+  the spec's census. Check 15/16 cannot see any of it (they match path literals), so it needs a
+  human-driven sweep rather than a gate.
+
+### BL-30 — `seed.sh` validates `--workspace`; nothing validates the door that feeds it
+- **source:** feat stream, feature 3a build (2026-08-18).
+- **status:** open
+- **body:** 3a's Decision 13 assigns both declaration guards to lint check 16, which reads the
+  **front door**. That is right for the library's own gate, but a consuming project's `setup`
+  run is not linted: the verb resolves `agent-workspace:` from the door and passes it to
+  `seed.sh`. S3 therefore added argument validation to `seed.sh` itself (refuse `.`, refuse an
+  absolute path) — a guard the spec does not describe. It is defensive and cheap, but it means
+  the "forbidden `.`" rule now has **two** enforcers with no single owner, which is exactly the
+  shape Decision 13 was written to avoid.
+- **fix sketch:** decide whether the script-side guard is doctrine (document it in M1 as the
+  runtime half of the same rule) or redundant (drop it and rely on the verb). Do not silently
+  keep both un-owned.
+
+### BL-29 — two slices in 3a's spec would have reddened the trunk gate as written
+- **source:** feat stream, feature 3a build (2026-08-18).
+- **status:** open (process finding — no code fix pending)
+- **body:** Two ordering defects survived four review rounds and were caught only at build time.
+  (1) **Check 15's new `.records/doctrine/` literal** was specified to land in S2 as a FAIL, but
+  the literal was live in five consumer skills until S5 — it would have failed the trunk gate for
+  the whole S2–S5 window. Round 3's MUST-FIX #3 caught exactly this for check 16 and gave it a
+  WARN carve-out; nobody applied the same reasoning to check 15. Built with the same staging
+  (WARN in S2, FAIL in S6). (2) **S3 relocating the seed broke `setup-journal-test.sh`**, a file
+  the spec assigns to **S4** — so S3 could not have landed green on its own. The path was
+  repointed in S3; the substantive S4 work stayed in S4.
+- **fix sketch:** nothing to fix in the code. The generalizable lesson for the roadmap's standing
+  discipline: **a slice's `paths` must include every file its own change breaks, not only the
+  files it means to edit.** Both defects are the same class — an edit surface enumerated by
+  intent rather than by consequence, which is the failure mode this feature's reviews kept
+  finding in a different guise.
+
 ### BL-28 — `analyst-facts.sh` carries a second, drifted copy of the reserved-name carve-out
 - **source:** feat stream, workspace-consolidation review round 2 (2026-08-18).
 - **status:** open
@@ -51,7 +97,9 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-26 — `skill-builder new` will keep minting skills that carry retired path variables
 - **source:** feat stream, workspace-consolidation review round 2 (2026-08-18).
-- **status:** open
+- **status:** **partly done (2026-08-18)** — feature 3a's S6 added the `agent-workspace`
+  resolver to `new.md`'s list, so a newly scaffolded doctrine-touching skill is no longer born
+  failing check 16. The `agent-templates` half stays open for **3b**.
 - **body:** `skills/skill-builder/verbs/new.md:35-36` tells the scaffolder to inline "the
   agent-records / **agent-templates** resolvers (default paths named literally)". Feature 3b retires
   `agent-templates`; feature 3a retires `agent-doctrine`. Until `new.md` is updated, every skill
