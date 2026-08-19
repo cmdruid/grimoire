@@ -115,7 +115,22 @@ Two process lessons, paid for with five review lenses across two rounds. They ap
   fallback on a fixture and confirm the verbs still work (they must no longer depend on it).
 - **Risks:** low. The one hazard is doing it *after* Phase 3 assumes it, rather than before.
 
-## Phase 3 — `agent-templates` → `<agent-workspace>/templates`   *requires: phase 1 (+2 for the fallback option)*
+## Phase 3 — `agent-templates` → `<agent-workspace>/templates`   *requires: phase 1 (+2 for the fallback option)*   **DROPPED 2026-08-19**
+
+> **Dropped as scoped, absorbed into BL-34.** The spec was argued and independently reviewed
+> (`docs/design/2026-08-18-agent-templates-home.md`, now `status: dropped`) and came out at 42 refs
+> across 27 files in 11 skills — because it **preserved** every legacy path while renaming: adopt
+> ladders, a brownfield probe, a carve-out kept for compat. Meanwhile its stated payoff (deleting
+> `records.sh`'s reserved-name carve-out) was never actually recovered, since that carve-out had to
+> stay.
+>
+> The pack is in **alpha**, so the legacy branches get **deleted, not carried** — which makes this
+> move cheap and folds it into BL-34 (one simple spec: two variables, two roots; `skill-builder`
+> holds it and enforces compliance; skills keep their own duplicate resolvers, which is the accepted
+> price of independence). Three real defects extracted from the attempt shipped separately:
+> BL-28 (`f2c5c8f`), the seeded-README doctrine home (`1901d71`), and the `checkpoint` mode bit.
+>
+> **Transferable lesson:** the value question belongs *before* the argued spec, not after the review.
 
 - **Goal:** retire the second variable into the workspace, and demote `records.sh`'s reserved-name
   list from architectural to legacy-compat.
