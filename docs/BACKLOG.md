@@ -66,7 +66,10 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-32 — five skills prescribe `records.sh new --template <resolved>` with no doctype — an invalid invocation
 - **source:** feat stream, BL-25 build (2026-08-19).
-- **status:** open
+- **status:** done (2026-08-19, feat stream) — all five now name the doctype. `blueprint/SKILL.md`
+  was fixed with the `design`→`specs` rename; `contractor/SKILL.md`, `debugger/SKILL.md`,
+  `workstream/SKILL.md`, `workstream/verbs/ship.md` in the follow-up sweep. Verified by
+  enumeration: `grep -rn 'records.sh new --template' skills/` returns nothing.
 - **body:** `records.sh new` takes the doctype as its **first positional** (`records.sh new
   <doctype> --title "…" [--template <path>]`). Five skills write the shorthand
   `records.sh new --template <resolved>` with the doctype dropped:
@@ -136,6 +139,11 @@ one-line resolution; delete only when the reason it existed is gone.
   `facts-test.sh` assertions that plant a `status: open` record in each reserved directory. The
   **ownership** half of the fix sketch is deliberately NOT resolved — two copies still exist by
   contract; that is now in scope for BL-34.
+- **ownership half closed** (2026-08-19, feat stream, BL-34 item 1): there is no reserved-name
+  list left to keep in step. Both `records.sh` and `analyst-facts.sh` now run the *same positive*
+  test — a dated filename plus front-matter declaring a doctype — so the drift this entry
+  describes has no surface to recur on. `facts-test.sh` red-proofs it by dating a planted file
+  and asserting it becomes a record.
 - **body:** `skills/journal/scripts/records.sh:64,82` is not the only place the reserved-name list
   lives. `skills/analyst/scripts/analyst-facts.sh:76-81` independently filters
   `grep -v -e "^$RR/templates/" -e "^$RR/scripts/"` — and **omits `doctrine/`**, so analyst already
@@ -239,7 +247,11 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-22 — `records.sh new` performs no reserved-name check
 - **source:** feat stream, agent-doctrine spec review round 2 (2026-08-18).
-- **status:** open
+- **status:** dropped (2026-08-19, feat stream) — **moot by design change.** BL-34's discriminator
+  removed reserved names entirely, so there is no reserved `<doctype>` left to reject. The defect
+  this described was *silent orphaning* — a record minted where `list`/`check` would never look.
+  That cannot happen now: the scan is a crawl at any depth, so a dated record declaring a doctype
+  is found wherever it sits, including under `templates/` or `scripts/`.
 - **body:** `resolve()` (`records.sh:64`) and `stores()` (`:73`) both exclude reserved
   directories, but `cmd_new` consults neither. With a matching template planted,
   `records.sh new templates --title X` succeeds today and mints a record inside a reserved

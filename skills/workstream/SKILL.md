@@ -111,8 +111,9 @@ answered by a single stamp probe; keep them apart.
   ship-time plan closes, optional debrief `reports/` — land under the agent-records home
   (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
   `.records/`). Resolve lock-in templates via the agent-templates rule; pass
-  `records.sh new --template <resolved>` when the tool exists; else file-mode fill from
-  the resolved `plans.md` / `reports.md`. Never write the flat
+  `records.sh new <doctype> --template <resolved>` when the tool exists; else file-mode fill
+  from the resolved `plans.md` / `reports.md`, naming the file `YYYY-MM-DD-<slug>.md` — an
+  undated filename is not a record, so the tool will not see it. Never write the flat
   `<agent-records>/templates/<doctype>.md`. File-mode close stamps `status:` only.
   Do not mint a Backlog tracker. Tracker-line completion runs only when that tracker
   file already exists.

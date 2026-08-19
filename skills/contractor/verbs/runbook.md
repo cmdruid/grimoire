@@ -14,7 +14,8 @@ existing phase-plan paths — never task-level work invented here.
 2. **From a plan:** emit a `plans/` record. Resolve `plans.md` via the
    agent-templates rule, then mint `records.sh new plans --template <resolved>
    --title "Runbook: <plan title>"` when the tool exists; else file-mode from
-   that same resolved path into `<agent-records>/plans/`. Either way set
+   that same resolved path into `<agent-records>/plans/`, naming the file
+   `YYYY-MM-DD-<slug>.md` (the record shape). Either way set
    `tags: [runbook]`. Body: ordered steps copied from the plan's slices —
    command/gate/path only, no approach essay. Each step names the slice id it
    came from.

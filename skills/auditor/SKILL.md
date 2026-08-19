@@ -78,7 +78,8 @@ layer (or the dated report file) is the memory.
 - **The pass report** — one `reports` record under the agent-records home, tagged
   `audit`. Resolve `reports.md` via the agent-templates rule;
   `records.sh new reports --template <resolved> --title "Audit: <scope>"` when
-  the tool exists; else file-mode from that path. Never write the flat
+  the tool exists; else file-mode from that path, naming the file
+  `YYYY-MM-DD-<slug>.md` (the record shape). Never write the flat
   `<agent-records>/templates/reports.md`. The reports store *is* the trend
   history. Close it `consumed` once its actionable findings are drained
   (`records.sh done` when the tool exists; else file-mode stamp).

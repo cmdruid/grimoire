@@ -26,8 +26,10 @@
 #      also carries the portability property: a portable skill with no bundled
 #      docs/ is simply never gated on docs/, in any library it's copied into.
 #   3. (retired -- the foreman BOOTSTRAP manifest lost its subject; numbering held.)
-#   4. Consumption wiring: every skills/<name> has a ~/.claude/skills/<name>
-#      symlink pointing at it (FAIL) and a README mention (WARN).
+#   4. README inventory: every skills/<name> is mentioned in README.md (WARN).
+#      (The ~/.claude/skills wiring probe that shared this slot was deleted --
+#      installation state, not repo content; it made the warn count depend on
+#      which checkout you linted from.)
 #   5. bash -n every scripts/*.sh (FAIL); shellcheck if installed (WARN).
 #   6. Cross-skill name refs: a backticked `/name` slash-invocation that matches
 #      no skill dir and no known generic term (WARN -- catches references to
@@ -219,24 +221,17 @@ rm -f /tmp/skills-lint-refs.$$
 # absorbed BOOTSTRAP.md (clankshop rollout, Task 2.5). Numbering retained so the
 # header comment's check list stays stable.
 
-# ---- 4. consumption wiring (advisory: installation state, not repo content) --
-# WARN-only: a public clone isn't necessarily wired into any harness. Physical-
-# path compare so links that resolve through intermediate symlinks still pass.
-if [ -d "$claude_skills" ]; then
-  for sk in "$skills_dir"/*/; do
-    name="$(basename "$sk")"
-    link="$claude_skills/$name"
-    if [ ! -L "$link" ]; then
-      warn "$name: not wired into ~/.claude/skills on this machine (./install.sh $name)"
-    else
-      want="$(cd -P "${sk%/}" 2>/dev/null && pwd)"
-      got="$(cd -P "$link" 2>/dev/null && pwd || true)"
-      [ "$got" = "$want" ] || warn "$name: ~/.claude/skills/$name resolves to ${got:-nothing}, not this clone"
-    fi
-  done
-else
-  echo "note: ~/.claude/skills absent -- skipping wiring check"
-fi
+# ---- 4. README inventory -----------------------------------------------------
+# The wiring arm that used to live here (does ~/.claude/skills/<name> symlink
+# back to this clone?) was DELETED: it tested this machine's installation state,
+# not repo content, so its result depended on which checkout you linted from.
+# The symlinks point at the root clone, so linting a WORKTREE made every skill
+# warn "resolves to <root>/skills/<name>, not this clone" -- measured: warns=23
+# from a worktree vs warns=8 from the root, a 15-warning delta with an identical
+# tree. That forced every gate instruction to say "gate on fails=0; the warn bar
+# is checkout-specific and will mislead you." A linter whose output depends on
+# where you run it teaches people to ignore its output. `./install.sh` manages
+# wiring; that is not a lint. Post-deletion both checkouts report warns=7.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   grep -q "\`$name\`" "$root/README.md" 2>/dev/null || warn "$name: not mentioned in README's skill inventory"

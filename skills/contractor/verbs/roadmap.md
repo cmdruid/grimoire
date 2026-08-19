@@ -27,7 +27,8 @@ that phase can be built. The roadmap never carries task-level detail.
 4. **Land it** per SKILL.md *Shared discipline*. Resolve `plans.md` via the
    agent-templates rule, then mint `records.sh new plans --template <resolved>
    --title "<Track> — Roadmap"` when the tool exists; else file-mode from that
-   same resolved path into `<agent-records>/plans/`. Either way set
+   same resolved path into `<agent-records>/plans/`, naming the file
+   `YYYY-MM-DD-<slug>.md` (the record shape). Either way set
    `tags: [roadmap]` and replace the body with the roadmap scaffold filled in
    from the resolved `roadmap.md`. Flip `status: current` while the map
    governs the track.

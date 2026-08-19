@@ -97,7 +97,8 @@ evaporated briefing costs the whole run.
 
 To persist: resolve `reports.md` via the agent-templates rule; mint with
 `records.sh new reports --template <resolved> --title "…"` when the tool
-exists; else file-mode from that path. Then fill the minted skeleton — body
+exists; else file-mode from that path, naming the file `YYYY-MM-DD-<slug>.md`
+(the record shape). Then fill the minted skeleton — body
 **and** the `tags:` line, which must carry the template's token (`tags: [analyst, briefing]`).
 The mint tool sets no tags; filling them is what lets the next briefing find this one as its
 anchor. On a host with no records tool, file-mode still writes under the

@@ -45,9 +45,10 @@ land in `<agent-records>/specs/` and `<agent-records>/adr/` on every host
 (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`,
 else `.records/`). Resolve `spec.md` / `adr.md` via the agent-templates rule;
 `records.sh new specs --template <resolved>` when the tool exists (the flag is
-required — there is no fallback); else file-mode from that path. `spec.md`
-carries both the front-matter and the body scaffold, so there is no second
-template to fill from. Never write the flat
+required — there is no fallback); else file-mode from that path, naming the
+file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the tool
+will not see it. `spec.md` carries both the front-matter and the body scaffold,
+so there is no second template to fill from. Never write the flat
 `<agent-records>/templates/<doctype>.md`. Status promotion:
 `records.sh touch --status current` when the tool exists; else file-mode
 stamp. Closure through `records.sh done` when the tool exists; else

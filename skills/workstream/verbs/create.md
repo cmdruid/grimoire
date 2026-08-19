@@ -86,7 +86,8 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    commit). If the source is an already-tracked doc, skip. If it's a new untracked plan file, move it
    into the worktree under `<agent-records>/plans/` on every host (ensure it carries the
    front-matter contract: `records.sh new plans --template <resolved>` + fill if the tool
-   exists; else file-mode fill from the resolved `plans.md`). Run the host's doc-linter from
+   exists; else file-mode fill from the resolved `plans.md`, naming the file
+   `YYYY-MM-DD-<slug>.md` — an undated filename is not a record). Run the host's doc-linter from
    the worktree, then commit it **on the stream branch** (it rides to `<target>` at first
    ship): `git -C <worktree> add <plans-home>/<basename> &&
    git -C <worktree> commit -m "Seed stream/<stream>: plan" -- <plans-home>/<basename>`.

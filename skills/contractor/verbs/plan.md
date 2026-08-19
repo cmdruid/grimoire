@@ -62,7 +62,8 @@ unsettled, stop and send those branches back.
    agent-templates rule, then mint `records.sh new plans --template <resolved>
    --title "<title> — Implementation Plan"` when the tool exists; else
    file-mode from that same resolved path into the agent-records `plans/` home
-   (SKILL.md destination rule). Either way set `tags: [plan]` and replace the
+   (SKILL.md destination rule), naming the file `YYYY-MM-DD-<slug>.md` (the
+   record shape). Either way set `tags: [plan]` and replace the
    body with the plan scaffold filled in from the resolved `plan.md` (bundled
    shape: `templates/plan.md`).
 

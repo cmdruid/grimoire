@@ -127,7 +127,8 @@ independent of what the root has checked out. Never hand-commit these records to
    - **A debrief report when the unit warrants narrative** — implementation surprises, follow-on
      context a future reader needs beyond the ledger line: resolve `reports.md` via the
      agent-templates rule; `records.sh new reports --template <resolved>` when the tool
-     exists; else file-mode from that path. Tag it `debrief`, write findings-first, commit
+     exists; else file-mode from that path, naming the file `YYYY-MM-DD-<slug>.md` (the
+     record shape). Tag it `debrief`, write findings-first, commit
      it on the branch. A routine unit needs no report.
    - **Complete the queue item's tracker line** only when that tracker file already exists:
      flip `[ ]` → `[x]` (append the completion date) and opportunistic `records.sh touch`
@@ -152,7 +153,8 @@ independent of what the root has checked out. Never hand-commit these records to
    **all landed features** done and set the next queue item current.
    Then **draft** the next feature's implementation plan from the queue source into
    `<agent-records>/plans/` (resolve `plans.md` via the agent-templates rule;
-   `records.sh new --template <resolved>` when the tool exists; else file-mode fill) —
+   `records.sh new plans --template <resolved>` when the tool exists; else file-mode fill,
+   naming the file `YYYY-MM-DD-<slug>.md` — the record shape) —
    a working-tree draft: it rides the *next* ship; do not commit it now. Do not start the next
    feature automatically. **In `manual` mode, skip this draft** — plan-authoring belongs to the next
    PLAN session on the plan-model (`flow.md` -> *Manual mode: the phase loop*); set `Phase: plan`

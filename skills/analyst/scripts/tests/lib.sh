@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# lib.sh — shared assertions for the clankshop test harness. Source, don't execute.
+# lib.sh — shared assertions for the analyst test harness. Source, don't execute.
 # Patient-zero holds: every test builds its fixtures in a mktemp dir — nothing runs
 # against the library's own tree.
 
