@@ -224,4 +224,48 @@ rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "malformed ledger check rc" "2" "$rc"
 expect "check counts ledger fields" "1 fields (want 6)" "$ERR"
 
+# --- the flat-templates fallback is load-bearing ONLY for a bare mint (BL-25) --
+# `cmd_new`'s `[ -n "$tpl" ] || tpl="$RR/templates/$doctype.md"` is brownfield
+# compatibility, not an interface. Every writer is supposed to resolve its
+# template through the agent-templates rule and pass `--template <resolved>`;
+# omitting it silently leans on this flat legacy path instead.
+#
+# Deleting the fallback is the decisive experiment, so run it: mutate a COPY of
+# the script (in a second fixture project, so its self-derived $RR still
+# resolves) and observe both forms. `--template` must keep working; the bare
+# form must hard-error. That second half is the fact BL-25 rests on -- the three
+# contractor verbs really would have broken, so the fallback could not be
+# deleted before they were flipped.
+#
+# The `assert applied` step is not ceremony: a "break" that silently fails to
+# apply leaves the suite green on unbroken input, which is indistinguishable
+# from a passing proof.
+proj2="$TMP/proj-nofallback"
+mkdir -p "$proj2"
+"$SKILL/scripts/standup.sh" "$proj2" >/dev/null
+RS2="$proj2/.records/scripts/records.sh"
+mkdir -p "$proj2/.records/templates"
+printf -- '---\ndoctype: plans\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\n' \
+  > "$proj2/.records/templates/plans.md"
+
+fallback='[ -n "$tpl" ] || tpl="$RR/templates/$doctype.md"'
+before="$(grep -cF -- "$fallback" "$RS2" || true)"
+expect_eq "fallback present before the cut" "1" "$before"
+grep -vF -- "$fallback" "$RS2" > "$RS2.cut" && mv "$RS2.cut" "$RS2"
+chmod +x "$RS2"
+after="$(grep -cF -- "$fallback" "$RS2" || true)"
+expect_eq "fallback gone after the cut" "0" "$after"
+
+# The prescribed form is unaffected -- it never consulted the fallback.
+resolved="$proj2/.records/templates/plans.md"
+rc=0; p_nf="$("$RS2" new plans --template "$resolved" --title "Survives the cut")" || rc=$?
+expect_eq "--template mints with no fallback" "0" "$rc"
+expect_eq "--template path" "$proj2/.records/plans/$today-survives-the-cut.md" "$p_nf"
+expect "--template front-matter filled" "# Survives the cut" "$p_nf"
+
+# The bare form dies -- proving it was leaning on the fallback all along.
+rc=0; "$RS2" new plans --title "Dies with the cut" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "bare mint errors with no fallback" "2" "$rc"
+expect "bare mint names the missing template" "no template for doctype 'plans'" "$ERR"
+
 report "records-test"
