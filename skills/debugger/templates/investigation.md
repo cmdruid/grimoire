@@ -1,7 +1,8 @@
 # Investigation body scaffold
 
-_Fills the body of a `reports` record minted by `records.sh new reports --title "..."` — the tool
-stamps the front-matter and filename; this template supplies only the sections below._
+_Fills the body of a `reports` record minted by
+`records.sh new reports --template <resolved> --title "..."` — the tool stamps the front-matter
+and filename; this template supplies only the sections below._
 
 ## Reproduction
 
