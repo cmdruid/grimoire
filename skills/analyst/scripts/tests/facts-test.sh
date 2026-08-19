@@ -44,7 +44,7 @@ mk_record plans   2026-08-10-planted-feature "done"      2026-08-10
 mk_record plans   2026-08-12-second-feature "done"      2026-08-12
 mk_record plans   2026-01-05-ancient-work "done"      2026-01-05
 # An open record inside the span, and a stale open one.
-mk_record design  2026-08-14-open-design     open      2026-08-14
+mk_record specs   2026-08-14-open-design     open      2026-08-14
 mk_record bugs    2026-02-01-stale-bug       open      2026-02-01
 # An audit report the health snapshot must attribute, never re-derive.
 mk_record reports 2026-08-05-audit-pass      open      2026-08-05 audit
@@ -105,10 +105,10 @@ expect "status: lists the open design"      "2026-08-14-open-design"  "$OUT"
 expect "status: counts tracker lines"       "trackers/2026-08-14-backlog.md	2"  "$OUT"
 
 # BREAK: close the open design — the open count must drop.
-sed -i.bak 's/^status: open/status: done/' "$FIX/.records/design/2026-08-14-open-design.md"
+sed -i.bak 's/^status: open/status: done/' "$FIX/.records/specs/2026-08-14-open-design.md"
 "$FACTS" status "$FIX" > "$OUT" 2>&1
 expect "status BREAK: open count drops"     "open_records=2"          "$OUT"
-sed -i.bak 's/^status: done/status: open/' "$FIX/.records/design/2026-08-14-open-design.md"
+sed -i.bak 's/^status: done/status: open/' "$FIX/.records/specs/2026-08-14-open-design.md"
 
 # --- a shared records home holds non-records (was BL-28) ----------------------
 # `each_record` must agree with `records.sh`'s discriminator. As a denylist it
@@ -122,7 +122,7 @@ for shared in doctrine templates scripts; do
   mkdir -p "$FIX/.records/$shared"
   cat > "$FIX/.records/$shared/planted.md" <<'EOF'
 ---
-doctype: design
+doctype: specs
 status: open
 created: 2026-08-01
 updated: 2026-08-01

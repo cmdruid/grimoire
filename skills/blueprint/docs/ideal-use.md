@@ -15,7 +15,7 @@ command's code and the host's design context. Proposes two approaches — a new
 `--json` flag vs. a separate `report-json` subcommand — and recommends the
 flag (less surface, reuses the existing arg parse). Weight call: one phase, no
 cross-cutting decision → small feature; slices, if any, will live in the spec.
-*Output:* a draft design doc in the `design/` store (`status: open`), open
+*Output:* a draft design doc in the `specs/` store (`status: open`), open
 questions at its foot. → proceed to `spec`.
 
 **2. `spec <draft>`**

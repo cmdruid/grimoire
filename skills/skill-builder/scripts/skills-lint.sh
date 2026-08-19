@@ -109,9 +109,9 @@
 #      severity: unlike 14 it is not edge-gated and reads .sh as well as .md,
 #      comments included.
 #  17. Bare `records.sh new` mint (FAIL). A backticked invocation carrying
-#      `records.sh new` and `--title` but no `--template` -- it falls through to
-#      the tool's flat `$RR/templates/<doctype>.md` fallback instead of the
-#      agent-templates rule, and skips the lock-in copy. Whitespace-normalized
+#      `records.sh new` and `--title` but no `--template` -- `--template` is
+#      required, so the call hard-errors at runtime, and it skips the lock-in
+#      copy. Whitespace-normalized
 #      (real invocations wrap mid-span) and fence-stripped (a quoted example
 #      must not trip it). Prose naming the tool without `--title` is out of
 #      scope. skill-builder and pack faces are exempt.
@@ -781,12 +781,12 @@ done
 
 # ---- 17. bare `records.sh new` mint (FAIL) -----------------------------------
 # A minting skill must pass `--template <resolved>` (the agent-templates rule).
-# Omitting it falls through to `records.sh`'s own `$RR/templates/<doctype>.md`
-# fallback -- the flat legacy path the template convention exists to retire --
-# so a bare call silently depends on brownfield surface AND skips the lock-in
-# copy into `<agent-templates>/<skill>/`. That fallback is shipped compatibility,
-# not an interface: this check is what lets it be deleted without hunting for
-# who was leaning on it.
+# `--template` is REQUIRED by `records.sh new`: the tool knows no taxonomy, so it
+# cannot guess a template path from a doctype name, and the flat
+# `$RR/templates/<doctype>.md` fallback it once had is gone. A bare call
+# therefore hard-errors at runtime AND skips the lock-in copy into
+# `<agent-templates>/<skill>/`. This check is what turns that runtime failure
+# into a lint failure, so it is caught while authoring rather than mid-verb.
 #
 # DECIDABILITY: an invocation is a backticked span containing `records.sh new`
 # and `--title` (the mint form -- a doctype and a title are what a real mint

@@ -1,7 +1,7 @@
 # The doctrine home — how this project works
 
 Doctrine for the workshop: policy and procedure — always *how we work*, never *what we are
-building* (that lives in the design spec, `.records/design/`). Readable by humans and agents
+building* (that lives in the design spec, `.records/specs/`). Readable by humans and agents
 alike. This README is the entry point and orientation; it is **not** part of any station's load
 set, so nothing pays for it twice.
 

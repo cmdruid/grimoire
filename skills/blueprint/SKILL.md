@@ -41,12 +41,13 @@ one.
   station context.
 
 **Destination is not stamped.** Feature `spec` / `brainstorm` / ADR artifacts
-land in `<agent-records>/design/` and `<agent-records>/adr/` on every host
+land in `<agent-records>/specs/` and `<agent-records>/adr/` on every host
 (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`,
-else `.records/`). Resolve `design.md` / `adr.md` via the agent-templates
-rule; `records.sh new --template <resolved>` when the tool exists; else
-file-mode from that path. Then fill the body from the resolved `spec.md`
-(or the ADR body). Never write the flat
+else `.records/`). Resolve `spec.md` / `adr.md` via the agent-templates rule;
+`records.sh new specs --template <resolved>` when the tool exists (the flag is
+required — there is no fallback); else file-mode from that path. `spec.md`
+carries both the front-matter and the body scaffold, so there is no second
+template to fill from. Never write the flat
 `<agent-records>/templates/<doctype>.md`. Status promotion:
 `records.sh touch --status current` when the tool exists; else file-mode
 stamp. Closure through `records.sh done` when the tool exists; else
@@ -69,11 +70,11 @@ to `status: current`.
 
 | Invocation | Does | Consumes → Produces | Station |
 |---|---|---|---|
-| (none) | `brainstorm` | conversation + prompt → `design/` doc (`status: open`) | design |
-| `brainstorm [topic]` | divergent ideation → a draft design doc | conversation + prompt → `design/` doc (`status: open`) | design |
+| (none) | `brainstorm` | conversation + prompt → `specs/` doc (`status: open`) | design |
+| `brainstorm [topic]` | divergent ideation → a draft design doc | conversation + prompt → `specs/` doc (`status: open`) | design |
 | `new <name>` | mint `./<name>.md` — founding-shaped, empty of design content | — → that file only | — |
 | `grill [doc]` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** | a draft / spec (or the conversation) → resolved decisions | design |
-| `spec [doc]` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) | conversation or draft → feature `design/` spec, **or** the named founding file | design |
+| `spec [doc]` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) | conversation or draft → feature `specs/` spec, **or** the named founding file | design |
 | `review <doc>` | two-axis critique; founding-shaped → six-H2 + leftover/gap rubric | a spec or design doc → a verdict (in context) | design |
 | `revise [<findings>] [<artifact>]` | fold review findings into the spec | a findings baton + spec → amended spec | design |
 | `deploy <file>` | project a founding spec into a git repo + three founding docs (new dir or in-place) | founding file → git repository | — |
@@ -130,7 +131,7 @@ is a gap. No italic / `TBD` / `<>` special cases.
 **Branch** (on a named `[doc]`; never scan cwd for a founding file):
 
 - **Founding-shaped** → stay on that file. Fill the six map H2s in place.
-  Do not rewrite to `templates/spec.md`. Do not mint a `design/` record.
+  Do not rewrite to `templates/spec.md`. Do not mint a `specs/` record.
   Do not strip `founding`. Do not add an H2 that is not in the map. Do not
   promote `status`. Who/when notes go **inside** the mapped section as a
   whole line in this exact form (roman, not italic): `Settled: YYYY-MM-DD.`
@@ -148,7 +149,7 @@ pull every constraint, preference, and half-decision already stated into the
 draft before asking anything; never start from a blank template.
 
 1. **Explore context** — the relevant code, docs, recent commits, and the host's
-   design context (workshop: design-station summon + the `design/` store's
+   design context (workshop: design-station summon + the `specs/` store's
    `status: current` spec; standalone: the project's own design docs) before
    asking anything. Don't brainstorm blind.
 2. **Scope check** — an idea spanning several independent subsystems decomposes
@@ -163,7 +164,7 @@ draft before asking anything; never start from a blank template.
    lead with a recommendation and say why.
 4. **Converge conversationally** — one question at a time (multiple-choice when
    possible), confirming each section before the next. YAGNI ruthlessly.
-5. **Write the draft** — a `design/` doc (`status: open`), shaped per
+5. **Write the draft** — a `specs/` doc (`status: open`), shaped per
    `templates/spec.md`'s sections at draft weight: problem, goal, candidate
    approach, open questions listed at the foot. Unresolved branches are
    *expected* here — `grill` or `spec` resolves them.
@@ -355,11 +356,16 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 
 ## Project templates
 
-- `design.md`
 - `adr.md`
 - `spec.md`
 
 `founding.md` is package-only.
+
+_(`design.md` was a front-matter-only stub minted first and then filled from
+`spec.md`. It existed to satisfy the store-named-lock-in filename convention;
+`records.sh` no longer guesses a template from a doctype name, so `spec.md` —
+which already carries the same front-matter plus the body scaffold — is minted
+directly and the stub is gone.)_
 
 ## Edges
 

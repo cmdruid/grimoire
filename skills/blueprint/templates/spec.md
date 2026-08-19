@@ -1,5 +1,5 @@
 ---
-doctype: design
+doctype: specs
 status: open
 created: <date>
 updated: <date>

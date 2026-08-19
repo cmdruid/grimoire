@@ -15,10 +15,10 @@ Standing judgments:
 
 ## Station policy
 
-- The **living design spec** lives in `.records/design/` — the doc with `status: current`.
+- The **living design spec** lives in `.records/specs/` — the doc with `status: current`.
   Superseded drafts and working papers keep their history alongside it; supersession is recorded
   (`records.sh done --as superseded`), never a silent overwrite.
-- Ideation and iteration are records too: brainstorms and drafts land in `.records/design/` with
+- Ideation and iteration are records too: brainstorms and drafts land in `.records/specs/` with
   honest statuses, so the trail from idea to spec survives.
 - Cross-station decisions land as ADRs (`.records/adr/`) at the decision moment — dated, never
   retroactively edited (INV-9).

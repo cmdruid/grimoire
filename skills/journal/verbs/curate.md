@@ -8,7 +8,8 @@ client that owns the trackers, not here.
 1. Resolve the records root (SKILL.md discipline). Run **`records.sh check`** first — fix
    contract violations before anything cosmetic (a record `check` can't parse is invisible to
    every scan).
-2. **Records**: `records.sh list` per store — close records that quietly finished
+2. **Records**: `records.sh list --type <doctype>` per doctype (the scan is a crawl filtered
+   on front-matter, not a walk of store directories) — close records that quietly finished
    (`/journal done`, right disposition), repair broken `→` links, and merge duplicate notes
    (survivor absorbs; loser closed `superseded`, note naming it).
 3. **Propose prunes, don't execute them unasked**: closed records past the project's prune

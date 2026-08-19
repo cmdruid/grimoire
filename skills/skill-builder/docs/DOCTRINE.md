@@ -406,8 +406,10 @@ resolves both homes and passes them in; the mint script never opens the front do
 
 1. `<agent-templates>/<skill>/<file>` if present → use it (incumbent; never overwrite).
 2. Else, **only for store-named lock-ins** (the filename stem *is* the store: `notes.md`,
-   `bugs.md`, `tickets.md`, `trackers.md`, `plans.md`, `design.md`, `adr.md`,
-   `reports.md`): if `<agent-records>/templates/<doctype>.md` is present (legacy flat) →
+   `bugs.md`, `tickets.md`, `trackers.md`, `plans.md`, `specs.md`, `adr.md`,
+   `reports.md` — the *conventional* set, not an enforced taxonomy: `records.sh` owns no
+   directory names, so a project may mint any store its writers need): if
+   `<agent-records>/templates/<doctype>.md` is present (legacy flat) →
    copy that file to `<agent-templates>/<skill>/<file>`, then use the new path. Do not
    delete the old file. Body scaffolds skip this step.
 3. Else copy the bundled `templates/<file>` to `<agent-templates>/<skill>/<file>`, then
@@ -430,7 +432,7 @@ doctrine path is exactly as wrong as a writer that does.
    > `<agent-workspace>/doctrine`.
 
    Doctrine: an audit rubric, a diagnostics playbook, a build lane, a station chapter. Not
-   doctrine: a spec (a dated `design/` record), a captured project fact, an audit *report*.
+   doctrine: a spec (a dated `specs/` record), a captured project fact, an audit *report*.
 
    **The test classifies where a thing LANDS, not where it ships from.** A skill's own
    bundled `templates/`- or seed-style content is package-only until deployed; the same bytes
@@ -487,7 +489,7 @@ doctrine path is exactly as wrong as a writer that does.
    conforming skills already say, not invented. One writes "under the agent-records home
    (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
    `.records/`)"; another writes "declared `agent-records:` or `records-root:` (front-door
-   `AGENTS.md`), else `.records/`"; several write only `<agent-records>/design/`. All
+   `AGENTS.md`), else `.records/`"; several write only `<agent-records>/specs/`. All
    resolve correctly. A single blessed sentence would fail most of them, and no one sentence
    fits a setup walk, a probe section, and a host-layout table without contortion. The set is
    greppable and bounded; adding a member is a deliberate edit *here*, never a free-form

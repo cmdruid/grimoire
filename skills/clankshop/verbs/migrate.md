@@ -50,7 +50,7 @@ migration): everything below then writes and commits on the stream's branch and 
    |---|---|
    | decision records, "why we chose X" docs | `adr` |
    | bug reports, repro writeups | `bugs` |
-   | design docs, specs, RFCs, ideation | `design` (the living spec, if one emerges, gets `status: current`) |
+   | design docs, specs, RFCs, ideation | `specs` (the living spec, if one emerges, gets `status: current`) |
    | durable how-it-works notes, shared memory | `notes` |
    | feature/implementation plans, roadmaps | `plans` |
    | investigation writeups, postmortems, audits | `reports` |

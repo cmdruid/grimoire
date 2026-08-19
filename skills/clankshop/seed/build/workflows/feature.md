@@ -23,7 +23,7 @@ sequence) → `/contractor plan` (and `runbook` / `build` as needed). The stream
 1. Validate the approach before any spec: purpose, constraints, 2–3 candidate approaches, pick
    one with the human. Classify the weight (INV-12) — brief, or roadmap-then-phases.
 2. Write the design: problem, goal, approach (+ alternatives rejected), mechanism,
-   verification. Anything spec-level lands in `.records/design/`; have it reviewed before
+   verification. Anything spec-level lands in `.records/specs/`; have it reviewed before
    planning against it.
 3. Plan task-by-task against the live tree — exact paths, complete code per step, riskiest
    piece spiked first. Re-verify every load-bearing signature at `HEAD` before sizing.

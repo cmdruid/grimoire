@@ -89,7 +89,7 @@ blocks every stream's `ship`).
 - Design artifacts are **docs-only** -> land on the integration trunk pathspec-scoped
   (`<project: pathspec-scoped commit command -- see host AGENTS.md>`); the **doc-linter is the only
   relevant check** -- **skip the full build gate**. Root index is contended -- never `git add -A`.
-- Artifacts: the design spec (with frontmatter) in `<project: design specs location -- e.g. .records/design/>`;
+- Artifacts: the design spec (with frontmatter) in `<project: design specs location -- e.g. .records/specs/>`;
   any decision in a new ADR (index it in the dev index); roadmap/backlog updates marking the feature
   designed.
   `<project: ADR location, dev index -- see host AGENTS.md>`

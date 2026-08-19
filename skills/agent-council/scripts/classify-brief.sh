@@ -98,13 +98,13 @@ fi
 
 fm="$(extract_fm "$abs")"
 dt="$(doctype_of "$fm")"
-if [ "$dt" = "design" ] || [ "$dt" = "spec" ] || has_founding_tag "$fm"; then
+if [ "$dt" = "specs" ] || [ "$dt" = "spec" ] || has_founding_tag "$fm"; then
   target="$abs"
   workdir="$parent"
   readable="true"
   kind="spec"
   brief="spec"
-  if [ "$dt" = "design" ] || [ "$dt" = "spec" ]; then
+  if [ "$dt" = "specs" ] || [ "$dt" = "spec" ]; then
     reason="doctype"
   else
     reason="founding-tag"

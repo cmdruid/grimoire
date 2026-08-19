@@ -43,7 +43,7 @@ printf '%s\n' '# demo' >"$TMP/SKILL.md"
 
 cat >"$TMP/design-spec.md" <<'EOF'
 ---
-doctype: design
+doctype: specs
 status: open
 tags: [spec]
 ---
@@ -61,7 +61,7 @@ EOF
 
 cat >"$TMP/founding.md" <<'EOF'
 ---
-doctype: design
+doctype: specs
 status: open
 tags: [founding]
 ---
@@ -71,7 +71,7 @@ EOF
 
 cat >"$TMP/founding-list.md" <<'EOF'
 ---
-doctype: design
+doctype: specs
 tags:
   - founding
 ---
