@@ -108,6 +108,13 @@
 #      default (WARN always -- advisory by design). Unconditional in SCOPE, not
 #      severity: unlike 14 it is not edge-gated and reads .sh as well as .md,
 #      comments included.
+#  17. Bare `records.sh new` mint (FAIL). A backticked invocation carrying
+#      `records.sh new` and `--title` but no `--template` -- it falls through to
+#      the tool's flat `$RR/templates/<doctype>.md` fallback instead of the
+#      agent-templates rule, and skips the lock-in copy. Whitespace-normalized
+#      (real invocations wrap mid-span) and fence-stripped (a quoted example
+#      must not trip it). Prose naming the tool without `--title` is out of
+#      scope. skill-builder and pack faces are exempt.
 #
 # Pack-face exemption (clankshop v2): the one skill dir that carries a PACK.md
 # is the pack's FACE -- it composes the pack, so naming its members is its job,
@@ -770,6 +777,48 @@ for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
       ;;
   esac
   break
+done
+
+# ---- 17. bare `records.sh new` mint (FAIL) -----------------------------------
+# A minting skill must pass `--template <resolved>` (the agent-templates rule).
+# Omitting it falls through to `records.sh`'s own `$RR/templates/<doctype>.md`
+# fallback -- the flat legacy path the template convention exists to retire --
+# so a bare call silently depends on brownfield surface AND skips the lock-in
+# copy into `<agent-templates>/<skill>/`. That fallback is shipped compatibility,
+# not an interface: this check is what lets it be deleted without hunting for
+# who was leaning on it.
+#
+# DECIDABILITY: an invocation is a backticked span containing `records.sh new`
+# and `--title` (the mint form -- a doctype and a title are what a real mint
+# needs). Prose merely NAMING the tool ("records minted by `records.sh new`")
+# carries no `--title` and is correctly out of scope; so is the deliberate
+# documentation of the brownfield form, which discusses `--template` by name.
+#
+# Reuses check 14's `strip_code`, for the same two reasons and a third:
+#   * a quoted example inside a fence must not TRIP the check (the inverse of
+#     14's anchoring property -- here stripping prevents false FAILs);
+#   * real invocations demonstrably wrap mid-span in the live tree
+#     (`debugger/SKILL.md` breaks one across `new` / `reports`), so the match
+#     must survive a line break;
+#   * flattening is what makes a whole backticked span extractable at all.
+#
+# Evidence is the offending span, not a line number: flattening loses the line,
+# and the span text is what you grep for anyway. Exemptions are the usual
+# name-based pair -- skill-builder (this comment names the banned shape) and
+# pack faces.
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  case "$name" in skill-builder) continue ;; esac
+  is_pack_face "$name" && continue
+  while IFS= read -r -d '' f; do
+    rel="${f#"$sk"}"
+    while IFS= read -r span; do
+      case "$span" in *'records.sh new'*) ;; *) continue ;; esac
+      case "$span" in *--title*) ;; *) continue ;; esac
+      case "$span" in *--template*) continue ;; esac
+      fail "$name: $rel: bare mint ${span} -- pass \`--template <resolved>\` (the agent-templates rule)"
+    done < <(strip_code "$f" | grep -o '`[^`]*`' || true)
+  done < <(find "$sk" -name '*.md' -print0)
 done
 
 # ---- summary -----------------------------------------------------------------
