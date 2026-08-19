@@ -1,8 +1,8 @@
 ---
-doctype: design
+doctype: specs
 status: open
 created: 2026-08-18
-updated: 2026-08-18
+updated: 2026-08-19
 tags: [spec]
 ---
 
@@ -35,7 +35,7 @@ The extra kinds are the wrong owner's work:
 
 - A reproducible defect with a cold-standing repro is capture-for-
   diagnosis, not a tracker line. `debugger` already investigates and
-  already **refuses** to mint `bugs/` (`SKILL.md:38`); `/backlog bug`
+  already **refuses** to mint `bugs/` (`SKILL.md:51`); `/backlog bug`
   is the dispatch writer. `issue.md` step 3 is a second path on
   "substantial analysis." Auditor drains defects through
   `/backlog bug`.
@@ -46,19 +46,20 @@ The extra kinds are the wrong owner's work:
   ROUTING step 6, migrate's tickets row) to know a concept we are
   not ready to keep.
 
-The result: backlog juggles four stores (`trackers`, `bugs`,
+The result: backlog juggles four **doctypes** (`trackers`, `bugs`,
 `tickets`, plus a notepad call) and still cannot empty Issues or
 Feedback.
 
 ## Goal
 
 `backlog` is a **tracker skill**. It files, sweeps, grooms, and
-promotes among Backlog / Issues / Feedback. It mints no `bugs/`,
-no `tickets/`, and no `notes/`. A reproducible defect is filed by
-`debugger`. A fact is written by `notepad`. "Needs the human" is
-not a doctype — a leftover ask is an Issue line. Issues and
-Feedback have a judgment drain onto Backlog. Every leftover that
-must survive a reset lands on one of the three trackers.
+promotes among Backlog / Issues / Feedback. It mints no `bugs`,
+no `tickets`, and no `notes` records. A reproducible defect is
+filed by `debugger` (doctype `bugs`; conventional dir `bugs/` via
+`records.sh new`). A fact is written by `notepad`. "Needs the
+human" is not a doctype — a leftover ask is an Issue line. Issues
+and Feedback have a judgment drain onto Backlog. Every leftover
+that must survive a reset lands on one of the three trackers.
 
 ## Approach
 
@@ -102,16 +103,17 @@ does not add it.
   problems, not a standing ask queue with Ask/Context/Resolution.
   A leftover `needs human: …` Issue line is a debrief remainder,
   not that queue under another name.
-- **`<agent-workflows>` as a fourth front-door home.** Sibling
-  `feat` owns the three-home standard (`agent-records` /
-  `agent-templates` / `agent-doctrine`). Station playbooks are
-  doctrine. Typed edges already declare composition. A lock-in
-  workflows home is earned at a second consumer (INV-13). Not this
-  feature, not this stream.
-- **Change journal's eight store names.** Format authority is not
-  this feature. `tickets/` and `bugs/` remain legal store names.
-  Writers stop minting `tickets/`; `bugs/` gains a new writer.
-  Incumbent records stay.
+- **`<agent-workflows>` as a fourth front-door home.** The live
+  homes are `agent-records`, `agent-templates`, and
+  `agent-workspace` (doctrine is the fixed subpath
+  `<agent-workspace>/doctrine`). Typed edges already declare
+  composition. A lock-in workflows home is earned at a second
+  consumer (INV-13). Not this feature, not this stream.
+- **Change journal.** Format authority is not this feature. HEAD
+  already owns **no directory names** (dated filename + `doctype`).
+  This package stops minting `tickets` (S1) then `bugs` (S4);
+  those remain legal **doctypes** a writer may mint. Incumbent
+  records stay. Do not restore an eight-store list.
 
 ## Mechanism
 
@@ -162,17 +164,17 @@ S1 drops `tickets.md` and keeps `bugs.md` until S4).
 
 ```
 <!-- edges:backlog -->
-- produces: record — tracker records and tracker lines; bugs/
-  while `verbs/bug.md` still exists
+- produces: record — tracker records and tracker lines; doctype
+  `bugs` while `verbs/bug.md` still exists
 - handoff: record — promote drains Issues/Feedback onto Backlog
 - consumes: record — debrief, curate, and promote read existing
   tracker lines
 <!-- /edges:backlog -->
 ```
 
-Drop `tickets/` from `produces` and drop
+Drop doctype `tickets` from `produces` and drop
 `handoff: — (none; it captures, it never drains)`. After S4 drop
-`bugs/` from `produces` too.
+doctype `bugs` from `produces` too.
 
 ### `promote`
 
@@ -191,7 +193,7 @@ the judgment INV-11 asked for.
    - **Promote** iff the line is now one cold-actionable thing to
      **build**. Find-or-create the Backlog tracker, append one
      newest-last line, stamp Backlog. The new line is one concrete
-     sentence. If the source carried `→ <store>/<file>.md`, copy
+     sentence. If the source carried `→ <dir>/<file>.md`, copy
      that link onto the new line; otherwise the sentence names
      origin (`promoted from Issues: …` / `promoted from Feedback:
      …`). Rewrite the source line to the contract's **completed**
@@ -230,15 +232,16 @@ narrative) **stays**.
 - A leftover that is a project concern / limitation → issue.
 - A leftover that is a dev-experience observation → feedback.
 - A leftover that needs the human → one Issue line
-  `needs human: <the ask, one sentence>`. Do not mint a `tickets/`
+  `needs human: <the ask, one sentence>`. Do not mint a `tickets`
   record.
 - A leftover that looks like a fileable repro → one Backlog line
-  `file repro: <symptom, one sentence>`. Do not mint `bugs/`. Do
-  not call debugger. The cold record is the host's bug-filing
-  lane later. When that record exists, rewrite this line to the
-  completed form and add `→ bugs/<file>.md` (or let
-  `/journal done` on the record do the linked-line rewrite — that
-  path already exists).
+  `file repro: <symptom, one sentence>`. Do not mint a `bugs`
+  record. Do not call debugger. The cold record is the host's
+  bug-filing lane later. When that record exists, rewrite this
+  line to the completed form and add `→ <dir>/<file>.md` for the
+  minted relpath (conventionally `bugs/<file>.md` because
+  `records.sh new` writes `$RR/<doctype>/`) — or let
+  `/journal done` on the record do the linked-line rewrite.
 - A leftover durable fact → one Backlog line
   `write down: <the fact, one sentence>`. Do not call notepad.
   When the fact is written, complete the line.
@@ -275,11 +278,16 @@ investigate path only.
 
 1. Resolve both homes (debugger inlines the same resolvers it
    already uses for `reports/`).
-2. Mint `bugs/` via a new in-package `scripts/bug-mint.sh`
-   (notepad's `note-mint.sh` shape: facts only; opportunistic
-   `records.sh new --template <resolved>`; else file-mode).
-   Template is a **copy** of today's `backlog/templates/bugs.md`
-   into `debugger/templates/bugs.md` (Repro / Expected vs actual /
+2. Mint a record with **doctype `bugs`** via a new in-package
+   `scripts/bug-mint.sh` (notepad's `note-mint.sh` shape: facts
+   only). When `records.sh` exists:
+   `records.sh new bugs --template <resolved> --title "…"`.
+   `--template` is **required** (do not pass `--template` as the
+   doctype — BL-32). Else file-mode: dated `YYYY-MM-DD-<slug>.md`
+   under the conventional `bugs/` directory `new` would have
+   created (`mkdir -p "$RR/$doctype"`). Template is a **copy** of
+   today's `backlog/templates/bugs.md` into
+   `debugger/templates/bugs.md` (Repro / Expected vs actual /
    Notes). Backlog keeps its copy until S4. Fill so the record
    stands cold.
 3. Do **not** append a tracker line.
@@ -294,8 +302,8 @@ investigate path only.
 
 Delete the **ticket-owned refuse** (`SKILL.md:15–20`, Done-when
 bullet). Tickets are not a concept. Debugger still **never
-enumerates** `bugs/` looking for work (INV-8). A filed record is
-welcome input when routed; it is not a queue.
+enumerates doctype `bugs`** looking for work (INV-8 — a doctype
+is not a queue). A filed record is welcome input when routed.
 
 `## Project templates` on debugger becomes `reports.md`,
 `investigation.md`, `bugs.md`. Edges:
@@ -308,31 +316,37 @@ welcome input when routed; it is not a queue.
 <!-- /edges:debugger -->
 ```
 
-`Do not mint bugs/` is deleted.
+`Do not mint bugs/` (`SKILL.md:51`) is deleted.
 
 Investigation (`reports/`, Phases 1–4, mutation policy) is
 unchanged except the Iron Rule's scope note above.
 
-**Close path for a `bugs/` record** (after `bug.md` is gone):
+**Close path for a `bugs` record** (after `bug.md` is gone):
 `/journal done` on the record. That verb already rewrites every
-tracker line that carried `→ bugs/<file>.md` to the completed
-form (`skills/journal/verbs/done.md`). `file` does not close. A
+tracker line that carried `→ <rel>` to the completed form
+(`skills/journal/verbs/done.md`). `file` does not close. A
 `file repro:` line with no record link yet is completed by the
 operator (or debrief) when the record exists — see debrief.
 
 ### Journal
 
-No format change. The eight store names stay. Journal's scope-
-boundary sentence that describes backlog as "escalating to the
-human" is rewritten so it does not claim a ticket verb. Journal
-does not take `tickets.md`; there is no minting verb.
+This feature does **not** change journal. HEAD already owns no
+directory names: a record is a dated filename plus front-matter
+`doctype`. `records.sh` crawls; `check` prints `OK ($count
+records)` and does **not** list `open tickets: N`. Do not restore
+an eight-store list. Do not treat `bugs/` or `tickets/` as
+journal-owned stores.
 
-Incumbent `tickets/` records: close with `/journal done` only.
-There is no Ask / Context / Resolution procedure after S1. Journal
-`curate` / `records.sh check` may still list `open tickets: N` —
-that is format, not a workflow. Nobody is required to surface an
-open ticket as an escalation; a leftover ask that must survive
-reset is the debrief/curate `needs human:` Issue line.
+S3 rewrites journal's scope-boundary sentence so it does not
+claim a ticket verb. Optionally drop the stale edges phrase
+"the eight stores." Journal does not take `tickets.md`.
+
+Incumbent records with `doctype: tickets` (any directory): close
+with `/journal done` only. There is no Ask / Context / Resolution
+procedure after S1. `records.sh list --type tickets --status open`
+is a **doctype filter**, not a store walk. Nobody is required to
+surface an open ticket as an escalation; a leftover ask that must
+survive reset is the debrief/curate `needs human:` Issue line.
 
 ### Consumers (same feature — otherwise the hole moves)
 
@@ -350,8 +364,8 @@ pack seed (`ROUTING.md`, `build/workflows/bug.md`) names
 | `clankshop/seed/core/INVARIANTS.md` | INV-4: "ticket updates" → "record captures, closures". |
 | `clankshop/seed/build/workflows/bug.md` | S4: step 1 files via `/debugger file`. **Change** (not current behavior): do not file-and-link in one step. Linking a tracker entry becomes a later `/backlog task` when the defect needs scheduling (INV-8). |
 | `clankshop/verbs/migrate.md` | The `open asks awaiting a human → tickets` row becomes **leave-in-place**. Do not map asks onto Issues (that is the rename this spec refused). |
-| `skills/skill-builder/scripts/skills-lint.sh` | S4: reword the BL-1 rationale comment (the `/backlog bug` example, ~L382) so it cites `/backlog task` and `/backlog debrief` only. |
-| `skills/journal/SKILL.md` | Scope-boundary sentence only (no ticket verb). Store-name list unchanged. |
+| `skills/skill-builder/scripts/skills-lint.sh` | S4: reword the BL-1 rationale comment (the `/backlog bug` example — find the comment, do not pin a line) so it cites `/backlog task` and `/backlog debrief` only. |
+| `skills/journal/SKILL.md` | Scope-boundary sentence only (no ticket verb). Optionally drop edges’ “the eight stores.” Do **not** write a store-name list. |
 | library `README.md` | Inventory row: drop "tickets". |
 
 `feat` / `app` streams are not this change. Do not edit their
@@ -371,13 +385,13 @@ trees.
 
 - `/backlog next` / `/backlog done` / performing the work.
 - `<agent-workflows>` or any new front-door variable.
-- Renaming or deleting journal stores.
-- Bulk-migrating or bulk-closing incumbent `tickets/` / `bugs/`
-  records (close path is `/journal done` when one is actually
-  done).
+- Reopening the templates-home track (3b) or changing
+  `agent-workspace`.
+- Restoring a journal store taxonomy, or bulk-migrating /
+  bulk-closing incumbent `tickets` / `bugs` records (close path
+  is `/journal done` when one is actually done).
 - Changing debugger's four-phase investigation (except scoping
   the Iron Rule and adding the `file` fork).
-- Handbook extraction / `<agent-doctrine>` (sibling `feat`).
 
 ## Verification
 
@@ -406,9 +420,10 @@ After S4, these have **zero** hits under `skills/`:
 - `verbs/ticket.md` / `backlog/verbs/bug.md`
 - `backlog/templates/bugs.md` / `backlog/templates/tickets.md`
 
-Allowed remnants: journal's store-name list; historical
-`docs/design/` prose; this spec. Lint comments are **not** allowed
-remnants — S4 rewrites the one live hit.
+Allowed remnants: historical `docs/design/` prose; this spec;
+journal edges’ leftover “the eight stores” if S3 does not drop it.
+Lint comments are **not** allowed remnants — S4 rewrites the one
+live hit.
 
 Red-proof the sweep: plant `/backlog bug` in a temp file under
 `skills/`, demand the grep fails, remove the plant.
@@ -437,7 +452,7 @@ string only in S4.
 |---|---|---|---|
 | S1 | Add `promote`; delete ticket verb + `tickets.md`; leftover tracker lines; rewrite debrief/curate/task/issue/SKILL.md (edges, kind-juggling including the `issue.md` bugs/notepad mint). **Keep** `verbs/bug.md`, `templates/bugs.md`, and the bug dispatch row + description triggers. Retarget the **tickets** mint-test arm. | `skills/backlog/scripts/tests/run.sh`; lint `backlog` | `skills/backlog/**` |
 | S2 | Debugger thin router + `file`: copy `bugs.md`, add `bug-mint.sh` + `scoped-commit.sh` + tests, description + utterance rule, drop ticket refuse, `consumes: bug`. Backlog still files bugs. | new debugger mint tests; lint `debugger` | `skills/debugger/**` |
-| S3 | Consumer retargets to the generic **host's bug-filing lane**; delete ROUTING step 6; migrate asks → leave-in-place; INV-4 wording; journal scope sentence; PACK.md; README; `flow.md` eventful-ship. Leaves do **not** name `/debugger file`. | zero `/backlog ticket` under `skills/`; zero `/debugger file` in leaves | `skills/auditor/**`, `skills/workstream/SKILL.md`, `skills/workstream/verbs/create.md`, `skills/workstream/flow.md`, `skills/clankshop/PACK.md`, `skills/clankshop/seed/core/ROUTING.md`, `skills/clankshop/seed/core/INVARIANTS.md`, `skills/clankshop/verbs/migrate.md`, `skills/journal/SKILL.md` (scope sentence only), `README.md` |
+| S3 | Consumer retargets to the generic **host's bug-filing lane**; delete ROUTING step 6; migrate asks → leave-in-place; INV-4 wording; journal scope sentence (no store-name list); PACK.md; README; `flow.md` eventful-ship. Leaves do **not** name `/debugger file`. | zero `/backlog ticket` under `skills/`; zero `/debugger file` in leaves | `skills/auditor/**`, `skills/workstream/SKILL.md`, `skills/workstream/verbs/create.md`, `skills/workstream/flow.md`, `skills/clankshop/PACK.md`, `skills/clankshop/seed/core/ROUTING.md`, `skills/clankshop/seed/core/INVARIANTS.md`, `skills/clankshop/verbs/migrate.md`, `skills/journal/SKILL.md` (scope sentence only), `README.md` |
 | S4 | Delete `verbs/bug.md` + `templates/bugs.md`; drop the bug dispatch row + description triggers (un-backticked refuse); retarget the **bugs** mint-test arm; seed `bug.md` step 1 names `/debugger file`; reword the `skills-lint.sh` BL-1 comment; absence grep + red-proof. | Verification absence grep; lint `backlog` | `skills/backlog/**`, `skills/clankshop/seed/build/workflows/bug.md`, `skills/clankshop/seed/core/ROUTING.md` (file step only), `skills/skill-builder/scripts/skills-lint.sh` |
 
 Land order is S1 → S2 → S3 → S4. S1 does not delete the bug
@@ -448,6 +463,90 @@ seed name the new one. `promote` ships in S1 without opening
 a filing hole.
 
 ## Review history
+
+### 2026-08-19 — approve
+
+Delta pass after the journal/homes fold (soundness, groundedness,
+skeptic). The four 2026-08-19 must-fixes are closed against live
+HEAD. Body no longer instructs an eight-store list, `open tickets:
+N`, `agent-doctrine`, or `new --template` as the doctype. Mint argv
+and debugger pin match `records.sh` / `SKILL.md:51`. S1 → S2 → S3
+→ S4 remains the land order. Ground-check unresolved paths are
+still the proposed debugger mint/tests.
+
+### 2026-08-19 — needs-rework
+
+Re-ground against post-sync HEAD (workspace home, journal
+discriminator, `design`→`specs`, `--template` required). Three
+lenses. Promote / leftover lines / debugger `file` / S1→S2→S3→S4
+still implementable. The Journal and front-door claims are now
+false instructions. Ground-check: `checked=20`; unresolved paths
+are still the proposed debugger mint/tests.
+
+**Must-fix**
+
+1. **Journal / Approach / S3 / Verification remnants.** HEAD
+   journal owns **no directory names**. A record is a dated
+   filename plus `doctype`. `records.sh` crawls; `check` does not
+   print `open tickets: N`. “The eight store names stay,” “legal
+   store names,” “store-name list unchanged,” and “`check` lists
+   open tickets” would restore a taxonomy HEAD deleted. Rewrite:
+   this feature does not change journal; `tickets` / `bugs` remain
+   legal **doctypes** a writer may mint; this package stops minting
+   `tickets` (S1) then `bugs` (S4); incumbents close with
+   `/journal done`; `list --type tickets` is a doctype filter.
+   S3 edits the scope-boundary sentence only — do not preserve a
+   store-name list that does not exist. Optional: drop journal
+   edges’ leftover “the eight stores.”
+
+2. **Record-link form.** Live contract is `→ <dir>/<file>.md`
+   (writer path), not `→ <store>/<file>.md`. S1 must copy the live
+   form. `→ bugs/<file>.md` is a conventional mint path
+   (`new` still does `mkdir -p "$RR/$doctype"`), not a reserved
+   store.
+
+3. **Front-door homes.** `agent-doctrine` is retired into
+   `<agent-workspace>/doctrine` (default `.dev/doctrine/`). Lint
+   check 16 FAILs a non-exempt `agent-doctrine` literal under
+   `skills/`. Three homes are `agent-records` /
+   `agent-templates` / `agent-workspace`. Out of scope: do not add
+   `<agent-workflows>`; do not reopen templates-home (3b).
+
+4. **Debugger pin + mint argv.** “Do not mint `bugs/`” is
+   `SKILL.md:51`, not `:38`. Ticket refuse is still L15–20.
+   `bug-mint.sh` must call
+   `records.sh new bugs --template <resolved> --title "…"` —
+   `--template` is required; do not pass `--template` as the
+   doctype (BL-32).
+
+**Nice-to-have**
+
+- This file’s front-matter is `doctype: design`; live mint path is
+  `doctype: specs`. Neighbors under `docs/design/` still say
+  `design`. Flip if this is ever adopted as a records-layer spec.
+- Lint BL-1 comment pin ~L382 has drifted (~L405).
+- Historical Review-history disposition still says
+  `S1 → S3 → S2 → S4`; live slices are `S1 → S2 → S3 → S4`.
+
+Promote, leftover prefixes, keep-`/backlog bug` until S4, and
+leaves saying “host’s bug-filing lane” still match live files.
+Do not restore an eight-store list. Do not treat `bugs/` as
+journal property.
+
+Dispositions (this fold):
+1. resolved — journal owns no directory names; tickets/bugs are
+   writer doctypes; no `open tickets: N`; S3 does not preserve a
+   store-name list.
+2. resolved — contract form is `→ <dir>/<file>.md`; `bugs/` is
+   the conventional `new` path.
+3. resolved — homes are `agent-records` / `agent-templates` /
+   `agent-workspace`; no `agent-doctrine`.
+4. resolved — pin is `SKILL.md:51`; mint is
+   `new bugs --template <resolved> --title "…"`.
+
+Nice-to-have: this file’s doctype is `specs`; lint comment un-pinned;
+old needs-rework #8 land-order disposition is historical (`S1 → S3 →
+S2 → S4`); live slices remain `S1 → S2 → S3 → S4`.
 
 ### 2026-08-18 — approve-with-changes
 
@@ -597,8 +696,10 @@ noted below.
    leaves to the generic "host's bug-filing lane" first; stand up
    `/debugger file` + its description trigger; then delete
    `verbs/bug.md`. `promote` can ship without deleting a writer.
-   Disposition: resolved — land order S1 → S3 → S2 → S4; S1 keeps the
-   bug writer; "independently valuable" dropped.
+   Disposition: resolved — S1 keeps the bug writer;
+   "independently valuable" dropped. *(Historical land order in
+   this stamp was S1 → S3 → S2 → S4; a later fold set live slices
+   to S1 → S2 → S3 → S4.)*
 
 9. **Independence vs S3.** Leaves must stay on "host's bug-filing lane."
    Only seed / ROUTING / `bug.md` name `/debugger file`. Delete S3's
