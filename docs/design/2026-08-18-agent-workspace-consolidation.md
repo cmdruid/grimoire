@@ -80,7 +80,7 @@ is `<station>/workflows/…`. No top-level workflows directory exists anywhere.
 that working. **But coincidence is not automatic and this is not a no-op:** `agent-workspace`
 defaults to `.dev`, so a legacy `dev/` host that changes nothing gets `WS=.dev` while its doctrine
 sits at `dev/doctrine` — and degrades silently. **Such a host must add `agent-workspace: dev` to
-stand still.** That is a required migration step with its own verification row (M7).
+stand still.** That is a required migration step with its own verification row (M6).
 
 **The pair deliberately breaks the echo pattern — do not "fix" it.** `agent-records`→`.records`
 echoes; this one does not, on purpose (settled 2026-08-18, human): the **variable** names the
@@ -96,10 +96,16 @@ write default paths **literally**, so the mapping is stated wherever used and le
 - **The one-line fix: change `agent-doctrine`'s default to `.handbook`** (or have `setup.md:52`
   write the declaration alongside `agent-records:`). The **cheapest thing that closes Problem 3** —
   zero new variables, zero retirements, zero moves — and a reviewer verified the seed layout matches
-  the five consumers' expected subpaths exactly, so nothing else would have to move. Rejected
-  because it leaves a variable with no variance case defaulting inside the records home, so the next
-  feature to touch a path home re-opens this design. **Taken as the abandonment fallback:** if this
-  feature must be dropped mid-flight, that one line is the thing to ship.
+  the five consumers' expected subpaths exactly, so nothing else would have to move.
+  **Stated plainly (round 3): the one-line fix does close Problem 3.** It satisfies this spec's Goal
+  as written — a default-layout workshop found by its own consumers with nothing declared, and no
+  second-doctrine-tree pathology (`.handbook` becomes the derived default, so rule 3 stops
+  misfiring). What it does **not** do is remove a variable with no demonstrated variance case from
+  the front door, or stop doctrine defaulting inside the records home. **So the rest of this feature
+  is a consistency investment, not a correctness fix** — that is the honest framing, and it is the
+  basis on which Decisions 1–2 were settled. Do not read the rejection as a claim that the cheap fix
+  leaves the regression open. **Taken as the abandonment fallback:** if this feature must be dropped
+  mid-flight, that one line is the thing to ship.
 - **Retire `agent-templates` in the same feature** (the pre-split scope). Rejected on evidence: its
   census failed three consecutive review rounds, because the retired variable is a **positional CLI
   argument** to `record-mint.sh` / `note-mint.sh`, is load-bearing in the legacy-flat adopt ladder
@@ -137,8 +143,21 @@ legibility risks, not correctness risks.
 
 Same precedence and mechanism as `agent-records`. **No legacy alias** — `records-root:` exists only
 because hosts declared it before a rename; `agent-workspace` is new with zero declarations to honor.
-`agent-workspace: .` is **forbidden** (it would place doctrine at `./doctrine`, colliding with real
-project directories) — reject it and report.
+
+**Two declaration guards, both owned by lint check 16** (S2). Nothing in this library mechanically
+resolves a front-door variable outside three state-analysis helpers, so a "reject it and report"
+with no named owner is unenforceable prose; check 16 already walks `skills/` and the door, and is
+the only mechanism this feature installs that can carry them:
+
+- **`agent-workspace: .` is forbidden** — it would place doctrine at `./doctrine`, colliding with
+  real project directories.
+- **`agent-workspace:` declared with a value equal to the current default (`.dev`) is flagged as a
+  probable no-op.** This is not pedantry: M6 *requires* a legacy coincident host to declare
+  `agent-workspace: dev` (undotted). `agent-workspace: .dev` is one keystroke away, syntactically
+  valid, and silently restates the default — so the host degrades exactly as Problem 3 describes,
+  now by way of the prescribed migration step rather than the bug it fixes. The guard sits on the
+  one path this spec mandates walking. (A deliberate `.dev` declaration is legal; the guard warns,
+  it does not fail.)
 
 Skill prose keeps naming the default literally (`.dev/doctrine/…`). **Two-level access is unchanged
 doctrine:** resolve the home, *then* test for the artifact; a missing artifact degrades exactly as
@@ -173,14 +192,20 @@ belongs in the tree, not in what `seed.sh` writes.)*
 as `$(cd "$(dirname "$0")/.." && pwd)`, so at `.dev/doctrine/scripts/context.sh` that yields
 `.dev/doctrine/` and every load-set path resolves. **This is why the loader must stay nested inside
 `doctrine/`** rather than in a workspace-level `scripts/` — at `.dev/scripts/context.sh` its root
-would resolve to `.dev/` and every load set would miss. Stale `.handbook/` literals at `context.sh:2`
-and `:5` must be updated; "no change" means its logic, not its bytes.
+would resolve to `.dev/` and every load set would miss. Two stale header comments must be updated —
+`context.sh:5` carries the actual `.handbook/` path literal (it is the file's only occurrence);
+`:2` carries the bare word "handbook" in the tool's one-line description. Both need the rename;
+only `:5` is a path literal. "No change" means its logic, not its bytes.
 
 **The stamp relocates** to `<workspace>/doctrine/README.md`. Its *string* is unchanged
 (`Seeded from clankshop vX.Y on DATE`), so rule 8's policy semantics are untouched — but four sites
 carry the old literal path: `DOCTRINE.md:337` plus the three surviving policy probes
-(`debugger:39`, `workstream/SKILL.md:101`, `workstream/verbs/create.md:119`). Those probes must now
-resolve `<agent-workspace>` before locating the stamp. That does **not** convert them into location
+(`debugger:40`, `workstream/SKILL.md:102`, `workstream/verbs/create.md:118`). Those probes must now
+resolve `<agent-workspace>` before locating the stamp. *(Line numbers corrected in round 3 — the
+first three each sit on the second line of a two-line sentence, and the earlier citations pointed at
+the half without the literal. `workstream/verbs/create.md` belongs to **this** list and **only**
+this list; it carries a `.handbook` stamp literal and zero occurrences of `agent-doctrine`, so its
+prior appearance in M5's carrier census was a false positive.)* That does **not** convert them into location
 questions — they still decide *is a workshop assembled* — but it is more machinery in a probe rule 8
 calls simple, and rule 8's wording should acknowledge it.
 
@@ -210,13 +235,40 @@ leaving M4 to imply a universal prohibition.
 `agent-doctrine:` to resolving `agent-workspace:` and reading `<agent-workspace>/doctrine/…`. Their
 station-shaped subpaths are unchanged.
 
-**The complete `<agent-doctrine>` carrier census (15 files, verified by an independent reviewer —
-this is the census the split was drawn around):** the five `SKILL.md`s, plus
-`auditor/BOOTSTRAP.md:12,102,268,275,276`, `workstream/{flow.md:56, verbs/sync.md:100,
-verbs/create.md:119}`, `journal/SKILL.md:29`, `agent-council/briefs/skill-review.md:33`,
-`skill-builder/docs/DOCTRINE.md`, `skills-lint.sh:632`,
-`skill-builder/scripts/tests/lint-doctrine-consumer-test.sh`, and `journal/scripts/records.sh:70`
-(comment only).
+**The complete `agent-doctrine` carrier census — GENERATED, not asserted.** Reproduce with:
+
+    grep -rlE 'agent[-_]doctrine|AGENT_DOCTRINE' skills/ | sort
+
+Output at `dd40010`, checked in here as the artifact (15 files):
+
+    skills/agent-council/briefs/skill-review.md          :33
+    skills/auditor/BOOTSTRAP.md                          :12,102,268,275,276
+    skills/auditor/SKILL.md                              :20
+    skills/blueprint/SKILL.md                            :32
+    skills/contractor/SKILL.md                           :23
+    skills/debugger/SKILL.md                             :28
+    skills/journal/SKILL.md                              :29
+    skills/journal/scripts/records.sh                    :70   (comment)
+    skills/journal/scripts/tests/records-test.sh         :183  (comment)
+    skills/skill-builder/docs/DOCTRINE.md                (multiple)
+    skills/skill-builder/scripts/skills-lint.sh          :632  (check-14 detector pattern)
+    skills/skill-builder/scripts/tests/lint-doctrine-consumer-test.sh
+    skills/workstream/SKILL.md                           :96
+    skills/workstream/flow.md                            :56
+    skills/workstream/verbs/sync.md                      :100
+
+**Corrected in round 3 (the prior census had the right count and the wrong membership).**
+`workstream/verbs/create.md` was in and is **out** — it carries zero occurrences of the term; what
+sits at its `:118` is a `.handbook` stamp literal, which belongs to M3's list.
+`journal/scripts/tests/records-test.sh` was out and is **in**. The two swaps cancel, which is why
+the erroneous list still totalled 15 — a count is not a census, and this is the fourth round the
+distinction has cost.
+
+**Inclusion rule, stated once and applied uniformly: a comment counts.** Check 16 is a *textual*
+absence guard; it cannot tell a comment from code, so every occurrence of the literal is a carrier
+regardless of syntactic role. That is why both `records.sh:70` and `records-test.sh:183` are in —
+the earlier list counted the first and omitted the second, which is the inconsistency that hid the
+error. **Both must therefore appear in a slice's `paths` (S5), or check 16 can never go green.**
 
 **Problem 3 closes by construction on a default host:** the seed lands at the *default* workspace
 path, so the host declares nothing and its consumers still resolve it. There is no declaration to
@@ -230,9 +282,13 @@ construction" is scoped to the default layout.)
   `<agent-workspace>/doctrine/README.md`; Guard (c)'s classification reads the new paths and
   **retains its "Existing `.handbook`?" branch** as a legacy arm.
 - `migrate.md` — step 3's seed row, step 4's door write, and a new **adopt row**: a legacy
-  coincident host declares `agent-workspace: dev`.
+  coincident host declares `agent-workspace: dev`. **The adopt row must state the undotted value
+  explicitly and warn that `.dev` is the wrong answer here** — it is the default, so declaring it is
+  a silent no-op that leaves the host degraded (M1's second guard is the mechanical backstop; this
+  is the prose one, at the point of use).
 - `check.md` — step 1's loader path, step 2's stamp path, step 4's door pointer.
-- `persona.md:12` — the deployed loader path `<root>/.handbook/scripts/context.sh`.
+- `persona.md:11` — the deployed loader path `<root>/.handbook/scripts/context.sh`. *(Was cited as
+  `:12` in round 2; that line is unrelated prose about the station's `POLICY.md` preamble.)*
 - `SKILL.md` — including its `description:` frontmatter, which names `.handbook/` and is routing
   surface.
 - **`seed.sh`** — gains `--workspace <rel>` (front-door doctrine forbids write scripts scanning the
@@ -269,10 +325,21 @@ construction" is scoped to the default layout.)
 - **Check 14**'s sanctioned set tracks rule 5. It is **edge-gated and `.md`-only**, so it cannot see
   `backlog`, `notepad`, `auditor`, `debugger`, `workstream`, or any `.sh` file — it is a *presence*
   requirement on the two skills that declare a doctrine edge, not a repo-wide guarantee.
-- **New unconditional check 16** — the absence guard check 14 cannot provide: FAIL on `agent-doctrine`
-  appearing as a resolution literal anywhere under `skills/`, exemptions `skill-builder` + pack
-  faces, **glob including `scripts/**/*.sh`**. This is what makes "the variable is retired"
-  verifiable rather than asserted.
+- **New check 16** — the absence guard check 14 cannot provide: it fires on `agent-doctrine`
+  appearing anywhere under `skills/` (comments included — see M5's inclusion rule), exemptions
+  `skill-builder` + pack faces, **glob including `scripts/**/*.sh`**. This is what makes "the
+  variable is retired" verifiable rather than asserted. It also carries M1's two declaration
+  guards (forbidden `.`; default-valued no-op).
+  **"Unconditional" describes its *scope*, not its severity** — unlike check 14 it is not
+  edge-gated, so it sees every skill and every file type. Its severity is staged across two slices:
+
+  **Check 16 lands transitionally, exactly as check 14 does.** S2 installs it before S5 flips the
+  carriers, so in every legal ordering the check would be red against real, not-yet-migrated files
+  for the whole S2–S5 window. It therefore ships **WARN-only** in S2, carrying the census as its
+  known-carrier list, and **S6 promotes it to FAIL** after S5 has emptied that list — with the
+  red-proof that the promoted check FAILs a fixture carrying the retired literal. This mirrors
+  check 14's "accept both literal families transitionally, narrow in S6" treatment and for the same
+  reason: the trunk gate stays green across the rollout.
 - **Check 15 keeps its `.handbook/<station>/` literals — do NOT rewrite them.** Check 15's own
   rationale (`skills-lint.sh:660-666`) rules out matching *default* paths: prose is required to name
   defaults literally, so a hardcoded default is textually identical to a documented one; only
@@ -286,21 +353,30 @@ construction" is scoped to the default layout.)
 **Governing discipline: no check is trusted until it FAILs on deliberately-broken input.**
 
 **Nothing in this library mechanically resolves a front-door variable outside three state-analysis
-helpers**, and this feature adds no resolver. So every row below is a **lint** or **agent** proof,
-and says which. An earlier draft asserted `script` rows against a resolver that does not exist, and
-one of them was **vacuous** — it could not go red whether the feature was implemented or not. Named
-rather than quietly replaced.
+helpers**, and this feature adds no resolver. Every row below is therefore a **lint**, **script**,
+or **agent** proof, and says which — where a `script` row exercises a real shipped tool
+(`context.sh`, `seed.sh`, `migrate-scan.sh`, `records.sh`) against a fixture. What an earlier draft
+did wrong was assert `script` rows against a **resolver that does not exist**, one of them
+**vacuous** — it could not go red whether the feature was implemented or not. Those rows are gone;
+the surviving `script` rows all drive tools that exist today.
+
+*(Round 3 correction: this paragraph previously claimed "every row below is a lint or agent proof"
+while the table carried `script` on seven of fourteen rows. The rows were sound; the claim was not.)*
 
 | what | how it is proven | kind |
 |---|---|---|
-| **`agent-doctrine` is retired** | check 16: no `agent-doctrine` resolution literal under `skills/` outside the exemptions, `.sh` included; **red-proof:** reintroduce the literal into a fixture skill → lint **FAILs** | lint |
-| check 14 keeps teeth | fixture skill declaring a `doctrine` edge with no sanctioned literal → check 14 FAILs; **red-proof:** add the `<agent-workspace>` literal → passes | lint |
-| check 15 gains a guard | fixture carrying `.records/doctrine/test/` → check 15 FAILs; **red-proof:** remove it → passes | lint |
+| **`agent-doctrine` is retired** | check 16 (promoted to FAIL in S6): no occurrence of `agent-doctrine` under `skills/` outside the exemptions, `.sh` and comments included; **red-proof:** reintroduce the literal into a fixture skill → lint **FAILs** | lint |
+| **check 16's census is exhaustive** | after S5, `grep -rlE 'agent[-_]doctrine' skills/` returns **only** the exemptions; **red-proof:** the pre-S5 tree returns the 15-file census, so the assertion demonstrably distinguishes done from not-done | lint |
+| **the flip is positive, not just absent** | check 16 proves the old literal is *gone*; it cannot distinguish "repointed to `<agent-workspace>`" from "silently deleted". So: each of the 15 carriers names `<agent-workspace>` (or `.dev/doctrine`) at the site the old literal occupied; **red-proof:** delete the replacement in a fixture carrier → the assertion FAILs while check 16 still passes (this is precisely the gap it covers) | lint |
+| check 14 keeps teeth | fixture skill declaring a `doctrine` edge with no sanctioned literal → check 14 **FAILs — this is the red-proof**; green control: add the `<agent-workspace>` literal → passes | lint |
+| check 15 gains a guard | fixture carrying `.records/doctrine/test/` → check 15 **FAILs — this is the red-proof**; green control: remove it → passes | lint |
+| **declaration guards fire** (M1) | `agent-workspace: .` → rejected and reported; `agent-workspace: .dev` on a host whose records are at `dev/` → flagged as a probable no-op; **red-proof:** remove each guard in turn → the fixture declaring the bad value passes silently | lint |
 | `context.sh` relocates transparently | seed a fixture to `.dev/doctrine/`, run `context.sh --check` → `load sets: OK`; **red-proof:** delete `core/ROUTING.md` → exit 2 | script |
 | seed refuses a pre-flip host | fixture with a live `.handbook/` → `seed.sh` **refuses**; **red-proof:** remove the legacy arm → it seeds a second tree | script |
 | `migrate-scan` sees both | fixture with `.handbook/` → `handbook=present`; fixture with `.dev/doctrine/` → `workspace=present`; **red-proof:** drop the legacy probe → a pre-flip host reports absent | script |
 | stamp relocation | `check` on a fixture finds the stamp at `.dev/doctrine/README.md`; **red-proof:** delete the stamp line → reported | script |
-| **legacy host must declare** | coincident fixture declaring only `agent-records: dev` → doctrine resolves to `.dev/…` and degrades; adding `agent-workspace: dev` restores it. Proves the migration step is required | script |
+| **legacy host must declare** | coincident fixture declaring only `agent-records: dev` → doctrine resolves to `.dev/…` and **degrades — this is the red-proof**; green control: add `agent-workspace: dev` → restored. Proves the migration step is required, not cosmetic | script |
+| **check 14's narrowing has teeth** (S6) | after S6 narrows check 14's sanctioned set to `<agent-workspace>` only, a fixture carrying the retired `<agent-doctrine>` literal **FAILs**; **red-proof:** run the same fixture against the pre-S6 transitional set → passes, so the narrowing is what does the work | lint |
 | coincidence still reserved | fixture with both at `dev/` and a `dev/doctrine/<station>/workflows/x.md` carrying prose and **no front-matter**: assert `check` green, `list` omits it, `show` exits 2 with `reserved path, not a record`, `touch` likewise — **each arm red-proofed independently** (the incumbent `records-test.sh:183-215` standard; `records.sh` is unmodified here, so this is a **no-regression** row) | script |
 | **Problem 3 closes on a default host** | seed a default-layout fixture, declare nothing → the path `seed.sh` wrote equals the literal each of the five consumers' `SKILL.md` names; **red-proof:** move the seed without declaring → the two diverge | agent |
 | policy probes still fire | fixture workshop → `debugger` Phase 4 gate opens; **red-proof:** remove the stamp → gate closes | agent |
@@ -313,17 +389,23 @@ rather than quietly replaced.
 | id | does | verify | paths |
 |---|---|---|---|
 | **S1** | `DOCTRINE.md` (M7): retire the variable, rules 1/3/5/6/8, the **owner exception**, remove `:226-228`'s doctrine example, fix `:230-232`'s literal, document the echo break | lint baseline; S2 depends on rule 5 | `skills/skill-builder/docs/DOCTRINE.md` |
-| **S2** | Lint: **new check 16** (absence, `.sh` included), check 14's set tracks rule 5 **accepting both literal families transitionally**, check 15 gains `.records/doctrine/` | the three lint rows, each red-proofed | `skills/skill-builder/scripts/skills-lint.sh`, `scripts/tests/lint-doctrine-consumer-test.sh` |
+| **S2** | Lint: **new check 16** (absence, `.sh` + comments included, **WARN-only here**) carrying M1's two declaration guards; check 14's set tracks rule 5 **accepting both literal families transitionally**; check 15 gains `.records/doctrine/` | the lint rows, each red-proofed; **lint stays green** (check 16 warns, does not fail, until S6) | `skills/skill-builder/scripts/skills-lint.sh`, `scripts/tests/lint-doctrine-consumer-test.sh` |
 | **S3** | Seed relocation: `seed.sh --workspace` + **dual refuse arm**, `context.sh:2,:5` literals, stamp path | `context.sh`, seed-refuses, stamp rows | `skills/clankshop/{scripts/seed.sh,seed/}`, `scripts/tests/seed-test.sh` |
 | **S4** | clankshop verbs + `migrate-scan.sh` dual probe + `migrate.md`'s adopt row | clankshop suite; migrate-scan + legacy-host rows | `skills/clankshop/{verbs/*,SKILL.md}`, `scripts/migrate-scan.sh`, `scripts/tests/{setup-journal,migrate-scan,face}-test.sh` |
-| **S5** | Flip all 15 `<agent-doctrine>` carriers (M5's census) + rule 8's stamp literal | Problem-3, policy-probe, declared-but-absent rows | the 5 `SKILL.md`s, `auditor/BOOTSTRAP.md`, `workstream/{flow.md,verbs/sync.md,verbs/create.md}`, `journal/SKILL.md`, `agent-council/briefs/skill-review.md` |
-| **S6** | Narrow check 14 to `<agent-workspace>` only; roster/prose folds; remaining `.handbook` literals | check-14 red-proof; lint `fails=0`; **all eight** suites | `skills-lint.sh`, `README.md`, `AGENTS.md`, `PACK.md`, `clankshop/seed/README.md`, `seed/review/workflows/doc-audit.md`, `workstream/templates/*` |
+| **S5** | Flip the **12 remaining** `agent-doctrine` carriers (M5's census minus the 3 handled in S1/S2) + rule 8's stamp literal + `create.md`'s stamp probe | Problem-3, policy-probe, declared-but-absent, positive-flip rows | the 5 `SKILL.md`s, `auditor/BOOTSTRAP.md`, `workstream/{flow.md,verbs/sync.md}`, **`journal/{SKILL.md, scripts/records.sh, scripts/tests/records-test.sh}`**, `agent-council/briefs/skill-review.md`; plus `workstream/verbs/create.md` (**stamp literal only** — not an `agent-doctrine` carrier) |
+| **S6** | **Promote check 16 WARN→FAIL** and narrow check 14 to `<agent-workspace>` only; **BL-26** — `skill-builder/verbs/new.md` stops prescribing the retired resolver; roster/prose folds; remaining `.handbook` literals | check-16 promotion + check-14 narrowing red-proofs; lint `fails=0`; **all eight** suites | `skills-lint.sh`, **`skill-builder/verbs/new.md`**, `README.md`, `AGENTS.md`, `PACK.md` (*roster prose — carries no `.handbook` literal*), `clankshop/seed/README.md`, `seed/review/workflows/doc-audit.md`, `workstream/templates/*` |
 
-**Ordering.** S1 first — it defines the literals every later slice writes. S2 lands **accepting both
-literal families**, so the gate does not go red on `blueprint`/`contractor` during S3–S5; **S6
-narrows it after S5**, with a red-proof that the narrowed set FAILs a fixture carrying the retired
-literal. That is the real constraint — *S6 narrows only after S5* — not a must-land-together pair.
-S3 before S4; S5 after S3.
+**Ordering.** S1 first — it defines the literals every later slice writes. S2 lands **permissively**:
+check 14 accepts both literal families and check 16 ships WARN-only, so the gate does not go red on
+`blueprint`/`contractor` or on the not-yet-flipped carriers during S3–S5. **S6 tightens both after
+S5** — narrowing check 14 and promoting check 16 to FAIL — each with its own red-proof. That is the
+real constraint: *S6 tightens only after S5*, not a must-land-together pair.
+
+Full constraint set: **S1 → S2 → S3 → S4 → S5 → S6.** Spelled out, the non-obvious edges are
+*S3 before S4* (the verbs point at what the seed writes), *S5 after S3*, and — **added in round 3** —
+**S5 after S4**: S5's own "declared-but-absent workspace" verification row exercises `clankshop
+setup`'s owner exception, which S4 builds. Without that edge, S1,S2,S3,**S5,S4**,S6 satisfies every
+stated constraint and runs S5's verification against machinery that does not exist yet.
 
 ## Greenfield check
 
@@ -338,9 +420,17 @@ S3 before S4; S5 after S3.
   feature 3b's, and only after `templates/` moves. Naming it now so 3b does not treat it as new.
 - **`agent-records`' legacy `records-root:` alias.** Still carried; brownfield hosts declared it.
 - **Whether `agent-workspace` needs to be a variable at all.** A fixed `.dev/` would close Problem 3
-  identically with zero variables. Settled as a variable (Decision 1, human) — and unlike
-  `agent-doctrine`, it has a **live** variance case this spec produces: M6's legacy coincident host
-  must declare `agent-workspace: dev`. It clears the bar that `agent-doctrine` never did.
+  identically with zero variables. Settled as a variable (Decision 1, human).
+  **This spec does NOT claim the new variable clears a bar the old one failed** — that claim was
+  withdrawn in round 3 as circular, and rightly: `agent-doctrine` is retired for having only a
+  prospective variance case, while `agent-workspace`'s one live case (M6's legacy coincident host
+  declaring `agent-workspace: dev`) exists *because this spec chose `.dev` as the default*. A
+  variance case a design manufactures is migration friction, not demonstrated host variance, and
+  grading the new variable on it while executing the old one for its absence would be a double
+  standard inside one document.
+  The variable is justified on **architecture** instead: the front door should express *where the
+  development environment lives* as one declaration, and a host that wants it elsewhere should not
+  have to fork the library. That is a design position, held openly, not an evidence claim.
 
 ## Decision log
 
@@ -357,13 +447,35 @@ Settled by the human 2026-08-18 unless noted. **Do not re-litigate.**
 5. **`.handbook/` becomes `<agent-workspace>/doctrine/`**; `context.sh` stays nested inside it.
 6. **Atomic retirement of `agent-doctrine`, no fallback window.** *Risk consciously accepted* — see
    M2. The `:226-228` removal is **required**, not optional.
+   **Re-affirmed in round 3 against a proposed one-cycle deprecation shim** (resolve a declared
+   `agent-doctrine:` for one release, printing a notice — modelled on the `records-root:` alias).
+   Rejected, and the reason is mechanical rather than a preference: **a shim and check 16 are
+   mutually exclusive.** Check 16 is an unconditional textual absence guard over `skills/` — it is
+   what converts "the variable is retired" from an assertion into a verifiable fact, and it is this
+   feature's principal verification win. A shim requires the resolution literal to keep existing
+   somewhere the guard would have to be taught to ignore, which reintroduces exactly the
+   edge-gated, exemption-riddled shape that made check 14 unable to prove anything repo-wide. The
+   population claim (one deployed workshop, the author's) was independently re-verified in round 3;
+   no `.handbook` tree exists anywhere else on this machine.
 7. **Workflows stay station-scoped**; no top-level `workflows/` *(agent, from evidence)*.
 8. **No legacy alias for `agent-workspace`**; `agent-workspace: .` is forbidden.
 9. **The edge type stays `doctrine`** *(agent)*.
 10. **Naming is closed** — five candidates burned; see the table.
 11. **`agent-templates` is OUT OF SCOPE — feature 3b** *(split 2026-08-18, human, on review
     evidence)*. This feature must not touch `records.sh:180`, the mint scripts, `analyst`,
-    `backlog`, or `notepad`.
+    `backlog`, or `notepad`. **Note:** S5 *does* edit `journal/scripts/records.sh` and
+    `records-test.sh` — but only their `agent-doctrine` **comments**, which the census requires and
+    check 16 will flag. No behavior, no reserved list, no `:180`. That is not a Decision 11
+    violation.
+12. **BL-26 is IN scope as an S6 tail step** *(round 3)*. The roadmap names it a Phase 1 tail step:
+    `skill-builder/verbs/new.md` prescribes the resolvers new skills are scaffolded with, so until
+    it is updated this feature keeps *minting* violations of the check it just installed. Cheap, and
+    it belongs with the S6 tightening rather than trailing it.
+13. **The two declaration guards are owned by lint check 16** *(round 3)* — forbidden
+    `agent-workspace: .`, and a warning on a declared value equal to the current default. The second
+    exists because M6's required migration step (`agent-workspace: dev`) is one keystroke from a
+    silent no-op (`.dev`). "Reject and report" with no named owner was unenforceable; nothing else
+    this feature installs can carry them.
 
 ## Grounding
 
@@ -374,7 +486,15 @@ Verified at spec time, not assumed:
 - `DOCTRINE.md:217-223`, `:226-228`, `:230-232`, `:236`, `:337`, rule 3 at `:395-400`, rule 5's home
   enumeration, rule 6's edge vocabulary.
 - 5 consumer readers of `agent-doctrine:`; **0 writers** repo-wide (exhaustive grep, twice).
-- The 15-file `<agent-doctrine>` carrier census — independently enumerated and confirmed complete.
+- The 15-file `agent-doctrine` carrier census — **generated, not asserted** (M5 carries the command
+  and its checked-in output). Round 3 corrected its membership: `workstream/verbs/create.md` out
+  (zero occurrences), `journal/scripts/tests/records-test.sh` in. Verified at `dd40010`.
+- The `.handbook` literal census is **complete and fully covered by the slices** — all 25 live
+  carriers under `skills/` + `README.md` + `AGENTS.md` map to a slice's `paths` (regenerated
+  round 3). `clankshop/PACK.md` carries none; it is in S6 for roster prose only.
+- `context.sh` holds exactly **one** `.handbook` path literal, at `:5`; `:2` is the bare word.
+- Stamp-probe line numbers re-opened and corrected round 3: `debugger:40`,
+  `workstream/SKILL.md:102`, `workstream/verbs/create.md:118`, `persona.md:11`.
 - `context.sh:15` (`HB` resolution, traced through `load_set()`/`check_all()`), `:16` STATIONS,
   stale `.handbook/` literals at `:2` and `:5`.
 - `seed.sh:31` hardcodes `hb="$root/.handbook"` and takes no home flag.
@@ -553,3 +673,31 @@ time inside the very census the split was drawn around.
 - Two skeptic attacks **failed**, and the spec's position holds: the install stamp and the
   reserved-name list are pre-existing debt the doc identifies, prices, and defers rather than hides.
 - `skills-lint.sh` baseline re-run at `fails=0 warns=22`, matching the Grounding claim.
+
+**Dispositions — round 3 fold (2026-08-18, `/blueprint revise`)**
+
+| Id | Finding | Disposition |
+|---|---|---|
+| F1 | Census wrong in composition | **resolved** — M5 now carries the generating command + its checked-in output; membership corrected (`create.md` out, `records-test.sh` in); comment-counts-as-carrier rule stated once and applied uniformly |
+| F2 | Two journal carriers in no slice | **resolved** — both added to S5's `paths`; Decision 11 amended to record that editing their comments is not an `agent-templates` violation |
+| F3 | Check 16 red for the S2–S5 window | **resolved** — check 16 ships **WARN-only** in S2 and is promoted to FAIL in S6, mirroring check 14's transitional treatment; both promotions carry red-proofs |
+| F4 | "every row is lint or agent" false | **resolved** — Verification intro now names three kinds and records why the surviving `script` rows are sound; the historical round-2 bullet is left as written (reviewer prose is not rewritten) |
+| F5 | S4→S5 ordering unstated | **resolved** — full constraint chain spelled out, with the S5-after-S4 edge and the counter-example ordering it excludes |
+| F6, F12 | `.dev` no-op typo; `.` guard unowned | **resolved** — both folded into one mechanism: M1's two declaration guards, owned by check 16 (Decision 13), with a prose warning at M6's adopt row and a red-proofed Verification row |
+| F7 | Negative-only flip verification | **resolved** — new positive-flip row asserting each carrier names the *new* literal, red-proofed so it fails where check 16 still passes |
+| F8 | BL-26 unacknowledged | **resolved** — `skill-builder/verbs/new.md` added to S6's `paths`; Decision 12 records it as an in-scope tail step per the roadmap |
+| F9 | Four off-by-one citations | **resolved** — corrected in M3 and M6, with a note that `create.md` belongs to the stamp list and not the carrier census |
+| F10 | `(M7)` should be `(M6)` | **resolved** — corrected |
+| F11 | `red-proof:` label misapplied | **resolved** — the FAIL clause is now labelled the red-proof in the check-14/15 rows; the legacy-host row gains the label it lacked |
+| F13 | S5 overclaims "all 15" | **resolved** — S5 now says "the 12 remaining", naming the 3 handled in S1/S2 |
+| F14 | S6 narrowing red-proof had no row | **resolved** — added as its own Verification row |
+| F15 | `context.sh:2` is a bare word | **resolved** — M3 distinguishes the path literal at `:5` from the bare word at `:2`; both still need the rename |
+| F16 | `PACK.md` carries no `.handbook` literal | **resolved** — S6's `paths` annotates it as roster prose |
+| F17 | `migrate.md:58` reserved-set drift | **rejected** — not a defect in this spec; it is a second drifted copy of the list BL-28 already tracks. Routed to the backlog as a BL-28 addendum, which is the correct owner |
+| D1 | Deprecation shim vs atomic retirement | **resolved (human, 2026-08-18)** — atomic stands; Decision 6 now records the mechanical reason (a shim and check 16 are mutually exclusive), which is stronger than the population argument alone |
+| D2 | Variance circularity | **resolved (human, 2026-08-18)** — the "clears the bar" claim is **withdrawn**; the Greenfield check now states the circularity plainly and defends the variable on architecture grounds |
+| D3 | Cheap-fix framing | **resolved (human, 2026-08-18)** — the Approach now states outright that the one-line fix *does* close Problem 3, and that the remainder is a consistency investment rather than a correctness fix |
+
+**Not folded, by design:** the design itself, the naming table, and Decisions 1–5 and 7–10 were not
+challenged in round 3 and are untouched. `status:` stays `open` — the fold is unverified content
+authored by the reviewing session, so it wants a delta pass or a human waive before sequencing.

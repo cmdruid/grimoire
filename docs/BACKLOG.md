@@ -26,6 +26,14 @@ one-line resolution; delete only when the reason it existed is gone.
   duplicated by contract. Feature 3b touches `analyst-facts.sh` anyway — fold it there, or fix
   standalone. Prove by breaking: plant a front-matter-less file in each reserved dir and confirm
   both tools skip it.
+- **addendum (2026-08-18, review round 3):** a **third** copy, drifted the same way.
+  `skills/clankshop/verbs/migrate.md:58` states the reserved set as
+  "(`templates/`, `scripts/`, `history.tsv`)" — three names, **omitting `doctrine/`**, against
+  `records.sh:64`'s four (`templates/*|scripts/*|doctrine/*|history.tsv`). So it is now three copies
+  with two drifted, and both that drifted dropped the *same* name. That strengthens the one-owner
+  reading in the fix sketch: prose copies of a tool's contract rot toward whatever the author
+  remembered. Whoever fixes this should sweep for further copies rather than patch the three known
+  ones.
 
 ### BL-27 — `standup.sh` creates a **declared** records home, which Doctrine-touching rule 3 forbids
 - **source:** feat stream, workspace-consolidation review round 2 (2026-08-18).
