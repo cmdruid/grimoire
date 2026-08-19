@@ -37,9 +37,16 @@ one-line resolution; delete only when the reason it existed is gone.
   problem largely evaporates once there is nothing to keep compatible.
 - **absorbs:** the `agent-templates` retirement (3b, dropped), BL-28's unresolved ownership half,
   BL-19's deferred calibrate pass, BL-33 (break-verification doctrine).
-- **open question for the human:** the doctrine and project memory record legacy hosts with records
-  at `dev/` (`/clankshop migrate declare-in-place`). Cutting legacy invariants drops support for
-  them. Confirm before the cut.
+- **spec:** `docs/design/2026-08-19-two-roots-simple-spec.md` (`status: current`, 2026-08-19).
+- **~~open question for the human~~ — DISSOLVED 2026-08-19.** The question was mis-stated.
+  `<agent-records>: dev` was never at risk — it is a variable and it resolves. The real issue was
+  that such hosts also keep doctrine at `dev/doctrine/`, nesting one home in the other, which is
+  what forced the `doctrine` reserved name in `records.sh`. Moving the record discriminator from
+  *path* to *front-matter block* removes the need for any reserved name, so coinciding roots are
+  legal and no legacy host loses support. **No decision required; the cut is unblocked.**
+- **ownership rule (human direction, 2026-08-19):** a skill creates only the directories it needs
+  for its own work. `journal` stops declaring the eight-store taxonomy on other skills' behalf;
+  `records.sh` crawls unknown subdirectories instead of matching a known list.
 
 ### BL-33 — "prove a new check by breaking it" does not say to verify the break applied
 - **source:** feat stream, BL-25 build (2026-08-19). Second occurrence in two sessions.
