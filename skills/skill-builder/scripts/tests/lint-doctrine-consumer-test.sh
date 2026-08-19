@@ -49,8 +49,20 @@ EOF
 run_lint() { rm -rf "$lib"; mkdir -p "$lib/skills"; }
 lint() { bash "$LINT" "$lib" >"$OUT" 2>"$ERR" || true; }
 
-c14='declares a doctrine edge but carries no sanctioned agent-doctrine resolution literal'
+c14='declares a doctrine edge but carries no sanctioned doctrine-home resolution literal'
 c15='off-home doctrine literal'
+c15b='stale doctrine default'
+c16a='occurrence(s) of the retired `agent-doctrine` literal'
+c16b='`agent-workspace: .` is forbidden'
+c16c='restates the current default'
+
+write_front_door() { # write_front_door <declaration-line>  (empty = no declaration)
+  {
+    echo '# fixture front door'
+    echo
+    if [ -n "$1" ]; then echo "$1"; fi
+  } > "$lib/AGENTS.md"
+}
 
 # --- check 14: red — edge declared, no literal --------------------------------
 run_lint
@@ -184,12 +196,12 @@ else
   pass=$((pass + 1))
 fi
 
-# --- check 15: green — the canonical DEFAULT path is conforming usage ---------
-# Skill prose is required to name default paths literally; only OFF-home
-# literals are decidable. This must never fire.
+# --- check 15: the CANONICAL default path is still conforming usage -----------
+# Unchanged rule, new default. `<agent-workspace>`'s default is `.dev/doctrine/`,
+# and prose is required to name defaults literally -- so this must never fire.
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'Doctrine lives under `<agent-doctrine>`, by default `.records/doctrine/`.'
+  'Doctrine lives under `<agent-workspace>/doctrine`, by default `.dev/doctrine/`.'
 lint
 if grep -q "$c15" "$OUT"; then
   echo "FAIL: canonical default path matched check 15 (must stay green)" >&2
@@ -198,5 +210,119 @@ if grep -q "$c15" "$OUT"; then
 else
   pass=$((pass + 1))
 fi
+
+# --- check 15: WARN — `.records/doctrine/` is newly decidable ------------------
+# This literal used to be excluded as "a home's canonical default". Once doctrine
+# resolves through <agent-workspace>/doctrine it is nobody's default, so it
+# becomes decidable -- the strongest guard the retirement buys. It lands WARN
+# while the consumers still carry it in their resolution prose.
+# RED-PROOF: the fixture carrying it must be reported.
+run_lint
+write_skill widget 'note — a captured fact' \
+  'The rubric sits at `.records/doctrine/test/workflows/audit/GUIDE.md`.'
+lint
+expect "check 15 warns on the stale doctrine default" "$c15b" "$OUT"
+expect_absent "check 15 does not FAIL on the stale default yet" \
+  "FAIL: widget: SKILL.md:1:\`.records/doctrine/" "$OUT"
+
+# green control: remove the literal -> silent.
+run_lint
+write_skill widget 'note — a captured fact' \
+  'The rubric sits at `.dev/doctrine/test/workflows/audit/GUIDE.md`.'
+lint
+expect_absent "check 15 is silent once the stale default is gone" "$c15b" "$OUT"
+
+# --- check 14: green — the NEW literal family satisfies it ---------------------
+run_lint
+write_skill widget 'doctrine — the diagnostics playbook' \
+  'The playbook lives at `<agent-workspace>/doctrine/test/workflows/diagnostics.md`.'
+lint
+expect_absent "check 14 accepts the agent-workspace angle-bracket member" "$c14" "$OUT"
+
+# --- check 16a: WARN — the retired literal anywhere under a skill --------------
+# RED-PROOF: reintroduce the retired literal into a fixture skill -> reported.
+# Note this fixture declares NO doctrine edge: check 16 is unconditional in
+# scope, so unlike check 14 it still sees the skill.
+run_lint
+write_skill widget 'note — a captured fact' \
+  'Resolve `agent-doctrine:` from the front door before reading the playbook.'
+lint
+expect "check 16a warns on the retired literal in a .md" "$c16a" "$OUT"
+expect "check 16a reports it as a WARN, not a FAIL (staged)" \
+  "WARN: widget: SKILL.md: 1 occurrence(s)" "$OUT"
+
+# green control: no retired literal -> silent.
+run_lint
+write_skill widget 'note — a captured fact' \
+  'Resolve `<agent-workspace>/doctrine` before reading the playbook.'
+lint
+expect_absent "check 16a is silent on a flipped skill" "$c16a" "$OUT"
+
+# --- check 16a: it reads .sh, and it counts COMMENTS --------------------------
+# The two journal carriers are comment-only occurrences inside a shell script.
+# A textual absence guard cannot tell a comment from code, and must not try: if
+# it skipped them the retirement could never be proven complete.
+run_lint
+write_skill widget 'note — a captured fact' 'Nothing doctrinal in the prose here.'
+mkdir -p "$lib/skills/widget/scripts"
+printf '#!/bin/sh\n# The agent-doctrine home defaults to <agent-records>/doctrine\nexit 0\n' \
+  > "$lib/skills/widget/scripts/tool.sh"
+lint
+expect "check 16a reads .sh files" "scripts/tool.sh: 1 occurrence(s)" "$OUT"
+
+# --- check 16a: skill-builder and pack faces are exempt -----------------------
+run_lint
+write_skill skill-builder 'note — a captured fact' \
+  'This doctrine documents `agent-doctrine` in order to ban it elsewhere.'
+lint
+expect_absent "check 16a exempts skill-builder" "$c16a" "$OUT"
+
+run_lint
+write_skill facade 'note — a captured fact' \
+  'The pack face still names `agent-doctrine` while composing its members.'
+printf '# facade pack\n' > "$lib/skills/facade/PACK.md"
+lint
+expect_absent "check 16a exempts pack faces" "$c16a" "$OUT"
+
+# --- check 16b: FAIL — `agent-workspace: .` is forbidden ----------------------
+# RED-PROOF. Not staged: the variable is new, so no host can have declared it.
+run_lint
+write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
+write_front_door 'agent-workspace: .'
+lint
+expect 'check 16b FAILs a dot-valued workspace declaration' \
+  "FAIL: front door (AGENTS.md): $c16b" "$OUT"
+
+# green control: any ordinary value -> silent.
+run_lint
+write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
+write_front_door 'agent-workspace: dev'
+lint
+expect_absent "check 16b is silent on an ordinary declaration" "$c16b" "$OUT"
+expect_absent "check 16c is silent on the prescribed undotted migration value" "$c16c" "$OUT"
+
+# --- check 16c: WARN — a declaration restating the current default ------------
+# The typo trap this arm exists for: the prescribed migration for a legacy host
+# whose records sit at `dev/` is `agent-workspace: dev`. `.dev` is one keystroke
+# away, syntactically valid, and a silent no-op that leaves the host degraded in
+# exactly the way the migration is supposed to fix.
+# RED-PROOF: the near-miss value must be reported.
+run_lint
+write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
+write_front_door 'agent-workspace: .dev'
+lint
+expect "check 16c warns on a default-valued declaration" "$c16c" "$OUT"
+expect_absent "check 16c warns rather than fails (advisory by design)" \
+  "FAIL: front door (AGENTS.md): $c16c" "$OUT"
+
+# --- check 16b/c: negative scope — no declaration at all ----------------------
+# The library itself is patient-zero: it never declares front-door variables in
+# its own door, so neither arm may fire when nothing is declared.
+run_lint
+write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
+write_front_door ''
+lint
+expect_absent "check 16b silent with no declaration" "$c16b" "$OUT"
+expect_absent "check 16c silent with no declaration" "$c16c" "$OUT"
 
 report "lint-doctrine-consumer-test"

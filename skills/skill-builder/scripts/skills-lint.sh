@@ -83,17 +83,31 @@
 #      must have a `## Project templates` heading in SKILL.md. A skill
 #      with no templates/ dir is out of scope. Pack faces are exempt.
 #  14. Doctrine home not resolved (FAIL). A skill declaring a `doctrine` typed
-#      edge must carry a sanctioned agent-doctrine resolution literal. Fenced
+#      edge must carry a sanctioned doctrine-home resolution literal. Fenced
 #      and indented blocks are stripped first (a quoted example must not
 #      satisfy it) and whitespace is normalized across newlines (the phrase
 #      members wrap in real skills; a line-based match would fail conforming
 #      ones). Edge-gated, so check 15 is the unconditional net beside it.
-#      skill-builder and pack faces are exempt.
-#  15. Off-home doctrine literal (FAIL). Any non-exempt skill's .md naming a
+#      skill-builder and pack faces are exempt. TRANSITIONAL: accepts both the
+#      `agent-workspace` and the retired `agent-doctrine` literal families
+#      while the consumers are flipped; narrowed to `agent-workspace` only once
+#      that flip lands.
+#  15. Off-home doctrine literal. Any non-exempt skill's .md naming a
 #      `.handbook/{test,build,design,review}/` path -- doctrine that should be
-#      reached through the resolved home. Unconditional: this is what catches a
-#      skill that hardcodes and never declares an edge. No per-skill exemption
-#      table; `docs/audit/` is deliberately not matched (see the block comment).
+#      reached through the resolved home (FAIL). Unconditional: this is what
+#      catches a skill that hardcodes and never declares an edge. No per-skill
+#      exemption table; `docs/audit/` is deliberately not matched (see the
+#      block comment). `.records/doctrine/` joins the matched set once doctrine
+#      stops defaulting under the records home -- it lands WARN while the
+#      consumers still carry it, and is promoted to FAIL with check 16.
+#  16. Retired doctrine variable + workspace declaration guards. Three arms,
+#      three severities, staged PER ARM (see the block comment): the retired
+#      `agent-doctrine` literal anywhere under a non-exempt skill (WARN now,
+#      FAIL once the carriers are flipped); a front-door `agent-workspace: .`
+#      (FAIL always); and a front-door `agent-workspace:` restating the current
+#      default (WARN always -- advisory by design). Unconditional in SCOPE, not
+#      severity: unlike 14 it is not edge-gated and reads .sh as well as .md,
+#      comments included.
 #
 # Pack-face exemption (clankshop v2): the one skill dir that carries a PACK.md
 # is the pack's FACE -- it composes the pack, so naming its members is its job,
@@ -626,8 +640,17 @@ for sk in "$skills_dir"/*/; do
     *) continue ;;
   esac
   found=0
+  # TRANSITIONAL: both literal families are accepted while the consumers are
+  # flipped from the retired `agent-doctrine` variable to `agent-workspace`.
+  # Same treatment check 14 has taken before, for the same reason -- narrowing
+  # first would redden the gate on every not-yet-flipped consumer. The
+  # `agent-doctrine` arm is dropped once that flip lands; check 16's absence
+  # arm is what proves the retirement actually happened.
   while IFS= read -r -d '' f; do
-    if strip_code "$f" | grep -qF -e '<agent-doctrine>' \
+    if strip_code "$f" | grep -qF -e '<agent-workspace>' \
+                                 -e 'the agent-workspace home' \
+                                 -e 'declared `agent-workspace:`' \
+                                 -e '<agent-doctrine>' \
                                  -e 'the agent-doctrine home' \
                                  -e 'declared `agent-doctrine:`'; then
       found=1
@@ -635,7 +658,7 @@ for sk in "$skills_dir"/*/; do
     fi
   done < <(find "$sk" -name '*.md' -print0)
   [ "$found" -eq 1 ] || \
-    fail "$name: declares a doctrine edge but carries no sanctioned agent-doctrine resolution literal"
+    fail "$name: declares a doctrine edge but carries no sanctioned doctrine-home resolution literal"
 done
 
 # ---- 15. off-home doctrine literal (FAIL) ------------------------------------
@@ -656,14 +679,23 @@ done
 # violations. Auditor's legacy-home detection is sanctioned; the fix was to stop
 # calling it a violation, not to excuse it.
 #
-# NOT attempted: a check on the canonical DEFAULT path. Skill prose is required
-# to name default paths literally, so `.records/doctrine/...` in prose is
-# conforming usage, and a hardcoded default is textually identical to a
-# documented one. Only OFF-home literals are decidable. For the same reason there
-# is no check on "prose that directs creating .handbook/": the only occurrences
-# in the corpus are prohibitions ("Do not create `.handbook/`"), which a naive
-# matcher would flag as violations -- compliant and violating text differ only by
-# a preceding negation. That rule lives in doctrine prose and in skill review.
+# STILL NOT attempted: a check on a home's canonical DEFAULT path. Skill prose is
+# required to name default paths literally, so a hardcoded default is textually
+# identical to a documented one. Only OFF-home literals are decidable. For the
+# same reason there is no check on "prose that directs creating .handbook/": the
+# only occurrences in the corpus are prohibitions ("Do not create `.handbook/`"),
+# which a naive matcher would flag as violations -- compliant and violating text
+# differ only by a preceding negation. That rule lives in doctrine prose and in
+# skill review.
+#
+# `.records/doctrine/` USED to be excluded by exactly that argument, and no
+# longer is: once doctrine resolves through `<agent-workspace>/doctrine`, that
+# path stops being any home's default, so it becomes decidable and is the
+# strongest guard this retirement buys. It is staged -- WARN while the consumers
+# still carry it in their resolution prose, FAIL once they are flipped -- for the
+# same reason check 16's absence arm is staged: the literal is live in five
+# consumer skills today, and failing on it here would redden the trunk gate for
+# the whole flip window.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   case "$name" in skill-builder) continue ;; esac
@@ -672,10 +704,78 @@ for sk in "$skills_dir"/*/; do
     rel="${f#"$sk"}"
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      fail "$name: $rel:$line: off-home doctrine literal (resolve <agent-doctrine> instead)"
+      fail "$name: $rel:$line: off-home doctrine literal (resolve <agent-workspace>/doctrine instead)"
     done < <(grep -nF -e '`.handbook/test/' -e '`.handbook/build/' \
                      -e '`.handbook/design/' -e '`.handbook/review/' "$f" || true)
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      warn "$name: $rel:$line: stale doctrine default \`.records/doctrine/\` (resolve <agent-workspace>/doctrine instead) [FAIL once the consumers are flipped]"
+    done < <(grep -nF -e '`.records/doctrine/' "$f" || true)
   done < <(find "$sk" -name '*.md' -print0)
+done
+
+# ---- 16. retired doctrine variable + workspace declaration guards ------------
+# THREE ARMS, THREE SEVERITIES -- staged per arm, not per check. Only one arm has
+# a transitional population; staging the other two would be cargo-culting the
+# carve-out.
+#
+#   a. retired-literal absence -- WARN now, FAIL once the carriers are flipped.
+#      The carriers are live today; failing here would redden the trunk gate for
+#      the whole flip window. Mirrors check 14's transitional treatment above,
+#      for the same reason.
+#   b. `agent-workspace: .` forbidden -- FAIL from the start. The variable is
+#      NEW, so nothing can have declared it before this change: there is no
+#      population to protect and no reason to soften it. `.` would place doctrine
+#      at `./doctrine`, colliding with real project directories.
+#   c. declared value equal to the current default -- WARN, always advisory. A
+#      deliberate `.dev` declaration is legal. This arm exists because the
+#      prescribed migration for a legacy host whose records already sit at `dev/`
+#      is `agent-workspace: dev` (UNDOTTED), and `.dev` is one keystroke away,
+#      syntactically valid, and a silent no-op that leaves the host degraded in
+#      exactly the way the migration is supposed to fix.
+#
+# UNCONDITIONAL describes its SCOPE, not its severity: unlike check 14 this is
+# not edge-gated, and it reads .sh as well as .md. Comments count -- a textual
+# absence guard cannot tell a comment from code, so every occurrence of the
+# literal is a carrier regardless of syntactic role. That inclusiveness is the
+# point: it is what makes "the variable is retired" a verifiable fact rather than
+# an assertion. skill-builder (this doctrine documents the literal it bans
+# elsewhere) and pack faces are exempt -- the same name-based exemption checks 12
+# and 15 use.
+#
+# Arm (a) reports ONE line per file, with the occurrence count and line numbers,
+# rather than one per occurrence: the flip sweeps whole files, so a per-file
+# roll-up is the actionable unit and keeps a transitional WARN band readable.
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  case "$name" in skill-builder) continue ;; esac
+  is_pack_face "$name" && continue
+  while IFS= read -r -d '' f; do
+    rel="${f#"$sk"}"
+    hits="$(grep -nE 'agent[-_]doctrine|AGENT_DOCTRINE' "$f" | cut -d: -f1 | tr '\n' ',' \
+            | sed 's/,$//' || true)"
+    [ -n "$hits" ] || continue
+    n="$(printf '%s' "$hits" | tr ',' '\n' | grep -c . || true)"
+    warn "$name: $rel: $n occurrence(s) of the retired \`agent-doctrine\` literal (line(s) $hits) -- resolve <agent-workspace>/doctrine instead [FAIL once the carriers are flipped]"
+  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
+done
+
+# Arms (b) and (c): the front door itself. Same precedence as every front-door
+# resolver -- AGENTS.md then CLAUDE.md, first declaration wins.
+for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
+  [ -f "$fd" ] || continue
+  ws_decl="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$fd" \
+             | head -n 1 | sed 's/[[:space:]]*$//')"
+  [ -n "$ws_decl" ] || continue
+  case "$ws_decl" in
+    .)
+      fail "front door ($(basename "$fd")): \`agent-workspace: .\` is forbidden -- it places doctrine at ./doctrine, colliding with real project directories"
+      ;;
+    .dev)
+      warn "front door ($(basename "$fd")): \`agent-workspace: .dev\` restates the current default -- probable no-op; a legacy host whose records sit at \`dev/\` needs the UNDOTTED \`dev\`"
+      ;;
+  esac
+  break
 done
 
 # ---- summary -----------------------------------------------------------------
