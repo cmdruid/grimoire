@@ -61,7 +61,7 @@ if [ ! -e "$rr/README.md" ]; then
 Records accumulated during development. A **record** is a markdown file named
 \`YYYY-MM-DD-<slug>.md\` carrying the front-matter contract
 (doctype/status/created/updated/tags). \`scripts/records.sh\` is the query +
-lifecycle tool (\`list\`, \`new\`, \`touch\`, \`done\`, \`history\`,
+lifecycle tool (\`list\`, \`grep\`, \`new\`, \`touch\`, \`done\`, \`history\`,
 \`prune-candidates\`, \`check\`) and the sole writer of \`history.tsv\`, the
 closure ledger.
 

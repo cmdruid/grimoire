@@ -9,11 +9,12 @@ One skill: the **definition** of a project's records layer. It owns the **discri
 (what makes a file a record — below), the **record contract** (below), the **template
 convention** (writers carry templates; mint from a caller-supplied `--template` path), and the
 deployed tool **`records.sh`** (search, query + lifecycle; sole writer of the `history.tsv` closure
-ledger). It owns **no directory names** — see the ownership rule below. `/journal setup` stands
-or refreshes the **tool layer** — `records.sh`, empty `history.tsv`, README — and is never a
-floor for writers. Writers state the in-package contract in their own package; they do not send
-the agent here for those bytes. At runtime they talk to the **deployed** `records.sh` when that
-file is executable, never to this skill's bundled copy.
+ledger). A skill creates only the directories it needs; the crawl knows no
+store list; `/journal setup` stands or refreshes the **tool layer** —
+`records.sh`, empty `history.tsv`, README — and is never a floor for writers.
+Writers state the in-package contract in their own package; they do not send
+the agent here for those bytes. At runtime they talk to the **deployed**
+`records.sh` when that file is executable, never to this skill's bundled copy.
 
 The layer's shape (the deployed `.records/README.md` restates it in-project):
 
@@ -23,15 +24,19 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
   necessarily carry a doctype block (it is what `new` copies into the minted record); the
   dated shape alone would swallow any dated prose file. No counters, no typed IDs, no stored
   index — querying is a live scan, crawling the root at **any depth**.
-- **Nothing is reserved, and no directory name is owned.** A skill creates only the
-  directories it needs for its own work, so the set under the root is open-ended and unknown
-  to this tool: it crawls rather than matching a list. `templates/`, `scripts/`, a
+- **Nothing is reserved.** A skill creates only the directories it needs for its own
+  work, so the set under the root is open-ended and unknown to this tool: it crawls rather
+  than matching a list. Journal's own directories remain `scripts/` (the tool) and
+  `history.tsv` (the ledger). Setup creates no writer directories and copies no templates.
+  `records.sh new` writes under a **caller-named relative directory**: default is the
+  `<doctype>` positional; `--dir <rel>` overrides (no leading `/`, no `..` segment).
+  `mkdir -p` of that path is the caller creating the directory through the tool — journal
+  does not enumerate, reserve, or advertise a store set. `templates/`, `scripts/`, a
   `doctrine/` tree — none need reserving, because their files fail one conjunct or the other
   and simply are not records. This is what lets the records home be **shared** with another
   home: a host may point `<agent-workspace>` and `<agent-records>` at the same directory
   without a carve-out. The **authoritative doctype is the front-matter key**, never the
-  parent directory — there is no second copy of the fact to disagree with. Setup creates no
-  directories at all; the skill that mints into one creates it.
+  parent directory — there is no second copy of the fact to disagree with.
 - **Micro-items are tracker lines, not records.** A tracker record's body holds one-line
   items in the contract's line form (below); detailed material — a bug repro, a durable fact —
   gets its own dated record, linked from a tracker line when it needs scheduling. Which
@@ -69,16 +74,16 @@ template → error), not by `check`.
 
   Completing a line is that rewrite + a `records.sh touch` of the tracker (no ledger line).
 - **Template convention**: `records.sh new <doctype> --template <resolved>`
-  `[--tag t]...` mints from the caller-supplied path (usually
-  `<agent-workspace>/templates/<skill>/<doctype>.md`). `--template` is
-  **required** — the tool knows no taxonomy, so it cannot guess a template
-  location from a doctype name, and there is no flat fallback. Repeatable
-  `--tag` fills the template's `<tags>` slot (`tags: [a, b]`; omitted →
-  `tags: []`). The minting skill owns the bundled template and copies it to
+  `[--dir <rel>] [--tag t]...` mints from the caller-supplied path (usually
+  `<agent-workspace>/templates/<skill>/<doctype>.md`) into `--dir` (default:
+  the `<doctype>` positional). `--template` is **required** — the tool knows
+  no taxonomy, so it cannot guess a template location from a doctype name,
+  and there is no flat fallback. Repeatable `--tag` fills the template's
+  `<tags>` slot (`tags: [a, b]`; omitted → `tags: []`). The minting skill
+  owns the bundled template and copies it to
   `<agent-workspace>/templates/<skill>/`, never to the flat
   `<agent-records>/templates/<doctype>.md`. Templates are undated, so the
-  discriminator leaves them alone wherever they sit. Journal's in-package
-  `reports.md` is the contract example only; setup copies nothing.
+  discriminator leaves them alone wherever they sit. Setup copies nothing.
 
 ## Verb dispatch (read the file, then follow it)
 
@@ -126,18 +131,15 @@ follow-up is not journal's job (scope boundary, below).
   host's cheap doc gate if it has one. A verb invoked **inside a client's sweep** (a debrief)
   only writes — the sweep makes the single atomic multi-file commit.
 
-## Project templates
-
-none — `reports.md` is the contract example. Setup copies nothing.
-
 ## Scope boundary + host conduct
 
-`journal` defines the format, stands it up, closes records, and keeps the stores conformant.
-Filing, sweeping, and grooming follow-ups is a client's job — point at the host's
-follow-up lifecycle; do not file from here. Journal owns no judgment beyond its own formats.
+`journal` defines the format, stands it up, closes records, and keeps the records home
+conformant. Filing, sweeping, and grooming follow-ups is a client's job — point at the
+host's follow-up lifecycle; do not file from here. Journal owns no judgment beyond its own
+formats.
 
 **Standalone by default, framework-aware when present.** Every verb works on any repo: the
-stores live under the agent-records home, and no verb refuses or stalls for lack of a workshop.
+records live under the agent-records home, and no verb refuses or stalls for lack of a workshop.
 On a workshop host the deployed doctrine's routing applies downstream; elsewhere it is simply
 absent — never demand the workshop as a precondition.
 

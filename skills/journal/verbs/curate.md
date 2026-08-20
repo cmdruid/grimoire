@@ -1,6 +1,6 @@
 # `curate` — substrate hygiene
 
-Keep the stores trustworthy: contract conformance, quiet closures, link rot, duplicate
+Keep the records home trustworthy: contract conformance, quiet closures, link rot, duplicate
 records, prune proposals. This is the **format's** half of curation — grooming tracker
 line-items (dedupe, re-rank, flip, reword) is the follow-up workflow's half and lives with the
 client that owns the trackers, not here.
@@ -8,13 +8,13 @@ client that owns the trackers, not here.
 1. Resolve the records root (SKILL.md discipline). Run **`records.sh check`** first — fix
    contract violations before anything cosmetic (a record `check` can't parse is invisible to
    every scan).
-2. **Records**: `records.sh list --type <doctype>` per doctype (the scan is a crawl filtered
-   on front-matter, not a walk of store directories). Clear every `check` **WARN** first — a
-   record-shaped filename the discriminator rejected is a file someone meant as a record and the
-   tool cannot see; it is invisible to every step below until its front-matter is fixed. Then
-   close records that quietly finished
-   (`/journal done`, right disposition), repair broken `→` links, and merge duplicate notes
-   (survivor absorbs; loser closed `superseded`, note naming it).
+2. **Records**: `records.sh list` **once** (optional filters if the human scoped the pass).
+   Walk the one list; do not filter by doctype unless the human scoped the
+   pass that way. Clear every `check` **WARN** first — a record-shaped filename
+   the discriminator rejected is a file someone meant as a record and the tool cannot see;
+   it is invisible to every step below until its front-matter is fixed. Then close records
+   that quietly finished (`/journal done`, right disposition), repair broken `→` links, and
+   merge duplicate notes (survivor absorbs; loser closed `superseded`, note naming it).
 3. **Propose prunes, don't execute them unasked**: closed records past the project's prune
    threshold (project doctrine — journal has no default) can be deleted; the ledger line and
    git history remain the trace. `records.sh prune-candidates --until <threshold-date>` is the

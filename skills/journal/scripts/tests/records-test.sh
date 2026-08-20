@@ -332,6 +332,36 @@ expect_eq "front-matter skip gone after the cut" "0" "$after"
 "$RSG" grep ZXSECRET >"$OUT"
 expect "tags-only plant matches once the skip is gone" "tagged-zx" "$OUT"
 
+# --- --dir: caller-named mint directory (red-proof 4) --------------------------
+abs_dir="$TMP/records-abs-should-not-exist"
+rc=0; "$RS" new notes --dir "$abs_dir" --template "$TPL/notes.md" --title "Abs dir" \
+  >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "--dir absolute rc" "2" "$rc"
+[ ! -e "$abs_dir" ] && pass=$((pass + 1)) || {
+  echo "FAIL: --dir absolute created $abs_dir" >&2; fail=$((fail + 1)); }
+[ ! -d "$proj/.records/abs" ] && pass=$((pass + 1)) || {
+  echo "FAIL: --dir absolute mkdir under the records root" >&2; fail=$((fail + 1)); }
+
+rc=0; "$RS" new notes --dir foo/../bar --template "$TPL/notes.md" --title "Dotdot dir" \
+  >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "--dir foo/../bar rc" "2" "$rc"
+[ ! -d "$proj/.records/foo" ] && pass=$((pass + 1)) || {
+  echo "FAIL: --dir foo/../bar created foo/" >&2; fail=$((fail + 1)); }
+[ ! -d "$proj/.records/bar" ] && pass=$((pass + 1)) || {
+  echo "FAIL: --dir foo/../bar created bar/" >&2; fail=$((fail + 1)); }
+
+rc=0; "$RS" new notes --dir "" --template "$TPL/notes.md" --title "Empty dir" \
+  >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "empty --dir rc" "2" "$rc"
+
+p_dir="$("$RS" new notes --dir nested/facts --template "$TPL/notes.md" --title "Nested fact")"
+expect_eq "new --dir path" "$proj/.records/nested/facts/$today-nested-fact.md" "$p_dir"
+expect "doctype is still the positional" "doctype: notes" "$p_dir"
+"$RS" list --type notes >"$OUT"
+expect "list sees the --dir record" "nested-fact" "$OUT"
+"$RS" list --type notes >"$OUT"
+expect "list path is the --dir location" "nested/facts/$today-nested-fact.md" "$OUT"
+
 # malformed ledger: hand-written lines are a fact check reports
 echo "garbage line" >> "$proj/.records/history.tsv"
 rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?

@@ -8,7 +8,7 @@
 #   records.sh list [--type t] [--status s] [--tag g] [--since d] [--until d]
 #   records.sh grep [--type t] [--status s] [--tag g] [--since d] [--until d] <pattern>
 #   records.sh show <path>
-#   records.sh new <doctype> --title "..." --template <path> [--tag t]...
+#   records.sh new <doctype> --title "..." --template <path> [--dir rel] [--tag t]...
 #   records.sh touch <path> [--status open|current]
 #   records.sh done <path> [--as done|dropped|superseded|consumed] [--note "..."]
 #   records.sh history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
@@ -38,7 +38,7 @@ usage: records.sh <command> [args]
   list    [--type t] [--status s] [--tag g] [--since d] [--until d]
   grep    [--type t] [--status s] [--tag g] [--since d] [--until d] <pattern>
   show    <path>
-  new     <doctype> --title "..." --template <path> [--tag t]...
+  new     <doctype> --title "..." --template <path> [--dir rel] [--tag t]...
   touch   <path> [--status open|current]
   done    <path> [--as done|dropped|superseded|consumed] [--note "..."]
   history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
@@ -224,10 +224,17 @@ cmd_new() {
   title=""
   tpl=""
   tags=""
+  dir=""
+  dir_set=0
   while [ $# -gt 0 ]; do
     case "$1" in
       --title)    [ $# -ge 2 ] || usage; title="$2"; shift 2 ;;
       --template) [ $# -ge 2 ] || usage; tpl="$2"; shift 2 ;;
+      --dir)
+        [ $# -ge 2 ] || usage
+        dir="$2"
+        dir_set=1
+        shift 2 ;;
       --tag)
         [ $# -ge 2 ] || usage
         [ -n "$2" ] || err "empty --tag"
@@ -238,16 +245,29 @@ cmd_new() {
   done
   [ -n "$title" ] || usage
   # --template is required: a writer resolves its own template path and passes
-  # it. There is no flat fallback to look up -- the tool no longer knows a
-  # taxonomy, so it cannot guess a template location from a doctype name.
+  # it. There is no flat fallback to look up -- the tool knows no taxonomy, so
+  # it cannot guess a template location from a doctype name.
   [ -n "$tpl" ] || err "--template is required (records.sh new <doctype> --title ... --template <path>)"
   [ -f "$tpl" ] || err "no template for doctype '$doctype': $tpl"
+  # Directory is --dir, defaulting to the doctype positional. mkdir is the
+  # caller creating that directory through the tool.
+  if [ "$dir_set" -eq 0 ]; then
+    dir="$doctype"
+  else
+    [ -n "$dir" ] || err "--dir is empty"
+    case "$dir" in
+      /*) err "--dir must be a relative path (no leading /): $dir" ;;
+    esac
+    case "/$dir/" in
+      */../*) err "--dir must not contain a .. segment: $dir" ;;
+    esac
+  fi
   today="$(date +%Y-%m-%d)"
   slug="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' \
           | sed -e 's/[^a-z0-9]\{1,\}/-/g' -e 's/^-\{1,\}//' -e 's/-\{1,\}$//')"
   [ -n "$slug" ] || err "title yields an empty slug: $title"
-  mkdir -p "$RR/$doctype"
-  base="$RR/$doctype/$today-$slug"
+  mkdir -p "$RR/$dir"
+  base="$RR/$dir/$today-$slug"
   path="$base.md"
   n=2
   while [ -e "$path" ]; do path="$base-$n.md"; n=$((n + 1)); done

@@ -384,7 +384,7 @@ triggers, SKILL.md intro, `curate.md` "the stores."
 
 ## Slices
 
-- [ ] **Slice 1: `grep` + standup refresh (tracer)** <requires: —>
+- [x] **Slice 1: `grep` + standup refresh (tracer)** <requires: —>
   - Files:
     - Modify: `skills/journal/scripts/records.sh` (`usage`, `cmd_grep`,
       dispatch `case`);
@@ -409,7 +409,7 @@ triggers, SKILL.md intro, `curate.md` "the stores."
     Expect ALL GREEN / setup-journal-test green. `records.sh` usage
     printed via a no-args call contains a `grep` line.
 
-- [ ] **Slice 2: `/journal search` + routing surface** <requires: 1>
+- [x] **Slice 2: `/journal search` + routing surface** <requires: 1>
   - Files:
     - Create: `skills/journal/verbs/search.md`;
     - Modify: `skills/journal/SKILL.md` (description = Mechanism
@@ -423,7 +423,7 @@ triggers, SKILL.md intro, `curate.md` "the stores."
     `verbs/search.md` exists and names `records.sh grep`. No journal
     test file required (read-only prose); do not skip slice-1 tests.
 
-- [ ] **Slice 3: mint `--dir` + curate + leftover language + drop
+- [x] **Slice 3: mint `--dir` + curate + leftover language + drop
   `reports.md`** <requires: 1>
   - Files:
     - Modify: `skills/journal/scripts/records.sh` (`cmd_new --dir`);
