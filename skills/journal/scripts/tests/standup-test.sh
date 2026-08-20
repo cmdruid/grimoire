@@ -101,4 +101,28 @@ expect_eq "bad target rc" "2" "$rc"
 rc=0; "$SKILL/scripts/standup.sh" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "no-args usage rc" "1" "$rc"
 
+rc=0; "$SKILL/scripts/standup.sh" "$proj" --records-root /abs >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "--records-root absolute rc" "1" "$rc"
+rc=0; "$SKILL/scripts/standup.sh" "$proj" --records-root foo/../bar >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "--records-root .. rc" "1" "$rc"
+
+chmod a-x "$proj/.records/scripts/records.sh"
+rc=0; "$SKILL/scripts/standup.sh" "$proj" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "chmod-repair later visit rc" "0" "$rc"
+expect "chmod-repair is current" "records: $proj/.records (journal, current)" "$OUT"
+expect "chmod-repair reports the script" "wrote: .records/scripts/records.sh" "$OUT"
+[ -x "$proj/.records/scripts/records.sh" ] && pass=$((pass + 1)) || {
+  echo "FAIL: later visit did not restore executable bit" >&2; fail=$((fail + 1)); }
+
+brown="$TMP/brownfield"
+mkdir -p "$brown/.records/notes"
+printf -- '---\ndoctype: notes\nstatus: bogus\ncreated: 2026-08-20\nupdated: 2026-08-20\ntags: []\n---\n# Broken\n' \
+  > "$brown/.records/notes/2026-08-20-broken.md"
+rc=0; "$SKILL/scripts/standup.sh" "$brown" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "brownfield check-fail standup rc" "0" "$rc"
+expect "brownfield still reports the layer" "records: $brown/.records (journal)" "$OUT"
+expect "brownfield points at curate" "tool layer is up" "$ERR"
+[ -x "$brown/.records/scripts/records.sh" ] && pass=$((pass + 1)) || {
+  echo "FAIL: brownfield standup did not install records.sh" >&2; fail=$((fail + 1)); }
+
 report "standup-test"

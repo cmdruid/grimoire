@@ -50,6 +50,15 @@ EOF
 
 err() { echo "records.sh: $*" >&2; exit 2; }
 
+# valid_rel_dir <rel>: caller-named directory under $RR — relative, nonempty,
+# no leading /, no `..` segment (including `foo/../bar` and a bare `..`).
+valid_rel_dir() {
+  [ -n "$1" ] || return 1
+  case "$1" in /*) return 1 ;; esac
+  case "/$1/" in */../*) return 1 ;; esac
+  return 0
+}
+
 is_closing() { case "$1" in done|dropped|superseded|consumed) return 0 ;; *) return 1 ;; esac; }
 is_status()  { case "$1" in open|current|done|dropped|superseded|consumed) return 0 ;; *) return 1 ;; esac; }
 
@@ -253,15 +262,8 @@ cmd_new() {
   # caller creating that directory through the tool.
   if [ "$dir_set" -eq 0 ]; then
     dir="$doctype"
-  else
-    [ -n "$dir" ] || err "--dir is empty"
-    case "$dir" in
-      /*) err "--dir must be a relative path (no leading /): $dir" ;;
-    esac
-    case "/$dir/" in
-      */../*) err "--dir must not contain a .. segment: $dir" ;;
-    esac
   fi
+  valid_rel_dir "$dir" || err "directory must be a relative path with no .. segment: $dir"
   today="$(date +%Y-%m-%d)"
   slug="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' \
           | sed -e 's/[^a-z0-9]\{1,\}/-/g' -e 's/^-\{1,\}//' -e 's/-\{1,\}$//')"
@@ -343,9 +345,16 @@ cmd_done() {
   title="$(awk '/^# /{ print substr($0, 3); exit }' "$abs" | tr '\t' ' ')"
   note="$(printf '%s' "$note" | tr '\t\n' '  ')"
   today="$(date +%Y-%m-%d)"
+  : >> "$LEDGER" || err "cannot write ledger: $LEDGER"
+  bak="$abs.done-bak"
+  cp "$abs" "$bak"
   stamp "$abs" "$today" "$disposition"
   line="$(printf '%s\t%s\t%s\t%s\t%s\t%s' "$today" "$disposition" "$rel" "$doctype" "$title" "$note" | tr '\n' ' ')"
-  printf '%s\n' "$line" >> "$LEDGER"
+  if ! printf '%s\n' "$line" >> "$LEDGER"; then
+    mv "$bak" "$abs"
+    err "ledger append failed; record restored: $rel"
+  fi
+  rm -f "$bak"
   printf '%s\n' "$line"
 }
 
@@ -440,14 +449,11 @@ cmd_check() {
       done
       fails=$((fails + 1))
     fi
-    # record links: a body reference `→ <store>/<file>.md` must resolve at the
-    # root (link-rot detection). Two filters keep illustrations from manufacturing
-    # false rot. (1) Only tokens whose first segment is a real top-level directory
-    # are checked, so prose naming no store can't trip it. (2) CODE BLOCKS are
-    # skipped -- fenced and four-space-indented alike -- because an example line
-    # showing the tracker-line FORM necessarily names a real store, which defeats
-    # filter (1) on its own: a template demonstrating `→ notes/<file>.md` is
-    # teaching syntax, not referencing a record.
+    # record links: a body reference `→ <dir>/<file>.md` must resolve at the
+    # root (link-rot detection). CODE BLOCKS are skipped -- fenced and
+    # four-space-indented alike -- because an example line showing the
+    # tracker-line FORM is teaching syntax, not referencing a record. A live
+    # link whose first-segment directory is gone is still rot.
     links="$(awk '
       /^[[:space:]]*(```|~~~)/ { fence = !fence; next }
       fence                    { next }
@@ -458,7 +464,7 @@ cmd_check() {
       while IFS= read -r lnk; do
         case "$lnk" in
           */*)
-            if [ -d "$RR/${lnk%%/*}" ] && ! [ -f "$RR/$lnk" ]; then
+            if ! [ -f "$RR/$lnk" ]; then
               echo "FAIL: $rel — broken link → $lnk" >&2
               fails=$((fails + 1))
             fi ;;
@@ -467,11 +473,19 @@ cmd_check() {
 $links
 LINKS
     fi
-    # status <-> ledger coherence: a closing status with no ledger line is a fact.
+    # status <-> ledger coherence: a closing status requires a ledger line
+    # whose disposition matches.
     status="$(fm_field "$RR/$rel" status)"
     if is_closing "$status"; then
-      if ! [ -f "$LEDGER" ] || ! awk -F'\t' -v p="$rel" '$3 == p { found = 1 } END { exit !found }' "$LEDGER"; then
+      disp=""
+      if [ -f "$LEDGER" ]; then
+        disp="$(awk -F'\t' -v p="$rel" '$3 == p { print $2; exit }' "$LEDGER")"
+      fi
+      if [ -z "$disp" ]; then
         echo "FAIL: $rel — closing status '$status' but no history.tsv ledger line" >&2
+        fails=$((fails + 1))
+      elif [ "$disp" != "$status" ]; then
+        echo "FAIL: $rel — ledger disposition '$disp' does not match closing status '$status'" >&2
         fails=$((fails + 1))
       fi
     fi

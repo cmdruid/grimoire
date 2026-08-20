@@ -4,8 +4,9 @@ Completion is a **judgment**, then a mechanic. The judgment: is this really fini
 under which disposition? The mechanic: `records.sh done` — closure in place (the file never
 moves; moves would dangle every path-based link) plus the one ledger line in `history.tsv`.
 
-1. Resolve the records root (SKILL.md discipline) and the record
-   (`records.sh list`/`show` to confirm you have the right one).
+1. Resolve the records root (SKILL.md discipline). Deployed tool missing
+   or not executable → name `/journal setup`, stop. Then confirm the
+   record (`records.sh list`/`show`).
 2. **Pick the disposition** — the vocabulary is the contract:
    - `done` — completed as intended;
    - `dropped` — deliberately won't do / no longer true (say why in the note);
@@ -16,13 +17,17 @@ moves; moves would dangle every path-based link) plus the one ledger line in `hi
    script stamps the date, rewrites `status:`, and appends the ledger line (its sole writer;
    it refuses a double-close). Never hand-edit a status to a closing value — `check` flags a
    closing status with no ledger line.
-4. **Tracker line-items are not records**: complete the line to the contract's completed
-   form (SKILL.md *The record contract* → Tracker line form) + `records.sh touch <tracker>`
-   — no ledger line. Closing a *whole tracker* (rare — a retired concern) goes through
+4. **Tracker line-items are not records.** Completing a line-item *on
+   request* is the follow-up client's job, not this verb. Closing a
+   *whole tracker* (rare — a retired concern) goes through
    `records.sh done` like any record.
-5. **Writebacks**: `records.sh list --type trackers`, then search each tracker body for
-   `→ <rel>` where `<rel>` is the closed record's records-root-relative path. For each hit,
-   rewrite that line to the contract's completed form and `records.sh touch` the tracker.
+5. **Writebacks**: `records.sh list` (no `--type`), then search each
+   body for `→ <rel>` where `<rel>` is the closed record's
+   records-root-relative path. Rewrite only **unchecked** tracker-item
+   lines under `## Items` that match the contract's live form (SKILL.md
+   *The record contract* → Tracker line form). Leave prose and already
+   completed items. `records.sh touch` each tracker you rewrote. Zero
+   hits: nothing to write back.
 6. **Commit** per the commit policy (SKILL.md): standalone → its own scoped commit
    (`Journal: done — <slug> (<disposition>)`); inside a client's sweep → write-only (the
    sweep commits once).
@@ -32,7 +37,7 @@ Pruning closed records (deleting the file; ledger + git history remain the trace
 
 ## Done when
 
-- Record closed: `records.sh done` wrote the disposition + ledger line; writebacks used the
-  contract's completed-line form; standalone commit landed (or write-only inside a sweep).
-- Line-item only: the one line matches the completed form; tracker `touch`ed; no ledger line.
+- Record closed: `records.sh done` wrote the disposition + ledger line;
+  writebacks rewrote only matching live tracker-item lines; standalone
+  commit landed (or write-only inside a sweep).
 - Not finished: left open (or `touch --status`); no close.

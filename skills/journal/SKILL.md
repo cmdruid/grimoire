@@ -91,7 +91,7 @@ template → error), not by `check`.
 |---|---|---|---|
 | `/journal setup` | `verbs/setup.md` | Tool layer: first visit stands it up; later visit refreshes `records.sh` | "stand up the records", "refresh records.sh" |
 | `/journal search` | `verbs/search.md` | Find records by content or metadata | "find/search/list/query records", "what's in the records about X" |
-| `/journal done <record>` | `verbs/done.md` | **Close** a record in place — disposition + note + the ledger line (or flip a tracker line-item) | "mark that done", "close out that plan" |
+| `/journal done <record>` | `verbs/done.md` | **Close** a record in place — disposition + note + the ledger line; write back inbound `→` links | "mark that done", "close out that plan" |
 | `/journal curate` | `verbs/curate.md` | **Substrate hygiene** — `check`, close what quietly finished, repair link rot, merge duplicates, propose prunes | "check the records", "tidy the records home" |
 
 `/journal` with no recognized verb: ask which of **setup / search / done / curate**. Filing a
@@ -103,7 +103,10 @@ follow-up is not journal's job (scope boundary, below).
   the first line-start `agent-records:` or `records-root:` in `AGENTS.md`, then
   `CLAUDE.md`; else `.records/`. (`agent-records:` preferred; `records-root:` still
   accepted so already-declared hosts do not break.) The deployed tool is
-  `<agent-records>/scripts/records.sh` — invoke **it** for every date, path, and
+  `<agent-records>/scripts/records.sh`. If that file is **missing or not
+  executable**, stop, name `/journal setup`, and do not run this skill's bundled
+  copy. `search` also stops when the deployed usage list has no `grep` line (a
+  later setup refreshes). Invoke **the deployed tool** for every date, path, and
   conformance fact (`new --template <resolved>` / `touch` / `done` / `list` /
   `grep` / `history` / `prune-candidates` / `check`); never guess a date, never
   hand-stamp front-matter, never write `history.tsv` by hand. `search` / `done` /

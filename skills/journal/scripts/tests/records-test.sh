@@ -155,9 +155,13 @@ rm "$sneaky"
 tr_rec="$("$RS" new trackers --template "$TPL/trackers.md" --title "Backlog")"
 note_rel="$("$RS" list --type notes | head -1 | cut -f1)"
 printf -- '- [ ] %s — wire the alpha [→ %s]\n' "$today" "$note_rel" >> "$tr_rec"
-printf -- '- [ ] %s — prose example, unchecked [→ path/to/linked-record.md]\n' "$today" >> "$tr_rec"
 "$RS" check >"$OUT"
 expect "resolving link passes check" "records check: OK" "$OUT"
+printf -- '- [ ] %s — vanished store [→ gone/%s-nope.md]\n' "$today" "$today" >> "$tr_rec"
+rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "removed-store link check rc" "2" "$rc"
+expect "check names the vanished-store link" "broken link → gone/$today-nope.md" "$ERR"
+sed -i.bak '/vanished store/d' "$tr_rec" && rm -f "$tr_rec.bak"
 printf -- '- [ ] %s — rotted [→ notes/never-existed.md]\n' "$today" >> "$tr_rec"
 rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "broken link check rc" "2" "$rc"
@@ -361,6 +365,25 @@ expect "doctype is still the positional" "doctype: notes" "$p_dir"
 expect "list sees the --dir record" "nested-fact" "$OUT"
 "$RS" list --type notes >"$OUT"
 expect "list path is the --dir location" "nested/facts/$today-nested-fact.md" "$OUT"
+
+rc=0; "$RS" new '..' --template "$TPL/notes.md" --title "Escapes" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "doctype .. refused rc" "2" "$rc"
+[ ! -f "$proj/$today-escapes.md" ] && pass=$((pass + 1)) || {
+  echo "FAIL: doctype .. wrote outside the records root" >&2; fail=$((fail + 1)); }
+
+mismatch="$proj/.records/notes/$today-mismatch.md"
+printf -- '---\ndoctype: notes\nstatus: done\ncreated: %s\nupdated: %s\ntags: []\n---\n# Mismatch\n' \
+  "$today" "$today" > "$mismatch"
+printf '%s\tdropped\tnotes/%s-mismatch.md\tnotes\tMismatch\t-\n' "$today" "$today" \
+  >> "$proj/.records/history.tsv"
+rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "disposition-mismatch check rc" "2" "$rc"
+expect "check names the disposition mismatch" "ledger disposition 'dropped' does not match closing status 'done'" "$ERR"
+rm "$mismatch"
+# drop the planted ledger line so later checks are not poisoned
+tmp_led="$proj/.records/history.tsv.keep"
+awk -F'\t' -v p="notes/$today-mismatch.md" '$3 != p { print }' \
+  "$proj/.records/history.tsv" > "$tmp_led" && mv "$tmp_led" "$proj/.records/history.tsv"
 
 # malformed ledger: hand-written lines are a fact check reports
 echo "garbage line" >> "$proj/.records/history.tsv"
