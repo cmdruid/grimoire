@@ -1,6 +1,6 @@
 ---
 doctype: specs
-status: open
+status: done
 created: 2026-08-18
 updated: 2026-08-19
 tags: [spec]
