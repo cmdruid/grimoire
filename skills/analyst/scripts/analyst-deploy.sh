@@ -10,8 +10,9 @@
 # runs, never a copy this script performs.
 #
 # Idempotent: re-running deploys nothing new and reports what it found.
-# Refuses nothing: with no records layer, it reports that and exits 0 -- the
-# skill reads its bundled templates in place on such a host.
+# Refuses nothing: with no workspace home, it reports that and exits 0 -- the
+# skill reads its bundled templates in place on such a host. The dest is a
+# workspace subpath, so a records directory is not a deploy gate.
 set -euo pipefail
 
 resolve_records_root() {
@@ -47,10 +48,10 @@ BUNDLED="$(cd "$(dirname "$0")/../templates" && pwd)"
 DEST="$WS/templates/analyst"
 PREV="$RR/templates/analyst"
 
-if [ ! -d "$RR" ]; then
-  echo "records_layer=absent"
+if [ ! -d "$WS" ]; then
+  echo "workspace=absent"
   echo "deployed=0"
-  echo "note=no records layer; the skill reads its bundled templates in place"
+  echo "note=no workspace home; the skill reads its bundled templates in place"
   exit 0
 fi
 
@@ -77,7 +78,7 @@ for f in "$BUNDLED"/*.md; do
   fi
 done
 
-echo "records_layer=present"
+echo "workspace=present"
 echo "dest=${DEST#"$ROOT"/}"
 echo "deployed_count=$deployed"
 echo "kept_count=$kept"

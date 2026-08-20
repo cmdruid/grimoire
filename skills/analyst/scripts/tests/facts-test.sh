@@ -151,7 +151,7 @@ expect "shared home: undating it again restores the count" "open_records=3" "$OU
 
 "$FACTS" health "$FIX" > "$OUT" 2>&1
 expect "health: counts the open bug"          "open_bugs=1"                "$OUT"
-expect "health: flags the stale open record"  "stale_open_records="        "$OUT"
+expect "health: flags the stale open record"  "stale_open_records=1"       "$OUT"
 expect "health: finds the audit report"       "audit_reports=1"            "$OUT"
 expect "health: attributes the audit by path" "2026-08-05-audit-pass.md"   "$OUT"
 # The gate is NEVER run here — the fact must say so, not report a result.
@@ -163,6 +163,16 @@ sed -i.bak 's/^status: open/status: done/' "$FIX/.records/bugs/2026-02-01-stale-
 "$FACTS" health "$FIX" > "$OUT" 2>&1
 expect "health BREAK: bug count drops"        "open_bugs=0"                "$OUT"
 sed -i.bak 's/^status: done/status: open/' "$FIX/.records/bugs/2026-02-01-stale-bug.md"
+
+# BREAK: reports/ with no audit tag must not abort (pipefail + grep -l).
+mv "$FIX/.records/reports/2026-08-05-audit-pass.md" "$FIX/audit-pass.bak"
+mk_record reports 2026-08-19-status-snap open 2026-08-19 "analyst, status"
+rc=0
+"$FACTS" health "$FIX" > "$OUT" 2>&1 || rc=$?
+expect_eq "health BREAK: no-audit reports dir exits 0" "0" "$rc"
+expect "health BREAK: no-audit reports dir counts zero" "audit_reports=0" "$OUT"
+mv "$FIX/audit-pass.bak" "$FIX/.records/reports/2026-08-05-audit-pass.md"
+rm -f "$FIX/.records/reports/2026-08-19-status-snap.md"
 
 # --- subsystem ---------------------------------------------------------------
 
@@ -178,6 +188,7 @@ expect "subsystem BREAK: absent path reported false" "path_exists[src/nonexisten
 "$FACTS" catalog "$FIX" > "$OUT" 2>&1
 expect "catalog: reports nothing deployed yet" "deployed=false" "$OUT"
 expect "catalog: lists briefing as bundled"    "briefing	bundled" "$OUT"
+expect_absent "catalog: lock-in reports.md is not a kind" "reports	bundled" "$OUT"
 
 mkdir -p "$FIX/.dev/templates/analyst"
 cp "$HERE/../../templates/briefing.md" "$FIX/.dev/templates/analyst/briefing.md"

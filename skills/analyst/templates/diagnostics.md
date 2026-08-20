@@ -16,8 +16,10 @@ stop.
 
 ## Gather
 
-1. `analyst-facts.sh health <root>` — open bug records, stale records (`open` with old `updated:`),
-   tracker debt, ledger cadence.
+1. `analyst-facts.sh health <root>` — open bug records, stale records (`open` with old
+   `updated:`), recorded audit reports, ledger cadence. Tracker line counts are a
+   `status` fact — run `analyst-facts.sh status <root>` (or read the tracker records)
+   if this snapshot needs tracker debt.
 2. **Prefer the project's own instruments.** If the project runs a code-quality audit, its
    latest audit reports are the authority on scored health — read them and **attribute** the
    numbers to that audit with its date. Never re-derive a score, and never restate an audit's

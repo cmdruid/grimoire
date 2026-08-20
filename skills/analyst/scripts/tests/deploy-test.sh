@@ -17,15 +17,16 @@ BARE="$(mktemp -d)"
 trap 'rm -rf "$FIX" "$BARE"' EXIT
 OUT="$FIX/out.txt"
 
-mkdir -p "$FIX/.records/plans"
+mkdir -p "$FIX/.records/plans" "$FIX/.dev"
 
 # --- first deploy ------------------------------------------------------------
 
 "$DEPLOY" "$FIX" > "$OUT" 2>&1
-expect "first deploy: records layer seen"   "records_layer=present"           "$OUT"
+expect "first deploy: workspace seen"       "workspace=present"               "$OUT"
 expect "first deploy: lands the catalog"    "deployed=briefing.md"            "$OUT"
+expect "first deploy: lands the lock-in"    "deployed=reports.md"             "$OUT"
 expect "first deploy: nothing kept back"    "kept_count=0"                    "$OUT"
-expect_eq "first deploy: all five templates" "5" \
+expect_eq "first deploy: five catalog kinds plus reports.md" "6" \
   "$(find "$FIX/.dev/templates/analyst" -name '*.md' | wc -l | tr -d ' ')"
 
 # --- customization survives a re-run -----------------------------------------
@@ -64,13 +65,26 @@ EOF
 expect "re-run: host-added template untouched" "template: house-style" \
   "$FIX/.dev/templates/analyst/house-style.md"
 
+# --- workspace present, no records dir (records is not a deploy gate) ---------
+
+WS_ONLY="$(mktemp -d)"
+trap 'rm -rf "$FIX" "$BARE" "$WS_ONLY"' EXIT
+mkdir -p "$WS_ONLY/.dev"
+"$DEPLOY" "$WS_ONLY" > "$OUT" 2>&1
+expect "workspace-only: deploys without a records dir" "workspace=present" "$OUT"
+expect "workspace-only: lands the catalog"             "deployed=briefing.md" "$OUT"
+expect_eq "workspace-only: creates no records dir" "0" \
+  "$(find "$WS_ONLY" -maxdepth 1 -name '.records' | wc -l | tr -d ' ')"
+
 # --- standalone degrade -------------------------------------------------------
 
 rc=0
 "$DEPLOY" "$BARE" > "$OUT" 2>&1 || rc=$?
 expect_eq "degrade: exits 0, never refuses" "0" "$rc"
-expect "degrade: reports the absent layer"  "records_layer=absent" "$OUT"
+expect "degrade: reports the absent workspace" "workspace=absent" "$OUT"
 expect "degrade: deploys nothing"           "deployed=0"           "$OUT"
+expect_eq "degrade: creates no workspace dir" "0" \
+  "$(find "$BARE" -maxdepth 1 -name '.dev' | wc -l | tr -d ' ')"
 expect_eq "degrade: creates no records dir" "0" \
   "$(find "$BARE" -maxdepth 1 -name '.records' | wc -l | tr -d ' ')"
 

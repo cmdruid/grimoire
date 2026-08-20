@@ -28,11 +28,14 @@ The live catalog is `<agent-workspace>/templates/analyst/` when deployed, else t
 `templates/`. **Deployed wins** — a project customizes its reports by editing the deployed copy,
 and host-added templates join the catalog the same way.
 
+`<root>` is `git rev-parse --show-toplevel` of the project being briefed. Non-git → ask.
+
 Deploy is **lazy** and mechanical: run `scripts/analyst-deploy.sh <root>` on the first
-workshop-host use. It copies only the bundled templates *absent* from the deployed directory and
-**never overwrites** — a customized template is the project's, and an upgrade of one is a
-judgment-assisted diff a human runs, never a silent replace. On a host with no records root it
-deploys nothing and reports so; read the bundled templates in place. It refuses nothing.
+use once a workspace home exists. It copies only the bundled templates *absent* from the
+deployed directory and **never overwrites** — a customized template is the project's, and
+an upgrade of one is a judgment-assisted diff a human runs, never a silent replace. On a
+host with no workspace home it deploys nothing and reports so; read the bundled templates
+in place. It never creates a missing workspace, declared or default. It refuses nothing.
 
 Each template's front-matter carries `template:` (its token), `use-when:` (the routing
 descriptor), and `inputs:` (the facts it needs). Its body carries the gathering and synthesis
@@ -59,9 +62,9 @@ question's *intent* is not. Keep it cheap and inline — never spend a dispatch 
 
 ## The engine
 
-1. **Resolve the template** (above). On a workshop host, run `scripts/analyst-deploy.sh <root>`
-   first if the catalog has never been deployed — it is idempotent, so running it when unsure
-   costs nothing.
+1. **Resolve the template** (above). Run `scripts/analyst-deploy.sh <root>` first if the
+   catalog has never been deployed — it is idempotent, so running it when unsure costs
+   nothing. No workspace home → it reports so and you read the bundled templates.
 2. **Gather facts** — run `scripts/analyst-facts.sh`; **each template's Gather section names its
    exact invocation** (every subcommand takes the project root as its first argument). It is
    read-only and prints `key=value` facts plus evidence; it never judges, and it **never runs the
@@ -82,9 +85,11 @@ doctrine — and never an editing sub-agent.
 ## Span anchor (`briefing`)
 
 An explicit span wins ("since Monday", "since v0.3"). Absent one, anchor to the **last persisted
-briefing** — `records.sh list --type reports --tag briefing`, newest first — else **14 calendar
-days back from today**. Always name the anchor actually used in the output; there is no hidden
-state file.
+briefing** — `records.sh list --type reports --tag briefing` when that tool is executable,
+newest first; else glob `<agent-records>/reports/YYYY-MM-DD-*.md` whose front-matter `tags`
+contain `briefing`, newest filename first. If neither yields a hit, **14 calendar days back
+from today**. Always name the anchor actually used in the output; there is no hidden state
+file. The records tool is never a floor.
 
 ## Persistence
 
@@ -96,12 +101,17 @@ person will see it. When in doubt, persist: a spare record costs a line in a sto
 evaporated briefing costs the whole run.
 
 To persist: resolve `reports.md` via the project-templates rule; mint with
-`records.sh new reports --template <resolved> --title "…" --tag analyst --tag briefing`
-when the tool exists; else file-mode from that path, naming the file
-`YYYY-MM-DD-<slug>.md` (the record shape) and write
-`tags: [analyst, briefing]` yourself. The tags let the next briefing find
-this one as its anchor. On a host with no records tool, file-mode still
-writes under the agent-records home.
+`records.sh new reports --template <resolved> --title "…" --tag analyst --tag <token>`
+when the tool exists (`<token>` is the resolved catalog token: `briefing`,
+`status`, `subsystem`, `diagnostics`, or `guide`); else file-mode from that
+path, naming the file `YYYY-MM-DD-<slug>.md` (the record shape) under
+`<agent-records>/reports/` (default `.records/reports/`; create the store on
+first write) and write `tags: [analyst, <token>]` yourself. **The in-package
+contract:** front-matter keys `doctype`, `status`, `created`, `updated`,
+`tags`; live statuses `open` / `current`; closed `done` / `dropped` /
+`superseded` / `consumed`. File-mode writes those five keys; never invent a
+sixth. Only a `briefing`-tagged report is a span anchor. On a host with no
+records tool, file-mode still writes under the agent-records home.
 
 ## Anti-patterns
 
@@ -127,11 +137,12 @@ skeleton with every claim cited; the anchor used is named; and the report was pe
 - `subsystem.md`
 - `diagnostics.md`
 - `guide.md`
+- `reports.md`
 
 ## Edges
 
 <!-- edges:analyst -->
-- produces: report — a briefing from the catalog, in context or persisted as a reports record tagged with its template token
+- produces: report — a catalog briefing, in context or persisted as a reports record tagged `analyst` plus the resolved template token
 - handoff: — (none; a report informs, it does not start a workflow)
 - consumes: record, report — the records layer (ledger, stores, trackers) and git history; audit reports feed the health snapshot when present
 <!-- /edges:analyst -->

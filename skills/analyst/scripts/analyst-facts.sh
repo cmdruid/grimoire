@@ -257,14 +257,20 @@ EOF
   # Recorded audit reports: the project's OWN instrument is the authority on
   # scored health. We report their existence and dates; we never re-derive a
   # score, and we never run the gate.
-  local audits=0
+  # grep -l exits 1 on no match; under `set -o pipefail` that used to abort
+  # the whole health command once reports/ existed without an audit tag.
+  local audits=0 audit_files=""
   if [ -d "$RR/reports" ]; then
-    audits="$(grep -l -E '^tags:.*audit' "$RR"/reports/*.md 2>/dev/null | wc -l | tr -d ' ')"
-    if [ "$audits" -gt 0 ]; then
+    audit_files="$(grep -l -E '^tags:.*audit' "$RR"/reports/*.md 2>/dev/null || true)"
+    if [ -n "$audit_files" ]; then
+      audits="$(printf '%s\n' "$audit_files" | grep -c . | tr -d ' ')"
       echo "--- audit reports (path, updated) ---"
-      for f in $(grep -l -E '^tags:.*audit' "$RR"/reports/*.md 2>/dev/null); do
+      while IFS= read -r f; do
+        [ -n "$f" ] || continue
         printf '%s\t%s\n' "$(rel_to_rr "$f")" "$(fm_field "$f" updated)"
-      done
+      done <<EOF
+$audit_files
+EOF
     fi
   fi
   echo "audit_reports=$audits"
@@ -321,8 +327,8 @@ EOF
 
 cmd_catalog() {
   setup "$@"
-  local deployed="$ROOT/$(resolve_workspace "$ROOT")/templates/analyst"
-  local bundled
+  local deployed bundled
+  deployed="$ROOT/$(resolve_workspace "$ROOT")/templates/analyst"
   bundled="$(cd "$(dirname "$0")/../templates" && pwd)"
   echo "bundled_dir=$bundled"
   echo "deployed_dir=$deployed"
@@ -332,6 +338,7 @@ cmd_catalog() {
   for f in "$bundled"/*.md; do
     [ -f "$f" ] || continue
     tok="$(fm_field "$f" template)"
+    [ -n "$tok" ] || continue   # lock-in doctypes (reports.md) are not catalog kinds
     if [ -f "$deployed/$(basename "$f")" ]; then
       printf '%s\tdeployed\n' "$tok"
     else
@@ -343,7 +350,9 @@ cmd_catalog() {
     for f in "$deployed"/*.md; do
       [ -f "$f" ] || continue
       [ -f "$bundled/$(basename "$f")" ] && continue
-      printf '%s\thost-added\n' "$(fm_field "$f" template)"
+      tok="$(fm_field "$f" template)"
+      [ -n "$tok" ] || continue
+      printf '%s\thost-added\n' "$tok"
     done
   fi
 }
