@@ -14,6 +14,14 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-37 — agent-council leftovers from the 2026-08-19 skill audit
+- **source:** grok stream, skill audit / refactor (2026-08-19).
+- **status:** open
+- **body:** Two nits the audit folded around, not through:
+  1. `scripts/read-result.sh` only extracts `### N. [seats] severity — ` with an em dash. ASCII `--` or a missing severity drops `n=0` with no error. Tests only cover the golden em-dash fixture.
+  2. When-to-use allows any named path; Do-not-use forbids a source-tree code review. A convene on `src/` can contradict itself. Restrict default targets to a file, a skill package, or a spec-shaped doc; directories without `SKILL.md` should ask.
+- **not this item:** review-round paths, Codex `-o`, `${TMPDIR:-/tmp}`, and the cluster-file shape landed in `4330d67`.
+
 ### BL-36 — the `clankshop` refactor is deferred; two BL-34 items ride with it
 - **source:** feat stream, BL-34 items 1–2 ship (2026-08-19). Human decision.
 - **status:** open (deliberately deferred, not blocked)
