@@ -233,7 +233,7 @@ Hand-off, compaction-anchor, coordinator, and `kind: workstream-template` intake
 <!-- edges:workstream -->
 - produces: — (none; the stream is isolation and a gitignored hand-off, not a typed record)
 - handoff: — (none; the loop is the skill)
-- consumes: plan, doctrine — a plan, roadmap, brief, or template as the queue source; station context when present
+- consumes: plan, roadmap, doctrine — a plan, roadmap, brief, or template as the queue source; station context when present
 <!-- /edges:workstream -->
 
 ## On-demand doctrine

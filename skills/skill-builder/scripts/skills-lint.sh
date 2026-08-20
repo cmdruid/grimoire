@@ -136,7 +136,6 @@ set -euo pipefail
 
 root="${1:-$(pwd)}"
 skills_dir="$root/skills"
-claude_skills="$HOME/.claude/skills"
 fails=0 warns=0
 
 fail() { echo "FAIL: $*"; fails=$((fails + 1)); }

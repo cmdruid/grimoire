@@ -137,10 +137,8 @@ none — `reports.md` is the contract example. Setup copies nothing.
 ## Scope boundary + host conduct
 
 `journal` defines the format, stands it up, closes records, and keeps the stores conformant.
-The follow-up **workflow** that runs on the layer — capturing items by kind, sweeping finished
-work, grooming and promoting the trackers — is a client's job (the pack's `backlog` member
-where installed), and what a captured signal *means* for the system is judged further
-downstream still. Journal owns no judgment beyond its own formats.
+Filing, sweeping, and grooming follow-ups is a client's job — point at the host's
+follow-up lifecycle; do not file from here. Journal owns no judgment beyond its own formats.
 
 **Standalone by default, framework-aware when present.** Every verb works on any repo: the
 stores live under the agent-records home, and no verb refuses or stalls for lack of a workshop.

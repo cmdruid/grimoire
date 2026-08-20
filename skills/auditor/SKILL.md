@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, drain actionable findings. Standalone by default (rubric home confirmed once, default docs/audit/); on a workshop host the rubric is test-station doctrine. Pass reports land in the agent-records home; defects stay in the report and promote via the host's bug-filing lane. Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
+description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, drain actionable findings. Workshop: test-station doctrine. Standalone: home confirmed once (`docs/audit/` is legacy detection only). Pass reports land in the agent-records home; defects stay in the report and promote via the host's bug-filing lane. Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
 ---
 
 # auditor — the code-quality audit driver
@@ -139,7 +139,8 @@ Follow the host's `GUIDE.md` → *Process*; in brief:
 ## Relationship to neighboring skills
 
 - A drained *defect* graduates via the host's bug-filing lane; a *feature* finding via
-  its backlog capture (`/backlog task`); else the host's own equivalent.
+  the host's backlog capture; else the host's own equivalent. Stay in the report if no
+  lane exists.
 - If the host has a **heavier, parallelized audit workflow** (score → adversarially verify →
   synthesize), reach for it when a single-reader pass isn't thorough enough.
 

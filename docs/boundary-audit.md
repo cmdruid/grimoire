@@ -260,3 +260,33 @@ The sharpening moved two `status`/`diagnostics` and `subsystem`/`guide` collisio
 off implicit overlap: each descriptor now names the sibling case it is *not*, and
 `guide` states the no-anchor exclusion outright. The residual ambiguities are
 properties of the prompts, not the descriptors — the classifier asks, as specified.
+
+**2026-08-19 (grok stream, skill audit / refactor)** — Pass 1 `fails=0 warns=2`
+after folding. Residual WARNs are genesis one-way types with no skill
+consumer: `founding-documents` and `git-repository` (both `blueprint`).
+Accepted exceptions — the human / the new repo is the consumer; do not
+invent a fake consume edge. Shellcheck and the `roadmap` / `runbook`
+orphans are gone (`workstream` now consumes `roadmap`; `contractor`
+consumes `plan` and `runbook` as the artifacts it walks).
+
+Auditor `description:` no longer sells `docs/audit/` as the live default
+(workshop: test-station doctrine; standalone: confirmed once;
+`docs/audit/` is legacy detection). Routing-probe of the thinned
+auditor description (fresh cold-router, descriptions only, 16-skill
+roster): **12/12**. Re-run Pass 2 after any further `description:`
+change.
+
+PACK.md gained the clankshop/journal, delegate/mailbox, and workstream
+build-lane seams that leaves were asserting. checkpoint/workstream
+descriptions were **not** thinned: the 2026-08-15 battery kept
+checkpoint's stream-scoped sentence as self-description without a
+sibling name.
+
+| prompt | expects |
+|---|---|
+| audit my repo for code quality problems | `auditor` |
+| how good is the code — score it | `auditor` |
+| is this project healthy? | `analyst` |
+| lint my skills directory | `skill-builder` |
+| this test just started failing | `debugger` |
+| check whether skill descriptions are self-scoped | `skill-builder` |

@@ -124,5 +124,5 @@ The artifact holds the job vocabulary (`status: open` / `current`, slice ids,
 <!-- edges:contractor -->
 - produces: plan, roadmap, runbook — job artifacts in `<agent-records>/plans/`
 - handoff: — (build executes in-place; ship is not this skill)
-- consumes: spec, review, doctrine — an approved specification, a findings baton (council RESULT.md or Review history), or station context read from the agent-workspace home
+- consumes: spec, review, doctrine, plan, runbook — an approved specification, a findings baton (council RESULT.md or Review history), station context, or a job artifact this skill walks
 <!-- /edges:contractor -->

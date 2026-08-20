@@ -46,6 +46,17 @@ session driving a stream (worktree or in-place) → that stream's `WORKSTREAM.md
 Checkpoint refuses the stream case mechanically; the canonical probe for its sites is the
 `save-guard.sh` script bundled with checkpoint (workstream's verbs carry their own probe).
 
+**Seam — `clankshop` / `journal`:** workshop `setup` / `migrate` delegates records
+tool-layer standup to journal. Journal does not write the door or seed doctrine.
+
+**Seam — `delegate` / `mailbox`:** delegate decides whether and how to farm work.
+Mailbox is transport only (slot mint / apply / consume). Whether to dispatch is
+never mailbox's question.
+
+**Seam — workstream build lane:** when the helpers are present, PLAN is the spec
+spine, then the job lead only if sequencing is required; BUILD walks the plan.
+`flow.md` points at those leaves; it does not restate their protocols.
+
 **Transition note (v2 rollout):** the manifest lists members by their **current** directory
 names so the pack stays installable at every phase of the v2 rebuild; the roster above uses
 the v2 names. Landed: `backlog` → `journal` (the v2 records layer — stores + `records.sh` +
