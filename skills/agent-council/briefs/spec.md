@@ -18,7 +18,9 @@ your target. Read that file, then only the paths it cites.
   shape frozen enough to implement from?
 
 If the document carries a `founding` tag, also: mapped sections
-that are empty vs leftover headings that do not belong.
+that are empty vs leftover headings that do not belong. Do not
+enforce the spec spine's founding-file map; that review is a
+different job. This brief only flags empty vs leftover headings.
 
 ## Do not
 

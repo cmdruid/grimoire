@@ -10,7 +10,7 @@ target, cluster their claims, let them update or rescind, and show one
 list ranked by how many seats support each claim. You are the
 orchestrator. You never sit on the panel.
 
-Scratch-only: ballots live under `$TMPDIR`. No durable home, no `init`.
+Scratch-only: ballots live under `${TMPDIR:-/tmp}`. No durable home, no `init`.
 
 ## When to use
 
@@ -64,9 +64,10 @@ about “what this really is.”
 4. Confirm cost. Name the seats and that this is up to six headless
    runs (round 1 + review). Wait for a yes. A previous session's yes
    does not count. A no leaves no scratch and no dispatches.
-5. Open `$TMPDIR/agent-council-<YYYYMMDDTHHMMSS>-<pid>/`. Print the
+5. Open `${TMPDIR:-/tmp}/agent-council-<YYYYMMDDTHHMMSS>-<pid>/`. Print the
    path once. You write every file in it. Layout: `round1/<seat>.md`,
    `review/<seat>.md`, `clusters.md`, `RESULT.md`, plus prompt files.
+   Below, `<scratch>` is that absolute directory.
 6. **Round 1.** One isolated, read-only, headless process per present
    seat, **in parallel**, per `references/spawn.md`. cwd is the
    workdir from step 2. Each prompt (a file in scratch) tells the seat:
@@ -74,16 +75,31 @@ about “what this really is.”
    - Read the brief at `<absolute brief path>`.
    - Emit opinions on stdout in the shape of `<absolute templates/ballot.md>`.
    - Do not edit files. Do not rank. Do not self-tag seats.
-   Capture stdout into `round1/<seat>.md`.
-7. **Cluster** (rules below). Write `clusters.md` with ids `C1`, `C2`,
-   … and support tags. No ranks, no “strongest / weakest” frame.
+   Capture: Claude/Grok → stdout into `<scratch>/round1/<seat>.md`. Codex →
+   `-o <scratch>/round1/<seat>.md` **is** the ballot (do not also expect
+   stdout; seats do not write scratch themselves).
+7. **Cluster** (rules below). Write `<scratch>/clusters.md` with ids `C1`,
+   `C2`, … and support tags. No ranks, no “strongest / weakest” frame.
+   Shape (seats parse this file; keep it exact):
+   ```
+   ## C1
+   claim: …
+   evidence: …
+   action: …
+   severity: high|mid|low
+   support: c,g,x
+   ```
    Fewer than two successful ballots (missing file, or zero extracted
    `## Opinion` blocks) → stop, say why, do not invent a ranked list.
 8. **Review.** Only seats that produced a successful round-1 ballot, in
-   parallel, read-only. Each prompt points at `clusters.md`, that
-   seat's `round1/<seat>.md`, and `templates/review.md`. A no-show,
-   crash, or unparseable reply **holds** that seat's round-1 support
-   and is noted. Silence is not a rescind.
+   parallel, read-only. Each prompt points at **absolute** paths:
+   `<scratch>/clusters.md`, `<scratch>/round1/<seat>.md`, and this
+   package's `<absolute templates/review.md>`. Seat cwd is still the
+   **target workdir**, so a relative `templates/review.md` would open the
+   *target's* file (or miss). A no-show, crash, or unparseable reply
+   **holds** that seat's round-1 support and is noted. Silence is not a
+   rescind. Capture the same way as round 1, into
+   `<scratch>/review/<seat>.md`.
 9. Re-cluster. Sort by support count. Write `RESULT.md`. Show it.
 
 ## Extracting opinions
