@@ -34,10 +34,10 @@ summons; **helpers** — `blueprint` (specification spine), `contractor` (job le
 the one required member), `backlog` (the follow-up lifecycle), `notepad` (project memory),
 `workstream` (development streams), `auditor` (code-quality audits), `debugger` (root-cause
 diagnostics), `analyst` (reports and briefings read back out of the records); **utilities** —
-`checkpoint`, `mailbox`, `delegate`, `scheduler`. `skill-builder` is a category of one: the
-**toolmaker** — it stewards the skills in this library themselves (scaffold new ones, audit
-boundary health, calibrate authoring doctrine), not project code, and is deliberately outside the
-`clankshop` pack (see *The packs* below).
+`checkpoint`, `mailbox`, `delegate`, `scheduler`. Three skills sit outside the pack on
+purpose: `agent-council` (cross-vendor review panel), `skill-builder` (the **toolmaker** —
+scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
+(developer-docs house style). See *The packs* below.
 
 | skill | what it does |
 |---|---|
@@ -51,6 +51,7 @@ boundary health, calibrate authoring doctrine), not project code, and is deliber
 | `contractor` | one job lead — roadmap, plan, runbook, review, revise, build; never ships; never writes a spec |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
+| `google-developer-style` | write developer docs in Google's house style; snapshot, no live-site floor; standalone, outside every pack |
 | `journal` | the records format authority: the record discriminator + contract + `records.sh` + the history ledger; setup, done, substrate curate |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
@@ -92,8 +93,8 @@ A pack is a **skill directory with a `PACK.md` manifest** (`docs/spec/pack-forma
 the face installs like any skill, `install.sh --pack` resolves the manifest, installs the members
 transactionally, and records the install in the sidecar `grimoire.lock` beside the target dir.
 
-- **`clankshop`** (`skills/clankshop/PACK.md`) — the skills above (minus `agent-council`
-  and `skill-builder`) as one agentic workshop: the composition lives with the face — the seed
+- **`clankshop`** (`skills/clankshop/PACK.md`) — the skills above (minus `agent-council`,
+  `google-developer-style`, and `skill-builder`) as one agentic workshop: the composition lives with the face — the seed
   doctrine in `skills/clankshop/seed/` (mirroring a deployed `<agent-workspace>/doctrine/`
   exactly) and the
   coupling-tier roster in the manifest itself.

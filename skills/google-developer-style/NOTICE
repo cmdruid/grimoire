@@ -1,0 +1,15 @@
+This skill's writing rules are derived from the Google developer
+documentation style guide:
+
+    https://developers.google.com/style
+
+That guide's page content is licensed under Creative Commons
+Attribution 4.0 International:
+
+    https://creativecommons.org/licenses/by/4.0/
+
+Code samples in the original guide are Apache 2.0. This package
+contains no Google code samples.
+
+The snapshot was built against the live guide on 2026-08-17. The
+live guide is the authority if a term is disputed.
