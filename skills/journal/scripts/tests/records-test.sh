@@ -268,6 +268,70 @@ rc=0; "$RS" touch doctrine/test/workflows/stamped.md >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "touch refuses front-mattered doctrine rc" "2" "$rc"
 expect "front-mattered doctrine named not-a-record" "not a record: doctrine/test/workflows/stamped.md" "$ERR"
 
+# --- grep: body search, not front-matter (red-proofs 1–2) -----------------------
+# Plant tags: [ZXSECRET] with no ZXSECRET in title or body → grep is empty
+# (exit 0). Title lives after the closing ---, so it must not contain the token.
+secret_tags="$proj/.records/notes/$today-tagged-zx.md"
+printf -- '---\ndoctype: notes\nstatus: open\ncreated: %s\nupdated: %s\ntags: [ZXSECRET]\n---\n\n# Tagged zx\n\nNo match word in the body.\n' \
+  "$today" "$today" > "$secret_tags"
+rc=0; "$RS" grep ZXSECRET >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "grep tags-only plant rc" "0" "$rc"
+expect_absent "grep does not match tags in front-matter" "tagged-zx" "$OUT"
+
+# Plant ZXSECRET in the body → one row. Tags-only plant still excluded.
+secret_body="$proj/.records/notes/$today-body-zx.md"
+printf -- '---\ndoctype: notes\nstatus: open\ncreated: %s\nupdated: %s\ntags: []\n---\n\n# Body zx\n\nThe token ZXSECRET lives here.\n' \
+  "$today" "$today" > "$secret_body"
+"$RS" grep ZXSECRET >"$OUT"
+expect "grep matches body" "body-zx" "$OUT"
+expect_absent "grep still excludes tags-only plant" "tagged-zx" "$OUT"
+
+"$RS" grep ZXSECRET --type notes >"$OUT"
+expect "grep --type notes keeps the body hit" "body-zx" "$OUT"
+"$RS" grep ZXSECRET --type plans >"$OUT"
+expect_absent "grep --type plans drops the notes hit" "body-zx" "$OUT"
+
+rc=0; "$RS" grep >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "grep without pattern is usage rc" "1" "$rc"
+
+rc=0; "$RS" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "no-args usage rc" "1" "$rc"
+expect "usage lists grep next to list" "  grep    " "$ERR"
+
+# Red-proof 2: coinciding-roots template with a unique token is not a record.
+printf '\nZXTEMPLTOKEN in the template\n' >> "$TPL/plans.md"
+"$RS" grep ZXTEMPLTOKEN >"$OUT"
+expect_absent "grep does not swallow templates" "templates/" "$OUT"
+p_tok="$("$RS" new plans --template "$TPL/plans.md" --title "Has token")"
+"$RS" grep ZXTEMPLTOKEN >"$OUT"
+expect "grep hits minted record with the template token" "has-token" "$OUT"
+expect_absent "template path still not listed after mint" "templates/" "$OUT"
+expect_eq "minted record path" "$proj/.records/plans/$today-has-token.md" "$p_tok"
+
+# Red-proof 1 (mutation): disable the front-matter skip on a COPY; the tags-only
+# plant starts matching. A silent no-op cut would leave this green on unbroken
+# input, so assert the skip is present, then gone.
+proj_grep="$TMP/proj-grep-skip"
+mkdir -p "$proj_grep"
+"$SKILL/scripts/standup.sh" "$proj_grep" >/dev/null
+RSG="$proj_grep/.records/scripts/records.sh"
+mkdir -p "$proj_grep/.records/notes"
+printf -- '---\ndoctype: notes\nstatus: open\ncreated: %s\nupdated: %s\ntags: [ZXSECRET]\n---\n\n# Tagged zx\n\nNo match word in the body.\n' \
+  "$today" "$today" > "$proj_grep/.records/notes/$today-tagged-zx.md"
+"$RSG" grep ZXSECRET >"$OUT"
+expect_absent "unbroken grep skips tags on the copy" "tagged-zx" "$OUT"
+
+skip='infm { next }  # GREP_SKIP_FM'
+before="$(grep -cF -- "$skip" "$RSG" || true)"
+expect_eq "front-matter skip present before the cut" "1" "$before"
+awk -v s="$skip" '{ if (index($0, s)) next; else print }' "$RSG" > "$RSG.cut"
+mv "$RSG.cut" "$RSG"
+chmod +x "$RSG"
+after="$(grep -cF -- "$skip" "$RSG" || true)"
+expect_eq "front-matter skip gone after the cut" "0" "$after"
+"$RSG" grep ZXSECRET >"$OUT"
+expect "tags-only plant matches once the skip is gone" "tagged-zx" "$OUT"
+
 # malformed ledger: hand-written lines are a fact check reports
 echo "garbage line" >> "$proj/.records/history.tsv"
 rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?

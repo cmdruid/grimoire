@@ -41,8 +41,16 @@ expect "workshop can mint a record" "# Backlog" "$p"
 "$RS" check >"$OUT"
 expect "records lifecycle green inside the workshop" "records check: OK (1 records)" "$OUT"
 
-# proven by breaking: the seam refuses a double standup (upgrade is a diff)
+# later visit refreshes (or reports current); the refuse is gone
 rc=0; "$JOURNAL/scripts/standup.sh" "$proj" >"$OUT" 2>"$ERR" || rc=$?
-expect_eq "double standup refused rc" "2" "$rc"
+expect_eq "double standup later-visit rc" "0" "$rc"
+if grep -qE 'journal, (current|refreshed)' "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: double standup stdout lacks current/refreshed — $(cat "$OUT")" >&2
+  fail=$((fail + 1))
+fi
+"$RS" check >"$OUT"
+expect "keep lifecycle still green after later visit" "records check: OK (1 records)" "$OUT"
 
 report "setup-journal-test"

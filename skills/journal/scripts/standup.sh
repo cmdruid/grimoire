@@ -10,12 +10,13 @@
 # (the deployed asset), an empty history.tsv ledger, and README.md if
 # absent. It does NOT create store directories, .gitkeep files, or
 # templates/ — the skill that mints a store creates that store; the first
-# lock-in copy creates <templates-home>/<skill>/. Additive and
-# idempotent-safe: it never overwrites an existing file, and it refuses a
-# root that is already stood up (scripts/records.sh present — an upgrade is
-# a diff, not a re-standup). A home that merely EXISTS (a legacy path, or a
-# notepad-created .records/notes/ with no tool) is fine — the tool is
-# written beside what is there. Exit codes: 0 ok · 1 usage · 2 refused/failed.
+# lock-in copy creates <templates-home>/<skill>/. Additive: a first visit
+# writes the tool layer; a later visit refreshes records.sh when the skill
+# copy has drifted (`cmp`) and never truncates the ledger or overwrites
+# README. A home that merely EXISTS (a legacy path, or a notepad-created
+# .records/notes/ with no tool) is fine — the tool is written beside what
+# is there. Exit codes: 0 ok · 1 usage · 2 failed (missing target or
+# skill-side records.sh).
 set -eu
 
 SKILL="$(cd "$(dirname "$0")/.." && pwd)"
@@ -37,13 +38,19 @@ done
 rr="$root/$rr_rel"
 
 if [ -e "$rr/scripts/records.sh" ]; then
-  echo "refusing: $rr is already stood up (upgrade is a diff, not a re-standup)" >&2
-  exit 2
+  if cmp -s "$SKILL/scripts/records.sh" "$rr/scripts/records.sh"; then
+    label="journal, current"
+  else
+    cp "$SKILL/scripts/records.sh" "$rr/scripts/records.sh"
+    chmod +x "$rr/scripts/records.sh"
+    label="journal, refreshed"
+  fi
+else
+  mkdir -p "$rr/scripts"
+  cp "$SKILL/scripts/records.sh" "$rr/scripts/records.sh"
+  chmod +x "$rr/scripts/records.sh"
+  label="journal"
 fi
-
-mkdir -p "$rr/scripts"
-cp "$SKILL/scripts/records.sh" "$rr/scripts/records.sh"
-chmod +x "$rr/scripts/records.sh"
 
 [ -e "$rr/history.tsv" ] || : > "$rr/history.tsv"
 
@@ -73,5 +80,5 @@ Stood up by journal on $(date +%Y-%m-%d).
 EOF
 fi
 
-echo "records: $rr (journal)"
+echo "records: $rr ($label)"
 "$rr/scripts/records.sh" check

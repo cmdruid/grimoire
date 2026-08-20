@@ -59,10 +59,33 @@ expect "partial home still stands up" "records: $partial/.records (journal)" "$O
 expect "existing store survives" "kept" "$partial/.records/notes/keep.txt"
 [ -x "$partial/.records/scripts/records.sh" ] && pass=$((pass + 1)) || { echo "FAIL: records.sh missing on partial home" >&2; fail=$((fail + 1)); }
 
-# --- proven by breaking ----------------------------------------------------------
+# --- later visit: refresh vs current (red-proofs 3 and 5) ------------------------
+# Red-proof 5: the old "exit 2 on re-standup" assertion is inverted below once
+# the refuse is gone. Watch it fail against the new script, then keep the
+# inverted form. Ledger + README must survive every later visit.
+printf '%s\tdone\tnotes/keep.md\tnotes\tKeep\tkeep-ledger\n' "$(date +%Y-%m-%d)" \
+  >> "$proj/.records/history.tsv"
+readme_sum="$(cksum "$proj/.records/README.md")"
 rc=0; "$SKILL/scripts/standup.sh" "$proj" >"$OUT" 2>"$ERR" || rc=$?
-expect_eq "re-standup refused rc" "2" "$rc"
-expect "re-standup refusal message" "refusing" "$ERR"
+expect_eq "byte-identical re-standup rc" "0" "$rc"
+expect "byte-identical re-standup is current" "records: $proj/.records (journal, current)" "$OUT"
+expect "ledger survives a later visit" "keep-ledger" "$proj/.records/history.tsv"
+expect_eq "README unchanged on later visit" "$readme_sum" "$(cksum "$proj/.records/README.md")"
+expect_absent "later visit does not refuse" "refusing" "$ERR"
+
+# Red-proof 3: drift the deployed script; later visit overwrites it (refreshed).
+printf '\n# MARKER-REFRESH\n' >> "$proj/.records/scripts/records.sh"
+rc=0; "$SKILL/scripts/standup.sh" "$proj" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "drifted re-standup rc" "0" "$rc"
+expect "drifted re-standup is refreshed" "records: $proj/.records (journal, refreshed)" "$OUT"
+expect_absent "refresh overwrites the drifted marker" "# MARKER-REFRESH" "$proj/.records/scripts/records.sh"
+expect_eq "README still unchanged after refresh" "$readme_sum" "$(cksum "$proj/.records/README.md")"
+expect "ledger still intact after refresh" "keep-ledger" "$proj/.records/history.tsv"
+
+# Byte-identical after the refresh is current again.
+rc=0; "$SKILL/scripts/standup.sh" "$proj" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "post-refresh identical rc" "0" "$rc"
+expect "post-refresh identical is current" "records: $proj/.records (journal, current)" "$OUT"
 
 # templates/ alone is NOT already-stood-up
 tplonly="$TMP/tplonly"

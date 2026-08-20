@@ -6,6 +6,7 @@
 # dates, paths, conformance — so agents never guess them.
 #
 #   records.sh list [--type t] [--status s] [--tag g] [--since d] [--until d]
+#   records.sh grep [--type t] [--status s] [--tag g] [--since d] [--until d] <pattern>
 #   records.sh show <path>
 #   records.sh new <doctype> --title "..." --template <path> [--tag t]...
 #   records.sh touch <path> [--status open|current]
@@ -35,6 +36,7 @@ usage() {
   cat >&2 <<'EOF'
 usage: records.sh <command> [args]
   list    [--type t] [--status s] [--tag g] [--since d] [--until d]
+  grep    [--type t] [--status s] [--tag g] [--since d] [--until d] <pattern>
   show    <path>
   new     <doctype> --title "..." --template <path> [--tag t]...
   touch   <path> [--status open|current]
@@ -131,6 +133,46 @@ cmd_list() {
     esac
   done
   records | while IFS= read -r r; do meta_row "$r"; done \
+    | awk -F'\t' -v t="$f_type" -v s="$f_status" -v g="$f_tag" -v a="$f_since" -v z="$f_until" '
+        t != "" && $2 != t { next }
+        s != "" && $3 != s { next }
+        g != "" && index("," $5 ",", "," g ",") == 0 { next }
+        a != "" && $4 < a { next }
+        z != "" && $4 > z { next }
+        { print }
+      ' \
+    | sort -t "$TAB" -k4,4r -k1,1
+}
+
+cmd_grep() {
+  f_type=""; f_status=""; f_tag=""; f_since=""; f_until=""; pattern=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --type)   [ $# -ge 2 ] || usage; f_type="$2";   shift 2 ;;
+      --status) [ $# -ge 2 ] || usage; f_status="$2"; shift 2 ;;
+      --tag)    [ $# -ge 2 ] || usage; f_tag="$2";    shift 2 ;;
+      --since)  [ $# -ge 2 ] || usage; f_since="$2";  shift 2 ;;
+      --until)  [ $# -ge 2 ] || usage; f_until="$2";  shift 2 ;;
+      --*)      usage ;;
+      *)
+        [ -z "$pattern" ] || usage
+        pattern="$1"
+        shift
+        ;;
+    esac
+  done
+  [ -n "$pattern" ] || usage
+  records | while IFS= read -r r; do
+    if awk '
+      BEGIN { infm = 0 }
+      NR == 1 { if ($0 == "---") { infm = 1; next } }
+      infm && $0 == "---" { infm = 0; next }
+      infm { next }  # GREP_SKIP_FM
+      { print }
+    ' "$RR/$r" | grep -q -- "$pattern"; then
+      meta_row "$r"
+    fi
+  done \
     | awk -F'\t' -v t="$f_type" -v s="$f_status" -v g="$f_tag" -v a="$f_since" -v z="$f_until" '
         t != "" && $2 != t { next }
         s != "" && $3 != s { next }
@@ -453,6 +495,7 @@ LINKS
 cmd="$1"; shift
 case "$cmd" in
   list)    cmd_list "$@" ;;
+  grep)    cmd_grep "$@" ;;
   show)    cmd_show "$@" ;;
   new)     cmd_new "$@" ;;
   touch)   cmd_touch "$@" ;;
