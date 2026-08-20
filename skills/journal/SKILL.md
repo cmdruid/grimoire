@@ -1,6 +1,6 @@
 ---
 name: journal
-description: "The records-layer format authority — defines a project's `.records/`: what makes a file a record (a dated filename plus front-matter declaring its doctype), the record front-matter contract, the template convention, and the deployed `records.sh` tool (query + lifecycle + the `history.tsv` closure ledger). Verbs: `setup` (stand up the records layer — standalone, or as the workshop's delegated records seam), `done` (close a record in place: disposition + ledger line), `curate` (substrate hygiene: contract check, link rot, duplicate merge, prune proposals). Use when the user runs `/journal ...`, stands up the records layer, closes a record, asks about the record format/contract, or tidies the stores."
+description: "The records-layer format authority — defines what makes a file a record (a dated filename plus front-matter declaring its doctype), the record contract, the template convention, and the deployed records.sh tool (search, query, lifecycle, and the history.tsv ledger) over the agent-records home (default `.records/`). Verbs: `setup` (stand up or refresh the tool layer), `search` (find records by content or metadata), `done` (close a record in place), `curate` (contract check, link rot, duplicate merge, prune proposals). Use when the user runs `/journal ...`, stands up or refreshes the records layer, searches or lists records, closes a record, asks about the record format/contract, or tidies the records home."
 ---
 
 # journal — the records format authority
@@ -8,17 +8,12 @@ description: "The records-layer format authority — defines a project's `.recor
 One skill: the **definition** of a project's records layer. It owns the **discriminator**
 (what makes a file a record — below), the **record contract** (below), the **template
 convention** (writers carry templates; mint from a caller-supplied `--template` path), and the
-deployed tool **`records.sh`** (query + lifecycle; sole writer of the `history.tsv` closure
-ledger). It owns **no directory names** — see the ownership rule below. `/journal setup` stands the
-**tool layer** — `records.sh`, empty `history.tsv`, README — and is never a floor for writers.
-The workshop's `setup` delegates its records step here. Writers state the in-package
-contract in their own package; they do not send the agent here for those bytes. At runtime
-they talk to the **deployed** `records.sh` when that file is executable, never to this
-skill's bundled copy.
-
-_Lineage: v1's `backlog` skill was this whole records instrument (renamed `journal` in v2); the
-follow-up workflow that ran on it (capture, debrief, tracker grooming) moved out to the v2
-`backlog` skill, leaving journal the format authority._
+deployed tool **`records.sh`** (search, query + lifecycle; sole writer of the `history.tsv` closure
+ledger). It owns **no directory names** — see the ownership rule below. `/journal setup` stands
+or refreshes the **tool layer** — `records.sh`, empty `history.tsv`, README — and is never a
+floor for writers. Writers state the in-package contract in their own package; they do not send
+the agent here for those bytes. At runtime they talk to the **deployed** `records.sh` when that
+file is executable, never to this skill's bundled copy.
 
 The layer's shape (the deployed `.records/README.md` restates it in-project):
 
@@ -89,12 +84,13 @@ template → error), not by `check`.
 
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
-| `/journal setup` | `verbs/setup.md` | Stand up the records **tool layer** — `records.sh`, empty ledger, README (standalone, or as the workshop `setup`'s delegated records step). No store directories, no templates. | "stand up the records", the workshop's records seam |
+| `/journal setup` | `verbs/setup.md` | Tool layer: first visit stands it up; later visit refreshes `records.sh` | "stand up the records", "refresh records.sh" |
+| `/journal search` | `verbs/search.md` | Find records by content or metadata | "find/search/list/query records", "what's in the records about X" |
 | `/journal done <record>` | `verbs/done.md` | **Close** a record in place — disposition + note + the ledger line (or flip a tracker line-item) | "mark that done", "close out that plan" |
-| `/journal curate` | `verbs/curate.md` | **Substrate hygiene** — `check`, close what quietly finished, repair link rot, merge duplicates, propose prunes | "check the records", "tidy the stores" |
+| `/journal curate` | `verbs/curate.md` | **Substrate hygiene** — `check`, close what quietly finished, repair link rot, merge duplicates, propose prunes | "check the records", "tidy the records home" |
 
-`/journal` with no recognized verb: ask whether the intent is standing the layer up, closing a
-record, or store hygiene. Filing a follow-up is not journal's job (scope boundary, below).
+`/journal` with no recognized verb: ask which of **setup / search / done / curate**. Filing a
+follow-up is not journal's job (scope boundary, below).
 
 ## Shared discipline (every verb relies on this — stated here once)
 
@@ -104,10 +100,10 @@ record, or store hygiene. Filing a follow-up is not journal's job (scope boundar
   accepted so already-declared hosts do not break.) The deployed tool is
   `<agent-records>/scripts/records.sh` — invoke **it** for every date, path, and
   conformance fact (`new --template <resolved>` / `touch` / `done` / `list` /
-  `history` / `prune-candidates` / `check`); never guess a date, never hand-stamp
-  front-matter, never write `history.tsv` by hand. `done` / `curate` use this
-  same scan so a host that only declared `agent-records:` is not silently aimed
-  at `.records/`.
+  `grep` / `history` / `prune-candidates` / `check`); never guess a date, never
+  hand-stamp front-matter, never write `history.tsv` by hand. `search` / `done` /
+  `curate` use this same scan so a host that only declared `agent-records:` is
+  not silently aimed at `.records/`.
 - **Scripts compute facts; the verb prose decides.** Whether a record is really done and under
   which disposition, what merges with what — that judgment lives in the verb files. The scripts
   (`records.sh`, `scripts/standup.sh`, `scripts/scoped-commit.sh`) do only deterministic
@@ -155,5 +151,5 @@ absent — never demand the workshop as a precondition.
 
 ## Done when
 
-- **No recognized verb:** asked which of setup / done / curate; did not file a follow-up.
+- **No recognized verb:** asked which of setup / search / done / curate; did not file a follow-up.
 - **A verb ran:** that verb file's Done when.
