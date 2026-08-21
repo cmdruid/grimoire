@@ -96,7 +96,7 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    re-embedded by `recycle`), and only its **name or path** is recorded in Coordinates `source:`.
 6. **Hand-off instantiation** *(the template-mode part is re-applied in place by `recycle.md` — keep
    these labels)*: write the hand-off into the worktree, then exclude it locally:
-   - **Project hooks (parse + materialize; no compile yet).** Resolve
+   - **Project hooks.** Resolve
      `<agent-workspace>` in prose (do not paste a bash resolver): first
      line-start `agent-workspace:` in `<root>/AGENTS.md` then `<root>/CLAUDE.md`,
      else `.dev`. Set `HOOKS=<root>/<agent-workspace>/hooks/workstream.md`
@@ -115,9 +115,15 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
      copy-if-absent. Then
      `hooks.sh parse --file "$HOOKS" --known feature-completion=Feature completion
      --known after-eventful-ship=After eventful ship`. `status=fail` → STOP.
-     Missing / no-parent is not a fail. Continue today's hand-off
-     instantiation **including** the stamp→`<debrief>` fill. Do **not** compile
-     in this slice.
+     Missing / no-parent is not a fail. After the hand-off file exists at
+     Coordinates `this hand-off:` (never `<root>/WORKSTREAM.md`), run
+     `hooks.sh compile --file "$HOOKS" --handoff <this hand-off:> --root <root>`
+     with the same two `--known` pairs (`--root` optional; pass it when the
+     verb has `<root>`). Attended create that just materialized `$HOOKS` may
+     **propose** a pathspec-scoped root commit for that one path.
+     Unattended / `--seed-only`: write, do not commit, record
+     `hooks: uncommitted` in Pointers. `--seed-only` still makes **no** root
+     commit.
    - Copy this skill's bundled `templates/workstream-handoff.md` (resolve it from the skill's own
      base directory — never a host-project path, so it works wherever the skill is installed) to
      `<root>/.workstreams/<stream>/WORKSTREAM.md` and fill it in:
@@ -138,12 +144,7 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
        principle, toolbox, hard-won lessons, the template's own user/conventions block) into the hand-off body
        so the instance is self-contained; the per-unit sections (TL;DR, Queue state, What's been done)
        start blank.
-     - **`<debrief>`:** run the *Host layout* probe (does
-       `<agent-workspace>/doctrine/README.md`, by default `.dev/doctrine/README.md`,
-       carry `Seeded from clankshop`?). Stamp present → write `/backlog debrief`.
-       Absent → write `the project's own close-the-books sweep (do not invoke /backlog)`.
-       Recycle re-applies this fill (it re-runs this step).
-     Do NOT commit it; do NOT seed it on the root.
+     Write only Coordinates `this hand-off:`. Do NOT commit it; do NOT seed it on the root.
    - Make it ignored from inside the worktree — **idempotently** — by running this skill's bundled
      `scripts/worktree-exclude.sh <root>/.workstreams/<stream>` (resolve `scripts/` from the skill's
      own base directory, not the host project) (for a

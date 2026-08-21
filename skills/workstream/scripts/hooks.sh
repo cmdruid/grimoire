@@ -13,8 +13,9 @@
 #
 # parse is read-only and never writes --file. materialize is a seed.sh-class
 # writer: copy --skeleton onto --file if absent; refuse overwrite; do not
-# mkdir a missing parent. compile / compiled-get / compiled-put stub usage
-# and exit 2 until the compile slice.
+# mkdir a missing parent. compile projects a `## Hooks (compiled)` snapshot
+# into --handoff (exclusive span; insert after Coordinates if absent).
+# compiled-get / compiled-put preserve that span across a template rewrite.
 #
 # --file for materialize (and compile) must be an absolute path (starts with
 # /). Relative → usage, exit 2. Never reads cwd for the destination.
@@ -43,8 +44,10 @@ usage: hooks.sh <subcommand> [args...]
   compiled-put --handoff <abs>
 
 parse is read-only. materialize copies --skeleton onto --file if absent
-(refuse overwrite; no mkdir of a missing parent). compile / compiled-get /
-compiled-put are not implemented in this slice (exit 2).
+(refuse overwrite; no mkdir of a missing parent). compile writes the
+exclusive ## Hooks (compiled) span into --handoff. compiled-get prints
+that span; compiled-put replaces or inserts it (empty stdin + span
+present = no-op).
 EOF
 }
 
@@ -308,9 +311,175 @@ do_materialize() {
   echo "status=created"
 }
 
+# Exclusive compiled span: from `## Hooks (compiled)` up to but not
+# including the next structural H2, or EOF. Prints "start end" (1-based,
+# end exclusive). "0 0" if absent.
+locate_compiled_span() {
+  awk '
+    BEGIN { start=0; end=0 }
+    $0 ~ /^##[ \t]+Hooks \(compiled\)/ {
+      if (start == 0) start = NR
+      next
+    }
+    start > 0 && end == 0 && $0 ~ /^##[ \t]+[^ \t]/ { end = NR }
+    END {
+      if (start == 0) print "0 0"
+      else if (end == 0) print start, NR+1
+      else print start, end
+    }
+  ' "$1"
+}
+
+# Line number of the first structural H2 after `## Coordinates` (insert-before).
+# NR+1 if Coordinates is the last heading (append).
+locate_insert_line() {
+  awk '
+    $0 ~ /^##[ \t]+Coordinates/ { seen=1; next }
+    seen && $0 ~ /^##[ \t]+[^ \t]/ { print NR; found=1; exit }
+    END { if (!found) print NR+1 }
+  ' "$1"
+}
+
+ensure_nl() { # ensure file ends with a newline; do not add a second
+  [ -s "$1" ] || { printf '\n' > "$1"; return 0; }
+  local hex
+  hex=$(tail -c 1 "$1" | od -An -tx1 | tr -d ' \n')
+  [ "$hex" = 0a ] && return 0
+  printf '\n' >> "$1"
+}
+
+# apply_span <dest> <spanfile>
+# nonempty span + present → exclusive-replace; nonempty + absent → insert
+# after Coordinates; empty span → no-op (do not insert, do not delete).
+apply_span() {
+  local dest="$1" span="$2" start end ins tmp
+  if [ ! -s "$span" ]; then
+    return 0
+  fi
+  ensure_nl "$span"
+  tmp=$(mktemp)
+  # shellcheck disable=SC2046
+  set -- $(locate_compiled_span "$dest")
+  start=$1; end=$2
+  if [ "$start" -gt 0 ]; then
+    head -n $((start - 1)) "$dest" > "$tmp"
+    cat "$span" >> "$tmp"
+    tail -n +"$end" "$dest" >> "$tmp"
+  else
+    ins=$(locate_insert_line "$dest")
+    if [ "$ins" -le 1 ]; then
+      cat "$span" > "$tmp"
+      cat "$dest" >> "$tmp"
+    else
+      head -n $((ins - 1)) "$dest" > "$tmp"
+      cat "$span" >> "$tmp"
+      tail -n +"$ins" "$dest" >> "$tmp"
+    fi
+  fi
+  mv "$tmp" "$dest"
+}
+
+hooks_rel() {
+  if [ -n "$root_arg" ]; then
+    case "$file" in
+      "$root_arg"/*) printf '%s\n' "${file#"$root_arg"/}" ;;
+      *) echo none ;;
+    esac
+  else
+    local s
+    s=$(printf '%s' "$file" | grep -oE '[^/]+/hooks/workstream\.md$' || true)
+    if [ -n "$s" ]; then printf '%s\n' "$s"; else echo none; fi
+  fi
+}
+
+extract_hook_body() { # extract_hook_body <slug> <parse-out>
+  awk -v s="$2" '
+    $0 == "--HOOK-BODY-BEGIN-- " s { grab=1; next }
+    $0 == "--HOOK-BODY-END-- " s { grab=0; next }
+    grab { print }
+  ' "$1"
+}
+
+do_compile() {
+  [ -n "$handoff" ] || { usage; exit 2; }
+  [ -f "$handoff" ] || { echo "hooks.sh: --handoff is not a file: $handoff" >&2; exit 2; }
+
+  local parse_out parse_rc=0 known_args=() i
+  parse_out=$(mktemp)
+  if [ "${#slugs[@]}" -gt 0 ]; then
+    for i in "${!slugs[@]}"; do
+      known_args+=(--known "${slugs[$i]}=${h2s[$i]}")
+    done
+  fi
+  "$0" parse --file "$file" "${known_args[@]}" >"$parse_out" || parse_rc=$?
+  if [ "$parse_rc" -eq 2 ]; then
+    rm -f "$parse_out"
+    exit 2
+  fi
+
+  local h h12 rel key val body span i
+  h=$(sed -n 's/^hash=//p' "$parse_out" | head -n 1)
+  if [ -z "$h" ] || [ "$h" = none ]; then
+    h12=none
+  else
+    h12=$(printf '%s' "$h" | cut -c1-12)
+  fi
+  rel=$(hooks_rel)
+  span=$(mktemp)
+  {
+    echo "## Hooks (compiled)"
+    echo "hooks-compiled: ${rel} @ ${h12}"
+    echo
+    if [ "${#slugs[@]}" -gt 0 ]; then
+      for i in "${!slugs[@]}"; do
+        key="hook_$(fact_key "${slugs[$i]}")"
+        val=$(sed -n "s/^${key}=//p" "$parse_out" | head -n 1)
+        echo "${slugs[$i]}:"
+        if [ "$val" = filled ]; then
+          extract_hook_body "$parse_out" "${slugs[$i]}"
+        else
+          echo "(empty)"
+        fi
+        echo
+      done
+    fi
+  } > "$span"
+  apply_span "$handoff" "$span"
+  rm -f "$parse_out" "$span"
+}
+
+do_compiled_get() {
+  [ -n "$handoff" ] || { usage; exit 2; }
+  [ -f "$handoff" ] || exit 0
+  local start end
+  # shellcheck disable=SC2046
+  set -- $(locate_compiled_span "$handoff")
+  start=$1; end=$2
+  [ "$start" -gt 0 ] || exit 0
+  sed -n "${start},$((end - 1))p" "$handoff"
+}
+
+do_compiled_put() {
+  # COMPILED_PUT_SITE
+  COMPILED_PUT=1
+  [ -n "$handoff" ] || { usage; exit 2; }
+  [ -f "$handoff" ] || { usage; exit 2; }
+  local span
+  span=$(mktemp)
+  cat > "$span"
+  if [ "${COMPILED_PUT:-1}" != 1 ]; then
+    rm -f "$span"
+    exit 0
+  fi
+  apply_span "$handoff" "$span"
+  rm -f "$span"
+}
+
 case "$cmd" in
   parse) do_parse ;;
   materialize) do_materialize ;;
-  compile|compiled-get|compiled-put) usage; exit 2 ;;
+  compile) do_compile ;;
+  compiled-get) do_compiled_get ;;
+  compiled-put) do_compiled_put ;;
   *) usage; exit 2 ;;
 esac

@@ -58,8 +58,11 @@ recycled slot; for a clean-named stream, `close`+`create` instead and pay the re
       template was passed, update Coordinates `source`/`source-kind` to match; re-read the template at
       `source:` and **re-embed its durable sections** (so an evolved template propagates), keeping recorded
       `mode`/`Ship cadence`/`Delegation route` by default; and **blank the per-unit sections** (TL;DR,
-      Queue state, What's been done, What's next). Do **not** add `## Hooks (compiled)`
-      to that blanked list. It is a FILE WRITE, never a commit — the hand-off is ignored.
+      Queue state, What's been done, What's next) **before** compile so the blank list cannot eat a
+      just-written compiled span. Do **not** add `## Hooks (compiled)`
+      to that blanked list.
+   6. `hooks.sh compile --file "$HOOKS" --handoff <this hand-off:> --root <root>`
+      (`--root` optional; pass it). It is a FILE WRITE, never a commit — the hand-off is ignored.
 5. **Refresh the cheat sheet.** Run `workstream-git.sh cheatsheet-check <worktree>`; lift the template's
    current orientation pointers, prune/fix anything stale it flags, and set `built-against:` to the
    current `git -C <worktree> rev-parse --short HEAD`.

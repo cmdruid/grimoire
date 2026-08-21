@@ -13,11 +13,18 @@ reset or not — bounding the hand-off's staleness to one in-flight feature). No
    mismatch, STOP — do not write: resolving the relative address against the worktree mints a stray
    nested `.workstreams/` copy, and the next `load` reads the canonical (now stale) file instead
    (observed: a save silently forked the hand-off this way and even rewrote the Coordinates line to
-   the doubled path).
-   Then apply `/checkpoint`'s **Save discipline** (scan/elide secrets; synthesize, don't transcribe;
-   absolute dates) to regenerate `<worktree>/WORKSTREAM.md` in place from its
-   own template (the workstream hand-off shape: Coordinates + START HERE + Queue state + Loop
-   routine), targeting that explicit path. Worktree specifics: reconcile *What's been done* against
+   the doubled path). The write path is Coordinates `this hand-off:` — in-place that is
+   `<root>/.workstreams/<stream>/WORKSTREAM.md`. Never write `<root>/WORKSTREAM.md`.
+   Then:
+   1. Path check above unchanged.
+   2. `hooks.sh compiled-get --handoff <this hand-off:>` → span (may be empty).
+   3. Apply `/checkpoint`'s **Save discipline** (scan/elide secrets; synthesize, don't transcribe;
+      absolute dates) to regenerate that same path in place from the bundled
+      `templates/workstream-handoff.md` (the workstream hand-off shape: Coordinates + START HERE + Queue state + Loop
+      routine). Do **not** recompile.
+   4. `hooks.sh compiled-put --handoff <this hand-off:>` with the saved span
+      (empty stdin + span present = no-op; placeholder stays).
+   Worktree specifics: reconcile *What's been done* against
    `git -C <worktree> log`, and **preserve the Coordinates block verbatim** (it's fixed for the stream's life).
    **Reconcile the TL;DR / next-action too, not just the done-list:** a claim like "X not yet
    done — do X next" must survive a check against `git -C <worktree> log` AND

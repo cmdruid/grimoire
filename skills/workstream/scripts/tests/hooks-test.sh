@@ -205,9 +205,119 @@ expect_eq "5c status no-parent" "no-parent" "$(fact status "$OUT")"
 [ ! -d "$TMP/no-such-home" ] && pass=$((pass + 1)) || {
   echo "FAIL: 5c created missing parent directory" >&2; fail=$((fail + 1)); }
 
-# compile stubs exit 2
-rc=0; "$HOOKS_SH" compile --file "$empty" --handoff "$TMP/h.md" "${KNOWN[@]}" \
+HANDOFF_TPL="$(cd "$DIR/../.." && pwd)/templates/workstream-handoff.md"
+CREATE_MD="$(cd "$DIR/../.." && pwd)/verbs/create.md"
+count_h2() { grep -cE '^## Hooks \(compiled\)' "$1" || true; }
+
+# --- 2. Filled body compiles into --handoff ----------------------------------
+filled="$TMP/filled.md"
+printf '%s\n' '# workstream hooks' '' \
+  '## Feature completion' '' \
+  '/backlog debrief' '' \
+  '## After eventful ship' >"$filled"
+rc=0; parse "$filled" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "2 parse filled rc" "0" "$rc"
+expect_eq "2 hook_feature_completion filled" "filled" "$(fact hook_feature_completion "$OUT")"
+ho2="$TMP/handoff-2.md"
+cp "$HANDOFF_TPL" "$ho2"
+rc=0; "$HOOKS_SH" compile --file "$filled" --handoff "$ho2" "${KNOWN[@]}" \
   >"$OUT" 2>"$ERR" || rc=$?
-expect_eq "compile stub rc" "2" "$rc"
+expect_eq "2 compile rc" "0" "$rc"
+"$HOOKS_SH" compiled-get --handoff "$ho2" >"$OUT"
+expect "2 compiled inlines Feature completion body" "/backlog debrief" "$OUT"
+expect "2 compiled lists after-eventful-ship (empty)" "after-eventful-ship:" "$OUT"
+expect "2 compiled (empty) sibling" "(empty)" "$OUT"
+expect "2 Delegation route survives" "## Delegation route" "$ho2"
+expect_eq "2 exactly one compiled H2" "1" "$(count_h2 "$ho2")"
+
+# --- 7. Stamp-fill deletion; empty compile stays (empty) ---------------------
+create_hits=$(grep -cF 'Seeded from clankshop' "$CREATE_MD" || true)
+expect_eq "7 create.md Seeded-from count is 0" "0" "$create_hits"
+ho7="$TMP/handoff-7.md"
+cp "$HANDOFF_TPL" "$ho7"
+rc=0; "$HOOKS_SH" compile --file "$empty" --handoff "$ho7" "${KNOWN[@]}" \
+  >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "7 empty compile rc" "0" "$rc"
+"$HOOKS_SH" compiled-get --handoff "$ho7" >"$OUT"
+expect "7 empty feature-completion" "feature-completion:" "$OUT"
+expect "7 empty bodies are (empty)" "(empty)" "$OUT"
+expect_absent "7 no /backlog debrief in compiled span" "/backlog debrief" "$OUT"
+# Disable: restore a fill paragraph on a COPY; count ≥1. Original stays 0.
+cp "$CREATE_MD" "$TMP/create-restored.md"
+printf '\nStamp present → Seeded from clankshop fill.\n' >> "$TMP/create-restored.md"
+restored_hits=$(grep -cF 'Seeded from clankshop' "$TMP/create-restored.md" || true)
+if [ "$restored_hits" -ge 1 ]; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: 7 restored fill paragraph count was $restored_hits" >&2
+  fail=$((fail + 1))
+fi
+expect_eq "7 original create.md still 0 after copy restore" "0" \
+  "$(grep -cF 'Seeded from clankshop' "$CREATE_MD" || true)"
+
+# --- 9. In-place compile target ----------------------------------------------
+tmp_root="$TMP/inplace-root"
+mkdir -p "$tmp_root/.workstreams/demo"
+ho9="$tmp_root/.workstreams/demo/WORKSTREAM.md"
+cp "$HANDOFF_TPL" "$ho9"
+hooks9="$tmp_root/.dev/hooks/workstream.md"
+mkdir -p "$tmp_root/.dev/hooks"
+cp "$SKELETON" "$hooks9"
+rc=0; "$HOOKS_SH" compile --file "$hooks9" --handoff "$ho9" --root "$tmp_root" \
+  "${KNOWN[@]}" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "9 in-place compile rc" "0" "$rc"
+expect "9 compiled span at this hand-off" "## Hooks (compiled)" "$ho9"
+expect "9 rel path under --root" "hooks-compiled: .dev/hooks/workstream.md @" "$ho9"
+[ ! -e "$tmp_root/WORKSTREAM.md" ] && pass=$((pass + 1)) || {
+  echo "FAIL: 9 planted <root>/WORKSTREAM.md" >&2; fail=$((fail + 1)); }
+
+# --- 10. Preserve compiled-put after template rewrite ------------------------
+ho10="$TMP/handoff-10.md"
+cp "$HANDOFF_TPL" "$ho10"
+rc=0; "$HOOKS_SH" compile --file "$filled" --handoff "$ho10" "${KNOWN[@]}" \
+  >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "10 compile rc" "0" "$rc"
+"$HOOKS_SH" compiled-get --handoff "$ho10" >"$TMP/span-10"
+pre10=$(hash_of "$TMP/span-10")
+cp "$HANDOFF_TPL" "$ho10"
+"$HOOKS_SH" compiled-put --handoff "$ho10" <"$TMP/span-10"
+"$HOOKS_SH" compiled-get --handoff "$ho10" >"$TMP/span-10-after"
+expect_eq "10 span byte-identical after put" "$pre10" "$(hash_of "$TMP/span-10-after")"
+expect "10 Delegation route after put" "## Delegation route" "$ho10"
+expect_eq "10 exactly one compiled H2 after put" "1" "$(count_h2 "$ho10")"
+expect "10 filled body survived put" "/backlog debrief" "$TMP/span-10-after"
+
+before=$(grep -cF 'COMPILED_PUT_SITE' "$HOOKS_SH" || true)
+expect_eq "10 compiled-put site present" "1" "$before"
+cutput="$TMP/hooks-noput.sh"
+sed -e 's/^  COMPILED_PUT=1/  COMPILED_PUT=0/' "$HOOKS_SH" >"$cutput"
+chmod +x "$cutput"
+ho10b="$TMP/handoff-10-disable.md"
+cp "$HANDOFF_TPL" "$ho10b"
+"$HOOKS_SH" compile --file "$filled" --handoff "$ho10b" "${KNOWN[@]}" >/dev/null
+cp "$HANDOFF_TPL" "$ho10b"
+"$cutput" compiled-put --handoff "$ho10b" <"$TMP/span-10"
+expect_absent "10 disable put loses filled body" "/backlog debrief" "$ho10b"
+expect_eq "10 hooks.sh unchanged after disable copy" "$orig_sum" "$(hash_of "$HOOKS_SH")"
+
+# --- 10b. Empty put is no-op -------------------------------------------------
+ho_empty_put="$TMP/handoff-10b.md"
+cp "$HANDOFF_TPL" "$ho_empty_put"
+: | "$HOOKS_SH" compiled-put --handoff "$ho_empty_put"
+expect_eq "10b empty put on placeholder: one compiled H2" "1" \
+  "$(count_h2 "$ho_empty_put")"
+expect "10b Delegation route after empty put" "## Delegation route" "$ho_empty_put"
+
+ho_no_span="$TMP/handoff-10b-none.md"
+# Strip any compiled heading from a copy so the span is absent.
+awk '
+  $0 ~ /^##[ \t]+Hooks \(compiled\)/ { skip=1; next }
+  skip && $0 ~ /^##[ \t]+[^ \t]/ { skip=0 }
+  skip { next }
+  { print }
+' "$HANDOFF_TPL" >"$ho_no_span"
+expect_eq "10b stripped copy has no compiled H2" "0" "$(count_h2 "$ho_no_span")"
+: | "$HOOKS_SH" compiled-put --handoff "$ho_no_span"
+expect_eq "10b empty put on absent span adds none" "0" "$(count_h2 "$ho_no_span")"
 
 report "hooks-test.sh"

@@ -101,9 +101,11 @@ answered by a single stamp probe; keep them apart.
 - **Is a workshop assembled here?** The install stamp (`Seeded from clankshop` in
   `<root>/<agent-workspace>/doctrine/README.md`) answers a *policy* question, not a location
   one, and still
-  governs exactly two things: filled `<debrief>` is `/backlog debrief` when stamped, else the
-  project's own close-the-books sweep (do not invoke `/backlog`); and queue items are
+  governs exactly one thing: queue items are
   **Backlog** tracker lines only when stamped *and* that tracker file already exists.
+  At `create`/`recycle`, read `$HOOKS` (absolute
+  `<root>/<agent-workspace>/hooks/workstream.md`) when present; empty or absent → no extra
+  glue command.
 - The **agent-records destination is not stamped**. On any host: do not create the doctrine
   home,
   and never route to the clankshop onramps.
@@ -143,8 +145,8 @@ answered by a single stamp probe; keep them apart.
   the trunk. Authoring is still delegable **read-only**: a subagent may write a `/mailbox` patch slot
   the main session applies (see the `mailbox` skill), or work in its **own isolated worktree** it merges
   back. Delegate the authoring; never the writing of the shared tree.
-- **The live hand-off never merges.** The hand-off IS `<worktree>/WORKSTREAM.md` — one absolute
-  path, the Coordinates `this hand-off:` line; `.workstreams/<stream>/WORKSTREAM.md` is only its
+- **The live hand-off never merges.** The live hand-off **is** Coordinates
+  `this hand-off:` — one absolute path; `.workstreams/<stream>/WORKSTREAM.md` is only its
   **ROOT-relative address** (a worktree stream's checkout lives AT `<root>/.workstreams/<stream>`,
   so the two coincide). Never resolve the relative form against the *worktree* — that mints a stray
   nested `.workstreams/` copy the next `load` won't read (stream-state's `nested_stray_handoff`
@@ -165,7 +167,8 @@ answered by a single stamp probe; keep them apart.
   W1). Two rules: **(1) Don't hand-commit a stream's own records to the root at all** — the feature's
   plan closure + ledger line and roadmap-ledger row commit **on the branch** and reach the trunk
   via the **ff-merge**, the single root mutation (and `--ff-only` fails safe: rejected → re-`sync` +
-  retry). **(2) For the few commits that must touch the root** (`/backlog debrief`'s captures — `create`
+  retry). **(2) For the few commits that must touch the root** (debrief / tracker
+  captures from compiled hooks — `create`
   seeds its plan **on the branch**, and `close` writes nothing), stage **and** commit in **one** tool call scoped with an
   explicit pathspec: `git -C <root> add <p> && git -C <root> commit -m "…" -- <p>` — the `-- <p>`
   excludes anything that raced into the index. A **rename/move** (`git mv`) stages a delete + an
@@ -222,8 +225,9 @@ The skill also bundles `scripts/hooks.sh` (project-hooks parser and
 materializer — resolve it from this skill's own base directory, same as
 `workstream-git.sh`). `parse` is read-only; `materialize` copies the bundled
 `templates/hooks.md` onto an absolute `--file` if absent and refuses overwrite
-(no mkdir of a missing parent). `compile` / `compiled-get` / `compiled-put`
-land in a later slice (stub usage, exit 2). It also bundles
+(no mkdir of a missing parent). `compile` projects `## Hooks (compiled)` into
+`--handoff`; `compiled-get` / `compiled-put` preserve that exclusive span
+across a template rewrite (`save` does not recompile). It also bundles
 `scripts/worktree-exclude.sh` (idempotent hand-off exclusion, used by
 `create`) and `scripts/worktree-teardown.sh` (the `close` mechanics).
 

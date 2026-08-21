@@ -15,12 +15,15 @@ _Read `flow.md` alongside this verb — `load` re-enters the loop it governs._
 > different stream already loaded in my context*, never on cwd.
 
 1. Parse `<stream>` to its name. Locate the worktree by matching it against `git worktree list`
-   (works from the root or any worktree of the repo), then target `<worktree>/WORKSTREAM.md`. If no
-   matching worktree or no `WORKSTREAM.md` is found, run `status` and list active streams so the
-   user can pick. **In-place streams own no worktree** — they never appear in `worktree list`;
-   locate them the way `status` does, by scanning `<root>/.workstreams/<stream>/WORKSTREAM.md`
-   directly (that file IS the hand-off to target).
-2. Apply `/checkpoint`'s **Resume discipline** to `<worktree>/WORKSTREAM.md`: read it in full and
+   (works from the root or any worktree of the repo), then target that checkout's
+   `WORKSTREAM.md`. If no matching worktree or no `WORKSTREAM.md` is found, run `status` and list
+   active streams so the user can pick. **In-place streams own no worktree** — they never appear in
+   `worktree list`; locate them the way `status` does, by scanning
+   `<root>/.workstreams/<stream>/WORKSTREAM.md` directly. Never guess
+   `<root>/WORKSTREAM.md`.
+2. Apply `/checkpoint`'s **Resume discipline** to Coordinates `this hand-off:` (the file
+   located in step 1 — after reading, it MUST equal the Coordinates `this hand-off:`
+   line; mismatch → STOP). Read it in full and
    load as context (write/move nothing — resume never consumes). Then run the START HERE guard
    from its Coordinates.
    **Worktree streams:** `git -C <worktree> rev-parse --show-toplevel` == worktree and branch

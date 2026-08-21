@@ -238,10 +238,10 @@ compaction/continuation summary sitting where your conversation history should b
 and Codex leave one), or by the host front-door's recovery anchor pointing you here. This is
 `/checkpoint`'s **Recovery discipline** (stop -> re-read the save-state in full -> reconcile:
 durable trail beats summary -> continue without a round-trip if KNOWN) run against
-`<worktree>/WORKSTREAM.md`, plus the workstream overlays — re-reading `flow.md` itself, the START
+Coordinates `this hand-off:`, plus the workstream overlays — re-reading `flow.md` itself, the START
 HERE guard, custody. Ritual:
 
-> stop current work -> re-read `<worktree>/WORKSTREAM.md` in full -> **re-read this `flow.md`**
+> stop current work -> re-read Coordinates `this hand-off:` in full -> **re-read this `flow.md`**
 > (the orchestration rules live outside the hand-off; the compaction may have erased them) -> run
 > the hand-off's START HERE guard (in-place streams: the custody check; and never recover another
 > session's worktree) -> reconcile: `git -C <worktree> log` and the durable records
@@ -282,14 +282,14 @@ hand-off's *Phase model map*). The three phases, each ending `save -> park -> re
 > (`/model <m>`), `/clear`, `/workstream load <stream>`."
 >
 > **BUILD** (build-model) — `/contractor build` when a contractor plan exists; otherwise the
-> host lane walks the spec's slices. Then debrief #1 (the hand-off's filled `<debrief>`
-> command — `SKILL.md` *Host layout*; the feature's follow-ups). Then act on *Ship cadence*: **at a landing point**, **save** (`Phase: ship`)
+> host lane walks the spec's slices. Then debrief #1 (the compiled hook **Feature completion** —
+> skip the glue command if empty; the feature's follow-ups). Then act on *Ship cadence*: **at a landing point**, **save** (`Phase: ship`)
 > -> park for the ship-model swap. **Between landing points**, **save** (`Phase: plan` for the *next*
 > feature) -> park for the plan-model swap. (Completed features still accumulate on the branch; only
 > SHIP lands.)
 >
 > **SHIP** (ship-model) — `/workstream ship` (land + advance the queue), *(if eventful)* debrief
-> #2 (the hand-off's filled `<debrief>` command — `SKILL.md` *Host layout*). Under a deferred *Ship cadence* this one SHIP phase lands the **whole accumulated batch** (every
+> #2 (the compiled hook **After eventful ship** — skip the glue command if empty). Under a deferred *Ship cadence* this one SHIP phase lands the **whole accumulated batch** (every
 > feature built since the last ship), not just one. Then **save** (`Phase: plan`) -> park for the
 > plan-model swap -> reset into the next feature's PLAN.
 

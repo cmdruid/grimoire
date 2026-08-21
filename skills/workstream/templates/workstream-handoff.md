@@ -45,6 +45,15 @@ isolated worktree), never editing the shared tree.
                   `verbs/sync.md` step 2c). Portable-ERE rule: no `\b`.>
 - this hand-off: <abs path to .workstreams/<stream>/WORKSTREAM.md>   (ignored; never merges)
 
+## Hooks (compiled)
+hooks-compiled: none @ none
+
+feature-completion:
+(empty)
+
+after-eventful-ship:
+(empty)
+
 ## Delegation route (confirmed once at create — persists across resets)
 <Set at `create` (propose-and-confirm; see the skill's `create` step 6). **One of three states:**
 - **a route** — the per-phase model map `/delegate` uses (its defaults, or a per-phase override like
@@ -81,8 +90,8 @@ the *Delegation route* governs there). The default model per phase, cited by eac
 instruction. The swap is a manual `/model` action, so any phase is overridable on the fly — this is the
 reminder default, not a lock.
 - PLAN:  <strong model, e.g. Opus>   — `/blueprint spec`; `/contractor plan` only when sequencing is required
-- BUILD: <mid model, e.g. Sonnet>    — `/contractor build` when a contractor plan exists; otherwise the host lane walks the spec's slices + `<debrief>` #1
-- SHIP:  <strong model, e.g. Opus>   — `/workstream ship` (land, conflict-resolve) + `<debrief>` #2>
+- BUILD: <mid model, e.g. Sonnet>    — `/contractor build` when a contractor plan exists; otherwise the host lane walks the spec's slices + the compiled hook **Feature completion** (skip the glue command if empty)
+- SHIP:  <strong model, e.g. Opus>   — `/workstream ship` (land, conflict-resolve) + the compiled hook **After eventful ship** (skip the glue command if empty; only when the ship was eventful)>
 
 ## TL;DR
 <What shipped, where it stands, and the single recommended next action.>
@@ -126,11 +135,6 @@ feature with its delegation tally (debrief #1), e.g. `- <feature> — delegation
 ## Pointers / open questions
 <ADR / roadmap / reports this stream depends on; anything blocked on a decision or a cross-stream seam.>
 
-`<debrief>` is filled at `create` / `recycle` from the host probe
-(`SKILL.md` *Host layout*): workshop → the workshop backlog
-debrief verb; else → the project's own close-the-books sweep
-(do not invoke the workshop backlog verb).
-
 ## Loop routine (the flow — verbs are primitives; this orchestrates them)
 Build the current feature to **completion** (autonomy rule): run all its tasks, committing as you go;
 round-trip **only at a seam** — launch / blocker / genuine fork / feature-completion. **Saves are
@@ -144,15 +148,15 @@ anchor-line technique). Speak that path at `save` / `load` / Recovery — not
 as a prefix on ordinary status replies.
 
 **Reset ritual** (whether Scenario A *lands* depends on *Ship cadence* above):
-- **Feature complete, at a landing point (`per-stage` / a milestone / track end):** `<debrief>`
+- **Feature complete, at a landing point (`per-stage` / a milestone / track end):** the compiled hook **Feature completion** (skip the glue command if empty)
   (#1 — routes the feature's follow-ups; its commits ride ship's ff-merge free) -> `/workstream ship`
   (lands every accumulated feature; plan-bound: advances the queue and drafts the next plan —
   except in `manual` mode, where the next PLAN session drafts it; template: no queue-advance,
   no draft — after the reset ritual, `/workstream recycle`) ->
-  *(if the ship was eventful — conflicts, contention retries, multiple syncs)* `<debrief>` #2 ->
+  *(if the ship was eventful — conflicts, contention retries, multiple syncs)* the compiled hook **After eventful ship** (skip the glue command if empty; only when the ship was eventful) ->
   **`/workstream save`** (the single pre-reset checkpoint) -> reset -> `/workstream load <stream>`.
 - **Feature complete, between landing points (`milestone`/`per-track`, not yet a milestone):**
-  `<debrief>` #1 -> **`/workstream save`** (the feature-completion checkpoint — fires at
+  the compiled hook **Feature completion** (skip the glue command if empty) -> **`/workstream save`** (the feature-completion checkpoint — fires at
   every feature seam, reset or not) -> advance to the next feature *on the same branch* (**no
   ship**; under `milestone` first *propose* a land if this looks like a natural milestone) ->
   *(if context heavy)* reset -> `load`. Unshipped features stay on the branch for the next milestone.
@@ -175,7 +179,7 @@ as a prefix on ordinary status replies.
   sync **more** proactively — held work widens divergence, so `sync`'s `land-readiness` conflict
   forecast matters most here.
 - Capture follow-ups as the feature surfaces them (jot into *What's next* / *Pointers*); the formal
-  routing is `<debrief>` #1 at completion (the host's PLANNING doc -> *When a plan completes*), the formal save is
+  routing is the compiled hook **Feature completion** (skip the glue command if empty) at completion (the host's PLANNING doc -> *When a plan completes*), the formal save is
   the pre-reset checkpoint.
 - **`manual` mode** (Coordinates `mode: manual`): a feature is three model-phased sessions — PLAN
   (plan-model) -> BUILD (build-model) -> SHIP (ship-model) — and **every phase boundary is a save +
