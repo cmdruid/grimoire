@@ -35,5 +35,10 @@ workshop, and the fix is `git mv .handbook <agent-workspace>/doctrine`, not `set
    it `check`: front-matter conformance and status↔ledger coherence are
    its facts. Missing → report the records layer as absent (setup's
    step 3 unfinished), not as a pass.
-6. **Report** — one list: green items as one line, each finding as location + what's wrong.
+6. **Hooks** — run `scripts/hooks-glue.sh check --file "$HOOKS" --presence
+   true|false` (absolute `$HOOKS=<root>/<agent-workspace>/hooks/workstream.md`;
+   presence from `scripts/hooks-glue.sh presence --clankshop-dir <skill-base>`).
+   Report-only: `finding=true` names `/clankshop setup`. Do not write the file.
+   Missing known H2 is not a finding.
+7. **Report** — one list: green items as one line, each finding as location + what's wrong.
    Fixes are ordinary routed work, not part of the check.

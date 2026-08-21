@@ -22,13 +22,16 @@ c. **Existing doctrine home?** Test the resolved `<agent-workspace>/doctrine`, *
    walk step.
    - Both absent → continue the walk.
    - Present, and a `check` would be green (stamp, slots, door pointer, records
-     layer) → already seeded. Stop. An upgrade the human asked for is a
+     layer, unfinished hooks would `finding=false`) → already seeded. Stop.
+     Unfinished hooks (`scripts/hooks-glue.sh check` would `finding=true`)
+     means **not** seeded. An upgrade the human asked for is a
      judgment-assisted diff against the current seed, anchored by the README
      stamp line — not a re-seed, not this walk.
    - Present but `check` would not be green (missing stamp, leftover `<gate>` /
-     `<trunk>`, no door pointer, records layer absent) → **resume**. Start at the
-     first unfinished *walk* step (1–5). Do not re-run `seed.sh` (it refuses). Do
-     not treat this as "already seeded."
+     `<trunk>`, no door pointer, records layer absent, unfinished hooks) → **resume**. Start at the
+     first unfinished *walk* step (1–6). Do not re-run `seed.sh` (it refuses). Do
+     not treat this as "already seeded." Empty `$HOOKS` with stamp/door/records
+     present hits **this** arm.
 
 ## The walk
 
@@ -66,11 +69,19 @@ c. **Existing doctrine home?** Test the resolved `<agent-workspace>/doctrine`, *
      restating it is a no-op the lint flags).
 
    Do not invent a third location. Do not rewrite unrelated existing content.
-5. **Validate**: run the `check` verb. Setup is complete only when it comes back green.
+5. **Hooks.** Set `HOOKS=<root>/<agent-workspace>/hooks/workstream.md` (absolute).
+   `mkdir` the parent of `$HOOKS` only when (a) `<root>/<agent-workspace>` already
+   exists as a directory, or (b) the home is the derived default `.dev` and the
+   mkdir is `hooks/` only. Then run `scripts/hooks-glue.sh fill --file "$HOOKS"
+   --skeleton <skill-base>/../workstream/templates/hooks.md` (skill-base like
+   `seed.sh`). Presence false (no sibling skeleton) → fill is noop. Do not
+   invoke `skills/workstream/scripts/hooks.sh`.
+6. **Validate**: run the `check` verb. Setup is complete only when it comes back green.
 
 ## Notes
 
 - The doctrine home is the **project's** document from this moment: project specifics accrete
   below the seeded preambles; upgrades diff against the current seed rather than re-projecting.
 - Nothing here writes outside `<root>`; commits (if the human wants them) are scoped to the
-  paths written (`<agent-workspace>/doctrine/`, `.records/`, `AGENTS.md`).
+  paths written (`<agent-workspace>/doctrine/`, `.records/`, `AGENTS.md`,
+  `<agent-workspace>/hooks/`).

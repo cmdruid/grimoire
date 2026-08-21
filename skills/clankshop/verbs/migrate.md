@@ -96,12 +96,15 @@ migration): everything below then writes and commits on the stream's branch and 
    `AGENTS.md` to setup's minimum (pointer naming `<agent-workspace>/doctrine/README.md`,
    thin dispatch table, `agent-records:` only when not `.records/`, `agent-workspace:` only
    when not `.dev`); existing content preserved.
-5. **Done means `check` is green.** Run the `check` verb; fix what it reports. One conformance
+5. **Hooks.** After the door is written, run `scripts/hooks-glue.sh fill --file "$HOOKS"
+   --skeleton <skill-base>/../workstream/templates/hooks.md` (`HOOKS=<root>/<agent-workspace>/hooks/workstream.md`,
+   absolute) **before** `check`. Same mkdir rule as setup. Presence false → noop.
+6. **Done means `check` is green.** Run the `check` verb; fix what it reports. One conformance
    regime, no grandfathering: after migration, `records.sh` sees everything.
 
 ## Notes
 
 - The install stamp is written by `seed.sh` in step 3; the migration is not "installed" until
-  step 5 is green — say so honestly if you stop early.
+  step 6 is green — say so honestly if you stop early.
 - Batch the mechanical moves into scoped commits per store, so the history reads as the
   migration it is.

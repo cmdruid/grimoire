@@ -49,6 +49,14 @@ Checkpoint refuses the stream case mechanically; the canonical probe for its sit
 **Seam — `clankshop` / `journal`:** workshop `setup` / `migrate` delegates records
 tool-layer standup to journal. Journal does not write the door or seed doctrine.
 
+**Seam — `workstream` / `backlog`:** `workstream` publishes
+`<agent-workspace>/hooks/workstream.md` from its own package
+skeleton (`skills/workstream/templates/hooks.md`). `setup` step 5 / `migrate` copy that skeleton
+if absent and fill empty `Feature completion` and `After eventful
+ship` with `/backlog debrief`. `check` reports empty pack glue only
+when that skeleton is installed; it does not write. Leaves do not
+name each other.
+
 **Seam — `delegate` / `mailbox`:** delegate decides whether and how to farm work.
 Mailbox is transport only (slot mint / apply / consume). Whether to dispatch is
 never mailbox's question.
