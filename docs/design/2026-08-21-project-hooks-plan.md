@@ -107,7 +107,7 @@ dir. No existing hooks parser. Face must not shell `hooks.sh` (floor).
 
 ## Slices
 
-- [ ] **Slice 1: parser + skeleton + materialize (tracer)**
+- [x] **Slice 1: parser + skeleton + materialize (tracer)**
   <requires: —>
   - Files:
     - Create: `skills/workstream/templates/hooks.md` — exact bytes:
@@ -294,7 +294,7 @@ dir. No existing hooks parser. Face must not shell `hooks.sh` (floor).
     each contain `hooks.sh materialize --file "$HOOKS"`; each `$HOOKS=`
     RHS contains `<root>/` or `"$root"/`. Lint `fails=0`.
 
-- [ ] **Slice 2: compile snapshot; remove `<debrief>` fill**
+- [x] **Slice 2: compile snapshot; remove `<debrief>` fill**
   <requires: 1>
   - Files:
     - Modify: `skills/workstream/scripts/hooks.sh` — add:
@@ -486,7 +486,7 @@ dir. No existing hooks parser. Face must not shell `hooks.sh` (floor).
        only SKILL.md remains).
     Lint `fails=0`.
 
-- [ ] **Slice 3: clankshop materialize + fill + PACK seam**
+- [x] **Slice 3: clankshop materialize + fill + PACK seam**
   <requires: 2>
   - Files:
     - Create: `skills/clankshop/scripts/hooks-glue.sh` — bash-3.2.
@@ -600,7 +600,7 @@ dir. No existing hooks parser. Face must not shell `hooks.sh` (floor).
     Verb greps (fail on 0): `setup.md`, `migrate.md`, and `check.md`
     each contain `hooks-glue.sh`.
 
-- [ ] **Slice 4: doctrine convention** <requires: 2>
+- [x] **Slice 4: doctrine convention** <requires: 2>
   - Files:
     - Modify: `skills/skill-builder/docs/DOCTRINE.md`
       - Add a **Project hooks** section next to doctrine-touching /

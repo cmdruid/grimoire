@@ -18,7 +18,7 @@ Two variables, two roots:
 | variable | default | holds |
 |---|---|---|
 | `<agent-records>` | `.records/` | dated, typed, closeable records + `history.tsv` |
-| `<agent-workspace>` | `.dev/` | `doctrine/`, `spec/`, `workflow/`, `templates/`, `scripts/` |
+| `<agent-workspace>` | `.dev/` | `doctrine/`, `spec/`, `workflow/`, `templates/`, `scripts/`, `hooks/` |
 
 `agent-templates` is retired as a variable — it becomes the fixed subpath
 `<agent-workspace>/templates`.

@@ -95,9 +95,9 @@ scoped to non-face skills.
 
 - **Glue is content (the pack's) vs. mechanism (the engine's) — birth vs. growth.** The glue *content*
   — the seams, the initial front-door wiring — is owned by the pack/runbook, which **births** the
-  constellation. A workflow-hub skill (this library's `foreman`) is the pack-agnostic **oven**: it
-  **stamps** whatever the recipe specifies and **grows** it afterward, but it **never authors** the
-  pack-specific glue. Recipe owns *what*; oven owns *how* and *ongoing*.
+  constellation. **Project hooks files** (`<agent-workspace>/hooks/<skill>.md`) are the glue
+  surface — not a composer skill to invoke. Pack/runbook still authors *what* the glue
+  says; there is no oven.
 
 - **Skills self-initialize and self-describe via typed edges; the composer wires the seams.** The
   tenets above govern what a skill's `description:` may *say*; this one — their extension from
@@ -383,8 +383,9 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    **The stamp still has legitimate consumers — do not "finish the migration" by deleting
    them.** A skill may keep probing it for a genuine *policy* decision, and two do today:
    `debugger` gates entering its fix phase on it (may fixes land on a project that has not
-   opted into a workshop?), and `workstream` gates `<debrief>` routing and Backlog
-   tracker-line permission on it. Neither is a leftover. The test when you meet a stamp
+   opted into a workshop?), and `workstream` gates Backlog tracker-line permission on it
+   (it no longer gates debrief routing on the stamp; that glue lives in project hooks).
+   Neither is a leftover. The test when you meet a stamp
    probe: **if removing it would change *where a file is read from*, it is a location
    question and belongs to a home resolver; if it would change *whether an action is
    allowed*, it is a policy question and the stamp is correct.** Conflating the two is the
@@ -417,13 +418,15 @@ A skill that reads **or writes** project doctrine follows these rules. Portable 
 library. Reading counts: you must resolve a path to read from it, so a reader that hardcodes a
 doctrine path is exactly as wrong as a writer that does.
 
-1. **Which home.** Three destinations, one test:
+1. **Which home.** Four destinations, one test:
 
    > **Records** are dated, typed, closeable instances → `<agent-records>`.
    > **Templates** are the schemas instances mint from →
    > `<agent-workspace>/templates`.
    > **Doctrine** is living, normative, undated, and never closes →
    > `<agent-workspace>/doctrine`.
+   > **Hooks** are skill-keyed overlay steps on a skill's own loop →
+   > `<agent-workspace>/hooks/<skill>.md`.
 
    Doctrine: an audit rubric, a diagnostics playbook, a build lane, a station chapter. Not
    doctrine: a spec (a dated `specs/` record), a captured project fact, an audit *report*.
@@ -452,6 +455,12 @@ doctrine path is exactly as wrong as a writer that does.
    paragraph above reads as a universal prohibition that would forbid `clankshop setup` from
    seeding into a declared home at all, and would forbid what records standup already does
    today.
+
+   **Narrow hooks mkdir.** A publisher may `mkdir` `hooks/` only when
+   `<agent-workspace>` already exists, or when the home is the derived default
+   `.dev` and the mkdir is `hooks/` only (creates `.dev` as a container for
+   `hooks/`, never `doctrine/`). Declared `agent-workspace:` that is absent →
+   do not create; treat hooks as empty. The leaf is not the workspace assembler.
 
    Doctrine is **copy-bundled-then-customized**, not mint-and-accumulate: a skill seeds
    generic content, then the host edits it in place and keeps editing it for years. So
@@ -501,6 +510,38 @@ operative steps name a fixed path, and no text match distinguishes that from cor
 That question belongs to skill review, as judgment. Claim the floor, not the ceiling: an
 absence-shaped check cannot even report a `file:line`, because there is no line where a
 missing sentence lives.
+
+## Project hooks
+
+**Hooks** are skill-keyed overlay steps on a skill's own loop →
+`<agent-workspace>/hooks/<skill>.md`. Default `.dev/hooks/<skill>.md`. The
+`<skill>` stem matches that skill's frontmatter `name:`. Fourth landing class
+(next to doctrine-touching / record-writing), not a front-door variable.
+
+A skill that owns a multi-step loop with named seams *may* publish hooks. Not
+every skill. The convention does **not** require a bundled hooks.md skeleton.
+A consumer may copy *its* package skeleton if absent, or generate empty H2s
+from `--known`. Never overwrite a present file. Never a project-level
+hooks.md under `<agent-workspace>/templates/`. `skill-builder new` does not
+scaffold a generic hooks file.
+
+Format (normative):
+
+```markdown
+# <skill> hooks
+
+Empty section = no extra glue command.
+
+## <Hook id>
+
+## <Hook id>
+```
+
+Structural H2s (`^##[ \t]+\S`, not inside a fence) are hook ids. Body = bytes
+after the heading until the next structural H2 or EOF, then strip surrounding
+whitespace; empty → no extra glue command. Duplicate H2 → parse fails.
+Extra H2 not in the known set → fact, not a fail. Known H2 missing from an
+existing file → that hook is empty; do not add the heading.
 
 ## Corollaries (four testable rules)
 

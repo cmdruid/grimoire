@@ -611,7 +611,7 @@ Grep gate — two commands, both under `skills/workstream/` excluding
 
 ## Slices
 
-- [ ] **Slice 1: parser + skeleton + create materialize (tracer)**
+- [x] **Slice 1: parser + skeleton + create materialize (tracer)**
   <requires: —>
   - Files:
     - Create: `skills/workstream/templates/hooks.md`;
@@ -632,7 +632,7 @@ Grep gate — two commands, both under `skills/workstream/` excluding
     `create.md` names the absolute `$HOOKS` path, never a
     cwd-relative `hooks/workstream.md`.
 
-- [ ] **Slice 2: compile snapshot; remove `<debrief>` fill**
+- [x] **Slice 2: compile snapshot; remove `<debrief>` fill**
   <requires: 1>
   - Files:
     - Modify: `skills/workstream/scripts/hooks.sh` (`compile`);
@@ -660,7 +660,7 @@ Grep gate — two commands, both under `skills/workstream/` excluding
     save preserve. Grep gate as specified (two commands).
   - Verify: red-proofs 2, 7, 9, 10. Grep gate. Parser suite still green.
 
-- [ ] **Slice 3: clankshop materialize + fill + PACK seam**
+- [x] **Slice 3: clankshop materialize + fill + PACK seam**
   <requires: 2>
   - Files:
     - Modify: `skills/clankshop/verbs/setup.md` (step 5 = hooks walk;
@@ -684,7 +684,7 @@ Grep gate — two commands, both under `skills/workstream/` excluding
     `bash skills/clankshop/scripts/tests/run.sh` ALL GREEN.
     Slice 1–2 tests still green.
 
-- [ ] **Slice 4: doctrine convention** <requires: 2>
+- [x] **Slice 4: doctrine convention** <requires: 2>
   - Files:
     - Modify: `skills/skill-builder/docs/DOCTRINE.md` (Project hooks
       section; four destinations; rule 3 narrow hooks mkdir; glue

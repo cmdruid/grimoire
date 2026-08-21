@@ -45,6 +45,13 @@ verb's job).
        records but locks nothing in yet).
    - **No** → do not add those sections.
 
+3b. **Project hooks?** — ask, orthogonal to the tier and to record-writer: *does
+    this skill have a named-seam loop the pack or a later agent might extend?*
+    - **Yes** → a sentence in `SKILL.md` plus known ids on the parse line.
+      Do **not** scaffold a generic hooks.md in the skill's templates
+      directory. Do not add a lint check that requires the file.
+    - **No** → nothing.
+
 4. **Write `SKILL.md`:**
    - Frontmatter: `name`, and a `description:` that **routes on its own** — states only this skill's
      job/domain, names no sibling to defer/disambiguate/contrast (the self-scoping rule; router and
