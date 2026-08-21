@@ -1,12 +1,17 @@
 ---
 doctype: design
-status: open
+status: done
 created: 2026-08-20
-updated: 2026-08-20
+updated: 2026-08-21
 tags: [spec]
 ---
 
 # `revise` propose-then-apply — Spec
+
+Shipped 2026-08-21: add propose-then-apply spec and plan;
+contractor and blueprint `revise` propose then apply; named
+re-review on confirm. File-mode close — no ledger on this
+host.
 
 This library's design home is `docs/design/` (patient-zero: grimoire
 authors the workshop, it does not run one on itself). This spec lives
@@ -488,7 +493,7 @@ This spec doubles as the plan. Two slices, same machine, two
 packages. Either order; no coupling beyond the shared rules
 above.
 
-- [ ] **Slice 1: contractor `revise` seam**
+- [x] **Slice 1: contractor `revise` seam**
   <requires: —>
   - Paths: `skills/contractor/SKILL.md`;
     `skills/contractor/verbs/revise.md`.
@@ -500,7 +505,7 @@ above.
     “No verb invokes the next”; `Why re-review` no longer
     claims a different pair of eyes on the named path.
 
-- [ ] **Slice 2: blueprint `revise` seam**
+- [x] **Slice 2: blueprint `revise` seam**
   <requires: —>
   - Paths: `skills/blueprint/SKILL.md`;
     `skills/blueprint/verbs/revise.md`.

@@ -1,12 +1,15 @@
 ---
 doctype: plans
-status: open
+status: done
 created: 2026-08-20
 updated: 2026-08-21
 tags: [plan]
 ---
 
 # `revise` propose-then-apply — Implementation Plan
+
+Shipped 2026-08-21: both slices walked; lint `fails=0`.
+File-mode close — no ledger on this host.
 
 Tracer: ship the new `revise` seam on contractor end to end (procedure +
 router), then widen it onto blueprint. Agent prose only; no new script
