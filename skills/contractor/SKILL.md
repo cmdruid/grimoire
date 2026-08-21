@@ -1,6 +1,6 @@
 ---
 name: contractor
-description: "Use when the user runs `/contractor`, or asks to write a roadmap, implementation plan, or runbook, to review one of those, to apply review findings or amend a needs-rework job, or to execute a plan or runbook. One job: sequence work from an approved spec, optionally delegate slices, walk the job. Never writes a spec. Never ships to trunk. For a one-line patch, skip it."
+description: "Use when the user runs `/contractor`, or asks to write a roadmap, implementation plan, or runbook, to review one of those, to apply review findings or amend a needs-rework job, to ask how we should revise a plan, or to execute a plan or runbook. One job: sequence work from an approved spec, optionally delegate slices, walk the job. Never writes a spec. Never ships to trunk. For a one-line patch, skip it."
 ---
 
 # contractor — the job lead
@@ -57,7 +57,7 @@ subject); closure — `done`, `dropped`, `superseded`, `consumed` — goes throu
 | `plan` | `verbs/plan.md` | tracer-bullet plan |
 | `runbook` | `verbs/runbook.md` | compile conductor |
 | `review` | `verbs/review.md` | critique roadmap/plan/runbook |
-| `revise` | `verbs/revise.md` | fold review findings into the job |
+| `revise` | `verbs/revise.md` | classify findings, propose amendments, fold on confirm |
 | `build` | `verbs/build.md` | execute plan or runbook |
 | (bare) | — | **ask** which verb; do not default |
 
@@ -67,7 +67,8 @@ plan  →  review  →  approve              →  build
                  →  needs-rework         →  revise  →  review  →  …
 ```
 
-Each arrow is a stop. No verb invokes the next.
+Each arrow is a stop. No verb invokes the next, except a `revise`
+confirmation that asks for `review` after apply.
 
 ## Brief the human (every verb)
 
@@ -76,10 +77,13 @@ The artifact holds the job vocabulary (`status: open` / `current`, slice ids,
 
 - **Lead with the situation** a newcomer could use: what the software can do
   now, or what you need the human to decide. Then the path to the artifact.
-- **One ask per stop.** After `plan`, `review`, or `revise`, stop and wait. During
-  `build`, run each slice's verify; brief the human at start, at a blocker,
-  and at the end — not after every slice unless they asked for a running
-  log or a slice failed.
+- **One ask per stop.** After `plan` or `review`, stop and wait. After
+  `revise`: questions (when they fire) are a stop; the proposal is a
+  stop; after apply without named re-review, the offer is a stop.
+  Named re-review is the exception. During `build`, run each slice's
+  verify; brief the human at start, at a blocker, and at the end —
+  not after every slice unless they asked for a running log or a
+  slice failed.
 - **Translate the closing code.** "The plan is at `<path>`. Please read it
   before I implement." not "Terminal step: `review` then `build`." "The
   tests would go green and still encode the wrong scripts" not a bare

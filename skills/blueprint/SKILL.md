@@ -1,6 +1,6 @@
 ---
 name: blueprint
-description: "Use when the user runs `/blueprint`, or asks to brainstorm, grill, or write a spec for a feature or design; or when starting a new project / new repository from scratch (`new`, `deploy`, founding spec, no repo yet); or to apply review findings or amend a needs-rework spec. Turns an idea into an argued specification. grill is the interview primitive until every decision branch resolves. review critiques a spec or design doc (soundness + groundedness). Does not write roadmaps or implementation plans and does not build. For a one-line patch, skip it (fix on the trunk)."
+description: "Use when the user runs `/blueprint`, or asks to brainstorm, grill, or write a spec for a feature or design; or when starting a new project / new repository from scratch (`new`, `deploy`, founding spec, no repo yet); or to apply review findings or amend a needs-rework spec, or to ask how we should revise a spec. Turns an idea into an argued specification. grill is the interview primitive until every decision branch resolves. review critiques a spec or design doc (soundness + groundedness). Does not write roadmaps or implementation plans and does not build. For a one-line patch, skip it (fix on the trunk)."
 ---
 
 # blueprint — the specification spine
@@ -23,7 +23,9 @@ and collides with none.
 **Brief the human.** The conversation leads with the decision or the draft,
 not the machinery. "Here are two approaches; I recommend A because…" /
 "The spec is at `<path>`. Please read it before we sequence work."
-After `revise`, one ask, then wait — same as after `spec` / `review`.
+After `revise`: questions (when they fire) are a stop; the proposal
+is a stop; after apply without named re-review, the offer is a
+further stop. Do not collapse questions and proposal into one ask.
 `founding-shaped`, `status: open`, and station names stay in the files.
 
 ## One environment probe (at entry)
@@ -77,7 +79,7 @@ to `status: current`.
 | `grill [doc]` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** | a draft / spec (or the conversation) → resolved decisions | design |
 | `spec [doc]` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) | conversation or draft → feature `specs/` spec, **or** the named founding file | design |
 | `review <doc>` | two-axis critique; founding-shaped → six-H2 + leftover/gap rubric | a spec or design doc → a verdict (in context) | design |
-| `revise [<findings>] [<artifact>]` | fold review findings into the spec | a findings baton + spec → amended spec | design |
+| `revise [<findings>] [<artifact>]` | classify findings, propose amendments, fold on confirm | a findings baton + spec → proposed amendments, then amended spec on confirm | design |
 | `deploy <file>` | project a founding spec into a git repo + three founding docs (new dir or in-place) | founding file → git repository | — |
 
 ```
@@ -86,7 +88,8 @@ spec  →  review  →  approve              →  (host sequences)
                  →  needs-rework         →  revise  →  review  →  …
 ```
 
-Each arrow is a stop. No verb invokes the next.
+Each arrow is a stop. No verb invokes the next, except a `revise`
+confirmation that asks for `review` after apply.
 
 `brainstorm → spec` is the linear spine; `grill` and `review` are primitives
 callable at any point. Bare `/blueprint` stays `brainstorm`. Genesis is
@@ -333,7 +336,8 @@ with `revise` (`verbs/revise.md`). This verb does not amend.
 There is no separate blueprint state file. Each verb consumes the previous
 verb's artifact by path: `brainstorm`'s draft → `spec` argues it — and each
 doc's front-matter `status` tracks its lifecycle. `grill` and `review` write
-no new file; `revise` amends the named artifact in place.
+no new file; `revise` amends the named artifact in place after
+confirm, not in the invoke turn.
 
 ## Composition (the orchestrator owns building, landing, capture)
 
