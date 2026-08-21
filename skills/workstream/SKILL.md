@@ -218,7 +218,13 @@ Subcommands (each consuming verb file names the facts it reads):
   sides of a rebase claim the same tracker ID (a collision no textual conflict shows)? Post-
   rebase, the pre-rebase base is required, same regime as `gate-facts`.
 
-The skill also bundles `scripts/worktree-exclude.sh` (idempotent hand-off exclusion, used by
+The skill also bundles `scripts/hooks.sh` (project-hooks parser and
+materializer — resolve it from this skill's own base directory, same as
+`workstream-git.sh`). `parse` is read-only; `materialize` copies the bundled
+`templates/hooks.md` onto an absolute `--file` if absent and refuses overwrite
+(no mkdir of a missing parent). `compile` / `compiled-get` / `compiled-put`
+land in a later slice (stub usage, exit 2). It also bundles
+`scripts/worktree-exclude.sh` (idempotent hand-off exclusion, used by
 `create`) and `scripts/worktree-teardown.sh` (the `close` mechanics).
 
 ## Project templates

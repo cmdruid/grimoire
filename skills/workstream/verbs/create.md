@@ -96,6 +96,28 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    re-embedded by `recycle`), and only its **name or path** is recorded in Coordinates `source:`.
 6. **Hand-off instantiation** *(the template-mode part is re-applied in place by `recycle.md` — keep
    these labels)*: write the hand-off into the worktree, then exclude it locally:
+   - **Project hooks (parse + materialize; no compile yet).** Resolve
+     `<agent-workspace>` in prose (do not paste a bash resolver): first
+     line-start `agent-workspace:` in `<root>/AGENTS.md` then `<root>/CLAUDE.md`,
+     else `.dev`. Set `HOOKS=<root>/<agent-workspace>/hooks/workstream.md`
+     (absolute). Never a relative `hooks/workstream.md` or a worktree-local
+     `.dev/hooks/` twin. `mkdir` the parent of `$HOOKS` only when (a)
+     `<root>/<agent-workspace>` **already exists** as a directory, or (b) the
+     home is the derived default `.dev` and the mkdir is `hooks/` only
+     (creates `.dev` as a container for `hooks/`, **never** `doctrine/`).
+     Declared `agent-workspace:` that is absent → do not mkdir; treat hooks
+     as empty. (Narrow exception to doctrine-touching rule 3 — named here so
+     this landing does not contradict it; the convention slice records it.)
+     Then run this skill's bundled
+     `scripts/hooks.sh materialize --file "$HOOKS" --skeleton
+     <skill-base>/templates/hooks.md` (resolve `scripts/` from this skill's
+     own base directory). Do **not** `cp` in the verb; the script is the
+     copy-if-absent. Then
+     `hooks.sh parse --file "$HOOKS" --known feature-completion=Feature completion
+     --known after-eventful-ship=After eventful ship`. `status=fail` → STOP.
+     Missing / no-parent is not a fail. Continue today's hand-off
+     instantiation **including** the stamp→`<debrief>` fill. Do **not** compile
+     in this slice.
    - Copy this skill's bundled `templates/workstream-handoff.md` (resolve it from the skill's own
      base directory — never a host-project path, so it works wherever the skill is installed) to
      `<root>/.workstreams/<stream>/WORKSTREAM.md` and fill it in:
