@@ -40,7 +40,7 @@ c. **Existing doctrine home?** Test the resolved `<agent-workspace>/doctrine`, *
      repo, or the default branch where a remote exists.
    - `<gate>`: the project's one gate command. Propose it from inspection (test runner, build
      manifest, CI config); confirm with the human. A brand-new project with no gate yet gets a
-     placeholder confirmed as such — the guardian fills it when one exists.
+     placeholder confirmed as such — the test station fills it when one exists.
 2. **Project the seed** (mechanics are scripted). Resolve `<agent-workspace>` from the door
    first (default `.dev`) and pass it in — the script never scans the front door:
    `scripts/seed.sh <root> --workspace '<agent-workspace>' --gate '<gate>' --trunk '<trunk>'`

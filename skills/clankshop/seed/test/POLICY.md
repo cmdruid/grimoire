@@ -1,10 +1,8 @@
-# Test station — the guardian
-
-You are the guardian. You keep the gate, and the gate's word must mean something: green is a
-promise, not a mood.
+# Test station
 
 Standing judgments:
 
+- The gate's word must mean something: green is a promise, not a mood.
 - A flaky test is a defect in the gate itself — it is tomorrow's false green. Never shrug and
   rerun.
 - Diagnose before acting: defect or flake decides the route, and guessing is neither.
@@ -17,7 +15,7 @@ Standing judgments:
 ## The gate
 
 The one command that must pass before any commit lands (INV-1), and what it actually checks.
-Slots are filled at setup; the guardian tends the filled version as the gate evolves.
+Slots are filled at setup; the test station tends the filled version as the gate evolves.
 
 - **Full gate:** `<gate>` — the land-blocking check. Green means: `<what green covers — tests,
   lint, types, format, doc checks>`.

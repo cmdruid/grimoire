@@ -1,13 +1,12 @@
 #!/bin/sh
 # context.sh — render a station's load set on demand (the doctrine home's one deployed tool).
 #
-#   context.sh <station|persona>          render the load set: each file prefixed by a
+#   context.sh <station>                  render the load set: each file prefixed by a
 #                                         `===> <path>` header (paths relative to the
 #                                         doctrine home, default `.dev/doctrine/`)
-#   context.sh <station|persona> --list   the reading list only (paths, in load order)
+#   context.sh <station> --list           the reading list only (paths, in load order)
 #   context.sh --check                    contract test: every station's load set resolves
 #
-# Personas alias their stations: architect→design, foreman→build, guardian→test, admin→review.
 # Load rule (stated in README.md): core/* then <station>/POLICY.md; workflows load lazily.
 # Exit codes: 0 ok · 1 usage · 2 broken load set.
 # Agent-facing: plain deterministic output, no color; errors on stderr.
@@ -18,17 +17,17 @@ STATIONS="design build test review"
 CORE_ORDER="POLICY.md INVARIANTS.md GOTCHAS.md ROUTING.md"
 
 usage() {
-  echo "usage: context.sh <station|persona> [--list] | context.sh --check" >&2
-  echo "stations: $STATIONS (aliases: architect foreman guardian admin)" >&2
+  echo "usage: context.sh <station> [--list] | context.sh --check" >&2
+  echo "stations: $STATIONS" >&2
   exit 1
 }
 
 station_for() {
   case "$1" in
-    design|architect)  echo design ;;
-    build|foreman)     echo build ;;
-    test|guardian)     echo test ;;
-    review|admin)      echo review ;;
+    design) echo design ;;
+    build)  echo build ;;
+    test)   echo test ;;
+    review) echo review ;;
     *) return 1 ;;
   esac
 }

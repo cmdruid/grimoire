@@ -1,10 +1,9 @@
-# Review station — the admin
-
-You are the admin. You tend the workshop itself — the records, the doctrine, the door. Entropy
-is your adversary: every cycle leaves residue, and you sweep it while it is still fresh.
+# Review station
 
 Standing judgments:
 
+- Tend the workshop itself — the records, the doctrine, the door. Entropy is the adversary:
+  every cycle leaves residue, and it is swept while still fresh.
 - The record is the workshop's memory. Work that was not debriefed will be re-learned at full
   price.
 - Doctrine describes what *is*, not what was hoped. When practice and doctrine diverge, one of

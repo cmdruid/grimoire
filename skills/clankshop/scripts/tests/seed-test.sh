@@ -45,12 +45,15 @@ expect "list order: core first" "core/POLICY.md" "$OUT"
 expect "list order: station last" "build/POLICY.md" "$OUT"
 expect_eq "load set is 5 files" "5" "$(wc -l < "$OUT" | tr -d ' ')"
 
-"$ctx" foreman --list >"$ERR"
-expect_eq "persona alias = station" "$(cat "$OUT")" "$(cat "$ERR")"
+"$ctx" test --list >"$OUT"
+expect "list order: test station last" "test/POLICY.md" "$OUT"
 
-"$ctx" guardian >"$OUT"
+"$ctx" test >"$OUT"
 expect "render headers" "===> test/POLICY.md" "$OUT"
-expect "render content" "You are the guardian." "$OUT"
+expect "render content" "A flaky test is a defect" "$OUT"
+
+rc=0; "$ctx" architect >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "architect is not a station alias" "1" "$rc"
 
 # --- proven by breaking --------------------------------------------------------
 rc=0; "$SKILL/scripts/seed.sh" "$proj" >"$OUT" 2>"$ERR" || rc=$?

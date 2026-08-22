@@ -24,7 +24,7 @@ The v2 roster, by coupling tier (how much workshop a skill needs):
 
 | tier | skill | is |
 |---|---|---|
-| system | `clankshop` | the seed (doctrine + `context.sh`) + `setup` / `migrate` / `check` / persona summons |
+| system | `clankshop` | the seed (doctrine + `context.sh`) + `setup` / `migrate` / `check` |
 | helper | `architect` | specification spine — ideation to argued spec; genesis (`new` / `deploy`) for a founding repo; never implementation plans |
 | helper | `contractor` | one job: roadmap / plan / runbook / build |
 | helper | `inspector` | critique and fold — review a spec or plan (or named kind); refine folds findings; both artifact sets |

@@ -1,6 +1,6 @@
 ---
 name: clankshop
-description: "Set up or migrate an agentic workshop around a code project: doctrine (.dev/doctrine/), records (.records/), and the AGENTS.md door. Verbs: setup (greenfield bootstrap: seed the doctrine home, stand up records via journal, write the door), migrate (brownfield onramp: inventory, one confirmed mapping table, adopt), check (assembly validation), and persona summons (architect/foreman/guardian/admin). Use when asked to set up or migrate the workshop on a project, validate its assembly, or talk to a station persona."
+description: "Set up or migrate an agentic workshop around a code project: doctrine (.dev/doctrine/), records (.records/), and the AGENTS.md door. Verbs: setup (greenfield bootstrap: seed the doctrine home, stand up records via journal, write the door), migrate (brownfield onramp: inventory, one confirmed mapping table, adopt), check (assembly validation). Use when asked to set up or migrate the workshop on a project, or validate its assembly."
 ---
 
 # clankshop — the workshop system
@@ -11,10 +11,9 @@ humans) work the project through a well-defined lifecycle, with the right contex
 the right time. Design: `docs/design/2026-08-12-clankshop-v2.md` (repo-root provenance
 citation).
 
-The workshop is a line of four **stations** — `design` (the architect), `build` (the foreman),
-`test` (the guardian), `review` (the admin). A station merges place and actor: an agent works
-a station by loading its context. Personas are **project-resident doctrine**, not machinery —
-each station's chapter opens in its persona's voice; nothing routes on the names.
+The workshop is a line of four **stations** — `design`, `build`, `test`, `review`. A station is
+a place: an agent works a station by loading its context. The face seeds doctrine and applies
+pack glue.
 
 Three deployed surfaces carry it: **`<agent-workspace>/doctrine/`** (doctrine — how we work;
 by default `.dev/doctrine/`), **`.records/`** (work products, including the living design
@@ -37,7 +36,6 @@ when a verb is selected, read its file and follow it.
 | `setup` | `verbs/setup.md` | greenfield bootstrap: seed the doctrine home, records standup via `journal`, write the door, `check` green |
 | `migrate` | `verbs/migrate.md` | brownfield onramp: scripted inventory, one confirmed mapping table, mechanical moves + judgment merges |
 | `check` | `verbs/check.md` | assembly validation — load sets, stamp, slots, links, records conformance |
-| `<persona> [prompt]` | `verbs/persona.md` | summon a station's voice for discussion — judgment only, no procedure |
 
 Shared discipline: resolve the project root first (a directory the conversation references,
 else the working directory, else ask); get the real date with `date +%Y-%m-%d`, never guess

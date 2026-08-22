@@ -8,14 +8,14 @@ set, so nothing pays for it twice.
 ## The line
 
 The workshop is a line of four **stations**. Work moves through them in lifecycle order; each is
-a standing area of work with its own doctrine and its own persona:
+a standing area of work with its own doctrine:
 
-| station | persona | covers |
-|---|---|---|
-| `design` | the architect | design and specification — the spec the code is measured against |
-| `build` | the foreman | planning and development — workflows, worktrees, development resources |
-| `test` | the guardian | testing and gating prior to release — fixtures, CI/CD, diagnostics |
-| `review` | the admin | upkeep after each cycle — records, doctrine, door, improvement loop |
+| station | covers |
+|---|---|
+| `design` | design and specification — the spec the code is measured against |
+| `build` | planning and development — workflows, worktrees, development resources |
+| `test` | testing and gating prior to release — fixtures, CI/CD, diagnostics |
+| `review` | upkeep after each cycle — records, doctrine, door, improvement loop |
 
 **The flow of a change:** work enters at the door (`AGENTS.md` routes it); `core/ROUTING.md`
 classifies it; **design** shapes anything with a design decision at stake; **build** plans and
@@ -30,7 +30,6 @@ straight to its lane; the stations it doesn't need cost nothing.
 
 Policy is always-on; procedures are pay-per-use. `scripts/context.sh <station>` renders a
 station's load set on demand (`--list` for the reading list, `--check` for the contract test).
-Persona names are accepted as station aliases (`architect` → `design`).
 
 ## Layout
 
@@ -42,12 +41,12 @@ Persona names are accepted as station aliases (`architect` → `design`).
     INVARIANTS.md   #   hard rules, never overridden
     GOTCHAS.md      #   project traps: working-as-coded but surprising
     ROUTING.md      #   how work is classified and dispatched
-  design/           # the design station (the architect)
-    POLICY.md       #   persona preamble + station policy + chores
+  design/           # the design station
+    POLICY.md       #   station policy + chores
     workflows/      #   loaded on demand, per routing
-  build/            # the build station (the foreman)      (same shape)
-  test/             # the test station (the guardian)      (same shape)
-  review/           # the review station (the admin)       (same shape)
+  build/            # the build station                    (same shape)
+  test/             # the test station                     (same shape)
+  review/           # the review station                   (same shape)
   scripts/          # deployed tooling: context.sh (records tooling lives with the records)
 ```
 

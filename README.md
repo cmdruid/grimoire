@@ -28,9 +28,8 @@ git clone https://github.com/cmdruid/grimoire && cd grimoire
 
 The `clankshop` pack binds most of them into one **agentic workshop**, tiered by coupling in the
 pack manifest (`skills/clankshop/PACK.md`): the pack **face** (`clankshop`) carries the seed
-handbook and the four **stations** — `design` (the architect), `build` (the foreman), `test` (the
-guardian), `review` (the admin) — with system verbs (`setup` / `migrate` / `check`) and persona
-summons; **helpers** — `architect` (specification spine), `contractor` (job lead), `inspector` (critique and fold), `journal` (the records format authority —
+doctrine and the four **stations** — `design`, `build`, `test`, `review` — with system verbs
+(`setup` / `migrate` / `check`); **helpers** — `architect` (specification spine), `contractor` (job lead), `inspector` (critique and fold), `journal` (the records format authority —
 the one required member), `backlog` (the follow-up lifecycle), `notepad` (project memory),
 `workstream` (development streams), `auditor` (code-quality audits), `debugger` (root-cause
 diagnostics), `analyst` (reports and briefings read back out of the records); **utilities** —
@@ -47,7 +46,7 @@ scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
 | `backlog` | the follow-up lifecycle: file, promote, debrief, and curate the three trackers — a client of the records layer (guards when none) |
 | `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
-| `clankshop` | the workshop face: seed doctrine + the four stations; `setup` / `migrate` / `check`, and persona summons for hat-on discussion |
+| `clankshop` | the workshop face: seed doctrine + the four stations; `setup` / `migrate` / `check` |
 | `contractor` | one job lead — roadmap, plan, runbook, build; never ships; never writes a spec |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |

@@ -10,12 +10,12 @@ it whenever you add or revise one. It is distilled from practice; the `workstrea
 
 Most of these skills are members of the **`clankshop` pack**, tiered by coupling in the pack
 manifest (`skills/clankshop/PACK.md`): the pack **face** (`skills/clankshop/`) carries the seed
-handbook and the four **stations** — `design` (the architect), `build` (the foreman), `test` (the
-guardian), `review` (the admin) — with the system verbs (`setup` / `migrate` / `check`) and
-persona summons for hat-on discussion; **helpers** (`architect` the specification spine,
+doctrine and the four **stations** — `design`, `build`, `test`, `review` — with the system verbs
+(`setup` / `migrate` / `check`); **helpers** (`architect` the specification spine,
 `contractor` the job lead, `inspector` critique and fold, `journal` the
 records format authority and the one required member, `backlog` the follow-up lifecycle,
-`workstream` the stream driver, `auditor`, `debugger`); **utilities** (`checkpoint`, `mailbox`,
+`notepad` project memory, `analyst` reports and briefings, `workstream` the stream driver,
+`auditor`, `debugger`); **utilities** (`checkpoint`, `mailbox`,
 `delegate`, `scheduler`). `skill-builder` is the library's own
 toolmaker and stays outside the pack. See `README.md` for the full inventory.
 
@@ -34,7 +34,7 @@ doctrine home documents its own layout; `README.md`
 The generalizable design philosophy for building agent skills — tools, scripts, self-init/edges,
 boundary independence, the lint gate — lives in **`skills/skill-builder/docs/DOCTRINE.md`**, a
 **portable** doc bundled with the `skill-builder` skill so it travels to any skills library, not just
-this one. Apply it whenever you add or revise a skill here; `/skill-builder distill` is what keeps it
+this one. Apply it whenever you add or revise a skill here; `/skill-builder calibrate` is what keeps it
 current as practice evolves. (`skill-builder` is itself the Phase 7 capstone of
 `docs/design/2026-07-18-skill-self-initialization-roadmap.md` — the toolmaker steward nothing else in
 this library was.)

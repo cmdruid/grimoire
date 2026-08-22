@@ -12,7 +12,7 @@ trap 'rm -rf "$TMP"' EXIT
 OUT="$TMP/out"
 
 # router rows -> files
-for v in setup migrate check persona; do
+for v in setup migrate check; do
   [ -f "$SKILL/verbs/$v.md" ] && pass=$((pass + 1)) || { echo "FAIL: router names verbs/$v.md but it is missing" >&2; fail=$((fail + 1)); }
   grep -qF "verbs/$v.md" "$SKILL/SKILL.md" && pass=$((pass + 1)) || { echo "FAIL: SKILL.md does not route verbs/$v.md" >&2; fail=$((fail + 1)); }
 done
