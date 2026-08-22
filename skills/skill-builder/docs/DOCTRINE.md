@@ -97,7 +97,8 @@ scoped to non-face skills.
   — the seams, the initial front-door wiring — is owned by the pack/runbook, which **births** the
   constellation. **Project hooks files** (`<agent-workspace>/hooks/<skill>.md`) are the glue
   surface — not a composer skill to invoke. Pack/runbook still authors *what* the glue
-  says; there is no oven.
+  says; there is no oven. Using `flows/` / `hooks/` / `templates/` is applying that
+  glue; there is still no oven.
 
 - **Skills self-initialize and self-describe via typed edges; the composer wires the seams.** The
   tenets above govern what a skill's `description:` may *say*; this one — their extension from
@@ -146,7 +147,10 @@ gaps to fill in later.
 + steward skills — the payoff (visibility without a composer) is real only where the skill has
 something durable to surface. Make it **optional** for scratch-only skills and **skip it** for
 pure-mechanism plumbing: registering a transport with no captured items would only bloat the
-front-door section this doctrine fights to keep lean.
+front-door section this doctrine fights to keep lean. **Exception:** an in-place steward
+with no durable home and nothing to surface (a finder over host files already in the
+tree) **skips** front-door `skill:` registration the same way — it is not a captured-item
+route.
 
 ## Typed edges & registration — the mechanics
 
@@ -372,8 +376,10 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    (`Seeded from clankshop` in `<agent-workspace>/doctrine/README.md`, default
    `.dev/doctrine/README.md`) answers one question: *is a workshop assembled here?* That is
    a **policy** question — may this project's workshop-specific lanes run — not a location
-   one. Station context, playbooks, and lanes are doctrine and resolve through
-   `<agent-workspace>/doctrine`; records resolve through `<agent-records>`. The stamp picks
+   one. Station context is doctrine and resolves through
+   `<agent-workspace>/doctrine`. Host procedures under `<agent-workspace>/flows/`
+   are not doctrine and do not resolve through that home; records resolve through
+   `<agent-records>`. The stamp picks
    **neither**, and does not decide whether a record is minted. Do not create the doctrine
    home as a side effect of anything. Do not run a workshop onramp as a side effect.
 
@@ -434,8 +440,12 @@ doctrine path is exactly as wrong as a writer that does.
    > (not mint shells, not records, not the audit rubric)
    > → `<agent-workspace>/inspector/<kind>.md`.
 
-   Doctrine: an audit rubric, a diagnostics playbook, a build lane, a station chapter. Not
-   doctrine: a spec (a dated `specs/` record), a captured project fact, an audit *report*.
+   Doctrine: an audit rubric, a station chapter. Not
+   doctrine: a spec (a dated `specs/` record), a captured project fact, an audit *report*,
+   a host procedure under `<agent-workspace>/flows/`. The auditor rubric at
+   `doctrine/test/workflows/audit/` remains doctrine (a parked nested tree). Host
+   procedures are workspace-resident files copied by their owner skill — not a sixth
+   landing class.
 
    **The test classifies where a thing LANDS, not where it ships from.** A skill's own
    bundled `templates/`- or seed-style content is package-only until deployed; the same bytes
@@ -457,16 +467,29 @@ doctrine path is exactly as wrong as a writer that does.
    `clankshop` assembles the workspace; `journal` assembles the records layer. For those two,
    building the home *is* the job, and a host that writes `agent-workspace: .workspace` is
    asking for it to be built there — not warning the assembler off. **Every other skill
-   resolves, tests, and degrades per rule 2 — never `mkdir`.** Without this exception the
+   resolves, tests, and degrades per rule 2 — never `mkdir`.** A host-procedure finder is
+   "every other skill," not an assembler. Without this exception the
    paragraph above reads as a universal prohibition that would forbid `clankshop setup` from
    seeding into a declared home at all, and would forbid what records standup already does
    today.
+
+   **Independent seeding.** A skill copies only the workspace files it owns
+   (`flows/` / `hooks/` / `templates/` as applicable), including crawl keys
+   (`title` / `use-when`) on any flow it copies; incumbent wins. A finder
+   over `flows/` is not a seeder of pack or sibling payload. Minting a
+   host-authored stub is not seeding.
 
    **Narrow hooks mkdir.** A publisher may `mkdir` `hooks/` only when
    `<agent-workspace>` already exists, or when the home is the derived default
    `.dev` and the mkdir is `hooks/` only (creates `.dev` as a container for
    `hooks/`, never `doctrine/`). Declared `agent-workspace:` that is absent →
    do not create; treat hooks as empty. The leaf is not the workspace assembler.
+
+   **Narrow `flows/` mkdir.** Same predicate as hooks: mkdir `flows/` only when
+   `<agent-workspace>` already exists, or when the home is the derived default
+   `.dev` and the mkdir is `flows/` only (creates `.dev` as a container for
+   `flows/`, never `doctrine/`). Declared `agent-workspace:` that is absent →
+   do not create. This is the hooks rule, not an owner exception.
 
    **Narrow inspector-kinds mkdir.** Same predicate: a consumer may `mkdir`
    `inspector/` only when `<agent-workspace>` already exists, or when the

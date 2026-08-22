@@ -1145,7 +1145,7 @@ Grep gates (count the hits; fail on the wrong count):
     `SKILL.md` has the dispatch table; `verbs/query.md` has
     the Query walk heading.
 
-- [ ] **Slice 4: doctrine + BL-36 note**
+- [x] **Slice 4: doctrine + BL-36 note**
   <requires: 3>
   - Files: `skills/skill-builder/docs/DOCTRINE.md` (glue bullet
     quoted from HEAD + using `flows/`/`hooks/`/`templates/` is

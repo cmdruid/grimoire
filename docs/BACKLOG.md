@@ -24,11 +24,15 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ### BL-36 — the `clankshop` refactor is deferred; two BL-34 items ride with it
 - **source:** feat stream, BL-34 items 1–2 ship (2026-08-19). Human decision.
-- **status:** open (deliberately deferred, not blocked)
+- **status:** partly done (2026-08-22, stream/skills) — item 3 **partly done**: the six
+  seed workflow files un-nested to `<agent-workspace>/flows/`. `spec/` station un-nest
+  and the auditor rubric home `doctrine/test/workflows/audit/` stay parked (that
+  auditor path remains a named nested workflow-shaped tree). Remainder still deferred.
 - **body:** BL-34's item 3 (drop the "handbook" idea, integrate `<agent-workspace>` with
-  `doctrine/` + `spec/` + `workflow/`, un-nest the six workflow files) is **deferred** — clankshop
-  is due a large refactor of its own and this work would be redone. Two things wait on it and
-  should NOT be attempted before it:
+  `doctrine/` + `spec/` + `workflow/`, un-nest the six workflow files) was **deferred** —
+  clankshop is due a large refactor of its own. The six-file un-nest landed with the
+  clankshop-face / `shopbook` work; `spec/` and lint 12–17 rewrite did not. Two things
+  wait on the remainder and should NOT be attempted before it:
   - **Item 4** — lint checks 12–17 (~246 lines) and their two test suites (~540 lines). They police
     the doctrine/records-home placement convention that item 3 replaces; deleting them now would
     drop enforcement of a convention still in force.
