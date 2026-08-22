@@ -1080,7 +1080,7 @@ Grep gates (count the hits; fail on the wrong count):
   - Verify: red-proof 1. Clankshop harness ALL GREEN. Lint
     `fails=0`. Grep gate 1–2.
 
-- [ ] **Slice 2: un-nest + face pointer + Guard + reclassify**
+- [x] **Slice 2: un-nest + face pointer + Guard + reclassify**
   <requires: 1>
   - Files: create `skills/clankshop/flows/*.md` (move + add crawl
     keys); delete seed `**/workflows/`; create

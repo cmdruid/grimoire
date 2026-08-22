@@ -1,3 +1,8 @@
+---
+title: Feature lane
+use-when: feature, new capability, design at stake, idea to landed
+---
+
 # The feature lane — idea to landed, gate-green code
 
 Turn an idea into landed code: validate the approach, argue the design, plan task-by-task,

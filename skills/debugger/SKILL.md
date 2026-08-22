@@ -37,14 +37,16 @@ enumerates doctype `bugs`** looking for work (a doctype is not a queue).
 Two independent questions. They were previously answered by one probe, which conflated a
 **location** question with a **policy** one — keep them apart.
 
-**Where does doctrine live?** The diagnostics playbook is doctrine, so it sits at
+**Where does doctrine live?** Station context and the install stamp sit at
 `<agent-workspace>/doctrine`: the declared `agent-workspace:` (front-door `AGENTS.md` then
-`CLAUDE.md`), else `.dev` — by default `.dev/doctrine/`. Resolving the
-home is not finding the playbook — resolve it, **then** test for the file. Consult
-`<agent-workspace>/doctrine/test/workflows/diagnostics.md` **when that file exists** (symptom → first
+`CLAUDE.md`), else `.dev` — by default `.dev/doctrine/`. Resolve the home, **then**
+test for the stamp. **This probe never gates a phase.**
+
+**Where is the diagnostics playbook?** Consult
+`<agent-workspace>/flows/diagnostics.md` **when that file exists** (symptom → first
 moves; a miss is a playbook gap — the test station tends that playbook). Absent → investigate
-without it. **This probe never gates a phase**; a project with no playbook is investigated the
-same way, just without the shortcut.
+without it. The playbook is a host procedure, not doctrine. A project with no playbook is
+investigated the same way, just without the shortcut.
 
 **May fixes land on this project?** Phase 4 is gated twice, and both gates are policy:
 

@@ -1,3 +1,8 @@
+---
+title: Spike lane
+use-when: spike, feasibility, timebox, open question
+---
+
 # The spike lane — a timeboxed answer to an open question
 
 Answer a feasibility question by building the smallest thing that answers it, inside a declared

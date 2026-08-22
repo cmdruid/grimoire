@@ -22,16 +22,26 @@ c. **Existing doctrine home?** Test the resolved `<agent-workspace>/doctrine`, *
    walk step.
    - Both absent → continue the walk.
    - Present, and a `check` would be green (stamp, slots, door pointer, records
-     layer, unfinished hooks would `finding=false`) → already seeded. Stop.
+     layer, unfinished hooks would `finding=false`, unfinished copy would
+     `finding=false`, and when `$SKILL/flows` is present face
+     `scripts/flows-door.sh check` is green) → already seeded. Stop.
      Unfinished hooks (`scripts/hooks-glue.sh check` would `finding=true`)
-     means **not** seeded. An upgrade the human asked for is a
+     means **not** seeded. Unfinished copy (`scripts/flows-copy.sh check`
+     would `finding=true`) means **not** seeded. A missing, malformed, or
+     wrong-path flows pointer when `$SKILL/flows` is present means **not**
+     seeded. An upgrade the human asked for is a
      judgment-assisted diff against the current seed, anchored by the README
      stamp line — not a re-seed, not this walk.
    - Present but `check` would not be green (missing stamp, leftover `<gate>` /
-     `<trunk>`, no door pointer, records layer absent, unfinished hooks) → **resume**. Start at the
+     `<trunk>`, no door pointer, records layer absent, unfinished hooks, unfinished
+     copy, missing/malformed/wrong-path flows pointer) → **resume**. Start at the
      first unfinished *walk* step (1–6). Do not re-run `seed.sh` (it refuses). Do
      not treat this as "already seeded." Empty `$HOOKS` with stamp/door/records
-     present hits **this** arm.
+     present hits **this** arm. A present doctrine pointer + complete copy +
+     missing flows pointer (or complete doctrine + missing dest stems) hits
+     **this** arm, not STOP, not a dead branch. Resume: skip `seed.sh` if
+     doctrine is present; **still run** the copy arm and/or door `apply` when
+     those predicates fire.
 
 ## The walk
 
@@ -41,13 +51,21 @@ c. **Existing doctrine home?** Test the resolved `<agent-workspace>/doctrine`, *
    - `<gate>`: the project's one gate command. Propose it from inspection (test runner, build
      manifest, CI config); confirm with the human. A brand-new project with no gate yet gets a
      placeholder confirmed as such — the test station fills it when one exists.
-2. **Project the seed** (mechanics are scripted). Resolve `<agent-workspace>` from the door
-   first (default `.dev`) and pass it in — the script never scans the front door:
-   `scripts/seed.sh <root> --workspace '<agent-workspace>' --gate '<gate>' --trunk '<trunk>'`
-   — copies the template doctrine to `<root>/<agent-workspace>/doctrine`, fills the slots,
-   writes the one install stamp (`Seeded from clankshop vX.Y on DATE` in
-   `<agent-workspace>/doctrine/README.md`), and self-checks the load sets. It refuses an
-   existing doctrine home **and** a legacy `.handbook/`. Omit `--workspace` for the default.
+2. **Project payload** (two arms; still this numbered step). Resolve `<agent-workspace>` from
+   the door first (default `.dev`) and pass it in — the scripts never scan the front door.
+   1. **Doctrine.** `scripts/seed.sh <root> --workspace '<agent-workspace>' --gate '<gate>'
+      --trunk '<trunk>'` — copies the template doctrine to
+      `<root>/<agent-workspace>/doctrine`, fills the slots, writes the one install stamp
+      (`Seeded from clankshop vX.Y on DATE` in `<agent-workspace>/doctrine/README.md`), and
+      self-checks the load sets. It refuses an existing doctrine home **and** a legacy
+      `.handbook/`. Omit `--workspace` for the default. Present doctrine home → do not
+      re-run (`seed.sh` refuses).
+   2. **Flows copy.** `scripts/flows-copy.sh copy --root <abs> --workspace '<agent-workspace>'`
+      (`SRC=$SKILL/flows`, `DST=$root/$ws/flows`). If `$SRC` is absent, skip. `mkdir` `$DST`
+      only when `<ws>` already exists (arm 1 just created it, or it already existed) or the
+      home is the derived default `.dev`. For each `$SRC/*.md`, copy **if the dest file is
+      absent**; never overwrite an incumbent; do not delete extras already in `$DST`. Resume
+      still runs this arm when dest stems are missing.
 3. **Stand up the records tool layer — `/journal setup`** (a required pack member; the
    records layer is its domain). Run `/journal setup` for `<root>`: `records.sh`,
    the empty history ledger, and the records README are its deployed assets, not
@@ -59,8 +77,14 @@ c. **Existing doctrine home?** Test the resolved `<agent-workspace>/doctrine`, *
 
    - a pointer that names `<agent-workspace>/doctrine/README.md` (the workshop's doctrine
      lives in `<agent-workspace>/doctrine/`, by default `.dev/doctrine/`; start there);
-   - a thin routing table compiled from `core/ROUTING.md`'s dispatch rows (kind of
-     work → lane). Detail stays in the doctrine home; the door only routes;
+   - a delimited flows **pointer** via `scripts/flows-door.sh apply --root <abs>
+     --workspace '<agent-workspace>'` (creates `AGENTS.md` only because this walk is
+     already writing the door; the script itself never creates the file). Body is one
+     line locating `<ws>/flows/`; not loaded until one is selected. No stem table. Do
+     not compile dispatch rows from `core/ROUTING.md`. Classification walk stays in
+     `core/ROUTING.md`. Unfinished (this step): `$SRC` present AND the pointer is
+     missing, malformed, or its body does not contain the resolved `<ws>/flows/` path
+     as a literal;
    - `agent-records: <rel>` at line start only when the records home is not
      `.records/` (omit the line for the default). `records-root:` remains
      accepted on already-declared hosts.
@@ -83,5 +107,5 @@ c. **Existing doctrine home?** Test the resolved `<agent-workspace>/doctrine`, *
 - The doctrine home is the **project's** document from this moment: project specifics accrete
   below the seeded preambles; upgrades diff against the current seed rather than re-projecting.
 - Nothing here writes outside `<root>`; commits (if the human wants them) are scoped to the
-  paths written (`<agent-workspace>/doctrine/`, `.records/`, `AGENTS.md`,
-  `<agent-workspace>/hooks/`).
+  paths written (`<agent-workspace>/doctrine/`, `<agent-workspace>/flows/`,
+  `.records/`, `AGENTS.md`, `<agent-workspace>/hooks/`).

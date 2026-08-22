@@ -1,3 +1,8 @@
+---
+title: Diagnostics playbook
+use-when: diagnostics, debug, symptom, investigate a failure
+---
+
 # Diagnostics — the debugging playbook
 
 Symptom → first moves: the project's playbook for diagnosing a failure, consulted by whoever

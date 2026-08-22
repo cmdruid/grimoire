@@ -14,9 +14,9 @@ Standing judgments:
 
 ## Station policy
 
-- Classification is `core/ROUTING.md`'s walk; the lanes live in `workflows/` here — each lane
-  file is complete and works **by hand, with no skills installed**; installed skills accelerate
-  a lane, they are never prerequisites.
+- Classification is `core/ROUTING.md`'s walk; the lanes live in
+  `<agent-workspace>/flows/` — each lane file is complete and works **by hand, with no
+  skills installed**; installed skills accelerate a lane, they are never prerequisites.
 - Planning artifacts — feature plans, implementation plans, roadmaps — land in
   `.records/plans/` (INV-12 sets the weight).
 - Long-lived streams of work ride worktrees; the main session is the sole writer of a shared

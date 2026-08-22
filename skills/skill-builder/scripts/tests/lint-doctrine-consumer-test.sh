@@ -79,7 +79,7 @@ fi
 # --- check 14: green — angle-bracket member -----------------------------------
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'The playbook lives at `<agent-workspace>/doctrine/test/workflows/diagnostics.md`.'
+  'The playbook lives at `<agent-workspace>/doctrine/core/POLICY.md`.'
 lint
 if grep -q "$c14" "$OUT"; then
   echo "FAIL: angle-bracket literal still matched check 14 (must stay green)" >&2
@@ -129,7 +129,7 @@ run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
   'Example only:
 
-    <agent-workspace>/doctrine/test/workflows/diagnostics.md
+    <agent-workspace>/doctrine/core/POLICY.md
 
 but this skill just reads a fixed path.'
 lint
@@ -234,7 +234,7 @@ expect_absent "check 15 is silent once the stale default is gone" "$c15b" "$OUT"
 # --- check 14: green — the NEW literal family satisfies it ---------------------
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'The playbook lives at `<agent-workspace>/doctrine/test/workflows/diagnostics.md`.'
+  'The playbook lives at `<agent-workspace>/doctrine/core/POLICY.md`.'
 lint
 expect_absent "check 14 accepts the agent-workspace angle-bracket member" "$c14" "$OUT"
 

@@ -38,6 +38,12 @@ expect_absent "no unfilled trunk slot" "<trunk>" "$proj/.dev/doctrine/core/ROUTI
 pack_version="$(awk '/^---$/{n++; next} n==1 && /^version:/{sub(/^version:[[:space:]]*/, ""); print; exit}' "$SKILL/PACK.md")"
 expect "stamp version+date" "Seeded from clankshop v${pack_version} on $(date +%Y-%m-%d)." "$proj/.dev/doctrine/README.md"
 
+# seed.sh is doctrine-only: no workflows/ under doctrine, no flows/ copy
+[ ! -e "$proj/.dev/doctrine/build/workflows" ] && pass=$((pass + 1)) \
+  || { echo "FAIL: seed.sh copied workflows/ into doctrine" >&2; fail=$((fail + 1)); }
+[ ! -e "$proj/.dev/flows" ] && pass=$((pass + 1)) \
+  || { echo "FAIL: seed.sh created flows/" >&2; fail=$((fail + 1)); }
+
 # --- deployed context.sh -------------------------------------------------------
 ctx="$proj/.dev/doctrine/scripts/context.sh"
 "$ctx" build --list >"$OUT"

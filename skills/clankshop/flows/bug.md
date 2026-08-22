@@ -1,3 +1,8 @@
+---
+title: Bug lane
+use-when: bug, defect, repro, root-cause, diagnose a failure
+---
+
 # The bug lane — root-cause before any fix
 
 Diagnose a reproducible defect to its root cause before proposing any fix — never patch a
@@ -9,7 +14,7 @@ there means working-as-coded, so capture a note and stop; no bug lane.
 
 **Policy:** the fix commit follows patch-lane policy (INV-1, INV-3); `bugs/` is a store, never a
 work queue — the actionable item is a linked tracker entry (INV-8). The diagnosis follows the
-test station's playbook (`test/workflows/diagnostics.md`); `/debugger`, where installed,
+test station's playbook (`<agent-workspace>/flows/diagnostics.md`); `/debugger`, where installed,
 runs the same discipline.
 
 ## The walk

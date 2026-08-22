@@ -20,8 +20,8 @@ Standing judgments:
 - **The doctrine is yours to keep true**: the precedence rule (core is the floor; stations
   refine, never restate) is enforced here; a divergence between practice and doctrine is fixed
   on whichever side is wrong.
-- **The door is doctrine too**: `AGENTS.md`'s routing table stays thin and current; detail
-  belongs in `core/ROUTING.md`.
+- **The door is a pointer**: `AGENTS.md` locates `<agent-workspace>/flows/`; the
+  classification walk stays in `core/ROUTING.md`.
 - **Feedback folds back**: captured friction about the workshop itself becomes doctrine
   improvements — the improvement loop runs here.
 
@@ -30,7 +30,7 @@ Standing judgments:
 - **Curate the stores**: close, supersede, or prune stale records (`records.sh done`, then
   delete only per the project's prune threshold — the ledger line and git history remain the
   trace).
-- **Audit the doctrine** (`workflows/doc-audit.md`): links resolve, no restatements, load sets
-  stay lean (`context.sh --check` for the mechanical floor).
+- **Audit the doctrine** (`<agent-workspace>/flows/doc-audit.md`): links resolve, no
+  restatements, load sets stay lean (`context.sh --check` for the mechanical floor).
 - **Ledger coherence**: `records.sh check` green — a closing status with no ledger line is a
   defect to fix, not a fact to tolerate.

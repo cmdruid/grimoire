@@ -69,7 +69,9 @@ migration): everything below then writes and commits on the stream's branch and 
    - Seed the doctrine: `scripts/seed.sh <root> --workspace '<agent-workspace>'
      --gate '<gate>' --trunk '<trunk>'` (the two facts confirmed alongside the table; omit
      `--workspace` for the default `.dev`). It refuses a legacy `.handbook/` — move that
-     first.
+     first. Then incumbent-safe flows copy: `scripts/flows-copy.sh copy --root <abs>
+     --workspace '<agent-workspace>'` (same unfinished predicate as setup; skip
+     `seed.sh` if doctrine is already present, still run the copy).
    - Stand up the records tool layer via `/journal setup` (it owns `records.sh` +
      the ledger + README; it creates no store directories and no templates) —
      pointed at the declared agent-records home (`agent-records:` preferred,
@@ -94,8 +96,9 @@ migration): everything below then writes and commits on the stream's branch and 
    the station `POLICY.md`s **below** the seeded preambles — integrated, deduplicated, linked
    (the precedence rule holds from day one). The door is written **into** the existing
    `AGENTS.md` to setup's minimum (pointer naming `<agent-workspace>/doctrine/README.md`,
-   thin dispatch table, `agent-records:` only when not `.records/`, `agent-workspace:` only
-   when not `.dev`); existing content preserved.
+   delimited flows pointer via `scripts/flows-door.sh apply`, `agent-records:` only when not
+   `.records/`, `agent-workspace:` only when not `.dev`); existing content preserved. Do not
+   compile a ROUTING dispatch table onto the door.
 5. **Hooks.** After the door is written, run `scripts/hooks-glue.sh fill --file "$HOOKS"
    --skeleton <skill-base>/../workstream/templates/hooks.md` (`HOOKS=<root>/<agent-workspace>/hooks/workstream.md`,
    absolute) **before** `check`. Same mkdir rule as setup. Presence false → noop.

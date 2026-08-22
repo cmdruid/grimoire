@@ -33,7 +33,7 @@ The v2 roster, by coupling tier (how much workshop a skill needs):
 | helper | `notepad` | project memory — write, find, update, supersede, and drop durable facts in `notes/` |
 | helper | `workstream` | long-lived development streams — worktrees, queues, shipping |
 | helper | `auditor` | code-quality audits; pass reports land in the agent-records home |
-| helper | `debugger` | root-cause debugging anywhere; guided by the test station's diagnostics when present |
+| helper | `debugger` | root-cause debugging anywhere; guided by `<agent-workspace>/flows/diagnostics.md` when present |
 | helper | `analyst` | reports and briefings for the developer — the records layer read back as prose, from a customizable template catalog |
 | utility | `checkpoint` | living session save-state: save/resume/done + compaction recovery |
 | utility | `mailbox` | worktree-safe transport for delegated results |

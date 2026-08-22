@@ -24,7 +24,7 @@ for f in "$SKILL"/verbs/*.md; do
 done
 
 # scripts the verbs lean on exist and parse
-for s in seed.sh migrate-scan.sh; do
+for s in seed.sh migrate-scan.sh flows-door.sh flows-copy.sh; do
   [ -f "$SKILL/scripts/$s" ] && pass=$((pass + 1)) || { echo "FAIL: scripts/$s missing" >&2; fail=$((fail + 1)); }
   bash -n "$SKILL/scripts/$s" && pass=$((pass + 1)) || { echo "FAIL: scripts/$s does not parse" >&2; fail=$((fail + 1)); }
 done

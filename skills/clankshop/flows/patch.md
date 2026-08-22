@@ -1,3 +1,8 @@
+---
+title: Patch lane
+use-when: patch, self-contained fix, one-line tweak
+---
+
 # The patch lane — one self-contained fix, no ceremony
 
 Land a single self-contained fix or tweak directly on `<trunk>` — no plan, no worktree, no

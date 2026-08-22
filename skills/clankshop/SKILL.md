@@ -17,7 +17,7 @@ pack glue.
 
 Three deployed surfaces carry it: **`<agent-workspace>/doctrine/`** (doctrine — how we work;
 by default `.dev/doctrine/`), **`.records/`** (work products, including the living design
-spec), and **`AGENTS.md`** (the door: a thin routing table plus the doctrine pointer). Once
+spec), and **`AGENTS.md`** (the door: a doctrine pointer plus a delimited flows pointer). Once
 seeded, all three are the **project's** documents — provenance is one install stamp line in
 `<agent-workspace>/doctrine/README.md`, and upgrades are a judgment-assisted diff against the
 current seed.
@@ -46,7 +46,10 @@ it; scripts compute facts, verbs own judgment.
 | asset | where | is |
 |---|---|---|
 | the seed | `seed/` | the template doctrine — mirrors a deployed `<agent-workspace>/doctrine/` exactly (README, `core/`, four station chapters, `seed/scripts/context.sh`) |
+| pack flows | `flows/` | six clankshop-owned host procedures (crawl keys + body) copied to `<agent-workspace>/flows/` |
 | seeding mechanics | `scripts/seed.sh` | projects `seed/` into a target root: copy, slot fill, install stamp, self-check |
+| flows copy | `scripts/flows-copy.sh` | incumbent-safe copy of `flows/` into the workspace |
+| flows pointer | `scripts/flows-door.sh` | writes and checks the delimited door pointer |
 | migration preflight | `scripts/migrate-scan.sh` | brownfield inventory facts for `migrate` |
 | pack manifest | `PACK.md` beside this SKILL.md | the roster `install.sh --pack` resolves (`docs/spec/pack-format.md`, repo-root) |
 

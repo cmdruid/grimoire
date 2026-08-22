@@ -50,5 +50,5 @@ nothing.>`
 
 - **Tend the gate section**: keep the commands, coverage description, and known costs true as
   the project's gate evolves.
-- **Tend the diagnostics playbook** (`workflows/diagnostics.md`): an investigation that surfaced
-  a missing symptom chapter is exactly the signal that adds one.
+- **Tend the diagnostics playbook** (`<agent-workspace>/flows/diagnostics.md`): an investigation
+  that surfaced a missing symptom chapter is exactly the signal that adds one.

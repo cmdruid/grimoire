@@ -1,8 +1,8 @@
 # ROUTING — classify the change, dispatch it
 
-The classification walk — judgment only; the lanes live in `build/workflows/`. Walk top to
-bottom, first match wins. The door's table (`AGENTS.md`) is compiled from the dispatch rows
-below.
+The classification walk — judgment only; the lanes live under
+`<agent-workspace>/flows/`. Walk top to bottom, first match wins. The door
+(`AGENTS.md`) is a pointer to that tree, not a copy of these rows.
 
 1. **Reproducible defect?** Check `GOTCHAS.md` first — a match means working-as-coded: capture a
    note, no bug lane. Otherwise → the bug lane.
@@ -20,10 +20,10 @@ below.
 
 | change | lane | entry point |
 |---|---|---|
-| reproducible defect | build/workflows/bug.md | file via `/debugger file`, then root-cause (`/debugger`) |
-| self-contained fix | build/workflows/patch.md | by hand, on `<trunk>` |
-| new capability / design at stake | build/workflows/feature.md | design station, then `/architect spec`, `/inspector review`, then `/contractor plan` only when sequencing is required; stream still ships |
-| unknown feasibility | build/workflows/spike.md | by hand, timeboxed |
+| reproducible defect | `<agent-workspace>/flows/bug.md` | file via `/debugger file`, then root-cause (`/debugger`) |
+| self-contained fix | `<agent-workspace>/flows/patch.md` | by hand, on `<trunk>` |
+| new capability / design at stake | `<agent-workspace>/flows/feature.md` | design station, then `/architect spec`, `/inspector review`, then `/contractor plan` only when sequencing is required; stream still ships |
+| unknown feasibility | `<agent-workspace>/flows/spike.md` | by hand, timeboxed |
 
 After a passing `/inspector review` the caller accepts, they write `published`
 (job artifacts: also `stage: approved`) before `/contractor plan` or

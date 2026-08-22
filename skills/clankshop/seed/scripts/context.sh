@@ -7,7 +7,9 @@
 #   context.sh <station> --list           the reading list only (paths, in load order)
 #   context.sh --check                    contract test: every station's load set resolves
 #
-# Load rule (stated in README.md): core/* then <station>/POLICY.md; workflows load lazily.
+# Load rule (stated in README.md): core/* then <station>/POLICY.md.
+# Procedures are not loaded until one is selected; core/ROUTING.md still
+# selects a classification-lane path under <ws>/flows/.
 # Exit codes: 0 ok · 1 usage · 2 broken load set.
 # Agent-facing: plain deterministic output, no color; errors on stderr.
 set -eu

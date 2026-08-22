@@ -40,5 +40,14 @@ workshop, and the fix is `git mv .handbook <agent-workspace>/doctrine`, not `set
    presence from `scripts/hooks-glue.sh presence --clankshop-dir <skill-base>`).
    Report-only: `finding=true` names `/clankshop setup`. Do not write the file.
    Missing known H2 is not a finding.
-7. **Report** — one list: green items as one line, each finding as location + what's wrong.
+7. **Flows copy** — when `$SKILL/flows` is present, run `scripts/flows-copy.sh
+   check --root <abs> --workspace '<agent-workspace>'`. `unfinished=true` (a source
+   stem missing at `<ws>/flows`) is a required finding; names `/clankshop setup`.
+   Extra dest files are not a finding. Missing crawl keys are not a finding.
+   Do not write.
+8. **Flows pointer** — when `$SKILL/flows` is present, run
+   `scripts/flows-door.sh check --root <abs> --workspace '<agent-workspace>'`.
+   `drift=true` or `block=missing|malformed` is a finding. Names `/clankshop setup`.
+   Do not write.
+9. **Report** — one list: green items as one line, each finding as location + what's wrong.
    Fixes are ordinary routed work, not part of the check.

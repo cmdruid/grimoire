@@ -18,7 +18,7 @@ Two variables, two roots:
 | variable | default | holds |
 |---|---|---|
 | `<agent-records>` | `.records/` | dated, typed, closeable records + `history.tsv` |
-| `<agent-workspace>` | `.dev/` | `doctrine/`, `spec/`, `workflow/`, `templates/`, `scripts/`, `hooks/` |
+| `<agent-workspace>` | `.dev/` | `doctrine/`, `spec/`, `flows/`, `templates/`, `scripts/`, `hooks/` |
 
 `agent-templates` is retired as a variable — it becomes the fixed subpath
 `<agent-workspace>/templates`.
@@ -75,9 +75,8 @@ discriminator would otherwise lose.
 - Record doctype `design` → **`specs`** (~15 references). Removes the collision with the
   doctrine station chapter `design/` when the roots coincide, and describes dated closeable
   design docs better than `design` did.
-- `<agent-workspace>` gains `spec/` and `workflow/`. The six existing workflow files un-nest
-  from their station directories (`seed/build/workflows/` ×4, `seed/test/workflows/` ×1,
-  `seed/review/workflows/` ×1).
+- `<agent-workspace>` gains `spec/` and `flows/` (plural). The six existing workflow files
+  un-nest from their station directories to `flows/`.
 
 ## The dissolved blocker
 

@@ -1,3 +1,8 @@
+---
+title: Doc audit
+use-when: doc-audit, doctrine sweep, lean load set
+---
+
 # Doc audit — keep the doctrine home true and lean
 
 The review station's periodic sweep of this doctrine home (and the door). Scan → diagnose → adjust;
@@ -21,9 +26,11 @@ tracker entries:
 - **Divergence** — does the doc describe practice as it *is*? Where practice and doctrine
   disagree, decide which is wrong and fix that one.
 - **Load-set weight** — is standing context (core + a station POLICY) carrying content that
-  should be lazy (a workflow) or a record? Every line in a load set is paid on every load.
+  should be lazy (a host procedure) or a record? Every line in a load set is paid on every load.
 - **Drains** — does every capture surface named by the docs still have a drain (INV-11)?
-- **The door** — is `AGENTS.md`'s table thin, current, and consistent with `core/ROUTING.md`?
+- **The door** — is `AGENTS.md`'s flows pointer well-formed and pointing at
+  `<agent-workspace>/flows/`? Classification walk stays in `core/ROUTING.md`; the door is a
+  pointer, not a stem table.
 
 ## Output
 

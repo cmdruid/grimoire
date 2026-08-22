@@ -25,8 +25,9 @@ straight to its lane; the stations it doesn't need cost nothing.
 
 ## Load rule
 
-> To work station X, read `core/*` plus `<station>/POLICY.md`. Workflows load lazily, when
-> routing selects one.
+> To work station X, read `core/*` plus `<station>/POLICY.md`. Procedures are not
+> loaded until one is selected; `core/ROUTING.md` still selects a classification-lane
+> path under `<agent-workspace>/flows/`.
 
 Policy is always-on; procedures are pay-per-use. `scripts/context.sh <station>` renders a
 station's load set on demand (`--list` for the reading list, `--check` for the contract test).
@@ -34,20 +35,21 @@ station's load set on demand (`--list` for the reading list, `--check` for the c
 ## Layout
 
 ```
-.dev/doctrine/      # the default; a declared `agent-workspace:` moves the parent
-  README.md         # this file — orientation; outside every load set
-  core/             # every station loads this — the shared floor
-    POLICY.md       #   workshop-wide standing judgments
-    INVARIANTS.md   #   hard rules, never overridden
-    GOTCHAS.md      #   project traps: working-as-coded but surprising
-    ROUTING.md      #   how work is classified and dispatched
-  design/           # the design station
-    POLICY.md       #   station policy + chores
-    workflows/      #   loaded on demand, per routing
-  build/            # the build station                    (same shape)
-  test/             # the test station                     (same shape)
-  review/           # the review station                   (same shape)
-  scripts/          # deployed tooling: context.sh (records tooling lives with the records)
+.dev/               # the default agent-workspace; a declared `agent-workspace:` moves it
+  doctrine/         # how we work
+    README.md       # this file — orientation; outside every load set
+    core/           # every station loads this — the shared floor
+      POLICY.md     #   workshop-wide standing judgments
+      INVARIANTS.md #   hard rules, never overridden
+      GOTCHAS.md    #   project traps: working-as-coded but surprising
+      ROUTING.md    #   how work is classified and dispatched
+    design/         # the design station
+      POLICY.md     #   station policy + chores
+    build/          # the build station                    (same shape)
+    test/           # the test station                     (same shape)
+    review/         # the review station                   (same shape)
+    scripts/        # deployed tooling: context.sh (records tooling lives with the records)
+  flows/            # host procedures (sibling of doctrine/; not loaded until one is selected)
 ```
 
 ## Precedence
