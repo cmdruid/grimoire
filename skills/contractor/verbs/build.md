@@ -11,15 +11,17 @@ A raw **roadmap** is not an input. Compile a runbook first.
 1. **Resolve input:** a **plan** or a **runbook**. A raw **roadmap** → refuse;
    tell the caller to `runbook` it first (describe the artifact type, do not
    name a sibling skill). A spec → refuse (that is not a job to walk).
-2. **Walk a plan only when its latest Review history stamp is `approve`
-   or `approve-with-changes`, or the human waives explicitly.** The latest
-   stamp is the most recently dated `### YYYY-MM-DD — <verdict>` heading.
-   A latest stamp of `needs-rework` is a **refuse** — tell the caller to
-   `revise` or to waive. Open vs closed items under that stamp do not
-   change this. No stamp at all → unknown; run `review` on that plan
-   first. For a runbook: also run the conductor completeness check
-   (`verbs/runbook.md` step 4); that check **does not** replace plan
-   review.
+2. **Walk a plan only when `status:` is `published` and `stage:` is
+   `approved`.** Missing / not `approved` / `implemented` → refuse.
+   Do not read a Review-history verdict. An explicit human waive:
+   the **caller** writes the **same** gate (`status: published` and
+   `stage: approved`) — via `records.sh touch --status published`
+   plus a `stage: approved` front-matter write, or file-mode —
+   notes the waive in conversation, **then** walks. It does not
+   walk a `draft`. For a runbook: also run the conductor
+   completeness check (`verbs/runbook.md` step 4); that check
+   **does not** replace the plan gate. Each referenced **plan**
+   must pass this same plan gate.
 3. **Plan:** walk slices in declared order. Per slice: do it yourself **or**
    write a self-contained brief and use the host's delegation mechanism. After
    each slice: the slice's verify command (for you). Do not narrate every
@@ -36,8 +38,9 @@ A raw **roadmap** is not an input. Compile a runbook first.
    - `NEEDS_CONTEXT` — cannot continue without an answer
    - `BLOCKED` — an external dependency or failed gate
 6. Done when every step/slice in scope has a verify result or an explicit skip
-   the human accepted. After a `DONE` / `DONE_WITH_CONCERNS` walk, run the
-   host's close-the-books sweep (SKILL.md *Hard seams*).
+   the human accepted. After a `DONE` / `DONE_WITH_CONCERNS` walk, set
+   `stage: implemented` on the walked plan (it stays `published`), then
+   run the host's close-the-books sweep (SKILL.md *Hard seams*).
 
 The host lane still lands the result. This verb stops at the job assessment.
 Tell the human what the software can do now, what is still open, and

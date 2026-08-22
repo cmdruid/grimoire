@@ -32,8 +32,8 @@ existing phase-plan paths — never task-level work invented here.
    - **Roadmap-sourced:** every unblocked phase has a plan path; order
      respects phase `requires:`; no raw implementation steps invented.
 5. Done when the conductor file exists and the completeness check is green.
-   `build` still requires each referenced plan to have passed `review` (or a
-   human waiver).
+   `build` still requires each referenced plan to be `published` with
+   `stage: approved` (or a caller waive of that gate).
 
 Land it per SKILL.md *Shared discipline*. Workshop: mint the shell, set
 `tags: [runbook]`, fill the conductor body. Standalone: write the

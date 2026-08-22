@@ -67,14 +67,13 @@ unsettled, stop and send those branches back.
    body with the plan scaffold filled in from the resolved `plan.md` (bundled
    shape: `templates/plan.md`).
 
-Output: the implementation plan. Tell the human where it is and what you
-need (read it, waive review, or change it). Then **stop**. The next verb
-is `review` then `build` unless they waive review — that sequence is
-yours to offer, not the opening of the reply. The host lane still lands
-the result; `build` walks the slices. For a multi-slice plan, running
-`review` first is recommended by default — its value is **bimodal, and
-both modes pay**: either an independent grounded pass catches must-fix
-defects before any code, or it independently corroborates the plan's
-own flagged uncertainties, de-risking building every slice in one pass
-— and there is no cheap way to know in advance which mode a given plan
-will get.
+Output: the implementation plan (`status: draft`). Tell the human where
+it is and that they should read it. Then **stop**. The host's review of
+the job artifact is the next stop; `build` walks an approved plan
+(`status: published` and `stage: approved`). The host lane still lands
+the result. For a multi-slice plan, an independent grounded pass before
+any code is recommended by default — its value is **bimodal, and both
+modes pay**: either it catches must-fix defects, or it independently
+corroborates the plan's own flagged uncertainties, de-risking walking
+every slice in one pass — and there is no cheap way to know in advance
+which mode a given plan will get.

@@ -1,9 +1,9 @@
 ---
 name: clankshop
-version: 2.4.0
+version: 2.5.0
 description: "An agentic workshop for a code project: doctrine, records, and routing deployed as four stations (design/build/test/review), with helpers for planning, records, follow-ups, streams, audits, debugging, and reporting."
 required: journal
-optional: analyst, auditor, backlog, blueprint, contractor, debugger, delegate, checkpoint, mailbox, notepad, scheduler, workstream
+optional: analyst, auditor, backlog, architect, contractor, inspector, debugger, delegate, checkpoint, mailbox, notepad, scheduler, workstream
 ---
 
 # clankshop — the workshop pack
@@ -25,8 +25,9 @@ The v2 roster, by coupling tier (how much workshop a skill needs):
 | tier | skill | is |
 |---|---|---|
 | system | `clankshop` | the seed (doctrine + `context.sh`) + `setup` / `migrate` / `check` / persona summons |
-| helper | `blueprint` | specification spine — ideation to argued spec; genesis (`new` / `deploy`) for a founding repo; never implementation plans |
-| helper | `contractor` | one job: roadmap / plan / runbook / review / build |
+| helper | `architect` | specification spine — ideation to argued spec; genesis (`new` / `deploy`) for a founding repo; never implementation plans |
+| helper | `contractor` | one job: roadmap / plan / runbook / build |
+| helper | `inspector` | critique and fold — review a spec or plan (or named kind); refine folds findings; both artifact sets |
 | helper | `journal` | **the records format authority** — the record contract, `records.sh`, the history ledger; required (setup delegates tool-layer standup to it) |
 | helper | `backlog` | the follow-up lifecycle — file, promote, debrief, and curate the three trackers |
 | helper | `notepad` | project memory — write, find, update, supersede, and drop durable facts in `notes/` |
@@ -78,6 +79,8 @@ renames have landed. The Phase 6 split then stood `backlog` up as the follow-up 
 **2.3.0:** `notepad` — project memory; `/backlog note` retired.
 **2.4.0:** `analyst` joins as a helper — the first member that reads the records layer back out
 as developer-facing prose.
+**2.5.0:** Slice 1 renamed `blueprint` → `architect` with no bump; `inspector` joins —
+critique and fold, both artifact sets.
 
 **One library skill is deliberately not a member:** `skill-builder`, the toolmaker steward for
 the skills library itself — a maintainer's tool for whoever authors skills, not part of the

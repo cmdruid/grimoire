@@ -14,6 +14,14 @@ one-line resolution; delete only when the reason it existed is gone.
 
 ## Open
 
+### BL-38 — spec Kind-template still says inspector owns the publish write
+- **source:** architect/inspector walk (2026-08-22). Plan GC forbade amending the spec.
+- **status:** open
+- **body:** `docs/design/2026-08-21-architect-contractor-inspector.md` Kind template shape still
+  says inspector verb files own “publish write”. Owner 2026-08-22: inspector approves,
+  the caller publishes. The walk implemented that; the spec sentence is stale. Spec is
+  still `status: open`. Fold the sentence on the next spec amend.
+
 ### BL-37 — agent-council leftovers from the 2026-08-19 skill audit
 - **source:** grok stream, skill audit / refactor (2026-08-19).
 - **status:** open

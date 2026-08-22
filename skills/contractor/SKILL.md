@@ -1,6 +1,6 @@
 ---
 name: contractor
-description: "Use when the user runs `/contractor`, or asks to write a roadmap, implementation plan, or runbook, to review one of those, to apply review findings or amend a needs-rework job, to ask how we should revise a plan, or to execute a plan or runbook. One job: sequence work from an approved spec, optionally delegate slices, walk the job. Never writes a spec. Never ships to trunk. For a one-line patch, skip it."
+description: "Use when the user runs `/contractor`, or asks to write a roadmap, implementation plan, or runbook, or to execute a plan or runbook. One job: sequence work from an approved spec, optionally delegate slices, walk the job. Never writes a spec. Never ships to trunk. For a one-line patch, skip it."
 ---
 
 # contractor — the job lead
@@ -44,10 +44,13 @@ conductor. Never write the flat
 `<agent-workspace>/templates/<doctype>.md`. Never deploy `plan.md` or
 `roadmap.md` *as* `plans.md`.
 
-**Status vocabulary** (the records contract): a working draft is `status: draft`;
-the accepted, living job artifact is promoted to `status: published` (one per
-subject); closed is `archived`. Closure goes through
-`records.sh done` on a workshop host. Optional `stage` (non-empty if present).
+**Status vocabulary** (the records contract): mint `status: draft`. The
+caller writes `published` and `stage: approved` after a passing host's
+review they accept. After a successful walk, this skill sets `stage:
+implemented` (the plan stays `published`). Closed is `archived`. Closure
+goes through `records.sh done` on a workshop host. Optional `stage`
+(non-empty if present). Journal owns the `status` enum; writer `stage`
+values are in-package.
 
 ## Verb dispatch (read the file, then follow it)
 
@@ -56,19 +59,14 @@ subject); closed is `archived`. Closure goes through
 | `roadmap` | `verbs/roadmap.md` | multi-phase map |
 | `plan` | `verbs/plan.md` | tracer-bullet plan |
 | `runbook` | `verbs/runbook.md` | compile conductor |
-| `review` | `verbs/review.md` | critique roadmap/plan/runbook |
-| `revise` | `verbs/revise.md` | classify findings, propose amendments, fold on confirm |
 | `build` | `verbs/build.md` | execute plan or runbook |
 | (bare) | — | **ask** which verb; do not default |
 
 ```
-plan  →  review  →  approve              →  build
-                 →  approve-with-changes →  build, or revise if asked
-                 →  needs-rework         →  revise  →  review  →  …
+plan  →  (host review)  →  (caller publishes)  →  build
 ```
 
-Each arrow is a stop. No verb invokes the next, except a `revise`
-confirmation that asks for `review` after apply.
+Each arrow is a stop. No verb invokes the next.
 
 ## Brief the human (every verb)
 
@@ -77,17 +75,12 @@ The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
 
 - **Lead with the situation** a newcomer could use: what the software can do
   now, or what you need the human to decide. Then the path to the artifact.
-- **One ask per stop.** After `plan` or `review`, stop and wait. After
-  `revise`: questions (when they fire) are a stop; the proposal is a
-  stop; after apply without named re-review, the offer is a stop.
-  Named re-review is the exception. During `build`, run each slice's
-  verify; brief the human at start, at a blocker, and at the end —
-  not after every slice unless they asked for a running log or a
-  slice failed.
+- **One ask per stop.** After `plan`, stop and wait. During `build`, run
+  each slice's verify; brief the human at start, at a blocker, and at
+  the end — not after every slice unless they asked for a running log
+  or a slice failed.
 - **Translate the closing code.** "The plan is at `<path>`. Please read it
-  before I implement." not "Terminal step: `review` then `build`." "The
-  tests would go green and still encode the wrong scripts" not a bare
-  `needs-rework`.
+  before I implement." not a bare `DONE`.
 
 ## Shared discipline (every verb)
 
@@ -106,9 +99,13 @@ The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
 - **Never ship** to trunk. Landing is someone else's job.
 - Delegation is **optional**. Per slice: do it, or write a brief and use the
   host's delegation mechanism. Do not restate spawn/return mechanics.
-- Every walked **plan** has a latest Review history stamp of `approve` or
-  `approve-with-changes` (or an explicit waive) before `build`. A latest
-  `needs-rework` is not a pass — `revise` is the path back.
+- Walk a **plan** only when `status:` is `published` **and** `stage:` is
+  `approved`. Missing / not `approved` / `implemented` → refuse. Do not
+  read a Review-history verdict. An explicit human waive: the **caller**
+  writes the **same** gate (`status: published` and `stage: approved`),
+  notes the waive in conversation, **then** walks. It does not walk a
+  `draft`. After a successful walk, set `stage: implemented` (the plan
+  stays `published`). Archive is a later close, not automatic.
 - **Never execute a raw roadmap.** Compile a runbook first, and only when every
   unblocked phase already has a plan path.
 - A runbook completeness check is **additional**. It does not substitute for
@@ -128,5 +125,5 @@ The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
 <!-- edges:contractor -->
 - produces: plan, roadmap, runbook — job artifacts in `<agent-records>/plans/`
 - handoff: — (build executes in-place; ship is not this skill)
-- consumes: spec, review, doctrine, plan, runbook — an approved specification, a findings baton (council RESULT.md or Review history), station context, or a job artifact this skill walks
+- consumes: spec, doctrine, plan, runbook — an approved specification, station context, or a job artifact this skill walks
 <!-- /edges:contractor -->

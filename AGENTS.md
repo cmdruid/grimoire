@@ -12,8 +12,8 @@ Most of these skills are members of the **`clankshop` pack**, tiered by coupling
 manifest (`skills/clankshop/PACK.md`): the pack **face** (`skills/clankshop/`) carries the seed
 handbook and the four **stations** — `design` (the architect), `build` (the foreman), `test` (the
 guardian), `review` (the admin) — with the system verbs (`setup` / `migrate` / `check`) and
-persona summons for hat-on discussion; **helpers** (`blueprint` the specification spine,
-`contractor` the job lead, `journal` the
+persona summons for hat-on discussion; **helpers** (`architect` the specification spine,
+`contractor` the job lead, `inspector` critique and fold, `journal` the
 records format authority and the one required member, `backlog` the follow-up lifecycle,
 `workstream` the stream driver, `auditor`, `debugger`); **utilities** (`checkpoint`, `mailbox`,
 `delegate`, `scheduler`). `skill-builder` is the library's own

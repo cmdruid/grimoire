@@ -30,7 +30,7 @@ that phase can be built. The roadmap never carries task-level detail.
    same resolved path into `<agent-records>/plans/`, naming the file
    `YYYY-MM-DD-<slug>.md` (the record shape). Either way set
    `tags: [roadmap]` and replace the body with the roadmap scaffold filled in
-   from the resolved `roadmap.md`. Flip `status: published` while the map
-   governs the track.
+   from the resolved `roadmap.md`. Land as `status: draft`. The caller
+   writes `published` after a passing host's review they accept.
 
 Output: the roadmap. Terminal step: `plan` the first unblocked phase.

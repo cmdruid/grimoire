@@ -27,7 +27,7 @@ This skill is a **router**: it owns the decisions (delegate-or-not, mechanism, r
 contract) and the inline + fan-out mechanics, and points at one specialist for deep mechanics
 (`mailbox` — the slot protocol; don't re-document it here). It is a **leaf** -- it names delegation
 *mechanisms*, never *task
-workflows*: a workflow skill may use `/delegate`; `/delegate` never says "use `/blueprint`".
+workflows*: a workflow skill may use `/delegate`; `/delegate` never says "use `/architect`".
 
 ## When to use
 

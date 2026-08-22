@@ -10,7 +10,7 @@ tags: [spec]
 
 <Draft weight (brainstorm): fill Problem/Goal, sketch the Approach, list open questions at the
 foot. Spec weight: every section argued, no open questions left — grill resolves them. The
-accepted spec is promoted to `status: published`. A small feature's spec may double as its plan
+accepted spec is published after a passing host's review, by the caller. A small feature's spec may double as its plan
 (add the optional Slices stub below).>
 
 ## Problem

@@ -174,7 +174,7 @@ done
 # ---- shared: bundle-ref resolution (checks 2 & 10) ---------------------------
 # One prefix alternation and one resolver, used by both checks so "what counts as
 # a bundled-resource path" and "how does docs/ resolve" can't drift apart.
-bundle_prefixes='scripts|templates|verbs|references|rules|docs|roles|doctrine'
+bundle_prefixes='scripts|templates|verbs|references|rules|docs|roles|doctrine|kinds'
 
 # resolve_bundle_ref <skill-dir> <ref>
 # <ref> is a path like "verbs/foo.md" or "docs/x.md", relative to a skill bundle

@@ -1,8 +1,8 @@
 # Ideal use — a worked arc through the spine
 
 A *"how to use me"* example, read on demand. It shows the spine verbs as
-**blueprint's own arc** on one concrete feature. The arc ends at the
-**accepted spec**. The spec is the terminal blueprint artifact.
+**architect's own arc** on one concrete feature. The arc ends at the
+**accepted spec**. The spec is the terminal architect artifact.
 
 ---
 
@@ -28,15 +28,16 @@ spec: **Problem** (consumers can't machine-read report output), **Approach**
 already-computed report model; no new data path), **Verification** (a
 golden-file test of the envelope). Because this is a small feature, the spec
 carries an optional **Slices** stub (flag parsed → envelope emitted; golden
-test red-first). Self-reviews, then gates on the human reading it. On
-approval: `records.sh touch <spec> --status published`.
-*Output:* the accepted spec. **Blueprint stops here.**
+test red-first). Self-reviews, then gates on the human reading it. The
+artifact stays `status: draft`. The caller publishes after a passing
+host's review they accept.
+*Output:* the accepted spec. **Architect stops here.**
 
 ---
 
 ## Where the arc ends
 
-The accepted spec is the terminal blueprint artifact. Implementation
+The accepted spec is the terminal architect artifact. Implementation
 sequencing is a different job; the host's build lane (or the human) consumes
 the spec from here.
 

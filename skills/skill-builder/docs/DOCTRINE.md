@@ -421,7 +421,7 @@ A skill that reads **or writes** project doctrine follows these rules. Portable 
 library. Reading counts: you must resolve a path to read from it, so a reader that hardcodes a
 doctrine path is exactly as wrong as a writer that does.
 
-1. **Which home.** Four destinations, one test:
+1. **Which home.** Five destinations, one test:
 
    > **Records** are dated, typed, closeable instances → `<agent-records>`.
    > **Templates** are the schemas instances mint from →
@@ -430,6 +430,9 @@ doctrine path is exactly as wrong as a writer that does.
    > `<agent-workspace>/doctrine`.
    > **Hooks** are skill-keyed overlay steps on a skill's own loop →
    > `<agent-workspace>/hooks/<skill>.md`.
+   > **Inspector kinds** are undated judgment templates
+   > (not mint shells, not records, not the audit rubric)
+   > → `<agent-workspace>/inspector/<kind>.md`.
 
    Doctrine: an audit rubric, a diagnostics playbook, a build lane, a station chapter. Not
    doctrine: a spec (a dated `specs/` record), a captured project fact, an audit *report*.
@@ -464,6 +467,13 @@ doctrine path is exactly as wrong as a writer that does.
    `.dev` and the mkdir is `hooks/` only (creates `.dev` as a container for
    `hooks/`, never `doctrine/`). Declared `agent-workspace:` that is absent →
    do not create; treat hooks as empty. The leaf is not the workspace assembler.
+
+   **Narrow inspector-kinds mkdir.** Same predicate: a consumer may `mkdir`
+   `inspector/` only when `<agent-workspace>` already exists, or when the
+   home is the derived default `.dev` and the mkdir is `inspector/` only
+   (creates `.dev` as a container for `inspector/`, never `doctrine/`).
+   Declared `agent-workspace:` that is absent → do not create; use the
+   bundled kind. The leaf is not the workspace assembler.
 
    Doctrine is **copy-bundled-then-customized**, not mint-and-accumulate: a skill seeds
    generic content, then the host edits it in place and keeps editing it for years. So
@@ -518,8 +528,9 @@ missing sentence lives.
 
 **Hooks** are skill-keyed overlay steps on a skill's own loop →
 `<agent-workspace>/hooks/<skill>.md`. Default `.dev/hooks/<skill>.md`. The
-`<skill>` stem matches that skill's frontmatter `name:`. Fourth landing class
-(next to doctrine-touching / record-writing), not a front-door variable.
+`<skill>` stem matches that skill's frontmatter `name:`. Skill-keyed overlay
+(the fourth landing class; inspector kinds are the fifth), not a front-door
+variable.
 
 A skill that owns a multi-step loop with named seams *may* publish hooks. Not
 every skill. The convention does **not** require a bundled hooks.md skeleton.

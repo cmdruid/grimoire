@@ -30,7 +30,7 @@ The `clankshop` pack binds most of them into one **agentic workshop**, tiered by
 pack manifest (`skills/clankshop/PACK.md`): the pack **face** (`clankshop`) carries the seed
 handbook and the four **stations** — `design` (the architect), `build` (the foreman), `test` (the
 guardian), `review` (the admin) — with system verbs (`setup` / `migrate` / `check`) and persona
-summons; **helpers** — `blueprint` (specification spine), `contractor` (job lead), `journal` (the records format authority —
+summons; **helpers** — `architect` (specification spine), `contractor` (job lead), `inspector` (critique and fold), `journal` (the records format authority —
 the one required member), `backlog` (the follow-up lifecycle), `notepad` (project memory),
 `workstream` (development streams), `auditor` (code-quality audits), `debugger` (root-cause
 diagnostics), `analyst` (reports and briefings read back out of the records); **utilities** —
@@ -43,16 +43,17 @@ scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
 |---|---|
 | `agent-council` | three-family review panel: independent Claude, Grok, and Codex opinions on a skill package, clustered and ranked by agreement; standalone, outside every pack |
 | `analyst` | reports and briefings for the developer: catch-ups, status, subsystem and health snapshots, guides — synthesized from the records layer and git, from a customizable template catalog |
+| `architect` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
 | `backlog` | the follow-up lifecycle: file, promote, debrief, and curate the three trackers — a client of the records layer (guards when none) |
-| `blueprint` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
 | `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
 | `clankshop` | the workshop face: seed doctrine + the four stations; `setup` / `migrate` / `check`, and persona summons for hat-on discussion |
-| `contractor` | one job lead — roadmap, plan, runbook, review, revise, build; never ships; never writes a spec |
+| `contractor` | one job lead — roadmap, plan, runbook, build; never ships; never writes a spec |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `google-developer-style` | write developer docs in Google's house style; snapshot, no live-site floor; standalone, outside every pack |
 | `journal` | the records format authority: the record discriminator + contract + `records.sh` + the history ledger; setup, done, substrate curate |
+| `inspector` | critique and fold: review a spec or plan (or named kind); refine folds findings; does not mint and does not write published |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |

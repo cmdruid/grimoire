@@ -89,7 +89,7 @@ agent may re-propose a one-off override at a seam; the recorded value governs by
 the *Delegation route* governs there). The default model per phase, cited by each phase-boundary park
 instruction. The swap is a manual `/model` action, so any phase is overridable on the fly — this is the
 reminder default, not a lock.
-- PLAN:  <strong model, e.g. Opus>   — `/blueprint spec`; `/contractor plan` only when sequencing is required
+- PLAN:  <strong model, e.g. Opus>   — `/architect spec`; `/inspector review`; after a passing review the caller accepts, they write `published`; `/contractor plan` only when sequencing is required
 - BUILD: <mid model, e.g. Sonnet>    — `/contractor build` when a contractor plan exists; otherwise the host lane walks the spec's slices + the compiled hook **Feature completion** (skip the glue command if empty)
 - SHIP:  <strong model, e.g. Opus>   — `/workstream ship` (land, conflict-resolve) + the compiled hook **After eventful ship** (skip the glue command if empty; only when the ship was eventful)>
 

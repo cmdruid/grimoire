@@ -11,8 +11,11 @@ or a design decision at stake.
 **Policy:** the gate plus a relevant end-to-end check before each commit (INV-1); scoped
 commits (INV-3); plans land in `.records/plans/`, ADRs in `.records/adr/`; done means landed on
 `<trunk>` (INV-2); a dated plan or ADR is never retroactively edited (INV-9). A design decision
-at stake goes to the design station **before** planning against it (INV-14). `/blueprint`,
-where installed, writes the spec. **One phase, spec already implementable** (has slices or
+at stake goes to the design station **before** planning against it (INV-14). `/architect`,
+where installed, writes the spec; `/inspector review` critiques it. After a passing
+`/inspector review` the caller accepts, they write `published` (job artifacts: also
+`stage: approved`) before `/contractor plan` or `/contractor build`. Not unattended.
+**One phase, spec already implementable** (has slices or
 is accepted as the plan) → this lane walks those slices; do **not** require
 `/contractor plan`. **Sequencing required** (second phase, blocking edges, or a tracer
 sequence) → `/contractor plan` (and `runbook` / `build` as needed). The stream still
@@ -23,8 +26,8 @@ sequence) → `/contractor plan` (and `runbook` / `build` as needed). The stream
 1. Validate the approach before any spec: purpose, constraints, 2–3 candidate approaches, pick
    one with the human. Classify the weight (INV-12) — brief, or roadmap-then-phases.
 2. Write the design: problem, goal, approach (+ alternatives rejected), mechanism,
-   verification. Anything spec-level lands in `.records/specs/`; have it reviewed before
-   planning against it.
+   verification. Anything spec-level lands in `.records/specs/`; `/inspector review`
+   before planning against it.
 3. Plan task-by-task against the live tree — exact paths, complete code per step, riskiest
    piece spiked first. Re-verify every load-bearing signature at `HEAD` before sizing.
 4. Build task-by-task, red-first: failing test → minimal implementation → `<gate>` green →

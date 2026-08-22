@@ -22,5 +22,9 @@ below.
 |---|---|---|
 | reproducible defect | build/workflows/bug.md | file via `/debugger file`, then root-cause (`/debugger`) |
 | self-contained fix | build/workflows/patch.md | by hand, on `<trunk>` |
-| new capability / design at stake | build/workflows/feature.md | design station, then `/blueprint` (spec); sequencing only if needed (`/contractor plan`); stream still ships |
+| new capability / design at stake | build/workflows/feature.md | design station, then `/architect spec`, `/inspector review`, then `/contractor plan` only when sequencing is required; stream still ships |
 | unknown feasibility | build/workflows/spike.md | by hand, timeboxed |
+
+After a passing `/inspector review` the caller accepts, they write `published`
+(job artifacts: also `stage: approved`) before `/contractor plan` or
+`/contractor build`. Not unattended.

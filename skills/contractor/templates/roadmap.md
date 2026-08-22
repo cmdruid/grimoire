@@ -9,8 +9,9 @@ tags: [roadmap]
 # <Track> — Roadmap
 
 <The decision map for multi-phase work: phases with gates and declared blocking edges. Each
-phase requires its own plan before build; the roadmap never carries task-level detail. Flip to
-`status: published` while it governs the track.>
+phase requires its own plan before build; the roadmap never carries task-level detail. Mint
+stays `status: draft`. The caller writes `published` after a passing host's review they
+accept, while it governs the track.>
 
 Spec: <path to the governing spec>
 

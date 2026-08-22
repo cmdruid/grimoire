@@ -65,8 +65,11 @@ build-model, so the build runs inline; delegation stays available only for fan-o
 the model lever.) The route is **confirmed once and recorded in the hand-off** (*Delegation route*
 section) so an autonomous loop never stalls re-asking it, and provider failures
 (quota/limit/outage) **degrade per `/delegate`'s fallback ladder -- down to inline on the
-orchestrator -- rather than blocking the loop**. The **planning stages** map to `/blueprint spec`
-when installed (the argued spec). Then `/contractor plan` **only when sequencing is required**
+orchestrator -- rather than blocking the loop**. The **planning stages** map to `/architect spec`
+when installed (the argued spec), then `/inspector review`. After a passing
+`/inspector review` the caller accepts, they write `published` (job artifacts:
+also `stage: approved`) before `/contractor plan` or `/contractor build`. Not
+unattended. Then `/contractor plan` **only when sequencing is required**
 (second phase, blocking edges, or a tracer sequence). Build: `/contractor build` when a
 contractor plan exists; otherwise the host lane executes the spec's own slices. Without those
 skills, author the spec/plan by hand per the lane. Either way the seam ownership is the
@@ -277,7 +280,9 @@ ritual's **save** + a **park** for a `/model` swap. The hand-off records the cur
 `build` | `ship`) so `load` resumes into the right phase and reminds you of its model (from the
 hand-off's *Phase model map*). The three phases, each ending `save -> park -> reset -> load`:
 
-> **PLAN** (plan-model) — author the feature's spec (`/blueprint spec`); then `/contractor plan`
+> **PLAN** (plan-model) — author the feature's spec (`/architect spec`); `/inspector review`;
+> after a passing review the caller accepts, they write `published` (jobs: also
+> `stage: approved`); then `/contractor plan`
 > only when sequencing is required. Then **save** (record `Phase: build`) -> **park**: "Plan ready. Switch to <build-model>
 > (`/model <m>`), `/clear`, `/workstream load <stream>`."
 >

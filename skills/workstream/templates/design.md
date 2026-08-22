@@ -62,7 +62,7 @@ blocks every stream's `ship`).
   edges, or a tracer sequence is required.
   `<project: planning tier docs -- see host AGENTS.md>`
 - **Templates:** `<project: spec and ADR templates -- if the host has
-  /blueprint installed, its bundled templates/ (spec, adr); job scaffolds (plan, roadmap)
+  /architect installed, its bundled templates/ (spec, adr); job scaffolds (plan, roadmap)
   from /contractor if installed; else equivalent>` Match the host repo's frontmatter schema
   (doctype / status / dates / tags).
 - **Change router:** `<project: change router doc (classifies any change -> the right lane) -- see host AGENTS.md>`

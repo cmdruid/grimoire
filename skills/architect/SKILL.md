@@ -1,19 +1,17 @@
 ---
-name: blueprint
-description: "Use when the user runs `/blueprint`, or asks to brainstorm, grill, or write a spec for a feature or design; or when starting a new project / new repository from scratch (`new`, `deploy`, founding spec, no repo yet); or to apply review findings or amend a needs-rework spec, or to ask how we should revise a spec. Turns an idea into an argued specification. grill is the interview primitive until every decision branch resolves. review critiques a spec or design doc (soundness + groundedness). Does not write roadmaps or implementation plans and does not build. For a one-line patch, skip it (fix on the trunk)."
+name: architect
+description: "Use when the user runs `/architect`, or asks to brainstorm, grill, or write a spec for a feature or design; or when starting a new project / new repository from scratch (`new`, `deploy`, founding spec, no repo yet). Turns an idea into an argued specification. grill is the interview primitive until every decision branch resolves. Does not write roadmaps or implementation plans and does not build. For a one-line patch, skip it (fix on the trunk)."
 ---
 
-# blueprint — the specification spine
+# architect — the specification spine
 
-`/blueprint <verb> [args]` runs the specification spine: divergent ideation
+`/architect <verb> [args]` runs the specification spine: divergent ideation
 (`brainstorm`), the interview that resolves every open decision (`grill`), the
-argued specification (`spec`), the cross-cutting `review` — an independent
-two-axis critique of a spec or design doc — and `revise`, the fold back from
-a `needs-rework` verdict. Genesis is two verbs around that
+argued specification (`spec`). Genesis is two verbs around that
 spine: `new` mints a founding-shaped working file; `grill`/`spec` fill it in
 place; `deploy` materializes a git repository (new directory, or in place
 in a non-git folder). **Building is not
-blueprint's job**, and neither is sequencing implementation. Trunk landing
+architect's job**, and neither is sequencing implementation. Trunk landing
 and the debrief sweep stay with the orchestrator. `deploy` does not land
 onto a host trunk.
 
@@ -23,9 +21,6 @@ and collides with none.
 **Brief the human.** The conversation leads with the decision or the draft,
 not the machinery. "Here are two approaches; I recommend A because…" /
 "The spec is at `<path>`. Please read it before we sequence work."
-After `revise`: questions (when they fire) are a stop; the proposal
-is a stop; after apply without named re-review, the offer is a
-further stop. Do not collapse questions and proposal into one ask.
 `founding-shaped`, `status: draft`, and station names stay in the files.
 
 ## One environment probe (at entry)
@@ -51,9 +46,9 @@ required — there is no fallback); else file-mode from that path, naming the
 file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the tool
 will not see it. `spec.md` carries both the front-matter and the body scaffold,
 so there is no second template to fill from. Never write the flat
-`<agent-workspace>/templates/<doctype>.md`. Status promotion:
-`records.sh touch --status published` when the tool exists; else file-mode
-stamp. Closure through `records.sh done` when the tool exists; else
+`<agent-workspace>/templates/<doctype>.md`. Mint stays `status: draft`.
+The caller writes `published` after a passing host's review they accept.
+Closure through `records.sh done` when the tool exists; else
 file-mode stamp. Founding-shaped `grill` / `spec` stay on the named file
 (no records mint). `new` / `deploy` unchanged.
 
@@ -62,12 +57,13 @@ file-mode stamp. Founding-shaped `grill` / `spec` stay on the named file
 `deploy`, and it does **not** apply to `grill`/`spec` when the named file is
 founding-shaped (*Founding-shaped* below). Those stay on the cwd working file.
 
-**Status vocabulary** (the records contract): a working draft is `status: draft`;
-the accepted, living spec is promoted to `status: published` (one `published`
-spec per subject); closed is `archived`. Closure goes through
+**Status vocabulary** (the records contract): a working draft is `status: draft`.
+Mint stays `draft`. The caller writes `published` after a passing host's
+review they accept (one `published` spec per subject, as writer prose).
+Closed is `archived`. Closure goes through
 `records.sh done` on a workshop host. Optional `stage` (non-empty if present).
 Founding-shaped working files stay `status: draft`. They are not the living
-feature spec. Do not promote them to `status: published`.
+feature spec. Do not write `published` on them.
 
 ## The verbs
 
@@ -78,29 +74,24 @@ feature spec. Do not promote them to `status: published`.
 | `new <name>` | mint `./<name>.md` — founding-shaped, empty of design content | — → that file only | — |
 | `grill [doc]` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** | a draft / spec (or the conversation) → resolved decisions | design |
 | `spec [doc]` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) | conversation or draft → feature `specs/` spec, **or** the named founding file | design |
-| `review <doc>` | two-axis critique; founding-shaped → six-H2 + leftover/gap rubric | a spec or design doc → a verdict (in context) | design |
-| `revise [<findings>] [<artifact>]` | classify findings, propose amendments, fold on confirm | a findings baton + spec → proposed amendments, then amended spec on confirm | design |
 | `deploy <file>` | project a founding spec into a git repo + three founding docs (new dir or in-place) | founding file → git repository | — |
 
 ```
-spec  →  review  →  approve              →  (host sequences)
-                 →  approve-with-changes →  host, or revise if asked
-                 →  needs-rework         →  revise  →  review  →  …
+spec  →  (host's review)  →  (caller publishes)  →  (host sequences)
 ```
 
-Each arrow is a stop. No verb invokes the next, except a `revise`
-confirmation that asks for `review` after apply.
+Each arrow is a stop. No verb invokes the next.
 
-`brainstorm → spec` is the linear spine; `grill` and `review` are primitives
-callable at any point. Bare `/blueprint` stays `brainstorm`. Genesis is
+`brainstorm → spec` is the linear spine; `grill` is a primitive
+callable at any point. Bare `/architect` stays `brainstorm`. Genesis is
 explicit `new`. Weight scales with the work: a **small feature** may stop
 at the accepted spec (the spec doubles as its plan — slices live **in**
-`templates/spec.md`, not a separate job artifact). For a **patch**, blueprint
+`templates/spec.md`, not a separate job artifact). For a **patch**, architect
 is not used at all.
 
-`new` lives in `verbs/new.md`, `deploy` in `verbs/deploy.md`, and `revise`
-in `verbs/revise.md` — read the verb file and follow it. `grill` / `spec` /
-`review` / `brainstorm` stay inline and gain a founding-shaped branch below.
+`new` lives in `verbs/new.md`, `deploy` in `verbs/deploy.md` — read the
+verb file and follow it. `grill` / `spec` / `brainstorm` stay inline
+and gain a founding-shaped branch below.
 
 ## Founding-shaped
 
@@ -109,7 +100,7 @@ structural H2 set is exactly the six map strings in `templates/founding.md`,
 each appearing once. That template owns the H2 strings; if they drift, the
 template wins. A duplicate mapped H2 or an extra unmapped H2 fails the shape.
 
-**Parser** (one grammar; founding `grill` / `spec` / `review` / `revise`
+**Parser** (one grammar; founding `grill` / `spec`
 and `deploy` share it):
 
 1. **Front-matter.** If the file begins with a line `---`, YAML through the
@@ -125,7 +116,7 @@ and `deploy` share it):
 5. **Leftover H2** = a structural H2 whose exact string is not in the
    template map. **Authored leftover** = any non-whitespace byte outside
    permitted chrome and outside a mapped body (pre-map prose, trailing
-   prose). Either leftover class refuses `deploy` and is a `review` finding.
+   prose). Either leftover class refuses `deploy` and is a critique finding.
 
 **Gap vs settled** (mapped bodies only). Strip whole lines matching
 `^Settled: [0-9]{4}-[0-9]{2}-[0-9]{2}\.$` and remaining whitespace.
@@ -140,10 +131,10 @@ is a gap. No italic / `TBD` / `<>` special cases.
   promote `status`. Who/when notes go **inside** the mapped section as a
   whole line in this exact form (roman, not italic): `Settled: YYYY-MM-DD.`
 - **No `founding` tag and no structural H2 is in the map** → existing
-  feature-spec `grill` / `spec` / `review` (may reshape / records-mint).
+  feature-spec `grill` / `spec` (may reshape / records-mint).
 - **Otherwise** (tag without the exact map; any map H2 without being
   founding-shaped, including a duplicate mapped H2) → refuse: restore the
-  shape with `/blueprint new` or fix the H2 set. Do not reshape. Do not
+  shape with `/architect new` or fix the H2 set. Do not reshape. Do not
   deploy-path this file.
 
 ## brainstorm `[topic]` — divergent ideation into a draft design
@@ -245,99 +236,23 @@ promotion. Refuse the otherwise-case. They never scan cwd.
    constraint explicitly as pay-the-debt vs design-around — grounded review
    structurally cannot supply this (a reviewer refuting claims against `HEAD`
    never flags that `HEAD` itself is the problem).
-5. **User-review gate** — the human reviews the written spec before anything is
-   sequenced against it. For an ADR-tier spec, an independent `review` first is
+5. **User-review gate** — the human reads the written spec before anything is
+   sequenced against it. For an ADR-tier spec, the host's review first is
    recommended by default — design-stage review has caught must-fix defects
-   before any cut existed. On approval it becomes the candidate
-   `status: published` spec (workshop: flip via
-   `records.sh touch <spec> --status published`; the superseded spec, if any,
-   closes `--as superseded` naming its successor).
+   before any cut existed. The artifact stays `status: draft`. The caller
+   writes `published` after a passing verdict they accept (the superseded
+   spec, if any, closes `--as superseded` naming its successor).
 
 Output: the argued spec. Tell the human where it is and that they should
 read it before anything is sequenced against it. Then **stop**.
 Implementation sequencing is a different job.
 
-## review `<doc>` — the two-axis critique
-
-Independent second-set-of-eyes on a **spec or design doc** — distinct from the
-self-review baked into `spec` (the author checking their own work; this verb is
-not the author). Findings + a verdict in context. Every verdict writes a dated
-stamp into the artifact's Review history; `needs-rework` also writes the
-finding list. It reviews **documents, not diffs** — a code change is the
-host's code-review tooling.
-
-This verb reviews **specs and design docs only** (an ADR written from `spec`
-counts). A sequenced plan, multi-phase map, or conductor is the wrong artifact
-for this review — refuse it.
-
-1. **Read the whole doc; detect its kind** from front-matter or shape. A job
-   artifact → refuse ("wrong artifact for this review"). If founding-shaped
-   (*Founding-shaped*): soundness uses the six map H2s + leftover/gap
-   rules, not `templates/spec.md`. Groundedness is against the bundled
-   `templates/founding.md`, the deploy procedure (`verbs/deploy.md`), and
-   live behavior — not a library design doc. Do not promote `status`.
-   Feature-spec `review` is otherwise unchanged.
-2. **Axis 1 — soundness** (internally consistent, feasible): no section
-   contradicts another; the approach is justified with alternatives honestly
-   weighed; the mechanism is implementable as written; scope is one artifact's
-   worth; every requirement is unambiguous. Two verification-sufficiency checks
-   the hand-trace habit misses: a **numeric acceptance target** must attribute
-   its population to the mechanism's target class (a real count over the wrong
-   class survives every rubric and dies at measurement); and every
-   **guard/absence-style test** ("asserts X never happens") needs a
-   **red-proof** — disable the guarded mechanism once and show the test fails,
-   or argue concretely why the fixture can exercise the failing arm
-   (hand-tracing verifies the green path; it never asks whether the test *can*
-   go red — a fixture whose world cannot contain X stays green with the guard
-   deleted).
-3. **Axis 2 — groundedness** (conforms to the codebase — and to core doctrine
-   when a workshop is present): run `scripts/ground-check.sh` `<root> <doc>`,
-   then **re-read the load-bearing signatures/code the claims rest on** (a
-   clean ground-check finds moved files; the trap is a confident doc citing a
-   function that never existed — or a `file:line` that resolves but points at
-   different code than the prose claims). On a workshop host, check the doc
-   against `core/` (invariants, gotchas) and the `status: published` spec + live
-   ADRs. **Add the substrate-skeptic pass** — grounding anchors the review to
-   the present code, so deliberately ask its inverse: *which mechanisms would
-   not exist in a from-scratch implementation?* A mechanism shaped by deletable
-   substrate (a code built-in, an integer pipeline, a frozen baseline) is a
-   finding even when every claim about `HEAD` is true.
-4. **Report the verdict, in context**: `approve` / `approve-with-changes` /
-   `needs-rework`; findings ranked by severity, each as location → what's wrong
-   → why it matters → a concrete fix, must-fix separated from nice-to-have; a
-   confidence note on anything unsure — never a guess presented as fact.
-   **Every verdict is a durable fact about the artifact:** write a dated stamp
-   into the artifact's `## Review history` (create the section if missing):
-
-   ```
-   ### YYYY-MM-DD — needs-rework | approve | approve-with-changes
-   ```
-
-   `needs-rework` still carries the finding list under the stamp (must-fix
-   separated from nice-to-have). `approve` and `approve-with-changes` may
-   be a stamp-only line. This is a write-back, not a new verdict word. The
-   owner may prune a fully resolved dated block after a later `approve`.
-
-Depth dial (default off): for a high-stakes artifact, dispatch a few
-**read-only** subagents in parallel — each a distinct lens, one a skeptic
-trying to *refute* the doc's central claim — and synthesize. Never an editing
-subagent.
-
-Terminal step: hand the verdict to whoever owns the artifact and **stop**.
-
-## After the verdict
-
-`review` hands the verdict to the artifact's owner and stops. The owner
-folds a `needs-rework` (or an `approve-with-changes` they want applied)
-with `revise` (`verbs/revise.md`). This verb does not amend.
-
 ## State between verbs = the artifacts
 
-There is no separate blueprint state file. Each verb consumes the previous
+There is no separate architect state file. Each verb consumes the previous
 verb's artifact by path: `brainstorm`'s draft → `spec` argues it — and each
-doc's front-matter `status` tracks its lifecycle. `grill` and `review` write
-no new file; `revise` amends the named artifact in place after
-confirm, not in the invoke turn.
+doc's front-matter `status` tracks its lifecycle. `grill` writes
+no new file.
 
 ## Composition (the orchestrator owns building, landing, capture)
 
@@ -353,7 +268,7 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 
 - A self-contained skill directory: `SKILL.md` + `templates/` (`spec.md`,
   `adr.md`, `founding.md` — the bundled body shapes) + `verbs/new.md` +
-  `verbs/deploy.md` + `verbs/revise.md` + `scripts/ground-check.sh` (the
+  `verbs/deploy.md` + `scripts/ground-check.sh` (the
   re-grounding fact-checker) + `docs/ideal-use.md` (a worked arc).
 - **Portable:** no workshop dependency (the one probe degrades to standalone),
   no host paths baked in, travels as one unit wherever the skills are
@@ -374,8 +289,8 @@ directly and the stub is gone.)_
 
 ## Edges
 
-<!-- edges:blueprint -->
+<!-- edges:architect -->
 - produces: spec, founding-documents — argued specification; a repo's three founding docs
 - handoff: spec, git-repository — the accepted spec is the feature baton; a git repository carrying three founding documents is the genesis baton
-- consumes: review, doctrine — a findings baton (council RESULT.md or Review history); station context read from the agent-workspace home; also a conversation or a draft the user names
-<!-- /edges:blueprint -->
+- consumes: doctrine — station context read from the agent-workspace home; also a conversation or a draft the user names
+<!-- /edges:architect -->

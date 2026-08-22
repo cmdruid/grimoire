@@ -35,7 +35,7 @@ differ. No forced `mv` of the working file.
 
 Classify with SKILL.md *Founding-shaped*. Require the tag **and** exactly
 the six map H2s, each once. Otherwise refuse in **one line**: not a
-founding spec; use `/blueprint new`. Name a duplicate H2 if that is why.
+founding spec; use `/architect new`. Name a duplicate H2 if that is why.
 Do not dump a leftover list for a feature spec. Do not enter the dest
 prompt.
 
