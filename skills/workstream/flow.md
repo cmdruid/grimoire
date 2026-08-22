@@ -239,24 +239,24 @@ pre-reset checkpoint. (Save-then-reset = checkpoint; reset-without-save = rollba
 no save preceded it and no session boundary fired `load`. You detect it by the
 compaction/continuation summary sitting where your conversation history should be (both Claude Code
 and Codex leave one), or by the host front-door's recovery anchor pointing you here. This is
-`/checkpoint`'s **Recovery discipline** (stop -> re-read the save-state in full -> reconcile:
-durable trail beats summary -> continue without a round-trip if KNOWN) run against
+`/checkpoint`'s **Recovery discipline** (stop → re-read the save-state in full → bounded
+facts-gather → reconcile → continue without a round-trip if KNOWN) run against
 Coordinates `this hand-off:`, plus the workstream overlays — re-reading `flow.md` itself, the START
 HERE guard, custody. Ritual:
 
 > stop current work -> re-read Coordinates `this hand-off:` in full -> **re-read this `flow.md`**
 > (the orchestration rules live outside the hand-off; the compaction may have erased them) -> run
 > the hand-off's START HERE guard (in-place streams: the custody check; and never recover another
-> session's worktree) -> reconcile: `git -C <worktree> log` and the durable records
-> (tracker files, the plan, `.records/`) are truth for everything committed; the compaction summary
-> is truth only for in-flight intent — merge them -> continue the current task **without a user
-> round-trip** if the next action is KNOWN.
+> session's worktree) -> **facts-gather** (this overlay): `git -C <worktree> log` plus paths the
+> hand-off already names (tracker files, the plan, `.records/` — do not open a search) ->
+> reconcile per Recovery -> **skip write-back** (commits + the on-disk plan are the mid-unit
+> store) -> continue the current task **without a user round-trip** if the next action is KNOWN.
 
 The pre-compaction session already held its launch confirm — re-confirming after a compaction is a
 nag, not a seam (Recovery inherits the compacted session's standing confirmation; a **fresh**
-session entering the stream runs `load`, whose launch seam earns one). Round-trip only if the
-reconcile surfaces genuine ambiguity (a real fork, or the
-summary contradicting disk). This is `load`-lite: `load`'s resume discipline run in place, minus
+session entering the stream runs `load`, whose launch seam earns one). Round-trip only if two
+in-flight intents both remain plausible (Recovery: summary vs disk is not a round-trip — disk
+wins). This is `load`-lite: `load`'s resume discipline run in place, minus
 the session-boundary mechanics and minus the launch-confirm seam.
 
 **When compaction itself fails, treat it as a hard session boundary** (the Recovery discipline's

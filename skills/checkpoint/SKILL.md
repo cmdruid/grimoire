@@ -16,7 +16,10 @@ This `SKILL.md` is a **thin router**: scope, guards, and dispatch live here; eac
 procedure lives in `verbs/<verb>.md`, and the four disciplines — the skill's citable core,
 which other skills borrow by name — live in **`references/disciplines.md`**. When a verb is
 selected, **read its file and follow it**; read the disciplines file at any save/resume/
-recovery moment if it is not already in context.
+recovery moment if it is not already in context. **Recovery load:** read
+`references/disciplines.md`; this skill's facts-gather (Recovery step 3, repo-state half) is
+`scripts/repo-snapshot.sh <root>` (resolve `scripts/` from this skill's own base directory).
+Do not read `verbs/*` unless the recipe calls `save` or `done`.
 
 ## Scope — two layers, one owner
 
@@ -34,7 +37,7 @@ for.** Session memory is what compaction destroys, so "did I create this file?" 
 whole test. Four rules:
 1. **Ownership is conferred by creating the file, by completing a Resume** (steps 1–2 plus the
    human's confirm — resume's transition clause), **or by running Recovery's reconcile** — a
-   compacted session that finds the root file and reconciles it against the durable trail IS
+   compacted session that finds the root file and completes Recovery steps 1–4 IS
    the owning session; the foreign guard must never fire against a post-compaction self.
 2. **Reading is not resuming.** A session that merely read the file while exploring has not
    resumed it and gains no ownership.
@@ -105,8 +108,9 @@ ignore mechanism*, fed by `scripts/save-guard.sh`.
 - **Resume discipline** — read in full, echo the next action, rewrite nothing.
 - **Lifecycle discipline** — first save early; refresh at the three checkpoint moments; ended
   only by `done`; presence = work in flight; rollback exception for polluted contexts.
-- **Recovery discipline** — on compaction: stop, re-read, reconcile (durable trail beats
-  summary), continue without a round-trip if KNOWN; anchor-dependent for discoverability.
+- **Recovery discipline** — on compaction: stop, re-read, bounded facts-gather, reconcile,
+  continue without a round-trip if KNOWN; write-back only when grounded and this file is the
+  only mid-unit store; anchor-dependent for discoverability.
 
 ## Unprompted behaviors (the during-the-session rules — no invocation needed)
 

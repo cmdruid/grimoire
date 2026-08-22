@@ -167,10 +167,12 @@ as a prefix on ordinary status replies.
   commits — bad commits need `git reset`.)
 - **Context auto-compacted (involuntary reset — Scenario C):** a compaction/continuation summary
   sits where your conversation should be -> STOP -> re-read this WORKSTREAM.md in full -> re-read
-  the skill's `flow.md` -> run START HERE -> reconcile against `git log` + the durable records
-  (they outrank the summary for anything committed) -> continue **without a user round-trip** if
-  the next action is KNOWN. If compaction itself **failed** (refusal or out-of-room — the session
-  is pinned at the limit): save if still possible, then reset / new session -> `load`.
+  the skill's `flow.md` -> run START HERE -> facts-gather: `git log` + the durable records this
+  file names (they outrank the summary for anything committed; do not open a search) ->
+  reconcile per `/checkpoint`'s Recovery discipline -> do not refresh this file from the merge
+  (commits + the on-disk plan carry mid-feature state) -> continue **without a user round-trip**
+  if the next action is KNOWN. If compaction itself **failed** (refusal or out-of-room — the
+  session is pinned at the limit): save if still possible, then reset / new session -> `load`.
 
 **Between resets (autonomous):**
 - Check if `<target>` moved (Coordinates integration-target): `git -C <worktree> log <branch>..<target>

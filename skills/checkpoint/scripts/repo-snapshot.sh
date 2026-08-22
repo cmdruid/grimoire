@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # repo-snapshot.sh <root>
 #
-# Repo-state facts for /checkpoint's Save discipline -- the "Repo state" section
-# (branch, clean/dirty) and the "What's been done" reconciliation against
-# `git log`, in one read instead of several probes.
+# Repo-state facts for /checkpoint's Save and Recovery disciplines -- Save's
+# "Repo state" section (branch, clean/dirty) and "What's been done" reconciliation
+# against `git log`, and Recovery step 3's repo-state half, in one read instead of
+# several probes.
 #
 # DOCTRINE: facts, not verdicts. It reports state; the save prose decides what to
 # write and synthesises it forward-looking. The wall-clock `date` here is correct
