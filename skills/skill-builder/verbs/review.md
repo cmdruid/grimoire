@@ -126,7 +126,13 @@ also parse `RESULT.md` by the contract: `# Council:`, `Brief:`,
 4. Grep before generalizing.
 5. Push back with evidence when the claim is wrong.
 
-Do not write findings back into the target skill.
+Do not write findings back into the target skill. The report
+does not license an edit. A later "fold" / "apply" / "fix
+that" must **name the apply target**; unnamed is unclear
+(rule 3). "The plan" is a plan, not the reviewed skill —
+the next write is that plan. Fold-then-re-review of a plan
+amends and re-reviews that file; it does not patch the
+skill.
 
 ## Report (in context; no file)
 
