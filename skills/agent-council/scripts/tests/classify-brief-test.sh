@@ -44,7 +44,7 @@ printf '%s\n' '# demo' >"$TMP/SKILL.md"
 cat >"$TMP/design-spec.md" <<'EOF'
 ---
 doctype: specs
-status: open
+status: draft
 tags: [spec]
 ---
 
@@ -62,7 +62,7 @@ EOF
 cat >"$TMP/founding.md" <<'EOF'
 ---
 doctype: specs
-status: open
+status: draft
 tags: [founding]
 ---
 
@@ -82,7 +82,7 @@ EOF
 cat >"$TMP/plans.md" <<'EOF'
 ---
 doctype: plans
-status: current
+status: published
 tags: [roadmap]
 ---
 

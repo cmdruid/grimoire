@@ -1,6 +1,6 @@
 ---
 doctype: plans
-status: open
+status: draft
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 tags: [roadmap]
@@ -10,7 +10,7 @@ tags: [roadmap]
 
 <The decision map for multi-phase work: phases with gates and declared blocking edges. Each
 phase requires its own plan before build; the roadmap never carries task-level detail. Flip to
-`status: current` while it governs the track.>
+`status: published` while it governs the track.>
 
 Spec: <path to the governing spec>
 

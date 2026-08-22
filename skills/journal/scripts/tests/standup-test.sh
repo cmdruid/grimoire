@@ -125,4 +125,35 @@ expect "brownfield points at curate" "tool layer is up" "$ERR"
 [ -x "$brown/.records/scripts/records.sh" ] && pass=$((pass + 1)) || {
   echo "FAIL: brownfield standup did not install records.sh" >&2; fail=$((fail + 1)); }
 
+# F3: later visit with drifted records.sh migrates status: open → draft, then check
+mig_refresh="$TMP/mig-refresh"
+mkdir -p "$mig_refresh"
+"$SKILL/scripts/standup.sh" "$mig_refresh" >/dev/null
+mkdir -p "$mig_refresh/.records/notes"
+printf -- '---\ndoctype: notes\nstatus: open\ncreated: %s\nupdated: %s\ntags: []\n---\n# Old open\n' \
+  "$(date +%Y-%m-%d)" "$(date +%Y-%m-%d)" \
+  > "$mig_refresh/.records/notes/$(date +%Y-%m-%d)-old-open.md"
+printf '\n# MARKER-MIGRATE\n' >> "$mig_refresh/.records/scripts/records.sh"
+rc=0; "$SKILL/scripts/standup.sh" "$mig_refresh" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "migrate-on-refresh rc" "0" "$rc"
+expect "migrate-on-refresh reports refreshed" "records: $mig_refresh/.records (journal, refreshed)" "$OUT"
+expect "migrate-on-refresh rewrote open → draft" "status: draft" \
+  "$mig_refresh/.records/notes/$(date +%Y-%m-%d)-old-open.md"
+expect "migrate-on-refresh check green" "records check: OK" "$OUT"
+
+# N8: later visit, already-current script, planted open → draft (migrate is not refresh-only)
+mig_current="$TMP/mig-current"
+mkdir -p "$mig_current"
+"$SKILL/scripts/standup.sh" "$mig_current" >/dev/null
+mkdir -p "$mig_current/.records/notes"
+printf -- '---\ndoctype: notes\nstatus: open\ncreated: %s\nupdated: %s\ntags: []\n---\n# Still open\n' \
+  "$(date +%Y-%m-%d)" "$(date +%Y-%m-%d)" \
+  > "$mig_current/.records/notes/$(date +%Y-%m-%d)-still-open.md"
+rc=0; "$SKILL/scripts/standup.sh" "$mig_current" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "migrate-on-current rc" "0" "$rc"
+expect "migrate-on-current reports current" "records: $mig_current/.records (journal, current)" "$OUT"
+expect "migrate-on-current rewrote open → draft" "status: draft" \
+  "$mig_current/.records/notes/$(date +%Y-%m-%d)-still-open.md"
+expect "migrate-on-current check green" "records check: OK" "$OUT"
+
 report "standup-test"

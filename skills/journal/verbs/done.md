@@ -12,10 +12,11 @@ moves; moves would dangle every path-based link) plus the one ledger line in `hi
    - `dropped` — deliberately won't do / no longer true (say why in the note);
    - `superseded` — replaced (the note **names the successor record**);
    - `consumed` — absorbed into the spec/doctrine (the note **names where**).
-   Not sure it's finished? Then it isn't — leave it open, or `touch --status` it instead.
+   Not sure it's finished? Then it isn't — leave it draft, or `touch --status
+   draft|published`.
 3. **Close it**: `records.sh done <path> [--as <disposition>] --note "<one line>"` — the
-   script stamps the date, rewrites `status:`, and appends the ledger line (its sole writer;
-   it refuses a double-close). Never hand-edit a status to a closing value — `check` flags a
+   script stamps `status: archived` and appends the ledger line (its sole writer;
+   it refuses a double-close). Never hand-edit a status to `archived` — `check` flags a
    closing status with no ledger line.
 4. **Tracker line-items are not records.** Completing a line-item *on
    request* is the follow-up client's job, not this verb. Closing a
@@ -40,4 +41,4 @@ Pruning closed records (deleting the file; ledger + git history remain the trace
 - Record closed: `records.sh done` wrote the disposition + ledger line;
   writebacks rewrote only matching live tracker-item lines; standalone
   commit landed (or write-only inside a sweep).
-- Not finished: left open (or `touch --status`); no close.
+- Not finished: left draft (or `touch --status draft|published`); no close.

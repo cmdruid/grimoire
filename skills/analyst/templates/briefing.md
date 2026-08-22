@@ -19,7 +19,7 @@ Written for someone who was away and needs to act — not a changelog, not a com
 3. **Read what the closures point at.** A ledger line is a fact; the story is in the closed
    record — the plan's goal, the debrief's findings, an ADR's decision. Read them, not just
    their titles.
-4. **Open items**: trackers plus any record still `open` whose activity falls in the span. A
+4. **Open items**: trackers plus any record still `draft` whose activity falls in the span. A
    catch-up without "what's still moving" is half a briefing.
 
 ## Synthesize

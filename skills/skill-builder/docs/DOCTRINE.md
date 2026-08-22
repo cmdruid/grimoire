@@ -348,11 +348,14 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    precondition. A description must not say the skill requires a stood-up records layer.
    A verb must not refuse and send the operator to journal standup.
 5. **In-package contract.** The writer states the five keys (`doctype`, `status`, `created`,
-   `updated`, `tags`), the status vocabulary (`open` | `current` live; `done` | `dropped` |
-   `superseded` | `consumed` closed), the dated slug (`YYYY-MM-DD-<slug>.md`), and the
-   record-link form (`→ <store>/<file>.md`) in *its own* package. It does not send the
-   agent to another skill's `SKILL.md` for those bytes. Pack composition (the face /
-   runbook) still names journal as the format authority; leaves do not.
+   `updated`, `tags`), the status / stage vocabulary **as registered in
+   `specs/records-front-matter.md`** (do not restate the enum
+   here — that file is the contract), the dated slug
+   (`YYYY-MM-DD-<slug>.md`), and the record-link form
+   (`→ <store>/<file>.md`) in *its own* package. It does not
+   send the agent to another skill's `SKILL.md` for those bytes.
+   Pack composition (the face / runbook) still names journal as
+   the format authority; leaves do not.
 6. **Opportunistic `records.sh`.** If `<agent-records>/scripts/records.sh` is executable, use
    `new --template <resolved>` / `touch` / `done` / `list`. Otherwise write the same contract
    shape from the resolved template. Resolution is the **project-templates rule**
@@ -362,8 +365,8 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    `<agent-records>/templates/<doctype>.md`.
 7. **Never hand-write `history.tsv`.** File-mode close rewrites `status:` (and `updated:`)
    only. After a later journal standup, `records.sh check` will flag a closed record with
-   no ledger line. Repair is journal `curate`: rewrite `status:` back to `open`, then
-   `records.sh done`. `records.sh done` refuses an already-closing status — that is why
+   no ledger line. Repair is journal `curate`: rewrite `status:` back to `draft`, then
+   `records.sh done`. `records.sh done` refuses an already-archived status — that is why
    the writer must not pretend file-mode close is a ledger close.
 8. **Workshop stamp is orthogonal — and no longer picks any home.** The probe
    (`Seeded from clankshop` in `<agent-workspace>/doctrine/README.md`, default
@@ -603,5 +606,6 @@ names `consumes: records-tool` only when it *cannot* file-mode; the default is t
 
 - `docs/BOUNDARY-AUDIT.md` — the independence-auditing workflow (`skill-builder check`).
 - `scripts/skills-lint.sh` — the mechanical gate (`skill-builder check`).
+- `specs/records-front-matter.md` — record status / stage contract (writer rule 5).
 - `verbs/new.md` — scaffolds a skill against this doctrine's tiers.
 - `verbs/calibrate.md` — folds accreted authoring decisions back into this doc.

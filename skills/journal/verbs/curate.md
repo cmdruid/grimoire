@@ -10,6 +10,7 @@ client that owns the trackers, not here.
    check`** first — fix contract violations before anything cosmetic (a
    record `check` can't parse is invisible to every scan).
 2. **Records**: `records.sh list` **once** (optional filters if the human scoped the pass).
+   Unfiltered `list` is the live set (archived rows: `list --status archived`).
    Walk the one list; do not filter by doctype unless the human scoped the
    pass that way. Inspect each `check` **WARN**: repair files that were
    meant as records; leave dated non-records alone. A remaining WARN on
@@ -23,7 +24,8 @@ client that owns the trackers, not here.
    threshold and does not read doctrine for one. If the human named a
    date, `records.sh prune-candidates --until <date>` is the shortlist.
    Otherwise run `prune-candidates` unfiltered, present the closed set,
-   and ask for a threshold before proposing any deletion. The ledger line
+   and ask for a threshold before proposing any deletion. `prune-candidates`
+   still walks the ledger, not `list`. The ledger line
    and git history remain the trace. Deletions only after the human
    confirms.
 4. **One scoped commit** over everything touched

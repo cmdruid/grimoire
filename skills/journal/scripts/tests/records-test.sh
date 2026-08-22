@@ -30,13 +30,13 @@ today="$(date +%Y-%m-%d)"
 TPL="$proj/.records/templates"
 mkdir -p "$TPL"
 for t in plans notes trackers; do
-  printf -- '---\ndoctype: %s\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: [<tags>]\n---\n\n# <title>\n' "$t" \
+  printf -- '---\ndoctype: %s\nstatus: draft\ncreated: <date>\nupdated: <date>\ntags: [<tags>]\n---\n\n# <title>\n' "$t" \
     > "$TPL/$t.md"
 done
 
 # --- --template: path outside $RR is accepted -----------------------------------
 outside="$TMP/outside-plans.md"
-printf -- '---\ndoctype: plans\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\noutside\n' \
+printf -- '---\ndoctype: plans\nstatus: draft\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\noutside\n' \
   > "$outside"
 p_out="$("$RS" new plans --template "$outside" --title "From outside")"
 expect_eq "new --template outside \$RR" "$proj/.records/plans/$today-from-outside.md" "$p_out"
@@ -46,7 +46,7 @@ expect "outside template title filled" "# From outside" "$p_out"
 p="$("$RS" new plans --template "$TPL/plans.md" --title "Alpha: the first plan")"
 expect_eq "new prints the path" "$proj/.records/plans/$today-alpha-the-first-plan.md" "$p"
 expect "front-matter doctype" "doctype: plans" "$p"
-expect "front-matter status open" "status: open" "$p"
+expect "front-matter status draft" "status: draft" "$p"
 expect "front-matter created stamped" "created: $today" "$p"
 expect "title slot filled" "# Alpha: the first plan" "$p"
 expect_absent "no unfilled date slot" "<date>" "$p"
@@ -66,7 +66,7 @@ expect_eq "colliding slug gets a suffix" "$proj/.records/plans/$today-alpha-the-
 # --- list: TSV row + filters -----------------------------------------------------
 "$RS" new notes --template "$TPL/notes.md" --title "A fact" >/dev/null
 "$RS" list >"$OUT"
-expect "list row is TSV" "plans/$today-alpha-the-first-plan.md	plans	open	$today" "$OUT"
+expect "list row is TSV" "plans/$today-alpha-the-first-plan.md	plans	draft	$today" "$OUT"
 "$RS" list --type notes >"$OUT"
 expect "type filter keeps notes" "A fact" "$OUT"
 expect_absent "type filter drops plans" "plans" "$OUT"
@@ -77,14 +77,14 @@ expect "tag filter matches" "alpha-the-first-plan" "$OUT"
 expect_absent "tag filter excludes" "alpha-the-first-plan" "$OUT"
 
 # --- touch: stamps without hand-editing ------------------------------------------
-"$RS" touch "$p" --status current >/dev/null
-expect "touch sets status" "status: current" "$p"
+"$RS" touch "$p" --status published >/dev/null
+expect "touch sets status" "status: published" "$p"
 expect "touch keeps updated stamped" "updated: $today" "$p"
 
 # --- done: closure in place + the one ledger line --------------------------------
 "$RS" 'done' "$p" --as consumed --note "folded into the spec" >"$OUT"
 expect "done reports the ledger line" "consumed	plans/$today-alpha-the-first-plan.md" "$OUT"
-expect "record closed in place" "status: consumed" "$p"
+expect "record closed in place" "status: archived" "$p"
 expect "ledger line appended" "$today	consumed	plans/$today-alpha-the-first-plan.md	plans	Alpha: the first plan	folded into the spec" "$proj/.records/history.tsv"
 
 "$RS" history >"$OUT"
@@ -97,14 +97,175 @@ expect "history grep matches" "consumed" "$OUT"
 "$RS" check >"$OUT"
 expect "check green after lifecycle" "records check: OK (5 records)" "$OUT"
 
+# --- live-set list, --stage, migrate-status, two-predicates red-proofs ------------
+archived_rel="plans/$today-alpha-the-first-plan.md"
+printf '\nARCHIVED-BODY-TOKEN\n' >> "$p"
+"$RS" list >"$OUT"
+expect_absent "unfiltered list hides archived" "$archived_rel" "$OUT"
+"$RS" list --status archived >"$OUT"
+expect "list --status archived shows it" "$archived_rel" "$OUT"
+"$RS" touch "$p2" --status published >/dev/null
+"$RS" list --status draft --status published >"$OUT"
+expect "OR-union keeps draft" "from-outside" "$OUT"
+expect "OR-union keeps published" "alpha-the-first-plan-2" "$OUT"
+expect_absent "OR-union hides archived" "$archived_rel" "$OUT"
+"$RS" touch "$p2" --status draft >/dev/null
+"$RS" grep ARCHIVED-BODY-TOKEN >"$OUT"
+expect "grep without flags hits archived body" "$archived_rel" "$OUT"
+
+# --stage: two live records, OR, empty want, unknown stage, empty-key check
+sed -i.bak '/^status:/a\
+stage: approved
+' "$p_tag" && rm -f "$p_tag.bak"
+printf '\nSTAGE-BODY-TOKEN\n' >> "$p_tag"
+fact="$proj/.records/notes/$today-a-fact.md"
+sed -i.bak '/^status:/a\
+stage: other
+' "$fact" && rm -f "$fact.bak"
+"$RS" list --stage approved >"$OUT"
+expect "list --stage approved keeps it" "tagged-fact" "$OUT"
+expect_absent "list --stage approved drops other" "a-fact" "$OUT"
+rc=0; "$RS" list --stage no-such >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "list --stage no-such rc" "0" "$rc"
+expect_absent "list --stage no-such is empty" "tagged-fact" "$OUT"
+"$RS" list --stage approved --stage other >"$OUT"
+expect "stage OR keeps approved" "tagged-fact" "$OUT"
+expect "stage OR keeps other" "a-fact" "$OUT"
+rc=0; "$RS" list --stage "" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "list --stage empty-want rc" "0" "$rc"
+expect_absent "list --stage empty-want matches nothing" "tagged-fact" "$OUT"
+"$RS" grep STAGE-BODY-TOKEN --stage approved >"$OUT"
+expect "grep --stage approved keeps the body hit" "tagged-fact" "$OUT"
+sed -i.bak '/^status:/a\
+stage: totally-unknown
+' "$p_out" && rm -f "$p_out.bak"
+"$RS" check >"$OUT"
+expect "unknown stage does not fail check" "records check: OK" "$OUT"
+
+# empty stage: throwaway fixture (do not leave in the shared fixture)
+empty_stage="$TMP/empty-stage"
+mkdir -p "$empty_stage"
+"$SKILL/scripts/standup.sh" "$empty_stage" >/dev/null
+RSE="$empty_stage/.records/scripts/records.sh"
+mkdir -p "$empty_stage/.records/notes"
+printf -- '---\ndoctype: notes\nstatus: draft\ncreated: %s\nupdated: %s\ntags: []\nstage:\n---\n# Empty stage\n' \
+  "$today" "$today" > "$empty_stage/.records/notes/$today-empty-stage.md"
+rc=0; "$RSE" check >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "empty stage: check rc" "2" "$rc"
+expect "empty stage fails check" "stage is empty" "$ERR"
+
+# migrate-status: rewrite status: only; do not bump updated:; do not rewrite ledger
+mig="$TMP/migrate"
+mkdir -p "$mig"
+"$SKILL/scripts/standup.sh" "$mig" >/dev/null
+RSM="$mig/.records/scripts/records.sh"
+mkdir -p "$mig/.records/notes" "$mig/.records/plans"
+printf -- '---\ndoctype: notes\nstatus: open\ncreated: 2020-01-01\nupdated: 2020-01-01\ntags: []\n---\n# Old open\n' \
+  > "$mig/.records/notes/2020-01-01-old-open.md"
+printf -- '---\ndoctype: plans\nstatus: current\ncreated: 2020-01-01\nupdated: 2020-01-01\ntags: []\n---\n# Old current\n' \
+  > "$mig/.records/plans/2020-01-01-old-current.md"
+printf -- '---\ndoctype: notes\nstatus: consumed\ncreated: 2020-01-01\nupdated: 2020-01-01\ntags: []\n---\n# Old consumed\n' \
+  > "$mig/.records/notes/2020-01-01-old-consumed.md"
+printf '2020-01-01\tconsumed\tnotes/2020-01-01-old-consumed.md\tnotes\tOld consumed\t-\n' \
+  >> "$mig/.records/history.tsv"
+"$RSM" migrate-status >"$OUT"
+expect "migrate-status reports 3" "migrated=3" "$OUT"
+expect "open → draft" "status: draft" "$mig/.records/notes/2020-01-01-old-open.md"
+expect "current → published" "status: published" "$mig/.records/plans/2020-01-01-old-current.md"
+expect "consumed → archived" "status: archived" "$mig/.records/notes/2020-01-01-old-consumed.md"
+expect "migrate does not bump updated" "updated: 2020-01-01" "$mig/.records/notes/2020-01-01-old-open.md"
+expect "ledger disposition still consumed" "consumed	notes/2020-01-01-old-consumed.md" "$mig/.records/history.tsv"
+"$RSM" migrate-status >"$OUT"
+expect "second migrate-status is idempotent" "migrated=0" "$OUT"
+
+# Red-proof new check enum: plant status: open, demand red, restore
+enum_rec="$proj/.records/notes/$today-enum-open.md"
+printf -- '---\ndoctype: notes\nstatus: open\ncreated: %s\nupdated: %s\ntags: []\n---\n# Enum open\n' \
+  "$today" "$today" > "$enum_rec"
+before="$(grep -cF -- 'status: open' "$enum_rec" || true)"
+expect_eq "open plant present before check" "1" "$before"
+rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "open status fails the new enum rc" "2" "$rc"
+expect "open status named" "status not in the contract: open" "$ERR"
+rm "$enum_rec"
+after=0
+[ -f "$enum_rec" ] && after=1
+expect_eq "open plant gone after restore" "0" "$after"
+
+# Red-proof live-set list: comment out the live-default awk arm on a copy
+live_arm='live && s == "" && $3 != "draft" && $3 != "published" { next }'
+proj_live="$TMP/proj-live-default"
+mkdir -p "$proj_live"
+"$SKILL/scripts/standup.sh" "$proj_live" >/dev/null
+RSL="$proj_live/.records/scripts/records.sh"
+mkdir -p "$proj_live/.records/notes"
+printf -- '---\ndoctype: notes\nstatus: draft\ncreated: %s\nupdated: %s\ntags: []\n---\n# Live default\n' \
+  "$today" "$today" > "$proj_live/.records/notes/$today-live-default.md"
+"$RSL" 'done' "$proj_live/.records/notes/$today-live-default.md" --as 'done' >/dev/null
+"$RSL" list >"$OUT"
+expect_absent "copy list hides archived before the cut" "live-default" "$OUT"
+before="$(grep -cF -- "$live_arm" "$RSL" || true)"
+expect_eq "live-default arm present before the cut" "1" "$before"
+cp "$RSL" "$RSL.bak"
+awk -v s="$live_arm" '{ if (index($0, s)) print "#" $0; else print }' "$RSL.bak" > "$RSL"
+chmod +x "$RSL"
+after="$(grep -c '^[[:space:]]*live && s == ""' "$RSL" || true)"
+expect_eq "live-default arm commented after the cut" "0" "$after"
+"$RSL" list >"$OUT"
+expect "archived reappears once live-default is commented" "live-default" "$OUT"
+mv "$RSL.bak" "$RSL"
+chmod +x "$RSL"
+expect_eq "live-default script restored" "0" "$(cmp -s "$RSL" "$SKILL/scripts/records.sh"; echo $?)"
+
+# Red-proof no $disp == $status: restore the equality arm; archived+consumed goes red
+proj_eq="$TMP/proj-eq"
+mkdir -p "$proj_eq"
+"$SKILL/scripts/standup.sh" "$proj_eq" >/dev/null
+RSEQ="$proj_eq/.records/scripts/records.sh"
+mkdir -p "$proj_eq/.records/notes"
+printf -- '---\ndoctype: notes\nstatus: archived\ncreated: %s\nupdated: %s\ntags: []\n---\n# Eq plant\n' \
+  "$today" "$today" > "$proj_eq/.records/notes/$today-eq-plant.md"
+printf '%s\tconsumed\tnotes/%s-eq-plant.md\tnotes\tEq plant\t-\n' "$today" "$today" \
+  >> "$proj_eq/.records/history.tsv"
+"$RSEQ" check >"$OUT"
+expect "archived+consumed green before equality restore" "records check: OK" "$OUT"
+before="$(grep -cF -- 'deliberately no: elif [ "$disp" != "$status" ]' "$RSEQ" || true)"
+expect_eq "no-equality comment present before the cut" "1" "$before"
+cp "$RSEQ" "$RSEQ.bak"
+awk '
+  /deliberately no: elif/ {
+    print "      elif [ \"$disp\" != \"$status\" ]; then"
+    print "        echo \"FAIL: $rel — ledger disposition '\''$disp'\'' does not match closing status '\''$status'\''\" >&2"
+    print "        fails=$((fails + 1))"
+    print "      fi"
+    prev = ""
+    next
+  }
+  NR > 1 { print prev }
+  { prev = $0 }
+  END { if (prev != "") print prev }
+' "$RSEQ.bak" > "$RSEQ"
+chmod +x "$RSEQ"
+after="$(grep -cF -- 'deliberately no: elif [ "$disp" != "$status" ]' "$RSEQ" || true)"
+expect_eq "no-equality comment gone after the cut" "0" "$after"
+rc=0; "$RSEQ" check >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "restored equality arm fails archived+consumed rc" "2" "$rc"
+expect "restored equality names the mismatch" "does not match closing status" "$ERR"
+mv "$RSEQ.bak" "$RSEQ"
+chmod +x "$RSEQ"
+expect_eq "equality-proof script restored" "0" "$(cmp -s "$RSEQ" "$SKILL/scripts/records.sh"; echo $?)"
+
 # --- proven by breaking -----------------------------------------------------------
 rc=0; "$RS" 'done' "$p" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "double-done refused rc" "2" "$rc"
-expect "double-done names the status" "already closed (consumed)" "$ERR"
+expect "double-done names the status" "already closed (archived)" "$ERR"
 
-rc=0; "$RS" touch "$p2" --status 'done' >"$OUT" 2>"$ERR" || rc=$?
+rc=0; "$RS" touch "$p2" --status archived >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "closing via touch refused rc" "2" "$rc"
 expect "closing via touch routed to done" "closing status goes through 'done'" "$ERR"
+rc=0; "$RS" touch "$p2" --status 'done' >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "touch --status done is unknown rc" "2" "$rc"
+expect "touch --status done names unknown status" "unknown status: done" "$ERR"
 
 rc=0; "$RS" 'done' "$p2" --as wontfix >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "unknown disposition rc" "2" "$rc"
@@ -145,10 +306,10 @@ rm "$bad"
 
 # closed status with no ledger line: the coherence half of check
 sneaky="$proj/.records/notes/$today-sneaky.md"
-printf -- '---\ndoctype: notes\nstatus: done\ncreated: %s\nupdated: %s\ntags: []\n---\n# Sneaky\n' "$today" "$today" > "$sneaky"
+printf -- '---\ndoctype: notes\nstatus: archived\ncreated: %s\nupdated: %s\ntags: []\n---\n# Sneaky\n' "$today" "$today" > "$sneaky"
 rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "closed-without-ledger check rc" "2" "$rc"
-expect "check names the coherence break" "closing status 'done' but no history.tsv ledger line" "$ERR"
+expect "check names the coherence break" "archived but no history.tsv ledger line" "$ERR"
 rm "$sneaky"
 
 # --- record links: `→ <store>/<file>.md` must resolve (link-rot detection) --------
@@ -203,7 +364,7 @@ expect "the warning explains the miss" "no front-matter declaring a doctype" "$E
 
 # front-matter present but declaring no type: the (b) half of the discriminator
 typeless="$proj/.records/notes/$today-typeless.md"
-printf -- '---\nstatus: open\ncreated: %s\n---\n# Typeless\n' "$today" > "$typeless"
+printf -- '---\nstatus: draft\ncreated: %s\n---\n# Typeless\n' "$today" > "$typeless"
 [ -f "$typeless" ] || { echo "FAIL: typeless fixture was not applied" >&2; exit 1; }
 rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "a typeless shaped file does not fail the check" "0" "$rc"
@@ -224,7 +385,7 @@ tk="$("$RS" new notes --template "$TPL/notes.md" --title "Need the API key")"
 expect "consumed plan is a prune candidate" "consumed	plans/$today-alpha-the-first-plan.md" "$OUT"
 "$RS" prune-candidates --until 2000-01-01 >"$OUT"
 expect_absent "until-filter excludes newer closures" "alpha-the-first-plan" "$OUT"
-"$RS" touch "$tk" --status open >/dev/null   # reopened after closure: no longer prunable
+"$RS" touch "$tk" --status draft >/dev/null   # reopened after closure: no longer prunable
 "$RS" prune-candidates >"$OUT"
 expect_absent "reopened record is not a candidate" "need-the-api-key" "$OUT"
 rm "$proj/.records/plans/$today-alpha-the-first-plan.md"   # pruned: ledger line stays,
@@ -276,7 +437,7 @@ expect "front-mattered doctrine named not-a-record" "not a record: doctrine/test
 # Plant tags: [ZXSECRET] with no ZXSECRET in title or body → grep is empty
 # (exit 0). Title lives after the closing ---, so it must not contain the token.
 secret_tags="$proj/.records/notes/$today-tagged-zx.md"
-printf -- '---\ndoctype: notes\nstatus: open\ncreated: %s\nupdated: %s\ntags: [ZXSECRET]\n---\n\n# Tagged zx\n\nNo match word in the body.\n' \
+printf -- '---\ndoctype: notes\nstatus: draft\ncreated: %s\nupdated: %s\ntags: [ZXSECRET]\n---\n\n# Tagged zx\n\nNo match word in the body.\n' \
   "$today" "$today" > "$secret_tags"
 rc=0; "$RS" grep ZXSECRET >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "grep tags-only plant rc" "0" "$rc"
@@ -284,7 +445,7 @@ expect_absent "grep does not match tags in front-matter" "tagged-zx" "$OUT"
 
 # Plant ZXSECRET in the body → one row. Tags-only plant still excluded.
 secret_body="$proj/.records/notes/$today-body-zx.md"
-printf -- '---\ndoctype: notes\nstatus: open\ncreated: %s\nupdated: %s\ntags: []\n---\n\n# Body zx\n\nThe token ZXSECRET lives here.\n' \
+printf -- '---\ndoctype: notes\nstatus: draft\ncreated: %s\nupdated: %s\ntags: []\n---\n\n# Body zx\n\nThe token ZXSECRET lives here.\n' \
   "$today" "$today" > "$secret_body"
 "$RS" grep ZXSECRET >"$OUT"
 expect "grep matches body" "body-zx" "$OUT"
@@ -320,7 +481,7 @@ mkdir -p "$proj_grep"
 "$SKILL/scripts/standup.sh" "$proj_grep" >/dev/null
 RSG="$proj_grep/.records/scripts/records.sh"
 mkdir -p "$proj_grep/.records/notes"
-printf -- '---\ndoctype: notes\nstatus: open\ncreated: %s\nupdated: %s\ntags: [ZXSECRET]\n---\n\n# Tagged zx\n\nNo match word in the body.\n' \
+printf -- '---\ndoctype: notes\nstatus: draft\ncreated: %s\nupdated: %s\ntags: [ZXSECRET]\n---\n\n# Tagged zx\n\nNo match word in the body.\n' \
   "$today" "$today" > "$proj_grep/.records/notes/$today-tagged-zx.md"
 "$RSG" grep ZXSECRET >"$OUT"
 expect_absent "unbroken grep skips tags on the copy" "tagged-zx" "$OUT"
@@ -372,13 +533,13 @@ expect_eq "doctype .. refused rc" "2" "$rc"
   echo "FAIL: doctype .. wrote outside the records root" >&2; fail=$((fail + 1)); }
 
 mismatch="$proj/.records/notes/$today-mismatch.md"
-printf -- '---\ndoctype: notes\nstatus: done\ncreated: %s\nupdated: %s\ntags: []\n---\n# Mismatch\n' \
+printf -- '---\ndoctype: notes\nstatus: archived\ncreated: %s\nupdated: %s\ntags: []\n---\n# Mismatch\n' \
   "$today" "$today" > "$mismatch"
-printf '%s\tdropped\tnotes/%s-mismatch.md\tnotes\tMismatch\t-\n' "$today" "$today" \
+printf '%s\tconsumed\tnotes/%s-mismatch.md\tnotes\tMismatch\t-\n' "$today" "$today" \
   >> "$proj/.records/history.tsv"
 rc=0; "$RS" check >"$OUT" 2>"$ERR" || rc=$?
-expect_eq "disposition-mismatch check rc" "2" "$rc"
-expect "check names the disposition mismatch" "ledger disposition 'dropped' does not match closing status 'done'" "$ERR"
+expect_eq "archived+consumed check rc" "0" "$rc"
+expect "two predicates: archived file + ledger consumed is green" "records check: OK" "$OUT"
 rm "$mismatch"
 # drop the planted ledger line so later checks are not poisoned
 tmp_led="$proj/.records/history.tsv.keep"
@@ -411,7 +572,7 @@ mkdir -p "$proj2"
 "$SKILL/scripts/standup.sh" "$proj2" >/dev/null
 RS2="$proj2/.records/scripts/records.sh"
 mkdir -p "$proj2/.records/templates"
-printf -- '---\ndoctype: plans\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\n' \
+printf -- '---\ndoctype: plans\nstatus: draft\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\n' \
   > "$proj2/.records/templates/plans.md"
 
 # baseline: the UNBROKEN script is green on this exact fixture, so any change

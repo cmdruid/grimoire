@@ -1,6 +1,6 @@
 ---
 doctype: trackers
-status: open
+status: draft
 created: <date>
 updated: <date>
 tags: [<tags>]
@@ -16,7 +16,7 @@ flip:
     - [ ] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md
     - [x] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md — 2026-08-17
 
-The tracker itself stays `open`. Stamp every body edit with
+The tracker itself stays `draft`. Stamp every body edit with
 `records.sh touch <this file>` so `updated:` stays honest.
 
 ## Items

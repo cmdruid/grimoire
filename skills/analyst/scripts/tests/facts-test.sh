@@ -40,14 +40,14 @@ EOF
 mkdir -p "$FIX/.records/scripts" "$FIX/.records/templates" "$FIX/.records/trackers"
 
 # Two closures in span, one long before it.
-mk_record plans   2026-08-10-planted-feature "done"      2026-08-10
-mk_record plans   2026-08-12-second-feature "done"      2026-08-12
-mk_record plans   2026-01-05-ancient-work "done"      2026-01-05
+mk_record plans   2026-08-10-planted-feature "archived"      2026-08-10
+mk_record plans   2026-08-12-second-feature "archived"      2026-08-12
+mk_record plans   2026-01-05-ancient-work "archived"      2026-01-05
 # An open record inside the span, and a stale open one.
-mk_record specs   2026-08-14-open-design     open      2026-08-14
-mk_record bugs    2026-02-01-stale-bug       open      2026-02-01
+mk_record specs   2026-08-14-open-design     draft      2026-08-14
+mk_record bugs    2026-02-01-stale-bug       draft      2026-02-01
 # An audit report the health snapshot must attribute, never re-derive.
-mk_record reports 2026-08-05-audit-pass      open      2026-08-05 audit
+mk_record reports 2026-08-05-audit-pass      draft      2026-08-05 audit
 
 printf '%s\n' \
   "2026-08-10	done	plans/2026-08-10-planted-feature.md	plans	planted closure" \
@@ -58,7 +58,7 @@ printf '%s\n' \
 cat > "$FIX/.records/trackers/2026-08-14-backlog.md" <<'EOF'
 ---
 doctype: trackers
-status: current
+status: published
 created: 2026-08-01
 updated: 2026-08-14
 tags: []
@@ -105,10 +105,10 @@ expect "status: lists the open design"      "2026-08-14-open-design"  "$OUT"
 expect "status: counts tracker lines"       "trackers/2026-08-14-backlog.md	2"  "$OUT"
 
 # BREAK: close the open design — the open count must drop.
-sed -i.bak 's/^status: open/status: done/' "$FIX/.records/specs/2026-08-14-open-design.md"
+sed -i.bak 's/^status: draft/status: archived/' "$FIX/.records/specs/2026-08-14-open-design.md"
 "$FACTS" status "$FIX" > "$OUT" 2>&1
 expect "status BREAK: open count drops"     "open_records=2"          "$OUT"
-sed -i.bak 's/^status: done/status: open/' "$FIX/.records/specs/2026-08-14-open-design.md"
+sed -i.bak 's/^status: archived/status: draft/' "$FIX/.records/specs/2026-08-14-open-design.md"
 
 # --- a shared records home holds non-records (was BL-28) ----------------------
 # `each_record` must agree with `records.sh`'s discriminator. As a denylist it
@@ -116,14 +116,14 @@ sed -i.bak 's/^status: done/status: open/' "$FIX/.records/specs/2026-08-14-open-
 # home had its chapters counted as open records here but not by `records.sh`.
 # Both sides are now the same positive test, so there is no list to drift. The
 # three directories are planted with an undated, otherwise contract-shaped
-# `status: open` file each -- exactly what a template or a doctrine page looks
+# `status: draft` file each -- exactly what a template or a doctrine page looks
 # like. If any is scanned, the open count moves.
 for shared in doctrine templates scripts; do
   mkdir -p "$FIX/.records/$shared"
   cat > "$FIX/.records/$shared/planted.md" <<'EOF'
 ---
 doctype: specs
-status: open
+status: draft
 created: 2026-08-01
 updated: 2026-08-01
 tags: []
@@ -159,14 +159,14 @@ expect "health: gate state is not-run"        "gate_state=unknown-not-run" "$OUT
 expect_absent "health: emits no score"        "score="                     "$OUT"
 
 # BREAK: close the bug — the defect count must drop.
-sed -i.bak 's/^status: open/status: done/' "$FIX/.records/bugs/2026-02-01-stale-bug.md"
+sed -i.bak 's/^status: draft/status: archived/' "$FIX/.records/bugs/2026-02-01-stale-bug.md"
 "$FACTS" health "$FIX" > "$OUT" 2>&1
 expect "health BREAK: bug count drops"        "open_bugs=0"                "$OUT"
-sed -i.bak 's/^status: done/status: open/' "$FIX/.records/bugs/2026-02-01-stale-bug.md"
+sed -i.bak 's/^status: archived/status: draft/' "$FIX/.records/bugs/2026-02-01-stale-bug.md"
 
 # BREAK: reports/ with no audit tag must not abort (pipefail + grep -l).
 mv "$FIX/.records/reports/2026-08-05-audit-pass.md" "$FIX/audit-pass.bak"
-mk_record reports 2026-08-19-status-snap open 2026-08-19 "analyst, status"
+mk_record reports 2026-08-19-status-snap draft 2026-08-19 "analyst, status"
 rc=0
 "$FACTS" health "$FIX" > "$OUT" 2>&1 || rc=$?
 expect_eq "health BREAK: no-audit reports dir exits 0" "0" "$rc"

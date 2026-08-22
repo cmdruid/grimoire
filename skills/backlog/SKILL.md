@@ -46,8 +46,10 @@ is (or run the debrief if the intent is "capture everything that surfaced").
   `<agent-workspace>/templates` (declared `agent-workspace:`, else `.dev`). Pass both
   into every `scripts/record-mint.sh` call. The script does not scan the front door.
 - **In-package contract.** Front-matter keys: `doctype`, `status`, `created`, `updated`,
-  `tags`. Live statuses: `open`, `current`. Closed: `done`, `dropped`, `superseded`,
-  `consumed`. Dated slug `YYYY-MM-DD-<slug>.md`. Record-link form: `→ <dir>/<file>.md`.
+  `tags`. Live `draft`, `published`. Closed `archived` (ledger `--as` is `done` /
+  `dropped` / `superseded` / `consumed` when the tool exists). File-mode close writes
+  `archived`. Optional `stage` (non-empty if present). Dated slug
+  `YYYY-MM-DD-<slug>.md`. Record-link form: `→ <dir>/<file>.md`.
   Tracker-line form under `## Items`, newest last (same optional ` → <dir>/<file>.md`
   before the completion date). Do not send the agent to another skill for those bytes.
 - **`record-mint.sh` is the one minter.** Always call it (from this skill's own `scripts/`).
@@ -57,7 +59,7 @@ is (or run the debrief if the intent is "capture everything that surfaced").
   `status:` / `updated:` only. Minting doctype `tickets` or `bugs` from this
   package is a hard error.
 - **List without the tool.** When `records.sh` is missing, scan
-  `<agent-records>/<doctype>/*.md` and honor live vs closing `status:`. Find a tracker
+  `<agent-records>/<doctype>/*.md` and honor live vs `archived`. Find a tracker
   by its H1 title among live `trackers/` records.
 - **The three canonical trackers**, found by title and created lazily on first capture
   (`record-mint.sh mint <agent-records> <templates-home> trackers "<Title>"`): **Backlog**

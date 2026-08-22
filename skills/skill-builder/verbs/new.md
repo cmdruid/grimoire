@@ -37,8 +37,15 @@ verb's job).
        `.dev/templates/<name>/`); and, for a skill that reads or writes
        doctrine, the agent-workspace resolver — the doctrine home is
        `<agent-workspace>/doctrine`, default `.dev/doctrine/…`;
-     - the five-key in-package contract (keys, status vocabulary, dated slug,
-       record-link form) — do not send the agent to another skill for those bytes;
+     - the five-key in-package contract — do not send the agent to another
+       skill for those bytes. State: the five keys (`doctype`, `status`,
+       `created`, `updated`, `tags`); `status`: `draft` | `published` live,
+       `archived` closed; optional `stage` (non-empty if present; values
+       declared here if this skill uses the key); the dated slug
+       (`YYYY-MM-DD-<slug>.md`); the record-link form (`→ <store>/<file>.md`);
+       file-mode close → `archived`, not a ledger disposition word. The
+       registered contract is `specs/records-front-matter.md`. Do not
+       scaffold a `stage` key onto templates;
      - a no-floor sentence: missing `records.sh` is not an error; journal standup is
        never a precondition;
      - `## Project templates` (named lock-in files, or an explicit "none" if it writes

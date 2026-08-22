@@ -1,6 +1,6 @@
 ---
 doctype: specs
-status: open
+status: draft
 created: <date>
 updated: <date>
 tags: [spec, founding]

@@ -108,9 +108,10 @@ path, naming the file `YYYY-MM-DD-<slug>.md` (the record shape) under
 `<agent-records>/reports/` (default `.records/reports/`; create the store on
 first write) and write `tags: [analyst, <token>]` yourself. **The in-package
 contract:** front-matter keys `doctype`, `status`, `created`, `updated`,
-`tags`; live statuses `open` / `current`; closed `done` / `dropped` /
-`superseded` / `consumed`. File-mode writes those five keys; never invent a
-sixth. Only a `briefing`-tagged report is a span anchor. On a host with no
+`tags`; live `draft` / `published`; closed `archived` (ledger `--as` is
+`done` / `dropped` / `superseded` / `consumed` when the tool exists).
+File-mode close writes `archived`. File-mode writes those five keys; never
+invent a sixth. Only a `briefing`-tagged report is a span anchor. On a host with no
 records tool, file-mode still writes under the agent-records home.
 
 ## Anti-patterns

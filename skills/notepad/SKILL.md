@@ -54,11 +54,12 @@ session scratch that must not persist.
   write `history.tsv` by hand. Never write the flat
   `<agent-records>/templates/notes.md`.
 - **The record contract (this package).** Front-matter keys:
-  `doctype`, `status`, `created`, `updated`, `tags`. Live statuses:
-  `open`, `current`. Closed statuses: `done`, `dropped`,
-  `superseded`, `consumed`. Record-link form:
-  `→ <store>/<file>.md`. Do not send the agent to another skill's
-  `SKILL.md`.
+  `doctype`, `status`, `created`, `updated`, `tags`. Live
+  `draft`, `published`. Closed `archived` (ledger `--as` is `done` /
+  `dropped` / `superseded` / `consumed` when the tool exists).
+  File-mode close writes `archived`. Optional `stage` (non-empty if
+  present). Record-link form: `→ <store>/<file>.md`. Do not send
+  the agent to another skill's `SKILL.md`.
 - **Resolve the commit tree, then commit there.** `<root>` is
   `git rev-parse --show-toplevel` of the checkout that holds the notes
   you wrote — never a different clone, and never the repo's root

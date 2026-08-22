@@ -35,7 +35,7 @@ the wrong review verb — refuse it.
    clean ground-check finds moved files; the trap is a confident doc citing a
    function that never existed — or a `file:line` that resolves but points at
    different code than the prose claims). On a workshop host, check the doc
-   against `core/` (invariants, gotchas) and the `status: current` spec + live
+   against `core/` (invariants, gotchas) and the `status: published` spec + live
    ADRs. **Substrate-skeptic is default off** here; turn it on only when a plan
    claims a mechanism shaped by deletable substrate (a code built-in, an
    integer pipeline, a frozen baseline) — then ask *which mechanisms would not

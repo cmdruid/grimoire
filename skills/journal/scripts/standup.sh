@@ -108,6 +108,7 @@ echo "records: $rr ($label)"
 [ "$wrote_script" -eq 1 ] && echo "wrote: $rr_from_root/scripts/records.sh"
 [ "$wrote_ledger" -eq 1 ] && echo "wrote: $rr_from_root/history.tsv"
 [ "$wrote_readme" -eq 1 ] && echo "wrote: $rr_from_root/README.md"
+"$rr/scripts/records.sh" migrate-status
 if ! "$rr/scripts/records.sh" check; then
   echo "records check failed — tool layer is up; run /journal curate" >&2
   exit 0

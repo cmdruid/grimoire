@@ -5,15 +5,16 @@
 # (resolved from its own location — never from cwd). The script owns the facts —
 # dates, paths, conformance — so agents never guess them.
 #
-#   records.sh list [--type t] [--status s] [--tag g] [--since d] [--until d]
-#   records.sh grep [--type t] [--status s] [--tag g] [--since d] [--until d] <pattern>
+#   records.sh list [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s]
+#   records.sh grep [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s] <pattern>
 #   records.sh show <path>
 #   records.sh new <doctype> --title "..." --template <path> [--dir rel] [--tag t]...
-#   records.sh touch <path> [--status open|current]
+#   records.sh touch <path> [--status draft|published]
 #   records.sh done <path> [--as done|dropped|superseded|consumed] [--note "..."]
 #   records.sh history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
 #   records.sh prune-candidates [--until d]
 #   records.sh check
+#   records.sh migrate-status
 #
 # A file is a RECORD iff it is named YYYY-MM-DD-<slug>.md AND carries a
 # front-matter block that declares a doctype. That is the whole discriminator:
@@ -22,28 +23,31 @@
 # templates, scripts) needs no reserved names — those files are simply not
 # records. The authoritative doctype is the front-matter key, never the parent
 # directory. `list`/`history` emit TSV — grep/awk-friendly, no parser needed.
-# Querying is a live scan (no stored index). Closure is in place: `done` sets the
-# closing status and appends the one ledger line to history.tsv — the ledger's
-# sole writer. The path is the ID.
+# Querying is a live scan (no stored index). Closure stamps the file `archived`
+# and appends `--as` to history.tsv — the ledger's sole writer. `list` default
+# is the live set (`draft` ∪ `published`). The path is the ID.
 # Exit codes: 0 ok · 1 usage · 2 error / check failure.
 set -eu
 
 RR="$(cd "$(dirname "$0")/.." && pwd)"
 LEDGER="$RR/history.tsv"
 TAB="$(printf '\t')"
+NL="$(printf '\n/')"
+NL="${NL%/}"
 
 usage() {
   cat >&2 <<'EOF'
 usage: records.sh <command> [args]
-  list    [--type t] [--status s] [--tag g] [--since d] [--until d]
-  grep    [--type t] [--status s] [--tag g] [--since d] [--until d] <pattern>
+  list    [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s]
+  grep    [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s] <pattern>
   show    <path>
   new     <doctype> --title "..." --template <path> [--dir rel] [--tag t]...
-  touch   <path> [--status open|current]
+  touch   <path> [--status draft|published]
   done    <path> [--as done|dropped|superseded|consumed] [--note "..."]
   history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
   prune-candidates [--until d]
   check
+  migrate-status
 EOF
   exit 1
 }
@@ -59,8 +63,9 @@ valid_rel_dir() {
   return 0
 }
 
-is_closing() { case "$1" in done|dropped|superseded|consumed) return 0 ;; *) return 1 ;; esac; }
-is_status()  { case "$1" in open|current|done|dropped|superseded|consumed) return 0 ;; *) return 1 ;; esac; }
+is_disposition() { case "$1" in done|dropped|superseded|consumed) return 0 ;; *) return 1 ;; esac; }
+is_archived()    { [ "$1" = archived ]; }
+is_status()      { case "$1" in draft|published|archived) return 0 ;; *) return 1 ;; esac; }
 
 # resolve <path-arg>: sets abs + rel (rel is records-root-relative, the ledger form).
 resolve() {
@@ -129,36 +134,77 @@ meta_row() {
   ' "$RR/$1"
 }
 
+# live=1 → default hide archived; live=0 → no default status filter.
+filter_rows() {
+  live="$1"
+  awk -F'\t' -v t="$f_type" -v s="$f_status" -v g="$f_tag" \
+      -v a="$f_since" -v z="$f_until" -v live="$live" '
+    function in_set(val, set,   n, arr, i) {
+      if (set == "") return 0
+      n = split(set, arr, " ")
+      for (i = 1; i <= n; i++) if (arr[i] == val) return 1
+      return 0
+    }
+    t != "" && $2 != t { next }
+    live && s == "" && $3 != "draft" && $3 != "published" { next }
+    s != "" && !in_set($3, s) { next }
+    g != "" && index("," $5 ",", "," g ",") == 0 { next }
+    a != "" && $4 < a { next }
+    z != "" && $4 > z { next }
+    { print }
+  '
+}
+
+stage_ok() {  # rel; f_stage is newline-separated wanted values
+  [ "$f_stage_given" -eq 0 ] && return 0
+  val="$(fm_field "$RR/$1" stage)"
+  val="$(printf '%s' "$val" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  [ -n "$val" ] || return 1
+  printf '%s\n' "$f_stage" | grep -qxF -- "$val"
+}
+
 cmd_list() {
-  f_type=""; f_status=""; f_tag=""; f_since=""; f_until=""
+  f_type=""; f_status=""; f_tag=""; f_since=""; f_until=""; f_stage=""; f_stage_given=0
   while [ $# -gt 0 ]; do
     case "$1" in
       --type)   [ $# -ge 2 ] || usage; f_type="$2";   shift 2 ;;
-      --status) [ $# -ge 2 ] || usage; f_status="$2"; shift 2 ;;
+      --status)
+        [ $# -ge 2 ] || usage
+        is_status "$2" || err "unknown status: $2"
+        f_status="${f_status:+$f_status }$2"
+        shift 2 ;;
+      --stage)
+        [ $# -ge 2 ] || usage
+        f_stage_given=1
+        f_stage="${f_stage:+$f_stage$NL}$2"
+        shift 2 ;;
       --tag)    [ $# -ge 2 ] || usage; f_tag="$2";    shift 2 ;;
       --since)  [ $# -ge 2 ] || usage; f_since="$2";  shift 2 ;;
       --until)  [ $# -ge 2 ] || usage; f_until="$2";  shift 2 ;;
       *) usage ;;
     esac
   done
-  records | while IFS= read -r r; do meta_row "$r"; done \
-    | awk -F'\t' -v t="$f_type" -v s="$f_status" -v g="$f_tag" -v a="$f_since" -v z="$f_until" '
-        t != "" && $2 != t { next }
-        s != "" && $3 != s { next }
-        g != "" && index("," $5 ",", "," g ",") == 0 { next }
-        a != "" && $4 < a { next }
-        z != "" && $4 > z { next }
-        { print }
-      ' \
-    | sort -t "$TAB" -k4,4r -k1,1
+  records | while IFS= read -r r; do
+    stage_ok "$r" || continue
+    meta_row "$r"
+  done | filter_rows 1 | sort -t "$TAB" -k4,4r -k1,1
 }
 
 cmd_grep() {
-  f_type=""; f_status=""; f_tag=""; f_since=""; f_until=""; pattern=""
+  f_type=""; f_status=""; f_tag=""; f_since=""; f_until=""; f_stage=""; f_stage_given=0; pattern=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --type)   [ $# -ge 2 ] || usage; f_type="$2";   shift 2 ;;
-      --status) [ $# -ge 2 ] || usage; f_status="$2"; shift 2 ;;
+      --status)
+        [ $# -ge 2 ] || usage
+        is_status "$2" || err "unknown status: $2"
+        f_status="${f_status:+$f_status }$2"
+        shift 2 ;;
+      --stage)
+        [ $# -ge 2 ] || usage
+        f_stage_given=1
+        f_stage="${f_stage:+$f_stage$NL}$2"
+        shift 2 ;;
       --tag)    [ $# -ge 2 ] || usage; f_tag="$2";    shift 2 ;;
       --since)  [ $# -ge 2 ] || usage; f_since="$2";  shift 2 ;;
       --until)  [ $# -ge 2 ] || usage; f_until="$2";  shift 2 ;;
@@ -179,18 +225,10 @@ cmd_grep() {
       infm { next }  # GREP_SKIP_FM
       { print }
     ' "$RR/$r" | grep -q -- "$pattern"; then
+      stage_ok "$r" || continue
       meta_row "$r"
     fi
-  done \
-    | awk -F'\t' -v t="$f_type" -v s="$f_status" -v g="$f_tag" -v a="$f_since" -v z="$f_until" '
-        t != "" && $2 != t { next }
-        s != "" && $3 != s { next }
-        g != "" && index("," $5 ",", "," g ",") == 0 { next }
-        a != "" && $4 < a { next }
-        z != "" && $4 > z { next }
-        { print }
-      ' \
-    | sort -t "$TAB" -k4,4r -k1,1
+  done | filter_rows 0 | sort -t "$TAB" -k4,4r -k1,1
 }
 
 cmd_show() {
@@ -319,7 +357,7 @@ cmd_touch() {
   done
   if [ -n "$new_status" ]; then
     is_status "$new_status" || err "unknown status: $new_status"
-    is_closing "$new_status" && err "closing status goes through 'done', not 'touch': $new_status"
+    is_archived "$new_status" && err "closing status goes through 'done', not 'touch': $new_status"
   fi
   require_record
   stamp "$abs" "$(date +%Y-%m-%d)" "$new_status"
@@ -337,10 +375,10 @@ cmd_done() {
       *) usage ;;
     esac
   done
-  is_closing "$disposition" || err "unknown disposition: $disposition (done|dropped|superseded|consumed)"
+  is_disposition "$disposition" || err "unknown disposition: $disposition (done|dropped|superseded|consumed)"
   require_record
   status="$(fm_field "$abs" status)"
-  is_closing "$status" && err "already closed ($status): $rel"
+  is_archived "$status" && err "already closed ($status): $rel"
   doctype="$(fm_field "$abs" doctype)"
   title="$(awk '/^# /{ print substr($0, 3); exit }' "$abs" | tr '\t' ' ')"
   note="$(printf '%s' "$note" | tr '\t\n' '  ')"
@@ -348,7 +386,7 @@ cmd_done() {
   : >> "$LEDGER" || err "cannot write ledger: $LEDGER"
   bak="$abs.done-bak"
   cp "$abs" "$bak"
-  stamp "$abs" "$today" "$disposition"
+  stamp "$abs" "$today" "archived"
   line="$(printf '%s\t%s\t%s\t%s\t%s\t%s' "$today" "$disposition" "$rel" "$doctype" "$title" "$note" | tr '\n' ' ')"
   if ! printf '%s\n' "$line" >> "$LEDGER"; then
     mv "$bak" "$abs"
@@ -402,7 +440,7 @@ cmd_prune_candidates() {
   awk -F'\t' -v z="$f_until" 'z != "" && $1 > z { next } { print }' "$LEDGER" \
     | while IFS="$TAB" read -r d disp rel dt title note; do
         [ -f "$RR/$rel" ] || continue
-        is_closing "$(fm_field "$RR/$rel" status)" || continue
+        is_archived "$(fm_field "$RR/$rel" status)" || continue
         printf '%s\t%s\t%s\t%s\t%s\n' "$d" "$disp" "$rel" "$dt" "$title"
       done
 }
@@ -429,13 +467,17 @@ cmd_check() {
         else if ($0 ~ /^created:/) { v = $0; sub(/^created:[ \t]*/, "", v); fm["created"] = v }
         else if ($0 ~ /^updated:/) { v = $0; sub(/^updated:[ \t]*/, "", v); fm["updated"] = v }
         else if ($0 ~ /^tags:/)    { fm["tags"] = "present" }
+        else if ($0 ~ /^stage:/) {
+          v = $0; sub(/^stage:[ \t]*/, "", v); sub(/[ \t]+$/, "", v)
+          if (v == "") print "stage is empty"
+        }
         next
       }
       END {
         if (!fmdone) { print "unterminated front-matter block"; exit }
         split("doctype status created updated tags", keys, " ")
         for (i in keys) if (!(keys[i] in fm)) print "missing key: " keys[i]
-        if (("status" in fm) && fm["status"] !~ /^(open|current|done|dropped|superseded|consumed)$/)
+        if (("status" in fm) && fm["status"] !~ /^(draft|published|archived)$/)
           print "status not in the contract: " fm["status"]
         if (("created" in fm) && fm["created"] !~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/)
           print "created is not YYYY-MM-DD: " fm["created"]
@@ -473,21 +515,17 @@ cmd_check() {
 $links
 LINKS
     fi
-    # status <-> ledger coherence: a closing status requires a ledger line
-    # whose disposition matches.
     status="$(fm_field "$RR/$rel" status)"
-    if is_closing "$status"; then
+    if is_archived "$status"; then
       disp=""
       if [ -f "$LEDGER" ]; then
         disp="$(awk -F'\t' -v p="$rel" '$3 == p { print $2; exit }' "$LEDGER")"
       fi
       if [ -z "$disp" ]; then
-        echo "FAIL: $rel — closing status '$status' but no history.tsv ledger line" >&2
-        fails=$((fails + 1))
-      elif [ "$disp" != "$status" ]; then
-        echo "FAIL: $rel — ledger disposition '$disp' does not match closing status '$status'" >&2
+        echo "FAIL: $rel — archived but no history.tsv ledger line" >&2
         fails=$((fails + 1))
       fi
+      # deliberately no: elif [ "$disp" != "$status" ]
     fi
   done < "$tmp"
   # ledger well-formedness: six tab-separated fields, a known disposition.
@@ -525,6 +563,40 @@ LINKS
   echo "records check: OK ($count records)"
 }
 
+# Rewrite status: only. Do not bump updated:. Do not touch history.tsv.
+migrate_status_line() {  # abs
+  tmp="$1.tmp"
+  awk '
+    BEGIN { infm = 0; fmdone = 0 }
+    NR == 1 && $0 == "---" { infm = 1; print; next }
+    infm && !fmdone && $0 == "---" { fmdone = 1; infm = 0; print; next }
+    infm && /^status:/ {
+      v = $0; sub(/^status:[ \t]*/, "", v)
+      if      (v == "open")                              v = "draft"
+      else if (v == "current")                           v = "published"
+      else if (v ~ /^(done|dropped|superseded|consumed)$/) v = "archived"
+      print "status: " v; next
+    }
+    { print }
+  ' "$1" > "$tmp" && mv "$tmp" "$1"
+}
+
+cmd_migrate_status() {
+  migrated=0
+  list="$(mktemp "${TMPDIR:-/tmp}/records-migrate.XXXXXX")"
+  records > "$list"
+  while IFS= read -r r; do
+    before="$(fm_field "$RR/$r" status)"
+    migrate_status_line "$RR/$r"
+    after="$(fm_field "$RR/$r" status)"
+    if [ "$before" != "$after" ]; then
+      migrated=$((migrated + 1))
+    fi
+  done < "$list"
+  rm -f "$list"
+  echo "migrated=$migrated"
+}
+
 [ $# -ge 1 ] || usage
 cmd="$1"; shift
 case "$cmd" in
@@ -537,5 +609,6 @@ case "$cmd" in
   history) cmd_history "$@" ;;
   prune-candidates) cmd_prune_candidates "$@" ;;
   check)   cmd_check "$@" ;;
+  migrate-status) cmd_migrate_status "$@" ;;
   *) usage ;;
 esac

@@ -16,7 +16,7 @@ stop.
 
 ## Gather
 
-1. `analyst-facts.sh health <root>` — open bug records, stale records (`open` with old
+1. `analyst-facts.sh health <root>` — open bug records, stale records (`draft` with old
    `updated:`), recorded audit reports, ledger cadence. Tracker line counts are a
    `status` fact — run `analyst-facts.sh status <root>` (or read the tracker records)
    if this snapshot needs tracker debt.

@@ -37,7 +37,8 @@ generalize). Never present a calibration as a done deal the human didn't review.
    present-tense doctrine — generically, no host-library-specific paths or skill names baked in (this
    doc must stay portable). Where a source record's reasoning is worth preserving for *why*, leave the
    record in place and mark it superseded/implemented rather than deleting it — `docs/DOCTRINE.md` is
-   the *what's true now*; the record stays the *why it changed*.
+   the *what's true now*; the record stays the *why it changed*. `calibrate` may add a file under `specs/`; it does
+   not fold enum tables back into `docs/DOCTRINE.md`.
 
 4. **Human review.** Present the diff — what moved into the doctrine, what stayed a historical record,
    what (if anything) didn't survive reconciliation and why. The human confirms before it's treated as

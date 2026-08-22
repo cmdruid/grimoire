@@ -1,6 +1,6 @@
 ---
 doctype: reports
-status: open
+status: draft
 created: <date>
 updated: <date>
 tags: [debrief]

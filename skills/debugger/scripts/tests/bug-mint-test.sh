@@ -57,7 +57,7 @@ expect_eq "mint rel" "bugs/$today-alpha-crash.md" "$(kv rel "$OUT")"
 path="$(kv path "$OUT")"
 expect_eq "mint path exists" "1" "$([ -f "$path" ] && echo 1 || echo 0)"
 expect_match "doctype" '^doctype: bugs$' "$(cat "$path")"
-expect_match "status open" '^status: open$' "$(cat "$path")"
+expect_match "status draft" '^status: draft$' "$(cat "$path")"
 expect_match "created today" "^created: $today$" "$(cat "$path")"
 expect_match "updated today" "^updated: $today$" "$(cat "$path")"
 expect_match "filled title" '^# Alpha crash$' "$(cat "$path")"
@@ -83,7 +83,7 @@ fi
 
 # file-mode close must not create history.tsv
 /bin/bash "$MINT" stamp "$RR" "$path" --status "done" --note "fixed" >/dev/null
-expect_match "file-mode close status" '^status: done$' "$(cat "$path")"
+expect_match "file-mode close status" '^status: archived$' "$(cat "$path")"
 expect_absent "file-mode close no history.tsv" "$RR/history.tsv"
 expect_absent "stamp opened no trackers/" "$RR/trackers"
 
@@ -112,8 +112,9 @@ if [ -f "$JOURNAL_RS" ]; then
 
   STAMP_RS="$(/bin/bash "$MINT" stamp "$RR2" "$rpath" --status "done" --note "fixed")"
   expect_eq "stamp records mode" "records" "$(kv mode "$STAMP_RS")"
-  expect_match "stamp records status" '^status: done$' "$(cat "$rpath")"
+  expect_match "stamp records status" '^status: archived$' "$(cat "$rpath")"
   expect_eq "ledger one line" "1" "$(grep -c . "$RR2/history.tsv" || true)"
+  expect_match "ledger --as done" '	done	' "$(cat "$RR2/history.tsv")"
   expect_absent "records stamp opened no trackers/" "$RR2/trackers"
 fi
 

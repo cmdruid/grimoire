@@ -43,7 +43,7 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
   trackers exist and what belongs on them is the follow-up workflow's judgment, not the
   format's.
 - **Closure is in place; history is a ledger.** A finished record never moves: `records.sh
-  done` sets the closing status and appends the one ledger line to `history.tsv` — its sole
+  done` stamps the file `archived` and appends the one ledger line to `history.tsv` — its sole
   writer, never hand-edited. A tracker *line-item* completes per the contract's line form
   (below), not through the ledger.
 
@@ -59,11 +59,11 @@ template → error), not by `check`.
   (both ISO `YYYY-MM-DD`), `tags`. A missing or empty `doctype` means the file is not a
   record at all; `check` reports it as a **WARN** when the filename wears the record shape,
   so a malformed record is surfaced rather than silently skipped by the crawl.
-- **Status vocabulary**: `open` | `current` while live; `done` | `dropped` | `superseded` |
-  `consumed` to close. A closing status **requires** a matching `history.tsv` ledger line
-  (`check` flags a hand-closed record); the ledger line is six tab-separated fields — date,
-  disposition, records-root-relative path, doctype, title, note — written only by
-  `records.sh done`.
+- **Status vocabulary**: `draft` | `published` while live; `archived` to close. A closing
+  status is `archived` and **requires a** `history.tsv` ledger line (disposition is the
+  ledger `--as` word, not the file status). `check` flags a hand-closed record; the ledger
+  line is six tab-separated fields — date, disposition, records-root-relative path, doctype,
+  title, note — written only by `records.sh done`.
 - **Record links**: `→ <dir>/<file>.md` — the record's records-root-relative path, whatever
   directory its writer put it in; `check` flags rot.
 - **Tracker line form**: under `## Items`, newest last. Live and completed (same optional

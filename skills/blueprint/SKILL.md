@@ -26,7 +26,7 @@ not the machinery. "Here are two approaches; I recommend A because…" /
 After `revise`: questions (when they fire) are a stop; the proposal
 is a stop; after apply without named re-review, the offer is a
 further stop. Do not collapse questions and proposal into one ask.
-`founding-shaped`, `status: open`, and station names stay in the files.
+`founding-shaped`, `status: draft`, and station names stay in the files.
 
 ## One environment probe (at entry)
 
@@ -52,7 +52,7 @@ file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the tool
 will not see it. `spec.md` carries both the front-matter and the body scaffold,
 so there is no second template to fill from. Never write the flat
 `<agent-workspace>/templates/<doctype>.md`. Status promotion:
-`records.sh touch --status current` when the tool exists; else file-mode
+`records.sh touch --status published` when the tool exists; else file-mode
 stamp. Closure through `records.sh done` when the tool exists; else
 file-mode stamp. Founding-shaped `grill` / `spec` stay on the named file
 (no records mint). `new` / `deploy` unchanged.
@@ -62,19 +62,19 @@ file-mode stamp. Founding-shaped `grill` / `spec` stay on the named file
 `deploy`, and it does **not** apply to `grill`/`spec` when the named file is
 founding-shaped (*Founding-shaped* below). Those stay on the cwd working file.
 
-**Status vocabulary** (the records contract): a working draft is `status: open`;
-the accepted, living spec is promoted to `status: current` (one per subject);
-closure — `done`, `dropped`, `superseded`, `consumed` — goes through
-`records.sh done` on a workshop host. Founding-shaped working files stay
-`status: open`. They are not the living feature spec. Do not promote them
-to `status: current`.
+**Status vocabulary** (the records contract): a working draft is `status: draft`;
+the accepted, living spec is promoted to `status: published` (one `published`
+spec per subject); closed is `archived`. Closure goes through
+`records.sh done` on a workshop host. Optional `stage` (non-empty if present).
+Founding-shaped working files stay `status: draft`. They are not the living
+feature spec. Do not promote them to `status: published`.
 
 ## The verbs
 
 | Invocation | Does | Consumes → Produces | Station |
 |---|---|---|---|
-| (none) | `brainstorm` | conversation + prompt → `specs/` doc (`status: open`) | design |
-| `brainstorm [topic]` | divergent ideation → a draft design doc | conversation + prompt → `specs/` doc (`status: open`) | design |
+| (none) | `brainstorm` | conversation + prompt → `specs/` doc (`status: draft`) | design |
+| `brainstorm [topic]` | divergent ideation → a draft design doc | conversation + prompt → `specs/` doc (`status: draft`) | design |
 | `new <name>` | mint `./<name>.md` — founding-shaped, empty of design content | — → that file only | — |
 | `grill [doc]` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** | a draft / spec (or the conversation) → resolved decisions | design |
 | `spec [doc]` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) | conversation or draft → feature `specs/` spec, **or** the named founding file | design |
@@ -154,7 +154,7 @@ draft before asking anything; never start from a blank template.
 
 1. **Explore context** — the relevant code, docs, recent commits, and the host's
    design context (workshop: design-station summon + the `specs/` store's
-   `status: current` spec; standalone: the project's own design docs) before
+   `status: published` spec; standalone: the project's own design docs) before
    asking anything. Don't brainstorm blind.
 2. **Scope check** — an idea spanning several independent subsystems decomposes
    into separate features first; brainstorm the first one. **And ask "is this
@@ -168,7 +168,7 @@ draft before asking anything; never start from a blank template.
    lead with a recommendation and say why.
 4. **Converge conversationally** — one question at a time (multiple-choice when
    possible), confirming each section before the next. YAGNI ruthlessly.
-5. **Write the draft** — a `specs/` doc (`status: open`), shaped per
+5. **Write the draft** — a `specs/` doc (`status: draft`), shaped per
    `templates/spec.md`'s sections at draft weight: problem, goal, candidate
    approach, open questions listed at the foot. Unresolved branches are
    *expected* here — `grill` or `spec` resolves them.
@@ -249,8 +249,8 @@ promotion. Refuse the otherwise-case. They never scan cwd.
    sequenced against it. For an ADR-tier spec, an independent `review` first is
    recommended by default — design-stage review has caught must-fix defects
    before any cut existed. On approval it becomes the candidate
-   `status: current` spec (workshop: flip via
-   `records.sh touch <spec> --status current`; the superseded spec, if any,
+   `status: published` spec (workshop: flip via
+   `records.sh touch <spec> --status published`; the superseded spec, if any,
    closes `--as superseded` naming its successor).
 
 Output: the argued spec. Tell the human where it is and that they should
@@ -296,7 +296,7 @@ for this review — refuse it.
    clean ground-check finds moved files; the trap is a confident doc citing a
    function that never existed — or a `file:line` that resolves but points at
    different code than the prose claims). On a workshop host, check the doc
-   against `core/` (invariants, gotchas) and the `status: current` spec + live
+   against `core/` (invariants, gotchas) and the `status: published` spec + live
    ADRs. **Add the substrate-skeptic pass** — grounding anchors the review to
    the present code, so deliberately ask its inverse: *which mechanisms would
    not exist in a from-scratch implementation?* A mechanism shaped by deletable

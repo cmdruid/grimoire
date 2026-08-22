@@ -12,10 +12,12 @@ Do not copy or refresh `records.sh` from here.
    `grep` line) → stop and name `/journal setup` (a later visit refreshes
    the tool). Do not copy the bundled `records.sh` from here.
 4. Parse the query into optional `list`-shaped filters (`--type` /
-   `--status` / `--tag` / `--since` / `--until` when the user named them)
+   `--status` / `--tag` / `--since` / `--until` / `--stage` when the user named them)
    and an optional **body** pattern. Metadata lives only in those
    filters, never in the pattern (`grep` skips front-matter). Map a
    metadata-shaped query onto filters before concluding "none".
+   `list` without `--status` hides `archived`; `grep` without `--status`
+   does not.
    - No body pattern (filters only, or a metadata-only ask) →
      `records.sh list` with those filters.
    - Body pattern → `records.sh grep` with those filters.

@@ -18,7 +18,7 @@ usage() {
 
 err() { echo "record-mint.sh: $*" >&2; exit 2; }
 
-is_closing() { case "$1" in done|dropped|superseded|consumed) return 0 ;; *) return 1 ;; esac; }
+is_disposition() { case "$1" in done|dropped|superseded|consumed) return 0 ;; *) return 1 ;; esac; }
 
 SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SKILL_NAME="backlog"
@@ -162,7 +162,7 @@ cmd_stamp() {
   if has_records "$rr"; then
     case "$path" in
       "$rr"/*)
-        if [ -n "$status" ] && is_closing "$status"; then
+        if [ -n "$status" ] && is_disposition "$status"; then
           if [ -n "$note" ]; then
             "$rr/scripts/records.sh" "done" "$path" --as "$status" --note "$note" >/dev/null
           else
@@ -179,12 +179,20 @@ cmd_stamp() {
         fi
         ;;
       *)
-        file_stamp "$path" "$(date +%Y-%m-%d)" "$status"
+        if is_disposition "$status"; then
+          file_stamp "$path" "$(date +%Y-%m-%d)" "archived"
+        else
+          file_stamp "$path" "$(date +%Y-%m-%d)" "$status"
+        fi
         mode="stamp"
         ;;
     esac
   else
-    file_stamp "$path" "$(date +%Y-%m-%d)" "$status"
+    if is_disposition "$status"; then
+      file_stamp "$path" "$(date +%Y-%m-%d)" "archived"
+    else
+      file_stamp "$path" "$(date +%Y-%m-%d)" "$status"
+    fi
     mode="stamp"
   fi
   rel="${path#"$rr"/}"

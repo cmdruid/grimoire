@@ -57,7 +57,7 @@ expect_eq "mint rel" "trackers/$today-alpha-crash.md" "$(kv rel "$OUT")"
 path="$(kv path "$OUT")"
 expect_eq "mint path exists" "1" "$([ -f "$path" ] && echo 1 || echo 0)"
 expect_match "doctype" '^doctype: trackers$' "$(cat "$path")"
-expect_match "status open" '^status: open$' "$(cat "$path")"
+expect_match "status draft" '^status: draft$' "$(cat "$path")"
 expect_match "created today" "^created: $today$" "$(cat "$path")"
 expect_match "updated today" "^updated: $today$" "$(cat "$path")"
 expect_match "filled title" '^# Alpha crash$' "$(cat "$path")"
@@ -92,14 +92,14 @@ fi
 
 # file-mode close must not create history.tsv
 /bin/bash "$MINT" stamp "$RR" "$path" --status "done" --note "fixed" >/dev/null
-expect_match "file-mode close status" '^status: done$' "$(cat "$path")"
+expect_match "file-mode close status" '^status: archived$' "$(cat "$path")"
 expect_absent "file-mode close no history.tsv" "$RR/history.tsv"
 
 # previous-home adopt: skill-namespaced file under records → templates home
 RRP="$TMP/prev-home"
 TH="$TMP/ws/templates"
 mkdir -p "$RRP/templates/backlog"
-printf -- '---\ndoctype: trackers\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\nprevious-home\n\n## Items\n' \
+printf -- '---\ndoctype: trackers\nstatus: draft\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\nprevious-home\n\n## Items\n' \
   > "$RRP/templates/backlog/trackers.md"
 OUTP="$(/bin/bash "$MINT" mint "$RRP" "$TH" trackers "Backlog")"
 expect_eq "prev-home dest" "1" "$([ -f "$TH/backlog/trackers.md" ] && echo 1 || echo 0)"
@@ -130,14 +130,14 @@ if [ -f "$JOURNAL_RS" ]; then
 
   STAMP_RS="$(/bin/bash "$MINT" stamp "$RR2" "$rpath" --status "done" --note "granted")"
   expect_eq "stamp records mode" "records" "$(kv mode "$STAMP_RS")"
-  expect_match "stamp records status" '^status: done$' "$(cat "$rpath")"
+  expect_match "stamp records status" '^status: archived$' "$(cat "$rpath")"
   expect_eq "ledger one line" "1" "$(grep -c . "$RR2/history.tsv" || true)"
 
   # legacy flat adopt: existing $RR/templates/trackers.md → skill dir
   RR3="$TMP/legacy-flat"
   AT3="$RR3/templates"
   mkdir -p "$RR3/templates"
-  printf -- '---\ndoctype: trackers\nstatus: open\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\nlegacy-flat\n\n## Items\n' \
+  printf -- '---\ndoctype: trackers\nstatus: draft\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\nlegacy-flat\n\n## Items\n' \
     > "$RR3/templates/trackers.md"
   OUT4="$(/bin/bash "$MINT" mint "$RR3" "$AT3" trackers "Backlog")"
   expect_eq "legacy adopt mode" "file" "$(kv mode "$OUT4")"

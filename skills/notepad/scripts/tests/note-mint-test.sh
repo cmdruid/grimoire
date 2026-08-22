@@ -57,7 +57,7 @@ expect_eq "mint rel" "notes/$today-alpha-fact.md" "$(kv rel "$OUT")"
 path="$(kv path "$OUT")"
 expect_eq "mint path exists" "1" "$([ -f "$path" ] && echo 1 || echo 0)"
 expect_match "doctype" '^doctype: notes$' "$(cat "$path")"
-expect_match "status open" '^status: open$' "$(cat "$path")"
+expect_match "status draft" '^status: draft$' "$(cat "$path")"
 expect_match "created today" "^created: $today$" "$(cat "$path")"
 expect_match "updated today" "^updated: $today$" "$(cat "$path")"
 expect_match "filled title" '^# Alpha fact$' "$(cat "$path")"
@@ -88,7 +88,7 @@ expect_eq "empty/punct wrote nothing extra" "2" "$nfiles"
 created_before="$(sed -n 's/^created: //p' "$path")"
 # force a distinguishable updated: if we could; stamp still writes today
 /bin/bash "$MINT" stamp "$RR" "$path" --status superseded >/dev/null
-expect_match "stamp status" '^status: superseded$' "$(cat "$path")"
+expect_match "stamp status" '^status: archived$' "$(cat "$path")"
 expect_eq "stamp left created" "$created_before" "$(sed -n 's/^created: //p' "$path")"
 expect_match "stamp updated" "^updated: $today$" "$(cat "$path")"
 expect_absent "stamp created no history.tsv" "$RR/history.tsv"
@@ -128,9 +128,10 @@ if [ -f "$JOURNAL_RS" ]; then
 
   STAMP_RS="$(/bin/bash "$MINT" stamp "$RR2" "$rpath" --status superseded)"
   expect_eq "stamp records mode" "records" "$(kv mode "$STAMP_RS")"
-  expect_match "stamp records status" '^status: superseded$' "$(cat "$rpath")"
+  expect_match "stamp records status" '^status: archived$' "$(cat "$rpath")"
   expect_eq "ledger exists" "1" "$([ -f "$RR2/history.tsv" ] && echo 1 || echo 0)"
   expect_eq "ledger one line" "1" "$(grep -c . "$RR2/history.tsv" || true)"
+  expect_match "ledger --as superseded" '	superseded	' "$(cat "$RR2/history.tsv")"
   if /bin/sh "$RR2/scripts/records.sh" check >/dev/null 2>&1; then
     pass=$((pass + 1))
   else

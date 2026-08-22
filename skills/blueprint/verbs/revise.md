@@ -3,7 +3,7 @@
 The only legal path from a `needs-rework` spec (or design, or ADR)
 back to a candidate for `review`. Same artifact set as `review`.
 Amends the original file in place. Does not mint a successor. Does
-not promote `status:` to `current`.
+not promote `status:` to `published`.
 
 **Why amend.** A `needs-rework` stamp means the spec is not safe to
 sequence against. Amending is how the artifact becomes a candidate
@@ -211,7 +211,7 @@ omitted, treat as must-fix. Skip any finding already marked
       not start `review`.
 8. **Apply** (only after a confirm that authorizes apply).
    Same path, same record. Do not mint a successor. Do not
-   flip `status:` to `current`. Stamp `updated:` (opportunistic
+   flip `status:` to `published`. Stamp `updated:` (opportunistic
    `records.sh touch`, else file-mode). Do not delete Review
    history; add dispositions (below). Do not strip `founding`.
 

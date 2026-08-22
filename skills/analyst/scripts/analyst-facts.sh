@@ -52,7 +52,7 @@ usage() {
 usage: analyst-facts.sh <subcommand> <root> [options]
 
   span      <root> --since <date|ref>     briefing: closures, records, commits in span
-  status    <root>                        status: open records, trackers, streams now
+  status    <root>                        status: draft records, trackers, streams now
   health    <root>                        diagnostics: defects, staleness, recorded gate state
   subsystem <root> --path <p> [--path p]  subsystem/guide: records + history for paths
   catalog   <root>                        which templates are deployed vs bundled
@@ -190,9 +190,9 @@ cmd_status() {
     [ -n "$f" ] || continue
     st="$(fm_field "$f" status)"
     case "$st" in
-      open)    open=$((open + 1));    open_list="$open_list$(rel_to_rr "$f")	open	$(fm_field "$f" updated)
+      draft)     open=$((open + 1));    open_list="$open_list$(rel_to_rr "$f")	$st	$(fm_field "$f" updated)
 " ;;
-      current) current=$((current + 1)) ;;
+      published) current=$((current + 1)) ;;
     esac
   done <<EOF
 $(each_record)
@@ -237,12 +237,12 @@ cmd_health() {
     u="$(fm_field "$f" updated)"
     case "$f" in
       "$RR"/bugs/*)
-        if [ "$st" = open ]; then
+        if [ "$st" = draft ]; then
           bugs=$((bugs + 1)); bug_list="$bug_list$(rel_to_rr "$f")	$u
 "
         fi ;;
     esac
-    if [ "$st" = open ] && [ -n "$u" ] && [ "$u" \< "$cutoff" ]; then
+    if [ "$st" = draft ] && [ -n "$u" ] && [ "$u" \< "$cutoff" ]; then
       stale=$((stale + 1)); stale_list="$stale_list$(rel_to_rr "$f")	$u
 "
     fi

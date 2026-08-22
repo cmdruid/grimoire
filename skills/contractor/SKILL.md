@@ -44,10 +44,10 @@ conductor. Never write the flat
 `<agent-workspace>/templates/<doctype>.md`. Never deploy `plan.md` or
 `roadmap.md` *as* `plans.md`.
 
-**Status vocabulary** (the records contract): a working draft is `status: open`;
-the accepted, living job artifact is promoted to `status: current` (one per
-subject); closure — `done`, `dropped`, `superseded`, `consumed` — goes through
-`records.sh done` on a workshop host.
+**Status vocabulary** (the records contract): a working draft is `status: draft`;
+the accepted, living job artifact is promoted to `status: published` (one per
+subject); closed is `archived`. Closure goes through
+`records.sh done` on a workshop host. Optional `stage` (non-empty if present).
 
 ## Verb dispatch (read the file, then follow it)
 
@@ -72,7 +72,7 @@ confirmation that asks for `review` after apply.
 
 ## Brief the human (every verb)
 
-The artifact holds the job vocabulary (`status: open` / `current`, slice ids,
+The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
 `DONE` / `needs-rework`). The conversation does not open with it.
 
 - **Lead with the situation** a newcomer could use: what the software can do

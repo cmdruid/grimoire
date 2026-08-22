@@ -34,6 +34,7 @@ memory.
   self-description layers, the four self-init tiers, the typed-edge + registration mechanics, the
   corollaries. The doctrine's living home — a host library's own front-door doc should point here
   rather than restate it.
+- **`specs/`** — portable format/authoring contracts the lint gate, `new`, and writer rule 5 honor. Indexed by `specs/README.md`. The records contract is `specs/records-front-matter.md`.
 - **`docs/BOUNDARY-AUDIT.md`** — the independence-auditing workflow `check` runs (the violation rubric,
   the routing-probe acceptance gate, the mechanical backstop it relies on).
 - **`scripts/skills-lint.sh`** — the mechanical gate: frontmatter limits, bundled-ref resolution,

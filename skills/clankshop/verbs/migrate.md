@@ -50,7 +50,7 @@ migration): everything below then writes and commits on the stream's branch and 
    |---|---|
    | decision records, "why we chose X" docs | `adr` |
    | bug reports, repro writeups | `bugs` |
-   | design docs, specs, RFCs, ideation | `specs` (the living spec, if one emerges, gets `status: current`) |
+   | design docs, specs, RFCs, ideation | `specs` (the living spec, if one emerges, gets `status: published`) |
    | durable how-it-works notes, shared memory | `notes` |
    | feature/implementation plans, roadmaps | `plans` |
    | investigation writeups, postmortems, audits | `reports` |
@@ -85,8 +85,8 @@ migration): everything below then writes and commits on the stream's branch and 
      (`doctype`/`status`/`created`/`updated`/`tags`): `doctype` naming what the doc *is* —
      the front-matter key is the authority and need not match the directory, and a record
      missing it is not a record at all — `created`/`updated` from `git log`, `status` flagged for
-     judgment where ambiguous. **Backfill only the non-closing statuses** (`open`, or
-     `current` for a living spec): a hand-written closing status would fail `check`'s
+     judgment where ambiguous. **Backfill only the non-closing statuses** (`draft`, or
+     `published` for a living spec): a hand-written closing status would fail `check`'s
      status↔ledger coherence (closed record, no ledger line). A record that is genuinely
      finished closes through `records.sh done <path> --note "closed at migration"` **after**
      standup — the ledger line is written by its one writer, dated honestly at adoption.

@@ -15,7 +15,7 @@ Standing judgments:
 
 ## Station policy
 
-- The **living design spec** lives in `.records/specs/` — the doc with `status: current`.
+- The **living design spec** lives in `.records/specs/` — the doc with `status: published`.
   Superseded drafts and working papers keep their history alongside it; supersession is recorded
   (`records.sh done --as superseded`), never a silent overwrite.
 - Ideation and iteration are records too: brainstorms and drafts land in `.records/specs/` with
@@ -28,5 +28,5 @@ Standing judgments:
 
 - **Drain the ADRs**: consolidate accumulated ADRs into the spec before they pile up; mark each
   drained ADR `consumed` (the note names where it landed).
-- **Tend the spec's status**: exactly one `status: current` spec at a time; supersede
+- **Tend the spec's status**: exactly one `status: published` spec at a time; supersede
   explicitly.

@@ -7,10 +7,10 @@ in an `adr` record.
 1. Resolve both homes (SKILL.md). Locate `scripts/note-mint.sh` from
    this skill's own directory.
 2. **List live notes only.** If `<agent-records>/scripts/records.sh` is
-   executable: `records.sh list --type notes --status open` and
-   `records.sh list --type notes --status current`. Else scan
-   `<agent-records>/notes/*.md` and skip any file whose `status:` is
-   `done`, `dropped`, `superseded`, or `consumed`.
+   executable: `records.sh list --type notes` (no `--status`; live-set
+   default). Else scan `<agent-records>/notes/*.md` and skip any file
+   whose `status:` is `archived`, and still skip `done`, `dropped`,
+   `superseded`, or `consumed` for unmigrated trees.
 3. If a **live** note already covers the fact: edit the body (one fact;
    why it holds; where it bites; links), then
    `note-mint.sh stamp <agent-records> <abs-path>`.

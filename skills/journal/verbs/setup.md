@@ -24,15 +24,18 @@ directory and no pre-seeded `templates/`**.
    **First visit** (no deployed `records.sh`): stands the layer.
    **Later visit** (script present): refreshes `records.sh` when the skill
    copy has drifted (`current` vs `refreshed`); restores the executable bit
-   if needed; never truncates the ledger or overwrites README.
+   if needed; **migrates statuses**, then `check`; never truncates the ledger
+   or overwrites README.
    **Exit 2**: missing target directory, or missing skill-side `records.sh`
    → STOP and report.
    **Exit 1**: usage, or a bad `--records-root`.
    If standup wrote the tool and then `check` failed, the tool layer **is
    up** — report that and point at `/journal curate`. That is not a setup
    refuse.
-   Converting legacy record *content* is a migration the human named, not
-   this verb.
+   Converting legacy record *content* (adopting foreign docs) is a
+   migration the human named, not this verb. Status-vocab rewrite
+   (`open`/`current`/close-words → `draft`/`published`/`archived`) is this
+   verb.
 3. **Commit** per the commit policy (SKILL.md): standalone → parse each
    `wrote: <path>` line from standup stdout and
    `scripts/scoped-commit.sh <root> "Stand up the records layer" <those

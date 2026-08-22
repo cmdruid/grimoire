@@ -15,7 +15,7 @@ command's code and the host's design context. Proposes two approaches — a new
 `--json` flag vs. a separate `report-json` subcommand — and recommends the
 flag (less surface, reuses the existing arg parse). Weight call: one phase, no
 cross-cutting decision → small feature; slices, if any, will live in the spec.
-*Output:* a draft design doc in the `specs/` store (`status: open`), open
+*Output:* a draft design doc in the `specs/` store (`status: draft`), open
 questions at its foot. → proceed to `spec`.
 
 **2. `spec <draft>`**
@@ -29,7 +29,7 @@ already-computed report model; no new data path), **Verification** (a
 golden-file test of the envelope). Because this is a small feature, the spec
 carries an optional **Slices** stub (flag parsed → envelope emitted; golden
 test red-first). Self-reviews, then gates on the human reading it. On
-approval: `records.sh touch <spec> --status current`.
+approval: `records.sh touch <spec> --status published`.
 *Output:* the accepted spec. **Blueprint stops here.**
 
 ---

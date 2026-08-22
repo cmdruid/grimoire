@@ -1,6 +1,6 @@
 ---
 doctype: adr
-status: open
+status: draft
 created: <date>
 updated: <date>
 tags: [<tags>]
