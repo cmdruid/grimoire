@@ -1,9 +1,9 @@
 ---
 name: clankshop
-version: 2.5.0
+version: 2.6.0
 description: "An agentic workshop for a code project: doctrine, records, and routing deployed as four stations (design/build/test/review), with helpers for planning, records, follow-ups, streams, audits, debugging, and reporting."
 required: journal
-optional: analyst, auditor, backlog, architect, contractor, inspector, debugger, delegate, checkpoint, mailbox, notepad, scheduler, workstream
+optional: analyst, auditor, backlog, architect, contractor, inspector, debugger, delegate, checkpoint, mailbox, notepad, scheduler, shopbook, workstream
 ---
 
 # clankshop — the workshop pack
@@ -31,6 +31,7 @@ The v2 roster, by coupling tier (how much workshop a skill needs):
 | helper | `journal` | **the records format authority** — the record contract, `records.sh`, the history ledger; required (setup delegates tool-layer standup to it) |
 | helper | `backlog` | the follow-up lifecycle — file, promote, debrief, and curate the three trackers |
 | helper | `notepad` | project memory — write, find, update, supersede, and drop durable facts in `notes/` |
+| helper | `shopbook` | experimental — query or create host procedures under `flows/`; this release: `query` (list/search/find aliases) + host-stub `create` + pointer `sync` + crawl-key `upkeep` |
 | helper | `workstream` | long-lived development streams — worktrees, queues, shipping |
 | helper | `auditor` | code-quality audits; pass reports land in the agent-records home |
 | helper | `debugger` | root-cause debugging anywhere; guided by `<agent-workspace>/flows/diagnostics.md` when present |
@@ -62,6 +63,18 @@ name each other.
 Mailbox is transport only (slot mint / apply / consume). Whether to dispatch is
 never mailbox's question.
 
+**Seam — `clankshop` / `shopbook`:** the face copies **its**
+`<agent-workspace>/flows/` files (with crawl keys) and writes
+the initial door **pointer** via `scripts/flows-door.sh`. Other
+skills seed their own `hooks/` / `templates/` / skill-owned
+flows (with crawl keys). `shopbook` never copies pack or
+sibling payload. `create` mints a host-authored stub only.
+Shopbook does not inventory pack stems and does not require
+a workshop. Setup does not invoke `/shopbook`. `/shopbook`
+later may `query` the tree (caller follows), may `create` a
+host stub (caller authors the body), may `sync` the pointer,
+and may `upkeep` missing keys. Leaves do not name each other.
+
 **Seam — workstream build lane:** when the helpers are present, PLAN is the spec
 spine, then the job lead only if sequencing is required; BUILD walks the plan.
 `flow.md` points at those leaves; it does not restate their protocols.
@@ -81,6 +94,8 @@ renames have landed. The Phase 6 split then stood `backlog` up as the follow-up 
 as developer-facing prose.
 **2.5.0:** Slice 1 renamed `blueprint` → `architect` with no bump; `inspector` joins —
 critique and fold, both artifact sets.
+**2.6.0:** `shopbook` joins as an experimental helper — query or create host
+procedures under `flows/`.
 
 **One library skill is deliberately not a member:** `skill-builder`, the toolmaker steward for
 the skills library itself — a maintainer's tool for whoever authors skills, not part of the

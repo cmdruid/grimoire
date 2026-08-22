@@ -47,7 +47,9 @@ workshop, and the fix is `git mv .handbook <agent-workspace>/doctrine`, not `set
    Do not write.
 8. **Flows pointer** — when `$SKILL/flows` is present, run
    `scripts/flows-door.sh check --root <abs> --workspace '<agent-workspace>'`.
-   `drift=true` or `block=missing|malformed` is a finding. Names `/clankshop setup`.
+   `drift=true` or `block=missing|malformed` is a finding. Names
+   `/shopbook sync` if that skill is present (sibling
+   `shopbook/SKILL.md` next to this face), else `/clankshop setup`.
    Do not write.
 9. **Report** — one list: green items as one line, each finding as location + what's wrong.
    Fixes are ordinary routed work, not part of the check.

@@ -32,7 +32,8 @@ doctrine and the four **stations** — `design`, `build`, `test`, `review` — w
 (`setup` / `migrate` / `check`); **helpers** — `architect` (specification spine), `contractor` (job lead), `inspector` (critique and fold), `journal` (the records format authority —
 the one required member), `backlog` (the follow-up lifecycle), `notepad` (project memory),
 `workstream` (development streams), `auditor` (code-quality audits), `debugger` (root-cause
-diagnostics), `analyst` (reports and briefings read back out of the records); **utilities** —
+diagnostics), `analyst` (reports and briefings read back out of the records), `shopbook`
+(experimental — query or create host procedures under `flows/`); **utilities** —
 `checkpoint`, `mailbox`, `delegate`, `scheduler`. Three skills sit outside the pack on
 purpose: `agent-council` (cross-vendor review panel), `skill-builder` (the **toolmaker** —
 scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
@@ -56,6 +57,7 @@ scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
+| `shopbook` | experimental finder + host-stub creator: query / list / search host procedures under `<agent-workspace>/flows/`, mint a stub (`create`), repair the door pointer (`sync`), fill missing title/use-when (`upkeep`) |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 

@@ -1104,7 +1104,7 @@ Grep gates (count the hits; fail on the wrong count):
   - Verify: red-proofs 2–12 on the **face** script. Grep gates 3,
     5, and 9. Clankshop harness green. Lint `fails=0`.
 
-- [ ] **Slice 3: `shopbook` finder + host stub**
+- [x] **Slice 3: `shopbook` finder + host stub**
   <requires: 2>
   - Files: create `skills/shopbook/SKILL.md` (journal-shaped
     dispatch table; dispatch applies to every invocation;

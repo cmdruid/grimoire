@@ -15,7 +15,7 @@ doctrine and the four **stations** — `design`, `build`, `test`, `review` — w
 `contractor` the job lead, `inspector` critique and fold, `journal` the
 records format authority and the one required member, `backlog` the follow-up lifecycle,
 `notepad` project memory, `analyst` reports and briefings, `workstream` the stream driver,
-`auditor`, `debugger`); **utilities** (`checkpoint`, `mailbox`,
+`auditor`, `debugger`, `shopbook` experimental host procedures); **utilities** (`checkpoint`, `mailbox`,
 `delegate`, `scheduler`). `skill-builder` is the library's own
 toolmaker and stays outside the pack. See `README.md` for the full inventory.
 
