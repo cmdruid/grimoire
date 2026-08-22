@@ -10,8 +10,15 @@ unsettled, stop and send those branches back.
 
 ## Procedure
 
-1. **Resolve the input.** An approved spec, or one phase of a roadmap the user
-   names. Missing → ask. A raw conversation with no spec → not this verb.
+1. **Resolve the input.** A spec with `status: published`, or one
+   phase of a roadmap the user names. Missing → ask. A raw
+   conversation with no spec → not this verb. Founding-shaped
+   files stay `draft` and are not this input. `status:` missing
+   / not `published` → refuse. An explicit human waive: the
+   caller writes `published` on that spec (opportunistic
+   `records.sh touch --status published`, else file-mode),
+   notes the waive, **then** plans. It does not plan against a
+   `draft`.
 2. **Summon context** per SKILL.md *One environment probe* (build station on a
    workshop host).
 3. **Slice tracer-first.** Slice 1 is the thinnest change that exercises the

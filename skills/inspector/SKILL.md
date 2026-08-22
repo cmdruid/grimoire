@@ -1,6 +1,6 @@
 ---
 name: inspector
-description: "Use when the user runs `/inspector`, or asks to review a spec or plan (or named kind), to apply review findings or amend a needs-rework artifact, or to ask how we should refine or revise this. Critique and fold as one skill. review dumps a conversation verdict. refine is propose-then-apply and leaves the artifact draft. Does not mint a record and does not write published. Bare `/inspector` asks which verb. For a one-line patch, skip it."
+description: "Use when the user runs `/inspector`, or asks to review a spec or plan (or named kind), to apply review findings or amend a needs-rework artifact, or to ask how we should refine or revise this. Critique and fold as one skill. review dumps a conversation verdict; on accept of a passing verdict this session writes published. refine is propose-then-apply and leaves the artifact draft. Does not mint a record. Bare `/inspector` asks which verb. For a one-line patch, skip it."
 ---
 
 # inspector — critique and fold
@@ -55,10 +55,12 @@ This package does **not** mint records.
 `specs/records-front-matter.md`. Writer `stage` values are in-package
 (journal does not own them):
 
-- **review** writes neither `status` nor `stage`.
+- **review** writes neither `status` nor `stage` in the verdict
+  turn. On accept of a passing verdict, this session writes
+  `published` (job artifacts: also `stage: approved`).
+  Founding-shaped: no write; stay `draft`.
 - **refine** leaves `status: draft` and drops `stage: approved` if
   present.
-- This package does **not** write `published`.
 
 ## Verb dispatch (read the file, then follow it)
 
@@ -107,7 +109,8 @@ does not open with it. Verdict words stay conversation-only.
 
 - **Lead with the situation** a newcomer could use: what is wrong
   with the document, or that it is ready. Then the path.
-- **One ask per stop.** After `review`, stop. After `refine`:
+- **One ask per stop.** After a passing `review`, accept is a
+  stop; the publish write is that stop. After `refine`:
   questions (when they fire) are a stop; the proposal is a stop;
   after apply without named re-review, the offer is a stop.
   Named re-review is the exception.
@@ -122,14 +125,15 @@ does not open with it. Verdict words stay conversation-only.
   never a host path.
 - **Kind file from this package** (or the workspace incumbent).
   Resolve `kinds/` from this skill's own base directory.
-- Do not mint a record. Do not write `published`.
+- Do not mint a record. Do not write `published` in the
+  `review` verdict turn.
 
 ## Edges
 
 In-place steward: no private home. Verdict is conversation-only.
 
 <!-- edges:inspector -->
-- produces: — (verdict is conversation-only; refine amends the named file in place)
-- handoff: — (none; the caller publishes or the host sequences)
+- produces: — (verdict is conversation-only; on accept of a passing review, front-matter `published`; refine amends the named file in place)
+- handoff: — (none; after publish the host sequences)
 - consumes: spec, plan, review, doctrine — artifacts under review; a findings baton (in-session list, named markdown, council RESULT.md); station context
 <!-- /edges:inspector -->

@@ -87,8 +87,11 @@ The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
 - **Read the verb file.** Do not reconstruct a procedure from this router.
 - **Scripts from this package.** `scripts/ground-check.sh` is this skill's copy
   — resolve it from this skill's own base directory, never a host path.
-- **An approved spec is the input.** Missing → ask. A spec with open decision
-  branches is not approved — send those branches back to a grill on the spec.
+- **A `status: published` spec is the input** (founding-shaped stays
+  `draft` and is not this input). Missing → ask. `status:` missing /
+  not `published` → refuse unless the caller writes that gate (notes
+  the waive) then sequences. A spec with open decision branches is
+  not settled — send those branches back to a grill on the spec.
 - **Land it** (minting verbs: `roadmap`, `plan`, `runbook`) under
   `<agent-records>/plans/` per the destination rule above. Mint the
   shell, then overwrite `tags:` and the body. Title missing → ask once.

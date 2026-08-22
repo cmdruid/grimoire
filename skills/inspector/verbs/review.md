@@ -48,20 +48,43 @@ not invent a rubric. Do not amend. Do not mint a record.
 
    Verdict words stay **conversation-only**. Do not create or
    append `## Review history`. Do not write `status:` or
-   `stage:`.
+   `stage:` **in this turn**.
 
    - **Failing** (`needs-rework`): stop. Leave `draft`. Do not
      write front-matter.
    - **Passing** (`approve` or `approve-with-changes`): dump the
-     verdict. Stop. Do not ask the caller to publish. Do not
-     write `status:` / `stage:`. The calling agent writes
-     `published` (and `stage: approved` on job artifacts) if
-     they accept that approval.
+     verdict. Wait (step 5). Do not write front-matter in this
+     turn.
+
+5. **After a passing verdict — wait for accept.** One sentence
+   the human can act on: the document is ready; if they accept,
+   this session writes `published` on `<path>`. Then **stop**.
+   Confirm-parse the next utterance (compositional):
+
+   1. **Reject** (closed set): `stop` / `don't` / `not yet` /
+      `refine` / `needs work` → do not write. Stay `draft`.
+   2. **Accept** (open set): any clear acceptance of the
+      verdict. Examples: `yes`, `looks good`, `approved`,
+      `proceed`, `do it`, `lgtm`, `ok`, `go ahead`. A request
+      to sequence or walk the accepted document is accept.
+      **Do:** write the gate on the artifact just reviewed
+      (below), **then** honor the rest of that utterance.
+      Founding-shaped: do **not** write `published`; stay
+      `draft`.
+   3. **Unclear** → ask once whether they accept the verdict.
+      Do not write. Do not start a walk or a sequence.
+
+   **Write (accept only).** Opportunistic
+   `records.sh touch --status published` when the tool exists;
+   else file-mode `status: published` and `updated:`. Job
+   artifacts (`plan` / `roadmap` / `runbook`): also
+   `stage: approved` in front-matter (`records.sh` has no
+   `--stage` writer). Specs and ADRs: `published` only. Then
+   stop, unless the same utterance asked for further work.
 
 Depth dial (default off): for a high-stakes artifact, dispatch a
 few **read-only** subagents in parallel — each a distinct lens,
 one a skeptic trying to *refute* the doc's central claim — and
 synthesize. Never an editing subagent.
 
-Terminal step: hand the verdict to whoever owns the artifact and
-**stop**. This verb does not amend. Fold is `refine`.
+This verb does not amend the body. Fold is `refine`.
