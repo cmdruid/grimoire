@@ -1,6 +1,6 @@
 ---
 doctype: design
-status: open
+status: published
 created: 2026-08-21
 updated: 2026-08-22
 tags: [spec]
@@ -110,16 +110,17 @@ holds the list until `refine` applies edits. The artifact’s
 loop.
 
 **Chosen: inspector approves; the caller publishes.** Passing
-`review` dumps the verdict in conversation and **stops**. It
-does not write `status:` / `stage:`. Failing `review` stops
-on `draft`. The **calling agent** (the session that invoked
-review) writes `published` (and `stage` where this spec
-defines it) **based on that approval**. A `build` waive is
-the same write by the caller, noted in conversation. Verdict
-words (`approve` / `approve-with-changes` / `needs-rework`)
-stay **conversation-only** — they are not written onto the
-artifact. Inspector’s only front-matter write is `refine`
-leaving `draft` (and dropping `stage: approved`).
+`review` dumps the verdict in conversation and **waits**.
+The verdict turn does not write `status:` / `stage:`.
+Failing `review` stops on `draft`. On **accept** of a
+passing verdict, the same session (the caller) writes
+`published` (and `stage: approved` on job artifacts), then
+stops again. `proceed` / a request to sequence or walk
+counts as accept — write first, then the rest of that
+utterance. Founding-shaped stays `draft`. A `build` waive
+is the same write by the caller, noted in conversation.
+Verdict words stay **conversation-only**. Inspector `refine`
+still leaves `draft` (and drops `stage: approved`).
 
 **Rejected: inspector for plans only.** The extract is from both
 skills; spec review staying on architect recreates the author-
@@ -158,11 +159,12 @@ Each arrow is a stop. No verb invokes the next, except an
 inspector `refine` confirmation that asks for `review` after
 apply (named re-review, already shipped).
 
-`publish` is not a new verb and not an inspector step. It is
-the calling agent writing front-matter after a passing
-inspector verdict, or a `build` waive. Review’s “stop” is
-after the verdict (pass or fail). The caller’s publish write
-is a later stop.
+`publish` is not a new verb. It is the calling session
+writing front-matter on **accept** of a passing inspector
+verdict (inspector `review` confirm-parse), or a `build` /
+`plan` waive of that gate. Review’s first stop is the
+verdict (pass or fail). The publish write is the next stop
+on accept — same session, not a later unnamed duty.
 
 ### `status` / `stage` (writers)
 
@@ -177,6 +179,10 @@ inspector approval):**
   (supersede / archive the prior). Not a journal check.
 - The spec usually stays `published` after the first cut.
   Later replacement is `archived` + ledger `superseded`.
+- `plan` / `roadmap` require that spec `status: published`.
+  Founding-shaped stays `draft` and is not that input. An
+  explicit waive writes `published` on the spec, then
+  sequences. It does not sequence against a `draft`.
 
 **Plans, roadmaps, runbooks (contractor mints; caller publishes
 after inspector approval; contractor walks):**
@@ -214,9 +220,10 @@ not write Review history.
 - **Failing** (`needs-rework`): stop. Leave `draft`. Do not
   write front-matter.
 - **Passing** (`approve` or `approve-with-changes`): dump the
-  verdict. Stop. Do not ask “publish?”. Do not write
-  front-matter. The caller writes `published` (and `stage:
-  approved` on job artifacts) if they accept that approval.
+  verdict. Wait. Do not write front-matter in the verdict
+  turn. On accept, this session writes `published` (and
+  `stage: approved` on job artifacts), then stops.
+  Founding-shaped: no write.
 
 Unknown kind → ask or refuse.
 
@@ -260,9 +267,10 @@ One markdown file per kind. Minimum:
   park)
 
 Inspector’s verb files own the shared machine (verdict words
-in conversation, confirm parse, apply rules that are not
-kind-specific, publish write). Templates do not override
-those.
+in conversation, confirm parse — including the publish write
+on accept of a passing review — and apply rules that are not
+kind-specific). The verdict turn does not write `status:` /
+`stage:`. Templates do not override those.
 
 ### Routing
 
@@ -321,7 +329,10 @@ stays in the pack / flow.
 - `/architect review` does not route. `/inspector review` on a
   spec and on a plan both kind-detect.
 - A failing review leaves `draft` and stops; a passing review
-  dumps the verdict and stops; the caller writes `published`.
+  dumps the verdict and waits; on accept the same session
+  writes `published` (jobs: + `stage: approved`). Founding-
+  shaped stays `draft`. `plan` refuses a spec that is not
+  `published` (waive is that write, then plan).
 - `refine` does not write in the propose turn; after apply the
   file is `draft` again (no stamp-keyed offer).
 - `build` on a `draft` plan refuses; a waive writes
@@ -495,3 +506,14 @@ that approval. A `build` waive is the same caller write.
 Inspector’s only status write is `refine` leaving `draft`.
 Approach / Pipeline / Inspector `review` / writer tables /
 Judgment Verification restated to match.
+
+### 2026-08-22 — owner: accept is the publish write
+
+The publish stop had no machine: “do not ask publish” plus a
+hard stop left the caller duty unnamed, so a later `build`
+waive published the plan and left the spec `open`. Restated:
+passing `review` waits; on accept the same session writes
+`published` (jobs: + `stage: approved`) before any next
+verb. Founding-shaped stays `draft`. Contractor `plan`
+refuses a spec that is not `published`. Kind-template
+“publish write” is that confirm-parse, not the verdict turn.
