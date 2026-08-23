@@ -25,3 +25,8 @@ records-mint / output-home path does not apply (SKILL.md *Probe exemption*).
 
 Output: that file only. Terminal step: stop. `grill` / `spec` fill it in
 place when the user names it.
+
+## Done when
+
+`./<stem>.md` exists, founding-shaped, empty bodies, dates filled.
+`grill` / `spec` were not run.
