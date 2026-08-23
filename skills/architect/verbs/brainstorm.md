@@ -27,7 +27,7 @@ founding-shaped and does not fill a named founding file.
 4. **Converge conversationally** — one question at a time (multiple-choice when
    possible), confirming each section before the next. YAGNI ruthlessly.
 5. **Write the draft** — a `specs/` doc (`status: draft`), shaped per
-   `templates/spec.md`'s sections at draft weight: problem, goal, candidate
+   `templates/specs.md`'s sections at draft weight: problem, goal, candidate
    approach, open questions listed at the foot. Unresolved branches are
    *expected* here — `grill` or `spec` resolves them.
 

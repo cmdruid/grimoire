@@ -7,7 +7,7 @@ design and code is detectable, and measurable once found. Start from a
 If `[doc]` is named, classify it (SKILL.md *Founding-shaped*) **before** the
 steps below. Founding-shaped → synthesize into the six map H2s on that same
 file; run `grill` on those sections; do not write Problem / Goal / Approach as
-H2s; skip the records-mint, `templates/spec.md` rewrite, and status
+H2s; skip the records-mint, `templates/specs.md` rewrite, and status
 promotion. Refuse the otherwise-case. They never scan cwd.
 
 Summon the design station per SKILL.md *One environment probe*. Feature
@@ -20,7 +20,7 @@ Founding-shaped stays on the named file.
    draft, prior ADRs) into the spec's shape before asking anything.
 2. **Grill the gaps** — run `grill` on the assembled draft: every remaining
    open branch gets resolved, not papered over.
-3. **Write the spec** per `templates/spec.md` (skip this reshape when the
+3. **Write the spec** per `templates/specs.md` (skip this reshape when the
    named file is founding-shaped): **Problem** (root need, not a
    surface knob), **Goal**, **Approach** (+ alternatives rejected and why),
    **Mechanism** (concrete enough to implement from), **Verification** (how

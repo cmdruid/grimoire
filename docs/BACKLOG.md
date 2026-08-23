@@ -38,11 +38,11 @@ one-line resolution; delete only when the reason it existed is gone.
     drop enforcement of a convention still in force.
   - **Item 5** — the document-paths simplification, which depends on the workspace layout item 3
     settles.
-- **the naming question, still unresolved:** the human wants `<agent-workspace>/spec/` *and* the
-  records doctype `specs` (now live as of BL-34 item 2). Near-identical names in different homes.
-  It did NOT bite during the rename — `blueprint/templates/design.md` was deleted rather than
-  renamed to `specs.md`, so no `specs.md`/`spec.md` pair was created — but the workspace-side half
-  is still open and belongs to item 3.
+- **the naming question, resolved 2026-08-23 (stream/skills):** no
+  `<agent-workspace>/spec/` station. Specs are records
+  (`<agent-records>/specs/`, doctype `specs`). Architect's lock-in
+  template is `templates/specs.md` (store-named). Item 3's remaining
+  un-nest is still parked; this only closes the name collision.
 
 ### BL-35 — lint check 17 cannot catch the BL-32 shape it was supposed to prevent
 - **source:** feat stream, BL-34 items 1–2 ship (2026-08-19).

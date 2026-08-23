@@ -43,6 +43,20 @@ else
   fail=$((fail + 1))
 fi
 
+# --- lock-in template is specs.md (store-named; not spec.md) ---
+if [ -f "$SKILL/templates/specs.md" ] && [ ! -e "$SKILL/templates/spec.md" ]; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: expected templates/specs.md and no templates/spec.md" >&2
+  fail=$((fail + 1))
+fi
+if grep -qF -- '- `specs.md`' "$SKILL/SKILL.md"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: Project templates list does not name specs.md" >&2
+  fail=$((fail + 1))
+fi
+
 # --- no design.md stub changelog ---
 hits=$(grep -n 'design.md was a front-matter' "$SKILL/SKILL.md" || true)
 if [ -z "$hits" ]; then

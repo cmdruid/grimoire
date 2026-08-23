@@ -45,11 +45,11 @@ one.
 **Destination is not stamped.** Feature `spec` / `brainstorm` / ADR artifacts
 land in `<agent-records>/specs/` and `<agent-records>/adr/` on every host
 (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`,
-else `.records/`). Resolve `spec.md` / `adr.md` via the project-templates rule;
+else `.records/`). Resolve `specs.md` / `adr.md` via the project-templates rule;
 `records.sh new specs --template <resolved>` when the tool exists (the flag is
 required — there is no fallback); else file-mode from that path, naming the
 file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the tool
-will not see it. `spec.md` carries both the front-matter and the body scaffold,
+will not see it. `specs.md` carries both the front-matter and the body scaffold,
 so there is no second template to fill from. Never write the flat
 `<agent-workspace>/templates/<doctype>.md`. Mint stays `status: draft`.
 The caller writes `published` after a passing host's review they accept.
@@ -90,7 +90,7 @@ Each arrow is a stop. No verb invokes the next.
 callable at any point. Bare `/architect` stays `brainstorm`. Genesis is
 explicit `new`. Weight scales with the work: a **small feature** may stop
 at the accepted spec (the spec doubles as its plan — slices live **in**
-`templates/spec.md`, not a separate job artifact). For a **patch**, architect
+`templates/specs.md`, not a separate job artifact). For a **patch**, architect
 is not used at all.
 
 ## Founding-shaped
@@ -126,7 +126,7 @@ is a gap. No italic / `TBD` / `<>` special cases.
 **Branch** (on a named `[doc]`; never scan cwd for a founding file):
 
 - **Founding-shaped** → stay on that file. Fill the six map H2s in place.
-  Do not rewrite to `templates/spec.md`. Do not mint a `specs/` record.
+  Do not rewrite to `templates/specs.md`. Do not mint a `specs/` record.
   Do not strip `founding`. Do not add an H2 that is not in the map. Do not
   promote `status`. Who/when notes go **inside** the mapped section as a
   whole line in this exact form (roman, not italic): `Settled: YYYY-MM-DD.`
@@ -166,7 +166,7 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 
 ## Structure, portability
 
-- A self-contained skill directory: `SKILL.md` + `templates/` (`spec.md`,
+- A self-contained skill directory: `SKILL.md` + `templates/` (`specs.md`,
   `adr.md`, `founding.md` — the bundled body shapes) + `verbs/brainstorm.md` +
   `verbs/grill.md` + `verbs/spec.md` + `verbs/new.md` +
   `verbs/deploy.md` + `scripts/ground-check.sh` (the
@@ -178,7 +178,7 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 ## Project templates
 
 - `adr.md`
-- `spec.md`
+- `specs.md`
 
 `founding.md` is package-only.
 
