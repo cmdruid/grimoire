@@ -11,18 +11,13 @@ existing phase-plan paths — never task-level work invented here.
 
 1. **Resolve input:** a **plan** path or a **roadmap** path. Missing → ask. A
    spec is refused ("that is not a job conductor input").
-2. **From a plan:** emit a `plans/` record. Resolve `plans.md` via the
-   project-templates rule, then mint `records.sh new plans --template <resolved>
-   --title "Runbook: <plan title>"` when the tool exists; else file-mode from
-   that same resolved path into `<agent-records>/plans/`, naming the file
-   `YYYY-MM-DD-<slug>.md` (the record shape). Either way set
-   `tags: [runbook]`. Body: ordered steps copied from the plan's slices —
+2. **From a plan:** compile ordered steps from the plan's slices —
    command/gate/path only, no approach essay. Each step names the slice id it
    came from.
 3. **From a roadmap:** refuse unless **every** unblocked phase already has a
    **plan path** (a written plan record). If any phase lacks a plan, stop and
    tell the caller to `plan` that phase first — `runbook` does not write plans;
-   `build` does not write plans. Body: ordered unblocked phases, each line a
+   `build` does not write plans. Compile: ordered unblocked phases, each line a
    **path** to that phase's plan, then "build it." Do not inline task-level
    work.
 4. **Completeness check** (conductor only). Fail → fix the runbook or
@@ -31,10 +26,13 @@ existing phase-plan paths — never task-level work invented here.
      gate; order respects slice `requires:`; no approach essay.
    - **Roadmap-sourced:** every unblocked phase has a plan path; order
      respects phase `requires:`; no raw implementation steps invented.
-5. Done when the conductor file exists and the completeness check is green.
-   `build` still requires each referenced plan to be `published` with
-   `stage: approved` (or a caller waive of that gate).
+5. **Land it** per SKILL.md *Shared discipline*. Resolve `plans.md` via the
+   project-templates rule, then mint `records.sh new plans --template <resolved>
+   --title "Runbook: <plan title>"` when the tool exists; else file-mode from
+   that same resolved path into `<agent-records>/plans/`, naming the file
+   `YYYY-MM-DD-<slug>.md` (the record shape). Either way set
+   `tags: [runbook]` and replace the body with the compiled conductor.
 
-Land it per SKILL.md *Shared discipline*. Workshop: mint the shell, set
-`tags: [runbook]`, fill the conductor body. Standalone: write the
-`tags: [runbook]` conductor into the named file in `<agent-records>/plans/`.
+Output: the conductor file (`status: draft`). `build` still requires each
+referenced plan to be `published` with `stage: approved` (or a caller waive
+of that gate).

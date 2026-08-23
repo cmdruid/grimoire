@@ -44,13 +44,13 @@ conductor. Never write the flat
 `<agent-workspace>/templates/<doctype>.md`. Never deploy `plan.md` or
 `roadmap.md` *as* `plans.md`.
 
-**Status vocabulary** (the records contract): mint `status: draft`. The
-caller writes `published` and `stage: approved` after a passing host's
-review they accept. After a successful walk, this skill sets `stage:
-implemented` (the plan stays `published`). Closed is `archived`. Closure
-goes through `records.sh done` on a workshop host. Optional `stage`
-(non-empty if present). Journal owns the `status` enum; writer `stage`
-values are in-package.
+**Status vocabulary.** The `status` enum is
+`specs/records-front-matter.md`. Mint stays `draft`. The caller writes
+`published` and `stage: approved` after a passing host's review they
+accept. After a successful walk, this skill sets `stage: implemented`
+(the plan stays `published`). Closed is `archived`. Closure through
+`records.sh done` when the tool exists; else file-mode stamp. Optional
+`stage` (non-empty if present); writer `stage` values are in-package.
 
 ## Verb dispatch (read the file, then follow it)
 
@@ -117,6 +117,16 @@ The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
   sweep (workshop: the deployed debrief; standalone: the project's own).
   Do not name a sibling.
 
+## Structure, portability
+
+- A self-contained skill directory: `SKILL.md` + `templates/` (`plans.md`
+  the store-named lock-in; `plan.md` and `roadmap.md` the body scaffolds)
+  + `verbs/roadmap.md` + `verbs/plan.md` + `verbs/runbook.md` +
+  `verbs/build.md` + `scripts/ground-check.sh`.
+- **Portable:** no workshop dependency (the one probe degrades to
+  standalone), no host paths baked in, travels as one unit wherever the
+  skills are installed.
+
 ## Project templates
 
 - `plans.md`
@@ -130,3 +140,10 @@ The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
 - handoff: — (build executes in-place; ship is not this skill)
 - consumes: spec, doctrine, plan, runbook — an approved specification, station context, or a job artifact this skill walks
 <!-- /edges:contractor -->
+
+## Done when
+
+- **Bare `/contractor`:** ask which verb; do not default.
+- **A named verb ran:** that verb file's closing (plan / roadmap /
+  runbook stop at the draft artifact; `build` stops at the job
+  assessment).
