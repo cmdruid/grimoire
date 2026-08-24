@@ -1,14 +1,16 @@
 # `save` — synthesize the session into the checkpoint file
 
-Steps 2–4 are the **Save discipline** (`references/disciplines.md` — exportable). Steps 1, 5–6
-are this skill's flow.
+Steps 2–4 are the **Save discipline** (`references/disciplines.md` — exportable), including
+next-action authoring. Steps 1, 5–7 are this skill's flow.
 
-1. **Sanity-check the request, and resolve the target.** If the conversation has been short,
-   contains no concrete work to checkpoint, or is purely Q&A with nothing to resume, push back —
-   ask what specifically to preserve. Resolve the target per SKILL.md *Where it writes*. In a
-   git repo, read `scripts/save-guard.sh <dir>` where `<dir>` **is** that resolved root
-   (resolve `scripts/` from this skill's own base directory) — one read emits every mechanical
-   pre-save fact; the decisions stay here:
+1. **Sanity-check the request, resolve the target, and classify any named next-action.** If the
+   conversation has been short, contains no concrete work to checkpoint, or is purely Q&A with
+   nothing to resume, push back — ask what specifically to preserve. Resolve the target per
+   SKILL.md *Where it writes*. After peeling path tokens, classify a **named next action** from
+   the invocation and the same-turn message (same section: `next:`, `—`, same-turn prose; `--`
+   is not a marker). In a git repo, read `scripts/save-guard.sh <dir>` where `<dir>` **is** that
+   resolved root (resolve `scripts/` from this skill's own base directory) — one read emits
+   every mechanical pre-save fact; the decisions stay here:
    - **Stream guard** (SKILL.md *Two layers* refusal): `worktree_stream=true` **or**
      `inplace_branch_match=true` → this session's tree belongs to a workstream — **refuse and
      point to `/workstream save`**; do not write.
@@ -24,18 +26,49 @@ are this skill's flow.
    securely.
 3. **Synthesize, do not transcribe.** Reframe past discussion as forward-looking instructions.
    In a git repo, cross-reference `git log` — reconcile it against the conversation rather than
-   memory.
+   memory. Author the **single next action** (Save discipline) as one load-executable sentence
+   for section 12 *Suggested first action*: prefer named this turn; else KNOWN; else best-guess.
+   TL;DR's "what comes next" restates that same sentence — not a second independent line.
 4. **Resolve relative time references.** Convert "yesterday", "last week", etc. into absolute
    dates using the real current date — the document outlives the conversation.
-5. **Write the file** to the target path using the structure below (overwriting in place — a
-   refresh rewrites the whole file, it does not append).
-6. **Confirm to the user.** Report the path written. **Managed root saves only:** note whether a
-   front door at this root carries a **recovery anchor** (`verbs/anchor.md`) — warn (without
-   mutating anything) if none is found, since a save that succeeds while recovery stays
-   undiscoverable is a silent hole — and end the warning with: run **`/checkpoint anchor`** to
-   install it. *Front door* = the files the harness actually always-loads at this root
-   (`AGENTS.md`, `CLAUDE.md`, or the host's equivalent); any one carrying the block satisfies
-   the check — name which. Offer a memory pointer if the harness supports persistent memory.
+5. **Round-trip gate (before write).** Classify, then:
+   - **Named** (and load-executable) or **KNOWN** or **unprompted** → write.
+   - **User-invoked, human-present, AMBIGUOUS** → **STOP.** Propose the recommendation first,
+     then one or two alternatives, each one line + why. One pick (or a named other). Then write
+     in the pick's turn. Do not re-confirm "should I save?"
+   - **Named-but-vague** → AMBIGUOUS, constrained by the stated intent.
+   - **Git/disk veto** of a named action → do not write the lie; surface the contradiction; the
+     situation is AMBIGUOUS; propose the real next from disk/pending.
+
+   **User-invoked:** the human asked to save / checkpoint / snapshot this turn.
+   **Human-present:** a human is in the conversation and can pick. Loop-driven / no-human saves
+   take the unprompted path for this gate.
+   **Unprompted:** Lifecycle first-save-early; the three checkpoint moments; Recovery
+   write-back. Also this gate's path when no human is present to pick, even if a save verb was
+   requested by a loop. Unprompted first-save-early and the three checkpoint moments skip this
+   step's ask even if the synthesized next action would have been AMBIGUOUS — write the best
+   guess.
+   **AMBIGUOUS:** a real fork: two or more reasonable next moves; several equally plausible
+   pending first items; user invoked save at a pause with no direction and no KNOWN predicate
+   holds.
+6. **Write the file** to the target path using the structure below (overwriting in place — a
+   refresh rewrites the whole file, it does not append). Section 12 is the next-action
+   contract; TL;DR restates it.
+7. **Confirm to the user.** Report the path written and **the recorded next action**.
+   **Managed root saves only:** note whether a front door at this root carries a **recovery
+   anchor** (`verbs/anchor.md`) — warn (without mutating anything) if none is found, since a
+   save that succeeds while recovery stays undiscoverable is a silent hole — and end the
+   warning with: run **`/checkpoint anchor`** to install it. *Front door* = the files the
+   harness actually always-loads at this root (`AGENTS.md`, `CLAUDE.md`, or the host's
+   equivalent); any one carrying the block satisfies the check — name which. Offer a memory
+   pointer if the harness supports persistent memory. **Also resume-how** (`/checkpoint
+   resume`, or `resume <path>` for unmanaged) when this save precedes a new session:
+   user-invoked, pre-reset, or context-pressure that recommends a reset. **Omit resume-how**
+   otherwise: first-save-early, work-unit completion with no reset, Recovery write-back. Do
+   not use a blanket "unprompted omits."
+
+Same-breath override after confirm ("actually next is Y") is a user-invoked save with named Y —
+refresh, do not re-ask.
 
 ## The ignore mechanism — checked, never assumed; a tracked file beats an ignore
 
@@ -63,13 +96,14 @@ Two tiers:
 
 - **Core (every save):** 1 Title + "last updated" date (the real current date) · 2
   Read-this-first preamble (one line: a living save-state, rewritten at each save, ended by
-  `/checkpoint done`) · 3 TL;DR (what the work is, where it stands, what comes next) · 6 What's
-  been done (artifacts with exact paths; decisions + rationale; in a code repo pull the shipped
-  list from `git log`, not memory) · 7 Repo state *(code projects — `scripts/repo-snapshot.sh
-  <root>` emits branch, detached flag, dirty state + counts, recent commits, and the date in
-  one read; build/tests green stays your call: that needs the host's gate)* · 8 What's pending
-  (numbered, priority order) · 12 Suggested first action (concrete enough to act on
-  immediately; resume echoes this line).
+  `/checkpoint done`) · 3 TL;DR (what the work is, where it stands, what comes next — restates
+  section 12's sentence) · 6 What's been done (artifacts with exact paths; decisions +
+  rationale; in a code repo pull the shipped list from `git log`, not memory) · 7 Repo state
+  *(code projects — `scripts/repo-snapshot.sh <root>` emits branch, detached flag, dirty
+  state + counts, recent commits, and the date in one read; build/tests green stays your
+  call: that needs the host's gate)* · 8 What's pending
+  (numbered, priority order) · 12 Suggested first action (one load-executable imperative
+  sentence — the next-action contract; resume echoes this line).
 - **Full-save additions (first save of a work-body, or when the checkpoint will outlive several
   resets — skip on a quick mid-session refresh):** 4 The user (role, level, preferences) · 5
   The project (what it is; key facts; open unknowns) · 9 Critical considerations (constraints,

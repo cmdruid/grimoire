@@ -83,29 +83,47 @@ stream-driving session uses its stream's save verb (*Scope*).
 
 ## Where it writes
 
-Classify the trailing argument, then resolve the target:
+Classify the trailing argument for the **target**, then (after peeling path tokens) classify any
+**named next action** from the invocation and the same-turn message. Path classification wins
+first. Next-action is an argument to `save`, not a second file or a second verb.
 
-- **No argument** → the root `CHECKPOINT.md`. Resolve the root in order: (1) the project
+- **No argument** (no path-like token) → the root `CHECKPOINT.md`. Resolve the root in order: (1) the project
   directory the conversation references, if any; (2) else if that path (else cwd) is inside a
   git repo → that `git rev-parse --show-toplevel`; (3) else if `./CHECKPOINT.md` exists in cwd
   → that directory (the file's parent); (4) else ask before generating. Step (2) is the first
   save in a git repo — the file need not exist yet. Step (3) is discovery, not a prerequisite.
 - **A path-like argument** (contains `/` or ends in `.md`) → that literal path, verbatim — the
-  unmanaged escape hatch for a deliberate second checkpoint file. Unmanaged end to end: no
+  unmanaged escape hatch for a deliberate second checkpoint file. At most one; first wins.
+  Unmanaged end to end: no
   anchor check, no lifecycle, `done <path>` rejected — and **only as fresh as its last save**:
   living-memory behavior requires the caller to supply an update cadence (re-save after each
   completed unit is the lightweight convention).
-- **A bare word** (`dev`, `research`, …) → **reject and explain**: named checkpoints do not
-  exist. Suggest the root checkpoint, an explicit path, or — for a genuinely concurrent
-  session — a stream with its own hand-off. Never silently reinterpret a bare word as a path.
+- **A single bare word** with no next-action marker (`dev`, `research`, `next` with no colon
+  or remainder, …) → **reject and explain**: named checkpoints do not exist. Suggest the root
+  checkpoint, an explicit path, or — for a genuinely concurrent session — a stream with its
+  own hand-off. Never silently reinterpret a bare word as a path.
+
+**Named next action** — after path tokens are peeled, from the invocation and the same-turn
+message:
+
+- `next:` plus the remainder of that span.
+- Remainder after `—` (the explicit delimiter form).
+- Same-turn prose that states the subsequent work ("checkpoint this, next we'll grill the spec";
+  "then we'll X").
+
+`--` is not a marker. Politeness (`please`, `now`) and chatter are not named. Combinations are
+legal (`/checkpoint save ./notes.md next: grill the spec`). A named string that is not
+load-executable is not named (Save discipline).
 
 Write-guards (tracked-file, ignore-as-checked-mechanism) are save's: `verbs/save.md` → *The
 ignore mechanism*, fed by `scripts/save-guard.sh`.
 
 ## The four disciplines (names + glosses — normative text in `references/disciplines.md`)
 
-- **Save discipline** — elide secrets; synthesize, don't transcribe; absolute dates.
-- **Resume discipline** — read in full, echo the next action, rewrite nothing.
+- **Save discipline** — elide secrets; synthesize, don't transcribe; absolute dates; author a
+  single next action (named > KNOWN > best-guess).
+- **Resume discipline** — read in full, echo the next action, rewrite nothing; do not reopen
+  the next-action design.
 - **Lifecycle discipline** — first save early; refresh at the three checkpoint moments; ended
   only by `done`; presence = work in flight; rollback exception for polluted contexts.
 - **Recovery discipline** — on compaction: stop, re-read, bounded facts-gather, reconcile,

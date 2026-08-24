@@ -14,12 +14,26 @@ renumber them.**
 
 How the file is written: scan/elide secrets; **synthesize, don't transcribe** (the document is
 for a future agent, not a chat log — and in a git repo, reconcile against `git log`, the truth
-for what shipped); resolve relative dates to absolute.
+for what shipped); resolve relative dates to absolute. Author a **single next action** as a
+**load-executable** contract: one imperative sentence a fresh agent can act on immediately
+(names the act, and the skill/verb when that *is* the move; not a paragraph). Prefer a next
+step **named** this turn; else a **KNOWN** continuation; else a best-guess synthesis
+(highest-priority pending item, or continue the in-flight unit). Git/disk veto a next-action
+that claims work undone when it has landed — do not write that lie.
+
+**Named** means this turn's invocation or same-turn message states a load-executable next
+step (intent, not extra words: markers and same-turn prose count; politeness and chatter do
+not). A string that is not concrete enough to act on immediately is not named. **KNOWN**
+means one clear continuation, any of: a single in-flight unit being paused; pending has one
+obvious first item; a queue / phase / flow-determined next is already determined; standing
+direction from earlier in the session that has not been superseded.
 
 ## Resume discipline
 
 How it is read: read **in full**, load as context, echo the single next action, **rewrite
-nothing**. Non-destructive — resume never deletes or edits the file, with no exception: a
+nothing**; **do not reopen the next-action design**. A redirect ("do Y instead") is new
+in-session intent; resume itself does not write; the next `save` captures Y. Non-destructive —
+resume never deletes or edits the file, with no exception: a
 discrepancy resume discovers (a stale file, landed work) is **reported**, and any refresh
 happens as a separate, confirmed **`save`** after resume completes — never inside the read.
 

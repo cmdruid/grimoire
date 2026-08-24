@@ -10,10 +10,12 @@ already a synthesized summary — **do not re-summarize it**, and never consume 
    session; the human decides). If neither exists, say so.
 2. **Read it in full** and load it as the working context for the session.
 3. **Confirm ready — briefly.** Reply that you've read it; at most echo the one-line *Suggested
-   first action* verbatim. A resuming session **confirms before continuing** (contrast Recovery,
-   which continues without a round-trip — it inherits the compacted session's standing
-   confirmation; a fresh session must earn one). While reconciling, apply the Lifecycle
-   discipline's qualified states — resume itself stays read-only in both:
+   first action* verbatim. **Do not reopen the next-action design** — a redirect ("do Y instead")
+   is new in-session intent, not a resume write; the next `save` captures Y. A resuming session
+   **confirms before continuing** (contrast Recovery, which continues without a round-trip — it
+   inherits the compacted session's standing confirmation; a fresh session must earn one). While
+   reconciling, apply the Lifecycle discipline's qualified states — resume itself stays read-only
+   in both:
    - a **stale** file → **report** the discrepancy (what the file claims vs what disk shows);
      on the human's confirm, transition into a separate **`save`** that refreshes it. Completing
      resume steps 1–2 plus that confirm **confers ownership** (SKILL.md, the one-owner rules) —

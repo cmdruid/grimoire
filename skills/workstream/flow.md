@@ -111,7 +111,9 @@ it token-free first:** run `workstream-git.sh stream-state <worktree> <branch> <
 `rebase_in_progress`/`nested_stray_handoff`/`staged_uncommitted` -> a hard stop to diagnose before
 any classification — `verbs/load.md` step 3) —
 and `cheatsheet-check <worktree>`, flagging any stale orientation pointer (in-place: plus the
-hand-off path — see SKILL.md *Helper scripts*). Then:
+hand-off path — see SKILL.md *Helper scripts*). A prior `save` authors the next-action contract
+(TL;DR / *What's next* first item) this launch confirms, unless `stream-state` forces otherwise.
+Then:
 
 **If the Delegation route contains `unconfirmed` and a human is present,** run
 `create.md` step 6's pre-confirm interview first (see `verbs/load.md` step 4) — then
