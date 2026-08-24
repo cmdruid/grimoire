@@ -1,104 +1,148 @@
 ---
 doctype: design
-status: current
+status: published
 created: 2026-08-19
-updated: 2026-08-19
+updated: 2026-08-24
 tags: [spec, bl-34]
 ---
 
-# Two roots — the simple spec
+# Two roots — records and skill-owned workspace
 
-BL-34's deliverable. A few lines, not a doctrine chapter. Supersedes the `agent-templates`
-variable (3b, dropped) and dissolves the legacy-`dev/` question that blocked it.
+This is the current lineage contract for the project's two configurable
+agent roots. The active workspace implementation is specified by
+`docs/design/2026-08-23-workspace-kinds.md`; it consumes this contract
+and does not amend this file during implementation.
 
-## The spec
+## Problem
 
-Two variables, two roots:
+Agent records and agent configuration have different ownership and
+classification rules. Treating one as a subdirectory of the other, or
+organizing both by the same top-level taxonomy, makes record discovery
+depend on reserved directory names and obscures which skill owns a
+workspace file.
 
-| variable | default | holds |
+## Goal
+
+Two independent variables resolve two independent roots:
+
+| Variable | Default | Holds |
 |---|---|---|
-| `<agent-records>` | `.records/` | dated, typed, closeable records + `history.tsv` |
-| `<agent-workspace>` | `.dev/` | `doctrine/`, `spec/`, `flows/`, `templates/`, `scripts/`, `hooks/` |
+| `<agent-records>` | `.records/` | dated, typed, closeable records plus `history.tsv` |
+| `<agent-workspace>` | `.dev/` | skill-owned configuration and executable support at `<skill>/<kind>` |
 
-`agent-templates` is retired as a variable — it becomes the fixed subpath
-`<agent-workspace>/templates`.
+The roots may coincide. Their files remain distinguishable by content
+and shape, not by a global directory carve-out.
 
-**The two roots MAY coincide.** A host that configures both to `dev/` is legal and needs no
-carve-out, because of the ownership rule and the discriminator below.
+`agent-records:` (legacy synonym `records-root:`) declares the first.
+`agent-workspace:` declares the second. Defaults need no declaration.
+Both values are repository-relative and may not be empty, `.`,
+absolute, or root-escaping.
 
-## The ownership rule
+## Approach
 
-**A skill creates only the directories it needs for its own work.** `journal` creates
-`scripts/` (its tool) and `history.tsv` (its ledger). `contractor` creates `plans/` when it
-mints a plan. `journal` does not create, name, or reserve directories on another skill's
-behalf.
+**Records are discriminator-first.** A Markdown file is a record iff it
+has the required front-matter record contract. Journal scans records at
+any depth and does not maintain a store-name registry.
 
-Consequence: the set of subdirectories under `<agent-records>` is **open-ended and unknown**
-to the tool. `records.sh` crawls; it does not match a known list.
+**Workspace is owner-first.** A managed workspace path begins with the
+owning skill and then one closed kind:
 
-## The discriminator
+```text
+<agent-workspace>/<skill>/{doctrine,hooks,scripts,templates,trackers,flows}/...
+```
 
-**A file is a record iff it carries a front-matter block.** Not "iff it lives under a known
-store." This is the whole of it, and it is what makes every carve-out unnecessary:
+The owner population is open. The kind vocabulary is closed. A skill
+creates only its own namespace and only the kinds it needs.
 
-- `templates/`, `scripts/`, `doctrine/` need no reserved status — their files have no record
-  front-matter, so they are not records.
-- The two roots may coincide — doctrine pages under a shared root are simply not records.
-- A directory name is the caller's business; the authoritative doctype is the front-matter key.
+**Coincidence is legal.** Record stores and skill namespaces can share
+one filesystem root because record front matter identifies records and
+workspace shape identifies managed skill configuration.
 
-`journal`'s purpose follows from this and nothing else: **scan/query records, keep the audit
-trail, enforce the front-matter schema.**
+## Mechanism
 
-## What gets cut
+### Records ownership
 
-| target | what goes |
-|---|---|
-| `journal/scripts/records.sh` `stores()` | the whole function — top-level scan minus `templates\|scripts\|doctrine` |
-| `records.sh:64` | reserved-path guard (`templates/*\|scripts/*\|doctrine/*`) |
-| `records.sh:84` | reserved-name filter in `stores()` |
-| `records.sh:347` | `fm["doctype"] != store` — a consistency check between two copies of one fact |
-| `records.sh:182` | flat-template fallback (BL-25 proved no live skill reaches it) |
-| `journal/SKILL.md:24` | the eight-store taxonomy declaration |
-| `skills-lint.sh` checks 12–17 | 246 lines policing doctrine/records-home placement |
-| `lint-doctrine-consumer-test.sh`, `lint-records-writer-test.sh` | ~540 lines testing those checks |
-| `clankshop` "handbook" | 47 references across 16 files (BL-31) |
+Journal owns the record format, query/write mechanics, and closure
+ledger. It does not own the content written by Architect, Contractor,
+Analyst, Auditor, Notepad, Workstream, or another producer.
 
-`records()` changes from `find` inside known stores to `find "$RR" -name '*.md'` at any depth,
-filtered by the discriminator.
+Consequences:
 
-**Kept:** `check` gains a WARN tier — a file matching the `YYYY-MM-DD-*.md` record shape but
-carrying no front-matter is reported, not silently skipped. This is the one thing the
-discriminator would otherwise lose.
+- record stores are open-ended;
+- `records.sh` crawls rather than enumerates stores;
+- a directory name does not determine `doctype`;
+- non-record Markdown inside a coincident root is ignored by record
+  operations;
+- dated record-shaped Markdown without front matter is a check warning,
+  not silently treated as a record.
 
-## Renames
+### Workspace ownership
 
-- Record doctype `design` → **`specs`** (~15 references). Removes the collision with the
-  doctrine station chapter `design/` when the roots coincide, and describes dated closeable
-  design docs better than `design` did.
-- `<agent-workspace>` gains `spec/` and `flows/` (plural). The six existing workflow files
-  un-nest from their station directories to `flows/`.
+The first path component is the owner. The second is one of:
 
-## The dissolved blocker
+- `doctrine` — project-customizable normative policy;
+- `hooks` — project-customizable known seam files;
+- `scripts` — staged package-owned executable bytes;
+- `templates` — project-customizable schemas/examples;
+- `trackers` — owner-defined structured living state;
+- `flows` — owner/project-authored procedures.
 
-BL-34 recorded an open question: legacy hosts with records at `dev/` would lose support under
-the hard cut. **The question was mis-stated.** `<agent-records>: dev` was never a problem — it
-is a variable and it resolves. The real issue was that such hosts also put doctrine at
-`dev/doctrine/`, nesting one home inside the other, which forced the `doctrine` reserved name
-in `records.sh`. The front-matter discriminator removes the need for any reserved name, so
-coincidence is legal and no host loses support. **No decision is required.**
+No `_shared`, `common`, or project pseudo-owner exists. General project
+documentation stays in the repository's ordinary documentation and
+front door. Shared records stay under `<agent-records>`.
 
-## Measured baseline (2026-08-19)
+Project operational state that is neither a record nor deployed skill
+configuration remains outside both contracts. In particular,
+`.workstreams/` remains Git/worktree session state.
 
-Generated, not hand-counted (`scratchpad/debt-census.py`). Re-run after the cut to verify.
+### Coincident resolution
 
-- markdown: 10,520 lines; **2,078 (20%) legacy / rationale / hedging**
-- shell: 6,769 lines — tests 2,839 (42%) · deployed product 2,086 (31%) · agent helper
-  1,017 (15%) · library self-policing 827 (12%)
-- exact-duplicate content across the library: **135 lines** (duplication is not the problem)
-- four drifted variants of the same 41-line `tests/lib.sh` (drift **is** the problem)
+When the roots differ, each authority validates only its root. When they
+coincide:
 
-## Method constraint
+- Journal accepts only files satisfying the record discriminator.
+- Workspace fully validates directories that exhibit recognized
+  `<skill>/<kind>` shape.
+- Other top-level record-store entries warn as coincident-unknown rather
+  than fail.
+- Retired kind-first workspace roots (`doctrine`, `hooks`, `scripts`,
+  `templates`, `trackers`, `flows`) remain known-bad and fail.
 
-The audit is **generated by tooling, not written as prose**. The single-variable census was
-wrong five consecutive times, the fifth authored on top of a correct machine-generated one.
-Every claim citing a census is re-derived from its output, never from memory of it.
+Neither authority writes or deletes the other's content.
+
+### Hard cut
+
+The following are retired without compatibility:
+
+- `agent-templates:` and templates beneath the records root;
+- kind-first workspace paths;
+- records-home or doctrine-home executable dumps;
+- store-name enumeration in Journal;
+- shared workspace assemblers and owner registries.
+
+There is no dual read, migration command, alias, symlink bridge, or
+automatic cleanup. Existing alpha hosts relocate project-owned files
+manually before invoking the new owner setup.
+
+## Verification
+
+- Split-root fixture: Journal sees only records; Workspace validates
+  only `<skill>/<kind>` namespaces.
+- Coincident-root fixture: record stores and skill namespaces coexist;
+  neither authority reports the other as its content.
+- A front-mattered record under an arbitrary store remains discoverable.
+- Non-record skill doctrine under a coincident root is never returned as
+  a record.
+- Every retired kind-first workspace root fails workspace check in split
+  and coincident modes.
+- No live skill relies on a store list or kind-first workspace path.
+- Mutation red-proofs remove the record discriminator and owner/kind
+  recognizer separately and make their fixtures fail.
+
+## Out of scope
+
+- The detailed workspace checker, setup rules, and consumer migrations
+  (workspace-kinds spec).
+- Record doctype schemas and individual producer behavior.
+- Relocating `.workstreams/`.
+- Compatibility or automated migration of alpha paths.
