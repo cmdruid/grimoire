@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, drain actionable findings. The resolved agent-workspace rubric is primary; `docs/audit/` is legacy detection only. Pass reports land in the agent-records home; defects stay in the report and promote via the host's bug-filing lane. Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
+description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, and drain actionable findings. The rubric resolves under Auditor's agent-workspace doctrine home. Pass reports land in the agent-records home; defects stay in the report and promote via the host's bug-filing lane. Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
 ---
 
 # auditor — the code-quality audit driver
@@ -24,15 +24,11 @@ subpath `<agent-workspace>/auditor/doctrine`, and `<agent-workspace>` is the dec
 detect `GUIDE.md`. No pack lifecycle is a prerequisite; rubric setup is this
 skill's explicit operation.
 
-Detection order, first hit wins:
-
-1. **`<agent-workspace>/auditor/doctrine/test/workflows/audit/`** — the resolved home (by default
-   `.dev/auditor/doctrine/test/workflows/audit/`). The rubric is project doctrine
-   (`GUIDE.md`, `rules/`, `metrics.sh`) and is loaded directly for each pass.
-2. **`docs/audit/GUIDE.md`** — the **legacy** home, still detected so rubrics already
-   deployed there keep working (the same courtesy `records-root:` gets alongside
-   `agent-records:`). Detected, never created fresh.
-3. Neither → ask once (do not scan the repo).
+Detect `GUIDE.md` only at
+`<agent-workspace>/auditor/doctrine/test/workflows/audit/` (by default
+`.dev/auditor/doctrine/test/workflows/audit/`). The rubric is project doctrine
+(`GUIDE.md`, `rules/`, `metrics.sh`) and is loaded directly for each pass. If it is absent,
+ask once; do not scan the repo.
 
 `setup` stands the rubric up at the resolved home; **incumbent wins** — an existing rubric is
 never overwritten, since a re-run would otherwise destroy the host's accumulated calibration.
@@ -99,7 +95,7 @@ Follow the bundled `BOOTSTRAP.md`:
    audit's purpose (hygiene vs release-gating → severity model).
 2. **Confirm the home** — resolved: `<agent-workspace>/auditor/doctrine/test/workflows/audit/`
    (no confirmation needed). An explicit setup may create only this Auditor-owned namespace;
-   refuse symlinked or non-directory parents before writing. Legacy `docs/audit/` remains detection-only.
+   refuse symlinked or non-directory parents before writing.
 3. **Author the rubric** — copy the bundled generic `rules/` into `<home>/rules/`, fill the
    `<language>` greps and `How to quantify` recipes, and add a rule file per
    `<native dimension>`, following the uniform rule-file shape in `BOOTSTRAP.md`.

@@ -6,7 +6,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 rc=0
 
-for t in facts-test.sh deploy-test.sh; do
+for t in facts-test.sh deploy-test.sh skill-doc-test.sh; do
   echo "== $t"
   bash "$HERE/$t" || rc=1
 done

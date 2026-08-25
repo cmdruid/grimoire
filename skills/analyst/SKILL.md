@@ -1,6 +1,6 @@
 ---
 name: analyst
-description: "Use when the user runs `/analyst`, asks to be briefed or caught up on a project, wants a status snapshot, a report on a subsystem or the project's health, or a guide introducing part of the codebase. Synthesizes the project's own records and git history into cited, readable prose. Reports state; renders no quality score. Keywords: brief me, catch me up, what happened, status report, health snapshot, walk me through."
+description: "Use when the user runs `/analyst`, asks to be briefed or caught up on a project, wants a status snapshot, a report on a subsystem or the project's health, a guide introducing part of the codebase, or to deploy a customizable report catalog. Synthesizes the project's own records and git history into cited, readable prose. Reports state; renders no quality score. Keywords: brief me, catch me up, what happened, status report, health snapshot, walk me through."
 ---
 
 # analyst — reports and briefings for the developer
@@ -17,6 +17,7 @@ it gathers that account, curates it, and writes the developer a briefing with it
 ```
 /analyst <token> [args]      # direct pick: briefing | status | subsystem | diagnostics | guide
 /analyst <free text>         # classified against the catalog's use-when descriptors
+/analyst setup               # deploy the customizable catalog explicitly
 ```
 
 Every report kind is a **template**, not a verb (`templates/`, deployed per *Catalog*). Adding a
@@ -30,8 +31,8 @@ and host-added templates join the catalog the same way.
 
 `<root>` is `git rev-parse --show-toplevel` of the project being briefed. Non-git → ask.
 
-Deploy is **lazy** and mechanical: run `scripts/analyst-deploy.sh <root>` on the first
-use. It copies only the bundled templates *absent* from the
+Deploy is **explicit** and mechanical: `/analyst setup` runs
+`scripts/analyst-deploy.sh <root>`. It copies only the bundled templates *absent* from the
 deployed directory and **never overwrites** — a customized template is the project's, and
 an upgrade of one is a judgment-assisted diff a human runs, never a silent replace. On a
 host with no workspace home it creates only `analyst/templates/` beneath the declared home.
@@ -42,7 +43,7 @@ descriptor), and `inputs:` (the facts it needs). Its body carries the gathering 
 instructions, then the output skeleton.
 
 **Tier note (no self-init):** analyst owns a deployable template catalog — customizable assets,
-not a project artifact store — so it has no `init` verb and no home to scaffold. Records it
+not a project artifact store. Only explicit `setup` scaffolds its template home. Records it
 persists live in the project's existing `reports/` store.
 
 ## Resolving the template
@@ -62,9 +63,8 @@ question's *intent* is not. Keep it cheap and inline — never spend a dispatch 
 
 ## The engine
 
-1. **Resolve the template** (above). Run `scripts/analyst-deploy.sh <root>` first if the
-   catalog has never been deployed — it is idempotent, so running it when unsure costs
-   nothing. An absent workspace is created narrowly for `analyst/templates/`.
+1. **Resolve the template** (above). Read a deployed catalog when present; otherwise use the
+   bundled catalog without creating project files. Only `/analyst setup` deploys templates.
 2. **Gather facts** — run `scripts/analyst-facts.sh`; **each template's Gather section names its
    exact invocation** (every subcommand takes the project root as its first argument). It is
    read-only and prints `key=value` facts plus evidence; it never judges, and it **never runs the
@@ -78,9 +78,9 @@ question's *intent* is not. Keep it cheap and inline — never spend a dispatch 
    (record paths, `file:line`): a briefing must be checkable.
 5. **Deliver** — in context by default; persist per *Persistence*.
 
-Analyst is read-only toward the project. Its only writes are a persisted report and the lazy
-template deploy. Delegation, when a span is large, follows the delegation front-door's own
-doctrine — and never an editing sub-agent.
+Analyst is read-only toward the project during report generation. Its only writes are a report
+persisted per *Persistence* and an explicitly requested catalog setup. Delegation, when a span is
+large, follows the delegation front-door's own doctrine — and never an editing sub-agent.
 
 ## Span anchor (`briefing`)
 
@@ -126,10 +126,11 @@ records tool, file-mode still writes under the agent-records home.
 
 ## Done when
 
-The template was resolved (or the ask was routed elsewhere); facts were gathered from the
+For a report, the template was resolved (or the ask was routed elsewhere); facts were gathered from the
 records layer and git, never from running the project's gates; the report follows its template's
 skeleton with every claim cited; the anchor used is named; and the report was persisted only per
-*Persistence*.
+*Persistence*. For `setup`, every absent bundled template was deployed, every incumbent was left
+untouched, and no namespace outside Analyst's template home was created.
 
 ## Project templates
 

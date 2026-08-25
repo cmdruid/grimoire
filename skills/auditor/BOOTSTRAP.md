@@ -8,9 +8,8 @@ project's *own code* for quality and invariant-conformance, surfaces findings wi
 is re-runnable each cycle. Drop this file into any project and an agent can **reconstruct the
 whole system**, or **borrow a piece**.
 
-The primary rubric home is `<agent-workspace>/auditor/doctrine/test/workflows/audit/`
-(project doctrine, loaded on demand); the legacy fallback is a
-directory confirmed once at setup (default `docs/audit/`). `<home>` below means that directory.
+The rubric home is `<agent-workspace>/auditor/doctrine/test/workflows/audit/`
+(project doctrine, loaded on demand). `<home>` below means that directory.
 
 It is a sibling to any companion dev-system blueprint (one that blueprints the surrounding deployed doc-system, if the host has one). This
 file blueprints only the audit subsystem. It is deliberately project-agnostic: anything specific to
@@ -99,7 +98,7 @@ One authored home (the rubric); deliverables drain per §3:
 
 ```
 <home>/               -- the rubric (hand-curated, source of truth)
-                         resolved: <agent-workspace>/auditor/doctrine/test/workflows/audit/ · legacy: docs/audit/
+                         resolved: <agent-workspace>/auditor/doctrine/test/workflows/audit/
   GUIDE.md            -- the hub: framing, risk-weighted scope, the rubric index, scoring
                          rules, process, the finding-entry shape, severity, drains
   rules/              -- one file per dimension, all in the uniform shape (§6)
@@ -265,8 +264,7 @@ Answer these in order; the answers fill the *Slots* and shape the rubric:
 
 **Full setup** (leaves-before-index, so each commit stays `<gate>`-green):
 1. Fill the *Slots* (§2) via the *Decision walk* (§9); resolve `<home>` per the skill's entry
-   probe (resolved: `<agent-workspace>/auditor/doctrine/test/workflows/audit/`; legacy: detection-only
-   `docs/audit/`).
+   probe: `<agent-workspace>/auditor/doctrine/test/workflows/audit/`.
 2. Copy the bundled generic `rules/` into `<home>/rules/`. Fill the `<language>` greps
    and *How to quantify* recipes. Write only `<native dimensions>` from the *Rule-file
    shape* (§6). (They reference `../GUIDE.md` in backticks, since it does not exist yet.)

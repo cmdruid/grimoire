@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# analyst-deploy.sh <root> — lazily deploy the bundled template catalog.
+# analyst-deploy.sh <root> — explicitly deploy the bundled template catalog.
 #
 # Copies any bundled template ABSENT from
 # <agent-workspace>/analyst/templates/. Adopts a previous-home copy at

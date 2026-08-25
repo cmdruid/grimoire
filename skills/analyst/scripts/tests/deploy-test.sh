@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# deploy-test.sh — exercise analyst-deploy.sh's lazy, never-overwriting deploy.
+# deploy-test.sh — exercise analyst-deploy.sh's explicit, never-overwriting deploy.
 #
 # The load-bearing guarantee is an ABSENCE: a customized template is never
 # replaced. An absence assertion is worthless unless the fixture can actually
