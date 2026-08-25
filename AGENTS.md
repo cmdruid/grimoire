@@ -14,8 +14,8 @@ Most of these skills are members of the root, faceless **`clankshop` pack** (`PA
 records format authority and the one required member, `backlog` the follow-up lifecycle,
 `notepad` project memory, `analyst` reports and briefings, `workstream` the stream driver,
 `auditor`, `debugger`, `shopbook` experimental host procedures); **utilities** (`checkpoint`, `mailbox`,
-`delegate`, `scheduler`). `skill-builder` is the library's own
-toolmaker and stays outside the pack. See `README.md` for the full inventory.
+`delegate`, `scheduler`, `workspace`). `agent-council`, `google-developer-style`, and
+`skill-builder` stay outside the pack. See `README.md` for the full inventory.
 
 The pack is distribution plus a human-readable seam map. It has no skill face and no project
 lifecycle: installation never writes doctrine, hooks, flows, records, trackers, or a project
