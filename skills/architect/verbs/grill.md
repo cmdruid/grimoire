@@ -12,8 +12,7 @@ steps below. Founding-shaped → fill the six map H2s in place under that
 branch; do not run the feature-spec reshape. Refuse the otherwise-case.
 They never scan cwd for a founding file.
 
-Summon the design station per SKILL.md *One environment probe* (founding
-`grill` is still a design-station read; it does not mint a record).
+Founding `grill` still does not mint a record.
 
 ## Procedure
 

@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, drain actionable findings. Workshop: test-station doctrine. Standalone: home confirmed once (`docs/audit/` is legacy detection only). Pass reports land in the agent-records home; defects stay in the report and promote via the host's bug-filing lane. Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
+description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, drain actionable findings. The resolved agent-workspace rubric is primary; `docs/audit/` is legacy detection only. Pass reports land in the agent-records home; defects stay in the report and promote via the host's bug-filing lane. Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
 ---
 
 # auditor — the code-quality audit driver
@@ -21,16 +21,14 @@ The rubric is doctrine, so its home resolves like any other: the doctrine home i
 subpath `<agent-workspace>/doctrine`, and `<agent-workspace>` is the declared
 `agent-workspace:` (front-door `AGENTS.md` then `CLAUDE.md`), else `.dev` — so by default
 `.dev/doctrine/`. Resolving the home is not finding the rubric — resolve it, **then**
-detect `GUIDE.md`. No mode ever refuses or stalls for lack of a workshop — standing one up is
-the human's separate decision (the clankshop onramps), never an audit side effect.
+detect `GUIDE.md`. No pack lifecycle is a prerequisite; rubric setup is this
+skill's explicit operation.
 
 Detection order, first hit wins:
 
 1. **`<agent-workspace>/doctrine/test/workflows/audit/`** — the resolved home (by default
-   `.dev/doctrine/test/workflows/audit/`). The rubric is guardian
-   doctrine (`GUIDE.md`, `rules/`, `metrics.sh`): an on-demand workflow of the test station,
-   invisible to the always-on load set. Before a pass, summon the station's context with
-   `<agent-workspace>/doctrine/scripts/context.sh test` when that loader exists.
+   `.dev/doctrine/test/workflows/audit/`). The rubric is project doctrine
+   (`GUIDE.md`, `rules/`, `metrics.sh`) and is loaded directly for each pass.
 2. **`docs/audit/GUIDE.md`** — the **legacy** home, still detected so rubrics already
    deployed there keep working (the same courtesy `records-root:` gets alongside
    `agent-records:`). Detected, never created fresh.
@@ -108,9 +106,8 @@ Follow the bundled `BOOTSTRAP.md`:
    rubric index, scoring rules, the finding-entry shape, severity, drains.
 5. **Write `metrics.sh`** (`<home>/metrics.sh`, `BOOTSTRAP.md` §8 columns, copy §13 stub) for the `<language>`; run it
    for a baseline report; wire `--check` on the native invariant.
-6. **Wire + gate** — workshop: add the routing hook (`<agent-workspace>/doctrine/core/ROUTING.md` classifies "audit the
-   code" → this workflow) and a chore line in `<agent-workspace>/doctrine/test/POLICY.md` if the guardian should run it on
-   cadence; standalone: one pointer from the host's doc index. Run the host's gate.
+6. **Wire + gate** — add one pointer from the host's doc index or existing
+   routing surface; never write another skill's files. Run the host's gate.
 7. **Baseline pass + select exemplars** — run a lean pass to seed the first pass report, then
    pin the score-5 `<exemplars>` in `GUIDE.md` and backfill calibrated examples
    (`BOOTSTRAP.md §10`).
@@ -122,7 +119,7 @@ setup only against throwaway fixtures.
 
 Follow the host's `GUIDE.md` → *Process*; in brief:
 
-1. **Calibrate.** (Workshop: summon test-station context first.) Read `GUIDE.md` and its
+1. **Calibrate.** Read `GUIDE.md` and its
    pinned score-5 exemplars; read each `rules/` file's anchors before scoring it.
 2. **Map / scope.** Pick targets by blast-radius depth (GUIDE's targets table), or honor a
    `<target>` arg. Plan the reading order Deep → Mid → Light.
@@ -159,7 +156,7 @@ changes. There is no mirror to re-sync.
 <!-- edges:auditor -->
 - produces: report — a pass report tagged audit
 - handoff: — (none; findings drain through the host's capture lane)
-- consumes: doctrine — station rubric when a workshop is present
+- consumes: doctrine — the host's resolved audit rubric
 <!-- /edges:auditor -->
 
 ## Done when

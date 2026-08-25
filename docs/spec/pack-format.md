@@ -111,8 +111,14 @@ pack-based skills' reads, project shadows global per pack name.
       "source": "github:cmdruid/grimoire",
       "ref": "a1b2c3d",
       "installedAt": "2026-08-08T00:00:00Z",
+      "manifest": {
+        "name": "clankshop",
+        "version": "1.0.0",
+        "description": "One-line summary",
+        "required": "journal",
+        "optional": "backlog, scheduler"
+      },
       "skills": {
-        "clankshop": { "hash": "sha256:…", "required": true },
         "journal":   { "hash": "sha256:…", "required": true },
         "backlog":   { "hash": "sha256:…", "required": false }
       }

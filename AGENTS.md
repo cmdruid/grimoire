@@ -8,10 +8,8 @@ This file captures the **design philosophy** for the tools, scripts, and skills 
 it whenever you add or revise one. It is distilled from practice; the `workstream` skill (its
 `scripts/workstream-git.sh` + *Helper scripts* section) is the worked reference.
 
-Most of these skills are members of the **`clankshop` pack**, tiered by coupling in the pack
-manifest (`skills/clankshop/PACK.md`): the pack **face** (`skills/clankshop/`) carries the seed
-doctrine and the four **stations** — `design`, `build`, `test`, `review` — with the system verbs
-(`setup` / `migrate` / `check`); **helpers** (`architect` the specification spine,
+Most of these skills are members of the root, faceless **`clankshop` pack** (`PACK.md`):
+**helpers** (`architect` the specification spine,
 `contractor` the job lead, `inspector` critique and fold, `journal` the
 records format authority and the one required member, `backlog` the follow-up lifecycle,
 `notepad` project memory, `analyst` reports and briefings, `workstream` the stream driver,
@@ -19,15 +17,9 @@ records format authority and the one required member, `backlog` the follow-up li
 `delegate`, `scheduler`). `skill-builder` is the library's own
 toolmaker and stays outside the pack. See `README.md` for the full inventory.
 
-A consuming project gets the workshop **deployed**, not copied: `/clankshop setup` (or `migrate`)
-seeds **`<agent-workspace>/doctrine/`** (by default `.dev/doctrine/` — the project's own
-doctrine: README with the load rules and the one install stamp line, `core/`, the four station
-chapters, `scripts/context.sh`), stands up **`.records/`** via `journal` (the record
-discriminator + `records.sh` + the `history.tsv` closure ledger), and writes the **`AGENTS.md` door** (a thin
-routing table plus the doctrine pointer). Once seeded, all three are the **project's**
-documents — upgrades are a judgment-assisted diff against the current seed. The deployed
-doctrine home documents its own layout; `README.md`
-(*Storage convention*) has the short version.
+The pack is distribution plus a human-readable seam map. It has no skill face and no project
+lifecycle: installation never writes doctrine, hooks, flows, records, trackers, or a project
+front door. Skills with durable project surfaces expose and own their own explicit setup.
 
 ## Design philosophy
 
@@ -44,13 +36,12 @@ this library was.)
 - **Feedback channel.** `docs/DOCTRINE.md`'s "skills are living artifacts" bullet says route friction
   to the skills' home feedback channel. For grimoire that channel is **GitHub issues**, tagged by
   skill — an installation may override it with its own collection file (see `README.md`).
-- **Patient-zero caveat.** The deployed mechanisms — the door, the seed projection, records
-  standup, self-init
+- **Patient-zero caveat.** The deployed mechanisms — self-registration, records standup, and
+  skill-owned project files
   (`docs/DOCTRINE.md` covers the helpers' portable regime) — are **built and tested here**, but
   grimoire's own `AGENTS.md` is authored library doctrine, not a consuming project's scaffold —
   **never let door blocks or deployed-layout content accrete in it**. Every deployed
-  mechanism is exercised against throwaway fixtures instead (committed harnesses in
-  `skills/clankshop/scripts/tests/`; fixture instances in temp dirs).
+  mechanism is exercised against throwaway fixtures in its owning skill's test harness.
 
 ## Workstream compaction recovery
 

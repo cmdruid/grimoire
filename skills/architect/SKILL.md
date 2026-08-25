@@ -15,7 +15,7 @@ architect's job**, and neither is sequencing implementation. Trunk landing
 and the debrief sweep stay with the orchestrator. `deploy` does not land
 onto a host trunk.
 
-This `SKILL.md` is a **thin router**: the probe, the dispatch table, the
+This `SKILL.md` is a **thin router**: the dispatch table, the
 Founding-shaped grammar the spine and genesis verbs share, and the typed
 edges. Each verb's procedure lives in `verbs/` (see the dispatch table).
 When a verb is selected, **read its file and follow it**.
@@ -26,21 +26,7 @@ and collides with none.
 **Brief the human.** The conversation leads with the decision or the draft,
 not the machinery. "Here are two approaches; I recommend A because…" /
 "The spec is at `<path>`. Please read it before we sequence work."
-`founding-shaped`, `status: draft`, and station names stay in the files.
-
-## One environment probe (at entry)
-
-Station context is doctrine, so it lives at `<agent-workspace>/doctrine`: the
-declared `agent-workspace:` (front-door `AGENTS.md` then `CLAUDE.md`), else
-`.dev` — by default `.dev/doctrine/`. Resolving the home is
-not finding the artifact — resolve it, **then** test for the design station's
-loader. Nothing else is probed, and no verb ever refuses or stalls for lack of
-one.
-
-- **`<agent-workspace>/doctrine/scripts/context.sh` present** → summon the design station
-  (`<agent-workspace>/doctrine/scripts/context.sh design`).
-- **Absent** → the project's own design docs and READMEs stand in for
-  station context.
+`founding-shaped` and `status: draft` stay in the files.
 
 **Destination is not stamped.** Feature `spec` / `brainstorm` / ADR artifacts
 land in `<agent-records>/specs/` and `<agent-records>/adr/` on every host
@@ -71,14 +57,14 @@ feature spec. Do not write `published` on them.
 
 ## Verb dispatch (read the file, then follow it)
 
-| Invocation | Verb file | Does | Station |
-|---|---|---|---|
-| (none) | `verbs/brainstorm.md` | divergent ideation → `specs/` doc (`status: draft`) | design |
-| `brainstorm [topic]` | `verbs/brainstorm.md` | divergent ideation → a draft design doc | design |
-| `new <name>` | `verbs/new.md` | mint `./<name>.md` — founding-shaped, empty of design content | — |
-| `grill [doc]` | `verbs/grill.md` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** | design |
-| `spec [doc]` | `verbs/spec.md` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) | design |
-| `deploy <file>` | `verbs/deploy.md` | project a founding spec into a git repo + three founding docs (new dir or in-place) | — |
+| Invocation | Verb file | Does |
+|---|---|---|
+| (none) | `verbs/brainstorm.md` | divergent ideation → `specs/` doc (`status: draft`) |
+| `brainstorm [topic]` | `verbs/brainstorm.md` | divergent ideation → a draft design doc |
+| `new <name>` | `verbs/new.md` | mint `./<name>.md` — founding-shaped, empty of design content |
+| `grill [doc]` | `verbs/grill.md` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** |
+| `spec [doc]` | `verbs/spec.md` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) |
+| `deploy <file>` | `verbs/deploy.md` | project a founding spec into a git repo + three founding docs (new dir or in-place) |
 
 ```
 spec  →  (host's review)  →  (caller publishes)  →  (host sequences)
@@ -143,8 +129,6 @@ is a gap. No italic / `TBD` / `<>` special cases.
 - **Scripts from this package.** `scripts/ground-check.sh` is this
   skill's copy — resolve it from this skill's own base directory,
   never a host path.
-- **Summon** the design station per *One environment probe* at verb
-  entry (`new` / `deploy` are probe-exempt).
 - Mint stays `draft`. Do not write `published`.
 
 ## State between verbs = the artifacts
@@ -158,7 +142,7 @@ no new file.
 
 - **Standalone** — the user runs the spine; the host's build lane consumes the
   accepted spec. The close-the-books sweep is the project's own convention.
-- **Workshop routing** — the doctrine's routing walk dispatches design-at-stake
+- **Project routing** — a host's routing convention may dispatch design-at-stake
   work here. The orchestrator / host lane consumes the spec.
 
 Do not name a successor skill. Feature composition ends at the accepted
@@ -171,9 +155,8 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
   `verbs/grill.md` + `verbs/spec.md` + `verbs/new.md` +
   `verbs/deploy.md` + `scripts/ground-check.sh` (the
   re-grounding fact-checker) + `docs/ideal-use.md` (a worked arc).
-- **Portable:** no workshop dependency (the one probe degrades to standalone),
-  no host paths baked in, travels as one unit wherever the skills are
-  installed.
+- **Portable:** no workshop dependency, no host paths baked in, travels as one
+  unit wherever the skills are installed.
 
 ## Project templates
 
@@ -187,7 +170,7 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 <!-- edges:architect -->
 - produces: spec, founding-documents — argued specification; a repo's three founding docs
 - handoff: spec, git-repository — the accepted spec is the feature baton; a git repository carrying three founding documents is the genesis baton
-- consumes: doctrine — station context read from the agent-workspace home; also a conversation or a draft the user names
+- consumes: — (a conversation or named draft is direct input, not a typed project artifact)
 <!-- /edges:architect -->
 
 ## Done when

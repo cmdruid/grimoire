@@ -4,15 +4,13 @@ Open the space before narrowing it. **Harvest the current conversation first** �
 pull every constraint, preference, and half-decision already stated into the
 draft before asking anything; never start from a blank template.
 
-Summon the design station per SKILL.md *One environment probe*. Feature
-`brainstorm` mints a `specs/` record (SKILL.md destination). It is not
+Feature `brainstorm` mints a `specs/` record (SKILL.md destination). It is not
 founding-shaped and does not fill a named founding file.
 
 ## Procedure
 
-1. **Explore context** — the relevant code, docs, recent commits, and the host's
-   design context (workshop: design-station summon + the `specs/` store's
-   `status: published` spec; standalone: the project's own design docs) before
+1. **Explore context** — the relevant code, docs, recent commits, the `specs/`
+   store's `status: published` spec, and the project's own design docs before
    asking anything. Don't brainstorm blind.
 2. **Scope check** — an idea spanning several independent subsystems decomposes
    into separate features first; brainstorm the first one. **And ask "is this

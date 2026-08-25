@@ -19,8 +19,8 @@ that phase can be built. The roadmap never carries task-level detail.
    the waive, **then** maps. It does not map against a `draft`.
    Open decision branches → stop; those belong in a grill on the
    spec.
-2. **Summon context** per SKILL.md *One environment probe* (build station on a
-   workshop host).
+2. **Read project context.** Load the host's own planning and implementation
+   guidance before mapping phases.
 3. **Write the map** per `templates/roadmap.md`:
    - **Phases** — each a coherent, independently-valuable slice with: goal,
      scope (in/out), a **gate** (exit criteria that make "done" checkable), and

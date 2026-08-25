@@ -31,14 +31,14 @@ fn fixtures_ignored() -> Ignore {
 }
 
 #[test]
-fn clankshop_is_a_valid_faced_pack() {
+fn clankshop_is_a_valid_faceless_pack() {
     let e = enumerate_with(&repo_root(), &fixtures_ignored()).unwrap();
     let clank = e
         .packs
         .iter()
         .find(|p| p.manifest.name == "clankshop")
         .expect("clankshop pack found");
-    assert!(matches!(clank.shape, PackShape::Faced { .. }));
+    assert!(matches!(clank.shape, PackShape::Faceless));
     // The version must parse as semver — the parser's contract. Its value is
     // the pack's to choose.
     assert!(clank.manifest.version.major >= 1, "semver parsed and sane");
@@ -47,6 +47,10 @@ fn clankshop_is_a_valid_faced_pack() {
     assert!(
         clank.manifest.members().next().is_some(),
         "clankshop declares members"
+    );
+    assert!(
+        clank.manifest.members().all(|name| name != "clankshop"),
+        "a faceless pack must not list an implicit face"
     );
 }
 

@@ -3,7 +3,6 @@
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILL="$(cd "$DIR/../.." && pwd)"
-FACE="$(cd "$SKILL/../clankshop" && pwd)"
 . "$DIR/lib.sh"
 
 DOOR="$SKILL/scripts/flows-door.sh"
@@ -133,34 +132,5 @@ sum11b=$(hash_of "$p11/AGENTS.md")
 rc=0; "$DOOR" apply --root "$p11" --workspace .dev >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "11 second apply rc" "0" "$rc"
 expect_eq "11 second apply checksum" "$sum11b" "$(hash_of "$p11/AGENTS.md")"
-
-# --- 13. Golden copy (functional body vs face) --------------------------------
-functional_body "$DOOR" > "$TMP/shop.body"
-functional_body "$FACE/scripts/flows-door.sh" > "$TMP/face.body"
-if cmp -s "$TMP/shop.body" "$TMP/face.body"; then
-  pass=$((pass + 1))
-else
-  echo "FAIL: 13 functional body not byte-identical to face flows-door.sh" >&2
-  diff -u "$TMP/face.body" "$TMP/shop.body" >&2 || true
-  fail=$((fail + 1))
-fi
-# Plant a logic break; identity red; restore.
-cp "$DOOR" "$TMP/door.bak"
-printf '\necho planted-break\n' >> "$DOOR"
-functional_body "$DOOR" > "$TMP/shop.broken"
-if cmp -s "$TMP/shop.broken" "$TMP/face.body"; then
-  echo "FAIL: 13 planted break did not go red" >&2
-  fail=$((fail + 1))
-else
-  pass=$((pass + 1))
-fi
-mv "$TMP/door.bak" "$DOOR"
-functional_body "$DOOR" > "$TMP/shop.restored"
-if cmp -s "$TMP/shop.restored" "$TMP/face.body"; then
-  pass=$((pass + 1))
-else
-  echo "FAIL: 13 restore left the door script drifted" >&2
-  fail=$((fail + 1))
-fi
 
 report "flows-door-test"

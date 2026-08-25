@@ -10,8 +10,7 @@ file; run `grill` on those sections; do not write Problem / Goal / Approach as
 H2s; skip the records-mint, `templates/specs.md` rewrite, and status
 promotion. Refuse the otherwise-case. They never scan cwd.
 
-Summon the design station per SKILL.md *One environment probe*. Feature
-`spec` mints or rewrites a `specs/` record (SKILL.md destination).
+Feature `spec` mints or rewrites a `specs/` record (SKILL.md destination).
 Founding-shaped stays on the named file.
 
 ## Procedure

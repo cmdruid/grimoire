@@ -84,31 +84,18 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 | `close` | `verbs/close.md` | `verbs/ship.md` (if WIP ships) | tear the stream down | root |
 | `status` | `verbs/status.md` | — | list active workstreams (read-only) | anywhere |
 
-## Host layout — standalone by default, workshop-aware when present
+## Host layout
 
 Workstream is **self-contained**: its own state is `.workstreams/<stream>/` (hand-offs, registry)
-plus ordinary git branches and worktrees, and **every verb works on any repo** — no workshop
-install is a precondition, and no verb ever refuses or stalls for lack of one. **Two
-independent questions** — a *location* question and a *policy* question. They were once
-answered by a single stamp probe; keep them apart.
+plus ordinary git branches and worktrees, and **every verb works on any repo** — no pack
+install or project scaffold is a precondition, and no verb ever refuses or stalls for lack
+of one.
 
-- **Where does doctrine live?** The build lane and station context are doctrine, so they sit
-  at `<agent-workspace>/doctrine`: declared `agent-workspace:` (front-door `AGENTS.md` then
-  `CLAUDE.md`), else `.dev` — by default `.dev/doctrine/`. Resolve the
-  home, **then** test for the artifact: summon the build station with
-  `<agent-workspace>/doctrine/scripts/context.sh build` **when that loader exists**; absent → no summon,
-  and the plan template's own structure stands in. **This never gates a verb.**
-- **Is a workshop assembled here?** The install stamp (`Seeded from clankshop` in
-  `<root>/<agent-workspace>/doctrine/README.md`) answers a *policy* question, not a location
-  one, and still
-  governs exactly one thing: queue items are
-  **Backlog** tracker lines only when stamped *and* that tracker file already exists.
-  At `create`/`recycle`, read `$HOOKS` (absolute
+- At `create`/`recycle`, read `$HOOKS` (absolute
   `<root>/<agent-workspace>/hooks/workstream.md`) when present; empty or absent → no extra
   glue command.
-- The **agent-records destination is not stamped**. On any host: do not create the doctrine
-  home,
-  and never route to the clankshop onramps.
+- Queue-item tracker completion runs only when the tracker file already exists.
+- Do not create a doctrine home or invoke any pack lifecycle as a side effect.
 - **Records (every host).** Workstream-owned records — seeded / drafted `plans/` files,
   ship-time plan closes, optional debrief `reports/` — land under the agent-records home
   (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
@@ -243,7 +230,7 @@ Hand-off, compaction-anchor, coordinator, and `kind: workstream-template` intake
 <!-- edges:workstream -->
 - produces: — (none; the stream is isolation and a gitignored hand-off, not a typed record)
 - handoff: — (none; the loop is the skill)
-- consumes: plan, roadmap, doctrine — a plan, roadmap, brief, or template as the queue source; station context when present
+- consumes: plan, roadmap — a plan, roadmap, brief, or template as the queue source
 <!-- /edges:workstream -->
 
 ## On-demand doctrine

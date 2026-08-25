@@ -9,27 +9,13 @@ One job lead: draft the bid from an approved spec, optionally staff slices, walk
 the job. Never writes a spec. Never ships to trunk. Open decision branches belong
 in a grill on the spec, not here.
 
-This `SKILL.md` is a **thin router**: the probe, the dispatch table, the seams
+This `SKILL.md` is a **thin router**: the dispatch table, the seams
 every verb shares, and the typed edges. Each verb's procedure lives in
 `verbs/` (see the dispatch table). When a verb is selected, **read its file
 and follow it**.
 
 This skill is **self-contained and uniquely named**: it depends on no other skill
 and collides with none.
-
-## One environment probe (at entry)
-
-Station context is doctrine, so it lives at `<agent-workspace>/doctrine`: the
-declared `agent-workspace:` (front-door `AGENTS.md` then `CLAUDE.md`), else
-`.dev` — by default `.dev/doctrine/`. Resolving the home is
-not finding the artifact — resolve it, **then** test for the build station's
-loader. Nothing else is probed, and no verb ever refuses or stalls for lack of
-one.
-
-- **`<agent-workspace>/doctrine/scripts/context.sh` present** → summon the build station
-  (`<agent-workspace>/doctrine/scripts/context.sh build`).
-- **Absent** → the project's own design docs and READMEs stand in for
-  station context.
 
 **Destination is not stamped.** `roadmap` / `plan` / `runbook` land in
 `<agent-records>/plans/` on every host (first `agent-records:` or
@@ -138,7 +124,7 @@ The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
 <!-- edges:contractor -->
 - produces: plan, roadmap, runbook — job artifacts in `<agent-records>/plans/`
 - handoff: — (build executes in-place; ship is not this skill)
-- consumes: spec, doctrine, plan, runbook — an approved specification, station context, or a job artifact this skill walks
+- consumes: spec, plan, runbook — an approved specification or a job artifact this skill walks
 <!-- /edges:contractor -->
 
 ## Done when

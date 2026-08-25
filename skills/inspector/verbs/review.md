@@ -13,8 +13,7 @@ not invent a rubric. Do not amend. Do not mint a record.
 
 1. **Read the whole doc; detect its kind** per SKILL.md
    *Kind-detect*. Load the kind file (workspace copy if present,
-   else bundled `kinds/<kind>.md`). Summon station context per
-   SKILL.md after the kind is known. Unknown kind → ask or refuse
+   else bundled `kinds/<kind>.md`). Unknown kind → ask or refuse
    here; stop.
 2. **Axis 1 — soundness** (internally consistent, feasible): use
    the kind file's soundness axes. Shared floor, unless the kind
@@ -27,15 +26,15 @@ not invent a rubric. Do not amend. Do not mint a record.
    never happens") needs a **red-proof** — disable the guarded
    mechanism once and show the test fails, or argue concretely
    why the fixture can exercise the failing arm.
-3. **Axis 2 — groundedness** (conforms to the codebase — and to
-   core doctrine when a workshop is present): run this package's
+3. **Axis 2 — groundedness** (conforms to the codebase and the
+   host's documented invariants): run this package's
    `scripts/ground-check.sh` `<root> <doc>`, then **re-read the
    load-bearing signatures/code the claims rest on** (a clean
    ground-check finds moved files; the trap is a confident doc
    citing a function that never existed — or a `file:line` that
    resolves but points at different code than the prose claims).
-   On a workshop host, check the doc against `core/` (invariants,
-   gotchas) and the `status: published` spec + live ADRs. Apply
+   Check the doc against the host's invariants and gotchas, plus
+   the `status: published` spec and live ADRs when present. Apply
    the kind file's groundedness extras (or "none beyond
    ground-check + re-read").
 4. **Report the verdict, in context**: open with one sentence the

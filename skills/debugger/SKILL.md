@@ -10,7 +10,7 @@ description: "Root-cause a bug, test failure, build break, or unexpected behavio
 Investigate a reported or observed failure to its **root cause** before writing a fix. An
 **instrument**: the procedure is tool-like and the operator owns the judgment — what to
 investigate, whether the verdict warrants a fix, when to stop. The discipline runs anywhere;
-the probe below adds the playbook and the durable report when a workshop is present.
+the project-context probe below adds the playbook when one is present.
 
 This `SKILL.md` is a **thin router** for the file / investigate fork. A file
 invocation reads `verbs/file.md`. Bare investigate stays here (Phases 1–4).
@@ -32,29 +32,17 @@ Do not ask which; do not investigate a file trigger.
 report is welcome input when one exists, never a required floor; it **never
 enumerates doctype `bugs`** looking for work (a doctype is not a queue).
 
-## Two environment probes (at entry)
-
-Two independent questions. They were previously answered by one probe, which conflated a
-**location** question with a **policy** one — keep them apart.
-
-**Where does doctrine live?** Station context and the install stamp sit at
-`<agent-workspace>/doctrine`: the declared `agent-workspace:` (front-door `AGENTS.md` then
-`CLAUDE.md`), else `.dev` — by default `.dev/doctrine/`. Resolve the home, **then**
-test for the stamp. **This probe never gates a phase.**
+## Project-context probe (at entry)
 
 **Where is the diagnostics playbook?** Consult
 `<agent-workspace>/flows/diagnostics.md` **when that file exists** (symptom → first
-moves; a miss is a playbook gap — the test station tends that playbook). Absent → investigate
+moves; a miss is a playbook gap). Absent → investigate
 without it. The playbook is a host procedure, not doctrine. A project with no playbook is
 investigated the same way, just without the shortcut.
 
-**May fixes land on this project?** Phase 4 is gated twice, and both gates are policy:
-
-- the human confirms the root cause and that a fix should land (see Phase 4), **and**
-- the project carries the clankshop install stamp — a line matching `Seeded from clankshop` in
-  `<root>/<agent-workspace>/doctrine/README.md` (by default `.dev/doctrine/README.md`).
-
-**Unstamped** → emit `unstamped`, and investigate through Phase 3. Do not enter Phase 4.
+**May fixes land on this project?** Phase 4 starts only when the human confirms
+the root cause and that a fix should land. No pack marker or deployed workshop
+is consulted.
 
 The report is a record on every host, under the agent-records home (first
 `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
@@ -168,8 +156,8 @@ phase.
 
 ### Phase 4 -- Fix the root cause
 
-Entered only after the human confirmed the root cause and that a fix should land. Unstamped: do
-not enter. Human declined: stop — the report is the output.
+Entered only after the human confirmed the root cause and that a fix should land.
+Human declined: stop — the report is the output.
 
 1. **Write a failing test first** -- the smallest reproduction, automated if the project has a test
    framework, a one-off script if it doesn't. This must exist before the fix, not after.
@@ -206,10 +194,8 @@ when one exists.
 ## Done when
 
 - **`file`:** that verb file's Done when.
-- **Unstamped:** reports record minted (file-mode if no tool); conversational
-  report of reproduction, root cause, evidence, and proposed fix. No Phase 4.
 - **Human declined the fix:** the report stands; no Phase 4.
-- **Workshop, fix landed:** failing test + one fix + verified + landed; reports record filled;
+- **Fix landed:** failing test + one fix + verified + landed; reports record filled;
   closed `consumed` when its substance has a durable home; linked from a tracker line only when
   one exists.
 - **Three-fix stop:** stopped; architectural question named; no fourth patch.
@@ -225,7 +211,7 @@ when one exists.
 <!-- edges:debugger -->
 - produces: report, bug — investigation record; filed repro record
 - handoff: — (none; the operator owns the fix)
-- consumes: bug, doctrine — a routed file; station diagnostics when present
+- consumes: bug — a routed repro when present
 <!-- /edges:debugger -->
 
 ## Boundaries

@@ -230,9 +230,10 @@ expect "2 compiled (empty) sibling" "(empty)" "$OUT"
 expect "2 Delegation route survives" "## Delegation route" "$ho2"
 expect_eq "2 exactly one compiled H2" "1" "$(count_h2 "$ho2")"
 
-# --- 7. Stamp-fill deletion; empty compile stays (empty) ---------------------
-create_hits=$(grep -cF 'Seeded from clankshop' "$CREATE_MD" || true)
-expect_eq "7 create.md Seeded-from count is 0" "0" "$create_hits"
+# --- 7. Retired stamp-fill stays absent; empty compile stays (empty) ---------
+stamp_text="Seeded from clan""kshop"
+create_hits=$(grep -cF "$stamp_text" "$CREATE_MD" || true)
+expect_eq "7 create.md retired-stamp count is 0" "0" "$create_hits"
 ho7="$TMP/handoff-7.md"
 cp "$HANDOFF_TPL" "$ho7"
 rc=0; "$HOOKS_SH" compile --file "$empty" --handoff "$ho7" "${KNOWN[@]}" \
@@ -244,8 +245,8 @@ expect "7 empty bodies are (empty)" "(empty)" "$OUT"
 expect_absent "7 no /backlog debrief in compiled span" "/backlog debrief" "$OUT"
 # Disable: restore a fill paragraph on a COPY; count ≥1. Original stays 0.
 cp "$CREATE_MD" "$TMP/create-restored.md"
-printf '\nStamp present → Seeded from clankshop fill.\n' >> "$TMP/create-restored.md"
-restored_hits=$(grep -cF 'Seeded from clankshop' "$TMP/create-restored.md" || true)
+printf '\nStamp present → %s fill.\n' "$stamp_text" >> "$TMP/create-restored.md"
+restored_hits=$(grep -cF "$stamp_text" "$TMP/create-restored.md" || true)
 if [ "$restored_hits" -ge 1 ]; then
   pass=$((pass + 1))
 else
@@ -253,7 +254,7 @@ else
   fail=$((fail + 1))
 fi
 expect_eq "7 original create.md still 0 after copy restore" "0" \
-  "$(grep -cF 'Seeded from clankshop' "$CREATE_MD" || true)"
+  "$(grep -cF "$stamp_text" "$CREATE_MD" || true)"
 
 # --- 9. In-place compile target ----------------------------------------------
 tmp_root="$TMP/inplace-root"

@@ -7,7 +7,7 @@ workflow hub runs on itself.
 
 Doctrine: `docs/DOCTRINE.md`'s *self-scoping descriptions*, *seams live in the runbook*, and *glue
 content vs. mechanism* bullets. The authoritative seam map is whatever runbook/pack manifest the
-library ships (grimoire's own is `skills/clankshop/PACK.md`).
+library ships (this repository's is root `PACK.md`).
 
 ## North star
 

@@ -45,10 +45,16 @@ fn the_repository_enumerates_as_its_own_content() {
         "the repository should enumerate cleanly: {:?}",
         view.issues
     );
-    let names: Vec<&str> = view.packs.iter().map(|p| p.name.as_str()).collect();
+    let clankshop = view
+        .packs
+        .iter()
+        .find(|pack| pack.name == "clankshop")
+        .expect("the flagship clankshop pack should be found");
+    assert!(!clankshop.faced, "the live clankshop pack is faceless");
+    assert_eq!(clankshop.dir, root, "the faceless manifest lives at root");
     assert!(
-        names.contains(&"clankshop"),
-        "the flagship pack should be found, got {names:?}"
+        clankshop.members.iter().all(|member| !member.is_face),
+        "the faceless pack must install no face member"
     );
 }
 

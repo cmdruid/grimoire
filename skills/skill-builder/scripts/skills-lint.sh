@@ -125,7 +125,7 @@
 #      without a following flag is out of scope. skill-builder and
 #      pack faces are exempt.
 #
-# Pack-face exemption (clankshop v2): the one skill dir that carries a PACK.md
+# Pack-face exemption: any skill dir that carries a PACK.md
 # is the pack's FACE -- it composes the pack, so naming its members is its job,
 # not a boundary leak. Faces are exempt from the independence checks
 # (7: sibling-in-description, 8: typed-edge blocks, 9: sibling verb-roster);
@@ -677,7 +677,7 @@ done
 #
 # There is NO exemption table. One was built as a burn-down while the consumers
 # were flipped, and it emptied -- so it is gone rather than left as dead code.
-# Pack faces are exempt (clankshop legitimately owns the handbook), as is
+# Pack faces are exempt (composition prose may name siblings), as is
 # skill-builder (this doctrine documents the literals it bans elsewhere); that is
 # the same name-based exemption check 12 uses, and it is the whole of it.
 #

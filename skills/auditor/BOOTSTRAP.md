@@ -8,8 +8,8 @@ project's *own code* for quality and invariant-conformance, surfaces findings wi
 is re-runnable each cycle. Drop this file into any project and an agent can **reconstruct the
 whole system**, or **borrow a piece**.
 
-The rubric home is mode-dependent (see the skill's entry probe): on a clankshop workshop host it
-is `<agent-workspace>/doctrine/test/workflows/audit/` (guardian doctrine, loaded on demand); standalone it is a
+The primary rubric home is `<agent-workspace>/doctrine/test/workflows/audit/`
+(project doctrine, loaded on demand); the legacy fallback is a
 directory confirmed once at setup (default `docs/audit/`). `<home>` below means that directory.
 
 It is a sibling to any companion dev-system blueprint (one that blueprints the surrounding deployed doc-system, if the host has one). This
@@ -432,4 +432,3 @@ cat <<EOF
 | native-invariant smells | $invariant |
 EOF
 ```
-

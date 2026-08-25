@@ -10,7 +10,7 @@ artifact sets: specs / ADRs / founding-shaped files, and plans /
 roadmaps / runbooks. Kind-detect, then the matching judgment.
 Hosts may add kinds.
 
-This `SKILL.md` is a **thin router**: the probe, kind-detect, the
+This `SKILL.md` is a **thin router**: kind-detect, the
 dispatch table, the seams every verb shares, and the typed edges.
 Each verb's procedure lives in `verbs/` (see the dispatch table).
 When a verb is selected, **read its file and follow it**.
@@ -21,22 +21,6 @@ and collides with none.
 There is no `init` and no `setup`. Missing
 `<agent-workspace>/inspector/` is not a refuse — use the bundled
 `kinds/<kind>.md`.
-
-## One environment probe (at entry)
-
-Station context is doctrine, so it lives at `<agent-workspace>/doctrine`: the
-declared `agent-workspace:` (front-door `AGENTS.md` then `CLAUDE.md`), else
-`.dev` — by default `.dev/doctrine/`. Resolving the home is
-not finding the artifact — resolve it, **then** test for the matching
-station's loader after kind-detect. Nothing else is probed, and no verb
-ever refuses or stalls for lack of one.
-
-- spec / adr / founding → design station
-  (`<agent-workspace>/doctrine/scripts/context.sh design`) when present
-- plan / roadmap / runbook → build station
-  (`<agent-workspace>/doctrine/scripts/context.sh build`) when present
-- Absent loader → the project's own design docs and READMEs stand in
-  for station context
 
 **Kind templates** land at `<agent-workspace>/inspector/<kind>.md`
 (default `.dev/inspector/<kind>.md`). No new front-door variable.
@@ -135,5 +119,5 @@ In-place steward: no private home. Verdict is conversation-only.
 <!-- edges:inspector -->
 - produces: — (verdict is conversation-only; on accept of a passing review, front-matter `published`; refine amends the named file in place)
 - handoff: — (none; after publish the host sequences)
-- consumes: spec, plan, review, doctrine — artifacts under review; a findings baton (in-session list, named markdown, council RESULT.md); station context
+- consumes: spec, plan, review — artifacts under review; a findings baton (in-session list, named markdown, council RESULT.md)
 <!-- /edges:inspector -->

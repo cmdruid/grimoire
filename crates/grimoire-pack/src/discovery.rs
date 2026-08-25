@@ -245,7 +245,7 @@ mod tests {
             Path::new("/r/crates/grimoire-pack/tests/fixtures/faced-valid/skills/alpha")
         ));
         assert!(!ig.skips(root, Path::new("/r/crates/grimoire-pack/tests")));
-        assert!(!ig.skips(root, Path::new("/r/skills/clankshop")));
+        assert!(!ig.skips(root, Path::new("/r/skills/omega")));
     }
 
     #[test]

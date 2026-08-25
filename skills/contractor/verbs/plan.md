@@ -19,8 +19,8 @@ unsettled, stop and send those branches back.
    `records.sh touch --status published`, else file-mode),
    notes the waive, **then** plans. It does not plan against a
    `draft`.
-2. **Summon context** per SKILL.md *One environment probe* (build station on a
-   workshop host).
+2. **Read project context.** Load the host's own planning and implementation
+   guidance before slicing.
 3. **Slice tracer-first.** Slice 1 is the thinnest change that exercises the
    riskiest/newest path end to end (a green unit test can hide a blank render —
    verify a *new* render/tech path visually in isolation; a reused, proven path

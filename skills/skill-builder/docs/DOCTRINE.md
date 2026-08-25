@@ -372,34 +372,10 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    no ledger line. Repair is journal `curate`: rewrite `status:` back to `draft`, then
    `records.sh done`. `records.sh done` refuses an already-archived status — that is why
    the writer must not pretend file-mode close is a ledger close.
-8. **Workshop stamp is orthogonal — and no longer picks any home.** The probe
-   (`Seeded from clankshop` in `<agent-workspace>/doctrine/README.md`, default
-   `.dev/doctrine/README.md`) answers one question: *is a workshop assembled here?* That is
-   a **policy** question — may this project's workshop-specific lanes run — not a location
-   one. Station context is doctrine and resolves through
-   `<agent-workspace>/doctrine`. Host procedures under `<agent-workspace>/flows/`
-   are not doctrine and do not resolve through that home; records resolve through
-   `<agent-records>`. The stamp picks
-   **neither**, and does not decide whether a record is minted. Do not create the doctrine
-   home as a side effect of anything. Do not run a workshop onramp as a side effect.
-
-   **The probe now costs a resolution first.** Because the stamp lives inside the workspace,
-   a prober must resolve `<agent-workspace>` before it can locate the file — so what this
-   rule calls a simple probe is a resolve-then-test, the same shape as rule 2's two-level
-   access. That does not convert it into a location question: the resolution buys you the
-   path, not the answer.
-
-   **The stamp still has legitimate consumers — do not "finish the migration" by deleting
-   them.** A skill may keep probing it for a genuine *policy* decision, and two do today:
-   `debugger` gates entering its fix phase on it (may fixes land on a project that has not
-   opted into a workshop?), and `workstream` gates Backlog tracker-line permission on it
-   (it no longer gates debrief routing on the stamp; that glue lives in project hooks).
-   Neither is a leftover. The test when you meet a stamp
-   probe: **if removing it would change *where a file is read from*, it is a location
-   question and belongs to a home resolver; if it would change *whether an action is
-   allowed*, it is a policy question and the stamp is correct.** Conflating the two is the
-   defect this rule was written after, and the tempting cleanup is to conflate them again in
-   the other direction.
+8. **Pack installation is not project policy.** A pack lock records installed
+   content, not whether a project has opted into a workflow. Writers never gate
+   record creation, destination resolution, or permission to act on a pack
+   marker. Do not create doctrine or invoke a pack lifecycle as a side effect.
 
 The **project-templates** resolution, per declared project template `<file>` (the verb
 resolves the records home and the templates home and passes them in; the mint script
@@ -463,15 +439,10 @@ doctrine path is exactly as wrong as a writer that does.
    skill ends up fabricating another tool's layout. An absent declared home degrades per rule
    2.
 
-   **Owner exception — the skill that assembles a home may create it even when declared.**
-   `clankshop` assembles the workspace; `journal` assembles the records layer. For those two,
-   building the home *is* the job, and a host that writes `agent-workspace: .workspace` is
-   asking for it to be built there — not warning the assembler off. **Every other skill
-   resolves, tests, and degrades per rule 2 — never `mkdir`.** A host-procedure finder is
-   "every other skill," not an assembler. Without this exception the
-   paragraph above reads as a universal prohibition that would forbid `clankshop setup` from
-   seeding into a declared home at all, and would forbid what records standup already does
-   today.
+   **Records-layer owner exception.** `journal` may create a declared records
+   home because standing up that layer is its explicit job. No skill assembles
+   the whole agent workspace; every workspace writer owns only its namespaced
+   files and otherwise follows rule 2.
 
    **Independent seeding.** A skill copies only the workspace files it owns
    (`flows/` / `hooks/` / `templates/` as applicable), including crawl keys
