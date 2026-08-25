@@ -4,11 +4,9 @@
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
+echo "== hooks-test.sh"
 rc=0
-for t in hooks-test.sh; do
-  echo "== $t"
-  bash "$DIR/$t" || rc=1
-done
+bash "$DIR/hooks-test.sh" || rc=1
 
 if [ "$rc" -eq 0 ]; then
   echo "workstream tests: ALL GREEN"

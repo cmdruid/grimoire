@@ -145,5 +145,5 @@ skeleton with every claim cited; the anchor used is named; and the report was pe
 <!-- edges:analyst -->
 - produces: report — a catalog briefing, in context or persisted as a reports record tagged `analyst` plus the resolved template token
 - handoff: — (none; a report informs, it does not start a workflow)
-- consumes: record, report — the records layer (ledger, stores, trackers) and git history; audit reports feed the health snapshot when present
+- consumes: record, report, tracker — the records layer (ledger, stores, trackers) and git history; audit reports feed the health snapshot when present
 <!-- /edges:analyst -->

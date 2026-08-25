@@ -168,8 +168,8 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 ## Edges
 
 <!-- edges:architect -->
-- produces: spec, founding-documents — argued specification; a repo's three founding docs
-- handoff: spec, git-repository — the accepted spec is the feature baton; a git repository carrying three founding documents is the genesis baton
+- produces: spec — an argued specification; deploy's repository is the terminal direct result of genesis, not a composition edge
+- handoff: spec — the accepted spec is the feature baton; genesis ends at the repository
 - consumes: — (a conversation or named draft is direct input, not a typed project artifact)
 <!-- /edges:architect -->
 

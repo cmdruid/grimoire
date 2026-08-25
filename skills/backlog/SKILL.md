@@ -51,7 +51,7 @@ the present one.
 
 <!-- edges:backlog -->
 - produces: tracker — living skill-owned follow-up rows
-- consumes: project-state — debrief gathers the finished body of work before routing leftovers
+- consumes: — (debrief reads the caller's finished-work context, not a typed artifact)
 <!-- /edges:backlog -->
 
 ## Scope boundary

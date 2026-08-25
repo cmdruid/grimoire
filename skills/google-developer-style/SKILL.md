@@ -70,7 +70,7 @@ Done when:
 ## Edges
 
 <!-- edges:google-developer-style -->
-- produces: documentation — developer-facing prose in this house style
+- produces: — (styles caller-owned prose in the calling context, not a new typed artifact)
 - handoff: — (none; styles the caller's draft, does not terminate a workflow)
 - consumes: — (none; reads the caller's writing task, not a typed artifact)
 <!-- /edges:google-developer-style -->
