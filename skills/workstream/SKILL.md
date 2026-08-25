@@ -35,8 +35,8 @@ is the harm this rule exists to prevent. Two consequences follow, keyed on *what
 
 - **You never spawn a stream for your own work.** When in-stream work surfaces something that *would
   be* its own stream — a tangent, a debug bug, the next roadmap track — you **capture or surface it;
-  you never stand it up to drive**: a **defect** → the host's bug-filing lane; **feature work** → `/backlog task`
-  (a **Backlog** tracker line) — on a non-workshop host, the project's own tracker instead (*Host layout*);
+  you never stand it up to drive**: a **defect** → the host's bug-filing lane; **feature work** →
+  the host's follow-up lane;
   the **next track / a new stream** → name it at a seam and hand it to the human/coordinator. Plain
   `create` *enters the loop*, so standing up a stream to drive is a **coordinator-only**,
   trunk-resident action — never yours. Needing isolation for a sub-task of your *own* feature is a
@@ -94,7 +94,6 @@ of one.
 - At `create`/`recycle`, read the two canonical files beneath `$HOOKS_DIR`
   (absolute `<root>/<agent-workspace>/workstream/hooks/`) when present;
   empty or absent → no extra glue command. Unrelated files are ignored.
-- Queue-item tracker completion runs only when the tracker file already exists.
 - Do not create a doctrine home or invoke any pack lifecycle as a side effect.
 - **Records (every host).** Workstream-owned records — seeded / drafted `plans/` files,
   ship-time plan closes, optional debrief `reports/` — land under the agent-records home
@@ -104,8 +103,6 @@ of one.
   from the resolved `plans.md` / `reports.md`, naming the file `YYYY-MM-DD-<slug>.md` — an
   undated filename is not a record, so the tool will not see it. Never write the flat
   `<agent-records>/templates/<doctype>.md`. File-mode close stamps `status:` only.
-  Do not mint a Backlog tracker. Tracker-line completion runs only when that tracker
-  file already exists.
 
 ## Discipline (applies to EVERY verb — non-negotiable)
 
@@ -204,10 +201,6 @@ Subcommands (each consuming verb file names the facts it reads):
   one-resident guard).
 - `inplace-state <root> <stream> <branch> <target>` — custody facts for an in-place stream
   (held/parked/foreign classification inputs; WIP-bank + dirty state).
-- `tracker-ids <worktree> <branch> <target> <file> <id-ere> [<pre-rebase-base>]` — did both
-  sides of a rebase claim the same tracker ID (a collision no textual conflict shows)? Post-
-  rebase, the pre-rebase base is required, same regime as `gate-facts`.
-
 The skill also bundles `scripts/hooks.sh` (project-hooks parser and
 materializer — resolve it from this skill's own base directory, same as
 `workstream-git.sh`). `parse` is read-only over an absolute `--dir` and only

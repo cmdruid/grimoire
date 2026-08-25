@@ -132,10 +132,6 @@ independent of what the root has checked out. Never hand-commit these records to
      exists; else file-mode from that path, naming the file `YYYY-MM-DD-<slug>.md` (the
      record shape). Tag it `debrief`, write findings-first, commit
      it on the branch. A routine unit needs no report.
-   - **Complete the queue item's tracker line** only when that tracker file already exists:
-     flip `[ ]` → `[x]` (append the completion date) and opportunistic `records.sh --root <root> --records-root <records-root-relative> touch`
-     (or file-mode stamp). Else record the ship in the plan close / hand-off / the
-     project's own tracker layout. Do not mint a Backlog tracker.
    - If the queue is tracked in a roadmap doc, update its ledger/queue row for this stream and commit
      it on the branch too: `git -C <worktree> commit -m "Roadmap: <stream> shipped <feature>" -- <roadmap-path>`.
      (At `sync` this may additively conflict with a sibling stream's row — resolve "keep both". The

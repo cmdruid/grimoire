@@ -44,16 +44,7 @@
      silent); (b) if one side **deleted** content the other still carries (a sibling fixed the issue
      and removed its entry), find out why before keeping it — a reflexive keep-both resurrects a
      dead entry and any stale references to it. Read the incoming commit subjects before trusting a
-     tracker-file resolution. And (c) **ID-bearing trackers can collide with NO textual conflict** —
-     both sides claim the same next ID (issue number, ADR filename) in different lines, the rebase
-     merges clean, and only an ID-aware compare catches it. After any rebase where both sides
-     appended to an ID-bearing tracker, run
-     `workstream-git.sh tracker-ids <worktree> <branch> <target> <file> <id-ere> <BASE>` —
-     threading step 2's captured `BASE` (post-rebase the incoming set otherwise reads empty, the
-     same regime as `gate-facts`) — and renumber before moving on if `id_collisions=true` or
-     `in_file_duplicates=true`. The file+pattern pairs come from the hand-off's optional
-     Coordinates `id-trackers:` line where recorded, else name them ad hoc (portable-ERE rule:
-     no `\b`).
+     tracker-file resolution.
    - **Pre-flight the collision (from step 1's forecast).** You already hold `will_conflict` /
      `conflict_files:` — so resolve the named files deliberately and know up front whether a
      `REVIEW(conflict):` marker is coming, instead of being surprised mid-rebase. It's a forecast
@@ -65,8 +56,7 @@
      survived — capture it **at the moment** (not deferred to reset, where the detail is lost), two ways:
      - leave a grep-able marker at the band-aid site: `// REVIEW(conflict): <one-line why>` — this **is**
        the review-pass target, and it satisfies the host's annotate-debt-in-source rule;
-     - add a one-line entry to the host's dev-experience/friction tracker (workshop host: an **Issues**
-       tracker line via `/backlog issue`; else the project's own) tagged
+     - add a one-line entry through the host's follow-up lane tagged
        `[conflict band-aid]`: `<file:line>` + why + this stream's name.
      A later review pass walks `grep -rn "REVIEW(conflict)"` (or the `[conflict band-aid]` entries) with
      the host's code-review tooling.

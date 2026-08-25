@@ -46,7 +46,7 @@ scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
 | `analyst` | reports and briefings for the developer: catch-ups, status, subsystem and health snapshots, guides — synthesized from the records layer and git, from a customizable template catalog |
 | `architect` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
-| `backlog` | the follow-up lifecycle: file, promote, debrief, and curate the three trackers — a client of the records layer (guards when none) |
+| `backlog` | extensible living TSV trackers: explicit setup, tracker add/remove/list, file, debrief cookbook, and curate — all under its owner-first workspace namespace |
 | `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
 | `contractor` | one job lead — roadmap, plan, runbook, build; never ships; never writes a spec |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |

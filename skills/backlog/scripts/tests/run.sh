@@ -5,8 +5,12 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 rc=0
-echo "== record-mint-test.sh"
-bash "$DIR/record-mint-test.sh" || rc=1
+echo "== trackers-test.sh"
+bash "$DIR/trackers-test.sh" || rc=1
+echo "== deploy-test.sh"
+bash "$DIR/deploy-test.sh" || rc=1
+echo "== skill-doc-test.sh"
+bash "$DIR/skill-doc-test.sh" || rc=1
 
 if [ "$rc" -eq 0 ]; then
   echo "backlog tests: ALL GREEN"

@@ -204,7 +204,7 @@ path is the ID, and a finding is cited as `<report-path>` + its heading.
   `--`); Drained (a link/line reference into a `<drain>`, or `--` while open); Finding (with
   the metric/`file:line` evidence); Fix.
 - **Drain -- by kind, at pass end.** A **defect** stays in the report; promote it via
-  the host's bug-filing lane. **Feature work / cleanup** becomes a Backlog tracker line only when
+  the host's bug-filing lane. **Feature work / cleanup** goes through the host's follow-up lane only when
   that tracker file already exists. A **project problem or risk** becomes an Issues
   line the same way. Evidence the *rubric or framework itself* should change becomes
   a Feedback line. Else the report is the queue. Backfill each finding's `Drained:`

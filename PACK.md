@@ -36,6 +36,8 @@ libraries; it is not part of a project's development toolkit.
   review judges either artifact without owning it.
 - A workstream owns its `WORKSTREAM.md` save-state. A root session may instead
   use the repository-level checkpoint file; one session never uses both.
+- Backlog may suggest `tasks`, `issues`, and `feedback` during explicit setup; the pack
+  installs no tracker, script, route, or debrief policy.
 - Delegate chooses whether and how to dispatch work. Mailbox is transport for a
   returned artifact, not the dispatch decision.
 - Records, workspace files, hooks, doctrine, and review kinds remain owned by
