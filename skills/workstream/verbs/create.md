@@ -101,23 +101,15 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
      line-start `agent-workspace:` in `<root>/AGENTS.md` then `<root>/CLAUDE.md`,
      else `.dev`. Set
      `HOOKS_DIR=<root>/<agent-workspace>/workstream/hooks` (absolute). Never a
-     relative directory or a worktree-local twin. Run this skill's bundled
-     `scripts/hooks.sh materialize --root <root> --dir "$HOOKS_DIR"
-     --skeleton-dir <skill-base>/templates/hooks --known feature-completion
-     --known after-eventful-ship` (resolve `scripts/` and `templates/` from
-     this skill's own base directory). It safely creates only Workstream's
-     owner/kind parents, refuses symlinked or non-directory parents, and copies
-     each absent skeleton without overwriting project content. Then run
+     relative directory or a worktree-local twin. Resolve this skill's bundled
+     `scripts/hooks.sh` from its own base directory, then run
      `hooks.sh parse --dir "$HOOKS_DIR" --known feature-completion --known
      after-eventful-ship`. `status=fail` → STOP. After the hand-off file exists at
      Coordinates `this hand-off:` (never `<root>/WORKSTREAM.md`), run
      `hooks.sh compile --dir "$HOOKS_DIR" --handoff <this hand-off:> --root
      <root>` with the same two `--known` seams (`--root` optional; pass it when
-     the verb has `<root>`). Attended create that materialized hook files may
-     **propose** one pathspec-scoped root commit for that directory.
-     Unattended / `--seed-only`: write, do not commit, record
-     `hooks: uncommitted` in Pointers. `--seed-only` still makes **no** root
-     commit.
+     the verb has `<root>`). Missing hooks compile as empty; create never writes
+     the project hook directory. A project may author either known file explicitly.
    - Copy this skill's bundled `templates/workstream-handoff.md` (resolve it from the skill's own
      base directory — never a host-project path, so it works wherever the skill is installed) to
      `<root>/.workstreams/<stream>/WORKSTREAM.md` and fill it in:

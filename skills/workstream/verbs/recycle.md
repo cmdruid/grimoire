@@ -48,10 +48,9 @@ recycled slot; for a clean-named stream, `close`+`create` instead and pay the re
       `agent-workspace:` in `<root>/AGENTS.md` then `<root>/CLAUDE.md`, else `.dev`).
    3. Set `HOOKS_DIR=<root>/<agent-workspace>/workstream/hooks` (absolute).
       Never a relative directory.
-   4. `hooks.sh materialize --root <root> --dir "$HOOKS_DIR" --skeleton-dir
-      <skill-base>/templates/hooks` (resolve package paths from this skill's own
-      base directory), then `hooks.sh parse --dir "$HOOKS_DIR"` with
+   4. Run this skill's `hooks.sh parse --dir "$HOOKS_DIR"` with
       `--known feature-completion --known after-eventful-ship`. `status=fail` → STOP.
+      Missing hooks compile as empty; recycle never creates the hook directory.
    5. Then regenerate that file exactly as `create.md`'s **Hand-off instantiation**
       (step 6) does for template mode, **but in place** (no `worktree add`, no exclude re-run —
       already done): **preserve the Coordinates block verbatim** (fixed for the stream's life); if a new

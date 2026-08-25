@@ -201,11 +201,10 @@ Subcommands (each consuming verb file names the facts it reads):
   one-resident guard).
 - `inplace-state <root> <stream> <branch> <target>` — custody facts for an in-place stream
   (held/parked/foreign classification inputs; WIP-bank + dirty state).
-The skill also bundles `scripts/hooks.sh` (project-hooks parser and
-materializer — resolve it from this skill's own base directory, same as
-`workstream-git.sh`). `parse` is read-only over an absolute `--dir` and only
-the declared `--known` seam files; `materialize` safely creates that owner/kind
-directory and copies bundled `templates/hooks/*.md` absent-only. `compile`
+The skill also bundles `scripts/hooks.sh` (project-hooks parser/compiler — resolve it from this
+skill's own base directory, same as `workstream-git.sh`). `parse` is read-only over an absolute
+`--dir` and only the declared `--known` seam files; missing hooks are empty and do not create a
+project directory. `compile`
 hashes that canonical known-file population and projects `## Hooks (compiled)` into
 `--handoff`; `compiled-get` / `compiled-put` preserve that exclusive span
 across a template rewrite (`save` does not recompile). It also bundles
@@ -224,8 +223,14 @@ Hand-off, compaction-anchor, coordinator, and `kind: workstream-template` intake
 <!-- edges:workstream -->
 - produces: — (none; the stream is isolation and a gitignored hand-off, not a typed record)
 - handoff: — (none; the loop is the skill)
-- consumes: plan, roadmap — a plan, roadmap, brief, or template as the queue source
+- consumes: plan, roadmap — typed queue sources; free-text briefs and intake templates are direct invocation inputs
 <!-- /edges:workstream -->
+
+## Done when
+
+The selected verb's done-when holds and the stream returns to the loop with its custody, hand-off,
+queue, gate, and landing state mutually consistent. The loop is complete only when its queue is
+exhausted or deliberately closed and every landing point has passed the configured ship seam.
 
 ## On-demand doctrine
 

@@ -5,7 +5,6 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$DIR/lib.sh"
 
 HOOKS_SH="$(cd "$DIR/.." && pwd)/hooks.sh"
-SKELETONS="$(cd "$DIR/../.." && pwd)/templates/hooks"
 HANDOFF_TPL="$(cd "$DIR/../.." && pwd)/templates/workstream-handoff.md"
 KNOWN=(--known feature-completion --known after-eventful-ship)
 
@@ -67,37 +66,7 @@ expect "compile empty seam" "after-eventful-ship:" "$OUT"
 expect "compile owner-first source" ".dev/workstream/hooks @" "$OUT"
 expect_absent "compile ignores unrelated" "ignore me" "$OUT"
 
-# Materialize safely creates only the owner/kind path, absent-only.
-root="$TMP/materialize"
-mkdir -p "$root"
-target="$root/.dev/workstream/hooks"
-rc=0
-"$HOOKS_SH" materialize --root "$root" --dir "$target" --skeleton-dir "$SKELETONS" \
-  "${KNOWN[@]}" >"$OUT" 2>"$ERR" || rc=$?
-expect_eq "materialize rc" "0" "$rc"
-expect_eq "materialize created count" "2" "$(fact created "$OUT")"
-[ -f "$target/feature-completion.md" ] && pass=$((pass + 1)) || {
-  echo "FAIL: feature-completion skeleton missing" >&2; fail=$((fail + 1)); }
-retired_hooks="$root/.dev/"hooks
-[ ! -e "$retired_hooks" ] && pass=$((pass + 1)) || {
-  echo "FAIL: retired top-level hooks directory created" >&2; fail=$((fail + 1)); }
-printf '%s\n' 'project-owned' > "$target/feature-completion.md"
-sum=$(hash_of "$target/feature-completion.md")
-"$HOOKS_SH" materialize --root "$root" --dir "$target" --skeleton-dir "$SKELETONS" \
-  "${KNOWN[@]}" >"$OUT"
-expect_eq "materialize incumbent count" "0" "$(fact created "$OUT")"
-expect_eq "materialize incumbent unchanged" "$sum" "$(hash_of "$target/feature-completion.md")"
-
-# Unsafe parents and relative destinations fail before writes.
-unsafe="$TMP/unsafe"
-mkdir -p "$unsafe/real"
-ln -s "$unsafe/real" "$unsafe/link"
-rc=0
-"$HOOKS_SH" materialize --root "$unsafe" --dir "$unsafe/link/workstream/hooks" \
-  --skeleton-dir "$SKELETONS" "${KNOWN[@]}" >"$OUT" 2>"$ERR" || rc=$?
-expect_eq "symlink parent rejected" "2" "$rc"
-[ ! -e "$unsafe/real/workstream" ] && pass=$((pass + 1)) || {
-  echo "FAIL: symlink target was mutated" >&2; fail=$((fail + 1)); }
+# Relative destinations fail before reads.
 rc=0
 "$HOOKS_SH" parse --dir .dev/workstream/hooks "${KNOWN[@]}" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "relative dir rejected" "2" "$rc"

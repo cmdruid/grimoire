@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # hooks.sh <subcommand> [args...]
-# Read, seed, and compile Workstream's owner-first one-file-per-seam hooks.
+# Read and compile Workstream's owner-first one-file-per-seam hooks.
 set -euo pipefail
 
 usage() {
@@ -8,14 +8,12 @@ usage() {
 usage: hooks.sh <subcommand> [args...]
 
   parse        --dir <abs> --known <slug> [--known ...]
-  materialize  --root <abs> --dir <abs> --skeleton-dir <abs> --known <slug> [...]
   compile      --dir <abs> --handoff <abs> [--root <abs>] --known <slug> [...]
   compiled-get --handoff <abs>
   compiled-put --handoff <abs>
 
-parse is read-only and reads only <dir>/<known>.md. materialize safely
-creates the owner/kind directory and copies absent skeletons. compile writes
-the exclusive ## Hooks (compiled) snapshot into the handoff.
+parse is read-only and reads only <dir>/<known>.md. compile writes the
+exclusive ## Hooks (compiled) snapshot into the handoff.
 EOF
 }
 
@@ -48,7 +46,6 @@ hook_body() { # first H1 is the optional label, not overlay content
 }
 
 dir=""
-skeleton_dir=""
 handoff=""
 root_arg=""
 slugs=()
@@ -61,10 +58,6 @@ while [ $# -gt 0 ]; do
     --dir)
       [ $# -ge 2 ] || { usage; exit 2; }
       dir="$2"; shift 2
-      ;;
-    --skeleton-dir)
-      [ $# -ge 2 ] || { usage; exit 2; }
-      skeleton_dir="$2"; shift 2
       ;;
     --handoff)
       [ $# -ge 2 ] || { usage; exit 2; }
@@ -143,64 +136,6 @@ emit_parse() {
     fi
   done
   [ "$status" != fail ] || exit 2
-}
-
-safe_mkdir_tree() { # safe_mkdir_tree <root> <absolute-target>
-  local root="$1" target="$2" rel current part old_ifs
-  is_abs "$root" && is_abs "$target" || return 1
-  [ -d "$root" ] && [ ! -L "$root" ] || return 1
-  case "$target" in "$root"/*) rel="${target#"$root"/}" ;; *) return 1 ;; esac
-  case "/$rel/" in *'/../'*|*'/./'*|*'//'*) return 1 ;; esac
-  current="$root"
-  old_ifs=$IFS
-  IFS='/'
-  set -- $rel
-  IFS=$old_ifs
-  for part in "$@"; do
-    [ -n "$part" ] || return 1
-    current="$current/$part"
-    if [ -L "$current" ]; then
-      return 1
-    elif [ -e "$current" ]; then
-      [ -d "$current" ] || return 1
-    else
-      mkdir "$current" || return 1
-      [ -d "$current" ] && [ ! -L "$current" ] || return 1
-    fi
-  done
-}
-
-do_materialize() {
-  require_dir_arg
-  [ -n "$root_arg" ] && is_abs "$root_arg" || { usage; exit 2; }
-  [ -n "$skeleton_dir" ] && is_abs "$skeleton_dir" && [ -d "$skeleton_dir" ] \
-    || { usage; exit 2; }
-  local slug src dst created=0
-  for slug in "${slugs[@]}"; do
-    src="$skeleton_dir/$slug.md"
-    [ -f "$src" ] && [ ! -L "$src" ] || {
-      echo "hooks.sh: skeleton is not a regular file: $src" >&2; exit 2; }
-  done
-  safe_mkdir_tree "$root_arg" "$dir" || {
-    echo "hooks.sh: unsafe hook directory: $dir" >&2; exit 2; }
-  for slug in "${slugs[@]}"; do
-    dst="$dir/$slug.md"
-    if [ -L "$dst" ] || { [ -e "$dst" ] && [ ! -f "$dst" ]; }; then
-      echo "hooks.sh: unsafe hook entry: $dst" >&2
-      exit 2
-    fi
-  done
-  for slug in "${slugs[@]}"; do
-    src="$skeleton_dir/$slug.md"
-    dst="$dir/$slug.md"
-    if [ ! -e "$dst" ]; then
-      cp "$src" "$dst"
-      created=$((created + 1))
-    fi
-  done
-  echo "dir=$dir"
-  echo "created=$created"
-  echo "status=ok"
 }
 
 locate_compiled_span() {
@@ -320,7 +255,6 @@ do_compiled_put() {
 
 case "$cmd" in
   parse) emit_parse ;;
-  materialize) do_materialize ;;
   compile) do_compile ;;
   compiled-get) do_compiled_get ;;
   compiled-put) do_compiled_put ;;
