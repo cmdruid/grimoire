@@ -88,7 +88,9 @@ cmd_stream_state() {
   rec_re="${rec_rel//./\\.}"
   head_branch="$(git -C "$wt" rev-parse --abbrev-ref HEAD)"
   toplevel="$(git -C "$wt" rev-parse --show-toplevel)"
-  porcelain="$(git -C "$wt" status --porcelain)"
+  # Enumerate individual untracked files. The default collapses a wholly-untracked
+  # `.records/` directory to one entry, hiding plan drafts from the classifier below.
+  porcelain="$(git -C "$wt" status --porcelain --untracked-files=all)"
   staged="$(git -C "$wt" diff --cached --name-only)"
   # A rebase-in-progress leaves rebase-merge/ or rebase-apply/ under the git dir
   # (linked worktrees: rev-parse resolves into the common dir's worktrees/ area).
