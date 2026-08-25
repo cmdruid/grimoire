@@ -30,8 +30,7 @@ conductor. Never write the flat
 `<agent-workspace>/contractor/templates/<doctype>.md`. Never deploy `plan.md` or
 `roadmap.md` *as* `plans.md`.
 
-**Status vocabulary.** The `status` enum is
-`specs/records-front-matter.md`. Mint stays `draft`. The caller writes
+**Status vocabulary.** Mint stays `draft`. The caller writes
 `published` and `stage: approved` after a passing host's review they
 accept. After a successful walk, this skill sets `stage: implemented`
 (the plan stays `published`). Closed is `archived`. Closure through

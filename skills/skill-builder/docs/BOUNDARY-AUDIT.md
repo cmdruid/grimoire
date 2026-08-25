@@ -57,8 +57,8 @@ keeps its own maintainer notes — this doc states the method, not one library's
 
 `scripts/skills-lint.sh` **check 7** WARNs when a `description:` names a sibling skill via `/<sibling>`.
 **Check 9** WARNs when a **body** names 3+ distinct verbs of the same sibling within one paragraph —
-the enumerated-roster shape of rubric item 3 (the pattern that actually bit `foreman` once: a stale
-list of `architect`'s verbs, long after `architect` gained new ones). Facts, not verdicts: both surface
+the enumerated-roster shape of rubric item 3, where a copied verb list silently goes stale. Facts,
+not verdicts: both surface
 a **candidate**; you judge it against this rubric (the router/fragment exceptions are real, so neither
 ever FAILs). A new WARN that isn't a documented exception is a regression — self-scope it (a
 description) or point instead of enumerate (a body).

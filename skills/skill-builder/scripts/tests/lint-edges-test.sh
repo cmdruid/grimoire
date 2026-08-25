@@ -44,7 +44,39 @@ else
   fail=$((fail + 1))
 fi
 
-# --- present (even all-empty) is not the missing-block WARN ------------------
+# --- incomplete block FAILs even though delimiters are present ----------------
+write_skill '## Edges
+<!-- edges:widget -->
+- produces: — (none)
+- consumes: — (none)
+<!-- /edges:widget -->'
+run_lint
+if grep -q 'FAIL: widget: typed-edge block needs exactly one `handoff:` line (found 0)' "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: missing handoff line did not FAIL" >&2
+  cat "$OUT" >&2
+  fail=$((fail + 1))
+fi
+
+# --- duplicate kind FAILs ----------------------------------------------------
+write_skill '## Edges
+<!-- edges:widget -->
+- produces: — (none)
+- produces: report
+- handoff: — (none)
+- consumes: — (none)
+<!-- /edges:widget -->'
+run_lint
+if grep -q 'FAIL: widget: typed-edge block needs exactly one `produces:` line (found 2)' "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: duplicate produces line did not FAIL" >&2
+  cat "$OUT" >&2
+  fail=$((fail + 1))
+fi
+
+# --- present and complete (even all-empty) is green --------------------------
 write_skill '## Edges
 <!-- edges:widget -->
 - produces: — (none)
@@ -52,9 +84,9 @@ write_skill '## Edges
 - consumes: — (none)
 <!-- /edges:widget -->'
 run_lint
-if grep -q 'WARN: widget: SKILL.md has no typed-edge block' "$OUT"; then
-  echo "FAIL: present edges block still matched missing-block WARN" >&2
-  grep 'typed-edge block' "$OUT" >&2
+if grep -qE '^(FAIL|WARN): widget: (SKILL.md has no typed-edge block|typed-edge block needs exactly one)' "$OUT"; then
+  echo "FAIL: complete edges block was not green" >&2
+  grep -E 'typed-edge block' "$OUT" >&2
   fail=$((fail + 1))
 else
   pass=$((pass + 1))

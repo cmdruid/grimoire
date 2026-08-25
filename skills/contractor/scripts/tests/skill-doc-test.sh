@@ -78,12 +78,20 @@ else
   fail=$((fail + 1))
 fi
 
-# --- status enum is the records contract, not a sibling name ---
-if grep -qF 'specs/records-front-matter.md' "$SKILL/SKILL.md"; then
+# --- status vocabulary is complete in-package, with no library-only path ---
+if grep -qF 'Mint stays `draft`' "$SKILL/SKILL.md" \
+  && grep -qF '`published` and `stage: approved`' "$SKILL/SKILL.md" \
+  && grep -qF '`stage: implemented`' "$SKILL/SKILL.md"; then
   pass=$((pass + 1))
 else
-  echo "FAIL: SKILL.md does not cite specs/records-front-matter.md" >&2
+  echo "FAIL: SKILL.md does not carry the complete status/stage vocabulary" >&2
   fail=$((fail + 1))
+fi
+if grep -qF 'specs/records-front-matter.md' "$SKILL/SKILL.md"; then
+  echo "FAIL: standalone contractor package cites a library-only specs path" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
 fi
 hits=$(grep -n '[Jj]ournal' "$SKILL/SKILL.md" "$SKILL"/verbs/*.md || true)
 if [ -z "$hits" ]; then

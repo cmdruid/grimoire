@@ -8,7 +8,7 @@ description: Keep a living save-state for the current session's work and recover
 Keep the session's work-in-progress in a **living save-state** — a file a future agent (any
 vendor) or a context-loss survivor can read as the entry point and continue from. The file is
 **gitignored per-machine scratch, rewritten at each save** — never merged, never a durable
-record. *(Formerly the `handoff` skill — the one-shot baton is retired.)* A *durable* record of
+record. A *durable* record of
 *finished* work closes through the host's records layer (or its own done trail), not a
 checkpoint.
 
@@ -150,10 +150,8 @@ Each verb's done-when closes its own file (`verbs/*.md`); Recovery's closes the 
 
 ## Edges
 
-Checkpoint's **typed edges** -- its place in a workflow declared as artifact *types*, never as
-sibling names (the typed-edge tenet -- portable home: skill-builder's `docs/DOCTRINE.md`
-§ *Typed edges*; library history: `docs/design/2026-07-18-skill-self-init-model.md` §2). A
-real **self-chain**: `save` produces the doc, `resume` consumes it back (consumes in the *edge*
+Checkpoint's **typed edges** declare a real **self-chain**: `save` produces the doc and `resume`
+consumes it back (consumes in the *edge*
 sense of reading -- the living file is never deleted by resume). No durable home (the root
 `CHECKPOINT.md` is gitignored scratch, lazily created) -- registration is optional and not
 implemented.

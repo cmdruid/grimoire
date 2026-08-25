@@ -15,8 +15,7 @@ dispatch table, the seams every verb shares, and the typed edges.
 Each verb's procedure lives in `verbs/` (see the dispatch table).
 When a verb is selected, **read its file and follow it**.
 
-This skill is **self-contained and uniquely named**: it depends on no other skill
-and collides with none.
+This skill is **self-contained** and depends on no other skill.
 
 There is no `init`. Explicit `setup` deploys Inspector's bundled kinds
 for project customization. Missing `<agent-workspace>/inspector/doctrine/`
@@ -34,9 +33,7 @@ namespace. An absent workspace or kind file uses the bundle.
 
 This package does **not** mint records.
 
-**Status vocabulary.** The `status` enum is
-`specs/records-front-matter.md`. Writer `stage` values are in-package
-(journal does not own them):
+**Status vocabulary.** Writer `stage` values are in-package:
 
 - **review** writes neither `status` nor `stage` in the verdict
   turn. On accept of a passing verdict, this session writes
@@ -123,10 +120,17 @@ does not open with it. Verdict words stay conversation-only.
 
 ## Edges
 
-In-place steward: no private home. Verdict is conversation-only.
+No private runtime store. Explicit `setup` may deploy project-customizable kind doctrine;
+verdicts remain conversation-only.
 
 <!-- edges:inspector -->
 - produces: doctrine — setup deploys Inspector-owned kind policy; verdict is conversation-only; accepted passing document review publishes, and refine amends in place
 - handoff: — (none; after publish the host sequences)
 - consumes: spec, plan, review, doctrine — artifacts or completed changes under review; a findings baton; optional project kind policy
 <!-- /edges:inspector -->
+
+## Done when
+
+The selected verb's done-when holds: the kind and effective policy were resolved without fallback
+through an invalid incumbent, each documented stop was honored, and no verb wrote outside its
+declared review/refine/setup boundary.

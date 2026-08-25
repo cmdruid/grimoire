@@ -62,10 +62,11 @@ scoped to non-face skills.
   reads — not only in the one script that consumes it. Otherwise the script and the doctrine disagree,
   and that divergence is tech debt.
 
-- **Harness-agnostic packages; harness-specifics at the edge.** A portable skill/script names only the
-  generic concept ("a prefix-matching approval policy"), never a specific agent or harness. The one
-  place a harness is named is its own config file (e.g. an approval-rules file), which lives outside
-  the portable package.
+- **Harness-agnostic packages; harness-specifics at the edge.** Ordinary workflow skills name the
+  generic concept ("a prefix-matching approval policy"), not a particular agent or harness; concrete
+  harness configuration lives outside those packages. A skill whose own domain is harness execution
+  or cross-harness routing may name the mechanisms it supports, but keeps those names at its dispatch
+  boundary and does not leak them into unrelated project workflow doctrine.
 
 - **Skills are living artifacts — capture the friction of using them.** Strong, concrete feedback about
   a skill you just used (a friction, a gap, a win worth keeping) is a signal that *improves* the skill,
@@ -174,13 +175,15 @@ Three kinds, by control-flow strength:
 | `consumes: T` | "I read/act on an artifact/state of type `T` as input." | a **data sink** for `T` |
 | `handoff: T` | "I *terminate* expecting a successor; the baton is `T`." | a **control-flow seam** — pair with a `consumes: T` |
 
-The composer's matching rule: `handoff: T` on A + `consumes: T` on B → a **seam** (control flows A→B).
-`produces: T` on A + `consumes: T` on B → a **dependency** (B reads A's output, no implied control).
-Unmatched edges are legal — a producer with no consumer is a leaf output; a consumer with no producer
-takes its input from outside the skill set. **A and B never name each other** — the composer supplies
-both names by matching on `T`. Types are **plain strings, matched by equality, open** (no registry to
-import) — prefer coarse, shared types (`plan`, not `feature-plan-v2`) over a precise-but-lonely one
-per skill.
+The composer's matching rule: `handoff: T` on A + `consumes: T` on B identifies a candidate
+**seam** (control may flow A→B). `produces: T` on A + `consumes: T` on B identifies a candidate
+**dependency** (B may read A's output, with no implied control). Equality is necessary, not
+sufficient: the composer still checks the notes and ownership. Owner-local workspace kinds such
+as `doctrine`, `hooks`, and `templates` do not cross owner namespaces merely because their coarse
+type strings match. Unmatched edges are legal — a producer with no consumer is a leaf output; a
+consumer with no producer takes its input from outside the skill set. **A and B never name each
+other** — the composer supplies both names after matching on `T`. Types are plain, open strings;
+prefer coarse, shared types (`plan`, not `feature-plan-v2`) over a precise-but-lonely one per skill.
 
 **Registration** (durable-home/steward tier only) idempotently projects a route into the host's
 always-loaded front-door doc, inside a `## Skill routes (self-registered)` section:

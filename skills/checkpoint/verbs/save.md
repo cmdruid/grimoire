@@ -85,8 +85,6 @@ In a git repo, before writing the root file (`save-guard.sh` emits all three fac
 3. **Re-check** (`git -C <root> check-ignore CHECKPOINT.md`) after appending — the append is
    only done when the re-check passes.
 
-(A stale `HANDOFF.md` exclusion line from the pre-rename era is left alone.)
-
 ## Document structure
 
 The **default** structure for a saved checkpoint — a skill borrowing only the disciplines (e.g.

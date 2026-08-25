@@ -4,10 +4,7 @@ Steps 2–3 are the **Resume discipline** (`references/disciplines.md` — expor
 already a synthesized summary — **do not re-summarize it**, and never consume it.
 
 1. **Locate the file** (per SKILL.md *Where it writes*): the root `CHECKPOINT.md` for a bare
-   `resume`; the literal path for `resume <path>`. **Legacy discovery:** a bare `resume` that
-   finds no `CHECKPOINT.md` checks for a `HANDOFF.md` at the same root and reports it if
-   present — without consuming or migrating it (it may be a pre-rename baton from an old
-   session; the human decides). If neither exists, say so.
+   `resume`; the literal path for `resume <path>`. If it does not exist, say so.
 2. **Read it in full** and load it as the working context for the session.
 3. **Confirm ready — briefly.** Reply that you've read it; at most echo the one-line *Suggested
    first action* verbatim. **Do not reopen the next-action design** — a redirect ("do Y instead")

@@ -10,6 +10,9 @@ bash "$DIR/lint-records-writer-test.sh" || rc=1
 echo "== lint-edges-test.sh"
 bash "$DIR/lint-edges-test.sh" || rc=1
 
+echo "== lint-bundle-ref-test.sh"
+bash "$DIR/lint-bundle-ref-test.sh" || rc=1
+
 echo "== lint-doctrine-consumer-test.sh"
 bash "$DIR/lint-doctrine-consumer-test.sh" || rc=1
 

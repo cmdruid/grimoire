@@ -48,8 +48,7 @@ file-mode stamp. Founding-shaped `grill` / `spec` stay on the named file
 `deploy`, and it does **not** apply to `grill`/`spec` when the named file is
 founding-shaped (*Founding-shaped* below). Those stay on the cwd working file.
 
-**Status vocabulary.** The `status` enum is
-`specs/records-front-matter.md`. Mint stays `draft`. The caller writes
+**Status vocabulary.** Mint stays `draft`. The caller writes
 `published` after a passing host's review they accept (one `published` spec
 per subject, as writer prose). This skill does not use `stage`.
 Founding-shaped working files stay `status: draft`. They are not the living

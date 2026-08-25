@@ -11,3 +11,6 @@ Resolve roots and require the staged engine per `SKILL.md`.
   If neither component exists but a stale owned block does, remove that block as repair.
 
 Add/remove commits every reported path once through the scoped helper; list is read-only.
+
+Done when `list` reflects the requested population, every tracker has both required components,
+the owned route block matches that population, and any changes were committed once.

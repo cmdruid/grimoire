@@ -1,8 +1,7 @@
 # `/skill-builder calibrate` — fold accreted authoring decisions back into `docs/DOCTRINE.md`
 
-The same collapse-ritual shape a design-seed steward runs for a project's spec — and the same *name*
-`foreman calibrate` already uses for "drain accumulated signal into doctrine" — applied to
-skill-authoring itself: as design docs, ADRs, and one-off authoring decisions accrete around *how this
+This is the collapse ritual for skill authoring: as design docs, ADRs, and one-off authoring
+decisions accrete around *how this
 library builds skills*, `calibrate` folds the ones that proved durable back into `docs/DOCTRINE.md` so
 it stays a clean, current reference — and marks the source records as historical rather than leaving
 them to silently disagree with the doctrine they fed.

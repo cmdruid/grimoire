@@ -5,7 +5,7 @@ description: "The toolmaker steward for a skills library itself -- not project c
 
 # skill-builder — the toolmaker steward
 
-Nothing in a skills library steward the skills themselves — a design-system steward maintains a
+Nothing in a skills library stewards the skills themselves — a design-system steward maintains a
 *project's* seed, a workflow hub maintains a *project's* dev glue, but the doctrine behind *how skills
 here are authored* (boundary independence, self-init, typed edges, the lint gate) has no home of its
 own. `skill-builder` is that home: a **portable** package (doctrine + gate script + audit workflow +
@@ -63,3 +63,8 @@ output is new/audited skill files and a conversational report, in-place changes 
 - handoff: — (the review ends the pass)
 - consumes: review, review-brief — optional RESULT.md baton; skill brief for same-session judgment
 <!-- /edges:skill-builder -->
+
+## Done when
+
+The selected verb's done-when holds; package-local doctrine and resources were used; every changed
+check was red-proved; and the host library's own gate is green.

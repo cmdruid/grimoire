@@ -25,7 +25,7 @@
 #      and are entirely out of this check's scope -- not even attempted. This
 #      also carries the portability property: a portable skill with no bundled
 #      docs/ is simply never gated on docs/, in any library it's copied into.
-#   3. (retired -- the foreman BOOTSTRAP manifest lost its subject; numbering held.)
+#   3. (reserved; numbering held for stable diagnostics.)
 #   4. README inventory: every skills/<name> is mentioned in README.md (WARN).
 #      (The ~/.claude/skills wiring probe that shared this slot was deleted --
 #      installation state, not repo content; it made the warn count depend on
@@ -51,9 +51,8 @@
 #   9. Sibling verb-roster enumeration (BL-1): a skill's BODY (not its description --
 #      check 7 covers that) naming 3+ distinct verbs of the SAME sibling skill via
 #      backticked `/sibling verb` tokens looks like an enumerated roster of that
-#      sibling's verb set (WARN -- boundary-audit candidate; the exact rot pattern
-#      that once bit `foreman`, whose body listed `architect`'s verbs stale long
-#      after `architect` gained new ones). Self-references are excluded -- a skill
+#      sibling's verb set (WARN -- boundary-audit candidate; this copied-roster
+#      shape silently goes stale). Self-references are excluded -- a skill
 #      enumerating its OWN verbs is normal. Known limitation: only the
 #      backticked-per-verb-token shape is caught; a prose-listed roster ("its verbs
 #      are init, brainstorm, plan...") needs the manual boundary-audit scan, the
@@ -96,11 +95,11 @@
 #      `agent-doctrine` family is no longer accepted -- the consumers are
 #      flipped, so accepting it would let a regression back in silently.
 #  15. Off-home doctrine literal. Any non-exempt skill's .md naming a
-#      `.handbook/{test,build,design,review}/` path -- doctrine that should be
-#      reached through the resolved home (FAIL). Unconditional: this is what
+#      `.handbook/{test,build,design,review}/` path or retired `docs/audit/`
+#      path -- doctrine that should be reached through the resolved home (FAIL).
+#      Unconditional: this is what
 #      catches a skill that hardcodes and never declares an edge. No per-skill
-#      exemption table; `docs/audit/` is deliberately not matched (see the
-#      block comment). `.records/doctrine/` is also matched (FAIL): it stopped
+#      exemption table. `.records/doctrine/` is also matched (FAIL): it stopped
 #      being any home's default when doctrine moved under `<agent-workspace>`,
 #      which is what made it decidable.
 #  16. Retired doctrine variable + workspace declaration guards. Three arms,
@@ -178,7 +177,7 @@ done
 # ---- shared: bundle-ref resolution (checks 2 & 10) ---------------------------
 # One prefix alternation and one resolver, used by both checks so "what counts as
 # a bundled-resource path" and "how does docs/ resolve" can't drift apart.
-bundle_prefixes='scripts|templates|verbs|references|rules|docs|roles|doctrine|kinds'
+bundle_prefixes='scripts|templates|verbs|references|rules|docs|roles|doctrine|kinds|specs'
 
 # resolve_bundle_ref <skill-dir> <ref>
 # <ref> is a path like "verbs/foo.md" or "docs/x.md", relative to a skill bundle
@@ -226,10 +225,8 @@ while IFS= read -r line; do
 done < <(awk '$1=="MISS"{print}' /tmp/skills-lint-refs.$$)
 rm -f /tmp/skills-lint-refs.$$
 
-# ---- 3. (retired) ------------------------------------------------------------
-# The foreman BOOTSTRAP manifest check lost its subject when the pack doctrine
-# absorbed BOOTSTRAP.md (clankshop rollout, Task 2.5). Numbering retained so the
-# header comment's check list stays stable.
+# ---- 3. (reserved) -----------------------------------------------------------
+# Numbering is retained so the header comment's check list stays stable.
 
 # ---- 4. README inventory -----------------------------------------------------
 # The wiring arm that used to live here (does ~/.claude/skills/<name> symlink
@@ -287,7 +284,7 @@ rm -f /tmp/skills-lint-xref.$$
 # skill's own bundled docs/BOUNDARY-AUDIT.md. Self-invocations (`/<own-name>`) are fine; the
 # router/fragment exceptions are legitimate, so this never FAILs. Keys on a
 # *backticked* `/name` (the convention for an invocation, per check 6) so bare
-# separators/paths (`bug/patch/feature`, `.agents/foreman/`) don't false-positive.
+# separators/paths (`bug/patch/feature`, `.agents/owner/`) don't false-positive.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   is_pack_face "$name" && continue  # pack-face exemption (header comment)
@@ -312,7 +309,8 @@ rm -f /tmp/skills-lint-sib.$$
 # Parse the delimited `<!-- edges:<name> -->` block in each SKILL.md. An edge line
 # is `- <kind>: <type>[, <type>...] [<emdash> <note>]`; an empty edge is
 # `- <kind>: <emdash> (none...)`. We check delimiter well-formedness, the edge
-# kind, and the type-not-sibling invariant, and collect (type,skill,kind) triples
+# kind, require exactly one line for each of produces/handoff/consumes, enforce
+# the type-not-sibling invariant, and collect (type,skill,kind) triples
 # for the orphan WARN. BL-4: kind is recorded (not just type+skill) so a type
 # declared by exactly one skill that has BOTH a produces/handoff line AND a
 # consumes line for it (a stated intra-skill chain, e.g. handoff's save->resume,
@@ -347,6 +345,11 @@ for sk in "$skills_dir"/*/; do
   fi
   # Body between the delimiters (single-line -v is BSD-safe).
   block="$(awk -v n="$name" '$0=="<!-- edges:"n" -->"{b=1;next} $0=="<!-- /edges:"n" -->"{b=0} b' "$f")"
+  for required_kind in produces handoff consumes; do
+    kind_count="$(printf '%s\n' "$block" | grep -cE "^- $required_kind:" || true)"
+    [ "$kind_count" -eq 1 ] || \
+      fail "$name: typed-edge block needs exactly one \`$required_kind:\` line (found $kind_count)"
+  done
   while IFS= read -r line; do
     case "$line" in "- "*) ;; *) continue ;; esac      # only edge bullets
     kind="$(printf '%s' "$line" | sed -n 's/^- \([a-z]*\):.*/\1/p')"
@@ -685,12 +688,6 @@ done
 # skill-builder (this doctrine documents the literals it bans elsewhere); that is
 # the same name-based exemption check 12 uses, and it is the whole of it.
 #
-# `docs/audit/` is deliberately NOT a matched literal. It is auditor-specific --
-# no other skill would write it -- so matching it caught nothing generalizable
-# while forcing an exemption broad enough to blanket that skill's real
-# violations. Auditor's legacy-home detection is sanctioned; the fix was to stop
-# calling it a violation, not to excuse it.
-#
 # STILL NOT attempted: a check on a home's canonical DEFAULT path. Skill prose is
 # required to name default paths literally, so a hardcoded default is textually
 # identical to a documented one. Only OFF-home literals are decidable. For the
@@ -716,7 +713,8 @@ for sk in "$skills_dir"/*/; do
       [ -n "$line" ] || continue
       fail "$name: $rel:$line: off-home doctrine literal (resolve <agent-workspace>/<skill>/doctrine instead)"
     done < <(grep -nF -e '`.handbook/test/' -e '`.handbook/build/' \
-                     -e '`.handbook/design/' -e '`.handbook/review/' "$f" || true)
+                     -e '`.handbook/design/' -e '`.handbook/review/' \
+                     -e '`docs/audit/' "$f" || true)
     while IFS= read -r line; do
       [ -n "$line" ] || continue
       fail "$name: $rel:$line: stale doctrine default \`.records/doctrine/\` (resolve <agent-workspace>/<skill>/doctrine instead)"

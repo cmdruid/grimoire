@@ -6,3 +6,6 @@ with `reorder --tracker <stem> --ids <complete-csv-permutation>`. Never edit TSV
 
 Commit every changed tracker path once through the scoped helper. Curation does not drain work,
 mint records, or change the project cookbook.
+
+Done when the requested rows have the intended state and order in the staged writer's `list`
+output, and every reported change was committed once through the scoped helper.

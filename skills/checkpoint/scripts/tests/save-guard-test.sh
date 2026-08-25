@@ -13,6 +13,13 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$DIR/lib.sh"
 GUARD="${GUARD_SH:-$DIR/../save-guard.sh}"
+
+if [ -x "$GUARD" ]; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: save-guard.sh is not executable although the skill invokes it directly" >&2
+  fail=$((fail + 1))
+fi
 TEMPLATE="${WS_TEMPLATE:-$DIR/../../../workstream/templates/workstream-handoff.md}"
 
 T="$(mktemp -d)"

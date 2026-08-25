@@ -180,20 +180,17 @@ else
   fail=$((fail + 1))
 fi
 
-# --- check 15: green — a sanctioned legacy literal is not matched at all ------
-# `docs/audit/` is auditor's legacy home, kept so deployed rubrics keep working.
-# It is deliberately absent from the matched literals rather than excused by an
-# exemption -- excusing it would have blanketed that skill's real violations too.
+# --- check 15: red — the retired Auditor-specific doctrine home ---------------
 run_lint
 write_skill widget 'note — a captured fact' \
-  'Legacy rubrics at `docs/audit/GUIDE.md` are still detected.'
+  'Read the rubric at `docs/audit/GUIDE.md`.'
 lint
-if grep -q "$c15" "$OUT"; then
-  echo "FAIL: sanctioned legacy literal matched check 15 (must stay green)" >&2
-  grep "$c15" "$OUT" >&2
-  fail=$((fail + 1))
-else
+if grep -q "FAIL: widget: .*$c15" "$OUT"; then
   pass=$((pass + 1))
+else
+  echo "FAIL: retired docs/audit literal did not FAIL check 15" >&2
+  cat "$OUT" >&2
+  fail=$((fail + 1))
 fi
 
 # --- check 15: the CANONICAL default path is still conforming usage -----------

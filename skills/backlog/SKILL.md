@@ -51,6 +51,7 @@ the present one.
 
 <!-- edges:backlog -->
 - produces: tracker — living skill-owned follow-up rows
+- handoff: — (none; tracker rows remain queued until an explicit caller selects them)
 - consumes: — (debrief reads the caller's finished-work context, not a typed artifact)
 <!-- /edges:backlog -->
 
@@ -59,3 +60,9 @@ the present one.
 Backlog stores and routes follow-ups. It does not diagnose defects, perform queued work, mint
 records, publish another skill's hook, or define another skill's return contract. Portable
 consumers name the host's follow-up or bug-filing lane; they do not require Backlog.
+
+## Done when
+
+The selected verb's done-when holds; every mutation went through the staged writer; the owned
+route block matches the current tracker population; and any standalone changes were committed
+with only the reported paths staged.
