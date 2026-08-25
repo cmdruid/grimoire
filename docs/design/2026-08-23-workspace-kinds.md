@@ -12,7 +12,7 @@ This library's design home is `docs/design/` (patient-zero). This spec
 lives here. It doubles as the implementation plan.
 
 Dependency (land first):
-`docs/design/2026-08-24-grimoire-faceless-pack.md` removes the
+`docs/design/2026-08-24-clankshop-faceless-pack.md` removes the
 clankshop assembler and establishes the faceless pack. This spec does
 not redefine packaging or delete clankshop.
 

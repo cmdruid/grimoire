@@ -13,7 +13,7 @@ lives here. It doubles as the implementation plan.
 
 Dependencies (land first):
 
-- `docs/design/2026-08-24-grimoire-faceless-pack.md` — skills own their
+- `docs/design/2026-08-24-clankshop-faceless-pack.md` — skills own their
   project lifecycle; there is no assembler.
 - `docs/design/2026-08-23-workspace-kinds.md` — Inspector's canonical
   project surface is `inspector/doctrine/`.

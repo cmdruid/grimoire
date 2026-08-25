@@ -6,16 +6,10 @@ updated: 2026-08-24
 tags: [spec]
 ---
 
-# Grimoire faceless pack — remove clankshop — Spec
+# Clankshop faceless pack — remove the face — Spec
 
 This library's design home is `docs/design/` (patient-zero). This
 spec lives here. It doubles as the implementation plan.
-
-External landing prerequisite: the TUI Phase 3 change currently carried by
-`stream/app` must land before F1. It changes `install.sh` and adds the live
-TUI dogfood test that installs and removes this repository's pack. If it has
-not landed, do not start this feature; coordinate the ownership handoff
-instead of editing the same surfaces concurrently.
 
 Land first. Consumers:
 
@@ -31,7 +25,8 @@ Land first. Consumers:
 
 ## Problem
 
-`clankshop` is simultaneously a skill, the faced `clankshop` pack, a
+`clankshop` is simultaneously a skill and the identity of the faced
+`clankshop` pack, while the skill itself is also a
 doctrine seed, a project assembler, a brownfield migrator, a hook
 publisher, a flow publisher, a records-layer caller, a door writer, and
 an assembly checker. Its setup therefore crosses nearly every member's
@@ -54,14 +49,14 @@ a new address.
 After this feature:
 
 - `skills/clankshop/` does not exist.
-- The installable bundle is a root faceless pack named `grimoire`.
+- The installable bundle remains the root faceless pack named `clankshop`.
   Root `PACK.md` is its manifest and runbook; it is not a skill and has
   no project lifecycle verb.
-- `install.sh --pack grimoire` installs the required and selected
+- `install.sh --pack clankshop` installs the required and selected
   optional members transactionally, records the faceless manifest in
   `grimoire.lock`, and installs no implicit face member.
-- `install.sh --pack clankshop` is unknown. There is no alias, lock
-  adoption, compatibility name, or migration.
+- `install.sh --pack grimoire` is unknown. `grimoire` is not a pack
+  name, alias, compatibility identity, or migration target.
 - Every skill is independently usable. Skills with durable project
   surfaces expose and own their own explicit setup; the pack runbook
   may describe seams but never writes them.
@@ -70,8 +65,9 @@ After this feature:
   glue, and their tests are deleted with no replacement composer.
   Durable-home skills may maintain only their own delimited
   self-registration blocks.
-- Live code and current documentation contain no `clankshop` policy
-  probe, invocation, path, pack identity, or setup dependency.
+- Live code and current documentation contain no `clankshop` skill,
+  policy probe, face path, station invocation, or setup dependency.
+  The `clankshop` pack identity remains current.
   Historical closed design records may retain the name as history.
 - Lint and installer tests are green.
 
@@ -85,16 +81,18 @@ This is a hard cut:
 
 - no `skills/clankshop/` tombstone;
 - no root wrapper skill;
-- no `clankshop` pack-name alias;
+- no `grimoire` pack-name alias;
 - no station-path fallback or `Seeded from clankshop` marker;
 - no automatic cleanup of already-deployed project files;
 - no migration verb or lock rewrite.
 
-Existing alpha installations remove the old installed pack and install
-`grimoire`. Existing deployed clankshop artifacts are ordinary
-project-file cleanup; the new runtime never reads them. The skill-first
-workspace check specified by the consumer spec reports the old
-kind-first workspace layout.
+Existing alpha installations use the standard transactional reinstall
+or upgrade of `clankshop`; the new manifest drops the old face member.
+This is not a compatibility reader, alias, or migration command.
+Existing deployed clankshop artifacts are ordinary project-file cleanup;
+the new runtime never reads them. The skill-first workspace check
+specified by the consumer spec reports the old kind-first workspace
+layout.
 
 **Rejected: isolate the assembler at
 `<agent-workspace>/doctrine/clankshop/`.** Filesystem isolation is not
@@ -120,8 +118,8 @@ Move the manifest role, not the face payload, to repository-root
 
 ```yaml
 ---
-name: grimoire
-version: 1.0.0
+name: clankshop
+version: 3.0.0
 description: "Independent agent skills with a faceless composition runbook"
 required: journal
 optional: analyst, auditor, backlog, architect, contractor, inspector, debugger, delegate, checkpoint, mailbox, notepad, scheduler, shopbook, workstream
@@ -164,14 +162,14 @@ The exact shell entrypoints are:
 
 ```text
 ./install.sh --list
-./install.sh --pack grimoire
-./install.sh --check --pack grimoire
-./install.sh --remove --pack grimoire
+./install.sh --pack clankshop
+./install.sh --check --pack clankshop
+./install.sh --remove --pack clankshop
 ```
 
-Fresh install and reinstall use `--pack grimoire`. List, install,
+Fresh install and reinstall use `--pack clankshop`. List, install,
 reinstall, check, and remove must all render the faceless pack without
-pretending a `grimoire` skill directory exists.
+pretending a `clankshop` skill directory exists.
 
 The transaction boundary is preflight every member, link, then commit one
 lock entry. A lock that is unparseable, has a newer unsupported version,
@@ -185,7 +183,8 @@ lock entry was not written.
 Delete all of `skills/clankshop/`: `SKILL.md`, `PACK.md`, `seed/`,
 `flows/`, `verbs/`, `scripts/`, and fixtures.
 
-Hard-cut live consumers away from clankshop identity:
+Hard-cut live consumers away from the clankshop face and composition
+identity:
 
 - remove stamp-based policy probes;
 - remove `/clankshop setup|migrate|check` remedies;
@@ -193,17 +192,13 @@ Hard-cut live consumers away from clankshop identity:
 - remove clankshop-specific face assumptions and fixtures while retaining
   the generic faced-pack lint exemptions and mutation fixtures required by
   pack format 1;
-- remove clankshop from the library inventory and local authoring
-  front door;
-- update pack-format examples to neutral or `grimoire` examples where
+- remove the clankshop skill from the library inventory and local
+  authoring front door while retaining the pack identity;
+- update pack-format examples to neutral or `clankshop` examples where
   they describe a current pack rather than historical rationale.
 
-Rename `crates/grimoire-pack/tests/clankshop.rs` to `grimoire.rs` and change
-the repository's live Rust conformance expectations to the root `grimoire`
-faceless pack. After the app prerequisite
-lands, update its dogfood scenario as well: select `grimoire`, expect no face
-symlink and no face teardown warning, and continue to prove install, check,
-and remove against both global and project scopes.
+Keep `crates/grimoire-pack/tests/clankshop.rs` and change the repository's
+live Rust conformance expectations to the root faceless `clankshop` pack.
 
 This feature removes the identity and composition layer. The following
 workspace feature owns the new `<agent-workspace>/<skill>/<kind>` paths;
@@ -231,7 +226,8 @@ This spec exclusively owns:
 - root `PACK.md` identity, format, initial surviving member set, and
   faceless-pack runbook baseline;
 - faceless support in `install.sh` and its pack tests;
-- removal of live clankshop identity and policy probes.
+- removal of the live clankshop face/composition identity and policy
+  probes while retaining the pack identity.
 
 It does not own the skill-first workspace grammar, Backlog behavior,
 Delegate behavior, Inspector behavior, or their setup mechanics. Those
@@ -254,7 +250,7 @@ not:
 | `README.md` workspace/backlog inventory spans | the named owner spec |
 | `README.md` Inspector inventory span | Inspector I4 |
 | shared station summons and clankshop policy probes | this spec F3 |
-| live Rust pack/core tests and the landed app dogfood pack identity | this spec F3 |
+| live Rust pack/core tests | this spec F3 |
 | Workstream hook paths/parser | workspace-kinds W3 |
 | Workstream legacy Backlog invocations | living-trackers B4 |
 
@@ -268,7 +264,7 @@ path.
 **Mechanical**
 
 - `test ! -e skills/clankshop`.
-- Root `PACK.md` parses as a faceless format-1 pack named `grimoire`.
+- Root `PACK.md` parses as a faceless format-1 pack named `clankshop`.
 - Installer fixtures cover list, fresh install, reinstall, check, and
   remove of the faceless pack; prove-by-breaking the no-implicit-face
   assertion and lock-cached-manifest assertion.
@@ -287,7 +283,7 @@ Across live surfaces (`AGENTS.md`, `README.md`, `install.sh`, root
 `PACK.md`, `docs/spec/`, `skills/`, and `crates/`):
 
 - zero `skills/clankshop`;
-- zero `/clankshop`;
+- zero `/clankshop setup`, `/clankshop migrate`, or `/clankshop check`;
 - zero `Seeded from clankshop`;
 - zero clankshop station-loader, setup, migrate, check, seed, or hook
   glue dependencies.
@@ -299,9 +295,9 @@ the gate fails.
 
 **Procedure**
 
-- `./install.sh --pack grimoire` installs members and no `grimoire`
+- `./install.sh --pack clankshop` installs members and no `clankshop`
   skill.
-- `./install.sh --pack clankshop` reports no matching pack and writes
+- `./install.sh --pack grimoire` reports no matching pack and writes
   nothing.
 - Installing one member directly still works without any pack state.
 - Invoking a surviving independent skill on a project with no deployed
@@ -311,9 +307,9 @@ the gate fails.
 
 | id | does | verify | paths |
 |---|---|---|---|
-| F1 | Add root faceless `grimoire` manifest/runbook; implement faceless install/list/check/remove, lock caching, and rollback on lock-write refusal | installer transaction fixtures | `PACK.md`, `install.sh`, `scripts/tests/install-pack-test.sh`, `crates/grimoire-pack/tests/conformance.rs`, `crates/grimoire-core/tests/parity.rs` |
+| F1 | Add root faceless `clankshop` manifest/runbook; implement faceless install/list/check/remove, lock caching, and rollback on lock-write refusal | installer transaction fixtures | `PACK.md`, `install.sh`, `scripts/tests/install-pack-test.sh`, `crates/grimoire-pack/tests/conformance.rs`, `crates/grimoire-core/tests/parity.rs` |
 | F2 | Delete the clankshop package and face fixtures | package absence + lint | `skills/clankshop/**` |
-| F3 | Remove live clankshop identity, stamp probes, station summons, clankshop-specific lint assumptions, and current inventory claims; retarget live pack dogfood to faceless `grimoire` | affected harnesses + red-proof absence gates | `AGENTS.md`, `README.md`, `docs/spec/pack-format.md`, `crates/grimoire-pack/{src/discovery.rs,tests/clankshop.rs,tests/grimoire.rs}`, `crates/grimoire-core/tests/live_repo.rs`, `crates/grimoire/tests/dogfood.rs`, `skills/{architect,auditor,contractor,debugger,inspector,workstream}/**`, `skills/shopbook/scripts/tests/{flows-door-test.sh,skill-doc-test.sh}`, `skills/skill-builder/{docs/BOUNDARY-AUDIT.md,docs/DOCTRINE.md,scripts/skills-lint.sh,scripts/tests/lint-doctrine-consumer-test.sh,scripts/tests/lint-edges-test.sh}` (owned identity/station spans only; generic faced-pack support remains) |
+| F3 | Remove the live clankshop face/composition identity, stamp probes, station summons, clankshop-specific lint assumptions, and current skill inventory claims; retarget live pack conformance to faceless `clankshop` | affected harnesses + red-proof absence gates | `AGENTS.md`, `README.md`, `docs/spec/pack-format.md`, `crates/grimoire-pack/{src/discovery.rs,tests/clankshop.rs}`, `crates/grimoire-core/tests/live_repo.rs`, `skills/{architect,auditor,contractor,debugger,inspector,workstream}/**`, `skills/shopbook/scripts/tests/{flows-door-test.sh,skill-doc-test.sh}`, `skills/skill-builder/{docs/BOUNDARY-AUDIT.md,docs/DOCTRINE.md,scripts/skills-lint.sh,scripts/tests/lint-doctrine-consumer-test.sh,scripts/tests/lint-edges-test.sh}` (owned identity/station spans only; generic faced-pack support remains) |
 
 Land order F1 → F2 → F3. One landing after F3. The next feature is
 workspace-kinds; it owns the skill-first path migration.

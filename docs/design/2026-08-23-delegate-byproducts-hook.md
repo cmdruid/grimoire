@@ -13,7 +13,7 @@ lives here. It doubles as the implementation plan.
 
 Dependencies (land first):
 
-- `docs/design/2026-08-24-grimoire-faceless-pack.md` — no face-owned
+- `docs/design/2026-08-24-clankshop-faceless-pack.md` — no face-owned
   hook publisher.
 - `docs/design/2026-08-23-workspace-kinds.md` — canonical hook path is
   `delegate/hooks/byproducts.md`.
