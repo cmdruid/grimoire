@@ -77,6 +77,7 @@ validate_tracker() {
   awk -F '\t' -v stem="$stem" -v header="$HEADER" '
     NR==1 { if ($0 != header) exit 10; next }
     /^# highwater=[0-9]+$/ { if (seen_hw++) exit 11; hw=substr($0,13)+0; next }
+    /^# migrated=[^[:space:]].*$/ { v=$0; sub(/^# migrated=/,"",v); if (migrated[v]++) exit 24; next }
     /^#/ { exit 12 }
     {
       if (NF != 6) exit 13
@@ -100,6 +101,42 @@ create_tracker() {
   [ ! -e "$file" ] || return 0
   printf '%s\n# highwater=0\n' "$HEADER" > "$file"
   echo "wrote=${file#"$ROOT"/}"
+}
+
+# Import normalized legacy rows through the sole writer. Input rows have five
+# TSV fields: status, created, completed, text, link. IDs are allocated above
+# the existing high-water mark and the source receipt makes replay a no-op.
+cmd_migrate_import() {
+  local stem="" source="" rows="" file facts max hw count=0 next tmp
+  while [ $# -gt 0 ]; do case "$1" in
+    --tracker) stem="${2:-}"; shift 2;; --source) source="${2:-}"; shift 2;;
+    --rows) rows="${2:-}"; shift 2;; *) usage;; esac; done
+  valid_stem "$stem" || die invalid-stem "$stem"
+  valid_rel "$source" || die unsafe-source "$source"
+  [ -f "$rows" ] && [ ! -L "$rows" ] || die no-rows "$rows"
+  file="$(tracker_path "$stem")"; facts="$(validate_tracker "$stem" "$file")"; read -r max hw <<< "$facts"
+  if grep -qxF -- "# migrated=$source" "$file"; then echo "changes=0"; return; fi
+  awk -F '\t' '
+    NF!=5 {exit 10}
+    $1!="open" && $1!="done" {exit 11}
+    $2!~/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/ {exit 12}
+    $1=="open" && $3!="" {exit 13}
+    $1=="done" && $3!~/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/ {exit 14}
+    $4=="" || $4~/[\t\n]/ {exit 15}
+    $5~/^\// || ("/"$5"/")~/\/\.\.\// {exit 16}
+  ' "$rows" || die malformed-migration-rows "$rows"
+  count="$(wc -l < "$rows" | tr -d ' ')"
+  [ "$count" -gt 0 ] || die empty-migration "$rows"
+  (( hw > max )) && next=$((hw+1)) || next=$((max+1))
+  tmp="$file.tmp.$$"
+  awk -F '\t' -v OFS='\t' -v hw="$((next+count-1))" -v receipt="# migrated=$source" '
+    NR==1 {print; print "# highwater="hw; print receipt; next}
+    /^# highwater=/ {next}
+    {print}
+  ' "$file" > "$tmp"
+  awk -F '\t' -v OFS='\t' -v stem="$stem" -v start="$next" '{print stem "-" (start+NR-1),$1,$2,$3,$4,$5}' "$rows" >> "$tmp"
+  mv "$tmp" "$file"
+  echo "changes=$count"; echo "wrote=${file#"$ROOT"/}"
 }
 
 module_count() {
@@ -308,5 +345,6 @@ safe_read_path "$WS_REL/backlog"
 case "$cmd" in
   setup) cmd_setup "$@";; tracker-add) [ $# -eq 1 ] || usage; src="$(suggestion "$1")"; if [ -f "$src" ]; then reconcile "$1" add; else reconcile "$1" custom; fi;;
   tracker-remove) cmd_tracker_remove "$@";; list) cmd_list "$@";; add) cmd_add "$@";; update) cmd_update "$@";;
-  complete) cmd_complete "$@";; drop) cmd_drop "$@";; reorder) cmd_reorder "$@";; compile) cmd_compile "$@";; *) usage;;
+  complete) cmd_complete "$@";; drop) cmd_drop "$@";; reorder) cmd_reorder "$@";; compile) cmd_compile "$@";;
+  migrate-import) cmd_migrate_import "$@";; *) usage;;
 esac

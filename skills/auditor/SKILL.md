@@ -19,14 +19,14 @@ up anywhere.
 
 The rubric is Auditor-owned doctrine, so its home is the fixed
 subpath `<agent-workspace>/auditor/doctrine`, and `<agent-workspace>` is the declared
-`agent-workspace:` (front-door `AGENTS.md` then `CLAUDE.md`), else `.dev` — so by default
-`.dev/auditor/doctrine/`. Resolving the home is not finding the rubric — resolve it, **then**
+`agent-workspace:` (front-door `AGENTS.md` then `CLAUDE.md`), else `.spaces` — so by default
+`.spaces/auditor/doctrine/`. Resolving the home is not finding the rubric — resolve it, **then**
 detect `GUIDE.md`. No pack lifecycle is a prerequisite; rubric setup is this
 skill's explicit operation.
 
 Detect `GUIDE.md` only at
 `<agent-workspace>/auditor/doctrine/test/workflows/audit/` (by default
-`.dev/auditor/doctrine/test/workflows/audit/`). The rubric is project doctrine
+`.spaces/auditor/doctrine/test/workflows/audit/`). The rubric is project doctrine
 (`GUIDE.md`, `rules/`, `metrics.sh`) and is loaded directly for each pass. If it is absent,
 ask once; do not scan the repo.
 
@@ -55,6 +55,7 @@ invariants). It is **not** a docs-system maintenance sweep. Different domain.
 - **`metrics`** — run the host's `metrics.sh`: print the report. No scoring.
 - **`check`** — run `metrics.sh --check`: the invariant gate (a non-zero count of the host's
   native-invariant smell is a P0 and fails).
+- **`migrate <source-path>`** — read `verbs/migrate.md`; upgrade owned audit records/templates.
 - **`<target>`** — a path scopes a pass to that path. Look it up in GUIDE's targets table
   for Deep / Mid / Light. If missing: Light unless the user named Deep.
 
@@ -70,11 +71,13 @@ layer (or the dated report file) is the memory.
 **Every host**, per pass:
 
 - **The pass report** — one `reports` record under the agent-records home, tagged
-  `audit`. Resolve `reports.md` via the project-templates rule;
-  `records.sh --root <root> --records-root <records-root-relative> new reports --template <resolved> --title "Audit: <scope>"` when
-  the tool exists; else file-mode from that path, naming the file
+  `audit`. Resolve `reports.md` at `<agent-workspace>/auditor/templates/`; a recognized legacy
+  location requires `/auditor migrate <path>` rather than silent adoption.
+  `records.sh --root <root> --records-root <records-root-relative> new reports --schema auditor/audit@1 --template <resolved> --title "Audit: <scope>" --tag audit` when
+  the tool exists; else file-mode with the same schema and resolved body, naming the file
   `YYYY-MM-DD-<slug>.md` (the record shape). Never write the flat
-  `<agent-workspace>/auditor/templates/reports.md`. The reports store *is* the trend
+  `<agent-records>/templates/reports.md`. A project template carrying `schema:` refuses. Current front matter requires `doctype`, `status`,
+  `schema`, and `tags`; ordinary edits stamp no generic date or revision. The reports store *is* the trend
   history. Close it `consumed` once its actionable findings are drained
   (`records.sh --root <root> --records-root <records-root-relative> done` when the tool exists; else file-mode stamp).
 - **Defects stay in the report.** Do not mint `bugs/`. Promote a defect via

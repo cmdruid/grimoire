@@ -1,11 +1,3 @@
----
-doctype: adr
-status: draft
-created: <date>
-updated: <date>
-tags: [<tags>]
----
-
 # <title>
 
 - **Deciders:** <who>

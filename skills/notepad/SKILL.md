@@ -30,6 +30,7 @@ front-door (patient-zero).
 | `/notepad find` | `verbs/find.md` | List or retrieve notes | "what did we write about X" |
 | `/notepad supersede` | `verbs/supersede.md` | Close old, mint replacement | "this note is no longer true — here is the new fact" |
 | `/notepad drop` | `verbs/drop.md` | Close `dropped`; no successor | "this fact is no longer true" |
+| `/notepad migrate <source-path>` | `verbs/migrate.md` | Preview and upgrade owned notes/templates | migrate notes |
 
 **No default verb.** `/notepad` with no recognized verb — ask which.
 
@@ -42,23 +43,24 @@ session scratch that must not persist.
 - **Resolve explicit roots** (resolver inlined): `<root>` is the project root; agent-records
   home is first `^agent-records:` or `^records-root:` in `AGENTS.md`,
   then `CLAUDE.md`, else `.records`. Agent workspace is declared
-  `agent-workspace:`, else `.dev`. Pass `<root>`, the repo-relative records root,
+  `agent-workspace:`, else `.spaces`. Pass `<root>`, the repo-relative records root,
   and the repo-relative workspace into every `scripts/note-mint.sh` call. The script
   resolves `<agent-workspace>/notepad/templates/` and does not scan the front door.
 - **One fact per note** (the path is the ID).
 - **`note-mint.sh` is the one minter.** Always call it (from this
   skill's own `scripts/`, never a host path). Signature:
   `mint <root> <records-root-relative> <workspace-relative> <title>`. It uses staged
-  Journal `records.sh` when that file is executable (`new --template
+  Journal `records.sh` when that file is executable (`new --schema notepad/note@1 --template
   <resolved>`); otherwise it writes the contract shape itself. Never
   write `history.tsv` by hand. Never write the flat
   `<agent-records>/templates/notes.md`.
 - **The record contract (this package).** Front-matter keys:
-  `doctype`, `status`, `created`, `updated`, `tags`. Live
+  `doctype`, `status`, `schema`, `tags`; schema `notepad/note@1`. Live
   `draft`, `published`. Closed `archived` (ledger `--as` is `done` /
   `dropped` / `superseded` / `consumed` when the tool exists).
-  File-mode close writes `archived`. Optional `stage` (non-empty if
-  present). Record-link form: `→ <store>/<file>.md`. Do not send
+  File-mode close changes only status. Ordinary edits stamp no generic date or revision. Optional
+  `stage` is non-empty if present. Filenames are `YYYY-MM-DD-<slug>.md`; record links are
+  `→ <store>/<file>.md`. Do not send
   the agent to another skill's `SKILL.md`.
 - **Resolve the commit tree, then commit there.** `<root>` is
   `git rev-parse --show-toplevel` of the checkout that holds the notes

@@ -22,7 +22,7 @@ for project customization. Missing `<agent-workspace>/inspector/doctrine/`
 is not a refuse — use the bundled `kinds/<kind>.md`.
 
 **Kind doctrine** lands at `<agent-workspace>/inspector/doctrine/<kind>.md`
-(default `.dev/inspector/doctrine/<kind>.md`). No new front-door variable.
+(default `.spaces/inspector/doctrine/<kind>.md`). No new front-door variable.
 Incumbent wins; upgrade is a judgment-assisted diff. Load the complete
 workspace copy when it is a readable regular file, else the bundled
 `kinds/<kind>.md` when absent. A symlink, directory, other incompatible
@@ -68,7 +68,7 @@ do not invent a rubric. The seven bundled kinds are in-scope. Hosts
 add document-kind files; they do not invent a rubric at runtime.
 
 1. Resolve `<agent-workspace>` (front-door `agent-workspace:`, else
-   `.dev`) and the optional `inspector/doctrine/` directory. Never create
+   `.spaces`) and the optional `inspector/doctrine/` directory. Never create
    it here. For each bundled stem, a readable regular project file is
    the complete effective policy; absence uses bundled `kinds/<kind>.md`.
    Symlinks, directories, other incompatible entries, and unreadable

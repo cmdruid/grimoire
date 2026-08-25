@@ -7,7 +7,7 @@ description: "Validate an agent workspace's owner-first skill/kind layout withou
 
 `/workspace` and `/workspace check` perform the same read-only operation. Resolve the project
 root, `<agent-workspace>` (first line-start `agent-workspace:` in `AGENTS.md`, then
-`CLAUDE.md`, else `.dev`), and `<agent-records>` (first `agent-records:` or `records-root:`,
+`CLAUDE.md`, else `.spaces`), and `<agent-records>` (first `agent-records:` or `records-root:`,
 else `.records`). Then run:
 
 ```text

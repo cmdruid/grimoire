@@ -110,15 +110,15 @@ independent of what the root has checked out. Never hand-commit these records to
    with the host's fast doc-linter (from the worktree), not the full gate. A shipped unit's durable
    trace is a **plan close plus an optional debrief report**, under the agent-records home on
    every host. If `<agent-workspace>/journal/scripts/records.sh` is executable, use it with
-   `--root <root> --records-root <records-root-relative>` (`done` / `new --template <resolved>`);
-   else file-mode stamp of `status:` / `updated:` only — do
+   `--root <root> --records-root <records-root-relative>` (`done` / `new --schema <owned-schema>`);
+   else file-mode stamp of `status:` only — do
    not write `history.tsv`. Ledger commit path only when `history.tsv` was actually written.
-   - **Close each accumulated feature's plan record in place.** For **each** feature completed
+   - **Close each accumulated feature's Workstream manifest in place.** For **each** feature completed
      since the last ship (one under `per-stage`; possibly several under `milestone`/`per-track`)
-     whose plan lives in the `plans/` store, run (in the worktree)
+     whose manifest lives in the `streams/` store, run (in the worktree)
      `records.sh --root <root> --records-root <records-root-relative> done
-     plans/<its-plan>.md --note "shipped: <feature subjects>"` when the tool
-     exists; else rewrite `status:` / `updated:` on the plan file. **Reference the feature's
+     streams/<its-manifest>.md --note "shipped: <feature subjects>"` when the tool
+     exists; else rewrite `status:` on the manifest file. **Reference the feature's
      commits by subject line, NOT by sha** in the note and any narrative: Landing (step 2)
      rebases this branch *after* these records are written, which rewrites every sha but
      **preserves subjects**. Commit the flip and, when written, the ledger together:
@@ -127,10 +127,9 @@ independent of what the root has checked out. Never hand-commit these records to
      plan record (a roadmap row built directly) is completed by its roadmap ledger-row
      advance below — never mint a record just to close it.
    - **A debrief report when the unit warrants narrative** — implementation surprises, follow-on
-     context a future reader needs beyond the ledger line: resolve `reports.md` via the
-     project-templates rule; `records.sh --root <root> --records-root <records-root-relative> new reports --template <resolved>` when the tool
-     exists; else file-mode from that path, naming the file `YYYY-MM-DD-<slug>.md` (the
-     record shape). Tag it `debrief`, write findings-first, commit
+     context a future reader needs beyond the ledger line: resolve `debrief.md` via the
+     project-templates rule; `records.sh --root <root> --records-root <records-root-relative> new streams --dir streams --schema workstream/debrief@1 --template <resolved> --tag debrief` when the tool
+     exists; else file-mode with that schema, naming the file `YYYY-MM-DD-<slug>.md`. Write findings-first and commit
      it on the branch. A routine unit needs no report.
    - If the queue is tracked in a roadmap doc, update its ledger/queue row for this stream and commit
      it on the branch too: `git -C <worktree> commit -m "Roadmap: <stream> shipped <feature>" -- <roadmap-path>`.
@@ -150,8 +149,8 @@ independent of what the root has checked out. Never hand-commit these records to
    **Otherwise** (plan / roadmap / brief): in the (ignored) worktree hand-off, mark
    **all landed features** done and set the next queue item current.
    Then **draft** the next feature's implementation plan from the queue source into
-   `<agent-records>/plans/` (resolve `plans.md` via the project-templates rule;
-   `records.sh --root <root> --records-root <records-root-relative> new plans --template <resolved>` when the tool exists; else file-mode fill,
+   `<agent-records>/streams/` (resolve `manifest.md` via the project-templates rule;
+   `records.sh --root <root> --records-root <records-root-relative> new streams --dir streams --schema workstream/plan@1 --template <resolved> --tag plan` when the tool exists; else file-mode fill,
    naming the file `YYYY-MM-DD-<slug>.md` — the record shape) —
    a working-tree draft: it rides the *next* ship; do not commit it now. Do not start the next
    feature automatically. **In `manual` mode, skip this draft** — plan-authoring belongs to the next

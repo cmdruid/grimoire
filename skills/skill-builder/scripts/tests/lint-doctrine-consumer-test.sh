@@ -194,11 +194,11 @@ else
 fi
 
 # --- check 15: the CANONICAL default path is still conforming usage -----------
-# Unchanged rule, owner-first default. The widget doctrine kind defaults under `.dev/widget/`,
+# Unchanged rule, owner-first default. The widget doctrine kind defaults under `.spaces/widget/`,
 # and prose is required to name defaults literally -- so this must never fire.
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'Doctrine lives under `<agent-workspace>/widget/doctrine`, by default `.dev/widget/doctrine/`.'
+  'Doctrine lives under `<agent-workspace>/widget/doctrine`, by default `.spaces/widget/doctrine/`.'
 lint
 if grep -q "$c15" "$OUT"; then
   echo "FAIL: canonical default path matched check 15 (must stay green)" >&2
@@ -224,7 +224,7 @@ expect "check 15 names the stale default" "$c15b" "$OUT"
 # green control: remove the literal -> silent.
 run_lint
 write_skill widget 'note — a captured fact' \
-  'The rubric sits at `.dev/widget/doctrine/test/workflows/audit/GUIDE.md`.'
+  'The rubric sits at `.spaces/widget/doctrine/test/workflows/audit/GUIDE.md`.'
 lint
 expect_absent "check 15 is silent once the stale default is gone" "$c15b" "$OUT"
 
@@ -316,23 +316,29 @@ lint
 expect 'check 16b FAILs a dot-valued workspace declaration' \
   "FAIL: front door (AGENTS.md): $c16b" "$OUT"
 
-# green control: any ordinary value -> silent.
+# Green controls: arbitrary declared values remain valid, including the former
+# default when a host deliberately chooses it. The hard cut removes implicit
+# `.dev` resolution; it does not reserve that otherwise-valid relative path.
 run_lint
 write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
 write_front_door 'agent-workspace: dev'
 lint
 expect_absent "check 16b is silent on an ordinary declaration" "$c16b" "$OUT"
-expect_absent "check 16c is silent on the prescribed undotted migration value" "$c16c" "$OUT"
+expect_absent "check 16c is silent on an ordinary declaration" "$c16c" "$OUT"
 
-# --- check 16c: WARN — a declaration restating the current default ------------
-# The typo trap this arm exists for: the prescribed migration for a legacy host
-# whose records sit at `dev/` is `agent-workspace: dev`. `.dev` is one keystroke
-# away, syntactically valid, and a silent no-op that leaves the host degraded in
-# exactly the way the migration is supposed to fix.
-# RED-PROOF: the near-miss value must be reported.
 run_lint
 write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
 write_front_door 'agent-workspace: .dev'
+lint
+expect_absent "check 16b accepts an explicit former-default path" "$c16b" "$OUT"
+expect_absent "check 16c treats an explicit former-default path as an override" "$c16c" "$OUT"
+
+# --- check 16c: WARN — a declaration restating the current default ------------
+# RED-PROOF: a syntactically valid declaration that merely freezes the current
+# default must be reported as the probable no-op it is.
+run_lint
+write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
+write_front_door 'agent-workspace: .spaces'
 lint
 expect "check 16c warns on a default-valued declaration" "$c16c" "$OUT"
 expect_absent "check 16c warns rather than fails (advisory by design)" \

@@ -1,11 +1,3 @@
----
-doctype: reports
-status: draft
-created: <date>
-updated: <date>
-tags: [audit]
----
-
 # <title>
 
 Pass report from a code-quality audit. Findings stay in this record;

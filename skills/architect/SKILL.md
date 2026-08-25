@@ -31,13 +31,15 @@ not the machinery. "Here are two approaches; I recommend A because…" /
 **Destination is not stamped.** Feature `spec` / `brainstorm` / ADR artifacts
 land in `<agent-records>/specs/` and `<agent-records>/adr/` on every host
 (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`,
-else `.records/`). Resolve `specs.md` / `adr.md` via the project-templates rule;
-`records.sh --root <root> --records-root <records-root-relative> new specs --template <resolved>` when the tool exists (the flag is
-required — there is no fallback); else file-mode from that path, naming the
+else `.records/`). Resolve `specs.md` / `adr.md` only from
+`<agent-workspace>/architect/templates/` (fresh projects receive the bundled body scaffold;
+recognized legacy locations require `/architect migrate <path>`).
+Mint specs with `records.sh --root <root> --records-root <records-root-relative> new specs --schema architect/spec@1 --template <resolved>`
+and ADRs with `new adr --schema architect/adr@1 --template <resolved>` when the tool exists;
+else synthesize the same four-key front matter in file mode, naming the
 file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the tool
-will not see it. `specs.md` carries both the front-matter and the body scaffold,
-so there is no second template to fill from. Never write the flat
-`<agent-workspace>/architect/templates/<doctype>.md`. Mint stays `status: draft`.
+will not see it. Templates supply bodies only and cannot select schemas. Never write the flat
+`<agent-records>/templates/<doctype>.md`. Mint stays `status: draft`.
 The caller writes `published` after a passing host's review they accept.
 Closure through `records.sh --root <root> --records-root <records-root-relative> done` when the tool exists; else
 file-mode stamp. Founding-shaped `grill` / `spec` stay on the named file
@@ -52,7 +54,12 @@ founding-shaped (*Founding-shaped* below). Those stay on the cwd working file.
 `published` after a passing host's review they accept (one `published` spec
 per subject, as writer prose). This skill does not use `stage`.
 Founding-shaped working files stay `status: draft`. They are not the living
-feature spec. Do not write `published` on them.
+feature spec. They carry `schema: architect/founding@1`; do not write `published` on them.
+
+**Record contract.** Current records require `doctype`, `status`, `schema`, and `tags`.
+Architect owns `architect/spec@1`, `architect/adr@1`, and `architect/founding@1`. The filename is
+`YYYY-MM-DD-<slug>.md`; record links use `→ <store>/<file>.md`. Generic timestamps and revisions are
+not stamped. Optional extra keys remain legal.
 
 ## Verb dispatch (read the file, then follow it)
 
@@ -64,6 +71,7 @@ feature spec. Do not write `published` on them.
 | `grill [doc]` | `verbs/grill.md` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** |
 | `spec [doc]` | `verbs/spec.md` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) |
 | `deploy <file>` | `verbs/deploy.md` | project a founding spec into a git repo + three founding docs (new dir or in-place) |
+| `migrate <source-path>` | `verbs/migrate.md` | preview and upgrade owned records/templates, including in place |
 
 ```
 spec  →  (host's review)  →  (caller publishes)  →  (host sequences)
@@ -152,7 +160,7 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 - A self-contained skill directory: `SKILL.md` + `templates/` (`specs.md`,
   `adr.md`, `founding.md` — the bundled body shapes) + `verbs/brainstorm.md` +
   `verbs/grill.md` + `verbs/spec.md` + `verbs/new.md` +
-  `verbs/deploy.md` + `scripts/ground-check.sh` (the
+  `verbs/deploy.md` + `verbs/migrate.md` + `scripts/ground-check.sh` (the
   re-grounding fact-checker) + `docs/ideal-use.md` (a worked arc).
 - **Portable:** no workshop dependency, no host paths baked in, travels as one
   unit wherever the skills are installed.

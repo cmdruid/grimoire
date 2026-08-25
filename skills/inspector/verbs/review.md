@@ -94,7 +94,7 @@ stop; an utterance may compose acceptance with more requested work.
 
 On accept, use executable `<agent-workspace>/journal/scripts/records.sh` when present, passing
 `--root <root> --records-root <records-root-relative> touch --status published`; otherwise update
-`status: published` and `updated:` in file mode. Job artifacts (`plan`, `roadmap`, `runbook`) also
+`status: published` in file mode. Job artifacts (`plan`, `roadmap`, `runbook`) also
 receive `stage: approved`; specs and ADRs receive `published` only. Then stop unless the same
 utterance requested further work.
 

@@ -1,11 +1,3 @@
----
-doctype: specs
-status: draft
-created: <date>
-updated: <date>
-tags: [spec]
----
-
 # <title> — Spec
 
 <Draft weight (brainstorm): fill Problem/Goal, sketch the Approach, list open questions at the

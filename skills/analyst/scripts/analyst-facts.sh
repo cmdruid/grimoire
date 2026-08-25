@@ -44,7 +44,7 @@ resolve_workspace() {
               | head -n 1 | sed 's/[[:space:]]*$//')"
     fi
   done
-  printf '%s\n' "${decl:-.dev}"
+  printf '%s\n' "${decl:-.spaces}"
 }
 
 usage() {
@@ -82,6 +82,9 @@ setup() {
   echo "records_layer=$RECORDS_LAYER"
   echo "ledger=$([ -f "$LEDGER" ] && echo present || echo absent)"
   echo "git=$GIT"
+  if [ "$GIT" = present ]; then
+    echo "git_shallow=$(git -C "$ROOT" rev-parse --is-shallow-repository 2>/dev/null || echo unknown)"
+  fi
 }
 
 # Records-root crawl, at any depth. A file is a record iff it is named
@@ -109,6 +112,22 @@ fm_field() {
 }
 
 rel_to_rr() { printf '%s\n' "${1#"$RR"/}"; }
+
+# Authoritative movement comes from Git path history. Dirty and untracked files
+# are current but deliberately undated; non-Git projects are unknown. --follow
+# preserves useful history across a single-path rename.
+record_movement() {
+  local f="$1" repo_rel state day
+  [ "$GIT" = present ] || { printf 'unknown\n'; return; }
+  repo_rel="${f#"$ROOT"/}"
+  state="$(git -C "$ROOT" status --porcelain --untracked-files=all -- "$repo_rel" 2>/dev/null | head -n 1)"
+  case "$state" in
+    '?? '*) printf 'untracked\n'; return ;;
+    ?*)     printf 'dirty\n'; return ;;
+  esac
+  day="$(git -C "$ROOT" log -1 --follow --format=%cs -- "$repo_rel" 2>/dev/null || true)"
+  [ -n "$day" ] && printf '%s\n' "$day" || printf 'unknown\n'
+}
 
 # --- subcommands -------------------------------------------------------------
 
@@ -146,16 +165,17 @@ cmd_span() {
     awk -F'\t' -v a="$since_date" '$1 >= a' "$LEDGER"
   fi
 
-  # Records whose front-matter says they moved in span.
-  local touched=0 f u
+  # Records whose Git path history moved in span. Dirty/untracked records are
+  # current and included, but intentionally have no invented date.
+  local touched=0 f movement
   local touched_list=""
   while IFS= read -r f; do
     [ -n "$f" ] || continue
-    u="$(fm_field "$f" updated)"
-    [ -n "$u" ] || continue
-    if [ "$u" \> "$since_date" ] || [ "$u" = "$since_date" ]; then
+    movement="$(record_movement "$f")"
+    if [ "$movement" = dirty ] || [ "$movement" = untracked ] \
+       || { [[ "$movement" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] && { [ "$movement" \> "$since_date" ] || [ "$movement" = "$since_date" ]; }; }; then
       touched=$((touched + 1))
-      touched_list="$touched_list$(rel_to_rr "$f")	$(fm_field "$f" status)
+      touched_list="$touched_list$(rel_to_rr "$f")	$(fm_field "$f" status)	$movement
 "
     fi
   done <<EOF
@@ -163,7 +183,7 @@ $(each_record)
 EOF
   echo "records_touched=$touched"
   if [ -n "$touched_list" ]; then
-    echo "--- records touched (path, status) ---"
+    echo "--- records touched (path, status, git movement) ---"
     printf '%s' "$touched_list"
   fi
 
@@ -190,7 +210,7 @@ cmd_status() {
     [ -n "$f" ] || continue
     st="$(fm_field "$f" status)"
     case "$st" in
-      draft)     open=$((open + 1));    open_list="$open_list$(rel_to_rr "$f")	$st	$(fm_field "$f" updated)
+      draft)     open=$((open + 1));    open_list="$open_list$(rel_to_rr "$f")	$st	$(record_movement "$f")
 " ;;
       published) current=$((current + 1)) ;;
     esac
@@ -199,7 +219,7 @@ $(each_record)
 EOF
   echo "open_records=$open"
   echo "current_records=$current"
-  [ -n "$open_list" ] && { echo "--- open records (path, status, updated) ---"; printf '%s' "$open_list"; }
+  [ -n "$open_list" ] && { echo "--- open records (path, status, git movement) ---"; printf '%s' "$open_list"; }
 
   # Trackers are records too, but their LINES are the state.
   if [ -d "$RR/trackers" ]; then
@@ -229,21 +249,22 @@ cmd_health() {
   echo "today=$today"
   echo "stale_cutoff=$cutoff"
 
-  local bugs=0 stale=0 f st u
+  local bugs=0 stale=0 f st movement
   local bug_list="" stale_list=""
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     st="$(fm_field "$f" status)"
-    u="$(fm_field "$f" updated)"
+    movement="$(record_movement "$f")"
     case "$f" in
       "$RR"/bugs/*)
         if [ "$st" = draft ]; then
-          bugs=$((bugs + 1)); bug_list="$bug_list$(rel_to_rr "$f")	$u
+          bugs=$((bugs + 1)); bug_list="$bug_list$(rel_to_rr "$f")	$movement
 "
         fi ;;
     esac
-    if [ "$st" = draft ] && [ -n "$u" ] && [ "$u" \< "$cutoff" ]; then
-      stale=$((stale + 1)); stale_list="$stale_list$(rel_to_rr "$f")	$u
+    if [ "$st" = draft ] && [[ "$movement" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] \
+       && [ "$movement" \< "$cutoff" ]; then
+      stale=$((stale + 1)); stale_list="$stale_list$(rel_to_rr "$f")	$movement
 "
     fi
   done <<EOF
@@ -251,8 +272,8 @@ $(each_record)
 EOF
   echo "open_bugs=$bugs"
   echo "stale_open_records=$stale"
-  [ -n "$bug_list" ]   && { echo "--- open bugs (path, updated) ---"; printf '%s' "$bug_list"; }
-  [ -n "$stale_list" ] && { echo "--- stale open records (path, updated) ---"; printf '%s' "$stale_list"; }
+  [ -n "$bug_list" ]   && { echo "--- open bugs (path, git movement) ---"; printf '%s' "$bug_list"; }
+  [ -n "$stale_list" ] && { echo "--- stale open records (path, git movement) ---"; printf '%s' "$stale_list"; }
 
   # Recorded audit reports: the project's OWN instrument is the authority on
   # scored health. We report their existence and dates; we never re-derive a
@@ -264,10 +285,10 @@ EOF
     audit_files="$(grep -l -E '^tags:.*audit' "$RR"/reports/*.md 2>/dev/null || true)"
     if [ -n "$audit_files" ]; then
       audits="$(printf '%s\n' "$audit_files" | grep -c . | tr -d ' ')"
-      echo "--- audit reports (path, updated) ---"
+      echo "--- audit reports (path, git movement) ---"
       while IFS= read -r f; do
         [ -n "$f" ] || continue
-        printf '%s\t%s\n' "$(rel_to_rr "$f")" "$(fm_field "$f" updated)"
+        printf '%s\t%s\n' "$(rel_to_rr "$f")" "$(record_movement "$f")"
       done <<EOF
 $audit_files
 EOF
@@ -338,7 +359,7 @@ cmd_catalog() {
   for f in "$bundled"/*.md; do
     [ -f "$f" ] || continue
     tok="$(fm_field "$f" template)"
-    [ -n "$tok" ] || continue   # lock-in doctypes (reports.md) are not catalog kinds
+    [ -n "$tok" ] || continue
     if [ -f "$deployed/$(basename "$f")" ]; then
       printf '%s\tdeployed\n' "$tok"
     else

@@ -112,12 +112,12 @@
 #      severity: unlike 14 it is not edge-gated and reads .sh as well as .md,
 #      comments included. Authoring-time half only — `seed.sh` is the runtime
 #      half that sees a consuming project's resolved `--workspace` (BL-30).
-#  17. Bare `records.sh new` mint (FAIL). Two arms: (a) a backticked
+#  17. Invalid `records.sh new` mint (FAIL). Two arms: (a) a backticked
 #      invocation carrying `records.sh new` and `--title` but no
-#      `--template`; (b) `records.sh new` immediately followed by a
+#      `--schema`; (b) `records.sh new` immediately followed by a
 #      flag (`new --<anything>` is never valid — the doctype is the
-#      first positional). `--template` is required, so a bare call
-#      hard-errors at runtime and skips the lock-in copy. Arm (b)
+#      first positional). `--schema` is required; `--template` is optional
+#      body scaffolding. Arm (b)
 #      catches the BL-32 shape that arm (a) cannot see (no `--title`).
 #      Whitespace-normalized (real invocations wrap mid-span) and
 #      fence-stripped. Prose naming the tool without `--title` and
@@ -127,6 +127,13 @@
 #      name workspace content owner-first. Either the symbolic workspace token
 #      or its default followed immediately by a reserved kind is the retired
 #      grammar. No skill roster is encoded; owners remain open.
+#  19. Schema writer prefix (FAIL). A literal value passed to `--schema` by a
+#      skill must use that skill's prefix and the shared schema grammar.
+#  20. Template role conformance (FAIL). Every bundled Markdown template must
+#      have a live read site outside its declaration. Declared project templates
+#      may not carry a front-matter schema key.
+#  21. Package-only copy (FAIL). A bundled template omitted from the declared
+#      project-template list may not be named on a shell copy command.
 #
 # Pack-face exemption: any skill dir that carries a PACK.md
 # is the pack's FACE -- it composes the pack, so naming its members is its job,
@@ -651,7 +658,7 @@ strip_code() { # strip fenced and indented blocks, then flatten whitespace
 }
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
-  case "$name" in skill-builder) continue ;; esac
+  case "$name" in journal|skill-builder) continue ;; esac
   is_pack_face "$name" && continue
   [ -f "$sk/SKILL.md" ] || continue
   edges="$(sed -n '/<!-- edges:/,/edges:.* -->/p' "$sk/SKILL.md")"
@@ -705,7 +712,7 @@ done
 # flipped, so any reappearance is a regression, not a leftover.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
-  case "$name" in skill-builder) continue ;; esac
+  case "$name" in journal|skill-builder) continue ;; esac
   is_pack_face "$name" && continue
   while IFS= read -r -d '' f; do
     rel="${f#"$sk"}"
@@ -737,11 +744,9 @@ done
 #      population to protect and no reason to soften it. `.` would place doctrine
 #      at `./doctrine`, colliding with real project directories.
 #   c. declared value equal to the current default -- WARN, always advisory. A
-#      deliberate `.dev` declaration is legal. This arm exists because the
-#      prescribed migration for a legacy host whose records already sit at `dev/`
-#      is `agent-workspace: dev` (UNDOTTED), and `.dev` is one keystroke away,
-#      syntactically valid, and a silent no-op that leaves the host degraded in
-#      exactly the way the migration is supposed to fix.
+#      deliberate `.spaces` declaration is legal but normally a no-op. Defaults
+#      should remain defaults: restating one creates sticky project configuration
+#      whose meaning changes if the library's default changes later.
 #
 # UNCONDITIONAL describes its SCOPE, not its severity: unlike check 14 this is
 # not edge-gated, and it reads .sh as well as .md. Comments count -- a textual
@@ -796,21 +801,16 @@ for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
     .)
       fail "front door ($(basename "$fd")): \`agent-workspace: .\` is forbidden -- it places doctrine at ./doctrine, colliding with real project directories"
       ;;
-    .dev)
-      warn "front door ($(basename "$fd")): \`agent-workspace: .dev\` restates the current default -- probable no-op; a legacy host whose records sit at \`dev/\` needs the UNDOTTED \`dev\`"
+    .spaces)
+      warn "front door ($(basename "$fd")): \`agent-workspace: .spaces\` restates the current default -- probable no-op; declare only an actual override"
       ;;
   esac
   break
 done
 
-# ---- 17. bare `records.sh new` mint (FAIL) -----------------------------------
-# A minting skill must pass `--template <resolved>` (the project-templates rule).
-# `--template` is REQUIRED by `records.sh new`: the tool knows no taxonomy, so it
-# cannot guess a template path from a doctype name, and the flat
-# `$RR/templates/<doctype>.md` fallback it once had is gone. A bare call
-# therefore hard-errors at runtime AND skips the lock-in copy into
-# `<agent-workspace>/<skill>/templates/`. This check is what turns that runtime failure
-# into a lint failure, so it is caught while authoring rather than mid-verb.
+# ---- 17. invalid `records.sh new` mint (FAIL) --------------------------------
+# A minting skill must pass its package-owned `--schema`. Project templates are
+# optional body scaffolds; they never select the schema.
 #
 # DECIDABILITY: two shapes are invocations. (a) a backticked span
 # containing `records.sh new` and `--title` (the mint form). (b) the
@@ -855,8 +855,8 @@ for sk in "$skills_dir"/*/; do
           ;;
       esac
       case "$span" in *--title*) ;; *) continue ;; esac
-      case "$span" in *--template*) continue ;; esac
-      fail "$name: $rel: bare mint ${span} -- pass \`--template <resolved>\` (the project-templates rule)"
+      case "$span" in *--schema*) continue ;; esac
+      fail "$name: $rel: bare mint ${span} -- pass package-owned \`--schema $name/<artifact>@<positive-integer>\`"
     done < <(strip_code "$f" | grep -o '`[^`]*`' || true)
   done < <(find "$sk" -name '*.md' -print0)
 done
@@ -866,7 +866,7 @@ done
 # immediately beneath the workspace root. Keep the two prefixes and the kind
 # vocabulary separate in this source: the test assembles broken fixtures, and a
 # literal absence sweep can therefore cover this package too.
-workspace_prefix='(<agent-workspace>|\.dev)'
+workspace_prefix='(<agent-workspace>|\.spaces)'
 workspace_kinds='(doctrine|hooks|scripts|templates|trackers|flows)'
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
@@ -877,6 +877,77 @@ for sk in "$skills_dir"/*/; do
       fail "$name: $rel:$line: kind-first workspace path -- use <agent-workspace>/<skill>/<kind>/..."
     done < <(grep -nE "$workspace_prefix/$workspace_kinds(/|[^a-z0-9-]|$)" "$f" || true)
   done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
+done
+
+# ---- 19. package-owned schema prefix (FAIL) ---------------------------------
+for sk in "$skills_dir"/*/; do
+  sk="${sk%/}"
+  name="$(basename "$sk")"
+  case "$name" in journal|skill-builder) continue ;; esac
+  is_pack_face "$name" && continue
+  while IFS= read -r -d '' f; do
+    rel="${f#"$sk"}"
+    while IFS= read -r token; do
+      value="${token#--schema }"
+      case "$value" in *'<'*|'$'*|is) continue ;; esac
+      if ! [[ "$value" =~ ^[a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*@[1-9][0-9]*$ ]]; then
+        fail "$name: $rel: invalid literal schema passed to --schema: $value"
+      elif [[ "$value" != "$name/"* ]]; then
+        fail "$name: $rel: schema writer-prefix mismatch: $value (want $name/...)"
+      fi
+    done < <(grep -hoE -- '--schema[[:space:]]+[^[:space:]`"]+' "$f" || true)
+  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
+done
+
+# ---- 20–21. project-template roles (FAIL) -----------------------------------
+for sk in "$skills_dir"/*/; do
+  sk="${sk%/}"
+  name="$(basename "$sk")"
+  is_pack_face "$name" && continue
+  [ -f "$sk/SKILL.md" ] || continue
+  declared="$(awk '
+    /^## Project templates/ { section=1; next }
+    section && /^## / { exit }
+    section && /^- `[^`]*\.md`/ { line=$0; sub(/^- `/, "", line); sub(/`.*/, "", line); print line }
+  ' "$sk/SKILL.md")"
+  for t in "$sk"/templates/*.md; do
+    [ -f "$t" ] || continue
+    file="$(basename "$t")"
+    is_declared=0
+    printf '%s\n' "$declared" | grep -qxF -- "$file" && is_declared=1
+
+    # A real use site must exist outside the template file and outside the
+    # declaration block itself. This makes an abandoned generic shell fail.
+    live=0
+    while IFS= read -r -d '' carrier; do
+      [ "$carrier" = "$sk/SKILL.md" ] && continue
+      grep -qF -- "$file" "$carrier" && { live=1; break; }
+    done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) ! -path "$sk/templates/*" -print0)
+    if [ "$live" -eq 0 ]; then
+      if [ "$is_declared" -eq 1 ]; then
+        awk '/^## Project templates/{skip=1; next} skip && /^## /{skip=0} !skip{print}' "$sk/SKILL.md" \
+          | grep -qF -- "$file" && live=1
+      else
+        grep -qF -- "$file" "$sk/SKILL.md" && live=1
+      fi
+    fi
+    [ "$live" -eq 1 ] || fail "$name: templates/$file has no live read site outside its declaration"
+
+    if [ "$is_declared" -eq 1 ]; then
+      if awk 'NR==1 && $0=="---"{fm=1;next} fm && $0=="---"{exit} fm && /^schema:/{found=1} END{exit !found}' "$t"; then
+        fail "$name: declared project template templates/$file selects a schema"
+      fi
+    else
+      while IFS= read -r -d '' script; do
+        grep -E "(^|[[:space:]])cp([[:space:]].*)?$file" "$script" >/dev/null 2>&1 && \
+          fail "$name: package-only template templates/$file is named on a copy command in ${script#"$sk"}"
+      done < <(find "$sk" -name '*.sh' -print0)
+    fi
+  done
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    [ -f "$sk/templates/$file" ] || fail "$name: declared project template is missing: templates/$file"
+  done <<< "$declared"
 done
 
 # ---- summary -----------------------------------------------------------------

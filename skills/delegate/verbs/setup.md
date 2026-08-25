@@ -1,7 +1,7 @@
 # `setup [<root>]` — create the optional byproducts policy point
 
 1. Resolve `<root>` from the argument, else the current repository root. It must exist; canonicalize
-   it. Resolve line-start `agent-workspace:` from root `AGENTS.md`, then `CLAUDE.md`, else `.dev`.
+   it. Resolve line-start `agent-workspace:` from root `AGENTS.md`, then `CLAUDE.md`, else `.spaces`.
    Reject an empty, `.`, absolute, or `..`-containing workspace declaration.
 2. Resolve the package skeleton at `templates/hooks/byproducts.md`. It must be an existing regular
    file whose exact size is zero; otherwise refuse before writing.

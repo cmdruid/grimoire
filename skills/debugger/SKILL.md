@@ -20,12 +20,14 @@ invocation reads `verbs/file.md`. Bare investigate stays here (Phases 1–4).
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
 | `/debugger file` | `verbs/file.md` | Capture a standing repro → a dated `bugs` record. Do not investigate. | file / repro / "capture the repro" / "this is broken — capture" |
+| `/debugger migrate <source-path>` | `verbs/migrate.md` | Preview and upgrade owned bug/investigation artifacts. | migrate debugger records |
 | `/debugger` | (this file, Phases 1–4) | Root-cause investigation | symptom / root-cause / "why is this failing" |
 
 **Utterance rule.** A prompt that matches file / repro / "capture the repro" /
 "this is broken — capture" (including the invocation `/debugger file`) reads
 `verbs/file.md` and does **not** enter Phases 1–4. Bare `/debugger` and
 symptom / root-cause / "why is this failing" language is today's Phases 1–4.
+`/debugger migrate <source-path>` reads `verbs/migrate.md` and does not investigate.
 Do not ask which; do not investigate a file trigger.
 
 **Inputs.** It accepts a **routed report or a live symptom** — a filed bug
@@ -46,9 +48,9 @@ is consulted.
 
 The report is a record on every host, under the agent-records home (first
 `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
-`.records/`). Resolve `reports.md` via the project-templates rule;
-`records.sh --root <root> --records-root <records-root-relative> new reports --template <resolved>` when the tool exists; else
-file-mode from that path plus the resolved `investigation.md` body, naming
+`.records/`). Resolve `investigation.md` via the project-templates rule;
+`records.sh --root <root> --records-root <records-root-relative> new reports --schema debugger/investigation@1 --template <resolved>` when the tool exists; else
+file-mode with that schema and resolved body, naming
 the file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the
 tool will not see it. Never write the
 flat `<agent-records>/templates/<doctype>.md`.
@@ -68,16 +70,20 @@ flat `<agent-records>/templates/<doctype>.md`.
 
 - **Resolve explicit roots.** `<root>` is the project root. Agent-records home: first line-start `agent-records:`
   or `records-root:` in `AGENTS.md`, then `CLAUDE.md`; else `.records`.
-  Agent workspace is declared `agent-workspace:`, else `.dev`. Pass `<root>`, the repo-relative
+  Agent workspace is declared `agent-workspace:`, else `.spaces`. Pass `<root>`, the repo-relative
   records root, and the repo-relative workspace into every `scripts/bug-mint.sh` call. The script
   resolves `<agent-workspace>/debugger/templates/` and does not scan the front door.
 - **`bug-mint.sh` is the one minter for `file`.** Always call it (from this
   skill's own `scripts/`). Signature: `mint <root> <records-root-relative>
   <workspace-relative> <title>`. It uses staged Journal `records.sh` when that file is executable
-  (`new bugs --template <resolved> --title "…"`); otherwise it writes the
+  (`new bugs --schema debugger/bug@1 --template <resolved> --title "…"`); otherwise it writes the
   contract shape (file-mode under `bugs/`). Never write `history.tsv` by
   hand. Never write the flat `<agent-records>/templates/bugs.md`. Never open
   a `trackers/` path.
+- **Record contract.** Current front matter requires `doctype`, `status`, `schema`, and `tags`.
+  Filed bugs use `debugger/bug@1`; investigations use `debugger/investigation@1`. Filenames are
+  `YYYY-MM-DD-<slug>.md`, links are `→ <store>/<file>.md`, and ordinary edits stamp no generic date
+  or revision metadata.
 - **Resolve the commit tree, then commit there.** `<root>` is
   `git rev-parse --show-toplevel` of the checkout that holds the record you
   wrote — never a different clone, and never the repo's root checkout from
@@ -180,9 +186,9 @@ If Phase 4 hit the three-fix threshold, say so explicitly and name the architect
 instead of a fix.
 
 **Every host:** the durable record is a reports record under the agent-records
-home. Resolve `reports.md` via the project-templates rule; `records.sh --root <root> --records-root <records-root-relative> new
-reports --template <resolved> --title "<investigation title>"` when the tool
-exists; else file-mode from that path, naming the file `YYYY-MM-DD-<slug>.md`
+home. Resolve `investigation.md` via the project-templates rule; `records.sh --root <root> --records-root <records-root-relative> new
+reports --schema debugger/investigation@1 --template <resolved> --title "<investigation title>"` when the tool
+exists; else file-mode with that schema, naming the file `YYYY-MM-DD-<slug>.md`
 (the record shape). Fill the body from the resolved
 `investigation.md` (reproduction, root cause, evidence, fix + verification,
 then a keyed `#### <key> — <title>` heading per actionable finding; keys
@@ -202,7 +208,6 @@ when one exists.
 
 ## Project templates
 
-- `reports.md`
 - `investigation.md`
 - `bugs.md`
 

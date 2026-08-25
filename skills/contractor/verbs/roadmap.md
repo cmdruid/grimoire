@@ -31,13 +31,11 @@ that phase can be built. The roadmap never carries task-level detail.
      order.
    - **No task-level detail.** No file lists, no commands, no slice code. If a
      phase needs that, it needs a `plan`.
-4. **Land it** per SKILL.md *Shared discipline*. Resolve `plans.md` via the
-   project-templates rule, then mint `records.sh --root <root> --records-root <records-root-relative> new plans --template <resolved>
-   --title "<Track> — Roadmap"` when the tool exists; else file-mode from that
-   same resolved path into `<agent-records>/plans/`, naming the file
-   `YYYY-MM-DD-<slug>.md` (the record shape). Either way set
-   `tags: [roadmap]` and replace the body with the roadmap scaffold filled in
-   from the resolved `roadmap.md`. Land as `status: draft`. The caller
+4. **Land it** per SKILL.md *Shared discipline*. Resolve `roadmap.md` via the
+   project-templates rule, then mint `records.sh --root <root> --records-root <records-root-relative> new plans --schema contractor/roadmap@1 --template <resolved>
+   --title "<Track> — Roadmap" --tag roadmap` when the tool exists; else file-mode with that schema
+   and resolved body into `<agent-records>/plans/`, naming the file
+   `YYYY-MM-DD-<slug>.md` (the record shape). Land as `status: draft`. The caller
    writes `published` after a passing host's review they accept.
 
 Output: the roadmap. Terminal step: `plan` the first unblocked phase.

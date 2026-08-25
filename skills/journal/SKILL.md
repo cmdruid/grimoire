@@ -7,7 +7,7 @@ description: "The records-layer format authority — defines what makes a file a
 
 One skill: the **definition** of a project's records layer. It owns the **discriminator**
 (what makes a file a record — below), the **record contract** (below), the **template
-convention** (writers carry templates; mint from a caller-supplied `--template` path), and the
+convention** (writers own schemas and may pass a body-only project template), and the
 staged tool **`records.sh`** (search, query + lifecycle; sole writer of the `history.tsv` closure
 ledger). A skill creates only the directories it needs; the crawl knows no
 store list; `/journal setup` stands or refreshes the **tool layer** —
@@ -20,8 +20,7 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
 
 - **A file is a record iff it is named `YYYY-MM-DD-<slug>.md` AND carries front-matter
   declaring a `doctype`.** That is the whole discriminator, and the path is the ID. Both
-  conjuncts earn their place: front-matter alone would swallow the record *templates*, which
-  necessarily carry a doctype block (it is what `new` copies into the minted record); the
+  conjuncts earn their place: front-matter alone could swallow undated typed scaffolds; the
   dated shape alone would swallow any dated prose file. No counters, no typed IDs, no stored
   index — querying is a live scan, crawling the root at **any depth**.
 - **Nothing is reserved.** A skill creates only the directories it needs for its own
@@ -51,12 +50,14 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
 
 `records.sh --root <root> --records-root <records-root-relative> check` enforces front-matter, the status vocabulary (including ledger
 coherence), and record-link resolution. Tracker line form is a prose convention —
-`check` does not scan it. The template convention is enforced by `new` (missing
-template → error), not by `check`.
+`check` does not scan it. `new` synthesizes shared metadata; project templates supply body prose.
 
-- **Front-matter: five keys**, between `---` delimiters at the top of every record —
-  `doctype` (the record's type, and the authority on it), `status`, `created`, `updated`
-  (both ISO `YYYY-MM-DD`), `tags`. A missing or empty `doctype` means the file is not a
+- **Front-matter: four required keys**, between `---` delimiters at the top of every record —
+  `doctype` (the record's type, and the authority on it), `status`, `schema`, and `tags`.
+  `schema` follows `<writer>/<artifact>@<positive-integer>` with lowercase kebab-case names;
+  Journal validates only this grammar. `created`, `updated`, `created_at`, `updated_at`, and
+  `revision` are retired reserved keys and invalidate a current record. The dated filename is the
+  creation authority; Git is the durable modification history. A missing or empty `doctype` means the file is not a
   record at all; `check` reports it as a **WARN** when the filename wears the record shape,
   so a malformed record is surfaced rather than silently skipped by the crawl.
 - **Status vocabulary**: `draft` | `published` while live; `archived` to close. A closing
@@ -73,17 +74,14 @@ template → error), not by `check`.
       - [x] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md — 2026-08-17
 
   Completing a line is that rewrite + a `records.sh --root <root> --records-root <records-root-relative> touch` of the tracker (no ledger line).
-- **Template convention**: `records.sh --root <root> --records-root <records-root-relative> new <doctype> --template <resolved>`
-  `[--dir <rel>] [--tag t]...` mints from the caller-supplied path (usually
-  `<agent-workspace>/<skill>/templates/<doctype>.md`) into `--dir` (default:
-  the `<doctype>` positional). `--template` is **required** — the tool knows
-  no taxonomy, so it cannot guess a template location from a doctype name,
-  and there is no flat fallback. Repeatable `--tag` fills the template's
-  `<tags>` slot (`tags: [a, b]`; omitted → `tags: []`). The minting skill
-  owns the bundled template and copies it to
-  `<agent-workspace>/<skill>/templates/`, never to the flat
-  `<agent-records>/templates/<doctype>.md`. Templates are undated, so the
-  discriminator leaves them alone wherever they sit. Setup copies nothing.
+- **Schema and template convention**: `records.sh --root <root> --records-root
+  <records-root-relative> new <doctype> --schema <owned-schema> --title <title>`
+  `[--template <resolved-body>] [--dir <rel>] [--tag t]...` synthesizes the four shared keys.
+  `--template` is optional and supplies body-only authoring scaffolding; literal `<title>` and
+  `<date>` slots are filled, while `<schema>` or `<tags>` slots refuse. The minting skill resolves
+  declared active templates only at `<agent-workspace>/<skill>/templates/`; recognized legacy
+  locations require its explicit `migrate` verb. Schema identifiers, validators, and migration
+  chains stay in the skill package and are never project-customizable. Setup copies nothing.
 
 ## Verb dispatch (read the file, then follow it)
 
@@ -103,13 +101,13 @@ follow-up is not journal's job (scope boundary, below).
   the first line-start `agent-records:` or `records-root:` in `AGENTS.md`, then
   `CLAUDE.md`; else `.records/`. (`agent-records:` preferred; `records-root:` still
   accepted so already-declared hosts do not break.) The agent workspace is the first line-start
-  `agent-workspace:` in those same files, else `.dev/`. The staged tool is
+  `agent-workspace:` in those same files, else `.spaces/`. The staged tool is
   `<agent-workspace>/journal/scripts/records.sh`. If that file is **missing or not
   executable**, stop, name `/journal setup`, and do not run this skill's bundled
   copy. `search` also stops when the staged usage list has no `grep` line (a
   later setup refreshes). Every invocation begins `records.sh --root <root>
   --records-root <records-root-relative>`. Invoke **the staged tool** for every date, path, and
-  conformance fact (`new --template <resolved>` / `touch` / `done` / `list` /
+  conformance fact (`new --schema <owned-schema> [--template <resolved-body>]` / `touch` / `done` / `list` /
   `grep` / `history` / `prune-candidates` / `check`); never guess a date, never
   hand-stamp front-matter, never write `history.tsv` by hand. `search` / `done` /
   `curate` use this same scan so a host that only declared `agent-records:` is

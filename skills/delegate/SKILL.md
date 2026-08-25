@@ -87,7 +87,7 @@ Judgment-heavy, ambiguous, or architectural work fails the third test -- do it i
 ## Dispatch-scoped project policy
 
 Before constructing **every** delegate prompt, resolve the project root and `agent-workspace:`
-(front-door `AGENTS.md`, then `CLAUDE.md`, else `.dev`) read-only. Read exactly
+(front-door `AGENTS.md`, then `CLAUDE.md`, else `.spaces`) read-only. Read exactly
 `<agent-workspace>/delegate/hooks/byproducts.md` once:
 
 - missing or zero-byte regular file → no overlay;

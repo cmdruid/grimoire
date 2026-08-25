@@ -328,7 +328,7 @@ redundant:
   **In `manual` mode a low/0 tally is *expected*** — delegation there is fan-out-only, not the model
   lever — so do **not** route it as `[delegate]` feedback; the per-phase model swaps are the model story.
   **Forward-reference guard:** if a debrief-#1 follow-up references the feature being shipped *this*
-  cycle, cite it **by intent/slug, never by its closure** — `ship` step 1 flips the plan record and
+  cycle, cite it **by intent/slug, never by its closure** — `ship` step 1 flips the stream manifest and
   writes the `history.tsv` ledger line *after* debrief, so a link to a not-yet-minted debrief report
   dangles and a "closed" claim is transiently false (a dangling link is what the host doc-linter
   rejects — the debrief commit gates on its own, before ship). Cite the slug in prose; the closure

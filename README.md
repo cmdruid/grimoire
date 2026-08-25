@@ -73,7 +73,7 @@ former role skills had already merged into the face
 
 ### Storage convention: what skills may maintain in a project
 
-A project has two independently resolved roots. **`<agent-workspace>`** (by default `.dev`)
+A project has two independently resolved roots. **`<agent-workspace>`** (by default `.spaces`)
 holds skill-owned working files beneath `<skill>/<kind>/`; owners are open and the kinds are
 `doctrine`, `hooks`, `scripts`, `templates`, `trackers`, and `flows`. **`<agent-records>`**
 (by default `.records`) holds work products:

@@ -14,8 +14,9 @@ waiting on a person.
 1. `analyst-facts.sh status <root>` — open/current record counts and the open list, tracker line counts, active streams,
    uncommitted/unlanded work.
 2. Read the **trackers** themselves. Their line text is the state; counts alone say nothing.
-3. For each in-flight item, find its **last movement** (record `updated:`, last commit touching
-   it). Age is the signal that separates "in progress" from "stalled."
+3. For each in-flight item, find its **last movement** from Git path history. Dirty and untracked
+   records are current but undated; non-Git history is unknown. Age is the signal that separates
+   "in progress" from "stalled."
 
 ## Synthesize
 

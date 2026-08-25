@@ -120,7 +120,9 @@ if [ ! -e "$records/README.md" ]; then
 # Records
 
 Records accumulated during development. A **record** is a Markdown file named
-\`YYYY-MM-DD-<slug>.md\` carrying the five-key front-matter contract.
+\`YYYY-MM-DD-<slug>.md\` carrying the four-key front-matter contract:
+\`doctype\`, \`status\`, \`schema\`, and \`tags\`. The filename date is the
+creation-date authority; Git is the durable modification history.
 \`$workspace_rel/journal/scripts/records.sh\` is the query and lifecycle engine;
 every invocation passes \`--root <root> --records-root $records_rel\`. It is the
 sole writer of \`history.tsv\`, the closure ledger.
@@ -128,7 +130,7 @@ sole writer of \`history.tsv\`, the closure ledger.
 The directory layout under this root belongs to record writers. The engine
 crawls records at any depth and knows no store roster. Project templates live
 at \`<agent-workspace>/<skill>/templates/\` (for example,
-\`.dev/notepad/templates/\`); project doctrine lives at
+\`.spaces/notepad/templates/\`); project doctrine lives at
 \`<agent-workspace>/<skill>/doctrine/\`. Journal setup deploys the engine,
 ledger, and this README only.
 
@@ -141,7 +143,6 @@ echo "records: $records ($label)"
 [ "$wrote_script" -eq 1 ] && echo "wrote: $workspace_rel/journal/scripts/records.sh"
 [ "$wrote_ledger" -eq 1 ] && echo "wrote: $records_rel/history.tsv"
 [ "$wrote_readme" -eq 1 ] && echo "wrote: $records_rel/README.md"
-"$deployed" --root "$root" --records-root "$records_rel" migrate-status
 if ! "$deployed" --root "$root" --records-root "$records_rel" check; then
-  echo "records check failed — tool layer is up; run /journal curate" >&2
+  echo "records check failed — tool layer is up; run the owning skill's migrate verb for legacy records, then /journal curate" >&2
 fi

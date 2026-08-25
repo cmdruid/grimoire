@@ -131,10 +131,10 @@ else
   fail=$((fail + 1))
 fi
 
-write_skill "${tpl_head}Workshop: mint \`records.sh new plans --template <resolved> --title \"<title>\"\`."
+write_skill "${tpl_head}Workshop: mint \`records.sh new plans --schema widget/plan@1 --template <resolved> --title \"<title>\"\`."
 run_lint
 if grep -q "$c17" "$OUT"; then
-  echo "FAIL: the prescribed --template form still matched check 17" >&2
+  echo "FAIL: the prescribed --schema form still matched check 17" >&2
   grep "$c17" "$OUT" >&2
   fail=$((fail + 1))
 else
@@ -144,7 +144,7 @@ fi
 # A conforming invocation broken across a line exactly as the live tree breaks
 # one. Whitespace normalization is what keeps this green.
 write_skill "${tpl_head}Resolve it, then \`records.sh new
-reports --template <resolved> --title \"<investigation title>\"\` when the tool exists."
+reports --schema widget/report@1 --template <resolved> --title \"<investigation title>\"\` when the tool exists."
 run_lint
 if grep -q "$c17" "$OUT"; then
   echo "FAIL: a wrapped CONFORMING invocation matched check 17 (normalization broken)" >&2
@@ -196,7 +196,7 @@ fi
 
 # BL-35: `new --<flag>` (doctype dropped) is never valid — no --title needed.
 c17_flag='new --flag'
-write_skill "${tpl_head}Workshop: mint \`records.sh new --template <resolved>\`."
+write_skill "${tpl_head}Workshop: mint \`records.sh new --schema widget/plan@1 --template <resolved>\`."
 run_lint
 if grep -q "FAIL: widget: SKILL.md: $c17_flag" "$OUT"; then
   pass=$((pass + 1))
@@ -214,6 +214,54 @@ if grep -q "$c17_flag" "$OUT"; then
   fail=$((fail + 1))
 else
   pass=$((pass + 1))
+fi
+
+# --- checks 19–21: package schema and template roles -------------------------
+write_skill "${tpl_head}Use foo.md at runtime. Mint \`records.sh new plans --schema other/plan@1 --title X\`."
+run_lint
+if grep -q 'schema writer-prefix mismatch: other/plan@1' "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: foreign schema prefix did not fail check 19" >&2; cat "$OUT" >&2; fail=$((fail + 1))
+fi
+
+write_skill "${tpl_head}Use foo.md at runtime. Mint \`records.sh new plans --schema widget/plan@1 --title X\`."
+run_lint
+if grep -q 'schema writer-prefix mismatch' "$OUT"; then
+  echo "FAIL: owned schema prefix failed check 19" >&2; fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+
+printf '%s\n' '---' 'schema: widget/plan@1' '---' '# Body' > "$sk/templates/foo.md"
+run_lint
+if grep -q 'declared project template templates/foo.md selects a schema' "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: project template front matter did not fail check 20" >&2; cat "$OUT" >&2; fail=$((fail + 1))
+fi
+
+printf '# Body\n' > "$sk/templates/foo.md"
+write_skill "$tpl_head"
+run_lint
+if grep -q 'templates/foo.md has no live read site outside its declaration' "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: unused declared template did not fail check 20" >&2; cat "$OUT" >&2; fail=$((fail + 1))
+fi
+
+mkdir -p "$sk/scripts"
+printf '%s\n' '#!/bin/sh' 'cp "$SKILL/templates/foo.md" "$dest/foo.md"' > "$sk/scripts/copy.sh"
+write_skill '## Project templates
+
+none
+
+Use the package-only foo.md while working.'
+run_lint
+if grep -q 'package-only template templates/foo.md is named on a copy command' "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: package-only copy did not fail check 21" >&2; cat "$OUT" >&2; fail=$((fail + 1))
 fi
 
 report "lint-records-writer-test"

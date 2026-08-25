@@ -6,7 +6,7 @@ description: "Find or create a project procedure under <agent-workspace>/<owner>
 # shopbook — find or create a host procedure
 
 **Experimental.** Finder and host-stub creator over `<agent-workspace>/*/flows/`
-(default `.dev/*/flows/`). Script-only search; the **calling** agent reads the
+(default `.spaces/*/flows/`). Script-only search; the **calling** agent reads the
 one file and follows it, or authors the body of a new stub. No durable home,
 no `init`, no front-door registration, no records, no hooks. In-place
 steward: it maintains host procedure files that already live in the project
@@ -46,7 +46,7 @@ routine / procedure / playbook) without those verbs does not select the
 - **Resolve the project root** (a directory the conversation references, else
   cwd, else ask). Resolve `<agent-workspace>` from the door (first
   line-start `agent-workspace:` in `AGENTS.md` then `CLAUDE.md`, else
-  `.dev`). Pass `--root` and `--workspace` into every script; the scripts
+  `.spaces`). Pass `--root` and `--workspace` into every script; the scripts
   do not scan the door.
 - **Scripts compute facts; the verb prose decides.** Never push a pick
   among several matches into a script. Never invent a procedure when

@@ -10,7 +10,7 @@ eq "empty sentinel" "1" "$(grep -c '^- None\.$' "$DOC")"
 eq "provider points to canonical contract" "1" "$(grep -c 'canonical three-part return contract' "$SKILL/references/codex.md")"
 
 # Dispatch snapshot is retained even if the project file changes in flight.
-ROOT="$(mktemp -d)"; trap 'rm -rf "$ROOT"' EXIT; mkdir -p "$ROOT/.dev/delegate/hooks"; POLICY="$ROOT/.dev/delegate/hooks/byproducts.md"
+ROOT="$(mktemp -d)"; trap 'rm -rf "$ROOT"' EXIT; mkdir -p "$ROOT/.spaces/delegate/hooks"; POLICY="$ROOT/.spaces/delegate/hooks/byproducts.md"
 printf 'route alpha exactly\n' > "$POLICY"; snapshot="$(cat "$POLICY")"; printf 'route beta instead\n' > "$POLICY"
 prompt="$(printf '%s\n' "$expected" 'Project byproducts policy (applies to this dispatch):' '---' "$snapshot" '---')"
 eq "snapshot retained" "1" "$(printf '%s\n' "$prompt" | grep -c 'route alpha exactly')"

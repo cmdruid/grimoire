@@ -1,7 +1,7 @@
 # Investigation body scaffold
 
 _Fills the body of a `reports` record minted by
-`records.sh --root <root> --records-root <records-root-relative> new reports --template <resolved> --title "..."` — the tool stamps the front-matter
+`records.sh --root <root> --records-root <records-root-relative> new reports --schema debugger/investigation@1 --template <resolved> --title "..."` — the tool stamps the front-matter
 and filename; this template supplies only the sections below._
 
 ## Reproduction

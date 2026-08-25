@@ -83,6 +83,7 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 | `recycle [<template>]` | `verbs/recycle.md` | `flow.md`, `verbs/create.md` | fresh unit in the same worktree | worktree |
 | `close` | `verbs/close.md` | `verbs/ship.md` (if WIP ships) | tear the stream down | root |
 | `status` | `verbs/status.md` | — | list active workstreams (read-only) | anywhere |
+| `migrate <source-path>` | `verbs/migrate.md` | — | preview and upgrade Workstream records/templates | anywhere |
 
 ## Host layout
 
@@ -95,14 +96,17 @@ of one.
   (absolute `<root>/<agent-workspace>/workstream/hooks/`) when present;
   empty or absent → no extra glue command. Unrelated files are ignored.
 - Do not create a doctrine home or invoke any pack lifecycle as a side effect.
-- **Records (every host).** Workstream-owned records — seeded / drafted `plans/` files,
-  ship-time plan closes, optional debrief `reports/` — land under the agent-records home
+- **Records (every host).** Workstream-owned execution manifests and debriefs land only in
+  `<agent-records>/streams/`; Contractor-style queue-source plans remain in `plans/` and are never
+  claimed merely because Workstream consumes them. Resolve the records home
   (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
-  `.records/`). Resolve lock-in templates via the project-templates rule; pass
-  `records.sh --root <root> --records-root <records-root-relative> new <doctype> --template <resolved>` when the tool exists; else file-mode fill
-  from the resolved `plans.md` / `reports.md`, naming the file `YYYY-MM-DD-<slug>.md` — an
-  undated filename is not a record, so the tool will not see it. Never write the flat
-  `<agent-records>/templates/<doctype>.md`. File-mode close stamps `status:` only.
+  `.records/`). Resolve active `manifest.md` / `debrief.md` only at
+  `<agent-workspace>/workstream/templates/`; recognized legacy locations require `/workstream
+  migrate <path>`. Mint `doctype: streams` with `schema: workstream/plan@1`, tag `plan`, or
+  `schema: workstream/debrief@1`, tag `debrief`, using `records.sh new streams --dir streams
+  --schema <schema> --template <resolved>` when available; otherwise synthesize the same four-key
+  profile in file mode. Names are `YYYY-MM-DD-<slug>.md`, links are `→ <store>/<file>.md`, and
+  generic dates/revisions are never stamped. Never write a flat records template.
 
 ## Discipline (applies to EVERY verb — non-negotiable)
 
@@ -117,7 +121,7 @@ of one.
   sweeps and strands state; bank WIP as a `wip:` commit instead (`verbs/park.md`).
 - **Present worktree-local references as absolute worktree paths.** When you show the user (in chat,
   a summary, a hand-off) a doc/file you created or changed in the worktree, give its **absolute
-  worktree path** (`<worktree>/.records/plans/foo.md`), not a bare repo-relative one — a bare path
+  worktree path** (`<worktree>/.records/streams/foo.md`), not a bare repo-relative one — a bare path
   resolves against the **root checkout**, where the worktree's unmerged work doesn't exist yet, so the
   link is broken until the stream ships. The same applies to a `file:line` you cite. Note such a doc
   is "on the stream branch until ship" so the reader knows why the root copy isn't there.
@@ -213,15 +217,18 @@ across a template rewrite (`save` does not recompile). It also bundles
 
 ## Project templates
 
-- `plans.md`
-- `reports.md`
+- `manifest.md`
+- `debrief.md`
 
-Hand-off, compaction-anchor, coordinator, and `kind: workstream-template` intake files are package-only.
+Hand-off (`workstream-handoff.md`), compaction anchor (`compaction-anchor.md`), coordinator
+(`coordinator.md`), and `kind: workstream-template` intake files (`debug.md`, `design.md`) are
+package-only and read by their named create/recycle paths; they are never copied as project
+templates.
 
 ## Edges
 
 <!-- edges:workstream -->
-- produces: — (none; the stream is isolation and a gitignored hand-off, not a typed record)
+- produces: plan, report — Workstream-owned schemas in `<agent-records>/streams/`
 - handoff: — (none; the loop is the skill)
 - consumes: plan, roadmap — typed queue sources; free-text briefs and intake templates are direct invocation inputs
 <!-- /edges:workstream -->

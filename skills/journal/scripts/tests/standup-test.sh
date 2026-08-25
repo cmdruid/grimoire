@@ -12,7 +12,7 @@ OUT="$TMP/out"
 ERR="$TMP/err"
 
 run_default() {
-  "$STANDUP" "$1" --workspace .dev --records-root .records
+  "$STANDUP" "$1" --workspace .spaces --records-root .records
 }
 
 # Split roots: engine under Workspace, data substrate under Records.
@@ -21,21 +21,21 @@ mkdir -p "$proj"
 rc=0; run_default "$proj" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "split standup rc" "0" "$rc"
 expect "split self-check" "records check: OK (0 records)" "$OUT"
-[ -x "$proj/.dev/journal/scripts/records.sh" ] && pass=$((pass + 1)) || {
+[ -x "$proj/.spaces/journal/scripts/records.sh" ] && pass=$((pass + 1)) || {
   echo "FAIL: staged engine missing" >&2; fail=$((fail + 1)); }
 [ -f "$proj/.records/history.tsv" ] && pass=$((pass + 1)) || {
   echo "FAIL: ledger missing" >&2; fail=$((fail + 1)); }
 [ ! -e "$proj/.records/scripts" ] && pass=$((pass + 1)) || {
   echo "FAIL: records-home script dump created" >&2; fail=$((fail + 1)); }
-expect "README names staged engine" ".dev/journal/scripts/records.sh" "$proj/.records/README.md"
+expect "README names staged engine" ".spaces/journal/scripts/records.sh" "$proj/.records/README.md"
 
 # Re-run preserves project substrate and refreshes package bytes.
 printf '%s\n' 'keep-ledger' > "$proj/.records/history.tsv"
 printf '%s\n' 'project readme' > "$proj/.records/README.md"
-printf '%s\n' '# drift' >> "$proj/.dev/journal/scripts/records.sh"
+printf '%s\n' '# drift' >> "$proj/.spaces/journal/scripts/records.sh"
 rc=0; run_default "$proj" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "refresh rc" "0" "$rc"
-expect_absent "refresh removes drift" "# drift" "$proj/.dev/journal/scripts/records.sh"
+expect_absent "refresh removes drift" "# drift" "$proj/.spaces/journal/scripts/records.sh"
 expect "refresh preserves ledger" "keep-ledger" "$proj/.records/history.tsv"
 expect "refresh preserves README" "project readme" "$proj/.records/README.md"
 
@@ -60,15 +60,17 @@ expect_eq "coincident rc" "0" "$rc"
 [ -f "$same/.records/history.tsv" ] && pass=$((pass + 1)) || {
   echo "FAIL: coincident ledger missing" >&2; fail=$((fail + 1)); }
 
-# Status migration runs through the explicitly rooted deployed engine.
+# Setup is a hard cut: it reports legacy records but never migrates them while
+# reading or refreshing the tool layer.
 mig="$TMP/migrate"
 mkdir -p "$mig/.records/notes"
 today=$(date +%Y-%m-%d)
 printf '%s\n' '---' 'doctype: notes' 'status: open' "created: $today" "updated: $today" \
   'tags: []' '---' '' '# Old status' > "$mig/.records/notes/$today-old.md"
 run_default "$mig" >"$OUT" 2>"$ERR"
-expect "migration reports one" "migrated=1" "$OUT"
-expect "migration rewrites status" "status: draft" "$mig/.records/notes/$today-old.md"
+expect_absent "setup performs no implicit migration" "migrated=" "$OUT"
+expect "setup reports legacy check failure" "records check failed" "$ERR"
+expect "legacy status is untouched" "status: open" "$mig/.records/notes/$today-old.md"
 
 # Unsafe parents fail before any writes.
 unsafe="$TMP/unsafe"
@@ -87,7 +89,7 @@ for bad in /abs foo/../bar .; do
   "$STANDUP" "$proj" --workspace "$bad" --records-root .records >"$OUT" 2>"$ERR" || rc=$?
   expect_eq "bad workspace $bad" "1" "$rc"
   rc=0
-  "$STANDUP" "$proj" --workspace .dev --records-root "$bad" >"$OUT" 2>"$ERR" || rc=$?
+  "$STANDUP" "$proj" --workspace .spaces --records-root "$bad" >"$OUT" 2>"$ERR" || rc=$?
   expect_eq "bad records root $bad" "1" "$rc"
 done
 

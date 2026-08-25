@@ -9,13 +9,13 @@
 #   records.sh --root <abs> --records-root <rel> list [--type t] ...
 #   records.sh --root <root> --records-root <records-root-relative> grep [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s] <pattern>
 #   records.sh --root <root> --records-root <records-root-relative> show <path>
-#   records.sh --root <root> --records-root <records-root-relative> new <doctype> --title "..." --template <path> [--dir rel] [--tag t]...
+#   records.sh --root <root> --records-root <records-root-relative> new <doctype> --schema <writer/artifact@N> --title "..." [--template <body-path>] [--dir rel] [--tag t]...
 #   records.sh --root <root> --records-root <records-root-relative> touch <path> [--status draft|published]
 #   records.sh --root <root> --records-root <records-root-relative> done <path> [--as done|dropped|superseded|consumed] [--note "..."]
 #   records.sh --root <root> --records-root <records-root-relative> history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
 #   records.sh --root <root> --records-root <records-root-relative> prune-candidates [--until d]
 #   records.sh --root <root> --records-root <records-root-relative> check
-#   records.sh --root <root> --records-root <records-root-relative> migrate-status
+#   records.sh --root <root> --records-root <records-root-relative> relocate <source> --to <destination-relative> [--staged <path>]
 #
 # A file is a RECORD iff it is named YYYY-MM-DD-<slug>.md AND carries a
 # front-matter block that declares a doctype. That is the whole discriminator:
@@ -40,13 +40,13 @@ usage: records.sh --root <abs> --records-root <rel> <command> [args]
   list    [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s]
   grep    [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s] <pattern>
   show    <path>
-  new     <doctype> --title "..." --template <path> [--dir rel] [--tag t]...
+  new     <doctype> --schema <writer/artifact@N> --title "..." [--template <body-path>] [--dir rel] [--tag t]...
   touch   <path> [--status draft|published]
   done    <path> [--as done|dropped|superseded|consumed] [--note "..."]
   history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
   prune-candidates [--until d]
   check
-  migrate-status
+  relocate <source> --to <destination-relative> [--staged <path>]
 EOF
   exit 1
 }
@@ -60,6 +60,22 @@ valid_rel_dir() {
   case "$1" in /*) return 1 ;; esac
   case "/$1/" in */../*) return 1 ;; esac
   return 0
+}
+
+valid_rel_file() {
+  valid_rel_dir "$1" || return 1
+  case "$1" in */|.) return 1 ;; esac
+  return 0
+}
+
+safe_components() { # <base> <relative>; reject every existing symlink component
+  base="$1"; path_rel="$2"; current="$base"; old_ifs=$IFS
+  IFS='/'; set -- $path_rel; IFS=$old_ifs
+  for part in "$@"; do
+    [ -n "$part" ] || continue
+    current="$current/$part"
+    [ ! -L "$current" ] || return 1
+  done
 }
 
 ROOT=""
@@ -84,6 +100,7 @@ LEDGER="$RR/history.tsv"
 is_disposition() { case "$1" in done|dropped|superseded|consumed) return 0 ;; *) return 1 ;; esac; }
 is_archived()    { [ "$1" = archived ]; }
 is_status()      { case "$1" in draft|published|archived) return 0 ;; *) return 1 ;; esac; }
+is_schema()      { printf '%s\n' "$1" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*@[1-9][0-9]*$'; }
 
 # resolve <path-arg>: sets abs + rel (rel is records-root-relative, the ledger form).
 resolve() {
@@ -133,22 +150,23 @@ records() {
   done
 }
 
-# meta_row <rel>: one TSV row — path·doctype·status·updated·tags·title.
+# meta_row <rel>: one TSV row — path·doctype·status·filename-date·tags·title.
 # Missing keys print empty fields (list is a lens; `check` is the enforcer).
 meta_row() {
-  awk -v rel="$1" '
-    BEGIN { infm = 0; fmdone = 0; doctype = ""; status = ""; updated = ""; tags = ""; title = "" }
+  name="${1##*/}"
+  day="$(printf '%.10s' "$name")"
+  awk -v rel="$1" -v day="$day" '
+    BEGIN { infm = 0; fmdone = 0; doctype = ""; status = ""; tags = ""; title = "" }
     NR == 1 { if ($0 == "---") { infm = 1; next } else { exit } }
     infm && $0 == "---" { infm = 0; fmdone = 1; next }
     infm {
       if      ($0 ~ /^doctype:/) { v = $0; sub(/^doctype:[ \t]*/, "", v); doctype = v }
       else if ($0 ~ /^status:/)  { v = $0; sub(/^status:[ \t]*/,  "", v); status  = v }
-      else if ($0 ~ /^updated:/) { v = $0; sub(/^updated:[ \t]*/, "", v); updated = v }
       else if ($0 ~ /^tags:/)    { v = $0; sub(/^tags:[ \t]*/,    "", v); gsub(/[][ \t]/, "", v); tags = v }
       next
     }
     fmdone && title == "" && /^# / { title = substr($0, 3) }
-    END { printf "%s\t%s\t%s\t%s\t%s\t%s\n", rel, doctype, status, updated, tags, title }
+    END { printf "%s\t%s\t%s\t%s\t%s\t%s\n", rel, doctype, status, day, tags, title }
   ' "$RR/$1"
 }
 
@@ -255,10 +273,10 @@ cmd_show() {
   cat "$abs"
 }
 
-# fill <template> <dest> <title> <date>: literal slot substitution (no regex —
+# fill <template> <dest> <title> <date>: literal body-slot substitution (no regex —
 # a title may carry any punctuation; same technique as the seed's subst).
 fill() {
-  TITLE="$3" DATE="$4" TAGS="${5:-}" awk '
+  TITLE="$3" DATE="$4" awk '
     {
       line = $0
       out = ""
@@ -273,12 +291,7 @@ fill() {
         line = substr(line, i + 6)
       }
       line = out line
-      out = ""
-      while ((i = index(line, "<tags>")) > 0) {
-        out = out substr(line, 1, i - 1) ENVIRON["TAGS"]
-        line = substr(line, i + 6)
-      }
-      print out line
+      print line
     }
   ' "$1" > "$2"
 }
@@ -287,6 +300,7 @@ cmd_new() {
   [ $# -ge 1 ] || usage
   doctype="$1"; shift
   title=""
+  schema=""
   tpl=""
   tags=""
   dir=""
@@ -294,6 +308,7 @@ cmd_new() {
   while [ $# -gt 0 ]; do
     case "$1" in
       --title)    [ $# -ge 2 ] || usage; title="$2"; shift 2 ;;
+      --schema)   [ $# -ge 2 ] || usage; schema="$2"; shift 2 ;;
       --template) [ $# -ge 2 ] || usage; tpl="$2"; shift 2 ;;
       --dir)
         [ $# -ge 2 ] || usage
@@ -309,11 +324,14 @@ cmd_new() {
     esac
   done
   [ -n "$title" ] || usage
-  # --template is required: a writer resolves its own template path and passes
-  # it. There is no flat fallback to look up -- the tool knows no taxonomy, so
-  # it cannot guess a template location from a doctype name.
-  [ -n "$tpl" ] || err "--template is required (records.sh --root <root> --records-root <records-root-relative> new <doctype> --title ... --template <path>)"
-  [ -f "$tpl" ] || err "no template for doctype '$doctype': $tpl"
+  [ -n "$schema" ] || err "--schema is required"
+  is_schema "$schema" || err "invalid schema (want writer/artifact@positive-integer): $schema"
+  if [ -n "$tpl" ]; then
+    [ -f "$tpl" ] || err "no body template for doctype '$doctype': $tpl"
+    grep -qF '<schema>' "$tpl" && err "body template contains forbidden <schema> slot: $tpl"
+    grep -qF '<tags>' "$tpl" && err "body template contains forbidden <tags> slot: $tpl"
+    [ "$(head -1 "$tpl")" != "---" ] || err "body template must not contain record front matter: $tpl"
+  fi
   # Directory is --dir, defaulting to the doctype positional. mkdir is the
   # caller creating that directory through the tool.
   if [ "$dir_set" -eq 0 ]; then
@@ -329,19 +347,34 @@ cmd_new() {
   path="$base.md"
   n=2
   while [ -e "$path" ]; do path="$base-$n.md"; n=$((n + 1)); done
-  fill "$tpl" "$path" "$title" "$today" "$tags"
+  tmp="$path.tmp"
+  {
+    printf '%s\n' '---'
+    printf 'doctype: %s\n' "$doctype"
+    printf 'status: draft\n'
+    printf 'schema: %s\n' "$schema"
+    printf 'tags: [%s]\n' "$tags"
+    printf '%s\n\n' '---'
+  } > "$tmp"
+  if [ -n "$tpl" ]; then
+    body="$path.body"
+    fill "$tpl" "$body" "$title" "$today"
+    cat "$body" >> "$tmp"
+    rm -f "$body"
+  else
+    printf '# %s\n' "$title" >> "$tmp"
+  fi
+  mv "$tmp" "$path"
   printf '%s\n' "$path"
 }
 
-# stamp <abs> <today> [<status>]: rewrite updated: (and optionally status:) in the
-# front-matter block only.
+# stamp <abs> <status>: rewrite status in the front-matter block only.
 stamp() {
   tmp="$1.tmp"
-  awk -v today="$2" -v st="${3:-}" '
+  awk -v st="${2:-}" '
     BEGIN { infm = 0; fmdone = 0 }
     NR == 1 && $0 == "---" { infm = 1; print; next }
     infm && !fmdone && $0 == "---" { fmdone = 1; infm = 0; print; next }
-    infm && /^updated:/ { print "updated: " today; next }
     infm && st != "" && /^status:/ { print "status: " st; next }
     { print }
   ' "$1" > "$tmp" && mv "$tmp" "$1"
@@ -357,10 +390,12 @@ fm_field() {
   ' "$1"
 }
 
-require_record() { # a stampable record: front-matter with updated: and status: lines
+require_record() { # a mutable current record
   head -1 "$abs" | grep -qx -- '---' || err "no front-matter (not a record?): $rel"
-  [ -n "$(fm_field "$abs" updated)" ] || err "front-matter lacks 'updated:': $rel"
   [ -n "$(fm_field "$abs" status)" ]  || err "front-matter lacks 'status:': $rel"
+  schema="$(fm_field "$abs" schema)"
+  [ -n "$schema" ] || err "front-matter lacks 'schema:' (run the owning skill's migrate verb): $rel"
+  is_schema "$schema" || err "front-matter has invalid schema: $rel"
 }
 
 cmd_touch() {
@@ -378,7 +413,7 @@ cmd_touch() {
     is_archived "$new_status" && err "closing status goes through 'done', not 'touch': $new_status"
   fi
   require_record
-  stamp "$abs" "$(date +%Y-%m-%d)" "$new_status"
+  stamp "$abs" "$new_status"
   printf '%s\n' "$rel"
 }
 
@@ -404,7 +439,7 @@ cmd_done() {
   : >> "$LEDGER" || err "cannot write ledger: $LEDGER"
   bak="$abs.done-bak"
   cp "$abs" "$bak"
-  stamp "$abs" "$today" "archived"
+  stamp "$abs" "archived"
   line="$(printf '%s\t%s\t%s\t%s\t%s\t%s' "$today" "$disposition" "$rel" "$doctype" "$title" "$note" | tr '\n' ' ')"
   if ! printf '%s\n' "$line" >> "$LEDGER"; then
     mv "$bak" "$abs"
@@ -456,11 +491,159 @@ cmd_prune_candidates() {
   done
   [ -f "$LEDGER" ] || return 0
   awk -F'\t' -v z="$f_until" 'z != "" && $1 > z { next } { print }' "$LEDGER" \
-    | while IFS="$TAB" read -r d disp rel dt title note; do
-        [ -f "$RR/$rel" ] || continue
-        is_archived "$(fm_field "$RR/$rel" status)" || continue
-        printf '%s\t%s\t%s\t%s\t%s\n' "$d" "$disp" "$rel" "$dt" "$title"
+    | while IFS="$TAB" read -r d disp record_path dt title note; do
+        [ -f "$RR/$record_path" ] || continue
+        is_archived "$(fm_field "$RR/$record_path" status)" || continue
+        printf '%s\t%s\t%s\t%s\t%s\n' "$d" "$disp" "$record_path" "$dt" "$title"
       done
+}
+
+checksum() { cksum "$1" | awk '{ print $1 ":" $2 }'; }
+
+# relocate is Journal's narrow record-identity primitive. The caller may provide
+# already-transformed bytes with --staged; Journal owns only the move, ledger,
+# and exact inbound record links. Its adjacent manifest makes every phase
+# idempotent and forward-resumable.
+cmd_relocate() {
+  [ $# -ge 1 ] || usage
+  source_arg="$1"; shift
+  to=""; staged=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --to)     [ $# -ge 2 ] || usage; to="$2"; shift 2 ;;
+      --staged) [ $# -ge 2 ] || usage; staged="$2"; shift 2 ;;
+      *) usage ;;
+    esac
+  done
+  [ -n "$to" ] || err "relocate requires --to <records-root-relative-path>"
+  valid_rel_file "$to" || err "relocation destination must be records-root-relative with no .. segment: $to"
+  case "${to##*/}" in
+    [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md) ;;
+    *) err "relocation destination is not a dated record path: $to" ;;
+  esac
+
+  # Resolve the manifest location without requiring the source to remain. This
+  # is what lets a rerun finish after the source-removal phase.
+  case "$source_arg" in
+    /*)
+      case "$source_arg" in "$RR"/*) hinted_rel="${source_arg#"$RR"/}" ;; *) err "relocation source is outside records root: $source_arg" ;; esac
+      ;;
+    *) hinted_rel="$source_arg" ;;
+  esac
+  valid_rel_file "$hinted_rel" || err "unsafe relocation source path: $source_arg"
+  safe_components "$RR" "$hinted_rel" || err "symlinked relocation source component: $source_arg"
+  safe_components "$RR" "$to" || err "symlinked relocation destination component: $to"
+  source_hint="$RR/$hinted_rel"
+  source_dir="$(dirname "$source_hint")"
+  manifest="$source_dir/.journal-relocate-manifest"
+  dest="$RR/$to"
+
+  if [ -f "$manifest" ]; then
+    old_rel="$(sed -n 's/^source=//p' "$manifest")"
+    recorded_to="$(sed -n 's/^destination=//p' "$manifest")"
+    before_sum="$(sed -n 's/^before=//p' "$manifest")"
+    staged_sum="$(sed -n 's/^staged=//p' "$manifest")"
+    phase="$(sed -n 's/^phase=//p' "$manifest")"
+    [ "$recorded_to" = "$to" ] || err "relocation manifest targets $recorded_to, not $to"
+    source="$RR/$old_rel"
+  else
+    resolve "$source_arg"
+    source="$abs"; old_rel="$rel"
+    [ "$old_rel" != "$to" ] || err "relocation source and destination are identical: $to"
+    [ ! -e "$dest" ] || err "relocation destination already exists: $to"
+    if [ -n "$staged" ]; then
+      [ -f "$staged" ] || err "no staged record: $staged"
+      staged_input="$staged"
+    else
+      staged_input="$source"
+    fi
+
+    # Preflight external references. Journal rewrites only records it owns.
+    refs="$(mktemp "${TMPDIR:-/tmp}/records-relocate-refs.XXXXXX")"
+    find "$ROOT" -type f | sort | while IFS= read -r f; do
+      case "$f" in
+        "$RR"/*|"$ROOT/.git"/*|*.tmp|*migrate-manifest*) continue ;;
+      esac
+      grep -Iq . "$f" 2>/dev/null || continue
+      grep -nHF -- "→ $old_rel" "$f" 2>/dev/null || true
+    done > "$refs"
+    if [ -s "$refs" ]; then
+      cat "$refs" >&2
+      rm -f "$refs"
+      err "external references block relocation of $old_rel"
+    fi
+    rm -f "$refs"
+
+    mkdir -p "$(dirname "$dest")"
+    staged_file="$dest.relocate-staged"
+    # Retarget a self-reference before calculating the staged checksum so the
+    # destination remains byte-stable through later link phases.
+    awk -v old="→ $old_rel" -v new="→ $to" '
+      { line=$0; while ((i=index(line, old)) > 0) { printf "%s%s", substr(line,1,i-1),new; line=substr(line,i+length(old)) } print line }
+    ' "$staged_input" > "$staged_file"
+    # Validate the staged current profile under its eventual dated name.
+    status="$(fm_field "$staged_file" status)"
+    schema="$(fm_field "$staged_file" schema)"
+    [ -n "$(fm_field "$staged_file" doctype)" ] || err "staged destination lacks doctype: $to"
+    is_status "$status" || err "staged destination has invalid status: $to"
+    is_schema "$schema" || err "staged destination has invalid schema: $to"
+    for retired in created updated created_at updated_at revision; do
+      [ -z "$(fm_field "$staged_file" "$retired")" ] || err "staged destination retains reserved key '$retired': $to"
+    done
+    grep -q '^tags:' "$staged_file" || err "staged destination lacks tags: $to"
+    before_sum="$(checksum "$source")"
+    staged_sum="$(checksum "$staged_file")"
+    phase=0
+    {
+      printf 'source=%s\n' "$old_rel"
+      printf 'destination=%s\n' "$to"
+      printf 'before=%s\n' "$before_sum"
+      printf 'staged=%s\n' "$staged_sum"
+      printf 'phase=0\n'
+    } > "$manifest"
+  fi
+
+  staged_file="$dest.relocate-staged"
+  if [ "$phase" -lt 1 ]; then
+    [ -f "$source" ] && [ "$(checksum "$source")" = "$before_sum" ] || err "relocation source no longer matches recorded before checksum: $old_rel"
+    [ -f "$staged_file" ] && [ "$(checksum "$staged_file")" = "$staged_sum" ] || err "relocation staged bytes no longer match recorded checksum: $to"
+    mv "$staged_file" "$dest"
+    sed 's/^phase=.*/phase=1/' "$manifest" > "$manifest.tmp" && mv "$manifest.tmp" "$manifest"
+    phase=1
+    [ "${RECORDS_TEST_FAIL_AFTER_PHASE:-}" != 1 ] || err "injected relocation failure after phase 1"
+  fi
+  if [ "$phase" -lt 2 ]; then
+    [ -f "$dest" ] && [ "$(checksum "$dest")" = "$staged_sum" ] || err "relocation destination no longer matches staged checksum: $to"
+    if [ -f "$LEDGER" ]; then
+      awk -F'\t' -v OFS='\t' -v old="$old_rel" -v new="$to" '{ if ($3 == old) $3 = new; print }' "$LEDGER" > "$LEDGER.tmp" && mv "$LEDGER.tmp" "$LEDGER"
+    fi
+    sed 's/^phase=.*/phase=2/' "$manifest" > "$manifest.tmp" && mv "$manifest.tmp" "$manifest"
+    phase=2
+    [ "${RECORDS_TEST_FAIL_AFTER_PHASE:-}" != 2 ] || err "injected relocation failure after phase 2"
+  fi
+  if [ "$phase" -lt 3 ]; then
+    records | while IFS= read -r r; do
+      [ "$r" = "$old_rel" ] && continue
+      [ "$r" = "$to" ] && continue
+      f="$RR/$r"
+      grep -qF -- "→ $old_rel" "$f" || continue
+      awk -v old="→ $old_rel" -v new="→ $to" '
+        { line=$0; while ((i=index(line, old)) > 0) { printf "%s%s", substr(line,1,i-1),new; line=substr(line,i+length(old)) } print line }
+      ' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+    done
+    sed 's/^phase=.*/phase=3/' "$manifest" > "$manifest.tmp" && mv "$manifest.tmp" "$manifest"
+    phase=3
+    [ "${RECORDS_TEST_FAIL_AFTER_PHASE:-}" != 3 ] || err "injected relocation failure after phase 3"
+  fi
+  if [ "$phase" -lt 4 ]; then
+    if [ -f "$source" ]; then
+      [ "$(checksum "$source")" = "$before_sum" ] || err "relocation source changed before removal: $old_rel"
+      rm -f "$source"
+    fi
+    sed 's/^phase=.*/phase=4/' "$manifest" > "$manifest.tmp" && mv "$manifest.tmp" "$manifest"
+  fi
+  rm -f "$manifest" "$staged_file"
+  printf 'relocated=%s\t%s\n' "$old_rel" "$to"
 }
 
 cmd_check() {
@@ -471,8 +654,8 @@ cmd_check() {
   count=0
   while IFS= read -r rel; do
     count=$((count + 1))
-    # per-record contract: front-matter present, five keys, enum status, ISO
-    # dates. The doctype is NOT checked against the parent directory -- the
+    # Per-record contract: front-matter, the four shared keys, status enum,
+    # schema grammar, and no retired generic history keys. The doctype is NOT checked against the parent directory -- the
     # front-matter key is the authority and the directory is the caller's
     # business, so there is no second copy of the fact to disagree with.
     findings="$(awk '
@@ -480,11 +663,13 @@ cmd_check() {
       NR == 1 { if ($0 == "---") { infm = 1; next } else { print "no front-matter block"; exit } }
       infm && $0 == "---" { infm = 0; fmdone = 1; next }
       infm {
-        if      ($0 ~ /^doctype:/) { v = $0; sub(/^doctype:[ \t]*/, "", v); fm["doctype"] = v }
-        else if ($0 ~ /^status:/)  { v = $0; sub(/^status:[ \t]*/,  "", v); fm["status"]  = v }
-        else if ($0 ~ /^created:/) { v = $0; sub(/^created:[ \t]*/, "", v); fm["created"] = v }
-        else if ($0 ~ /^updated:/) { v = $0; sub(/^updated:[ \t]*/, "", v); fm["updated"] = v }
-        else if ($0 ~ /^tags:/)    { fm["tags"] = "present" }
+        if      ($0 ~ /^doctype:/) { v = $0; sub(/^doctype:[ \t]*/, "", v); fm["doctype"] = v; seen["doctype"]++ }
+        else if ($0 ~ /^status:/)  { v = $0; sub(/^status:[ \t]*/,  "", v); fm["status"]  = v; seen["status"]++ }
+        else if ($0 ~ /^schema:/)  { v = $0; sub(/^schema:[ \t]*/,  "", v); fm["schema"]  = v; seen["schema"]++ }
+        else if ($0 ~ /^tags:/)    { fm["tags"] = "present"; seen["tags"]++ }
+        else if ($0 ~ /^(created|updated|created_at|updated_at|revision):/) {
+          key = $0; sub(/:.*/, "", key); retired[key] = 1
+        }
         else if ($0 ~ /^stage:/) {
           v = $0; sub(/^stage:[ \t]*/, "", v); sub(/[ \t]+$/, "", v)
           if (v == "") print "stage is empty"
@@ -493,14 +678,16 @@ cmd_check() {
       }
       END {
         if (!fmdone) { print "unterminated front-matter block"; exit }
-        split("doctype status created updated tags", keys, " ")
-        for (i in keys) if (!(keys[i] in fm)) print "missing key: " keys[i]
+        split("doctype status schema tags", keys, " ")
+        for (i in keys) {
+          if (!(keys[i] in fm)) print "missing key: " keys[i]
+          if (seen[keys[i]] > 1) print "duplicate key: " keys[i]
+        }
+        for (key in retired) print "retired reserved key: " key
         if (("status" in fm) && fm["status"] !~ /^(draft|published|archived)$/)
           print "status not in the contract: " fm["status"]
-        if (("created" in fm) && fm["created"] !~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/)
-          print "created is not YYYY-MM-DD: " fm["created"]
-        if (("updated" in fm) && fm["updated"] !~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/)
-          print "updated is not YYYY-MM-DD: " fm["updated"]
+        if (("schema" in fm) && fm["schema"] !~ /^[a-z0-9]+(-[a-z0-9]+)*\/[a-z0-9]+(-[a-z0-9]+)*@[1-9][0-9]*$/)
+          print "schema not in writer/artifact@positive-integer grammar: " fm["schema"]
       }
     ' "$RR/$rel")"
     if [ -n "$findings" ]; then
@@ -581,40 +768,6 @@ LINKS
   echo "records check: OK ($count records)"
 }
 
-# Rewrite status: only. Do not bump updated:. Do not touch history.tsv.
-migrate_status_line() {  # abs
-  tmp="$1.tmp"
-  awk '
-    BEGIN { infm = 0; fmdone = 0 }
-    NR == 1 && $0 == "---" { infm = 1; print; next }
-    infm && !fmdone && $0 == "---" { fmdone = 1; infm = 0; print; next }
-    infm && /^status:/ {
-      v = $0; sub(/^status:[ \t]*/, "", v)
-      if      (v == "open")                              v = "draft"
-      else if (v == "current")                           v = "published"
-      else if (v ~ /^(done|dropped|superseded|consumed)$/) v = "archived"
-      print "status: " v; next
-    }
-    { print }
-  ' "$1" > "$tmp" && mv "$tmp" "$1"
-}
-
-cmd_migrate_status() {
-  migrated=0
-  list="$(mktemp "${TMPDIR:-/tmp}/records-migrate.XXXXXX")"
-  records > "$list"
-  while IFS= read -r r; do
-    before="$(fm_field "$RR/$r" status)"
-    migrate_status_line "$RR/$r"
-    after="$(fm_field "$RR/$r" status)"
-    if [ "$before" != "$after" ]; then
-      migrated=$((migrated + 1))
-    fi
-  done < "$list"
-  rm -f "$list"
-  echo "migrated=$migrated"
-}
-
 [ $# -ge 1 ] || usage
 cmd="$1"; shift
 case "$cmd" in
@@ -626,7 +779,7 @@ case "$cmd" in
   done)    cmd_done "$@" ;;
   history) cmd_history "$@" ;;
   prune-candidates) cmd_prune_candidates "$@" ;;
+  relocate) cmd_relocate "$@" ;;
   check)   cmd_check "$@" ;;
-  migrate-status) cmd_migrate_status "$@" ;;
   *) usage ;;
 esac

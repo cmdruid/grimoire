@@ -65,14 +65,12 @@ unsettled, stop and send those branches back.
 6. **Self-review** — spec→plan coverage (every requirement maps to a slice —
    list gaps), placeholder scan, type/name consistency. Add a slice for any
    uncovered requirement.
-7. **Land it** per SKILL.md *Shared discipline*. Resolve `plans.md` via the
-   project-templates rule, then mint `records.sh --root <root> --records-root <records-root-relative> new plans --template <resolved>
-   --title "<title> — Implementation Plan"` when the tool exists; else
-   file-mode from that same resolved path into the agent-records `plans/` home
+7. **Land it** per SKILL.md *Shared discipline*. Resolve `plan.md` via the
+   project-templates rule, then mint `records.sh --root <root> --records-root <records-root-relative> new plans --schema contractor/plan@1 --template <resolved>
+   --title "<title> — Implementation Plan" --tag plan` when the tool exists; else
+   file-mode with the same schema and resolved body into the agent-records `plans/` home
    (SKILL.md destination rule), naming the file `YYYY-MM-DD-<slug>.md` (the
-   record shape). Either way set `tags: [plan]` and replace the
-   body with the plan scaffold filled in from the resolved `plan.md` (bundled
-   shape: `templates/plan.md`).
+   record shape).
 
 Output: the implementation plan (`status: draft`). Tell the human where
 it is and that they should read it. Then **stop**. The host's review of

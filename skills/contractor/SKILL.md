@@ -20,15 +20,15 @@ and collides with none.
 **Destination is not stamped.** `roadmap` / `plan` / `runbook` land in
 `<agent-records>/plans/` on every host (first `agent-records:` or
 `records-root:` in `AGENTS.md` then `CLAUDE.md`, else `.records/`), with
-`tags:` exactly one of `[plan]`, `[roadmap]`, `[runbook]`. Resolve
-`plans.md` via the project-templates rule; `records.sh --root <root> --records-root <records-root-relative> new plans --template
-<resolved>` when the tool exists; else file-mode from that path, naming the
+`tags:` exactly one writer kind among `plan`, `roadmap`, or `runbook`. Resolve active body scaffolds
+only at `<agent-workspace>/contractor/templates/`; a recognized legacy template requires
+`/contractor migrate <path>`. Mint with `records.sh --root <root> --records-root
+<records-root-relative> new plans --schema contractor/<kind>@1 --template <resolved>` for plans and
+roadmaps (omit `--template` for a compiled runbook); else synthesize the same four-key profile, naming the
 file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the
 tool will not see it. Then
-fill the body from the resolved `plan.md` / `roadmap.md` / runbook
-conductor. Never write the flat
-`<agent-workspace>/contractor/templates/<doctype>.md`. Never deploy `plan.md` or
-`roadmap.md` *as* `plans.md`.
+fill the body from `plan.md`, `roadmap.md`, or the runbook conductor. Never write the flat
+`<agent-records>/templates/<doctype>.md`. The former generic `plans.md` shell is retired.
 
 **Status vocabulary.** Mint stays `draft`. The caller writes
 `published` and `stage: approved` after a passing host's review they
@@ -36,6 +36,11 @@ accept. After a successful walk, this skill sets `stage: implemented`
 (the plan stays `published`). Closed is `archived`. Closure through
 `records.sh --root <root> --records-root <records-root-relative> done` when the tool exists; else file-mode stamp. Optional
 `stage` (non-empty if present); writer `stage` values are in-package.
+
+**Record contract.** Current records require `doctype`, `status`, `schema`, and `tags`; use
+`contractor/plan@1`, `contractor/roadmap@1`, or `contractor/runbook@1`. The filename is
+`YYYY-MM-DD-<slug>.md`, links are `→ <store>/<file>.md`, and ordinary edits stamp no generic date
+or revision metadata.
 
 ## Verb dispatch (read the file, then follow it)
 
@@ -45,6 +50,7 @@ accept. After a successful walk, this skill sets `stage: implemented`
 | `plan` | `verbs/plan.md` | tracer-bullet plan |
 | `runbook` | `verbs/runbook.md` | compile conductor |
 | `build` | `verbs/build.md` | execute plan or runbook |
+| `migrate <source-path>` | `verbs/migrate.md` | preview and upgrade owned plans/templates, including in place |
 | (bare) | — | **ask** which verb; do not default |
 
 ```
@@ -104,8 +110,8 @@ The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
 
 ## Structure, portability
 
-- A self-contained skill directory: `SKILL.md` + `templates/` (`plans.md`
-  the store-named lock-in; `plan.md` and `roadmap.md` the body scaffolds)
+- A self-contained skill directory: `SKILL.md` + `templates/` (`plan.md` and `roadmap.md` are the
+  active body scaffolds; runbooks are compiled)
   + `verbs/roadmap.md` + `verbs/plan.md` + `verbs/runbook.md` +
   `verbs/build.md` + `scripts/ground-check.sh`.
 - **Portable:** no workshop dependency (the one probe degrades to
@@ -114,7 +120,6 @@ The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
 
 ## Project templates
 
-- `plans.md`
 - `plan.md`
 - `roadmap.md`
 

@@ -6,7 +6,7 @@ SKILL="$(cd "$HERE/../.." && pwd)"
 ENGINE="$SKILL/scripts/trackers.sh"
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
-W=.dev
+W=.spaces
 RUN=(/bin/bash "$ENGINE" --root "$ROOT" --workspace "$W")
 pass=0 fail=0
 
@@ -101,6 +101,23 @@ no "${RUN[@]}" compile
 sed -i.bak '/^## orphan/,$d' "$C" && rm "$C.bak"
 printf '\n## tasks\nduplicate\n' >> "$C"
 no "${RUN[@]}" compile
+
+# Migration import allocates above highwater, preserves row facts, and receipts
+# the source so replay is a zero-change operation.
+ROWS="$ROOT/import.tsv"
+printf '%s\n' $'open\t2026-01-01\t\tlegacy open\tdocs/open.md' \
+  $'done\t2026-01-02\t2026-02-03\tlegacy done\tdocs/done.md' > "$ROWS"
+out="$("${RUN[@]}" migrate-import --tracker tasks --source trackers/2026-01-01-old.md --rows "$ROWS")"
+has <(printf '%s\n' "$out") 'changes=2'
+has "$T" '# migrated=trackers/2026-01-01-old.md'
+has "$T" $'tasks-1\topen\t2026-01-01\t\tlegacy open\tdocs/open.md'
+has "$T" $'tasks-2\tdone\t2026-01-02\t2026-02-03\tlegacy done\tdocs/done.md'
+sum_t="$(shasum "$T" | awk '{print $1}')"
+out="$("${RUN[@]}" migrate-import --tracker tasks --source trackers/2026-01-01-old.md --rows "$ROWS")"
+has <(printf '%s\n' "$out") 'changes=0'
+eq "migration replay preserves tracker bytes" "$sum_t" "$(shasum "$T" | awk '{print $1}')"
+printf '%s\n' $'open\tbad-date\t\tbad\t' > "$ROWS"
+no "${RUN[@]}" migrate-import --tracker tasks --source trackers/bad.md --rows "$ROWS"
 
 # Unsafe parents refuse without following the link.
 SAFE="$(mktemp -d)"

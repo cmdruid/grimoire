@@ -77,6 +77,13 @@ git -C "$FIX" config user.email t@example.com
 git -C "$FIX" config user.name Test
 git -C "$FIX" add -A
 git -C "$FIX" commit -qm "planted commit touching the widget subsystem"
+# Give the stale bug its own Git-derived movement date. This is deliberately a
+# later commit with an old declared timestamp: the harness reports Git facts,
+# not front-matter dates.
+printf '\nGit-history movement fixture.\n' >> "$FIX/.records/bugs/2026-02-01-stale-bug.md"
+git -C "$FIX" add .records/bugs/2026-02-01-stale-bug.md
+GIT_AUTHOR_DATE='2026-02-01T12:00:00Z' GIT_COMMITTER_DATE='2026-02-01T12:00:00Z' \
+  git -C "$FIX" commit -qm "touch stale bug in old history"
 
 # --- span --------------------------------------------------------------------
 
@@ -190,9 +197,9 @@ expect "catalog: reports nothing deployed yet" "deployed=false" "$OUT"
 expect "catalog: lists briefing as bundled"    "briefing	bundled" "$OUT"
 expect_absent "catalog: lock-in reports.md is not a kind" "reports	bundled" "$OUT"
 
-mkdir -p "$FIX/.dev/analyst/templates"
-cp "$HERE/../../templates/briefing.md" "$FIX/.dev/analyst/templates/briefing.md"
-cat > "$FIX/.dev/analyst/templates/house-style.md" <<'EOF'
+mkdir -p "$FIX/.spaces/analyst/templates"
+cp "$HERE/../../templates/briefing.md" "$FIX/.spaces/analyst/templates/briefing.md"
+cat > "$FIX/.spaces/analyst/templates/house-style.md" <<'EOF'
 ---
 template: house-style
 use-when: "A project-local report kind."

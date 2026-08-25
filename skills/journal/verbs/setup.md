@@ -15,7 +15,7 @@ directory and no pre-seeded `templates/`**.
      The relative path must have no leading `/` and no `..` segment (standup
      refuses otherwise). Pass it as `--records-root`.
    - `<agent-workspace>`: first line-start `agent-workspace:` in those same files;
-     else `.dev`. Apply the same relative-path constraints and pass it as `--workspace`.
+     else `.spaces`. Apply the same relative-path constraints and pass it as `--workspace`.
 2. **Run the mechanics**: `scripts/standup.sh <root> --workspace <rel> --records-root <rel>` —
    creates the agent-records home directory itself if needed, installs or
    refreshes `records.sh` in `<agent-workspace>/journal/scripts/`, seeds an empty
@@ -26,7 +26,7 @@ directory and no pre-seeded `templates/`**.
    **First visit** (no staged `records.sh`): stands the layer.
    **Later visit** (script present): refreshes `records.sh` when the skill
    copy has drifted (`current` vs `refreshed`); restores the executable bit
-   if needed; **migrates statuses**, then `check`; never truncates the ledger
+   if needed; then `check`; never migrates records, truncates the ledger,
    or overwrites README.
    **Exit 2**: missing target directory, or missing skill-side `records.sh`
    → STOP and report.
@@ -34,10 +34,8 @@ directory and no pre-seeded `templates/`**.
    If standup wrote the tool and then `check` failed, the tool layer **is
    up** — report that and point at `/journal curate`. That is not a setup
    refuse.
-   Converting legacy record *content* (adopting foreign docs) is a
-   migration the human named, not this verb. Status-vocab rewrite
-   (`open`/`current`/close-words → `draft`/`published`/`archived`) is this
-   verb.
+   Converting legacy record content or metadata is a migration the human named, not this verb.
+   Legacy records remain unchanged and are routed to the owning skill's explicit `migrate` verb.
 3. **Commit** per the commit policy (SKILL.md): standalone → parse each
    `wrote: <path>` line from standup stdout and
    `scripts/scoped-commit.sh <root> "Stand up the records layer" <those

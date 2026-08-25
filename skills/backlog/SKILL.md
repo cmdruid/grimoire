@@ -18,19 +18,22 @@ writer and the project-authored `hooks/debrief.md` is the routing cookbook.
 | `/backlog file <stem> [text]` | `verbs/file.md` | Append one open item to a known tracker |
 | `/backlog debrief` | `verbs/debrief.md` | Compile project routing and sweep finished-work leftovers once |
 | `/backlog curate [<stem>]` | `verbs/curate.md` | Complete, update, drop, or reorder through the writer |
+| `/backlog migrate <source-path>` | `verbs/migrate.md` | Import a legacy tracker record and normalize its retained source |
 
 Bare `/backlog` asks which verb. Unknown verbs refuse; there are no taxonomy aliases.
 
 ## Shared discipline
 
 - Resolve `<root>` as the project checkout and `<workspace>` from line-start `agent-workspace:`
-  in `AGENTS.md`, then `CLAUDE.md`, else `.dev`. It must be repo-relative with no `..` segment.
+  in `AGENTS.md`, then `CLAUDE.md`, else `.spaces`. It must be repo-relative with no `..` segment.
 - Except for setup, invoke only the executable staged engine at
   `<root>/<workspace>/backlog/scripts/trackers.sh`, always beginning with
   `--root <root> --workspace <workspace>`. Missing or non-executable refuses with
   `reason=setup-required` and points to `/backlog setup`; never run the bundled engine.
 - Never read or edit TSV bytes directly. Use `list` and `compile` for reads and writer commands
   for every mutation. Tracker stems match `[a-z0-9][a-z0-9-]*`.
+- Migration imports normalized rows only through staged writer command `migrate-import`; its
+  `# migrated=<record-relative-source>` receipt makes replay idempotent and IDs stay above highwater.
 - Operations that can change tracker population preflight `scripts/register-route.sh` before
   data writes, then reconcile Backlog's delimited root-`AGENTS.md` block afterward.
 - Standalone setup, tracker, file, and curate calls make one scoped commit over every reported

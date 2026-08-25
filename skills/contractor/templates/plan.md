@@ -1,11 +1,3 @@
----
-doctype: plans
-status: draft
-created: <date>
-updated: <date>
-tags: [plan]
----
-
 # <title> — Implementation Plan
 
 <Tracer-bullet: slice 1 is the thinnest end-to-end path through the riskiest/newest ground;

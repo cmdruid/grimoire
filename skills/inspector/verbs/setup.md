@@ -2,7 +2,7 @@
 
 1. Resolve `<root>` from the argument, else the current repository root. Require an existing
    directory and canonicalize it. Resolve line-start `agent-workspace:` from root `AGENTS.md`, then
-   `CLAUDE.md`, else `.dev`. Reject an empty, `.`, absolute, or root-escaping declaration.
+   `CLAUDE.md`, else `.spaces`. Reject an empty, `.`, absolute, or root-escaping declaration.
 2. Run this package's `scripts/kinds-deploy.sh --root <root> --workspace <resolved-relative-home>`.
    The script resolves bundled `kinds/` relative to its own package; it never scans a front door.
 3. Report each copied and incumbent kind. A collision may leave earlier safe copies in place;

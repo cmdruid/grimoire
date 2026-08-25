@@ -84,13 +84,13 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    `git -C <root> worktree add -b stream/<stream> <root>/.workstreams/<stream> <target>`.
 5. **Seed the plan on the branch** (plan-bound, *new untracked plan file* only; `create` makes no root
    commit). If the source is an already-tracked doc, skip. If it's a new untracked plan file, move it
-   into the worktree under `<agent-records>/plans/` on every host (ensure it carries the
-   front-matter contract: `records.sh --root <root> --records-root <records-root-relative> new plans --template <resolved>` + fill if the tool
-   exists; else file-mode fill from the resolved `plans.md`, naming the file
+   into the worktree as a Workstream manifest under `<agent-records>/streams/` (ensure it carries the
+   front-matter contract: `records.sh --root <root> --records-root <records-root-relative> new streams --dir streams --schema workstream/plan@1 --template <resolved> --tag plan` + fill if the tool
+   exists; else file-mode fill from the resolved `manifest.md`, naming the file
    `YYYY-MM-DD-<slug>.md` — an undated filename is not a record). Run the host's doc-linter from
    the worktree, then commit it **on the stream branch** (it rides to `<target>` at first
-   ship): `git -C <worktree> add <plans-home>/<basename> &&
-   git -C <worktree> commit -m "Seed stream/<stream>: plan" -- <plans-home>/<basename>`.
+   ship): `git -C <worktree> add <streams-home>/<basename> &&
+   git -C <worktree> commit -m "Seed stream/<stream>: manifest" -- <streams-home>/<basename>`.
    Brief / unplanned mode: nothing to seed. Template mode: nothing to seed on the branch either — the template
    is an external tracked doc; its durable doctrine is **embedded** into the hand-off in step 6 (and
    re-embedded by `recycle`), and only its **name or path** is recorded in Coordinates `source:`.
@@ -99,7 +99,7 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    - **Project hooks.** Resolve
      `<agent-workspace>` in prose (do not paste a bash resolver): first
      line-start `agent-workspace:` in `<root>/AGENTS.md` then `<root>/CLAUDE.md`,
-     else `.dev`. Set
+     else `.spaces`. Set
      `HOOKS_DIR=<root>/<agent-workspace>/workstream/hooks` (absolute). Never a
      relative directory or a worktree-local twin. Resolve this skill's bundled
      `scripts/hooks.sh` from its own base directory, then run

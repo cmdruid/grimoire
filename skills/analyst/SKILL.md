@@ -18,6 +18,7 @@ it gathers that account, curates it, and writes the developer a briefing with it
 /analyst <token> [args]      # direct pick: briefing | status | subsystem | diagnostics | guide
 /analyst <free text>         # classified against the catalog's use-when descriptors
 /analyst setup               # deploy the customizable catalog explicitly
+/analyst migrate <path>      # upgrade owned reports or catalog templates
 ```
 
 Every report kind is a **template**, not a verb (`templates/`, deployed per *Catalog*). Adding a
@@ -28,6 +29,9 @@ kind is dropping in a file.
 The live catalog is `<agent-workspace>/analyst/templates/` when deployed, else this skill's bundled
 `templates/`. **Deployed wins** — a project customizes its reports by editing the deployed copy,
 and host-added templates join the catalog the same way.
+The active bundled files are `briefing.md`, `status.md`, `subsystem.md`, `diagnostics.md`, and
+`guide.md`; resolution reads the selected file during every report. No generic record shell is part
+of the catalog.
 
 `<root>` is `git rev-parse --show-toplevel` of the project being briefed. Non-git → ask.
 
@@ -37,6 +41,9 @@ deployed directory and **never overwrites** — a customized template is the pro
 an upgrade of one is a judgment-assisted diff a human runs, never a silent replace. On a
 host with no workspace home it creates only `analyst/templates/` beneath the declared home.
 It refuses symlinked or non-directory parents before writing.
+If a previous-home template exists while the canonical file is absent, setup refuses and names
+`/analyst migrate <path>`; it never silently adopts a customization. A deployed template carrying
+front-matter `schema:` is invalid because schemas stay in this package.
 
 Each template's front-matter carries `template:` (its token), `use-when:` (the routing
 descriptor), and `inputs:` (the facts it needs). Its body carries the gathering and synthesis
@@ -100,18 +107,18 @@ cron-fired tick, a non-interactive harness invocation, or any run whose output g
 person will see it. When in doubt, persist: a spare record costs a line in a store, an
 evaporated briefing costs the whole run.
 
-To persist: resolve `reports.md` via the project-templates rule; mint with
-`records.sh --root <root> --records-root <records-root-relative> new reports --template <resolved> --title "…" --tag analyst --tag <token>`
+To persist, use the resolved catalog template to author the report, then mint with
+`records.sh --root <root> --records-root <records-root-relative> new reports --schema analyst/report@1 --title "…" --tag analyst --tag <token>`
 when the tool exists (`<token>` is the resolved catalog token: `briefing`,
-`status`, `subsystem`, `diagnostics`, or `guide`); else file-mode from that
-path, naming the file `YYYY-MM-DD-<slug>.md` (the record shape) under
+`status`, `subsystem`, `diagnostics`, or `guide`) and replace only the minted body with the authored
+report; else file-mode with the same schema, naming the file `YYYY-MM-DD-<slug>.md` under
 `<agent-records>/reports/` (default `.records/reports/`; create the store on
 first write) and write `tags: [analyst, <token>]` yourself. **The in-package
-contract:** front-matter keys `doctype`, `status`, `created`, `updated`,
-`tags`; live `draft` / `published`; closed `archived` (ledger `--as` is
+contract:** front-matter keys `doctype`, `status`, `schema`, `tags`; schema
+`analyst/report@1`; live `draft` / `published`; closed `archived` (ledger `--as` is
 `done` / `dropped` / `superseded` / `consumed` when the tool exists).
-File-mode close writes `archived`. File-mode writes those five keys; never
-invent a sixth. Only a `briefing`-tagged report is a span anchor. On a host with no
+File-mode close changes only status. Generic timestamps and revisions are not written. The filename
+is `YYYY-MM-DD-<slug>.md`; links use `→ <store>/<file>.md`. Only a `briefing`-tagged report is a span anchor. On a host with no
 records tool, file-mode still writes under the agent-records home.
 
 ## Anti-patterns
@@ -139,7 +146,13 @@ untouched, and no namespace outside Analyst's template home was created.
 - `subsystem.md`
 - `diagnostics.md`
 - `guide.md`
-- `reports.md`
+
+Schema identifiers and catalog-token validation are package-owned; project templates customize
+authoring guidance only.
+
+## Migration
+
+For `/analyst migrate <source-path>`, read and follow `verbs/migrate.md`.
 
 ## Edges
 

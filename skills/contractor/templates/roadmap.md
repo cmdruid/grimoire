@@ -1,11 +1,3 @@
----
-doctype: plans
-status: draft
-created: <YYYY-MM-DD>
-updated: <YYYY-MM-DD>
-tags: [roadmap]
----
-
 # <Track> — Roadmap
 
 <The decision map for multi-phase work: phases with gates and declared blocking edges. Each

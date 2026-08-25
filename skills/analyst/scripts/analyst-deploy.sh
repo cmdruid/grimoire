@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # analyst-deploy.sh <root> — explicitly deploy the bundled template catalog.
 #
-# Copies any bundled template ABSENT from
-# <agent-workspace>/analyst/templates/. Adopts a previous-home copy at
-# <agent-records>/templates/analyst/ when the new dest is empty.
+# Copies any actively used bundled template absent from
+# <agent-workspace>/analyst/templates/. A previous-home copy requires explicit migration.
 # Never overwrites: a deployed template is the project's, customized or not, and
 # silently replacing it would discard the customization this deploy exists to
 # enable. An upgrade of a customized template is a judgment-assisted diff a human
@@ -34,7 +33,7 @@ resolve_workspace() {
               | head -n 1 | sed 's/[[:space:]]*$//')"
     fi
   done
-  printf '%s\n' "${decl:-.dev}"
+  printf '%s\n' "${decl:-.spaces}"
 }
 
 valid_rel() {
@@ -82,7 +81,10 @@ if [ -d "$PREV" ] && [ "$PREV" != "$DEST" ]; then
   for f in "$PREV"/*.md; do
     [ -f "$f" ] || continue
     base="$(basename "$f")"
-    [ -e "$DEST/$base" ] || cp "$f" "$DEST/$base"
+    [ -e "$DEST/$base" ] || {
+      echo "analyst-deploy.sh: legacy template requires /analyst migrate $f" >&2
+      exit 2
+    }
   done
 fi
 
@@ -91,6 +93,10 @@ for f in "$BUNDLED"/*.md; do
   [ -f "$f" ] || continue
   base="$(basename "$f")"
   if [ -e "$DEST/$base" ]; then
+    awk 'NR==1 && $0=="---"{fm=1;next} fm && $0=="---"{exit} fm && /^schema:/{found=1} END{exit !found}' "$DEST/$base" && {
+      echo "analyst-deploy.sh: project template cannot select a schema: $DEST/$base" >&2
+      exit 2
+    }
     kept=$((kept + 1))
     echo "kept=$base"        # already the project's -- untouched
   else

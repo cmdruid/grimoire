@@ -61,8 +61,8 @@ path="$(kv path "$OUT")"
 expect_eq "mint path exists" "1" "$([ -f "$path" ] && echo 1 || echo 0)"
 expect_match "doctype" '^doctype: notes$' "$(cat "$path")"
 expect_match "status draft" '^status: draft$' "$(cat "$path")"
-expect_match "created today" "^created: $today$" "$(cat "$path")"
-expect_match "updated today" "^updated: $today$" "$(cat "$path")"
+expect_match "owned schema" '^schema: notepad/note@1$' "$(cat "$path")"
+expect_eq "retired keys absent" "0" "$(grep -cE '^(created|updated|created_at|updated_at|revision):' "$path" || true)"
 expect_match "filled title" '^# Alpha fact$' "$(cat "$path")"
 expect_absent "no history.tsv after mint" "$RR/history.tsv"
 expect_absent "no scripts/ after mint" "$RR/scripts"
@@ -88,12 +88,10 @@ fi
 nfiles="$(find "$RR/notes" -type f | wc -l | tr -d ' ')"
 expect_eq "empty/punct wrote nothing extra" "2" "$nfiles"
 
-created_before="$(sed -n 's/^created: //p' "$path")"
-# force a distinguishable updated: if we could; stamp still writes today
 /bin/bash "$MINT" stamp "$ROOT" "$R" "$W" "$path" --status superseded >/dev/null
 expect_match "stamp status" '^status: archived$' "$(cat "$path")"
-expect_eq "stamp left created" "$created_before" "$(sed -n 's/^created: //p' "$path")"
-expect_match "stamp updated" "^updated: $today$" "$(cat "$path")"
+expect_match "stamp preserves schema" '^schema: notepad/note@1$' "$(cat "$path")"
+expect_eq "stamp adds no retired key" "0" "$(grep -cE '^(created|updated|created_at|updated_at|revision):' "$path" || true)"
 expect_absent "stamp created no history.tsv" "$RR/history.tsv"
 
 # --- slice 2: opportunistic records.sh ---
@@ -149,6 +147,23 @@ fi
 
 # file-mode supersede still no ledger (already asserted on $RR)
 expect_absent "file-mode supersede no history" "$RR/history.tsv"
+
+# Ordinary minting hard-cuts legacy template locations; it does not adopt.
+RLEG="legacy-template"; WLEG="ws-legacy"; RRLEG="$ROOT/$RLEG"
+mkdir -p "$RRLEG/templates/notepad"
+printf '# Customized legacy note\n' > "$RRLEG/templates/notepad/notes.md"
+rc=0
+/bin/bash "$MINT" mint "$ROOT" "$RLEG" "$WLEG" "Must migrate" >/dev/null 2>&1 || rc=$?
+expect_eq "legacy template blocks ordinary mint" "2" "$rc"
+expect_absent "legacy template was not adopted" "$ROOT/$WLEG/notepad/templates/notes.md"
+
+# Project templates cannot take over the package-owned schema.
+RSC="schema-template"; WSC="ws-schema"; RRSC="$ROOT/$RSC"; ATSC="$ROOT/$WSC/notepad/templates"
+mkdir -p "$RRSC" "$ATSC"
+printf '%s\n' '---' 'schema: hostile/note@1' '---' '# Body' > "$ATSC/notes.md"
+rc=0
+/bin/bash "$MINT" mint "$ROOT" "$RSC" "$WSC" "Schema override" >/dev/null 2>&1 || rc=$?
+expect_eq "project template schema blocks mint" "2" "$rc"
 
 echo "note-mint-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

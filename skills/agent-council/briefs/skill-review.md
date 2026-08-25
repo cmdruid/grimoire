@@ -23,7 +23,7 @@ templates it actually names. Do not tour the rest of any repo.
 - **Output shape** — if it produces something, is that shape specified?
   If it produces a record, the destination is `<agent-records>/<store>/`
   (default `.records/<store>/`), not a confirmed `docs/` fallback and
-  not "skip, write nowhere." The in-package contract (five keys, dated
+  not "skip, write nowhere." The in-package contract (four keys including the writer-owned schema, dated
   slug) is specified in the package. Every store it mints has
   `templates/<doctype>.md` in the package. A `## Project templates` list
   names the lock-in set; every listed file exists in the package; the

@@ -7,7 +7,7 @@ SKILL="$(cd "$DIR/../.." && pwd)"
 . "$DIR/lib.sh"
 
 # --- job verbs live in verbs/; SKILL.md does not keep their H2s ---
-for v in roadmap plan runbook build; do
+for v in roadmap plan runbook build migrate; do
   if [ -f "$SKILL/verbs/$v.md" ]; then
     pass=$((pass + 1))
   else
@@ -26,7 +26,7 @@ else
 fi
 
 # --- dispatch cites every verb file ---
-for v in roadmap plan runbook build; do
+for v in roadmap plan runbook build migrate; do
   if grep -qF "\`verbs/$v.md\`" "$SKILL/SKILL.md"; then
     pass=$((pass + 1))
   else
@@ -43,11 +43,11 @@ else
   fail=$((fail + 1))
 fi
 
-# --- lock-in is plans.md (store-named); plan.md / roadmap.md are body scaffolds ---
-if [ -f "$SKILL/templates/plans.md" ]; then
+# --- generic plans.md is retired; active body scaffolds remain ---
+if [ ! -e "$SKILL/templates/plans.md" ]; then
   pass=$((pass + 1))
 else
-  echo "FAIL: expected templates/plans.md" >&2
+  echo "FAIL: retired templates/plans.md remains" >&2
   fail=$((fail + 1))
 fi
 if [ -f "$SKILL/templates/plan.md" ] && [ -f "$SKILL/templates/roadmap.md" ]; then
@@ -62,7 +62,7 @@ else
   echo "FAIL: runbook is compiled; expected no templates/runbook.md" >&2
   fail=$((fail + 1))
 fi
-for f in plans.md plan.md roadmap.md; do
+for f in plan.md roadmap.md; do
   if grep -qF -- "- \`$f\`" "$SKILL/SKILL.md"; then
     pass=$((pass + 1))
   else
@@ -70,11 +70,10 @@ for f in plans.md plan.md roadmap.md; do
     fail=$((fail + 1))
   fi
 done
-if grep -qF 'Never deploy `plan.md`' "$SKILL/SKILL.md" \
-  && grep -qF '*as* `plans.md`' "$SKILL/SKILL.md"; then
+if grep -qF 'generic `plans.md` shell is retired' "$SKILL/SKILL.md"; then
   pass=$((pass + 1))
 else
-  echo "FAIL: SKILL.md dropped the never-deploy-as-plans.md rule" >&2
+  echo "FAIL: SKILL.md dropped the plans.md retirement" >&2
   fail=$((fail + 1))
 fi
 
@@ -93,7 +92,7 @@ if grep -qF 'specs/records-front-matter.md' "$SKILL/SKILL.md"; then
 else
   pass=$((pass + 1))
 fi
-hits=$(grep -n '[Jj]ournal' "$SKILL/SKILL.md" "$SKILL"/verbs/*.md || true)
+hits=$(grep -n '[Jj]ournal' "$SKILL/SKILL.md" "$SKILL"/verbs/*.md | grep -v 'verbs/migrate.md' || true)
 if [ -z "$hits" ]; then
   pass=$((pass + 1))
 else

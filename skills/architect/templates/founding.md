@@ -1,8 +1,7 @@
 ---
 doctype: specs
 status: draft
-created: <date>
-updated: <date>
+schema: architect/founding@1
 tags: [spec, founding]
 ---
 

@@ -9,7 +9,7 @@ with no topic is list.
 ## Query walk
 
 1. Resolve project root (conversation → cwd → ask). Resolve
-   `<agent-workspace>` from the door (else `.dev`).
+   `<agent-workspace>` from the door (else `.spaces`).
 2. Run `search` if there is a query, including a single kebab-case stem;
    else `list` (`/shopbook query`
    with no topic is list). Invoke this skill's `scripts/flows-index.sh`

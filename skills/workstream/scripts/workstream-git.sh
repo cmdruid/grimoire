@@ -89,7 +89,7 @@ cmd_stream_state() {
   head_branch="$(git -C "$wt" rev-parse --abbrev-ref HEAD)"
   toplevel="$(git -C "$wt" rev-parse --show-toplevel)"
   # Enumerate individual untracked files. The default collapses a wholly-untracked
-  # `.records/` directory to one entry, hiding plan drafts from the classifier below.
+  # `.records/` directory to one entry, hiding stream-manifest drafts from the classifier below.
   porcelain="$(git -C "$wt" status --porcelain --untracked-files=all)"
   staged="$(git -C "$wt" diff --cached --name-only)"
   # A rebase-in-progress leaves rebase-merge/ or rebase-apply/ under the git dir
@@ -105,16 +105,15 @@ cmd_stream_state() {
   last_subj="$(git -C "$wt" log -1 --format='%s')"
   last_age="$(git -C "$wt" log -1 --format='%cr')"
 
-  # Untracked plan drafts (e.g. ship's next-plan draft) are EXPECTED dirt, not
-  # WIP -- separate them so the agent doesn't read a drafted plan as unsaved work.
-  drafts="$(printf '%s\n' "$porcelain" | sed -n "s#^?? \($rec_re/plans/.*\.md\)\$#\1#p" | grep -v '/archive/' | paste -sd, - || true)"
+  # Untracked Workstream manifest drafts are expected dirt, not WIP.
+  drafts="$(printf '%s\n' "$porcelain" | sed -n "s#^?? \($rec_re/streams/.*\.md\)\$#\1#p" | grep -v '/archive/' | paste -sd, - || true)"
   [ -z "$drafts" ] && drafts="none"
-  # Real WIP = any porcelain line that is NOT an untracked TOP-LEVEL .records/plans
+  # Real WIP = any porcelain line that is NOT an untracked top-level streams
   # draft (the same set `drafts` reports). An untracked file under
-  # .records/plans/archive/ (or deeper) is real WIP, not a draft -- it must surface in
+  # streams/archive/ (or deeper) is real WIP, not a draft -- it must surface in
   # wip_tracked rather than as dirt no fact explains.
   local wip
-  wip="$(printf '%s\n' "$porcelain" | grep -v '^$' | grep -vE "^\?\? $rec_re/plans/[^/]+\.md\$" || true)"
+  wip="$(printf '%s\n' "$porcelain" | grep -v '^$' | grep -vE "^\?\? $rec_re/streams/[^/]+\.md\$" || true)"
 
   echo "agent-records=$rec_rel"
   echo "records-root=$rec_rel"

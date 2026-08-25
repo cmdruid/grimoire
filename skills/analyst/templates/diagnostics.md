@@ -16,8 +16,9 @@ stop.
 
 ## Gather
 
-1. `analyst-facts.sh health <root>` — open bug records, stale records (`draft` with old
-   `updated:`), recorded audit reports, ledger cadence. Tracker line counts are a
+1. `analyst-facts.sh health <root>` — open bug records, stale records (`draft` with old Git path
+   history), recorded audit reports, ledger cadence. Dirty and untracked records are current but
+   undated; a shallow repository limits the history claim. Tracker line counts are a
    `status` fact — run `analyst-facts.sh status <root>` (or read the tracker records)
    if this snapshot needs tracker debt.
 2. **Prefer the project's own instruments.** If the project runs a code-quality audit, its

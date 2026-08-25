@@ -4,7 +4,7 @@
 #   note-mint.sh stamp <root> <records-root> <workspace> <abs-path> [--status <status>] [--note "<text>"]
 #
 # Uses <agent-workspace>/journal/scripts/records.sh when that file is executable
-# (`new --template <resolved>`); otherwise writes the contract shape itself.
+# (`new --schema notepad/note@1 --template <resolved>`); otherwise writes the contract shape itself.
 # Resolves notes.md through the project-templates rule. Never decides
 # update-vs-mint or whether to commit. Never writes history.tsv by hand.
 # Never writes the flat <agent-records>/templates/notes.md.
@@ -25,7 +25,7 @@ SKILL_NAME="notepad"
 BUNDLED_TPL="$SKILL_DIR/templates/notes.md"
 
 fill() {
-  TITLE="$3" DATE="$4" TAGS="${5:-}" awk '
+  TITLE="$3" DATE="$4" awk '
     {
       line = $0
       out = ""
@@ -40,12 +40,7 @@ fill() {
         line = substr(line, i + 6)
       }
       line = out line
-      out = ""
-      while ((i = index(line, "<tags>")) > 0) {
-        out = out substr(line, 1, i - 1) ENVIRON["TAGS"]
-        line = substr(line, i + 6)
-      }
-      print out line
+      print line
     }
   ' "$1" > "$2"
 }
@@ -62,11 +57,10 @@ emit() {
 
 file_stamp() {
   tmp="$1.tmp"
-  awk -v today="$2" -v st="${3:-}" '
+  awk -v st="${2:-}" '
     BEGIN { infm = 0; fmdone = 0 }
     NR == 1 && $0 == "---" { infm = 1; print; next }
     infm && !fmdone && $0 == "---" { fmdone = 1; infm = 0; print; next }
-    infm && /^updated:/ { print "updated: " today; next }
     infm && st != "" && /^status:/ { print "status: " st; next }
     { print }
   ' "$1" > "$tmp" && mv "$tmp" "$1"
@@ -125,17 +119,16 @@ resolve_notes_template() {
   local flat="$rr/templates/notes.md"
   [ -f "$BUNDLED_TPL" ] || err "bundled template missing: $BUNDLED_TPL"
   if [ -f "$dest" ]; then
+    if awk 'NR==1 && $0=="---"{fm=1;next} fm && $0=="---"{exit} fm && /^schema:/{found=1} END{exit !found}' "$dest"; then
+      err "project template cannot select a schema: $dest"
+    fi
     printf '%s\n' "$dest"
     return 0
   fi
   mkdir -p "$(dirname "$dest")"
-  if [ -f "$prev" ]; then
-    cp "$prev" "$dest"
-  elif [ -f "$flat" ]; then
-    cp "$flat" "$dest"
-  else
-    cp "$BUNDLED_TPL" "$dest"
-  fi
+  [ ! -f "$prev" ] || err "legacy notes template found; run /notepad migrate $prev before minting"
+  [ ! -f "$flat" ] || err "legacy notes template found; run /notepad migrate $flat before minting"
+  cp "$BUNDLED_TPL" "$dest"
   printf '%s\n' "$dest"
 }
 
@@ -147,7 +140,7 @@ cmd_mint() {
   tpl="$(resolve_notes_template "$rr" "$at")"
 
   if has_records; then
-    path="$("$engine" --root "$root" --records-root "$rr_rel" new notes --template "$tpl" --title "$title")"
+    path="$("$engine" --root "$root" --records-root "$rr_rel" new notes --schema notepad/note@1 --template "$tpl" --title "$title")"
     rel="${path#"$rr"/}"
     emit "$rr" "$path" "$rel" "records"
     return 0
@@ -161,7 +154,13 @@ cmd_mint() {
   path="$base.md"
   n=2
   while [ -e "$path" ]; do path="$base-$n.md"; n=$((n + 1)); done
-  fill "$tpl" "$path" "$title" "$today"
+  body="$path.body"
+  fill "$tpl" "$body" "$title" "$today"
+  {
+    printf '%s\n' '---' 'doctype: notes' 'status: draft' 'schema: notepad/note@1' 'tags: []' '---' ''
+    cat "$body"
+  } > "$path"
+  rm -f "$body"
   rel="${path#"$rr"/}"
   emit "$rr" "$path" "$rel" "file"
 }
@@ -204,18 +203,18 @@ cmd_stamp() {
         ;;
       *)
         if is_disposition "$status"; then
-          file_stamp "$path" "$(date +%Y-%m-%d)" "archived"
+          file_stamp "$path" "archived"
         else
-          file_stamp "$path" "$(date +%Y-%m-%d)" "$status"
+          file_stamp "$path" "$status"
         fi
         mode="stamp"
         ;;
     esac
   else
     if is_disposition "$status"; then
-      file_stamp "$path" "$(date +%Y-%m-%d)" "archived"
+      file_stamp "$path" "archived"
     else
-      file_stamp "$path" "$(date +%Y-%m-%d)" "$status"
+      file_stamp "$path" "$status"
     fi
     mode="stamp"
   fi

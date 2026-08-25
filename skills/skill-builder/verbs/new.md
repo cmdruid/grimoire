@@ -34,22 +34,22 @@ verb's job).
    - **Yes** → scaffold, in `SKILL.md` (see `docs/DOCTRINE.md` § Record-writing skills):
      - the inlined agent-records resolver (default `.records/…`) and the
        templates home as `<agent-workspace>/<name>/templates/` (default
-       `.dev/<name>/templates/`); and, for a skill that reads or writes
+       `.spaces/<name>/templates/`); and, for a skill that reads or writes
        doctrine, the agent-workspace resolver — its doctrine home is
-       `<agent-workspace>/<name>/doctrine/`, default `.dev/<name>/doctrine/`;
-     - the five-key in-package contract — do not send the agent to another
-       skill for those bytes. State: the five keys (`doctype`, `status`,
-       `created`, `updated`, `tags`); `status`: `draft` | `published` live,
+       `<agent-workspace>/<name>/doctrine/`, default `.spaces/<name>/doctrine/`;
+     - the four-key in-package contract — do not send the agent to another
+       skill for those bytes. State: the four keys (`doctype`, `status`,
+       `schema`, `tags`) and every package-owned schema identifier; `status`: `draft` | `published` live,
        `archived` closed; optional `stage` (non-empty if present; values
        declared here if this skill uses the key); the dated slug
        (`YYYY-MM-DD-<slug>.md`); the record-link form (`→ <store>/<file>.md`);
        file-mode close → `archived`, not a ledger disposition word. The
-       registered contract is `specs/records-front-matter.md`. Do not
-       scaffold a `stage` key onto templates;
+       registered contract is `specs/records-front-matter.md`. Do not scaffold retired generic
+       timestamps/revisions or a `stage` key onto templates;
      - a no-floor sentence: missing `records.sh` is not an error; journal standup is
        never a precondition;
-     - `## Project templates` (named lock-in files, or an explicit "none" if it writes
-       records but locks nothing in yet).
+     - `## Project templates` (only named body scaffolds the skill actively resolves, or an explicit
+       "none"). Keep schemas, validators, and migrations package-owned.
    - **No** → do not add those sections.
 
 3b. **Project hooks?** — ask, orthogonal to the tier and to record-writer: *does

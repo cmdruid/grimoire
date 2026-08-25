@@ -1,11 +1,3 @@
----
-doctype: bugs
-status: draft
-created: <date>
-updated: <date>
-tags: [<tags>]
----
-
 # <title>
 
 ## Repro

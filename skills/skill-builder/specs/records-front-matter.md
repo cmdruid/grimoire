@@ -1,90 +1,61 @@
-# Record `status` / `stage`
+# Record front matter
 
-Portable front-matter contract. Writer rule 5, `new`, and journal
-`check` honor this file. Doctrine points here; it does not restate
-the enum.
+Portable record metadata contract. Writer rule 5, Skill-builder lint, and Journal `check` honor
+this file. Artifact validators and migration chains remain inside their owning skill package.
 
-## `status` (journal, required)
+## Current profile
 
-| value | means | migrates from |
+Every current record has exactly these four required keys between top-of-file `---` delimiters:
+
+- `doctype`: the open record type; front matter, not the parent directory, is authoritative.
+- `status`: `draft` or `published` while live; `archived` when closed.
+- `schema`: `<writer>/<artifact>@<positive-integer>`, with lowercase kebab-case names. The writer
+  component is the owning skill name. Shared tools validate this grammar, not artifact registries.
+- `tags`: a YAML-style inline list; it may be empty.
+
+`created`, `updated`, `created_at`, `updated_at`, and `revision` are retired reserved keys. They are
+invalid on a current record and may appear only in a registered legacy input selected by the owning
+skill's explicit `migrate` verb. Migration removes them; ordinary readers never rewrite them.
+
+The first ten filename characters in `YYYY-MM-DD-<slug>.md` are the creation-date authority.
+Journal date filters and sorting use that date. Git path history is the durable modification source;
+ordinary edits do not stamp generic dates or revision counters.
+
+Extra domain-specific keys remain legal. A project template is a body-only authoring scaffold and
+cannot declare or select `schema`; schema identifiers, validators, and migrations are package-owned.
+
+## `status` (Journal, required)
+
+| value | means | registered legacy input |
 |---|---|---|
 | `draft` | not the official record yet | `open` |
 | `published` | in the live, citable set | `current` |
 | `archived` | left the live set | `done`, `dropped`, `superseded`, `consumed` |
 
-`touch --status` accepts only `draft` | `published`. It refuses
-`archived` (“closing goes through `done`”).
+`touch --status` accepts only `draft` or `published`. Closing goes through `done`.
 
-**Two predicates** (do not collapse them):
+Two predicates remain distinct:
 
-- File closed ⇔ `status: archived`.
-- Disposition ⇔ `done` | `dropped` | `superseded` | `consumed`
-  (ledger `--as` only). Unchanged vocabulary.
+- File closed iff `status: archived`.
+- Disposition is `done`, `dropped`, `superseded`, or `consumed` in ledger `--as` only.
 
-`records.sh --root <root> --records-root <records-root-relative> done` stamps the **file** `archived` and appends the
-ledger line whose disposition is `--as`. `done --as consumed` is
-legal: file `archived`, ledger `consumed`.
-
-`check`: an `archived` file must have *a* ledger line for that
-path. It does **not** require `$disp == $status`.
-
-File-mode close (no `records.sh`): rewrite `status: archived` and
-`updated:` only. Do not write `history.tsv`. After a later standup,
-`check` flags archived-without-ledger. Repair is `curate`: rewrite
-`status:` back to `draft`, then `records.sh --root <root> --records-root <records-root-relative> done`.
+`records.sh done` changes only the file's `status` and appends the six-field ledger line. An
+`archived` file must have a ledger row for its path; the disposition need not equal the status.
+File-mode close changes only `status: archived` and never writes `history.tsv`.
 
 ## `stage` (writer, optional)
 
-- Not one of the five required keys (`doctype`, `status`, `created`,
-  `updated`, `tags`). Extra keys remain legal.
-- If the key is present, its value is a non-empty string (no leading
-  / trailing whitespace after trim). Empty or missing-with-key-present
-  is a `check` fail.
-- Journal does not interpret the string. `list --stage` / `grep
-  --stage` exact-match it.
-- Templates mint **without** `stage` unless that writer’s procedure
-  says otherwise.
-- A writer that uses `stage` states its values in **its own**
-  package (in-package contract, same independence rule as today).
+- `stage` is not one of the four required keys.
+- If present, its trimmed value is non-empty.
+- Journal does not own the value vocabulary. `list --stage` and `grep --stage` exact-match it.
+- A writer that uses `stage` declares its values inside its own package.
 
-## Filters
+## Mint and filters
 
-AND across dimensions; OR within a repeated flag.
+`records.sh new <doctype> --schema <schema> --title <title> [--dir <rel>] [--tag <tag>]...
+[--template <body-template>]` synthesizes the current front matter. A body template is optional and
+supports literal `<title>` and `<date>` substitution. `<schema>` and `<tags>` body slots refuse.
 
-| invocation | default | flags |
-|---|---|---|
-| `list` | `draft` ∪ `published` (hide `archived`) | `--type`, `--tag`, `--since`, `--until`, `--status`, `--stage` |
-| `grep` | whole corpus, including `archived` | same flags + pattern |
-| `history` | unchanged (ledger, filter by disposition) | unchanged |
-
-The live-set default is a behavior change. `done` writebacks and
-`curate` that call unfiltered `list` now see the live set (what they
-want for open trackers). Archived rows: `list --status archived`.
-`check` and `prune-candidates` still crawl every record, not `list`.
-`--type` matches the front-matter `doctype:` string — an open set.
-Journal still knows no store list and reserves no doctype.
-
-`--status` accepts `draft` | `published` | `archived`. Repeatable →
-OR.
-
-`--stage` accepts any string. Repeatable → OR. Unknown strings are
-not an error (journal does not own the enum); they simply match
-nothing.
-
-Citable catalog: `list --status published`.
-WIP: `list --status draft`.
-A writer gate (example, not a reserved type):
-`list --type <doctype> --stage <value>`.
-
-`list` TSV columns stay: path, doctype, status, updated, tags,
-title.
-
-## In-package contract (writers)
-
-Rule 5 restates this vocabulary, not a six-value set:
-
-- five required keys, dated slug, record-link form — unchanged
-- `status`: `draft` | `published` live; `archived` closed
-- optional `stage` (non-empty if present); values declared here if
-  this skill uses the key
-- file-mode close → `archived`, not a ledger disposition word
+Filters are AND across dimensions and OR within repeated flags. `list` defaults to `draft` plus
+`published`; `grep` searches the whole corpus. `list` TSV columns are path, doctype, status,
+filename date, tags, and title, sorted by filename date descending and then path.

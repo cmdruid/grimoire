@@ -22,4 +22,4 @@ change does not move it). Doctrine essays
 
 | spec | what |
 |---|---|
-| `records-front-matter.md` | Record `status` / `stage`, filters, in-package contract |
+| `records-front-matter.md` | Four-key record profile, schema grammar, status/stage, mint and filters |

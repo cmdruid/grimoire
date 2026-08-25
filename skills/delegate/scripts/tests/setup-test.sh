@@ -21,25 +21,25 @@ deploy() {
 
 [ -f "$SKELETON" ] && [ ! -s "$SKELETON" ] && pass=$((pass+1)) || fail=$((fail+1))
 ROOT="$(mktemp -d)"; trap 'rm -rf "$ROOT"' EXIT
-ok deploy "$ROOT" .dev; eq "fresh zero bytes" "0" "$(wc -c < "$ROOT/.dev/delegate/hooks/byproducts.md" | tr -d ' ')"
-ok deploy "$ROOT" .dev
-printf 'project policy\n' > "$ROOT/.dev/delegate/hooks/byproducts.md"; sum="$(shasum "$ROOT/.dev/delegate/hooks/byproducts.md" | awk '{print $1}')"; ok deploy "$ROOT" .dev
-eq "incumbent preserved" "$sum" "$(shasum "$ROOT/.dev/delegate/hooks/byproducts.md" | awk '{print $1}')"
+ok deploy "$ROOT" .spaces; eq "fresh zero bytes" "0" "$(wc -c < "$ROOT/.spaces/delegate/hooks/byproducts.md" | tr -d ' ')"
+ok deploy "$ROOT" .spaces
+printf 'project policy\n' > "$ROOT/.spaces/delegate/hooks/byproducts.md"; sum="$(shasum "$ROOT/.spaces/delegate/hooks/byproducts.md" | awk '{print $1}')"; ok deploy "$ROOT" .spaces
+eq "incumbent preserved" "$sum" "$(shasum "$ROOT/.spaces/delegate/hooks/byproducts.md" | awk '{print $1}')"
 
 DECL="$(mktemp -d)"; ok deploy "$DECL" ops; [ -f "$DECL/ops/delegate/hooks/byproducts.md" ] && pass=$((pass+1)) || fail=$((fail+1))
-ESC="$(mktemp -d)"; BAD="$(mktemp -d)"; ln -s "$ESC" "$BAD/.dev"; no deploy "$BAD" .dev; eq "parent symlink escape" "0" "$(find "$ESC" -mindepth 1 | wc -l | tr -d ' ')"
-DEST="$(mktemp -d)"; mkdir -p "$DEST/.dev/delegate/hooks"; ln -s "$ESC/policy" "$DEST/.dev/delegate/hooks/byproducts.md"; no deploy "$DEST" .dev; [ ! -e "$ESC/policy" ] && pass=$((pass+1)) || fail=$((fail+1))
-FILEP="$(mktemp -d)"; mkdir "$FILEP/.dev"; : > "$FILEP/.dev/delegate"; no deploy "$FILEP" .dev
+ESC="$(mktemp -d)"; BAD="$(mktemp -d)"; ln -s "$ESC" "$BAD/.spaces"; no deploy "$BAD" .spaces; eq "parent symlink escape" "0" "$(find "$ESC" -mindepth 1 | wc -l | tr -d ' ')"
+DEST="$(mktemp -d)"; mkdir -p "$DEST/.spaces/delegate/hooks"; ln -s "$ESC/policy" "$DEST/.spaces/delegate/hooks/byproducts.md"; no deploy "$DEST" .spaces; [ ! -e "$ESC/policy" ] && pass=$((pass+1)) || fail=$((fail+1))
+FILEP="$(mktemp -d)"; mkdir "$FILEP/.spaces"; : > "$FILEP/.spaces/delegate"; no deploy "$FILEP" .spaces
 no deploy "$ROOT" ../escape
 
 GITROOT="$(mktemp -d)"; git -C "$GITROOT" init -q; git -C "$GITROOT" config user.email test@example.com; git -C "$GITROOT" config user.name Test
-printf '# Fixture\n' > "$GITROOT/README.md"; git -C "$GITROOT" add README.md; git -C "$GITROOT" commit -qm init; ok deploy "$GITROOT" .dev
-git -C "$GITROOT" add -- .dev/delegate/hooks/byproducts.md; git -C "$GITROOT" commit -qm 'Delegate: setup' -- .dev/delegate/hooks/byproducts.md
+printf '# Fixture\n' > "$GITROOT/README.md"; git -C "$GITROOT" add README.md; git -C "$GITROOT" commit -qm init; ok deploy "$GITROOT" .spaces
+git -C "$GITROOT" add -- .spaces/delegate/hooks/byproducts.md; git -C "$GITROOT" commit -qm 'Delegate: setup' -- .spaces/delegate/hooks/byproducts.md
 eq "standalone commit clean" "" "$(git -C "$GITROOT" status --porcelain)"
-eq "standalone commit one path" ".dev/delegate/hooks/byproducts.md" "$(git -C "$GITROOT" show --pretty='' --name-only HEAD)"
+eq "standalone commit one path" ".spaces/delegate/hooks/byproducts.md" "$(git -C "$GITROOT" show --pretty='' --name-only HEAD)"
 
 # Red proof: the planted symlink fixture would catch a deploy that followed parents.
-MUT="$(mktemp -d)"; TARGET="$(mktemp -d)"; ln -s "$TARGET" "$MUT/.dev"; mkdir -p "$MUT/.dev/delegate/hooks"; cp "$SKELETON" "$MUT/.dev/delegate/hooks/byproducts.md"
+MUT="$(mktemp -d)"; TARGET="$(mktemp -d)"; ln -s "$TARGET" "$MUT/.spaces"; mkdir -p "$MUT/.spaces/delegate/hooks"; cp "$SKELETON" "$MUT/.spaces/delegate/hooks/byproducts.md"
 [ -f "$TARGET/delegate/hooks/byproducts.md" ] && pass=$((pass+1)) || fail=$((fail+1))
 
 rm -rf "$DECL" "$ESC" "$BAD" "$DEST" "$FILEP" "$MUT" "$TARGET" "$GITROOT"
