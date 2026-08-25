@@ -2,6 +2,7 @@
 set -euo pipefail
 
 repo="$(CDPATH='' cd "$(dirname "$0")/../.." && pwd)"
+pack_version="$(sed -n 's/^version:[[:space:]]*//p' "$repo/PACK.md" | head -n 1)"
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/clankshop-pack-test.XXXXXX")"
 trap 'rm -rf "$tmp"' EXIT
 
@@ -11,13 +12,13 @@ fail() {
 }
 
 assert_faceless_lock() {
-  python3 - "$1" <<'PY'
+  python3 - "$1" "$pack_version" <<'PY'
 import json, sys
 
 with open(sys.argv[1]) as handle:
     lock = json.load(handle)
 entry = lock["packs"]["clankshop"]
-assert entry["version"] == "3.1.0", entry
+assert entry["version"] == sys.argv[2], entry
 assert entry["manifest"]["name"] == "clankshop", entry
 assert entry["manifest"]["required"] == "journal", entry
 assert "clankshop" not in entry["skills"], entry
@@ -37,7 +38,7 @@ assert_faceless_lock "$lock"
 
 list_out="$tmp/list.out"
 "$repo/install.sh" --target "$target" --list >"$list_out"
-grep -Eq '^  clankshop[[:space:]]+v3\.1\.0' "$list_out" \
+awk -v version="v$pack_version" '$1 == "clankshop" && $2 == version { found=1 } END { exit !found }' "$list_out" \
   || fail "list did not render the root faceless pack"
 
 "$repo/install.sh" --target "$target" --check --pack clankshop
