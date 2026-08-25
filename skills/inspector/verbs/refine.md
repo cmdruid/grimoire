@@ -1,10 +1,10 @@
 # `refine` · fold review findings into an artifact
 
-The only legal path from a `needs-rework` artifact back to a
-candidate for `review`. Same artifact set as `review` (the six
-bundled kinds, plus any host-added kind). Amends the original
-file in place. Does not mint a successor. Does not write
-`published`.
+The only legal path from a `needs-rework` **document** back to a
+candidate for `review`. It accepts the six bundled document kinds plus
+host-added document kinds. `implementation` has no legal refine path:
+refuse it without amending code. This verb amends the original file in
+place, mints no successor, and does not write `published`.
 
 **Why amend.** A failing verdict means the artifact is not safe
 to sequence or walk against. Amending is how it becomes a
@@ -72,6 +72,7 @@ omitted, treat as must-fix.
 1. **Resolve** inputs (above). Locate the artifact. Kind-detect.
    Load the kind file. Summon context per SKILL.md after the
    kind is known. Unknown kind → ask or refuse; stop.
+   `implementation` → refuse; implementation review never enters refine.
 2. **Inventory** open findings. Number them for the table (`F1`,
    `F2`, …) even if the source used a different scheme — keep a
    source id in parentheses when one exists (`F1 (C3)`).
@@ -125,8 +126,15 @@ omitted, treat as must-fix.
    the item stays unmarked and the rest may proceed. Do not quiz
    confident rows. Answering questions is **not** package confirm
    — even if the human says "do it" / "approved, re-review" in
-   the same message. Still step 6, then wait.
-6. **Propose. Do not amend.** Conversation, not a file. The
+   the same message. Still run step 6, then step 7 when material remains, and wait.
+6. **Empty material package.** After all questions are settled and parks
+   acknowledged, determine the optional dispositions before presenting a
+   proposal. If no `keep` and no `keep-optional` that the owner recommends
+   taking remains, say there is nothing material to fold and stop. Do not show
+   an empty remediation table, ask for package confirmation, amend the artifact,
+   or change status. Resolved, push-back, omitted nit/unsupported, parked, and
+   deferred-only rows do not manufacture a package.
+7. **Propose. Do not amend.** Conversation, not a file. The
    proposal *is* the live table plus concrete amendments, not a
    second artifact. Show:
 
@@ -158,7 +166,7 @@ omitted, treat as must-fix.
    this?", "let's revise the spec", "apply now", "skip the
    proposal". There is no skip-proposal token. None of them
    apply in the same turn as the proposal.
-7. **Confirm parse** (the wait **after the proposal** only).
+8. **Confirm parse** (the wait **after the proposal** only).
    Compositional, not exclusive rows. A later `review` (or
    `/inspector review`) after stop-and-offer is a **new arrow**,
    not this exception.
@@ -183,7 +191,7 @@ omitted, treat as must-fix.
    4. **Accept** (open set): any clear package acceptance.
       Examples, not a closed list: `approved`, `yes`, `looks
       good`, `do it`, `lgtm`, `ok`, `go ahead`, `apply`.
-      **Do:** apply, then step 9 else. Reject (1) wins over
+      **Do:** apply, then step 10 else. Reject (1) wins over
       this.
    5. **Named re-review** (intent, same confirmation
       utterance): extra conjunct on accept. They ask this
@@ -192,19 +200,19 @@ omitted, treat as must-fix.
       review", "then run review", "review it after",
       "approved, re-review the spec", `/inspector review` in
       *this* utterance. Agent is the subject. **Do:** apply
-      (if 4 did not already), then step 9 named path *instead
-      of* step 9 else.
+      (if 4 did not already), then step 10 named path *instead
+      of* step 10 else.
    6. **`re-review` alone.** Pending `keep`s → ask once,
       recommended answer: apply these first, then re-review.
       Do not skip the fold. Do not review the unamended
       artifact from this verb. No pending `keep`s (nothing to
       fold) → skip Apply; follow `review` on the current
-      artifact (step 9 named path).
+      artifact (step 10 named path).
    7. During the **questions** stop, "approved" /
       "approved, re-review" is not confirm. Finish asks (or
       say the package cannot be built yet). Do not apply. Do
       not start `review`.
-8. **Apply** (only after a confirm that authorizes apply).
+9. **Apply** (only after a confirm that authorizes apply).
    Same path, same record. Do not mint a successor. Do not
    write `published`. Stamp `updated:` (opportunistic
    `records.sh --root <root> --records-root <records-root-relative> touch --status draft`, else file-mode
@@ -225,7 +233,7 @@ omitted, treat as must-fix.
    named unit or append the next unused id when the kind
    file allows it. A new requirement is park, not a `keep`
    row.
-9. **After confirm.**
+10. **After confirm.**
 
    - **Named re-review:** follow this skill's `review`
      procedure (`verbs/review.md`) on the artifact (amended

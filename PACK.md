@@ -22,7 +22,8 @@ and owns its own setup procedure.
 `journal` is required because it is the records format and tool-layer authority.
 All other members are optional and default-installed:
 
-- Work leads: `architect`, `contractor`, and `inspector`.
+- Work leads: `architect`, `contractor`, and `inspector`; Inspector reviews documents and completed
+  implementations, publishes only accepted passing documents, and owns its project kind setup.
 - Project knowledge and follow-up: `journal`, `backlog`, `notepad`, and `analyst`.
 - Development operations: `workstream`, `auditor`, `debugger`, and `shopbook`.
 - Utilities: `delegate`, `mailbox`, `checkpoint`, `scheduler`, and `workspace`.

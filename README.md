@@ -53,7 +53,7 @@ scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `google-developer-style` | write developer docs in Google's house style; snapshot, no live-site floor; standalone, outside every pack |
 | `journal` | the records format authority: the record discriminator + contract + `records.sh` + the history ledger; setup, done, substrate curate |
-| `inspector` | critique and fold: review a spec or plan (or named kind); refine folds findings; does not mint and does not write published |
+| `inspector` | adequate, material review of documents and completed implementations; accepted passing document reviews publish, refine folds findings, and setup deploys Inspector-owned kind doctrine absent-only |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |

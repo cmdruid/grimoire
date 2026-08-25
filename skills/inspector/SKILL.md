@@ -1,14 +1,14 @@
 ---
 name: inspector
-description: "Use when the user runs `/inspector`, or asks to review a spec or plan (or named kind), to apply review findings or amend a needs-rework artifact, or to ask how we should refine or revise this. Critique and fold as one skill. review dumps a conversation verdict; on accept of a passing verdict this session writes published. refine is propose-then-apply and leaves the artifact draft. Does not mint a record. Bare `/inspector` asks which verb. For a one-line patch, skip it."
+description: "Use when the user runs `/inspector`, asks to review a document or completed implementation, wants findings folded into an artifact, asks how to refine or revise one, or wants Inspector's project doctrine deployed. Review is an adequate, material two-axis judgment; accepted passing document reviews publish, implementation verdicts never mutate; refine is propose-then-apply and leaves draft; setup seeds kinds absent-only. Does not mint records. Bare `/inspector` asks which verb. For a one-line patch, skip it."
 ---
 
 # inspector — critique and fold
 
-Independent second-set-of-eyes, then the fold back. Owns both
-artifact sets: specs / ADRs / founding-shaped files, and plans /
-roadmaps / runbooks. Kind-detect, then the matching judgment.
-Hosts may add kinds.
+Independent second-set-of-eyes, then the fold back. Owns document
+review for specs / ADRs / founding-shaped files and plans / roadmaps /
+runbooks, plus review of completed implementations. Kind-detect, then
+the matching judgment. Hosts may add document kinds.
 
 This `SKILL.md` is a **thin router**: kind-detect, the
 dispatch table, the seams every verb shares, and the typed edges.
@@ -18,14 +18,16 @@ When a verb is selected, **read its file and follow it**.
 This skill is **self-contained and uniquely named**: it depends on no other skill
 and collides with none.
 
-There is no `init` and no `setup`. Missing
-`<agent-workspace>/inspector/doctrine/` is not a refuse — use the bundled
-`kinds/<kind>.md`.
+There is no `init`. Explicit `setup` deploys Inspector's bundled kinds
+for project customization. Missing `<agent-workspace>/inspector/doctrine/`
+is not a refuse — use the bundled `kinds/<kind>.md`.
 
 **Kind doctrine** lands at `<agent-workspace>/inspector/doctrine/<kind>.md`
 (default `.dev/inspector/doctrine/<kind>.md`). No new front-door variable.
-Incumbent wins; upgrade is a judgment-assisted diff. Load the
-workspace copy if present, else the bundled `kinds/<kind>.md`.
+Incumbent wins; upgrade is a judgment-assisted diff. Load the complete
+workspace copy when it is a readable regular file, else the bundled
+`kinds/<kind>.md` when absent. A symlink, directory, other incompatible
+entry, or unreadable file is an error — never a fallback and never a merge.
 
 Review and refine are not setup operations: they never create this
 namespace. An absent workspace or kind file uses the bundle.
@@ -39,7 +41,8 @@ This package does **not** mint records.
 - **review** writes neither `status` nor `stage` in the verdict
   turn. On accept of a passing verdict, this session writes
   `published` (job artifacts: also `stage: approved`).
-  Founding-shaped: no write; stay `draft`.
+  Founding-shaped: no write; stay `draft`. Implementation review never
+  writes status or stage.
 - **refine** leaves `status: draft` and drops `stage: approved` if
   present.
 
@@ -49,11 +52,13 @@ This package does **not** mint records.
 |---|---|---|
 | `review` | `verbs/review.md` | two-axis critique; conversation verdict |
 | `refine` | `verbs/refine.md` | classify findings, propose amendments, fold on confirm |
+| `setup` | `verbs/setup.md` | deploy all bundled kind doctrine absent-only |
 | (bare) | — | **ask** which verb; do not default |
 
 ```
-review  →  (caller publishes)        →  (host sequences / walk)
-        →  stay draft                →  refine  →  review  →  …
+document review  →  accept/publish   →  (host sequences / walk)
+                 →  refine next turn →  review  →  …
+implementation review → verdict only
 ```
 
 Each arrow is a stop. No verb invokes the next, except a `refine`
@@ -61,27 +66,34 @@ confirmation that asks for `review` after apply.
 
 ## Kind-detect (review and refine, once)
 
-Kind-detect is the **only** artifact gate. Unknown kind → ask or
-refuse; do not invent a rubric. The six bundled kinds are in-scope.
-Hosts add files; they do not invent a rubric at runtime.
+Kind-detect is the **only** target gate. Unknown kind → ask or refuse;
+do not invent a rubric. The seven bundled kinds are in-scope. Hosts
+add document-kind files; they do not invent a rubric at runtime.
 
-1. Read the artifact. Classify from `tags:` / `doctype` / shape,
-   then the founding-shaped parser in `kinds/founding.md` (try
-   founding **before** spec — both may carry a spec tag).
-2. Resolve `<agent-workspace>` (front-door `agent-workspace:`, else
-   `.dev`). Test for `<agent-workspace>/inspector/doctrine/<kind>.md`.
-   Present → use it. Absent → bundled `kinds/<kind>.md`.
-3. No matching discriminator among workspace files and bundled
-   kinds → ask or refuse. Do not invent a rubric.
-4. Axes, groundedness extras, and refine legal locations come
+1. Resolve `<agent-workspace>` (front-door `agent-workspace:`, else
+   `.dev`) and the optional `inspector/doctrine/` directory. Never create
+   it here. For each bundled stem, a readable regular project file is
+   the complete effective policy; absence uses bundled `kinds/<kind>.md`.
+   Symlinks, directories, other incompatible entries, and unreadable
+   files are errors. Never merge or dual-read.
+2. Read the target. Try the effective document policies in this order:
+   founding, spec, adr, plan, roadmap, runbook. Founding is before spec
+   because both may carry a spec tag. Then try additional readable,
+   regular project `doctrine/*.md` policies in filename order. If two
+   document discriminators match, ask.
+3. Only after every document kind fails, an explicit named diff, range,
+   worktree, or commit may match the effective `implementation` policy.
+   Resolve its governing design when named or discoverable from the
+   change context. A document never falls through to implementation.
+4. No matching discriminator among workspace files and bundled kinds →
+   ask or refuse. Do not invent a rubric.
+5. Axes, groundedness extras, and refine legal locations come
    **from the kind file**. Verb files own the shared machine
    (verdict words, confirm parse, apply rules that are not
    kind-specific). Kind files do not override those.
 
-Match order for bundled kinds: founding, then spec, adr, plan,
-roadmap, runbook. A workspace kind with its own discriminator is
-tried against the same artifact; first confident match wins. If
-two match, ask.
+Host-added policies extend document review only; they cannot replace the
+reserved `implementation` discriminator or create a code-refine path.
 
 ## Brief the human (every verb)
 
@@ -114,7 +126,7 @@ does not open with it. Verdict words stay conversation-only.
 In-place steward: no private home. Verdict is conversation-only.
 
 <!-- edges:inspector -->
-- produces: — (verdict is conversation-only; on accept of a passing review, front-matter `published`; refine amends the named file in place)
+- produces: doctrine — setup deploys Inspector-owned kind policy; verdict is conversation-only; accepted passing document review publishes, and refine amends in place
 - handoff: — (none; after publish the host sequences)
-- consumes: spec, plan, review — artifacts under review; a findings baton (in-session list, named markdown, council RESULT.md)
+- consumes: spec, plan, review, doctrine — artifacts or completed changes under review; a findings baton; optional project kind policy
 <!-- /edges:inspector -->
