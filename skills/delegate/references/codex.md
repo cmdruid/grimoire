@@ -56,9 +56,9 @@ same-session correction.)
 
 In the prompt: name exactly what's in scope (the task, or the file list), point at the plan file by path,
 and state what's out of scope (no drive-by refactors, no dependency bumps, no submodule pointer changes).
-Tell Codex **not to commit** and not to run stack/network verifications (see gotcha). Ask it to report the
-files it touched, any gate output, **and any byproducts it hit** (follow-ups / bugs / friction) for your
-return contract.
+Tell Codex **not to commit** and not to run stack/network verifications (see gotcha). Require the
+canonical three-part return contract from `SKILL.md`; provider mechanics do not redefine its headings,
+status vocabulary, empty sentinel, or project-policy snapshot.
 
 **Before delegating a deletion / scrub / rename, verify the targets are actually dead** against the
 current codebase yourself -- Codex will execute a wrong "remove X" faithfully (e.g. scrubbing a string

@@ -38,8 +38,9 @@ libraries; it is not part of a project's development toolkit.
   use the repository-level checkpoint file; one session never uses both.
 - Backlog may suggest `tasks`, `issues`, and `feedback` during explicit setup; the pack
   installs no tracker, script, route, or debrief policy.
-- Delegate chooses whether and how to dispatch work. Mailbox is transport for a
-  returned artifact, not the dispatch decision.
+- Delegate chooses whether and how to dispatch work and may expose its own optional
+  `delegate/hooks/byproducts.md` policy through explicit setup. The pack never fills it.
+  Mailbox is transport for a returned artifact, not the dispatch decision.
 - Records, workspace files, hooks, doctrine, and review kinds remain owned by
   the skill that defines them. Pack installation never projects those files
   into a project.

@@ -1,6 +1,6 @@
 ---
 name: delegate
-description: "Use when work is well-scoped, returns a checkable artifact or conclusion, and does not need your taste to produce — or on explicit /delegate [task]. Pick the mechanism (inline read-only, mailbox slot, Codex executor, parallel fan-out, isolated worktree), confirm the provider/model once, degrade to inline on provider failure. Keywords: /delegate, dispatch, byproducts, model routing."
+description: "Use when work is well-scoped, returns a checkable artifact or conclusion, and does not need your taste to produce — or on explicit `/delegate [task]`. Pick the mechanism, confirm the provider/model once, require the three-part return contract, and apply an optional project byproducts policy. `/delegate setup` creates that policy point absent-only. Keywords: delegate, dispatch, setup, byproducts, model routing."
 ---
 
 # delegate -- hand work to a sub-agent, keep the judgment
@@ -18,7 +18,7 @@ contract**:
 
 - the **route** (which provider/model) -- **confirmed up front**, because you can't see live
   cost/quota/availability;
-- the **byproducts** (follow-ups / bugs / friction the delegate hit) -- **returned compactly**, because
+- the **byproducts** (observations outside the requested deliverable) -- **returned compactly**, because
   you can't see the delegate's dead context.
 
 Everything else stays **pass-by-reference**: a path is paid once; pasted content is paid repeatedly.
@@ -32,8 +32,9 @@ workflows*: a workflow skill may use `/delegate`; `/delegate` never says "use `/
 ## When to use
 
 Trigger when work is **well-scoped**, **returns a checkable artifact or conclusion**, and **does not
-need your taste to produce** — or on an explicit `/delegate [task]`. No verbs -- with a task, assess
-and route it; with none, this is the ambient doctrine.
+need your taste to produce** — or on an explicit `/delegate [task]`. With a task, assess and route it;
+with none, this is the ambient doctrine. `/delegate setup [<root>]` is the one verb: read and follow
+`verbs/setup.md`, then stop without dispatching.
 
 **Is it delegable?** All three must hold:
 - **well-scoped** -- you can state it self-contained, without your session history;
@@ -82,6 +83,30 @@ Judgment-heavy, ambiguous, or architectural work fails the third test -- do it i
   decided once. Provider *failures* are then handled per **Failure states** below, not by prompting; an
   unattended loop **degrades, it never stalls**. This is what makes `/delegate` safe to run inside an
   autonomous workstream loop.
+
+## Dispatch-scoped project policy
+
+Before constructing **every** delegate prompt, resolve the project root and `agent-workspace:`
+(front-door `AGENTS.md`, then `CLAUDE.md`, else `.dev`) read-only. Read exactly
+`<agent-workspace>/delegate/hooks/byproducts.md` once:
+
+- missing or zero-byte regular file → no overlay;
+- non-empty regular file → retain its exact bytes as this dispatch's snapshot;
+- directory, unreadable entry, symlink, or read error → surface the problem and do not dispatch.
+
+Do not trim, glob, merge files, or reread on return. When the snapshot is non-empty, append exactly
+one block to the prompt:
+
+```text
+Project byproducts policy (applies to this dispatch):
+---
+<exact snapshot>
+---
+```
+
+The snapshot may add project-specific detection and routing guidance. It cannot redefine the task,
+transport, status vocabulary, or mandatory return headings. Interpret returned Byproducts through
+the retained snapshot; without one, present them as observations in the calling context.
 
 ## The decision tree -- pick the mechanism
 
@@ -151,54 +176,47 @@ About to do work →
 
 ## The return contract -- compact, three parts
 
-Every delegation returns **three** compact things -- never the raw exploration:
+Every delegate prompt requires this exact semantic structure; none of the headings is optional:
 
-1. **Deliverable** -- a handle + one-line summary (mailbox slot), or a bounded summary (inline). Bulk
-   artifacts travel as a **path** you apply, never re-paid through context.
-2. **Status** -- the delegate's own assessment of how the task went, one of four states (distinct
-   from *provider* failure below -- this is the task's difficulty, not the API's health):
-   - **DONE** -- complete, verified against the actual gate/tests, no known gap.
-   - **DONE_WITH_CONCERNS** -- complete, but the delegate has one specific, named doubt (an edge case
-     it couldn't cover, an assumption it couldn't verify). Never silently ship a concern -- state it.
-   - **NEEDS_CONTEXT** -- couldn't proceed with the prompt as given (a missing file, an ambiguous
-     requirement, a fact only the orchestrator holds). Re-dispatch with the gap filled; never guess
-     on the delegate's behalf, and never re-run the identical prompt expecting a different result.
-   - **BLOCKED** -- the task itself doesn't fit: too hard for the model it ran on, or the task/plan as
-     written rests on a wrong assumption. Escalate to a stronger model or a smaller re-scoped task --
-     never a same-model retry of the unchanged dispatch (that treats a difficulty problem as if it
-     were a transient provider hiccup).
-3. **Byproducts block** -- a small, structured list, surfaced by the delegate (it does a
-   mini-debrief of its own slice). The kinds live here:
-   - follow-up work
-   - defect
-   - project problem/risk
-   - dev-experience observation
-   - skill feedback (home channel, tagged by skill — not a project tracker)
+```markdown
+## Deliverable
+<the requested artifact or conclusion>
 
-   **Empty is fine and explicit.** `/backlog debrief` is the workshop *drain* when that verb
-   exists; otherwise the project's own close-the-books sweep. Do not treat `/backlog` as the
-   vocabulary source.
+## Status
+<DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED>
+
+## Byproducts
+- <compact observation outside the deliverable>
+```
+
+When there is no applicable observation, the final section is exactly:
+
+```markdown
+## Byproducts
+- None.
+```
+
+The Deliverable is a handle plus one-line summary for a mailbox artifact, or a bounded conclusion
+for inline analysis; bulk bytes travel by path. Status describes task fit, not provider health.
+Byproducts are compact observations outside the deliverable. They are not permission to expand the
+assignment, implement unrelated work, mutate unrelated files, contact external systems, or create a
+durable artifact unless the original task required it.
 
 **Route on status, don't just relay it:**
 - **DONE** → proceed, but still re-establish trust from evidence (below) -- a self-reported DONE is not
   itself the evidence.
 - **DONE_WITH_CONCERNS** → investigate the named doubt yourself before accepting; it is exactly the
   kind of specific, bounded claim worth five minutes of verification.
-- **NEEDS_CONTEXT** → re-dispatch with the missing piece filled in; log why the original prompt fell
-  short as a byproduct (a project problem/risk or a dev-experience observation) -- it improves the
-  next prompt, not just this one.
+- **NEEDS_CONTEXT** → re-dispatch with the missing piece filled in rather than guessing or repeating
+  the unchanged prompt.
 - **BLOCKED** → escalate (bigger model / smaller task) on the first one or two; **three or more BLOCKED
   reports on re-scoped attempts of the same underlying task means the task or the plan itself is
   wrong, not the model** -- stop re-scoping and take it back to whoever owns the plan, the same
-  "question the fundamentals, not the Nth attempt" shape `debugger` uses for a run of failed fixes.
+  "question the fundamentals, not the Nth attempt" shape used for repeated failed attempts.
 
-**Stash returned byproducts into your running capture notes immediately** (as you would your own
-discovered follow-ups) so they survive context compaction to the host's close-the-books sweep. They
-land back in your context by contract, so that sweep needs no special handling.
-
-**Weak model = weak detector.** A cheap delegate spots fewer byproducts than you would. "Report anything
-that looked like a bug / follow-up / friction" is a low bar most models clear, but **byproduct-rich or
-observation-heavy work is a reason to route UP, not down** -- a real counterweight to the cost instinct.
+Consume the three parts independently: validate or apply Deliverable, use Status for control flow,
+and interpret Byproducts through the retained dispatch snapshot. A weak model remains a weak detector;
+observation-heavy work is a reason to route up rather than down.
 
 ## Re-establish trust on return
 
@@ -229,7 +247,7 @@ confirmed up front (a runtime error is knowable; next week's quota was not). Cla
   never block the whole loop on one failed dispatch.
 
 **Log every fallback as a byproduct** (route X failed → fell back to Y) in the return contract's
-byproducts block (a project problem/risk or a dev-experience observation). A fallback is also a
+Byproducts section. A fallback is also a
 signal the confirmed route has gone stale and may need re-confirming -- the same observable fact,
 surfaced to whoever owns the route.
 
@@ -271,7 +289,7 @@ The protocol above is harness-neutral; only *how you spawn a sub-agent on the na
 | pick mechanism | inline sub-agent / mailbox slot / codex / parallel fan-out / isolated worktree |
 | route | compute checkable facts; **confirm the provider/model** with the human (once → session pref) |
 | dispatch | self-contained task, no inherited context; on the confirmed model |
-| return | deliverable (tiny) + status (DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED) + byproducts (follow-up / defect / problem-risk / observation / skill feedback; empty OK); stash now |
+| return | exact Deliverable + Status + Byproducts headings; empty Byproducts is `- None.` |
 | trust | re-establish from diff / gates / output -- never the self-report, even a DONE one |
 
 ## Edges
@@ -293,5 +311,5 @@ with no captured items to surface, the exact thing registration exists for. All 
 ## Done when
 
 Mechanism picked; route confirmed or pre-confirmed; return contract received (deliverable +
-status + byproducts); trust re-established from evidence; byproducts stashed. If the route
+status + byproducts); trust re-established from evidence; Byproducts interpreted through the dispatch snapshot. If the route
 failed: fallback or floor named.
