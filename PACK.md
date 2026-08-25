@@ -1,6 +1,6 @@
 ---
 name: clankshop
-version: 3.1.1
+version: 4.0.0
 description: "Independent agent skills with a faceless composition runbook"
 required: journal
 optional: analyst, auditor, backlog, architect, contractor, inspector, debugger, delegate, checkpoint, mailbox, notepad, scheduler, shopbook, workspace, workstream
