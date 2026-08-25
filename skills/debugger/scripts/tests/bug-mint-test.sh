@@ -44,11 +44,14 @@ TMP="$(mktemp -d "${TMPDIR:-/tmp}/bug-mint-test.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 
 # --- no records.sh: file-mode mint -------------------------------------------
-RR="$TMP/bare"
-AT="$RR/templates"
+ROOT="$TMP"
+R="bare"
+W="ws-bare"
+RR="$ROOT/$R"
+AT="$ROOT/$W/debugger/templates"
 mkdir -p "$RR"
 
-OUT="$(/bin/bash "$MINT" mint "$RR" "$AT" "Alpha crash")"
+OUT="$(/bin/bash "$MINT" mint "$ROOT" "$R" "$W" "Alpha crash")"
 rr_abs="$(cd "$RR" && pwd)"
 expect_eq "mint agent-records" "$rr_abs" "$(kv agent-records "$OUT")"
 expect_eq "mint records-root compat" "$rr_abs" "$(kv records-root "$OUT")"
@@ -61,20 +64,20 @@ expect_match "status draft" '^status: draft$' "$(cat "$path")"
 expect_match "created today" "^created: $today$" "$(cat "$path")"
 expect_match "updated today" "^updated: $today$" "$(cat "$path")"
 expect_match "filled title" '^# Alpha crash$' "$(cat "$path")"
-expect_eq "nested dest copied" "1" "$([ -f "$AT/debugger/bugs.md" ] && echo 1 || echo 0)"
+expect_eq "owner-first dest copied" "1" "$([ -f "$AT/bugs.md" ] && echo 1 || echo 0)"
 expect_absent "no flat templates/bugs.md" "$RR/templates/bugs.md"
 expect_absent "no history.tsv after mint" "$RR/history.tsv"
 expect_absent "no scripts/ after mint" "$RR/scripts"
 expect_absent "mint opened no trackers/" "$RR/trackers"
 
-OUT2="$(/bin/bash "$MINT" mint "$RR" "$AT" "Alpha crash")"
+OUT2="$(/bin/bash "$MINT" mint "$ROOT" "$R" "$W" "Alpha crash")"
 expect_eq "collision rel" "bugs/$today-alpha-crash-2.md" "$(kv rel "$OUT2")"
 
 # missing bundled template → refuse
 FAKE="$TMP/no-tpl-skill"
 mkdir -p "$FAKE/scripts"
 cp "$MINT" "$FAKE/scripts/bug-mint.sh"
-if /bin/bash "$FAKE/scripts/bug-mint.sh" mint "$RR" "$AT" "Nope" >/dev/null 2>&1; then
+if /bin/bash "$FAKE/scripts/bug-mint.sh" mint "$ROOT" "$R" "$W" "Nope" >/dev/null 2>&1; then
   echo "FAIL: missing doctype template — expected non-zero" >&2
   fail=$((fail + 1))
 else
@@ -82,35 +85,37 @@ else
 fi
 
 # file-mode close must not create history.tsv
-/bin/bash "$MINT" stamp "$RR" "$path" --status "done" --note "fixed" >/dev/null
+/bin/bash "$MINT" stamp "$ROOT" "$R" "$W" "$path" --status "done" --note "fixed" >/dev/null
 expect_match "file-mode close status" '^status: archived$' "$(cat "$path")"
 expect_absent "file-mode close no history.tsv" "$RR/history.tsv"
 expect_absent "stamp opened no trackers/" "$RR/trackers"
 
 # --- with records.sh ---------------------------------------------------------
 if [ -f "$JOURNAL_RS" ]; then
-  RR2="$TMP/with-rs"
-  AT2="$RR2/templates"
-  mkdir -p "$RR2/scripts"
-  cp "$JOURNAL_RS" "$RR2/scripts/records.sh"
-  chmod +x "$RR2/scripts/records.sh"
+  R2="with-rs"
+  W2="ws-rs"
+  RR2="$ROOT/$R2"
+  AT2="$ROOT/$W2/debugger/templates"
+  mkdir -p "$RR2" "$ROOT/$W2/journal/scripts"
+  cp "$JOURNAL_RS" "$ROOT/$W2/journal/scripts/records.sh"
+  chmod +x "$ROOT/$W2/journal/scripts/records.sh"
   : > "$RR2/history.tsv"
 
-  OUT3="$(/bin/bash "$MINT" mint "$RR2" "$AT2" "Need the key")"
+  OUT3="$(/bin/bash "$MINT" mint "$ROOT" "$R2" "$W2" "Need the key")"
   expect_eq "records mode" "records" "$(kv mode "$OUT3")"
   rpath="$(kv path "$OUT3")"
   expect_eq "records path exists" "1" "$([ -f "$rpath" ] && echo 1 || echo 0)"
-  expect_eq "records nested dest" "1" "$([ -f "$AT2/debugger/bugs.md" ] && echo 1 || echo 0)"
+  expect_eq "records owner-first dest" "1" "$([ -f "$AT2/bugs.md" ] && echo 1 || echo 0)"
   expect_absent "records no flat bugs.md" "$RR2/templates/bugs.md"
   expect_absent "records mint opened no trackers/" "$RR2/trackers"
-  if /bin/sh "$RR2/scripts/records.sh" check >/dev/null 2>&1; then
+  if /bin/sh "$ROOT/$W2/journal/scripts/records.sh" --root "$ROOT" --records-root "$R2" check >/dev/null 2>&1; then
     pass=$((pass + 1))
   else
     echo "FAIL: records.sh check after new" >&2
     fail=$((fail + 1))
   fi
 
-  STAMP_RS="$(/bin/bash "$MINT" stamp "$RR2" "$rpath" --status "done" --note "fixed")"
+  STAMP_RS="$(/bin/bash "$MINT" stamp "$ROOT" "$R2" "$W2" "$rpath" --status "done" --note "fixed")"
   expect_eq "stamp records mode" "records" "$(kv mode "$STAMP_RS")"
   expect_match "stamp records status" '^status: archived$' "$(cat "$rpath")"
   expect_eq "ledger one line" "1" "$(grep -c . "$RR2/history.tsv" || true)"

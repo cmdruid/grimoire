@@ -41,10 +41,11 @@ is (or run the debrief if the intent is "capture everything that surfaced").
 
 ## Shared discipline (every verb relies on this — stated here once)
 
-- **Resolve both homes, then mint.** Agent-records home: first line-start `agent-records:`
-  or `records-root:` in `AGENTS.md`, then `CLAUDE.md`; else `.records`. Templates home:
-  `<agent-workspace>/templates` (declared `agent-workspace:`, else `.dev`). Pass both
-  into every `scripts/record-mint.sh` call. The script does not scan the front door.
+- **Resolve explicit roots, then mint.** `<root>` is the project root. Agent-records home: first line-start `agent-records:`
+  or `records-root:` in `AGENTS.md`, then `CLAUDE.md`; else `.records`. Agent workspace:
+  declared `agent-workspace:`, else `.dev`. Pass `<root>`, the repo-relative records root,
+  and the repo-relative workspace into every `scripts/record-mint.sh` call. The script
+  resolves `<agent-workspace>/backlog/templates/` and does not scan the front door.
 - **In-package contract.** Front-matter keys: `doctype`, `status`, `created`, `updated`,
   `tags`. Live `draft`, `published`. Closed `archived` (ledger `--as` is `done` /
   `dropped` / `superseded` / `consumed` when the tool exists). File-mode close writes
@@ -53,7 +54,8 @@ is (or run the debrief if the intent is "capture everything that surfaced").
   Tracker-line form under `## Items`, newest last (same optional ` → <dir>/<file>.md`
   before the completion date). Do not send the agent to another skill for those bytes.
 - **`record-mint.sh` is the one minter.** Always call it (from this skill's own `scripts/`).
-  It uses deployed `records.sh` when that file is executable (`new --template <resolved>`);
+  It uses staged `<agent-workspace>/journal/scripts/records.sh` when that file is executable
+  (always with explicit `--root` and `--records-root`);
   otherwise it writes the contract shape (file-mode). Never write `history.tsv` by hand.
   Never write the flat `<agent-records>/templates/<doctype>.md`. File-mode close rewrites
   `status:` / `updated:` only. Minting doctype `tickets` or `bugs` from this
@@ -62,7 +64,7 @@ is (or run the debrief if the intent is "capture everything that surfaced").
   `<agent-records>/<doctype>/*.md` and honor live vs `archived`. Find a tracker
   by its H1 title among live `trackers/` records.
 - **The three canonical trackers**, found by title and created lazily on first capture
-  (`record-mint.sh mint <agent-records> <templates-home> trackers "<Title>"`): **Backlog**
+  (`record-mint.sh mint <root> <records-root-relative> <workspace-relative> trackers "<Title>"`): **Backlog**
   (things to build), **Issues** (project problems/concerns), **Feedback** (dev-experience
   observations). **Incumbent-schema guard:** if a tracker's existing items follow a legacy
   per-item shape the migration never normalized, don't silently mix a second schema into

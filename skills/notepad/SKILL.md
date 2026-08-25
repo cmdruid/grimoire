@@ -39,17 +39,17 @@ session scratch that must not persist.
 
 ## Shared discipline (every verb relies on this — stated here once)
 
-- **Resolve both homes** (doctrine resolver, inlined): agent-records
+- **Resolve explicit roots** (resolver inlined): `<root>` is the project root; agent-records
   home is first `^agent-records:` or `^records-root:` in `AGENTS.md`,
-  then `CLAUDE.md`, else `.records`. Templates home is
-  `<agent-workspace>/templates` (declared `agent-workspace:`, else `.dev`).
-  Pass both into every `scripts/note-mint.sh` mint call. The script
-  does not scan the front door.
+  then `CLAUDE.md`, else `.records`. Agent workspace is declared
+  `agent-workspace:`, else `.dev`. Pass `<root>`, the repo-relative records root,
+  and the repo-relative workspace into every `scripts/note-mint.sh` call. The script
+  resolves `<agent-workspace>/notepad/templates/` and does not scan the front door.
 - **One fact per note** (the path is the ID).
 - **`note-mint.sh` is the one minter.** Always call it (from this
   skill's own `scripts/`, never a host path). Signature:
-  `mint <agent-records> <templates-home> <title>`. It uses deployed
-  `records.sh` when that file is executable (`new --template
+  `mint <root> <records-root-relative> <workspace-relative> <title>`. It uses staged
+  Journal `records.sh` when that file is executable (`new --template
   <resolved>`); otherwise it writes the contract shape itself. Never
   write `history.tsv` by hand. Never write the flat
   `<agent-records>/templates/notes.md`.

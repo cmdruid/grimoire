@@ -15,7 +15,7 @@ that phase can be built. The roadmap never carries task-level detail.
    and are not this input. `status:` missing / not `published` →
    refuse. An explicit human waive: the caller writes
    `published` on that spec (opportunistic
-   `records.sh touch --status published`, else file-mode), notes
+   `records.sh --root <root> --records-root <records-root-relative> touch --status published`, else file-mode), notes
    the waive, **then** maps. It does not map against a `draft`.
    Open decision branches → stop; those belong in a grill on the
    spec.
@@ -32,7 +32,7 @@ that phase can be built. The roadmap never carries task-level detail.
    - **No task-level detail.** No file lists, no commands, no slice code. If a
      phase needs that, it needs a `plan`.
 4. **Land it** per SKILL.md *Shared discipline*. Resolve `plans.md` via the
-   project-templates rule, then mint `records.sh new plans --template <resolved>
+   project-templates rule, then mint `records.sh --root <root> --records-root <records-root-relative> new plans --template <resolved>
    --title "<Track> — Roadmap"` when the tool exists; else file-mode from that
    same resolved path into `<agent-records>/plans/`, naming the file
    `YYYY-MM-DD-<slug>.md` (the record shape). Either way set

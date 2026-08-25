@@ -42,10 +42,10 @@ case "$ws" in
 esac
 
 door="$root/AGENTS.md"
-flows_dir="$root/$ws/flows"
-pointer_line="Project procedures live under \`$ws/flows/\` and are not loaded until one is selected."
-# Match the backticked path so `.dev/flows/` is not a substring hit for `dev/flows/`.
-path_lit="\`$ws/flows/\`"
+flows_dir="$root/$ws/*/flows"
+pointer_line="Project procedures live under \`$ws/*/flows/\` and are not loaded until one is selected."
+# Match the full backticked owner-first glob so a different workspace cannot satisfy it.
+path_lit="\`$ws/*/flows/\`"
 
 if [ -f "$door" ]; then
   door_class=agents

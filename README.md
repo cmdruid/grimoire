@@ -34,7 +34,8 @@ the one required member), `backlog` (the follow-up lifecycle), `notepad` (projec
 `workstream` (development streams), `auditor` (code-quality audits), `debugger` (root-cause
 diagnostics), `analyst` (reports and briefings read back out of the records), `shopbook`
 (experimental — query or create host procedures under `flows/`); **utilities** —
-`checkpoint`, `mailbox`, `delegate`, `scheduler`. Three skills sit outside the pack on
+`checkpoint`, `mailbox`, `delegate`, `scheduler`, `workspace` (the owner-first workspace guard).
+Three skills sit outside the pack on
 purpose: `agent-council` (cross-vendor review panel), `skill-builder` (the **toolmaker** —
 scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
 (developer-docs house style). See *The packs* below.
@@ -56,8 +57,9 @@ scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
-| `shopbook` | experimental finder + host-stub creator: query / list / search host procedures under `<agent-workspace>/flows/`, mint a stub (`create`), repair the door pointer (`sync`), fill missing title/use-when (`upkeep`) |
+| `shopbook` | experimental finder + host-stub creator: query / list / search host procedures under `<agent-workspace>/<owner>/flows/`, mint a stub (`create`), repair the door pointer (`sync`), fill missing title/use-when (`upkeep`) |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
+| `workspace` | read-only workspace format guard: validate open owner namespaces, closed kinds, safe paths, and split/coincident workspace and records roots |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
 The v2 rebuild (`docs/design/2026-08-12-clankshop-v2.md`) once shaped the pack as a faced
@@ -72,11 +74,13 @@ former role skills had already merged into the face
 ### Storage convention: what skills may maintain in a project
 
 A project has two independently resolved roots. **`<agent-workspace>`** (by default `.dev`)
-holds skill-owned working files such as doctrine, hooks, templates, review kinds, and host
-procedures. **`<agent-records>`** (by default `.records`) holds work products:
+holds skill-owned working files beneath `<skill>/<kind>/`; owners are open and the kinds are
+`doctrine`, `hooks`, `scripts`, `templates`, `trackers`, and `flows`. **`<agent-records>`**
+(by default `.records`) holds work products:
 dated, typed records (`YYYY-MM-DD-<slug>.md` carrying front-matter that declares a `doctype`)
-in whatever directories their writers mint, plus `records.sh` and the `history.tsv` closure
-ledger — the format is `journal`'s (templates arrive with the skills that mint them;
+in whatever directories their writers mint, plus the `history.tsv` closure ledger. Journal's
+staged engine lives at `<agent-workspace>/journal/scripts/records.sh`; the format is `journal`'s
+(templates arrive with the skills that mint them;
 `journal` ships the commons).
 **`AGENTS.md`** is the door and the one place `agent-workspace:` / `agent-records:` are declared
 when they are not the defaults. Each durable-home skill owns its files and optional route block;

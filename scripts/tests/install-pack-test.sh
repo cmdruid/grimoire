@@ -17,7 +17,7 @@ import json, sys
 with open(sys.argv[1]) as handle:
     lock = json.load(handle)
 entry = lock["packs"]["clankshop"]
-assert entry["version"] == "3.0.0", entry
+assert entry["version"] == "3.1.0", entry
 assert entry["manifest"]["name"] == "clankshop", entry
 assert entry["manifest"]["required"] == "journal", entry
 assert "clankshop" not in entry["skills"], entry
@@ -30,13 +30,14 @@ lock="$tmp/project/grimoire.lock"
 
 "$repo/install.sh" --target "$target" --pack clankshop
 [ -L "$target/journal" ] || fail "required member was not installed"
+[ -L "$target/workspace" ] || fail "workspace member was not installed"
 [ ! -e "$target/clankshop" ] && [ ! -L "$target/clankshop" ] \
   || fail "faceless pack installed an implicit face"
 assert_faceless_lock "$lock"
 
 list_out="$tmp/list.out"
 "$repo/install.sh" --target "$target" --list >"$list_out"
-grep -Eq '^  clankshop[[:space:]]+v3\.0\.0' "$list_out" \
+grep -Eq '^  clankshop[[:space:]]+v3\.1\.0' "$list_out" \
   || fail "list did not render the root faceless pack"
 
 "$repo/install.sh" --target "$target" --check --pack clankshop

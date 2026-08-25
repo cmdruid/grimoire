@@ -17,17 +17,17 @@ up anywhere.
 
 ## One environment probe (at entry)
 
-The rubric is doctrine, so its home resolves like any other: the doctrine home is the fixed
-subpath `<agent-workspace>/doctrine`, and `<agent-workspace>` is the declared
+The rubric is Auditor-owned doctrine, so its home is the fixed
+subpath `<agent-workspace>/auditor/doctrine`, and `<agent-workspace>` is the declared
 `agent-workspace:` (front-door `AGENTS.md` then `CLAUDE.md`), else `.dev` — so by default
-`.dev/doctrine/`. Resolving the home is not finding the rubric — resolve it, **then**
+`.dev/auditor/doctrine/`. Resolving the home is not finding the rubric — resolve it, **then**
 detect `GUIDE.md`. No pack lifecycle is a prerequisite; rubric setup is this
 skill's explicit operation.
 
 Detection order, first hit wins:
 
-1. **`<agent-workspace>/doctrine/test/workflows/audit/`** — the resolved home (by default
-   `.dev/doctrine/test/workflows/audit/`). The rubric is project doctrine
+1. **`<agent-workspace>/auditor/doctrine/test/workflows/audit/`** — the resolved home (by default
+   `.dev/auditor/doctrine/test/workflows/audit/`). The rubric is project doctrine
    (`GUIDE.md`, `rules/`, `metrics.sh`) and is loaded directly for each pass.
 2. **`docs/audit/GUIDE.md`** — the **legacy** home, still detected so rubrics already
    deployed there keep working (the same courtesy `records-root:` gets alongside
@@ -75,12 +75,12 @@ layer (or the dated report file) is the memory.
 
 - **The pass report** — one `reports` record under the agent-records home, tagged
   `audit`. Resolve `reports.md` via the project-templates rule;
-  `records.sh new reports --template <resolved> --title "Audit: <scope>"` when
+  `records.sh --root <root> --records-root <records-root-relative> new reports --template <resolved> --title "Audit: <scope>"` when
   the tool exists; else file-mode from that path, naming the file
   `YYYY-MM-DD-<slug>.md` (the record shape). Never write the flat
-  `<agent-workspace>/templates/reports.md`. The reports store *is* the trend
+  `<agent-workspace>/auditor/templates/reports.md`. The reports store *is* the trend
   history. Close it `consumed` once its actionable findings are drained
-  (`records.sh done` when the tool exists; else file-mode stamp).
+  (`records.sh --root <root> --records-root <records-root-relative> done` when the tool exists; else file-mode stamp).
 - **Defects stay in the report.** Do not mint `bugs/`. Promote a defect via
   the host's bug-filing lane. If no lane exists, stay in the report. Tracker
   lines only when the tracker file already exists; else the report is the queue.
@@ -97,8 +97,9 @@ Follow the bundled `BOOTSTRAP.md`:
    the `<native dimensions>` (the host's sacred invariants), the `<targets>` (Deep/Mid/Light by
    blast radius), the `<drains>` (records layer or the host's existing trackers), and the
    audit's purpose (hygiene vs release-gating → severity model).
-2. **Confirm the home** — resolved: `<agent-workspace>/doctrine/test/workflows/audit/` (no confirmation needed —
-   doctrine has one home); standalone: propose `docs/audit/` and confirm once.
+2. **Confirm the home** — resolved: `<agent-workspace>/auditor/doctrine/test/workflows/audit/`
+   (no confirmation needed). An explicit setup may create only this Auditor-owned namespace;
+   refuse symlinked or non-directory parents before writing. Legacy `docs/audit/` remains detection-only.
 3. **Author the rubric** — copy the bundled generic `rules/` into `<home>/rules/`, fill the
    `<language>` greps and `How to quantify` recipes, and add a rule file per
    `<native dimension>`, following the uniform rule-file shape in `BOOTSTRAP.md`.
@@ -131,7 +132,7 @@ Follow the host's `GUIDE.md` → *Process*; in brief:
 5. **Record.** Write the pass report (reports record / dated file): scorecard + findings with
    evidence, per GUIDE's finding-entry shape.
 6. **Drain.** Route every actionable finding per *Deliverables*; then close the report
-   (`records.sh done <report> --as consumed` on a workshop host).
+   (`records.sh --root <root> --records-root <records-root-relative> done <report> --as consumed` on a workshop host).
 
 ## Relationship to neighboring skills
 

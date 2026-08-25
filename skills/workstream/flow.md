@@ -53,7 +53,7 @@ whole feature, exactly as above.
 
 **The stream builds the plan itself, per the host's build lane.** Execute the plan's tasks/slices
 red-first to gate-green, following the host's feature lane where one is documented
-(`<agent-workspace>/flows/feature.md` when that file exists — its walk's build step), else the plan
+(`<agent-workspace>/workstream/flows/feature.md` when that file exists — its walk's build step), else the plan
 template's own structure. The execution discipline is the loop's own: the main session is the
 **sole writer** of the tree, authoring is mode-routed per `/delegate` (inline, a `/mailbox` patch
 slot the orchestrator applies, or an isolated worktree merged back), the **gate stays
@@ -138,7 +138,7 @@ is the hole seed-only `create` documented and `load` must close.
 **Verify a queued item is still real before offering it *to build*.** A Backlog-tracker / roadmap item
 can already be **shipped** — by a sibling stream, with the entry never pruned. Before presenting such an
 item as buildable work (a KNOWN next-item *or* an AMBIGUOUS pick), cheaply confirm it isn't already done:
-on a workshop host `records.sh history --grep <slug>` (the closure ledger), else grep the project's own
+on a workshop host `records.sh --root <root> --records-root <records-root-relative> history --grep <slug>` (the closure ledger), else grep the project's own
 done trail — plus glance at the code surface it names. A stale entry otherwise costs a
 wasted question round-trip + an Explore dispatch before `build` discovers there is nothing to build.
 (Same doctrine as `/contractor plan`'s grounding gate: verify inherited/queued work is real before building it.)

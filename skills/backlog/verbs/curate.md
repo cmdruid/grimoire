@@ -8,7 +8,7 @@ record-level hygiene (contract conformance, link rot, prune proposals) is the fo
 authority's half, not this verb's.
 
 1. Resolve both homes (SKILL.md).
-2. **Walk each tracker** (`records.sh list --type trackers` when the tool exists; else
+2. **Walk each tracker** (`records.sh --root <root> --records-root <records-root-relative> list --type trackers` when the tool exists; else
    scan live `<agent-records>/trackers/*.md`): dedupe overlapping lines (merge into the
    sharper one), reword vague items until they act cold, re-order by priority (top =
    next — a deliberate exception to the contract's append-newest-last rule; later captures

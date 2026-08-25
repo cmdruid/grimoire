@@ -21,7 +21,7 @@ the enum.
 - Disposition ⇔ `done` | `dropped` | `superseded` | `consumed`
   (ledger `--as` only). Unchanged vocabulary.
 
-`records.sh done` stamps the **file** `archived` and appends the
+`records.sh --root <root> --records-root <records-root-relative> done` stamps the **file** `archived` and appends the
 ledger line whose disposition is `--as`. `done --as consumed` is
 legal: file `archived`, ledger `consumed`.
 
@@ -31,7 +31,7 @@ path. It does **not** require `$disp == $status`.
 File-mode close (no `records.sh`): rewrite `status: archived` and
 `updated:` only. Do not write `history.tsv`. After a later standup,
 `check` flags archived-without-ledger. Repair is `curate`: rewrite
-`status:` back to `draft`, then `records.sh done`.
+`status:` back to `draft`, then `records.sh --root <root> --records-root <records-root-relative> done`.
 
 ## `stage` (writer, optional)
 

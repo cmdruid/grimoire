@@ -21,13 +21,13 @@ and collides with none.
 `<agent-records>/plans/` on every host (first `agent-records:` or
 `records-root:` in `AGENTS.md` then `CLAUDE.md`, else `.records/`), with
 `tags:` exactly one of `[plan]`, `[roadmap]`, `[runbook]`. Resolve
-`plans.md` via the project-templates rule; `records.sh new plans --template
+`plans.md` via the project-templates rule; `records.sh --root <root> --records-root <records-root-relative> new plans --template
 <resolved>` when the tool exists; else file-mode from that path, naming the
 file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the
 tool will not see it. Then
 fill the body from the resolved `plan.md` / `roadmap.md` / runbook
 conductor. Never write the flat
-`<agent-workspace>/templates/<doctype>.md`. Never deploy `plan.md` or
+`<agent-workspace>/contractor/templates/<doctype>.md`. Never deploy `plan.md` or
 `roadmap.md` *as* `plans.md`.
 
 **Status vocabulary.** The `status` enum is
@@ -35,7 +35,7 @@ conductor. Never write the flat
 `published` and `stage: approved` after a passing host's review they
 accept. After a successful walk, this skill sets `stage: implemented`
 (the plan stays `published`). Closed is `archived`. Closure through
-`records.sh done` when the tool exists; else file-mode stamp. Optional
+`records.sh --root <root> --records-root <records-root-relative> done` when the tool exists; else file-mode stamp. Optional
 `stage` (non-empty if present); writer `stage` values are in-package.
 
 ## Verb dispatch (read the file, then follow it)

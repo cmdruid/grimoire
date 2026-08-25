@@ -33,10 +33,10 @@ verb's job).
    example of a records-path client.
    - **Yes** → scaffold, in `SKILL.md` (see `docs/DOCTRINE.md` § Record-writing skills):
      - the inlined agent-records resolver (default `.records/…`) and the
-       templates home as `<agent-workspace>/templates/<name>/` (default
-       `.dev/templates/<name>/`); and, for a skill that reads or writes
-       doctrine, the agent-workspace resolver — the doctrine home is
-       `<agent-workspace>/doctrine`, default `.dev/doctrine/…`;
+       templates home as `<agent-workspace>/<name>/templates/` (default
+       `.dev/<name>/templates/`); and, for a skill that reads or writes
+       doctrine, the agent-workspace resolver — its doctrine home is
+       `<agent-workspace>/<name>/doctrine/`, default `.dev/<name>/doctrine/`;
      - the five-key in-package contract — do not send the agent to another
        skill for those bytes. State: the five keys (`doctype`, `status`,
        `created`, `updated`, `tags`); `status`: `draft` | `published` live,
@@ -53,10 +53,11 @@ verb's job).
    - **No** → do not add those sections.
 
 3b. **Project hooks?** — ask, orthogonal to the tier and to record-writer: *does
-    this skill have a named-seam loop the pack or a later agent might extend?*
-    - **Yes** → a sentence in `SKILL.md` plus known ids on the parse line.
-      Do **not** scaffold a generic hooks.md in the skill's templates
-      directory. Do not add a lint check that requires the file.
+    this skill have a named-seam loop a project might extend?*
+    - **Yes** → document each known seam at
+      `<agent-workspace>/<name>/hooks/<seam>.md`. The owner may bundle an
+      absent-only skeleton; do not scaffold one generic hooks file and do not
+      add a lint check that requires project files to exist.
     - **No** → nothing.
 
 4. **Write `SKILL.md`:**
@@ -80,12 +81,15 @@ verb's job).
 
 5. **Durable-home tier only — scaffold `init`:**
    - Draft the new skill's own `<new-skill>/verbs/init.md`: an idempotent home-scaffold
-     (create-if-absent for each store the skill
-     owns; never touch existing content) **plus** front-door self-registration, modeled on the
+     beneath `<agent-workspace>/<name>/<owned-kind>/` (create-if-absent for each store the skill
+     owns; never touch existing content or another owner namespace) **plus** front-door self-registration, modeled on the
      front-door registration mechanism (`docs/DOCTRINE.md` § Typed edges & registration) — content-vs-
      arrangement split, absent→append / present→replace-between-delimiters / malformed→report-and-stop.
      A skill implementing it bundles its **own** registration script (self-containment: no runtime
      call-out to another skill's copy — it must work installed alone, BL-6).
+   - An explicit setup may create its declared workspace when absent. Before
+     each mkdir, recheck that every existing parent is a real directory and not
+     a symlink; refuse unsafe parents without partial writes.
    - State the `built-against` stamp formula as **path-scoped to the new skill's own directory** —
      `git -C <skill-dir> log -1 --format=%h -- .`, never `git -C <skill-dir> rev-parse --short HEAD`
      (the latter collapses to one value across every skill on a monorepo skills-root, BL-7) — else a

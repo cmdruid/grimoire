@@ -75,7 +75,7 @@ trunk). So the coordinator NEVER does iterative, scratch-generating work on the 
   the design stream, not here.
 - **Respect stream ownership** -- check `/workstream status` + the relevant decision record before
   touching a path another stream owns.
-- `<project: additional hard-won coordinator lessons -- see the host's <agent-workspace>/doctrine/core/INVARIANTS.md>`
+- `<project: additional hard-won coordinator lessons -- see host AGENTS.md and the owner-local doctrine it points to>`
 
 ## Durable orientation pointers
 - **Front door:** `<project: AGENTS.md location>`; **dev index:** `<project: dev index location>`;

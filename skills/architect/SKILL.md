@@ -32,14 +32,14 @@ not the machinery. "Here are two approaches; I recommend A because…" /
 land in `<agent-records>/specs/` and `<agent-records>/adr/` on every host
 (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`,
 else `.records/`). Resolve `specs.md` / `adr.md` via the project-templates rule;
-`records.sh new specs --template <resolved>` when the tool exists (the flag is
+`records.sh --root <root> --records-root <records-root-relative> new specs --template <resolved>` when the tool exists (the flag is
 required — there is no fallback); else file-mode from that path, naming the
 file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the tool
 will not see it. `specs.md` carries both the front-matter and the body scaffold,
 so there is no second template to fill from. Never write the flat
-`<agent-workspace>/templates/<doctype>.md`. Mint stays `status: draft`.
+`<agent-workspace>/architect/templates/<doctype>.md`. Mint stays `status: draft`.
 The caller writes `published` after a passing host's review they accept.
-Closure through `records.sh done` when the tool exists; else
+Closure through `records.sh --root <root> --records-root <records-root-relative> done` when the tool exists; else
 file-mode stamp. Founding-shaped `grill` / `spec` stay on the named file
 (no records mint). `new` / `deploy` unchanged.
 

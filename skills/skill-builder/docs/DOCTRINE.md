@@ -93,12 +93,12 @@ scoped to non-face skills.
   leaf but absent from the runbook is drift; a seam duplicated into a leaf is co-mingling — audit for
   both (`docs/BOUNDARY-AUDIT.md`).
 
-- **Glue is content (the pack's) vs. mechanism (the engine's) — birth vs. growth.** The glue *content*
-  — the seams, the initial front-door wiring — is owned by the pack/runbook, which **births** the
-  constellation. **Project hooks files** (`<agent-workspace>/hooks/<skill>.md`) are the glue
-  surface — not a composer skill to invoke. Pack/runbook still authors *what* the glue
-  says; there is no oven. Using `flows/` / `hooks/` / `templates/` is applying that
-  glue; there is still no oven.
+- **Glue is content vs. mechanism.** A runbook may describe the seam, while the
+  owning skill implements the reader and a project owns any local overlay body.
+  **Project hook files** live at
+  `<agent-workspace>/<skill>/hooks/<seam>.md`; there is no composer skill or
+  pack-level writer. The same ownership rule applies to `flows/`, `hooks/`, and
+  `templates/`: a publisher writes only beneath its own skill namespace.
 
 - **Skills self-initialize and self-describe via typed edges; the composer wires the seams.** The
   tenets above govern what a skill's `description:` may *say*; this one — their extension from
@@ -118,8 +118,8 @@ scoped to non-face skills.
    omission; pack faces carry none — § Two regimes).
 2. **Ideal-use examples** — self-contained *"how to use me"* route/workflow a composer or role skill
    can ingest to understand usage. **Enrichment.**
-3. **Deployable seed** — project-customizable assets (e.g. a `templates/` home) plus an authoring
-   verb. **Enrichment.**
+3. **Deployable seed** — project-customizable assets (for example,
+   `<agent-workspace>/<skill>/templates/`) plus an authoring verb. **Enrichment.**
 
 Edges are the minimum; layers 2–3 are optional. **Examples stay self-contained** — a cross-skill
 workflow is a seam the composer *generates* from edges, never a hardcoded sibling reference. A
@@ -224,37 +224,40 @@ A second variable stands on its own root:
 
     agent-workspace: .dev
 
-The **agent-workspace home** is where a project's development environment lives — doctrine
-(living normative prose — see *Doctrine-touching skills* below) at the fixed subpath
-`<agent-workspace>/doctrine`, and **project templates** (schemas, not instances) at the
-fixed subpath `<agent-workspace>/templates`. Default `.dev`. Declare it only as an
-override; there is **no** legacy synonym. A declared value of `.` is forbidden — it would
-place doctrine at `./doctrine`, colliding with real project directories.
+The **agent-workspace home** is where a project's skill-owned development
+environment lives. Its grammar is
+`<agent-workspace>/<skill>/<kind>/...`: owner names are open
+`[a-z0-9-]+`, while kinds are the closed set `doctrine`, `hooks`,
+`scripts`, `templates`, `trackers`, and `flows`. A skill materializes only
+the kinds it owns and writes only beneath its own namespace. Default `.dev`.
+Declare it only as an override; there is **no** legacy synonym. A declared
+value of `.` is forbidden because it would mingle owner namespaces with the
+project root.
 
-**`agent-templates` is retired.** It was a third variable that defaulted *inside* the
-records home (`<agent-records>/templates`). No host ever declared it. Templates now
-resolve at `<agent-workspace>/templates`, the same way doctrine resolves at
-`<agent-workspace>/doctrine` — one `agent-workspace:` line moves both. Do not restore
-the variable; do not declare `agent-templates:` on a front door.
+**`agent-templates` is retired.** It was a third variable that defaulted
+*inside* the records home (`<agent-records>/templates`). No host ever declared
+it. A skill's templates now resolve at
+`<agent-workspace>/<skill>/templates/`, and its doctrine at
+`<agent-workspace>/<skill>/doctrine/`; one `agent-workspace:` line moves every
+owner namespace. Do not restore the variable or declare `agent-templates:` on
+a front door.
 
-**The doctrine home is a fixed subpath, not a variable of its own.** It was one — retired into
-`<agent-workspace>/doctrine` because it had no demonstrated variance case, and because
-defaulting it *inside* the records home forced that layer to disown a subdirectory it did not
-own. A host that wants its development environment somewhere else moves the whole workspace in
-one line.
+**Doctrine is an owner-local kind, not a variable of its own.** Its former
+variable had no demonstrated variance case, and defaulting it inside the records
+home forced that layer to disown a subdirectory it did not own. A host that
+wants its development environment somewhere else moves the whole workspace in
+one line; each skill still reads its own `doctrine/` kind.
 
 **`agent-workspace` does not echo `.dev`, and that is deliberate — do not "fix" it.**
 `agent-records` → `.records` echoes; this pair does not. The **variable** names the concept
-precisely, for the prose that has to explain what the home is *for*; the **directory** stays
-short and legible for a literal that appears at depth —
-`.dev/doctrine/test/workflows/audit/GUIDE.md` reads where
-`.workspace/doctrine/test/workflows/audit/GUIDE.md` stutters against `workflows/`. The
-consistency cost is small because the rule just below requires default paths written literally,
-so the mapping is stated wherever it is used and learned once.
+precisely, for the prose that has to explain what the home is *for*; the
+**directory** stays short and legible for paths at depth. For example,
+`.dev/auditor/doctrine/test/workflows/audit/GUIDE.md` stays readable. The
+mapping is stated wherever it is used and learned once.
 
 Skill prose keeps naming each default path literally (`.records/plans/…`,
-`.dev/templates/backlog/…`, `.dev/doctrine/test/workflows/audit/…`) — never
-`$RECORDS_ROOT/plans/…`.
+`.dev/backlog/templates/…`, `.dev/auditor/doctrine/test/workflows/audit/…`) —
+never `$RECORDS_ROOT/plans/…`.
 
 **A note on `agent-workspace`'s justification, so a later reader can re-weigh it.** The bar
 below demands the value *truly vary per host*. For `agent-records` that was established
@@ -300,9 +303,8 @@ The canonical records resolver (bash-3.2 safe; both declaration names):
 The **agent-workspace** home uses the same mechanism but a **flat default** — it does not fall
 back through another home, and it accepts only its own name:
 
-    # Front-door variable `agent-workspace` (default `.dev`). The doctrine home is
-    # the fixed subpath `<agent-workspace>/doctrine`. Templates are
-    # `<agent-workspace>/templates`.
+    # Front-door variable `agent-workspace` (default `.dev`). Skill-owned
+    # content lives at `<agent-workspace>/<skill>/<kind>/...`.
     resolve_agent_workspace() {
       local root="$1" fd decl=""
       for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
@@ -314,9 +316,10 @@ back through another home, and it accepts only its own name:
       printf '%s\n' "${decl:-.dev}"
     }
 
-    # Templates home: fixed subpath, not a variable.
+    # Templates home: owner-local kind, not a variable.
     resolve_templates_home() {
-      printf '%s/templates\n' "$(resolve_agent_workspace "$1")"
+      local root="$1" owner="$2"
+      printf '%s/%s/templates\n' "$(resolve_agent_workspace "$root")" "$owner"
     }
 
 Rules of the road: **declare once** — first match wins; when *documenting* a variable (this doc,
@@ -340,14 +343,14 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
 2. **Carry your templates; declare the lock-in set.** A skill that mints store `D` ships
    a doctype template named `D.md` (five keys + `<title>` / `<date>`). Body scaffolds may
    also live under `templates/`. A `## Project templates` list in `SKILL.md` names every
-   bundled file that is project-lock-in (copied to `<agent-workspace>/templates/<skill>/`). Files not
+   bundled file that is project-lock-in (copied to `<agent-workspace>/<skill>/templates/`). Files not
    on the list are package-only. The review brief flags: a writer whose store has no
    in-package doctype template; a list entry with no bundled file; a copy of a file the
    list does not name.
 3. **Own-store standup.** On first write, `mkdir` that skill's store (and the agent-records
    home directory if needed). Do not create a deployed `records.sh`, `history.tsv`, other
    stores, the records README, or the *flat* `<agent-records>/templates/<doctype>.md`.
-   Creating `<agent-workspace>/templates/<skill>/` on first lock-in copy is required.
+   Creating `<agent-workspace>/<skill>/templates/` on first lock-in copy is required.
 4. **No floor.** Missing `records.sh` is not an error. Journal standup is never a
    precondition. A description must not say the skill requires a stood-up records layer.
    A verb must not refuse and send the operator to journal standup.
@@ -360,7 +363,8 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    send the agent to another skill's `SKILL.md` for those bytes.
    Pack composition (the face / runbook) still names journal as
    the format authority; leaves do not.
-6. **Opportunistic `records.sh`.** If `<agent-records>/scripts/records.sh` is executable, use
+6. **Opportunistic `records.sh`.** If `<agent-workspace>/journal/scripts/records.sh` is executable,
+   use it with explicit `--root <root> --records-root <records-root-relative>` before
    `new --template <resolved>` / `touch` / `done` / `list`. Otherwise write the same contract
    shape from the resolved template. Resolution is the **project-templates rule**
    (incumbent skill-namespaced file at the workspace, then previous-home adopt,
@@ -368,9 +372,9 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    Never write a second copy at the *flat*
    `<agent-records>/templates/<doctype>.md`.
 7. **Never hand-write `history.tsv`.** File-mode close rewrites `status:` (and `updated:`)
-   only. After a later journal standup, `records.sh check` will flag a closed record with
+   only. After a later journal standup, `records.sh --root <root> --records-root <records-root-relative> check` will flag a closed record with
    no ledger line. Repair is journal `curate`: rewrite `status:` back to `draft`, then
-   `records.sh done`. `records.sh done` refuses an already-archived status — that is why
+   `records.sh --root <root> --records-root <records-root-relative> done`. `records.sh --root <root> --records-root <records-root-relative> done` refuses an already-archived status — that is why
    the writer must not pretend file-mode close is a ledger close.
 8. **Pack installation is not project policy.** A pack lock records installed
    content, not whether a project has opted into a workflow. Writers never gate
@@ -381,7 +385,7 @@ The **project-templates** resolution, per declared project template `<file>` (th
 resolves the records home and the templates home and passes them in; the mint script
 never opens the front door):
 
-1. `<agent-workspace>/templates/<skill>/<file>` present → use it (incumbent; never overwrite).
+1. `<agent-workspace>/<skill>/templates/<file>` present → use it (incumbent; never overwrite).
 2. Else `<agent-records>/templates/<skill>/<file>` present (the *previous* home) →
    copy to the new path, then use it. Do not delete the old file. Applies to every
    lock-in, not only store-named ones.
@@ -389,10 +393,10 @@ never opens the front door):
    `bugs.md`, `tickets.md`, `trackers.md`, `plans.md`, `specs.md`, `adr.md`,
    `reports.md` — the *conventional* set, not an enforced taxonomy): if
    `<agent-records>/templates/<doctype>.md` is present (legacy flat) →
-   copy that file to `<agent-workspace>/templates/<skill>/<file>`, then use the new
+   copy that file to `<agent-workspace>/<skill>/templates/<file>`, then use the new
    path. Do not delete the old file. Body scaffolds skip this step.
 4. Else copy the bundled `templates/<file>` to
-   `<agent-workspace>/templates/<skill>/<file>`, then use it.
+   `<agent-workspace>/<skill>/templates/<file>`, then use it.
 
 Package-only templates skip this resolver. They are read from the skill's own
 `templates/` and are never copied into the project.
@@ -407,19 +411,19 @@ doctrine path is exactly as wrong as a writer that does.
 
    > **Records** are dated, typed, closeable instances → `<agent-records>`.
    > **Templates** are the schemas instances mint from →
-   > `<agent-workspace>/templates`.
+   > `<agent-workspace>/<skill>/templates/`.
    > **Doctrine** is living, normative, undated, and never closes →
-   > `<agent-workspace>/doctrine`.
-   > **Hooks** are skill-keyed overlay steps on a skill's own loop →
-   > `<agent-workspace>/hooks/<skill>.md`.
+   > `<agent-workspace>/<skill>/doctrine/`.
+   > **Hooks** are seam overlays on a skill's own loop →
+   > `<agent-workspace>/<skill>/hooks/<seam>.md`.
    > **Inspector kinds** are undated judgment templates
    > (not mint shells, not records, not the audit rubric)
-   > → `<agent-workspace>/inspector/<kind>.md`.
+   > → `<agent-workspace>/inspector/doctrine/<kind>.md`.
 
    Doctrine: an audit rubric, a station chapter. Not
    doctrine: a spec (a dated `specs/` record), a captured project fact, an audit *report*,
-   a host procedure under `<agent-workspace>/flows/`. The auditor rubric at
-   `doctrine/test/workflows/audit/` remains doctrine (a parked nested tree). Host
+   a host procedure under `<agent-workspace>/<skill>/flows/`. The auditor rubric at
+   `auditor/doctrine/test/workflows/audit/` remains doctrine (a parked nested tree). Host
    procedures are workspace-resident files copied by their owner skill — not a sixth
    landing class.
 
@@ -432,42 +436,29 @@ doctrine path is exactly as wrong as a writer that does.
    skill degrades with no doctrine at all**. Never treat home-exists as artifact-exists: a
    doctrine home containing no chapters must make a consumer fall back, not fail.
 
-3. **Standup — the derived default only, and incumbent wins.** On first write a skill may
-   `mkdir` its own subdirectory, and the home itself **only when the home is the derived
-   default**. Never create an *explicitly declared* home that is absent — that declaration
-   names territory the project has assigned to something else, and materializing it is how a
-   skill ends up fabricating another tool's layout. An absent declared home degrades per rule
-   2.
+3. **Standup — explicit, narrow, and incumbent wins.** Normal reads never
+   create directories. An explicit setup/deploy verb may create its declared
+   workspace when absent, then only
+   `<agent-workspace>/<its-own-name>/<owned-kind>/`. It must not create,
+   inspect as configuration, or interpret another owner namespace. Before each
+   creation, recheck every existing parent: a symlink or non-directory parent
+   is unsafe and the operation refuses without partial writes.
 
-   **Records-layer owner exception.** `journal` may create a declared records
-   home because standing up that layer is its explicit job. No skill assembles
-   the whole agent workspace; every workspace writer owns only its namespaced
-   files and otherwise follows rule 2.
+   **Records-layer owner exception.** A records-format steward may create a
+   declared records home because standing up that distinct layer is its explicit
+   job. No skill assembles the whole agent workspace; there is no pack-level
+   exception.
 
    **Independent seeding.** A skill copies only the workspace files it owns
-   (`flows/` / `hooks/` / `templates/` as applicable), including crawl keys
+   (`flows/` / `hooks/` / `templates/` beneath its namespace, as applicable), including crawl keys
    (`title` / `use-when`) on any flow it copies; incumbent wins. A finder
    over `flows/` is not a seeder of pack or sibling payload. Minting a
    host-authored stub is not seeding.
 
-   **Narrow hooks mkdir.** A publisher may `mkdir` `hooks/` only when
-   `<agent-workspace>` already exists, or when the home is the derived default
-   `.dev` and the mkdir is `hooks/` only (creates `.dev` as a container for
-   `hooks/`, never `doctrine/`). Declared `agent-workspace:` that is absent →
-   do not create; treat hooks as empty. The leaf is not the workspace assembler.
-
-   **Narrow `flows/` mkdir.** Same predicate as hooks: mkdir `flows/` only when
-   `<agent-workspace>` already exists, or when the home is the derived default
-   `.dev` and the mkdir is `flows/` only (creates `.dev` as a container for
-   `flows/`, never `doctrine/`). Declared `agent-workspace:` that is absent →
-   do not create. This is the hooks rule, not an owner exception.
-
-   **Narrow inspector-kinds mkdir.** Same predicate: a consumer may `mkdir`
-   `inspector/` only when `<agent-workspace>` already exists, or when the
-   home is the derived default `.dev` and the mkdir is `inspector/` only
-   (creates `.dev` as a container for `inspector/`, never `doctrine/`).
-   Declared `agent-workspace:` that is absent → do not create; use the
-   bundled kind. The leaf is not the workspace assembler.
+   **Kind-local creation.** A publisher creates only the kind needed by the
+   authorized operation. A hooks publisher creates its own `hooks/`; a flow
+   publisher creates its own `flows/`; an Inspector setup creates
+   `inspector/doctrine/`. None may populate sibling kinds or another owner.
 
    Doctrine is **copy-bundled-then-customized**, not mint-and-accumulate: a skill seeds
    generic content, then the host edits it in place and keeps editing it for years. So
@@ -520,36 +511,28 @@ missing sentence lives.
 
 ## Project hooks
 
-**Hooks** are skill-keyed overlay steps on a skill's own loop →
-`<agent-workspace>/hooks/<skill>.md`. Default `.dev/hooks/<skill>.md`. The
-`<skill>` stem matches that skill's frontmatter `name:`. Skill-keyed overlay
-(the fourth landing class; inspector kinds are the fifth), not a front-door
-variable.
+**Hooks** are seam overlays on a skill's own loop →
+`<agent-workspace>/<skill>/hooks/<seam>.md`. Default
+`.dev/<skill>/hooks/<seam>.md`. The `<skill>` stem matches that skill's
+frontmatter `name:`; `<seam>` is a safe Markdown filename known by that owner.
+Neither is a front-door variable.
 
 A skill that owns a multi-step loop with named seams *may* publish hooks. Not
-every skill. The convention does **not** require a bundled hooks.md skeleton.
-A consumer may copy *its* package skeleton if absent, or generate empty H2s
-from `--known`. Never overwrite a present file. Never a project-level
-hooks.md under `<agent-workspace>/templates/`. `skill-builder new` does not
-scaffold a generic hooks file.
+every skill. The convention does **not** require bundled skeletons. A consumer
+may copy its own package skeletons absent-only. Never overwrite a present file,
+never create another owner's hook, and never put hook files in templates.
+`skill-builder new` does not scaffold a generic hooks file.
 
-Format (normative):
+Each seam is one file. Format (normative):
 
 ```markdown
-# <skill> hooks
+# <skill> — <seam>
 
-Empty section = no extra glue command.
-
-## <Hook id>
-
-## <Hook id>
+<optional overlay instructions>
 ```
 
-Structural H2s (`^##[ \t]+\S`, not inside a fence) are hook ids. Body = bytes
-after the heading until the next structural H2 or EOF, then strip surrounding
-whitespace; empty → no extra glue command. Duplicate H2 → parse fails.
-Extra H2 not in the known set → fact, not a fail. Known H2 missing from an
-existing file → that hook is empty; do not add the heading.
+The consumer reads only canonical filenames it knows. Missing or whitespace-only
+files mean skip. It does not glob new runtime behavior into existence.
 
 ## Corollaries (four testable rules)
 

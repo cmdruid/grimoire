@@ -7,12 +7,12 @@ downstream.
 
 1. Resolve both homes (SKILL.md).
 2. **Find or create the Feedback tracker**: if `records.sh` is executable,
-   `records.sh list --type trackers`, title `Feedback`; else scan live
+   `records.sh --root <root> --records-root <records-root-relative> list --type trackers`, title `Feedback`; else scan live
    `<agent-records>/trackers/*.md` by H1. When absent,
-   `scripts/record-mint.sh mint <agent-records> <templates-home> trackers "Feedback"`.
+   `scripts/record-mint.sh mint <root> <records-root-relative> <workspace-relative> trackers "Feedback"`.
 3. **Append one line** under `## Items`, newest last, in the contract's live tracker-line
    form: `- [ ] <date> — [<surface, e.g. the skill or gate name>] <the observation, one sentence>`.
-4. **Stamp**: `scripts/record-mint.sh stamp <agent-records> <tracker-path>`.
+4. **Stamp**: `scripts/record-mint.sh stamp <root> <records-root-relative> <workspace-relative> <tracker-path>`.
 5. **Commit per the capture-commit policy** (SKILL.md): standalone → its own scoped commit
    (`Backlog: feedback — <slug>`); inside a `debrief` sweep → write-only.
 

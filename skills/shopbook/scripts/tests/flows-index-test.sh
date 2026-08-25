@@ -23,8 +23,9 @@ expect_eq "missing dir matches" "0" "$(fact matches "$OUT")"
 
 # Fixture tree
 p="$TMP/tree"
-mkdir -p "$p/.dev/flows"
-cat > "$p/.dev/flows/cut-tag.md" <<'EOF'
+mkdir -p "$p/.dev/shopbook/flows"
+mkdir -p "$p/.dev/debugger/flows"
+cat > "$p/.dev/shopbook/flows/cut-tag.md" <<'EOF'
 ---
 title: Cut a tag
 use-when: cut a tag
@@ -33,7 +34,7 @@ use-when: cut a tag
 # Cut a tag
 EOF
 # use-when-only hit: "release" lives only in use-when (not stem/title/H1).
-cat > "$p/.dev/flows/ship-it.md" <<'EOF'
+cat > "$p/.dev/shopbook/flows/ship-it.md" <<'EOF'
 ---
 title: Ship it
 use-when: release
@@ -41,7 +42,7 @@ use-when: release
 
 # Ship it
 EOF
-cat > "$p/.dev/flows/start-env.md" <<'EOF'
+cat > "$p/.dev/shopbook/flows/start-env.md" <<'EOF'
 ---
 title: Start the environment
 use-when: boot, local
@@ -49,7 +50,7 @@ use-when: boot, local
 
 # Start the environment
 EOF
-cat > "$p/.dev/flows/publish.md" <<'EOF'
+cat > "$p/.dev/shopbook/flows/publish.md" <<'EOF'
 ---
 title: Publish notes
 use-when: docs
@@ -58,7 +59,7 @@ use-when: docs
 # Publish notes
 EOF
 # Unquoted on-disk FM still parses.
-cat > "$p/.dev/flows/unquoted.md" <<'EOF'
+cat > "$p/.dev/shopbook/flows/unquoted.md" <<'EOF'
 ---
 title: Unquoted Title
 use-when: plain
@@ -66,12 +67,22 @@ use-when: plain
 
 # Unquoted Title
 EOF
+cat > "$p/.dev/debugger/flows/diagnostics.md" <<'EOF'
+---
+title: Diagnose a failure
+use-when: investigate a failing test
+---
+
+# Diagnose a failure
+EOF
 
 rc=0; "$IDX" list --root "$p" --workspace .dev >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "list rc" "0" "$rc"
-expect_eq "list matches 5" "5" "$(fact matches "$OUT")"
+expect_eq "list matches across owners" "6" "$(fact matches "$OUT")"
 expect "list has cut-tag" "cut-tag" "$OUT"
 expect "list has unquoted" "unquoted" "$OUT"
+expect "list has debugger owner" "debugger" "$OUT"
+expect "list has debugger path" ".dev/debugger/flows/diagnostics.md" "$OUT"
 
 # 14. use-when containing release → matches=1 (stem/title/H1 do not)
 rc=0; "$IDX" search --root "$p" --workspace .dev --query release >"$OUT" 2>"$ERR" || rc=$?
@@ -97,7 +108,7 @@ rc=0; "$IDX" search --root "$p" --workspace .dev --query Unquoted >"$OUT" 2>"$ER
 expect_eq "unquoted title matches" "1" "$(fact matches "$OUT")"
 
 # 15. Two title hits → matches=2, no singular path=
-cat > "$p/.dev/flows/alpha.md" <<'EOF'
+cat > "$p/.dev/shopbook/flows/alpha.md" <<'EOF'
 ---
 title: Shared token zzzy
 use-when: a
@@ -105,7 +116,7 @@ use-when: a
 
 # Alpha
 EOF
-cat > "$p/.dev/flows/beta.md" <<'EOF'
+cat > "$p/.dev/shopbook/flows/beta.md" <<'EOF'
 ---
 title: Other zzzy hit
 use-when: b
@@ -127,7 +138,7 @@ expect_eq "18 empty search rc" "0" "$rc"
 expect_eq "18 empty search matches" "0" "$(fact matches "$OUT")"
 [ ! -e "$p18/.dev" ] && pass=$((pass + 1)) \
   || { echo "FAIL: 18 search created .dev" >&2; fail=$((fail + 1)); }
-[ ! -e "$p18/.dev/flows/bug.md" ] && pass=$((pass + 1)) \
+[ ! -e "$p18/.dev/shopbook/flows/bug.md" ] && pass=$((pass + 1)) \
   || { echo "FAIL: 18 search invented bug.md" >&2; fail=$((fail + 1)); }
 
 report "flows-index-test"

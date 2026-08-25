@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # flows-index.sh list|search --root <abs> --workspace <rel> [--query <text>]
 #
-# Facts over regular *.md in one directory of <root>/<workspace>/flows/.
-# No LLM. Missing dir → flows_dir=missing matches=0 exit 0.
+# Facts over regular *.md in <root>/<workspace>/*/flows/.
+# No LLM. Missing workspace → flows_dir=missing matches=0 exit 0.
 set -euo pipefail
 
 usage() {
@@ -101,29 +101,35 @@ case "$cmd" in
   *) usage ;;
 esac
 
-flows_dir="$root/$ws/flows"
+workspace_dir="$root/$ws"
 
 echo "workspace=$ws"
 
-if [ ! -d "$flows_dir" ]; then
+if [ ! -d "$workspace_dir" ]; then
   echo "flows_dir=missing"
   echo "matches=0"
+  echo "owners="
   echo "stems="
   echo "paths="
   echo "titles="
   exit 0
 fi
 
-echo "flows_dir=$flows_dir"
+echo "flows_dir=$workspace_dir/*/flows"
 
-# Collect regular *.md, one level, skip dotfiles, sorted by stem.
+# Collect regular owner/flows/*.md, skip reserved/invalid owners and dotfiles.
 files=""
 # shellcheck disable=SC2044
-for f in $(find "$flows_dir" -maxdepth 1 -type f -name '*.md' ! -name '.*' | sort); do
+for f in $(find "$workspace_dir" -mindepth 3 -maxdepth 3 -type f -name '*.md' ! -name '.*' -path '*/flows/*.md' | sort); do
+  rel=${f#"$workspace_dir"/}
+  owner=${rel%%/*}
+  printf '%s' "$owner" | grep -qE '^[a-z0-9]+(-[a-z0-9]+)*$' || continue
+  case "$owner" in doctrine|hooks|scripts|templates|trackers|flows) continue ;; esac
   files="$files
 $f"
 done
 
+owners=""
 stems=""
 paths=""
 titles=""
@@ -135,6 +141,8 @@ for f in $files; do
   [ -n "$f" ] || continue
   base=$(basename "$f")
   stem=${base%.md}
+  rel=${f#"$workspace_dir"/}
+  owner=${rel%%/*}
 
   facts=$(parse_crawl "$f")
   title=$(printf '%s\n' "$facts" | sed -n 's/^title=//p' | head -n 1)
@@ -145,7 +153,7 @@ for f in $files; do
     if [ -z "$query" ]; then
       continue
     fi
-    haystack=$(lower "$stem $title $use_when $h1")
+    haystack=$(lower "$owner $stem $title $use_when $h1")
     ok=1
     # shellcheck disable=SC2086
     set -- $query
@@ -160,10 +168,12 @@ for f in $files; do
   fi
 
   if [ "$n" -eq 0 ]; then
+    owners="$owner"
     stems="$stem"
     paths="$f"
     titles="$title"
   else
+    owners="$owners,$owner"
     stems="$stems,$stem"
     paths="$paths,$f"
     titles="$titles,$title"
@@ -173,6 +183,7 @@ done
 unset IFS
 
 echo "matches=$n"
+echo "owners=$owners"
 echo "stems=$stems"
 echo "paths=$paths"
 echo "titles=$titles"

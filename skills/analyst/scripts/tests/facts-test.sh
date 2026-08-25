@@ -190,9 +190,9 @@ expect "catalog: reports nothing deployed yet" "deployed=false" "$OUT"
 expect "catalog: lists briefing as bundled"    "briefing	bundled" "$OUT"
 expect_absent "catalog: lock-in reports.md is not a kind" "reports	bundled" "$OUT"
 
-mkdir -p "$FIX/.dev/templates/analyst"
-cp "$HERE/../../templates/briefing.md" "$FIX/.dev/templates/analyst/briefing.md"
-cat > "$FIX/.dev/templates/analyst/house-style.md" <<'EOF'
+mkdir -p "$FIX/.dev/analyst/templates"
+cp "$HERE/../../templates/briefing.md" "$FIX/.dev/analyst/templates/briefing.md"
+cat > "$FIX/.dev/analyst/templates/house-style.md" <<'EOF'
 ---
 template: house-style
 use-when: "A project-local report kind."

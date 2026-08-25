@@ -92,8 +92,8 @@ mv "$TMP/SKILL.md.bak" "$SKILL/SKILL.md"
 # --- 18. query walk lives in verbs/query.md; not inlined in SKILL.md ---------
 Q="$SKILL/verbs/query.md"
 S="$SKILL/SKILL.md"
-for needle in 'test `$DST/<stem>.md`' 'do not call `flows-create.sh`' \
-  'a miss leaves `$DST` absent' 'continue to step 3 and search'; do
+for needle in '`<agent-workspace>/*/flows/*.md`' 'did not call `scripts/flows-create.sh`' \
+  'including a single kebab-case stem' 'Do not mint or mkdir'; do
   if grep -qF -- "$needle" "$Q"; then
     pass=$((pass + 1))
   else
@@ -113,8 +113,8 @@ if grep -qF 'Query walk' "$S"; then
 else
   pass=$((pass + 1))
 fi
-if grep -qF '$DST/<stem>.md' "$S"; then
-  echo "FAIL: 18 SKILL.md contains \$DST/<stem>.md" >&2
+if grep -qF '<agent-workspace>/*/flows/*.md' "$S"; then
+  echo "FAIL: 18 SKILL.md inlines the query glob" >&2
   fail=$((fail + 1))
 else
   pass=$((pass + 1))
@@ -122,16 +122,16 @@ fi
 # Delete the kebab bullets; greps go red; restore.
 cp "$Q" "$TMP/query.md.bak"
 # Count before, delete the four distinctive strings' lines, demand red.
-before=$(grep -cF 'do not call `flows-create.sh`' "$Q" || true)
+before=$(grep -cF 'did not call `scripts/flows-create.sh`' "$Q" || true)
 awk '
-  /test `\$DST\/<stem>\.md`/ { next }
-  /do not call `flows-create.sh`/ { next }
-  /a miss leaves `\$DST` absent/ { next }
-  /continue to step 3 and search/ { next }
+  /<agent-workspace>\/\*\/flows\/\*\.md/ { next }
+  /did not call `scripts\/flows-create.sh`/ { next }
+  /including a single kebab-case stem/ { next }
+  /Do not mint or mkdir/ { next }
   { print }
 ' "$Q" > "$TMP/query.stripped"
 mv "$TMP/query.stripped" "$Q"
-after=$(grep -cF 'do not call `flows-create.sh`' "$Q" || true)
+after=$(grep -cF 'did not call `scripts/flows-create.sh`' "$Q" || true)
 if [ "$before" -gt 0 ] && [ "$after" -eq 0 ]; then
   pass=$((pass + 1))
 else

@@ -28,10 +28,10 @@ templates it actually names. Do not tour the rest of any repo.
   `templates/<doctype>.md` in the package. A `## Project templates` list
   names the lock-in set; every listed file exists in the package; the
   skill does not copy a file the list does not name. Project copies land
-  under `<agent-workspace>/templates/<skill>/`.
+  under `<agent-workspace>/<skill>/templates/`.
 - **Home resolution** — for each home the skill touches
-  (`<agent-records>`, `<agent-workspace>`, and the templates subpath
-  `<agent-workspace>/templates`),
+  (`<agent-records>`, `<agent-workspace>`, and the owner-first templates subpath
+  `<agent-workspace>/<skill>/templates`),
   **reading counts as touching**. Three questions the lint cannot answer,
   which is why they are yours:
   - Does the **operative procedure** resolve the home, or does the skill
@@ -43,9 +43,9 @@ templates it actually names. Do not tour the rest of any repo.
     artifact-exists and break?
   - If it stands doctrine up, does it **leave an incumbent alone**?
     Doctrine is copy-then-customize; a re-run that overwrites host edits
-    destroys accumulated project judgment. Creating an explicitly
-    *declared* home that is absent is also a finding — that path is
-    someone else's territory.
+    destroys accumulated project judgment. Only an explicit setup or
+    deploy operation may create its owner's declared namespace, after
+    rechecking every parent for symlinks and non-directories.
 
 ## Do not
 

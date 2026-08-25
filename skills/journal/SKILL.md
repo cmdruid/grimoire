@@ -1,6 +1,6 @@
 ---
 name: journal
-description: "The records-layer format authority — defines what makes a file a record (a dated filename plus front-matter declaring its doctype), the record contract, the template convention, and the deployed records.sh tool (search, query, lifecycle, and the history.tsv ledger) over the agent-records home (default `.records/`). Verbs: `setup` (stand up or refresh the tool layer), `search` (find records by content or metadata), `done` (close a record in place), `curate` (contract check, link rot, duplicate merge, prune proposals). Use when the user runs `/journal ...`, stands up or refreshes the records layer, searches or lists records, closes a record, asks about the record format/contract, or tidies the records home."
+description: "The records-layer format authority — defines what makes a file a record (a dated filename plus front-matter declaring its doctype), the record contract, the template convention, and the staged records.sh tool (search, query, lifecycle, and the history.tsv ledger) over the agent-records home (default `.records/`). Verbs: `setup` (stand up or refresh the tool layer), `search` (find records by content or metadata), `done` (close a record in place), `curate` (contract check, link rot, duplicate merge, prune proposals). Use when the user runs `/journal ...`, stands up or refreshes the records layer, searches or lists records, closes a record, asks about the record format/contract, or tidies the records home."
 ---
 
 # journal — the records format authority
@@ -8,12 +8,12 @@ description: "The records-layer format authority — defines what makes a file a
 One skill: the **definition** of a project's records layer. It owns the **discriminator**
 (what makes a file a record — below), the **record contract** (below), the **template
 convention** (writers carry templates; mint from a caller-supplied `--template` path), and the
-deployed tool **`records.sh`** (search, query + lifecycle; sole writer of the `history.tsv` closure
+staged tool **`records.sh`** (search, query + lifecycle; sole writer of the `history.tsv` closure
 ledger). A skill creates only the directories it needs; the crawl knows no
 store list; `/journal setup` stands or refreshes the **tool layer** —
-`records.sh`, empty `history.tsv`, README — and is never a floor for writers.
+`<agent-workspace>/journal/scripts/records.sh`, empty `history.tsv`, and the records README — and is never a floor for writers.
 Writers state the in-package contract in their own package; they do not send
-the agent here for those bytes. At runtime they talk to the **deployed**
+the agent here for those bytes. At runtime they talk to the **staged**
 `records.sh` when that file is executable, never to this skill's bundled copy.
 
 The layer's shape (the deployed `.records/README.md` restates it in-project):
@@ -26,15 +26,15 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
   index — querying is a live scan, crawling the root at **any depth**.
 - **Nothing is reserved.** A skill creates only the directories it needs for its own
   work, so the set under the root is open-ended and unknown to this tool: it crawls rather
-  than matching a list. Journal's own directories remain `scripts/` (the tool) and
-  `history.tsv` (the ledger). Setup creates no writer directories and copies no templates.
-  `records.sh new` writes under a **caller-named relative directory**: default is the
+  than matching a list. Journal owns `journal/scripts/` under the agent workspace (the tool)
+  and `history.tsv` at the records root (the ledger). Setup creates no writer directories and copies no templates.
+  `records.sh --root <root> --records-root <records-root-relative> new` writes under a **caller-named relative directory**: default is the
   `<doctype>` positional; `--dir <rel>` overrides (no leading `/`, no `..` segment).
   `mkdir -p` of that path is the caller creating the directory through the tool — journal
   does not enumerate, reserve, or advertise a store set. `templates/`, `scripts/`, a
   `doctrine/` tree — none need reserving, because their files fail one conjunct or the other
-  and simply are not records. This is what lets the records home be **shared** with another
-  home: a host may point `<agent-workspace>` and `<agent-records>` at the same directory
+  and simply are not records. This is what lets the records home be **coincident** with the workspace:
+  a host may point `<agent-workspace>` and `<agent-records>` at the same directory
   without a carve-out. The **authoritative doctype is the front-matter key**, never the
   parent directory — there is no second copy of the fact to disagree with.
 - **Micro-items are tracker lines, not records.** A tracker record's body holds one-line
@@ -49,7 +49,7 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
 
 ## The record contract
 
-`records.sh check` enforces front-matter, the status vocabulary (including ledger
+`records.sh --root <root> --records-root <records-root-relative> check` enforces front-matter, the status vocabulary (including ledger
 coherence), and record-link resolution. Tracker line form is a prose convention —
 `check` does not scan it. The template convention is enforced by `new` (missing
 template → error), not by `check`.
@@ -63,7 +63,7 @@ template → error), not by `check`.
   status is `archived` and **requires a** `history.tsv` ledger line (disposition is the
   ledger `--as` word, not the file status). `check` flags a hand-closed record; the ledger
   line is six tab-separated fields — date, disposition, records-root-relative path, doctype,
-  title, note — written only by `records.sh done`.
+  title, note — written only by `records.sh --root <root> --records-root <records-root-relative> done`.
 - **Record links**: `→ <dir>/<file>.md` — the record's records-root-relative path, whatever
   directory its writer put it in; `check` flags rot.
 - **Tracker line form**: under `## Items`, newest last. Live and completed (same optional
@@ -72,16 +72,16 @@ template → error), not by `check`.
       - [ ] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md
       - [x] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md — 2026-08-17
 
-  Completing a line is that rewrite + a `records.sh touch` of the tracker (no ledger line).
-- **Template convention**: `records.sh new <doctype> --template <resolved>`
+  Completing a line is that rewrite + a `records.sh --root <root> --records-root <records-root-relative> touch` of the tracker (no ledger line).
+- **Template convention**: `records.sh --root <root> --records-root <records-root-relative> new <doctype> --template <resolved>`
   `[--dir <rel>] [--tag t]...` mints from the caller-supplied path (usually
-  `<agent-workspace>/templates/<skill>/<doctype>.md`) into `--dir` (default:
+  `<agent-workspace>/<skill>/templates/<doctype>.md`) into `--dir` (default:
   the `<doctype>` positional). `--template` is **required** — the tool knows
   no taxonomy, so it cannot guess a template location from a doctype name,
   and there is no flat fallback. Repeatable `--tag` fills the template's
   `<tags>` slot (`tags: [a, b]`; omitted → `tags: []`). The minting skill
   owns the bundled template and copies it to
-  `<agent-workspace>/templates/<skill>/`, never to the flat
+  `<agent-workspace>/<skill>/templates/`, never to the flat
   `<agent-records>/templates/<doctype>.md`. Templates are undated, so the
   discriminator leaves them alone wherever they sit. Setup copies nothing.
 
@@ -99,14 +99,16 @@ follow-up is not journal's job (scope boundary, below).
 
 ## Shared discipline (every verb relies on this — stated here once)
 
-- **Resolve the agent-records home, then let `records.sh` own the facts.** The home is
+- **Resolve both roots, then let `records.sh` own the facts.** The records home is
   the first line-start `agent-records:` or `records-root:` in `AGENTS.md`, then
   `CLAUDE.md`; else `.records/`. (`agent-records:` preferred; `records-root:` still
-  accepted so already-declared hosts do not break.) The deployed tool is
-  `<agent-records>/scripts/records.sh`. If that file is **missing or not
+  accepted so already-declared hosts do not break.) The agent workspace is the first line-start
+  `agent-workspace:` in those same files, else `.dev/`. The staged tool is
+  `<agent-workspace>/journal/scripts/records.sh`. If that file is **missing or not
   executable**, stop, name `/journal setup`, and do not run this skill's bundled
-  copy. `search` also stops when the deployed usage list has no `grep` line (a
-  later setup refreshes). Invoke **the deployed tool** for every date, path, and
+  copy. `search` also stops when the staged usage list has no `grep` line (a
+  later setup refreshes). Every invocation begins `records.sh --root <root>
+  --records-root <records-root-relative>`. Invoke **the staged tool** for every date, path, and
   conformance fact (`new --template <resolved>` / `touch` / `done` / `list` /
   `grep` / `history` / `prune-candidates` / `check`); never guess a date, never
   hand-stamp front-matter, never write `history.tsv` by hand. `search` / `done` /

@@ -30,7 +30,7 @@ write_agents "$p5/AGENTS.md" \
   'Some existing content.'
 rc=0; "$DOOR" apply --root "$p5" --workspace .dev >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "5 apply rc" "0" "$rc"
-expect "5 pointer path literal" ".dev/flows/" "$p5/AGENTS.md"
+expect "5 pointer path literal" ".dev/*/flows/" "$p5/AGENTS.md"
 expect "5 pointer sentence" "not loaded until one is selected." "$p5/AGENTS.md"
 expect_absent "5 no shopbook in body" "shopbook" "$p5/AGENTS.md"
 expect_absent "5 no ROUTING table" "build/workflows" "$p5/AGENTS.md"
@@ -40,8 +40,8 @@ expect_eq "5 check rc" "0" "$rc"
 expect_eq "5 block ok" "ok" "$(fact block "$OUT")"
 expect_eq "5 drift false" "false" "$(fact drift "$OUT")"
 sum5=$(hash_of "$p5/AGENTS.md")
-mkdir -p "$p5/.dev/flows"
-printf 'extra\n' > "$p5/.dev/flows/host-only.md"
+mkdir -p "$p5/.dev/shopbook/flows"
+printf 'extra\n' > "$p5/.dev/shopbook/flows/host-only.md"
 rc=0; "$DOOR" check --root "$p5" --workspace .dev >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "5 extra dest check rc" "0" "$rc"
 expect_eq "5 extra dest drift false" "false" "$(fact drift "$OUT")"
@@ -53,13 +53,13 @@ mkdir -p "$p8"
 write_agents "$p8/AGENTS.md" '# AGENTS.md'
 rc=0; "$DOOR" apply --root "$p8" --workspace dev >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "8 apply rc" "0" "$rc"
-expect "8 body contains dev/flows/" "dev/flows/" "$p8/AGENTS.md"
-expect_absent "8 body has no .dev/flows/" ".dev/flows/" "$p8/AGENTS.md"
+expect "8 body contains owner-first glob" "dev/*/flows/" "$p8/AGENTS.md"
+expect_absent "8 body has no default workspace" ".dev/*/flows/" "$p8/AGENTS.md"
 rc=0; "$DOOR" check --root "$p8" --workspace dev >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "8 check rc" "0" "$rc"
 awk '
-  /pointer_line=/ && /ws\/flows/ {
-    print "pointer_line=\"Project procedures live under \\`.dev/flows/\\` and are not loaded until one is selected.\""
+  /pointer_line=/ && /ws\/\*\/flows/ {
+    print "pointer_line=\"Project procedures live under \\`.dev/*/flows/\\` and are not loaded until one is selected.\""
     next
   }
   { print }
@@ -126,7 +126,7 @@ rc=0; "$DOOR" apply --root "$p11" --workspace .dev >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "11 apply rc" "0" "$rc"
 expect "11 oven span kept" "<!-- skill:shopbook BEGIN -->" "$p11/AGENTS.md"
 expect "11 oven body kept" "keep-me" "$p11/AGENTS.md"
-expect "11 pointer also present" ".dev/flows/" "$p11/AGENTS.md"
+expect "11 pointer also present" ".dev/*/flows/" "$p11/AGENTS.md"
 expect "11 oven END kept" "<!-- skill:shopbook END -->" "$p11/AGENTS.md"
 sum11b=$(hash_of "$p11/AGENTS.md")
 rc=0; "$DOOR" apply --root "$p11" --workspace .dev >"$OUT" 2>"$ERR" || rc=$?

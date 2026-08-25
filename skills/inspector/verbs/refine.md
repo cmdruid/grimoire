@@ -207,7 +207,7 @@ omitted, treat as must-fix.
 8. **Apply** (only after a confirm that authorizes apply).
    Same path, same record. Do not mint a successor. Do not
    write `published`. Stamp `updated:` (opportunistic
-   `records.sh touch --status draft`, else file-mode
+   `records.sh --root <root> --records-root <records-root-relative> touch --status draft`, else file-mode
    `status: draft` and `updated:`). If `stage: approved` is
    present, **drop it**. Do not create or append `## Review
    history`.

@@ -1,20 +1,21 @@
 #!/bin/sh
-# records.sh — record query + lifecycle over the records root it is deployed into.
-# Journal's deployed asset: the source of truth lives in the journal skill; standup
-# copies it to <records-root>/scripts/records.sh, and it operates on THAT root
-# (resolved from its own location — never from cwd). The script owns the facts —
+# records.sh — record query + lifecycle over an explicitly named records root.
+# Journal's deployed asset: the source of truth lives in the journal skill;
+# setup stages it under <agent-workspace>/journal/scripts/records.sh. Every
+# invocation supplies --root and --records-root; deployment location and cwd
+# never select the data root. The script owns the facts —
 # dates, paths, conformance — so agents never guess them.
 #
-#   records.sh list [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s]
-#   records.sh grep [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s] <pattern>
-#   records.sh show <path>
-#   records.sh new <doctype> --title "..." --template <path> [--dir rel] [--tag t]...
-#   records.sh touch <path> [--status draft|published]
-#   records.sh done <path> [--as done|dropped|superseded|consumed] [--note "..."]
-#   records.sh history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
-#   records.sh prune-candidates [--until d]
-#   records.sh check
-#   records.sh migrate-status
+#   records.sh --root <abs> --records-root <rel> list [--type t] ...
+#   records.sh --root <root> --records-root <records-root-relative> grep [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s] <pattern>
+#   records.sh --root <root> --records-root <records-root-relative> show <path>
+#   records.sh --root <root> --records-root <records-root-relative> new <doctype> --title "..." --template <path> [--dir rel] [--tag t]...
+#   records.sh --root <root> --records-root <records-root-relative> touch <path> [--status draft|published]
+#   records.sh --root <root> --records-root <records-root-relative> done <path> [--as done|dropped|superseded|consumed] [--note "..."]
+#   records.sh --root <root> --records-root <records-root-relative> history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
+#   records.sh --root <root> --records-root <records-root-relative> prune-candidates [--until d]
+#   records.sh --root <root> --records-root <records-root-relative> check
+#   records.sh --root <root> --records-root <records-root-relative> migrate-status
 #
 # A file is a RECORD iff it is named YYYY-MM-DD-<slug>.md AND carries a
 # front-matter block that declares a doctype. That is the whole discriminator:
@@ -29,15 +30,13 @@
 # Exit codes: 0 ok · 1 usage · 2 error / check failure.
 set -eu
 
-RR="$(cd "$(dirname "$0")/.." && pwd)"
-LEDGER="$RR/history.tsv"
 TAB="$(printf '\t')"
 NL="$(printf '\n/')"
 NL="${NL%/}"
 
 usage() {
   cat >&2 <<'EOF'
-usage: records.sh <command> [args]
+usage: records.sh --root <abs> --records-root <rel> <command> [args]
   list    [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s]
   grep    [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s] <pattern>
   show    <path>
@@ -62,6 +61,25 @@ valid_rel_dir() {
   case "/$1/" in */../*) return 1 ;; esac
   return 0
 }
+
+ROOT=""
+RR_REL=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --root) [ $# -ge 2 ] || usage; ROOT="$2"; shift 2 ;;
+    --records-root) [ $# -ge 2 ] || usage; RR_REL="$2"; shift 2 ;;
+    *) break ;;
+  esac
+done
+[ -n "$ROOT" ] && [ -n "$RR_REL" ] || usage
+case "$ROOT" in /*) ;; *) err "--root must be absolute: $ROOT" ;; esac
+[ -d "$ROOT" ] || err "--root is not a directory: $ROOT"
+valid_rel_dir "$RR_REL" || err "--records-root must be repo-relative with no .. segment: $RR_REL"
+ROOT="$(cd "$ROOT" && pwd)"
+RR="$ROOT/$RR_REL"
+case "$RR" in "$ROOT"/*) ;; *) err "records root escapes --root: $RR_REL" ;; esac
+[ -d "$RR" ] || err "records root is not a directory: $RR"
+LEDGER="$RR/history.tsv"
 
 is_disposition() { case "$1" in done|dropped|superseded|consumed) return 0 ;; *) return 1 ;; esac; }
 is_archived()    { [ "$1" = archived ]; }
@@ -294,7 +312,7 @@ cmd_new() {
   # --template is required: a writer resolves its own template path and passes
   # it. There is no flat fallback to look up -- the tool knows no taxonomy, so
   # it cannot guess a template location from a doctype name.
-  [ -n "$tpl" ] || err "--template is required (records.sh new <doctype> --title ... --template <path>)"
+  [ -n "$tpl" ] || err "--template is required (records.sh --root <root> --records-root <records-root-relative> new <doctype> --title ... --template <path>)"
   [ -f "$tpl" ] || err "no template for doctype '$doctype': $tpl"
   # Directory is --dir, defaulting to the doctype positional. mkdir is the
   # caller creating that directory through the tool.

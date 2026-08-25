@@ -6,19 +6,19 @@ in an `adr` record.
 
 1. Resolve both homes (SKILL.md). Locate `scripts/note-mint.sh` from
    this skill's own directory.
-2. **List live notes only.** If `<agent-records>/scripts/records.sh` is
-   executable: `records.sh list --type notes` (no `--status`; live-set
+2. **List live notes only.** If `<agent-workspace>/journal/scripts/records.sh` is
+   executable: `records.sh --root <root> --records-root <records-root-relative> list --type notes` (no `--status`; live-set
    default). Else scan `<agent-records>/notes/*.md` and skip any file
    whose `status:` is `archived`, and still skip `done`, `dropped`,
    `superseded`, or `consumed` for unmigrated trees.
 3. If a **live** note already covers the fact: edit the body (one fact;
    why it holds; where it bites; links), then
-   `note-mint.sh stamp <agent-records> <abs-path>`.
+   `note-mint.sh stamp <root> <records-root-relative> <workspace-relative> <abs-path>`.
 4. If a **closed** note matches the same subject: **STOP** — do not
    update it. Tell the operator to `/notepad supersede` (same subject,
    new claim) or `/notepad write` a distinct fact.
 5. Otherwise mint:
-   `note-mint.sh mint <agent-records> <templates-home> "<headline>"`,
+   `note-mint.sh mint <root> <records-root-relative> <workspace-relative> "<headline>"`,
    then fill the body. Prefer one fact per note.
 6. **Commit** per SKILL.md: standalone →
    `scripts/scoped-commit.sh <root> "Notepad: write — <slug>" <paths…>`;

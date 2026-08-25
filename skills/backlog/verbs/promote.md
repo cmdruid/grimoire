@@ -5,7 +5,7 @@ Judgment, not a mechanical copy. Curate stays hygiene; this verb is the drain. T
 
 1. Resolve both homes (SKILL.md).
 2. **Load candidates.** Open the live Issues and Feedback trackers **if they already
-   exist** (title match among live `trackers/` records; `records.sh list --type trackers`
+   exist** (title match among live `trackers/` records; `records.sh --root <root> --records-root <records-root-relative> list --type trackers`
    when the tool exists). Do not find-or-create a tracker in order to walk it. Default:
    every live `- [ ]` line on both existing trackers. A human-named subset is allowed
    ("promote that feedback line"). If both trackers are absent, or every candidate is

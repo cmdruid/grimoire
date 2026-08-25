@@ -1,115 +1,147 @@
 #!/bin/sh
-# standup.sh — stand up the records *tool layer* in a target project (the
-# mechanical half of `journal setup`; judgment — resolving the root, reading
-# a declared agent-records: / records-root:, whether to commit — stays with
-# the verb).
+# standup.sh — stage Journal's engine and stand up the records substrate.
 #
-#   standup.sh <target-root> [--records-root <rel>]
+#   standup.sh <target-root> --workspace <rel> --records-root <rel>
 #
-# Creates <target-root>/<records-root> (default .records): scripts/records.sh
-# (the deployed asset), an empty history.tsv ledger, and README.md if
-# absent. It does NOT create store directories, .gitkeep files, or
-# templates/ — the skill that mints a store creates that store; the first
-# lock-in copy creates <templates-home>/<skill>/. Additive: a first visit
-# writes the tool layer; a later visit refreshes records.sh when the skill
-# copy has drifted (`cmp`) and never truncates the ledger or overwrites
-# README. A home that merely EXISTS (a legacy path, or a notepad-created
-# .records/notes/ with no tool) is fine — the tool is written beside what
-# is there. Exit codes: 0 ok · 1 usage / bad --records-root · 2 failed
-# (missing target or skill-side records.sh). A failing records check after
-# a successful write still exits 0 (tool layer is up; curate the records).
+# The package engine is staged at <workspace>/journal/scripts/records.sh.
+# The ledger and README live at <records-root>. No store or template directory
+# is created. Package bytes win for the staged engine; project records win.
 set -eu
 
 SKILL="$(cd "$(dirname "$0")/.." && pwd)"
 
-usage() { echo "usage: standup.sh <target-root> [--records-root <rel>]" >&2; exit 1; }
+usage() {
+  echo "usage: standup.sh <target-root> --workspace <rel> --records-root <rel>" >&2
+  exit 1
+}
 
 valid_rel_dir() {
   [ -n "$1" ] || return 1
-  case "$1" in /*) return 1 ;; esac
-  case "/$1/" in */../*) return 1 ;; esac
+  case "$1" in .|/*) return 1 ;; esac
+  case "/$1/" in */../*|*/./*|*//*) return 1 ;; esac
   return 0
+}
+
+safe_tree() { # verify existing parents from root to target
+  target="$1"
+  case "$target" in "$root"/*) rel="${target#"$root"/}" ;; *) return 1 ;; esac
+  current="$root"
+  old_ifs=$IFS
+  IFS='/'; set -- $rel; IFS=$old_ifs
+  for part in "$@"; do
+    current="$current/$part"
+    if [ -L "$current" ]; then
+      return 1
+    elif [ -e "$current" ] && [ ! -d "$current" ]; then
+      return 1
+    fi
+  done
+}
+
+make_tree() { # create after every existing parent has passed safe_tree
+  target="$1"
+  rel="${target#"$root"/}"
+  current="$root"
+  old_ifs=$IFS
+  IFS='/'; set -- $rel; IFS=$old_ifs
+  for part in "$@"; do
+    current="$current/$part"
+    if [ ! -e "$current" ]; then mkdir "$current"; fi
+    [ -d "$current" ] && [ ! -L "$current" ] || return 1
+  done
 }
 
 [ $# -ge 1 ] || usage
 root="$1"; shift
-rr_rel=".records"
+workspace_rel=""
+records_rel=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --records-root) [ $# -ge 2 ] || usage; rr_rel="$2"; shift 2 ;;
+    --workspace) [ $# -ge 2 ] || usage; workspace_rel="$2"; shift 2 ;;
+    --records-root) [ $# -ge 2 ] || usage; records_rel="$2"; shift 2 ;;
     *) usage ;;
   esac
 done
-valid_rel_dir "$rr_rel" || {
-  echo "standup.sh: --records-root must be a relative path with no .. segment: $rr_rel" >&2
+[ -n "$workspace_rel" ] && [ -n "$records_rel" ] || usage
+valid_rel_dir "$workspace_rel" || {
+  echo "standup.sh: --workspace must be relative, non-dot, and contain no .. segment" >&2
   exit 1
 }
+valid_rel_dir "$records_rel" || {
+  echo "standup.sh: --records-root must be relative, non-dot, and contain no .. segment" >&2
+  exit 1
+}
+[ -d "$root" ] && [ ! -L "$root" ] || { echo "no safe target directory: $root" >&2; exit 2; }
+root="$(cd "$root" && pwd)"
+source_engine="$SKILL/scripts/records.sh"
+[ -f "$source_engine" ] || { echo "records.sh missing beside this script: $source_engine" >&2; exit 2; }
 
-[ -d "$root" ] || { echo "no such directory: $root" >&2; exit 2; }
-[ -f "$SKILL/scripts/records.sh" ] || { echo "records.sh missing beside this script: $SKILL/scripts/records.sh" >&2; exit 2; }
-rr="$root/$rr_rel"
-rr_from_root="${rr#"$root"/}"
+workspace="$root/$workspace_rel"
+records="$root/$records_rel"
+script_dir="$workspace/journal/scripts"
+deployed="$script_dir/records.sh"
+
+safe_tree "$script_dir" && safe_tree "$records" || {
+  echo "standup.sh: unsafe workspace or records parent" >&2
+  exit 2
+}
+for entry in "$deployed" "$records/history.tsv" "$records/README.md"; do
+  if [ -L "$entry" ] || { [ -e "$entry" ] && [ ! -f "$entry" ]; }; then
+    echo "standup.sh: unsafe incumbent: $entry" >&2
+    exit 2
+  fi
+done
+make_tree "$script_dir"
+make_tree "$records"
+
 wrote_script=0
 wrote_ledger=0
 wrote_readme=0
-
-if [ -e "$rr/scripts/records.sh" ]; then
-  if cmp -s "$SKILL/scripts/records.sh" "$rr/scripts/records.sh"; then
-    label="journal, current"
-    [ -x "$rr/scripts/records.sh" ] || wrote_script=1
-    chmod +x "$rr/scripts/records.sh"
-  else
-    cp "$SKILL/scripts/records.sh" "$rr/scripts/records.sh"
-    chmod +x "$rr/scripts/records.sh"
-    label="journal, refreshed"
-    wrote_script=1
-  fi
+if [ -e "$deployed" ] && cmp -s "$source_engine" "$deployed"; then
+  label="journal, current"
+  [ -x "$deployed" ] || wrote_script=1
 else
-  mkdir -p "$rr/scripts"
-  cp "$SKILL/scripts/records.sh" "$rr/scripts/records.sh"
-  chmod +x "$rr/scripts/records.sh"
+  was_present=0
+  [ -e "$deployed" ] && was_present=1
+  cp "$source_engine" "$deployed"
   label="journal"
+  [ "$was_present" -eq 0 ] || label="journal, refreshed"
   wrote_script=1
 fi
+chmod +x "$deployed"
 
-if [ ! -e "$rr/history.tsv" ]; then
-  : > "$rr/history.tsv"
+if [ ! -e "$records/history.tsv" ]; then
+  : > "$records/history.tsv"
   wrote_ledger=1
 fi
 
-if [ ! -e "$rr/README.md" ]; then
-  cat > "$rr/README.md" <<EOF
+if [ ! -e "$records/README.md" ]; then
+  cat > "$records/README.md" <<EOF
 # Records
 
-Records accumulated during development. A **record** is a markdown file named
-\`YYYY-MM-DD-<slug>.md\` carrying the front-matter contract
-(doctype/status/created/updated/tags). \`scripts/records.sh\` is the query +
-lifecycle tool (\`list\`, \`grep\`, \`new\`, \`touch\`, \`done\`, \`history\`,
-\`prune-candidates\`, \`check\`) and the sole writer of \`history.tsv\`, the
-closure ledger.
+Records accumulated during development. A **record** is a Markdown file named
+\`YYYY-MM-DD-<slug>.md\` carrying the five-key front-matter contract.
+\`$workspace_rel/journal/scripts/records.sh\` is the query and lifecycle engine;
+every invocation passes \`--root <root> --records-root $records_rel\`. It is the
+sole writer of \`history.tsv\`, the closure ledger.
 
-The directory layout under this root is the writers' business: a skill creates
-only the directories it needs for its own work, so the tool crawls this root at
-any depth instead of matching a list of store names. Nothing here needs
-reserving — a file that is not a dated record declaring a doctype simply is not
-a record, which is why this home can be shared with other homes. Project
-templates live at \`<agent-workspace>/templates/<skill>/\` (default
-\`.dev/templates/<skill>/\`) and arrive with the writer that mints them;
-they are undated, so they are not records. Project **doctrine** resolves
-through the agent-workspace home (default \`.dev/doctrine/\`). Journal setup
-deploys this tool layer only.
+The directory layout under this root belongs to record writers. The engine
+crawls records at any depth and knows no store roster. Project templates live
+at \`<agent-workspace>/<skill>/templates/\` (for example,
+\`.dev/notepad/templates/\`); project doctrine lives at
+\`<agent-workspace>/<skill>/doctrine/\`. Journal setup deploys the engine,
+ledger, and this README only.
 
 Stood up by journal on $(date +%Y-%m-%d).
 EOF
   wrote_readme=1
 fi
 
-echo "records: $rr ($label)"
-[ "$wrote_script" -eq 1 ] && echo "wrote: $rr_from_root/scripts/records.sh"
-[ "$wrote_ledger" -eq 1 ] && echo "wrote: $rr_from_root/history.tsv"
-[ "$wrote_readme" -eq 1 ] && echo "wrote: $rr_from_root/README.md"
-"$rr/scripts/records.sh" migrate-status
-if ! "$rr/scripts/records.sh" check; then
+echo "records: $records ($label)"
+[ "$wrote_script" -eq 1 ] && echo "wrote: $workspace_rel/journal/scripts/records.sh"
+[ "$wrote_ledger" -eq 1 ] && echo "wrote: $records_rel/history.tsv"
+[ "$wrote_readme" -eq 1 ] && echo "wrote: $records_rel/README.md"
+"$deployed" --root "$root" --records-root "$records_rel" migrate-status
+if ! "$deployed" --root "$root" --records-root "$records_rel" check; then
   echo "records check failed — tool layer is up; run /journal curate" >&2
-  exit 0
 fi

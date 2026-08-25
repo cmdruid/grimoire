@@ -9,7 +9,7 @@ not this verb.
    refuse.
 3. Write one body sentence saying what changed (the fact is no longer
    true, and why).
-4. Close: `note-mint.sh stamp <agent-records> <abs-path> --status dropped
+4. Close: `note-mint.sh stamp <root> <records-root-relative> <workspace-relative> <abs-path> --status dropped
    --note "<what changed>"`.
 5. Do not mint a replacement.
 6. **Commit** per SKILL.md: standalone →

@@ -1,9 +1,9 @@
 ---
 name: clankshop
-version: 3.0.0
+version: 3.1.0
 description: "Independent agent skills with a faceless composition runbook"
 required: journal
-optional: analyst, auditor, backlog, architect, contractor, inspector, debugger, delegate, checkpoint, mailbox, notepad, scheduler, shopbook, workstream
+optional: analyst, auditor, backlog, architect, contractor, inspector, debugger, delegate, checkpoint, mailbox, notepad, scheduler, shopbook, workspace, workstream
 ---
 
 # clankshop — the faceless skills pack
@@ -25,7 +25,7 @@ All other members are optional and default-installed:
 - Work leads: `architect`, `contractor`, and `inspector`.
 - Project knowledge and follow-up: `journal`, `backlog`, `notepad`, and `analyst`.
 - Development operations: `workstream`, `auditor`, `debugger`, and `shopbook`.
-- Utilities: `delegate`, `mailbox`, `checkpoint`, and `scheduler`.
+- Utilities: `delegate`, `mailbox`, `checkpoint`, `scheduler`, and `workspace`.
 
 `skill-builder` is intentionally outside the pack. It maintains skills
 libraries; it is not part of a project's development toolkit.

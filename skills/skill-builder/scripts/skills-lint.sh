@@ -124,6 +124,10 @@
 #      fence-stripped. Prose naming the tool without `--title` and
 #      without a following flag is out of scope. skill-builder and
 #      pack faces are exempt.
+#  18. Kind-first workspace paths (FAIL). Live skill Markdown and shell must
+#      name workspace content owner-first. Either the symbolic workspace token
+#      or its default followed immediately by a reserved kind is the retired
+#      grammar. No skill roster is encoded; owners remain open.
 #
 # Pack-face exemption: any skill dir that carries a PACK.md
 # is the pack's FACE -- it composes the pack, so naming its members is its job,
@@ -697,7 +701,7 @@ done
 # skill review.
 #
 # `.records/doctrine/` USED to be excluded by exactly that argument, and no
-# longer is: once doctrine resolves through `<agent-workspace>/doctrine`, that
+# longer is: once doctrine resolves through `<agent-workspace>/<skill>/doctrine`, that
 # path stops being any home's default, so it becomes decidable and is the
 # strongest guard this retirement buys. It shipped WARN while the five consumer
 # skills still carried it in their resolution prose, and is now FAIL -- they are
@@ -710,12 +714,12 @@ for sk in "$skills_dir"/*/; do
     rel="${f#"$sk"}"
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      fail "$name: $rel:$line: off-home doctrine literal (resolve <agent-workspace>/doctrine instead)"
+      fail "$name: $rel:$line: off-home doctrine literal (resolve <agent-workspace>/<skill>/doctrine instead)"
     done < <(grep -nF -e '`.handbook/test/' -e '`.handbook/build/' \
                      -e '`.handbook/design/' -e '`.handbook/review/' "$f" || true)
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      fail "$name: $rel:$line: stale doctrine default \`.records/doctrine/\` (resolve <agent-workspace>/doctrine instead)"
+      fail "$name: $rel:$line: stale doctrine default \`.records/doctrine/\` (resolve <agent-workspace>/<skill>/doctrine instead)"
     done < <(grep -nF -e '`.records/doctrine/' "$f" || true)
   done < <(find "$sk" -name '*.md' -print0)
 done
@@ -763,12 +767,12 @@ for sk in "$skills_dir"/*/; do
             | sed 's/,$//' || true)"
     [ -n "$hits" ] || continue
     n="$(printf '%s' "$hits" | tr ',' '\n' | grep -c . || true)"
-    fail "$name: $rel: $n occurrence(s) of the retired \`agent-doctrine\` literal (line(s) $hits) -- resolve <agent-workspace>/doctrine instead"
+    fail "$name: $rel: $n occurrence(s) of the retired \`agent-doctrine\` literal (line(s) $hits) -- resolve <agent-workspace>/<skill>/doctrine instead"
   done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
 done
 
 # Arm (a2): retired `agent-templates` literal. Same exemption and roll-up
-# as (a). Templates resolve at `<agent-workspace>/templates`.
+# as (a). Templates resolve at `<agent-workspace>/<skill>/templates`.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   case "$name" in skill-builder) continue ;; esac
@@ -779,7 +783,7 @@ for sk in "$skills_dir"/*/; do
             | sed 's/,$//' || true)"
     [ -n "$hits" ] || continue
     n="$(printf '%s' "$hits" | tr ',' '\n' | grep -c . || true)"
-    fail "$name: $rel: $n occurrence(s) of the retired \`agent-templates\` literal (line(s) $hits) -- resolve <agent-workspace>/templates instead"
+    fail "$name: $rel: $n occurrence(s) of the retired \`agent-templates\` literal (line(s) $hits) -- resolve <agent-workspace>/<skill>/templates instead"
   done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
 done
 
@@ -807,7 +811,7 @@ done
 # cannot guess a template path from a doctype name, and the flat
 # `$RR/templates/<doctype>.md` fallback it once had is gone. A bare call
 # therefore hard-errors at runtime AND skips the lock-in copy into
-# `<agent-workspace>/templates/<skill>/`. This check is what turns that runtime failure
+# `<agent-workspace>/<skill>/templates/`. This check is what turns that runtime failure
 # into a lint failure, so it is caught while authoring rather than mid-verb.
 #
 # DECIDABILITY: two shapes are invocations. (a) a backticked span
@@ -857,6 +861,24 @@ for sk in "$skills_dir"/*/; do
       fail "$name: $rel: bare mint ${span} -- pass \`--template <resolved>\` (the project-templates rule)"
     done < <(strip_code "$f" | grep -o '`[^`]*`' || true)
   done < <(find "$sk" -name '*.md' -print0)
+done
+
+# ---- 18. kind-first workspace paths (FAIL) ----------------------------------
+# Owners are open, so the only deterministic authoring error is a reserved kind
+# immediately beneath the workspace root. Keep the two prefixes and the kind
+# vocabulary separate in this source: the test assembles broken fixtures, and a
+# literal absence sweep can therefore cover this package too.
+workspace_prefix='(<agent-workspace>|\.dev)'
+workspace_kinds='(doctrine|hooks|scripts|templates|trackers|flows)'
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  while IFS= read -r -d '' f; do
+    rel="${f#"$sk"}"
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      fail "$name: $rel:$line: kind-first workspace path -- use <agent-workspace>/<skill>/<kind>/..."
+    done < <(grep -nE "$workspace_prefix/$workspace_kinds(/|[^a-z0-9-]|$)" "$f" || true)
+  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
 done
 
 # ---- summary -----------------------------------------------------------------

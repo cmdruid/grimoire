@@ -79,7 +79,7 @@ fi
 # --- check 14: green — angle-bracket member -----------------------------------
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'The playbook lives at `<agent-workspace>/doctrine/core/POLICY.md`.'
+  'The playbook lives at `<agent-workspace>/widget/doctrine/core/POLICY.md`.'
 lint
 if grep -q "$c14" "$OUT"; then
   echo "FAIL: angle-bracket literal still matched check 14 (must stay green)" >&2
@@ -129,7 +129,7 @@ run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
   'Example only:
 
-    <agent-workspace>/doctrine/core/POLICY.md
+    <agent-workspace>/widget/doctrine/core/POLICY.md
 
 but this skill just reads a fixed path.'
 lint
@@ -197,11 +197,11 @@ else
 fi
 
 # --- check 15: the CANONICAL default path is still conforming usage -----------
-# Unchanged rule, new default. `<agent-workspace>`'s default is `.dev/doctrine/`,
+# Unchanged rule, owner-first default. The widget doctrine kind defaults under `.dev/widget/`,
 # and prose is required to name defaults literally -- so this must never fire.
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'Doctrine lives under `<agent-workspace>/doctrine`, by default `.dev/doctrine/`.'
+  'Doctrine lives under `<agent-workspace>/widget/doctrine`, by default `.dev/widget/doctrine/`.'
 lint
 if grep -q "$c15" "$OUT"; then
   echo "FAIL: canonical default path matched check 15 (must stay green)" >&2
@@ -213,7 +213,7 @@ fi
 
 # --- check 15: FAIL — `.records/doctrine/` is newly decidable ------------------
 # This literal used to be excluded as "a home's canonical default". Once doctrine
-# resolves through <agent-workspace>/doctrine it is nobody's default, so it
+# resolves through <agent-workspace>/widget/doctrine it is nobody's default, so it
 # becomes decidable -- the strongest guard the retirement buys. It shipped WARN
 # while the consumers were being flipped and is now FAIL.
 # RED-PROOF: the fixture carrying it must FAIL.
@@ -227,14 +227,14 @@ expect "check 15 names the stale default" "$c15b" "$OUT"
 # green control: remove the literal -> silent.
 run_lint
 write_skill widget 'note — a captured fact' \
-  'The rubric sits at `.dev/doctrine/test/workflows/audit/GUIDE.md`.'
+  'The rubric sits at `.dev/widget/doctrine/test/workflows/audit/GUIDE.md`.'
 lint
 expect_absent "check 15 is silent once the stale default is gone" "$c15b" "$OUT"
 
 # --- check 14: green — the NEW literal family satisfies it ---------------------
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'The playbook lives at `<agent-workspace>/doctrine/core/POLICY.md`.'
+  'The playbook lives at `<agent-workspace>/widget/doctrine/core/POLICY.md`.'
 lint
 expect_absent "check 14 accepts the agent-workspace angle-bracket member" "$c14" "$OUT"
 
@@ -267,7 +267,7 @@ expect_absent "check 16a no longer warns" "WARN: widget: SKILL.md: 1 occurrence(
 # green control: no retired literal -> silent.
 run_lint
 write_skill widget 'note — a captured fact' \
-  'Resolve `<agent-workspace>/doctrine` before reading the playbook.'
+  'Resolve `<agent-workspace>/widget/doctrine` before reading the playbook.'
 lint
 expect_absent "check 16a is silent on a flipped skill" "$c16a" "$OUT"
 
@@ -280,7 +280,7 @@ expect "check 16a2 FAILs on the retired templates literal" "$c16a2" "$OUT"
 
 run_lint
 write_skill widget 'note — a captured fact' \
-  'Resolve `<agent-workspace>/templates` before copying a lock-in.'
+  'Resolve `<agent-workspace>/widget/templates` before copying a lock-in.'
 lint
 expect_absent "check 16a2 is silent on a flipped templates path" "$c16a2" "$OUT"
 

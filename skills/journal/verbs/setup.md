@@ -1,12 +1,12 @@
 # `setup` — stand up or refresh the records tool layer
 
-Stand up `records.sh`, the empty ledger, and the records README in a target
+Stage `records.sh` in the agent workspace and stand up the empty ledger and records README in a target
 project — or refresh `records.sh` on a later visit. Works standalone on any
 repo; this is also the records step a workshop setup delegates (the workshop
 never improvises a records layer of its own). It creates **no writer
 directory and no pre-seeded `templates/`**.
 
-1. **Resolve the two facts** (judgment stays here, mechanics are scripted):
+1. **Resolve the three facts** (judgment stays here, mechanics are scripted):
    - `<root>`: `git rev-parse --show-toplevel` of the checkout that should
      hold the records; else a project directory the conversation
      references; else ask. Read `AGENTS.md` / `CLAUDE.md` under that root.
@@ -14,21 +14,23 @@ directory and no pre-seeded `templates/`**.
      `AGENTS.md`, then `CLAUDE.md`; else `.records`. Never invent a third location.
      The relative path must have no leading `/` and no `..` segment (standup
      refuses otherwise). Pass it as `--records-root`.
-2. **Run the mechanics**: `scripts/standup.sh <root> [--records-root <rel>]` —
+   - `<agent-workspace>`: first line-start `agent-workspace:` in those same files;
+     else `.dev`. Apply the same relative-path constraints and pass it as `--workspace`.
+2. **Run the mechanics**: `scripts/standup.sh <root> --workspace <rel> --records-root <rel>` —
    creates the agent-records home directory itself if needed, installs or
-   refreshes `records.sh` in `<agent-records>/scripts/`, seeds an empty
+   refreshes `records.sh` in `<agent-workspace>/journal/scripts/`, seeds an empty
    `history.tsv` only if missing, writes the records README only if absent,
    and self-checks. It is additive (a home that merely exists — a leftover
    path, or a notepad-created `.records/notes/` with no tool — is fine). It
    does not `mkdir` writer directories, write `.gitkeep`, or copy templates.
-   **First visit** (no deployed `records.sh`): stands the layer.
+   **First visit** (no staged `records.sh`): stands the layer.
    **Later visit** (script present): refreshes `records.sh` when the skill
    copy has drifted (`current` vs `refreshed`); restores the executable bit
    if needed; **migrates statuses**, then `check`; never truncates the ledger
    or overwrites README.
    **Exit 2**: missing target directory, or missing skill-side `records.sh`
    → STOP and report.
-   **Exit 1**: usage, or a bad `--records-root`.
+   **Exit 1**: usage, a bad root, or an unsafe/symlinked destination.
    If standup wrote the tool and then `check` failed, the tool layer **is
    up** — report that and point at `/journal curate`. That is not a setup
    refuse.
@@ -46,7 +48,7 @@ directory and no pre-seeded `templates/`**.
 
 ## Done when
 
-- First visit: tool layer stood up — deployed `records.sh` + empty ledger +
+- First visit: tool layer stood up — staged `records.sh` + empty ledger +
   README; no writer directories created; standalone commit landed on the
   `wrote:` paths (or write-only inside a sweep).
 - Later visit: `records.sh` current or refreshed (executable); ledger and

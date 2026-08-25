@@ -1,13 +1,13 @@
 # `upkeep` — fill missing title / use-when
 
-Ongoing maintenance of crawl keys on `$DST/*.md` (same glob as the
+Ongoing maintenance of crawl keys on `<agent-workspace>/*/flows/*.md` (same glob as the
 index). Not a workshop onramp; not `migrate`. `--check` is facts-only.
 
 1. Resolve project root and `<agent-workspace>` the same way as query.
 2. Run this skill's `scripts/flows-upkeep.sh`
    `check|apply --root --workspace`.
 3. Decision:
-   - Missing `$DST` → no-op 0.
+   - Missing workspace or no owner flow directories → no-op 0.
    - `--check`: exit 0 if `need=` empty and `malformed=` empty; else 1.
      Write nothing.
    - `apply`: insert a leading front-matter block when `fm=missing`

@@ -19,19 +19,16 @@ This skill is **self-contained and uniquely named**: it depends on no other skil
 and collides with none.
 
 There is no `init` and no `setup`. Missing
-`<agent-workspace>/inspector/` is not a refuse — use the bundled
+`<agent-workspace>/inspector/doctrine/` is not a refuse — use the bundled
 `kinds/<kind>.md`.
 
-**Kind templates** land at `<agent-workspace>/inspector/<kind>.md`
-(default `.dev/inspector/<kind>.md`). No new front-door variable.
+**Kind doctrine** lands at `<agent-workspace>/inspector/doctrine/<kind>.md`
+(default `.dev/inspector/doctrine/<kind>.md`). No new front-door variable.
 Incumbent wins; upgrade is a judgment-assisted diff. Load the
 workspace copy if present, else the bundled `kinds/<kind>.md`.
 
-`mkdir` of `<agent-workspace>/inspector/` only when
-`<agent-workspace>` already exists or is the derived default `.dev`
-(creates `.dev` as a container for `inspector/`, never `doctrine/`).
-Declared `agent-workspace:` that is absent → do not create; use the
-bundle. Never create a declared-absent workspace.
+Review and refine are not setup operations: they never create this
+namespace. An absent workspace or kind file uses the bundle.
 
 This package does **not** mint records.
 
@@ -72,7 +69,7 @@ Hosts add files; they do not invent a rubric at runtime.
    then the founding-shaped parser in `kinds/founding.md` (try
    founding **before** spec — both may carry a spec tag).
 2. Resolve `<agent-workspace>` (front-door `agent-workspace:`, else
-   `.dev`). Test for `<agent-workspace>/inspector/<kind>.md`.
+   `.dev`). Test for `<agent-workspace>/inspector/doctrine/<kind>.md`.
    Present → use it. Absent → bundled `kinds/<kind>.md`.
 3. No matching discriminator among workspace files and bundled
    kinds → ask or refuse. Do not invent a rubric.

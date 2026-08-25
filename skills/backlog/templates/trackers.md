@@ -17,6 +17,6 @@ flip:
     - [x] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md — 2026-08-17
 
 The tracker itself stays `draft`. Stamp every body edit with
-`records.sh touch <this file>` so `updated:` stays honest.
+`records.sh --root <root> --records-root <records-root-relative> touch <this file>` so `updated:` stays honest.
 
 ## Items

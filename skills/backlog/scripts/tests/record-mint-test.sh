@@ -44,11 +44,14 @@ TMP="$(mktemp -d "${TMPDIR:-/tmp}/record-mint-test.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 
 # --- no records.sh: file-mode mint + five keys --------------------------------
-RR="$TMP/bare"
-AT="$RR/templates"
+ROOT="$TMP"
+R="bare"
+W="ws-bare"
+RR="$ROOT/$R"
+AT="$ROOT/$W/backlog/templates"
 mkdir -p "$RR"
 
-OUT="$(/bin/bash "$MINT" mint "$RR" "$AT" trackers "Alpha crash")"
+OUT="$(/bin/bash "$MINT" mint "$ROOT" "$R" "$W" trackers "Alpha crash")"
 rr_abs="$(cd "$RR" && pwd)"
 expect_eq "mint agent-records" "$rr_abs" "$(kv agent-records "$OUT")"
 expect_eq "mint records-root compat" "$rr_abs" "$(kv records-root "$OUT")"
@@ -61,29 +64,29 @@ expect_match "status draft" '^status: draft$' "$(cat "$path")"
 expect_match "created today" "^created: $today$" "$(cat "$path")"
 expect_match "updated today" "^updated: $today$" "$(cat "$path")"
 expect_match "filled title" '^# Alpha crash$' "$(cat "$path")"
-expect_eq "nested dest copied" "1" "$([ -f "$AT/backlog/trackers.md" ] && echo 1 || echo 0)"
+expect_eq "owner-first dest copied" "1" "$([ -f "$AT/trackers.md" ] && echo 1 || echo 0)"
 expect_absent "no flat templates/trackers.md" "$RR/templates/trackers.md"
 expect_absent "no history.tsv after mint" "$RR/history.tsv"
 expect_absent "no scripts/ after mint" "$RR/scripts"
 
-OUT2="$(/bin/bash "$MINT" mint "$RR" "$AT" trackers "Alpha crash")"
+OUT2="$(/bin/bash "$MINT" mint "$ROOT" "$R" "$W" trackers "Alpha crash")"
 expect_eq "collision rel" "trackers/$today-alpha-crash-2.md" "$(kv rel "$OUT2")"
 
-if /bin/bash "$MINT" mint "$RR" "$AT" gizmos "Nope" >/dev/null 2>&1; then
+if /bin/bash "$MINT" mint "$ROOT" "$R" "$W" gizmos "Nope" >/dev/null 2>&1; then
   echo "FAIL: missing doctype template — expected non-zero" >&2
   fail=$((fail + 1))
 else
   pass=$((pass + 1))
 fi
 
-if /bin/bash "$MINT" mint "$RR" "$AT" tickets "Need the key" >/dev/null 2>&1; then
+if /bin/bash "$MINT" mint "$ROOT" "$R" "$W" tickets "Need the key" >/dev/null 2>&1; then
   echo "FAIL: tickets mint — expected non-zero" >&2
   fail=$((fail + 1))
 else
   pass=$((pass + 1))
 fi
 
-if /bin/bash "$MINT" mint "$RR" "$AT" bugs "Alpha crash" >/dev/null 2>&1; then
+if /bin/bash "$MINT" mint "$ROOT" "$R" "$W" bugs "Alpha crash" >/dev/null 2>&1; then
   echo "FAIL: bugs mint — expected non-zero" >&2
   fail=$((fail + 1))
 else
@@ -91,58 +94,64 @@ else
 fi
 
 # file-mode close must not create history.tsv
-/bin/bash "$MINT" stamp "$RR" "$path" --status "done" --note "fixed" >/dev/null
+/bin/bash "$MINT" stamp "$ROOT" "$R" "$W" "$path" --status "done" --note "fixed" >/dev/null
 expect_match "file-mode close status" '^status: archived$' "$(cat "$path")"
 expect_absent "file-mode close no history.tsv" "$RR/history.tsv"
 
 # previous-home adopt: skill-namespaced file under records → templates home
-RRP="$TMP/prev-home"
-TH="$TMP/ws/templates"
+RP="prev-home"
+WP="ws-prev"
+RRP="$ROOT/$RP"
+TH="$ROOT/$WP/backlog/templates"
 mkdir -p "$RRP/templates/backlog"
 printf -- '---\ndoctype: trackers\nstatus: draft\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\nprevious-home\n\n## Items\n' \
   > "$RRP/templates/backlog/trackers.md"
-OUTP="$(/bin/bash "$MINT" mint "$RRP" "$TH" trackers "Backlog")"
-expect_eq "prev-home dest" "1" "$([ -f "$TH/backlog/trackers.md" ] && echo 1 || echo 0)"
+OUTP="$(/bin/bash "$MINT" mint "$ROOT" "$RP" "$WP" trackers "Backlog")"
+expect_eq "prev-home dest" "1" "$([ -f "$TH/trackers.md" ] && echo 1 || echo 0)"
 expect_match "prev-home body adopted" 'previous-home' "$(cat "$(kv path "$OUTP")")"
 expect_eq "prev-home left in place" "1" "$([ -f "$RRP/templates/backlog/trackers.md" ] && echo 1 || echo 0)"
 
 # --- with records.sh: --template from the templates home --------------------
 if [ -f "$JOURNAL_RS" ]; then
-  RR2="$TMP/with-rs"
-  AT2="$RR2/templates"
-  mkdir -p "$RR2/scripts"
-  cp "$JOURNAL_RS" "$RR2/scripts/records.sh"
-  chmod +x "$RR2/scripts/records.sh"
+  R2="with-rs"
+  W2="ws-rs"
+  RR2="$ROOT/$R2"
+  AT2="$ROOT/$W2/backlog/templates"
+  mkdir -p "$RR2" "$ROOT/$W2/journal/scripts"
+  cp "$JOURNAL_RS" "$ROOT/$W2/journal/scripts/records.sh"
+  chmod +x "$ROOT/$W2/journal/scripts/records.sh"
   : > "$RR2/history.tsv"
 
-  OUT3="$(/bin/bash "$MINT" mint "$RR2" "$AT2" trackers "Need the key")"
+  OUT3="$(/bin/bash "$MINT" mint "$ROOT" "$R2" "$W2" trackers "Need the key")"
   expect_eq "records mode" "records" "$(kv mode "$OUT3")"
   rpath="$(kv path "$OUT3")"
   expect_eq "records path exists" "1" "$([ -f "$rpath" ] && echo 1 || echo 0)"
-  expect_eq "records nested dest" "1" "$([ -f "$AT2/backlog/trackers.md" ] && echo 1 || echo 0)"
+  expect_eq "records owner-first dest" "1" "$([ -f "$AT2/trackers.md" ] && echo 1 || echo 0)"
   expect_absent "records no flat trackers.md" "$RR2/templates/trackers.md"
-  if /bin/sh "$RR2/scripts/records.sh" check >/dev/null 2>&1; then
+  if /bin/sh "$ROOT/$W2/journal/scripts/records.sh" --root "$ROOT" --records-root "$R2" check >/dev/null 2>&1; then
     pass=$((pass + 1))
   else
     echo "FAIL: records.sh check after new" >&2
     fail=$((fail + 1))
   fi
 
-  STAMP_RS="$(/bin/bash "$MINT" stamp "$RR2" "$rpath" --status "done" --note "granted")"
+  STAMP_RS="$(/bin/bash "$MINT" stamp "$ROOT" "$R2" "$W2" "$rpath" --status "done" --note "granted")"
   expect_eq "stamp records mode" "records" "$(kv mode "$STAMP_RS")"
   expect_match "stamp records status" '^status: archived$' "$(cat "$rpath")"
   expect_eq "ledger one line" "1" "$(grep -c . "$RR2/history.tsv" || true)"
 
   # legacy flat adopt: existing $RR/templates/trackers.md → skill dir
-  RR3="$TMP/legacy-flat"
-  AT3="$RR3/templates"
+  R3="legacy-flat"
+  W3="ws-legacy"
+  RR3="$ROOT/$R3"
+  AT3="$ROOT/$W3/backlog/templates"
   mkdir -p "$RR3/templates"
   printf -- '---\ndoctype: trackers\nstatus: draft\ncreated: <date>\nupdated: <date>\ntags: []\n---\n\n# <title>\nlegacy-flat\n\n## Items\n' \
     > "$RR3/templates/trackers.md"
-  OUT4="$(/bin/bash "$MINT" mint "$RR3" "$AT3" trackers "Backlog")"
+  OUT4="$(/bin/bash "$MINT" mint "$ROOT" "$R3" "$W3" trackers "Backlog")"
   expect_eq "legacy adopt mode" "file" "$(kv mode "$OUT4")"
   expect_match "legacy body adopted" 'legacy-flat' "$(cat "$(kv path "$OUT4")")"
-  expect_eq "legacy copied to skill dir" "1" "$([ -f "$AT3/backlog/trackers.md" ] && echo 1 || echo 0)"
+  expect_eq "legacy copied to owner dir" "1" "$([ -f "$AT3/trackers.md" ] && echo 1 || echo 0)"
   expect_eq "legacy flat left in place" "1" "$([ -f "$RR3/templates/trackers.md" ] && echo 1 || echo 0)"
 fi
 

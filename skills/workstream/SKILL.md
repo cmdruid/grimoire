@@ -91,16 +91,16 @@ plus ordinary git branches and worktrees, and **every verb works on any repo** �
 install or project scaffold is a precondition, and no verb ever refuses or stalls for lack
 of one.
 
-- At `create`/`recycle`, read `$HOOKS` (absolute
-  `<root>/<agent-workspace>/hooks/workstream.md`) when present; empty or absent → no extra
-  glue command.
+- At `create`/`recycle`, read the two canonical files beneath `$HOOKS_DIR`
+  (absolute `<root>/<agent-workspace>/workstream/hooks/`) when present;
+  empty or absent → no extra glue command. Unrelated files are ignored.
 - Queue-item tracker completion runs only when the tracker file already exists.
 - Do not create a doctrine home or invoke any pack lifecycle as a side effect.
 - **Records (every host).** Workstream-owned records — seeded / drafted `plans/` files,
   ship-time plan closes, optional debrief `reports/` — land under the agent-records home
   (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
   `.records/`). Resolve lock-in templates via the project-templates rule; pass
-  `records.sh new <doctype> --template <resolved>` when the tool exists; else file-mode fill
+  `records.sh --root <root> --records-root <records-root-relative> new <doctype> --template <resolved>` when the tool exists; else file-mode fill
   from the resolved `plans.md` / `reports.md`, naming the file `YYYY-MM-DD-<slug>.md` — an
   undated filename is not a record, so the tool will not see it. Never write the flat
   `<agent-records>/templates/<doctype>.md`. File-mode close stamps `status:` only.
@@ -210,9 +210,10 @@ Subcommands (each consuming verb file names the facts it reads):
 
 The skill also bundles `scripts/hooks.sh` (project-hooks parser and
 materializer — resolve it from this skill's own base directory, same as
-`workstream-git.sh`). `parse` is read-only; `materialize` copies the bundled
-`templates/hooks.md` onto an absolute `--file` if absent and refuses overwrite
-(no mkdir of a missing parent). `compile` projects `## Hooks (compiled)` into
+`workstream-git.sh`). `parse` is read-only over an absolute `--dir` and only
+the declared `--known` seam files; `materialize` safely creates that owner/kind
+directory and copies bundled `templates/hooks/*.md` absent-only. `compile`
+hashes that canonical known-file population and projects `## Hooks (compiled)` into
 `--handoff`; `compiled-get` / `compiled-put` preserve that exclusive span
 across a template rewrite (`save` does not recompile). It also bundles
 `scripts/worktree-exclude.sh` (idempotent hand-off exclusion, used by

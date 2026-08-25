@@ -9,14 +9,14 @@ fact. No successor → refuse; that is `drop`.
 3. **Successor required.** If none exists and none will be minted,
    STOP and point at `/notepad drop`.
 4. Mint the replacement
-   (`note-mint.sh mint <agent-records> <templates-home> "<headline>"`)
+   (`note-mint.sh mint <root> <records-root-relative> <workspace-relative> "<headline>"`)
    or confirm the successor path already exists. Fill the new body.
 5. On the **old** note's body, append one contract record-link:
    `→ notes/<successor-file>.md`.
 6. Close the old note:
-   `note-mint.sh stamp <agent-records> <old-abs> --status superseded --note "notes/<successor-file>.md"`.
+   `note-mint.sh stamp <root> <records-root-relative> <workspace-relative> <old-abs> --status superseded --note "notes/<successor-file>.md"`.
    The body link is the canonical shape; `--note` is the ledger field
-   when `records.sh done` runs.
+   when `records.sh --root <root> --records-root <records-root-relative> done` runs.
 7. **Commit** per SKILL.md: standalone →
    `scripts/scoped-commit.sh <root> "Notepad: supersede — <slug>" <paths…>`;
    write-only sweep → print `path=` / `rel=` for every path written;

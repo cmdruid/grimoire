@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # note-mint.sh — mint or stamp a notes/ record. Facts only.
-#   note-mint.sh mint  <agent-records> <templates-home> <title>
-#   note-mint.sh stamp <agent-records> <abs-path> [--status <status>] [--note "<text>"]
+#   note-mint.sh mint  <root> <records-root> <workspace> <title>
+#   note-mint.sh stamp <root> <records-root> <workspace> <abs-path> [--status <status>] [--note "<text>"]
 #
-# Uses <agent-records>/scripts/records.sh when that file is executable
+# Uses <agent-workspace>/journal/scripts/records.sh when that file is executable
 # (`new --template <resolved>`); otherwise writes the contract shape itself.
 # Resolves notes.md through the project-templates rule. Never decides
 # update-vs-mint or whether to commit. Never writes history.tsv by hand.
@@ -11,8 +11,8 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: note-mint.sh mint  <agent-records> <templates-home> <title>" >&2
-  echo "       note-mint.sh stamp <agent-records> <abs-path> [--status <status>] [--note \"<text>\"]" >&2
+  echo "usage: note-mint.sh mint  <root> <records-root> <workspace> <title>" >&2
+  echo "       note-mint.sh stamp <root> <records-root> <workspace> <abs-path> [--status <status>] [--note \"<text>\"]" >&2
   exit 2
 }
 
@@ -77,14 +77,50 @@ slug_of() {
     | sed -e 's/[^a-z0-9]\{1,\}/-/g' -e 's/^-\{1,\}//' -e 's/-\{1,\}$//'
 }
 
+valid_rel() {
+  [ -n "$1" ] || return 1
+  case "$1" in /*) return 1 ;; esac
+  case "/$1/" in */../*) return 1 ;; esac
+}
+
+safe_tree() {
+  local rel="$2" current="$1" segment old_ifs
+  valid_rel "$rel" || err "unsafe relative path: $rel"
+  old_ifs="$IFS"; IFS=/
+  for segment in $rel; do
+    [ -n "$segment" ] || continue
+    current="$current/$segment"
+    [ ! -L "$current" ] || err "symlinked destination parent: $current"
+    [ ! -e "$current" ] || [ -d "$current" ] || err "destination parent is not a directory: $current"
+    [ -d "$current" ] || mkdir "$current"
+  done
+  IFS="$old_ifs"
+}
+
+init_paths() {
+  root="$1"; rr_rel="$2"; ws_rel="$3"; create="${4:-no}"
+  case "$root" in /*) ;; *) err "root must be absolute: $root" ;; esac
+  [ -d "$root" ] || err "root is not a directory: $root"
+  root="$(abs_dir "$root")"
+  valid_rel "$rr_rel" || err "unsafe records root: $rr_rel"
+  valid_rel "$ws_rel" || err "unsafe workspace: $ws_rel"
+  if [ "$create" = yes ]; then
+    safe_tree "$root" "$rr_rel"
+    safe_tree "$root" "$ws_rel/$SKILL_NAME/templates"
+  fi
+  rr="$root/$rr_rel"
+  at="$root/$ws_rel/$SKILL_NAME/templates"
+  engine="$root/$ws_rel/journal/scripts/records.sh"
+}
+
 has_records() {
-  [ -x "$1/scripts/records.sh" ]
+  [ -x "$engine" ]
 }
 
 # resolve_notes_template <agent-records> <templates-home>
 resolve_notes_template() {
   local rr="$1" at="$2"
-  local dest="$at/$SKILL_NAME/notes.md"
+  local dest="$at/notes.md"
   local prev="$rr/templates/$SKILL_NAME/notes.md"
   local flat="$rr/templates/notes.md"
   [ -f "$BUNDLED_TPL" ] || err "bundled template missing: $BUNDLED_TPL"
@@ -104,18 +140,14 @@ resolve_notes_template() {
 }
 
 cmd_mint() {
-  [ $# -ge 3 ] || usage
-  rr="$1"; at="$2"; title="$3"
+  [ $# -ge 4 ] || usage
+  init_paths "$1" "$2" "$3" yes
+  title="$4"
   [ -n "$title" ] || err "empty title"
-  [ -d "$rr" ] || mkdir -p "$rr"
-  [ -d "$at" ] || mkdir -p "$at"
-  rr="$(abs_dir "$rr")"
-  at="$(abs_dir "$at")"
-
   tpl="$(resolve_notes_template "$rr" "$at")"
 
-  if has_records "$rr"; then
-    path="$("$rr/scripts/records.sh" new notes --template "$tpl" --title "$title")"
+  if has_records; then
+    path="$("$engine" --root "$root" --records-root "$rr_rel" new notes --template "$tpl" --title "$title")"
     rel="${path#"$rr"/}"
     emit "$rr" "$path" "$rel" "records"
     return 0
@@ -135,8 +167,9 @@ cmd_mint() {
 }
 
 cmd_stamp() {
-  [ $# -ge 2 ] || usage
-  rr="$1"; path="$2"; shift 2
+  [ $# -ge 4 ] || usage
+  init_paths "$1" "$2" "$3"
+  path="$4"; shift 4
   status=""
   note=""
   while [ $# -gt 0 ]; do
@@ -150,21 +183,21 @@ cmd_stamp() {
   rr="$(abs_dir "$rr")"
   [ -f "$path" ] || err "no such file: $path"
 
-  if has_records "$rr"; then
+  if has_records; then
     case "$path" in
       "$rr"/*)
         if [ -n "$status" ] && is_disposition "$status"; then
           if [ -n "$note" ]; then
-            "$rr/scripts/records.sh" "done" "$path" --as "$status" --note "$note" >/dev/null
+            "$engine" --root "$root" --records-root "$rr_rel" "done" "$path" --as "$status" --note "$note" >/dev/null
           else
-            "$rr/scripts/records.sh" "done" "$path" --as "$status" >/dev/null
+            "$engine" --root "$root" --records-root "$rr_rel" "done" "$path" --as "$status" >/dev/null
           fi
           mode="records"
         else
           if [ -n "$status" ]; then
-            "$rr/scripts/records.sh" touch "$path" --status "$status" >/dev/null
+            "$engine" --root "$root" --records-root "$rr_rel" touch "$path" --status "$status" >/dev/null
           else
-            "$rr/scripts/records.sh" touch "$path" >/dev/null
+            "$engine" --root "$root" --records-root "$rr_rel" touch "$path" >/dev/null
           fi
           mode="records"
         fi

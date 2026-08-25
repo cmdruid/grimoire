@@ -30,7 +30,7 @@ three trackers. Speech alone is not a drain.
    - a leftover durable fact → one Backlog line `write down: <the fact, one sentence>`.
      When the fact is written, complete the line.
 4. **Close what completed**: records this work finished get
-   `scripts/record-mint.sh stamp <agent-records> <abs-path> --status <disposition> --note "<one line>"`;
+   `scripts/record-mint.sh stamp <root> <records-root-relative> <workspace-relative> <abs-path> --status <disposition> --note "<one line>"`;
    tracker line-items get the contract's completed form + `record-mint.sh stamp`
    (no ledger line for the line-item). A `needs human:` line completes when the human
    answers (completed form, no Resolution section).

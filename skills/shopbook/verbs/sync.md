@@ -14,12 +14,12 @@ require `sync`. `--check` is facts-only (write nothing). Missing
      write `CLAUDE.md`. `block=malformed` → stop, touch nothing.
      `block=missing` on an existing `AGENTS.md` → append the pointer.
      `block=ok` → rewrite only the delimited span (idempotent).
-3. Report the facts. Adding or deleting a `flows/*.md` file does not
+3. Report the facts. Adding or deleting an `<owner>/flows/*.md` file does not
    drift the pointer — do not `sync` for that.
 
 ## Done when
 
 - `--check`: facts printed; nothing written.
-- `apply`: pointer span matches the resolved `<agent-workspace>/flows/`
+- `apply`: pointer span matches the resolved `<agent-workspace>/*/flows/`
   literal, or a no-op / stop was reported; `CLAUDE.md` untouched;
   `AGENTS.md` not created.

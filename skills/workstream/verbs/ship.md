@@ -109,13 +109,15 @@ independent of what the root has checked out. Never hand-commit these records to
 1. **Commit the shipping records on the branch — BEFORE landing.** These are doc-only, so gate them
    with the host's fast doc-linter (from the worktree), not the full gate. A shipped unit's durable
    trace is a **plan close plus an optional debrief report**, under the agent-records home on
-   every host. If `<agent-records>/scripts/records.sh` is executable, use it (`done` /
-   `new --template <resolved>`); else file-mode stamp of `status:` / `updated:` only — do
+   every host. If `<agent-workspace>/journal/scripts/records.sh` is executable, use it with
+   `--root <root> --records-root <records-root-relative>` (`done` / `new --template <resolved>`);
+   else file-mode stamp of `status:` / `updated:` only — do
    not write `history.tsv`. Ledger commit path only when `history.tsv` was actually written.
    - **Close each accumulated feature's plan record in place.** For **each** feature completed
      since the last ship (one under `per-stage`; possibly several under `milestone`/`per-track`)
      whose plan lives in the `plans/` store, run (in the worktree)
-     `records.sh done plans/<its-plan>.md --note "shipped: <feature subjects>"` when the tool
+     `records.sh --root <root> --records-root <records-root-relative> done
+     plans/<its-plan>.md --note "shipped: <feature subjects>"` when the tool
      exists; else rewrite `status:` / `updated:` on the plan file. **Reference the feature's
      commits by subject line, NOT by sha** in the note and any narrative: Landing (step 2)
      rebases this branch *after* these records are written, which rewrites every sha but
@@ -126,12 +128,12 @@ independent of what the root has checked out. Never hand-commit these records to
      advance below — never mint a record just to close it.
    - **A debrief report when the unit warrants narrative** — implementation surprises, follow-on
      context a future reader needs beyond the ledger line: resolve `reports.md` via the
-     project-templates rule; `records.sh new reports --template <resolved>` when the tool
+     project-templates rule; `records.sh --root <root> --records-root <records-root-relative> new reports --template <resolved>` when the tool
      exists; else file-mode from that path, naming the file `YYYY-MM-DD-<slug>.md` (the
      record shape). Tag it `debrief`, write findings-first, commit
      it on the branch. A routine unit needs no report.
    - **Complete the queue item's tracker line** only when that tracker file already exists:
-     flip `[ ]` → `[x]` (append the completion date) and opportunistic `records.sh touch`
+     flip `[ ]` → `[x]` (append the completion date) and opportunistic `records.sh --root <root> --records-root <records-root-relative> touch`
      (or file-mode stamp). Else record the ship in the plan close / hand-off / the
      project's own tracker layout. Do not mint a Backlog tracker.
    - If the queue is tracked in a roadmap doc, update its ledger/queue row for this stream and commit
@@ -153,7 +155,7 @@ independent of what the root has checked out. Never hand-commit these records to
    **all landed features** done and set the next queue item current.
    Then **draft** the next feature's implementation plan from the queue source into
    `<agent-records>/plans/` (resolve `plans.md` via the project-templates rule;
-   `records.sh new plans --template <resolved>` when the tool exists; else file-mode fill,
+   `records.sh --root <root> --records-root <records-root-relative> new plans --template <resolved>` when the tool exists; else file-mode fill,
    naming the file `YYYY-MM-DD-<slug>.md` — the record shape) —
    a working-tree draft: it rides the *next* ship; do not commit it now. Do not start the next
    feature automatically. **In `manual` mode, skip this draft** — plan-authoring belongs to the next

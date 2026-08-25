@@ -44,11 +44,14 @@ TMP="$(mktemp -d "${TMPDIR:-/tmp}/note-mint-test.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 
 # --- slice 1: no records.sh ---
-RR="$TMP/bare"
-AT="$RR/templates"
+ROOT="$TMP"
+R="bare"
+W="ws-bare"
+RR="$ROOT/$R"
+AT="$ROOT/$W/notepad/templates"
 mkdir -p "$RR"
 
-OUT="$(/bin/bash "$MINT" mint "$RR" "$AT" "Alpha fact")"
+OUT="$(/bin/bash "$MINT" mint "$ROOT" "$R" "$W" "Alpha fact")"
 rr_abs="$(cd "$RR" && pwd)"
 expect_eq "mint agent-records" "$rr_abs" "$(kv agent-records "$OUT")"
 expect_eq "mint records-root compat" "$rr_abs" "$(kv records-root "$OUT")"
@@ -63,20 +66,20 @@ expect_match "updated today" "^updated: $today$" "$(cat "$path")"
 expect_match "filled title" '^# Alpha fact$' "$(cat "$path")"
 expect_absent "no history.tsv after mint" "$RR/history.tsv"
 expect_absent "no scripts/ after mint" "$RR/scripts"
-expect_eq "nested dest copied" "1" "$([ -f "$AT/notepad/notes.md" ] && echo 1 || echo 0)"
+expect_eq "owner-first dest copied" "1" "$([ -f "$AT/notes.md" ] && echo 1 || echo 0)"
 expect_absent "no flat templates/notes.md" "$RR/templates/notes.md"
 
-OUT2="$(/bin/bash "$MINT" mint "$RR" "$AT" "Alpha fact")"
+OUT2="$(/bin/bash "$MINT" mint "$ROOT" "$R" "$W" "Alpha fact")"
 expect_eq "collision rel" "notes/$today-alpha-fact-2.md" "$(kv rel "$OUT2")"
 expect_eq "collision mode" "file" "$(kv mode "$OUT2")"
 
-if /bin/bash "$MINT" mint "$RR" "$AT" "" >/dev/null 2>&1; then
+if /bin/bash "$MINT" mint "$ROOT" "$R" "$W" "" >/dev/null 2>&1; then
   echo "FAIL: empty title — expected non-zero" >&2
   fail=$((fail + 1))
 else
   pass=$((pass + 1))
 fi
-if /bin/bash "$MINT" mint "$RR" "$AT" "???" >/dev/null 2>&1; then
+if /bin/bash "$MINT" mint "$ROOT" "$R" "$W" "???" >/dev/null 2>&1; then
   echo "FAIL: punctuation-only title — expected non-zero" >&2
   fail=$((fail + 1))
 else
@@ -87,7 +90,7 @@ expect_eq "empty/punct wrote nothing extra" "2" "$nfiles"
 
 created_before="$(sed -n 's/^created: //p' "$path")"
 # force a distinguishable updated: if we could; stamp still writes today
-/bin/bash "$MINT" stamp "$RR" "$path" --status superseded >/dev/null
+/bin/bash "$MINT" stamp "$ROOT" "$R" "$W" "$path" --status superseded >/dev/null
 expect_match "stamp status" '^status: archived$' "$(cat "$path")"
 expect_eq "stamp left created" "$created_before" "$(sed -n 's/^created: //p' "$path")"
 expect_match "stamp updated" "^updated: $today$" "$(cat "$path")"
@@ -95,44 +98,48 @@ expect_absent "stamp created no history.tsv" "$RR/history.tsv"
 
 # --- slice 2: opportunistic records.sh ---
 if [ -f "$JOURNAL_RS" ]; then
-  RR2="$TMP/with-rs"
-  AT2="$RR2/templates"
-  mkdir -p "$RR2/scripts"
-  cp "$JOURNAL_RS" "$RR2/scripts/records.sh"
-  chmod +x "$RR2/scripts/records.sh"
+  R2="with-rs"
+  W2="ws-rs"
+  RR2="$ROOT/$R2"
+  AT2="$ROOT/$W2/notepad/templates"
+  mkdir -p "$RR2" "$ROOT/$W2/journal/scripts"
+  cp "$JOURNAL_RS" "$ROOT/$W2/journal/scripts/records.sh"
+  chmod +x "$ROOT/$W2/journal/scripts/records.sh"
   : > "$RR2/history.tsv"
 
-  OUT3="$(/bin/bash "$MINT" mint "$RR2" "$AT2" "Via records")"
+  OUT3="$(/bin/bash "$MINT" mint "$ROOT" "$R2" "$W2" "Via records")"
   expect_eq "records mode" "records" "$(kv mode "$OUT3")"
   rpath="$(kv path "$OUT3")"
   expect_eq "records path exists" "1" "$([ -f "$rpath" ] && echo 1 || echo 0)"
-  expect_eq "records nested dest" "1" "$([ -f "$AT2/notepad/notes.md" ] && echo 1 || echo 0)"
+  expect_eq "records owner-first dest" "1" "$([ -f "$AT2/notes.md" ] && echo 1 || echo 0)"
   expect_absent "records no flat notes.md" "$RR2/templates/notes.md"
-  if /bin/sh "$RR2/scripts/records.sh" check >/dev/null 2>&1; then
+  if /bin/sh "$ROOT/$W2/journal/scripts/records.sh" --root "$ROOT" --records-root "$R2" check >/dev/null 2>&1; then
     pass=$((pass + 1))
   else
     echo "FAIL: records.sh check after new" >&2
     fail=$((fail + 1))
   fi
 
-  RR3="$TMP/rs-no-tpl"
-  AT3="$RR3/templates"
-  mkdir -p "$RR3/scripts"
-  cp "$JOURNAL_RS" "$RR3/scripts/records.sh"
-  chmod +x "$RR3/scripts/records.sh"
+  R3="rs-no-tpl"
+  W3="ws-rs-empty"
+  RR3="$ROOT/$R3"
+  AT3="$ROOT/$W3/notepad/templates"
+  mkdir -p "$RR3" "$ROOT/$W3/journal/scripts"
+  cp "$JOURNAL_RS" "$ROOT/$W3/journal/scripts/records.sh"
+  chmod +x "$ROOT/$W3/journal/scripts/records.sh"
   : > "$RR3/history.tsv"
-  OUT4="$(/bin/bash "$MINT" mint "$RR3" "$AT3" "Nested dest")"
+  OUT4="$(/bin/bash "$MINT" mint "$ROOT" "$R3" "$W3" "Nested dest")"
   expect_eq "nested-dest mode" "records" "$(kv mode "$OUT4")"
-  expect_eq "nested dest copied" "1" "$([ -f "$AT3/notepad/notes.md" ] && echo 1 || echo 0)"
+  expect_eq "owner-first dest copied" "1" "$([ -f "$AT3/notes.md" ] && echo 1 || echo 0)"
   expect_absent "no flat lazy-deploy" "$RR3/templates/notes.md"
 
-  STAMP_RS="$(/bin/bash "$MINT" stamp "$RR2" "$rpath" --status superseded)"
+  STAMP_RS="$(/bin/bash "$MINT" stamp "$ROOT" "$R2" "$W2" "$rpath" --status superseded)"
   expect_eq "stamp records mode" "records" "$(kv mode "$STAMP_RS")"
   expect_match "stamp records status" '^status: archived$' "$(cat "$rpath")"
   expect_eq "ledger exists" "1" "$([ -f "$RR2/history.tsv" ] && echo 1 || echo 0)"
   expect_eq "ledger one line" "1" "$(grep -c . "$RR2/history.tsv" || true)"
   expect_match "ledger --as superseded" '	superseded	' "$(cat "$RR2/history.tsv")"
-  if /bin/sh "$RR2/scripts/records.sh" check >/dev/null 2>&1; then
+  if /bin/sh "$ROOT/$W2/journal/scripts/records.sh" --root "$ROOT" --records-root "$R2" check >/dev/null 2>&1; then
     pass=$((pass + 1))
   else
     echo "FAIL: records.sh check after done" >&2

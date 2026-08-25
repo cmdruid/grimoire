@@ -24,18 +24,18 @@ kind is dropping in a file.
 
 ## Catalog
 
-The live catalog is `<agent-workspace>/templates/analyst/` when deployed, else this skill's bundled
+The live catalog is `<agent-workspace>/analyst/templates/` when deployed, else this skill's bundled
 `templates/`. **Deployed wins** — a project customizes its reports by editing the deployed copy,
 and host-added templates join the catalog the same way.
 
 `<root>` is `git rev-parse --show-toplevel` of the project being briefed. Non-git → ask.
 
 Deploy is **lazy** and mechanical: run `scripts/analyst-deploy.sh <root>` on the first
-use once a workspace home exists. It copies only the bundled templates *absent* from the
+use. It copies only the bundled templates *absent* from the
 deployed directory and **never overwrites** — a customized template is the project's, and
 an upgrade of one is a judgment-assisted diff a human runs, never a silent replace. On a
-host with no workspace home it deploys nothing and reports so; read the bundled templates
-in place. It never creates a missing workspace, declared or default. It refuses nothing.
+host with no workspace home it creates only `analyst/templates/` beneath the declared home.
+It refuses symlinked or non-directory parents before writing.
 
 Each template's front-matter carries `template:` (its token), `use-when:` (the routing
 descriptor), and `inputs:` (the facts it needs). Its body carries the gathering and synthesis
@@ -64,7 +64,7 @@ question's *intent* is not. Keep it cheap and inline — never spend a dispatch 
 
 1. **Resolve the template** (above). Run `scripts/analyst-deploy.sh <root>` first if the
    catalog has never been deployed — it is idempotent, so running it when unsure costs
-   nothing. No workspace home → it reports so and you read the bundled templates.
+   nothing. An absent workspace is created narrowly for `analyst/templates/`.
 2. **Gather facts** — run `scripts/analyst-facts.sh`; **each template's Gather section names its
    exact invocation** (every subcommand takes the project root as its first argument). It is
    read-only and prints `key=value` facts plus evidence; it never judges, and it **never runs the
@@ -85,7 +85,7 @@ doctrine — and never an editing sub-agent.
 ## Span anchor (`briefing`)
 
 An explicit span wins ("since Monday", "since v0.3"). Absent one, anchor to the **last persisted
-briefing** — `records.sh list --type reports --tag briefing` when that tool is executable,
+briefing** — `records.sh --root <root> --records-root <records-root-relative> list --type reports --tag briefing` when that tool is executable,
 newest first; else glob `<agent-records>/reports/YYYY-MM-DD-*.md` whose front-matter `tags`
 contain `briefing`, newest filename first. If neither yields a hit, **14 calendar days back
 from today**. Always name the anchor actually used in the output; there is no hidden state
@@ -101,7 +101,7 @@ person will see it. When in doubt, persist: a spare record costs a line in a sto
 evaporated briefing costs the whole run.
 
 To persist: resolve `reports.md` via the project-templates rule; mint with
-`records.sh new reports --template <resolved> --title "…" --tag analyst --tag <token>`
+`records.sh --root <root> --records-root <records-root-relative> new reports --template <resolved> --title "…" --tag analyst --tag <token>`
 when the tool exists (`<token>` is the resolved catalog token: `briefing`,
 `status`, `subsystem`, `diagnostics`, or `guide`); else file-mode from that
 path, naming the file `YYYY-MM-DD-<slug>.md` (the record shape) under

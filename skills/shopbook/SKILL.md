@@ -1,17 +1,18 @@
 ---
 name: shopbook
-description: "Find or create a project procedure under <agent-workspace>/flows/ (workflow, playbook, host routine). Query, list, or search by title and use-when; when asked to run a host routine (start the environment, publish a release), resolve one file and follow it in the calling context. When asked to create, add, or author a workflow, routine, procedure, or playbook, mint a host stub there (create). Use when asked to use the shopbook, query or create a project procedure, list host workflows, repair the procedures pointer in AGENTS.md, or fill missing title/use-when (upkeep)."
+description: "Find or create a project procedure under <agent-workspace>/<owner>/flows/ (workflow, playbook, host routine). Query, list, or search by title and use-when; when asked to run a host routine (start the environment, publish a release), resolve one file and follow it in the calling context. When asked to create, add, or author a workflow, routine, procedure, or playbook, mint a host stub for a named owner (create). Use when asked to use the shopbook, query or create a project procedure, list host workflows, repair the procedures pointer in AGENTS.md, or fill missing title/use-when (upkeep)."
 ---
 
 # shopbook — find or create a host procedure
 
-**Experimental.** Finder and host-stub creator over `<agent-workspace>/flows/`
-(default `.dev/flows/`). Script-only search; the **calling** agent reads the
+**Experimental.** Finder and host-stub creator over `<agent-workspace>/*/flows/`
+(default `.dev/*/flows/`). Script-only search; the **calling** agent reads the
 one file and follows it, or authors the body of a new stub. No durable home,
 no `init`, no front-door registration, no records, no hooks. In-place
 steward: it maintains host procedure files that already live in the project
-tree (and may mkdir `flows/` under the same narrow rule as hooks). It does
-not assemble the workspace and does not copy another skill's bundled files.
+tree. An explicit create requires an owner and may create only that
+`<owner>/flows/` path after safe-parent checks. It does not assemble the
+workspace and does not copy another skill's bundled files.
 
 This `SKILL.md` is a **thin router**. Dispatch applies to **every**
 invocation (slash, unknown slash, NL, and bare). When a verb is selected,
@@ -50,12 +51,10 @@ routine / procedure / playbook) without those verbs does not select the
 - **Scripts compute facts; the verb prose decides.** Never push a pick
   among several matches into a script. Never invent a procedure when
   `matches=0`.
-- **Narrow `flows/` mkdir** (create only): mkdir `$DST` only when (a)
-  `<root>/<agent-workspace>` already exists as a directory, or (b) the
-  home is the derived default `.dev` and the mkdir is `flows/` only
-  (creates `.dev` as a container for `flows/`, never `doctrine/`).
-  Declared `agent-workspace:` that is absent → `reason=no-home`, write
-  nothing.
+- **Owner-first creation** (`create` only): require a valid named owner and
+  create only `<root>/<agent-workspace>/<owner>/flows/`. A declared absent
+  workspace is allowed for this explicit write. Recheck every parent and
+  refuse symlinked or non-directory parents before writing.
 
 ## Edges
 

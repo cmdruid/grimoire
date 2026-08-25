@@ -74,7 +74,7 @@ not invent a rubric. Do not amend. Do not mint a record.
       Do not write. Do not start a walk or a sequence.
 
    **Write (accept only).** Opportunistic
-   `records.sh touch --status published` when the tool exists;
+   `records.sh --root <root> --records-root <records-root-relative> touch --status published` when the tool exists;
    else file-mode `status: published` and `updated:`. Job
    artifacts (`plan` / `roadmap` / `runbook`): also
    `stage: approved` in front-matter (`records.sh` has no

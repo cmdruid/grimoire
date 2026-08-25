@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # flows-upkeep.sh check|apply --root <abs> --workspace <rel>
 #
-# Fill missing title / use-when on $DST/*.md. Never change an existing key.
-# Missing $DST → no-op 0. Does not create or delete files.
+# Fill missing title / use-when on <workspace>/*/flows/*.md.
+# Missing workspace → no-op 0. Does not create or delete files.
 set -euo pipefail
 
 usage() {
@@ -152,25 +152,29 @@ case "$cmd" in
   *) usage ;;
 esac
 
-flows_dir="$root/$ws/flows"
+workspace_dir="$root/$ws"
 
 echo "workspace=$ws"
 
-if [ ! -d "$flows_dir" ]; then
+if [ ! -d "$workspace_dir" ]; then
   echo "flows_dir=missing"
   echo "need="
   echo "malformed="
   exit 0
 fi
 
-echo "flows_dir=$flows_dir"
+echo "flows_dir=$workspace_dir/*/flows"
 
 need=""
 malformed=""
 
 # shellcheck disable=SC2044
-for f in $(find "$flows_dir" -maxdepth 1 -type f -name '*.md' ! -name '.*' | sort); do
+for f in $(find "$workspace_dir" -mindepth 3 -maxdepth 3 -type f -name '*.md' ! -name '.*' -path '*/flows/*.md' | sort); do
   [ -n "$f" ] || continue
+  rel=${f#"$workspace_dir"/}
+  owner=${rel%%/*}
+  printf '%s' "$owner" | grep -qE '^[a-z0-9]+(-[a-z0-9]+)*$' || continue
+  case "$owner" in doctrine|hooks|scripts|templates|trackers|flows) continue ;; esac
   base=$(basename "$f")
   stem=${base%.md}
   facts=$(parse_fm "$f")
@@ -184,12 +188,12 @@ for f in $(find "$flows_dir" -maxdepth 1 -type f -name '*.md' ! -name '.*' | sor
   [ "$title_set" = 1 ] && title_state=ok
   [ "$use_when_set" = 1 ] && use_state=ok
 
-  echo "file.$stem.fm=$fm"
-  echo "file.$stem.title=$title_state"
-  echo "file.$stem.use_when=$use_state"
+  echo "file.$owner.$stem.fm=$fm"
+  echo "file.$owner.$stem.title=$title_state"
+  echo "file.$owner.$stem.use_when=$use_state"
 
   if [ "$fm" = malformed ]; then
-    if [ -z "$malformed" ]; then malformed="$stem"; else malformed="$malformed,$stem"; fi
+    if [ -z "$malformed" ]; then malformed="$owner/$stem"; else malformed="$malformed,$owner/$stem"; fi
     continue
   fi
 
@@ -201,7 +205,7 @@ for f in $(find "$flows_dir" -maxdepth 1 -type f -name '*.md' ! -name '.*' | sor
     continue
   fi
 
-  if [ -z "$need" ]; then need="$stem"; else need="$need,$stem"; fi
+  if [ -z "$need" ]; then need="$owner/$stem"; else need="$need,$owner/$stem"; fi
 
   [ "$cmd" = apply ] || continue
 

@@ -85,7 +85,7 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
 5. **Seed the plan on the branch** (plan-bound, *new untracked plan file* only; `create` makes no root
    commit). If the source is an already-tracked doc, skip. If it's a new untracked plan file, move it
    into the worktree under `<agent-records>/plans/` on every host (ensure it carries the
-   front-matter contract: `records.sh new plans --template <resolved>` + fill if the tool
+   front-matter contract: `records.sh --root <root> --records-root <records-root-relative> new plans --template <resolved>` + fill if the tool
    exists; else file-mode fill from the resolved `plans.md`, naming the file
    `YYYY-MM-DD-<slug>.md` — an undated filename is not a record). Run the host's doc-linter from
    the worktree, then commit it **on the stream branch** (it rides to `<target>` at first
@@ -99,28 +99,22 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    - **Project hooks.** Resolve
      `<agent-workspace>` in prose (do not paste a bash resolver): first
      line-start `agent-workspace:` in `<root>/AGENTS.md` then `<root>/CLAUDE.md`,
-     else `.dev`. Set `HOOKS=<root>/<agent-workspace>/hooks/workstream.md`
-     (absolute). Never a relative `hooks/workstream.md` or a worktree-local
-     `.dev/hooks/` twin. `mkdir` the parent of `$HOOKS` only when (a)
-     `<root>/<agent-workspace>` **already exists** as a directory, or (b) the
-     home is the derived default `.dev` and the mkdir is `hooks/` only
-     (creates `.dev` as a container for `hooks/`, **never** `doctrine/`).
-     Declared `agent-workspace:` that is absent → do not mkdir; treat hooks
-     as empty. (Narrow exception to doctrine-touching rule 3 — named here so
-     this landing does not contradict it; the convention slice records it.)
-     Then run this skill's bundled
-     `scripts/hooks.sh materialize --file "$HOOKS" --skeleton
-     <skill-base>/templates/hooks.md` (resolve `scripts/` from this skill's
-     own base directory). Do **not** `cp` in the verb; the script is the
-     copy-if-absent. Then
-     `hooks.sh parse --file "$HOOKS" --known feature-completion=Feature completion
-     --known after-eventful-ship=After eventful ship`. `status=fail` → STOP.
-     Missing / no-parent is not a fail. After the hand-off file exists at
+     else `.dev`. Set
+     `HOOKS_DIR=<root>/<agent-workspace>/workstream/hooks` (absolute). Never a
+     relative directory or a worktree-local twin. Run this skill's bundled
+     `scripts/hooks.sh materialize --root <root> --dir "$HOOKS_DIR"
+     --skeleton-dir <skill-base>/templates/hooks --known feature-completion
+     --known after-eventful-ship` (resolve `scripts/` and `templates/` from
+     this skill's own base directory). It safely creates only Workstream's
+     owner/kind parents, refuses symlinked or non-directory parents, and copies
+     each absent skeleton without overwriting project content. Then run
+     `hooks.sh parse --dir "$HOOKS_DIR" --known feature-completion --known
+     after-eventful-ship`. `status=fail` → STOP. After the hand-off file exists at
      Coordinates `this hand-off:` (never `<root>/WORKSTREAM.md`), run
-     `hooks.sh compile --file "$HOOKS" --handoff <this hand-off:> --root <root>`
-     with the same two `--known` pairs (`--root` optional; pass it when the
-     verb has `<root>`). Attended create that just materialized `$HOOKS` may
-     **propose** a pathspec-scoped root commit for that one path.
+     `hooks.sh compile --dir "$HOOKS_DIR" --handoff <this hand-off:> --root
+     <root>` with the same two `--known` seams (`--root` optional; pass it when
+     the verb has `<root>`). Attended create that materialized hook files may
+     **propose** one pathspec-scoped root commit for that directory.
      Unattended / `--seed-only`: write, do not commit, record
      `hooks: uncommitted` in Pointers. `--seed-only` still makes **no** root
      commit.
@@ -136,7 +130,7 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
        (plan-file mode), or the verbatim brief (brief mode). **Sweep a transcribed queue for staleness
        at authoring time:** when the queue's items were transcribed from tracker/backlog entries (a
        roadmap seeded from a Backlog sweep), grep EACH item's key symbols/files against the done trail
-       (`records.sh history` / `git log` / the project's done records) **before** recording it — stale
+       (`records.sh --root <root> --records-root <records-root-relative> history` / `git log` / the project's done records) **before** recording it — stale
        tracker entries seed already-shipped queue items (observed 4× across two phases of one
        roadmap), and the launch-time "verify the front item" check only ever catches them one wasted
        unit later. **Template mode:** there is no queue — write the

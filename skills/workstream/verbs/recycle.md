@@ -46,12 +46,12 @@ recycled slot; for a clean-named stream, `close`+`create` instead and pay the re
    1. `<root>` = Coordinates `root checkout:` (not `pwd`).
    2. Resolve `<agent-workspace>` the same way as create (first line-start
       `agent-workspace:` in `<root>/AGENTS.md` then `<root>/CLAUDE.md`, else `.dev`).
-   3. Set `HOOKS=<root>/<agent-workspace>/hooks/workstream.md` (absolute). Never a
-      relative `hooks/workstream.md`.
-   4. `hooks.sh materialize --file "$HOOKS" --skeleton
-      <skill-base>/templates/hooks.md` (resolve `scripts/` from this skill's own
-      base directory), then `hooks.sh parse --file "$HOOKS"` with the two
-      `--known` pairs. `status=fail` → STOP. Missing / no-parent is not a fail.
+   3. Set `HOOKS_DIR=<root>/<agent-workspace>/workstream/hooks` (absolute).
+      Never a relative directory.
+   4. `hooks.sh materialize --root <root> --dir "$HOOKS_DIR" --skeleton-dir
+      <skill-base>/templates/hooks` (resolve package paths from this skill's own
+      base directory), then `hooks.sh parse --dir "$HOOKS_DIR"` with
+      `--known feature-completion --known after-eventful-ship`. `status=fail` → STOP.
    5. Then regenerate that file exactly as `create.md`'s **Hand-off instantiation**
       (step 6) does for template mode, **but in place** (no `worktree add`, no exclude re-run —
       already done): **preserve the Coordinates block verbatim** (fixed for the stream's life); if a new
@@ -61,7 +61,7 @@ recycled slot; for a clean-named stream, `close`+`create` instead and pay the re
       Queue state, What's been done, What's next) **before** compile so the blank list cannot eat a
       just-written compiled span. Do **not** add `## Hooks (compiled)`
       to that blanked list.
-   6. `hooks.sh compile --file "$HOOKS" --handoff <this hand-off:> --root <root>`
+   6. `hooks.sh compile --dir "$HOOKS_DIR" --handoff <this hand-off:> --root <root>`
       (`--root` optional; pass it). It is a FILE WRITE, never a commit — the hand-off is ignored.
 5. **Refresh the cheat sheet.** Run `workstream-git.sh cheatsheet-check <worktree>`; lift the template's
    current orientation pointers, prune/fix anything stale it flags, and set `built-against:` to the

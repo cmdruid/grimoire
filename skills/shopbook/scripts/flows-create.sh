@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# flows-create.sh --root <abs> --workspace <rel> --stem <kebab> [--title t] [--use-when u]
+# flows-create.sh --root <abs> --workspace <rel> --owner <skill> --stem <kebab> [--title t] [--use-when u]
 #
-# Mint a host stub at <root>/<workspace>/flows/<stem>.md (crawl keys + H1).
+# Mint a host stub at <root>/<workspace>/<owner>/flows/<stem>.md (crawl keys + H1).
 # Does not know pack stems. Does not overwrite incumbents.
 set -euo pipefail
 
 usage() {
   cat >&2 <<'EOF'
-usage: flows-create.sh --root <abs> --workspace <rel> --stem <kebab> [--title t] [--use-when u]
+usage: flows-create.sh --root <abs> --workspace <rel> --owner <skill> --stem <kebab> [--title t] [--use-when u]
 EOF
   exit 2
 }
@@ -46,6 +46,7 @@ NL=$(printf '\n/'); NL="${NL%/}"
 root=""
 ws=""
 stem=""
+owner=""
 title_set=0
 use_when_set=0
 title=""
@@ -55,6 +56,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --root)      [ $# -ge 2 ] || usage; root="$2";      shift 2 ;;
     --workspace) [ $# -ge 2 ] || usage; ws="$2";        shift 2 ;;
+    --owner)     [ $# -ge 2 ] || usage; owner="$2";     shift 2 ;;
     --stem)      [ $# -ge 2 ] || usage; stem="$2";      shift 2 ;;
     --title)     [ $# -ge 2 ] || usage; title="$2"; title_set=1; shift 2 ;;
     --use-when)  [ $# -ge 2 ] || usage; use_when="$2"; use_when_set=1; shift 2 ;;
@@ -62,18 +64,19 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-[ -n "$root" ] && [ -n "$ws" ] && [ -n "$stem" ] || usage
+[ -n "$root" ] && [ -n "$ws" ] && [ -n "$owner" ] && [ -n "$stem" ] || usage
 is_abs "$root" || usage
 case "$ws" in
   .|"") echo "refusing: --workspace '.' " >&2; exit 2 ;;
   /*)   echo "refusing: --workspace must be repo-relative" >&2; exit 2 ;;
 esac
 
-flows_dir="$root/$ws/flows"
+flows_dir="$root/$ws/$owner/flows"
 path="$flows_dir/$stem.md"
 
 emit() {
   echo "workspace=$ws"
+  echo "owner=$owner"
   echo "flows_dir=$flows_dir"
   echo "stem=$stem"
   echo "path=$path"
@@ -81,7 +84,18 @@ emit() {
   echo "reason=$2"
 }
 
-# Check order: bad-stem, bad-value, no-home, incumbent, else create.
+# Check order: bad-owner, bad-stem, bad-value, unsafe-parent, incumbent, else create.
+if ! is_kebab "$owner"; then
+  emit false bad-owner
+  exit 1
+fi
+case "$owner" in
+  doctrine|hooks|scripts|templates|trackers|flows)
+    emit false bad-owner
+    exit 1
+    ;;
+esac
+
 if ! is_kebab "$stem"; then
   emit false bad-stem
   exit 1
@@ -99,23 +113,38 @@ if bad_value "$title" || bad_value "$use_when"; then
   exit 1
 fi
 
-home_ok=0
-if [ -d "$root/$ws" ]; then
-  home_ok=1
-elif [ "$ws" = ".dev" ]; then
-  home_ok=1
-fi
-if [ "$home_ok" -ne 1 ]; then
-  emit false no-home
-  exit 1
-fi
-
 if [ -e "$path" ]; then
   emit false incumbent
   exit 1
 fi
 
-mkdir -p "$flows_dir"
+safe_mkdir_tree() {
+  local target="$1" rel current part old_ifs
+  [ -d "$root" ] && [ ! -L "$root" ] || return 1
+  case "$target" in "$root"/*) rel="${target#"$root"/}" ;; *) return 1 ;; esac
+  case "/$rel/" in *'/../'*|*'/./'*|*'//'*) return 1 ;; esac
+  current="$root"
+  old_ifs=$IFS
+  IFS='/'
+  set -- $rel
+  IFS=$old_ifs
+  for part in "$@"; do
+    current="$current/$part"
+    if [ -L "$current" ]; then
+      return 1
+    elif [ -e "$current" ]; then
+      [ -d "$current" ] || return 1
+    else
+      mkdir "$current" || return 1
+      [ -d "$current" ] && [ ! -L "$current" ] || return 1
+    fi
+  done
+}
+
+if ! safe_mkdir_tree "$flows_dir"; then
+  emit false unsafe-parent
+  exit 1
+fi
 {
   printf '%s\n' '---'
   printf 'title: %s\n' "$(yaml_quote "$title")"

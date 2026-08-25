@@ -328,7 +328,7 @@ EOF
 cmd_catalog() {
   setup "$@"
   local deployed bundled
-  deployed="$ROOT/$(resolve_workspace "$ROOT")/templates/analyst"
+  deployed="$ROOT/$(resolve_workspace "$ROOT")/analyst/templates"
   bundled="$(cd "$(dirname "$0")/../templates" && pwd)"
   echo "bundled_dir=$bundled"
   echo "deployed_dir=$deployed"
