@@ -1,6 +1,6 @@
 ---
 name: architect
-description: "Use when the user runs `/architect`, or asks to brainstorm, grill, or write a spec for a feature or design; or when starting a new project / new repository from scratch (`new`, `deploy`, founding spec, no repo yet). Does not write roadmaps or implementation plans and does not build. For a one-line patch, skip it (fix on the trunk)."
+description: "Use when the user runs `/architect`, asks to brainstorm, grill, or write a spec for a feature or design, starts a new project (`new`, `deploy`), or deploys Architect's optional project templates with `/architect setup`. Does not write roadmaps or implementation plans and does not build. For a one-line patch, skip it."
 ---
 
 # architect — the specification spine
@@ -32,8 +32,9 @@ not the machinery. "Here are two approaches; I recommend A because…" /
 land in `<agent-records>/specs/` and `<agent-records>/adr/` on every host
 (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`,
 else `.records/`). Resolve `specs.md` / `adr.md` only from
-`<agent-workspace>/architect/templates/` (fresh projects receive the bundled body scaffold;
-recognized legacy locations require `/architect migrate <path>`).
+`<agent-workspace>/architect/templates/`; when absent, read the bundled body scaffold without a
+project write. Only `/architect setup` deploys a fresh project copy. Recognized legacy locations
+require `/architect migrate <path>`.
 Mint specs with `records.sh --root <root> --records-root <records-root-relative> new specs --schema architect/spec@1 --template <resolved>`
 and ADRs with `new adr --schema architect/adr@1 --template <resolved>` when the tool exists;
 else synthesize the same four-key front matter in file mode, naming the
@@ -71,6 +72,7 @@ not stamped. Optional extra keys remain legal.
 | `grill [doc]` | `verbs/grill.md` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** |
 | `spec [doc]` | `verbs/spec.md` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) |
 | `deploy <file>` | `verbs/deploy.md` | project a founding spec into a git repo + three founding docs (new dir or in-place) |
+| `setup [<root>]` | `verbs/setup.md` | deploy active project templates absent-only |
 | `migrate <source-path>` | `verbs/migrate.md` | preview and upgrade owned records/templates, including in place |
 
 ```

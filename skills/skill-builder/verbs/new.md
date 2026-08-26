@@ -49,15 +49,19 @@ verb's job).
      - a no-floor sentence: missing `records.sh` is not an error; journal standup is
        never a precondition;
      - `## Project templates` (only named body scaffolds the skill actively resolves, or an explicit
-       "none"). Keep schemas, validators, and migrations package-owned.
+       "none"). A nonempty inventory also gets a routed `setup` procedure that names every listed
+       file, deploys it absent-only, and preserves schemas, validators, and migrations in-package.
+       Ordinary work resolves canonical incumbent → recognized-legacy refusal → bundled read-only
+       fallback and never creates `<agent-workspace>`.
    - **No** → do not add those sections.
 
 3b. **Project hooks?** — ask, orthogonal to the tier and to record-writer: *does
     this skill have a named-seam loop a project might extend?*
     - **Yes** → document each known seam at
       `<agent-workspace>/<name>/hooks/<seam>.md`. The owner may bundle an
-      absent-only skeleton; do not scaffold one generic hooks file and do not
-      add a lint check that requires project files to exist.
+      absent-only skeleton and routes explicit `setup` when the hook is meaningful to predeploy;
+      do not scaffold one generic hooks file and do not add a lint check that requires project files
+      to exist.
     - **No** → nothing.
 
 4. **Write `SKILL.md`:**

@@ -142,6 +142,8 @@ Before submitting a change:
 2. **Description = trigger, not summary** (≤ ~700 chars; quote it if it contains `: `).
 3. **Run the gate:** `skills/skill-builder/scripts/skills-lint.sh` — frontmatter limits,
    bundled-ref resolution, manifest checks, script syntax, cross-skill refs. Fix every FAIL.
+4. **Run the repository integration tests:** `scripts/tests/run.sh` — exercises pack installation
+   and Clankshop project configuration against throwaway projects.
 
 ## License
 

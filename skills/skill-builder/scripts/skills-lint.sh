@@ -82,9 +82,10 @@
 #      `stop and point at `/journal setup``. Evidence: skill, file, line.
 #      Does not match a prohibition ("journal standup is never a
 #      precondition"). Journal, skill-builder, and pack faces are exempt.
-#  13. Project-templates heading (FAIL). A skill that has templates/*.md
-#      must have a `## Project templates` heading in SKILL.md. A skill
-#      with no templates/ dir is out of scope. Pack faces are exempt.
+#  13. Project-templates declaration + setup route (FAIL). A skill that has
+#      templates/*.md must have a `## Project templates` heading in SKILL.md.
+#      A nonempty inventory must route `setup`; its setup procedure and test
+#      must name every declared project template. Pack faces are exempt.
 #  14. Doctrine home not resolved (FAIL). A skill declaring a `doctrine` typed
 #      edge must carry a sanctioned doctrine-home resolution literal. Fenced
 #      and indented blocks are stripped first (a quoted example must not
@@ -611,9 +612,20 @@ for sk in "$skills_dir"/*/; do
   done < <(find "$sk" -name '*.md' -print0)
 done
 
-# ---- 13. project-templates heading (FAIL) ------------------------------------
-# A skill that ships templates/*.md must declare ## Project templates.
-# Pack faces exempt (same as the independence checks).
+# ---- 13. project-templates declaration + setup route (FAIL) -----------------
+# A skill that ships templates/*.md must declare ## Project templates. A
+# nonempty inventory is an explicit deployable surface, so it must route setup
+# and both the setup procedure and setup test must cover every declared file.
+live_markdown() { # remove examples and hidden prose before route checks
+  awk '
+    /^[[:space:]]*(```|~~~)/ { fence = !fence; next }
+    fence                    { next }
+    /^[[:space:]]*<!--/      { html = 1 }
+    html                     { if ($0 ~ /-->/) html = 0; next }
+    /^(    |\t)/             { next }
+    { print }
+  ' "$1"
+}
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   is_pack_face "$name" && continue
@@ -626,7 +638,56 @@ for sk in "$skills_dir"/*/; do
   [ "$has_tpl" -eq 1 ] || continue
   if ! grep -q '^## Project templates' "$sk/SKILL.md" 2>/dev/null; then
     fail "$name: templates/*.md present but SKILL.md has no ## Project templates heading"
+    continue
   fi
+  declared="$(awk '
+    /^## Project templates/ { section=1; next }
+    section && /^## / { exit }
+    section && /^- `[^`]*\.md`/ { line=$0; sub(/^- `/, "", line); sub(/`.*/, "", line); print line }
+  ' "$sk/SKILL.md")"
+  [ -n "$declared" ] || continue
+  live_skill="$(live_markdown "$sk/SKILL.md")"
+  setup_carrier="$sk/SKILL.md"
+  if [ -f "$sk/verbs/setup.md" ]; then
+    if ! awk -v name="$name" '
+      index($0, "`verbs/setup.md`") {
+        shaped = ($0 ~ /^\|/ || $0 ~ /^-[[:space:]]+\*\*/)
+        named = (shaped && index($0, "`/" name " setup"))
+        table = ($0 ~ /^\|/ && $0 ~ /\|[[:space:]]*`setup([[:space:]]|\[|`)/)
+        mode = ($0 ~ /^-[[:space:]]+\*\*`setup([[:space:]]|\[|`)/)
+        if (named || table || mode) found=1
+      }
+      END { exit !found }
+    ' <<< "$live_skill"; then
+      fail "$name: nonempty Project templates inventory has no routed setup"
+      continue
+    fi
+    setup_carrier="$sk/verbs/setup.md"
+  elif ! grep -Eq "\`/${name} setup\`[[:space:]]+runs([[:space:]]|$)" <<< "$live_skill"; then
+    fail "$name: nonempty Project templates inventory has no routed setup"
+    continue
+  fi
+  setup_test=""
+  for candidate in "$sk/scripts/tests/setup-test.sh" "$sk/scripts/tests/deploy-test.sh"; do
+    if [ -f "$candidate" ]; then setup_test="$candidate"; break; fi
+  done
+  if [ -z "$setup_test" ]; then
+    fail "$name: nonempty Project templates inventory has no setup test carrier"
+    continue
+  fi
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    if [ "$setup_carrier" = "$sk/SKILL.md" ]; then
+      inline_carrier="$(awk '/^## Project templates/{skip=1; next} skip && /^## /{skip=0} !skip{print}' <<< "$live_skill")"
+      grep -qF -- "$file" <<< "$inline_carrier" || \
+        fail "$name: declared project template lacks setup procedure coverage: $file"
+    else
+      grep -qF -- "$file" "$setup_carrier" || \
+        fail "$name: declared project template lacks setup procedure coverage: $file"
+    fi
+    awk '!/^[[:space:]]*#/' "$setup_test" | grep -qF -- "$file" || \
+      fail "$name: declared project template lacks setup test coverage: $file"
+  done <<< "$declared"
 done
 
 # ---- 14. doctrine home not resolved (FAIL) -----------------------------------

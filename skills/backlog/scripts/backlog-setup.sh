@@ -21,6 +21,14 @@ case "$ROOT" in /*) ;; *) die unsafe-root;; esac; [ -d "$ROOT" ] || die unsafe-r
 [ -n "$mode" ] || die usage
 SKILL="$(cd "$(dirname "$0")/.." && pwd)"; SRC="$SKILL/scripts/trackers.sh"; DEST="$ROOT/$WS/backlog/scripts/trackers.sh"; REG="$SKILL/scripts/register-route.sh"
 "$REG" preflight --root "$ROOT" --workspace "$WS" >/dev/null
+if [ "$mode" = list ]; then
+  "$SRC" --root "$ROOT" --workspace "$WS" setup --list
+  exit
+fi
+[ -z "${BACKLOG_SETUP_TEST_AFTER_PREFLIGHT:-}" ] || {
+  [ -x "$BACKLOG_SETUP_TEST_AFTER_PREFLIGHT" ] || die test-hook
+  "$BACKLOG_SETUP_TEST_AFTER_PREFLIGHT" "$ROOT" "$WS"
+}
 
 safe_tree() {
   current="$ROOT"; old_ifs="$IFS"; IFS=/
@@ -28,10 +36,14 @@ safe_tree() {
   IFS="$old_ifs"
 }
 safe_tree "$WS/backlog/scripts"; [ ! -L "$DEST" ] || die symlink "$DEST"; [ ! -e "$DEST" ] || [ -f "$DEST" ] || die incompatible-entry "$DEST"
-if [ ! -f "$DEST" ] || ! cmp -s "$SRC" "$DEST"; then cp "$SRC" "$DEST"; chmod +x "$DEST"; echo "wrote=${DEST#"$ROOT"/}"; elif [ ! -x "$DEST" ]; then chmod +x "$DEST"; echo "wrote=${DEST#"$ROOT"/}"; fi
+tool_wrote=0
+if [ ! -f "$DEST" ] || ! cmp -s "$SRC" "$DEST"; then cp "$SRC" "$DEST"; chmod +x "$DEST"; echo "wrote=${DEST#"$ROOT"/}"; tool_wrote=1; elif [ ! -x "$DEST" ]; then chmod +x "$DEST"; echo "wrote=${DEST#"$ROOT"/}"; tool_wrote=1; fi
+[ "$tool_wrote" -eq 0 ] || [ -z "${BACKLOG_SETUP_TEST_AFTER_WRITE:-}" ] || {
+  [ -x "$BACKLOG_SETUP_TEST_AFTER_WRITE" ] || die test-post-write-hook
+  "$BACKLOG_SETUP_TEST_AFTER_WRITE" "$ROOT" "$WS" "${DEST#"$ROOT"/}" 1
+}
 
 RUN=("$DEST" --root "$ROOT" --workspace "$WS")
-if [ "$mode" = list ]; then "${RUN[@]}" setup --list; exit; fi
 [ "${#stems[@]}" -gt 0 ] || [ "${#custom[@]}" -gt 0 ] || die usage
 if [ "${#stems[@]}" -gt 0 ]; then "${RUN[@]}" setup --apply "${stems[@]}"; fi
 if [ "${#custom[@]}" -gt 0 ]; then for stem in "${custom[@]}"; do "${RUN[@]}" tracker-add "$stem"; done; fi

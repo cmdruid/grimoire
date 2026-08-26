@@ -55,12 +55,43 @@ safe_tree() {
   done
 }
 
-deployed=0
-kept=0
+check_tree() {
+  local rel="$1" current="$ROOT" component old_ifs="$IFS"
+  valid_relative "$rel" || die "unsafe destination path" "$rel"
+  IFS='/'; read -r -a components <<< "$rel"; IFS="$old_ifs"
+  for component in "${components[@]}"; do
+    current="$current/$component"
+    [ ! -L "$current" ] || die "symlinked destination parent" "$current"
+    if [ -e "$current" ]; then
+      [ -d "$current" ] || die "destination parent is not a directory" "$current"
+    else
+      break
+    fi
+  done
+}
+
+# Whole-set preflight: validate every bundled kind and incumbent before any
+# owner directory is created.
 found=0
+check_tree "$WORKSPACE/inspector/doctrine"
 for source in "$BUNDLED"/*.md; do
   [ -f "$source" ] && [ ! -L "$source" ] || continue
-  found=$((found + 1))
+  found=$((found + 1)); base="$(basename "$source")"
+  case "$base" in [A-Za-z0-9]*.md) ;; *) die "unsafe bundled kind name" "$base" ;; esac
+  dest="$ROOT/$WORKSPACE/inspector/doctrine/$base"
+  [ ! -L "$dest" ] || die "incompatible destination" "$dest"
+  [ ! -e "$dest" ] || [ -f "$dest" ] || die "incompatible destination" "$dest"
+done
+[ "$found" -gt 0 ] || die "no bundled kinds found" "$BUNDLED"
+[ -z "${INSPECTOR_SETUP_TEST_AFTER_PREFLIGHT:-}" ] || {
+  [ -x "$INSPECTOR_SETUP_TEST_AFTER_PREFLIGHT" ] || die "test hook is not executable"
+  "$INSPECTOR_SETUP_TEST_AFTER_PREFLIGHT" "$ROOT" "$WORKSPACE"
+}
+
+deployed=0
+kept=0
+for source in "$BUNDLED"/*.md; do
+  [ -f "$source" ] && [ ! -L "$source" ] || continue
   base="$(basename "$source")"
   case "$base" in
     [A-Za-z0-9]*.md) ;;
@@ -82,10 +113,13 @@ for source in "$BUNDLED"/*.md; do
     cmp -s "$source" "$dest" || die "copy verification failed" "$dest"
     deployed=$((deployed + 1))
     echo "deployed=${dest#"$ROOT"/}"
+    if [ -n "${INSPECTOR_SETUP_TEST_AFTER_WRITE:-}" ]; then
+      [ -x "$INSPECTOR_SETUP_TEST_AFTER_WRITE" ] || die "test post-write hook is not executable"
+      "$INSPECTOR_SETUP_TEST_AFTER_WRITE" "$ROOT" "$WORKSPACE" "${dest#"$ROOT"/}" "$deployed"
+    fi
   fi
 done
 
-[ "$found" -gt 0 ] || die "no bundled kinds found" "$BUNDLED"
 echo "dest=$WORKSPACE/inspector/doctrine"
 echo "deployed_count=$deployed"
 echo "kept_count=$kept"

@@ -1,6 +1,6 @@
 ---
 name: notepad
-description: "Use when the user runs `/notepad`, asks to write down a project fact, look up or update existing notes, supersede a note that is no longer true, or drop a note with no successor. Keywords: notepad, write this down, project memory, capture this fact."
+description: "Use when the user runs `/notepad`, asks to write down a project fact, look up or update existing notes, supersede a note that is no longer true, drop a note with no successor, or deploy its optional project template. Keywords: notepad, setup, write this down, project memory, capture this fact."
 ---
 
 # notepad — project memory
@@ -30,6 +30,7 @@ front-door (patient-zero).
 | `/notepad find` | `verbs/find.md` | List or retrieve notes | "what did we write about X" |
 | `/notepad supersede` | `verbs/supersede.md` | Close old, mint replacement | "this note is no longer true — here is the new fact" |
 | `/notepad drop` | `verbs/drop.md` | Close `dropped`; no successor | "this fact is no longer true" |
+| `/notepad setup [<root>]` | `verbs/setup.md` | Deploy the active notes template absent-only | configure notepad |
 | `/notepad migrate <source-path>` | `verbs/migrate.md` | Preview and upgrade owned notes/templates | migrate notes |
 
 **No default verb.** `/notepad` with no recognized verb — ask which.
@@ -47,6 +48,10 @@ session scratch that must not persist.
   and the repo-relative workspace into every `scripts/note-mint.sh` call. The script
   resolves `<agent-workspace>/notepad/templates/` and does not scan the front door.
 - **One fact per note** (the path is the ID).
+- **Template resolution is read-only.** A valid
+  `<agent-workspace>/notepad/templates/notes.md` incumbent wins; a recognized legacy copy refuses
+  and names `/notepad migrate <source-path>`; otherwise ordinary work reads bundled
+  `templates/notes.md` without creating `.spaces`. Only `setup` deploys it.
 - **`note-mint.sh` is the one minter.** Always call it (from this
   skill's own `scripts/`, never a host path). Signature:
   `mint <root> <records-root-relative> <workspace-relative> <title>`. It uses staged

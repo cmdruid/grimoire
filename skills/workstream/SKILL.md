@@ -1,6 +1,6 @@
 ---
 name: workstream
-description: "Drive a long-lived development stream as a continuous loop, shipping features off the stream's queue — in its own git worktree or in-place in the main checkout (`create --in-place`, worktrees impractical). `create <name> [<src>]` seeds the stream, enters the loop (`delegate`/`manual` mode); `save`/`load` checkpoint/resume across session resets; `sync` pulls the trunk in; `ship` lands accumulated work per the landing mode (merge/push/PR) and advances the queue; `park`/`unpark` hand the shared tree back and forth (in-place); `recycle` starts a fresh unit in the same slot; `close` tears the stream down; `status` lists active streams. Use when the user runs `/workstream ...`, or asks to start/resume/continuously build a stream of features."
+description: "Drive a long-lived development stream as a continuous loop, shipping queued features in a git worktree or in-place. `create`, `save`/`load`, `sync`, `ship`, `park`/`unpark`, `recycle`, `close`, and `status` own stream lifecycle. `/workstream setup` deploys optional active templates and empty hook points. Use when the user runs `/workstream`, asks to start or resume a continuous feature stream, manage its worktree lifecycle, ship its work, or configure its project surfaces."
 ---
 
 # workstream
@@ -83,6 +83,7 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 | `recycle [<template>]` | `verbs/recycle.md` | `flow.md`, `verbs/create.md` | fresh unit in the same worktree | worktree |
 | `close` | `verbs/close.md` | `verbs/ship.md` (if WIP ships) | tear the stream down | root |
 | `status` | `verbs/status.md` | — | list active workstreams (read-only) | anywhere |
+| `setup [<root>]` | `verbs/setup.md` | — | deploy active templates and empty hook points | root |
 | `migrate <source-path>` | `verbs/migrate.md` | — | preview and upgrade Workstream records/templates | anywhere |
 
 ## Host layout
@@ -100,9 +101,11 @@ of one.
   `<agent-records>/streams/`; Contractor-style queue-source plans remain in `plans/` and are never
   claimed merely because Workstream consumes them. Resolve the records home
   (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
-  `.records/`). Resolve active `manifest.md` / `debrief.md` only at
-  `<agent-workspace>/workstream/templates/`; recognized legacy locations require `/workstream
-  migrate <path>`. Mint `doctype: streams` with `schema: workstream/plan@1`, tag `plan`, or
+  `.records/`). Resolve active `manifest.md` / `debrief.md` at
+  `<agent-workspace>/workstream/templates/` when present; otherwise read the bundled active template
+  without a project write. Only `/workstream setup` deploys a fresh copy. Recognized legacy
+  locations require `/workstream migrate <path>`. Mint `doctype: streams` with
+  `schema: workstream/plan@1`, tag `plan`, or
   `schema: workstream/debrief@1`, tag `debrief`, using `records.sh new streams --dir streams
   --schema <schema> --template <resolved>` when available; otherwise synthesize the same four-key
   profile in file mode. Names are `YYYY-MM-DD-<slug>.md`, links are `→ <store>/<file>.md`, and

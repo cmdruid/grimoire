@@ -11,6 +11,11 @@ fail() {
   exit 1
 }
 
+project_config_absent() {
+  [ ! -e "$tmp/project/.spaces" ] && [ ! -e "$tmp/project/.records" ] \
+    && [ ! -e "$tmp/project/AGENTS.md" ] && [ ! -e "$tmp/project/.clankshop" ]
+}
+
 assert_faceless_lock() {
   python3 - "$1" "$pack_version" <<'PY'
 import json, sys
@@ -35,6 +40,14 @@ lock="$tmp/project/grimoire.lock"
 [ ! -e "$target/clankshop" ] && [ ! -L "$target/clankshop" ] \
   || fail "faceless pack installed an implicit face"
 assert_faceless_lock "$lock"
+project_config_absent || fail "pack install created project configuration"
+
+# Faceless-member canary red-proof: direct setup can create project config, so
+# the absence assertion is capable of detecting the forbidden side effect.
+"$target/delegate/scripts/delegate-setup.sh" --write-only "$tmp/project" >/dev/null
+if project_config_absent; then fail "project-config absence assertion missed direct member setup"; fi
+rm -rf "$tmp/project/.spaces"
+project_config_absent || fail "canary cleanup did not restore the fixture"
 
 list_out="$tmp/list.out"
 "$repo/install.sh" --target "$target" --list >"$list_out"
@@ -42,6 +55,7 @@ awk -v version="v$pack_version" '$1 == "clankshop" && $2 == version { found=1 } 
   || fail "list did not render the root faceless pack"
 
 "$repo/install.sh" --target "$target" --check --pack clankshop
+project_config_absent || fail "pack check created project configuration"
 
 mv "$target/journal" "$tmp/journal.link"
 if "$repo/install.sh" --target "$target" --check --pack clankshop >"$tmp/check.out" 2>&1; then
@@ -72,6 +86,7 @@ PY
 [ ! -e "$target/clankshop" ] && [ ! -L "$target/clankshop" ] \
   || fail "reinstall retained the retired face"
 assert_faceless_lock "$lock"
+project_config_absent || fail "pack update created project configuration"
 
 # A faceless check must use the cached manifest, not the source tree.
 cp "$lock" "$tmp/lock.with-manifest"
@@ -95,6 +110,7 @@ mv "$tmp/lock.with-manifest" "$lock"
 
 "$repo/install.sh" --target "$target" --remove --pack clankshop
 [ ! -e "$target/journal" ] || fail "remove left the required member installed"
+project_config_absent || fail "pack remove created project configuration"
 python3 - "$lock" <<'PY'
 import json, sys
 

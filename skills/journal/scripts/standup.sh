@@ -91,31 +91,49 @@ for entry in "$deployed" "$records/history.tsv" "$records/README.md"; do
     exit 2
   fi
 done
-make_tree "$script_dir"
-make_tree "$records"
+[ -z "${JOURNAL_SETUP_TEST_AFTER_PREFLIGHT:-}" ] || {
+  [ -x "$JOURNAL_SETUP_TEST_AFTER_PREFLIGHT" ] || { echo "standup.sh: test hook is not executable" >&2; exit 2; }
+  "$JOURNAL_SETUP_TEST_AFTER_PREFLIGHT" "$root" "$workspace_rel" "$records_rel"
+}
+make_tree "$script_dir" || { echo "standup.sh: unsafe workspace parent during creation" >&2; exit 2; }
+make_tree "$records" || { echo "standup.sh: unsafe records parent during creation" >&2; exit 2; }
 
 wrote_script=0
-wrote_ledger=0
-wrote_readme=0
+write_count=0
+after_write() {
+  write_count=$((write_count + 1))
+  echo "wrote: $1"
+  [ -z "${JOURNAL_SETUP_TEST_AFTER_WRITE:-}" ] || {
+    [ -x "$JOURNAL_SETUP_TEST_AFTER_WRITE" ] || {
+      echo "standup.sh: test post-write hook is not executable" >&2; exit 2;
+    }
+    "$JOURNAL_SETUP_TEST_AFTER_WRITE" "$root" "$workspace_rel" "$records_rel" "$1" "$write_count"
+  }
+}
 if [ -e "$deployed" ] && cmp -s "$source_engine" "$deployed"; then
   label="journal, current"
   [ -x "$deployed" ] || wrote_script=1
 else
   was_present=0
   [ -e "$deployed" ] && was_present=1
+  safe_tree "$script_dir" || { echo "standup.sh: unsafe workspace parent during write" >&2; exit 2; }
   cp "$source_engine" "$deployed"
   label="journal"
   [ "$was_present" -eq 0 ] || label="journal, refreshed"
   wrote_script=1
 fi
+safe_tree "$script_dir" || { echo "standup.sh: unsafe workspace parent during write" >&2; exit 2; }
 chmod +x "$deployed"
+[ "$wrote_script" -eq 0 ] || after_write "$workspace_rel/journal/scripts/records.sh"
 
 if [ ! -e "$records/history.tsv" ]; then
+  safe_tree "$records" || { echo "standup.sh: unsafe records parent during write" >&2; exit 2; }
   : > "$records/history.tsv"
-  wrote_ledger=1
+  after_write "$records_rel/history.tsv"
 fi
 
 if [ ! -e "$records/README.md" ]; then
+  safe_tree "$records" || { echo "standup.sh: unsafe records parent during write" >&2; exit 2; }
   cat > "$records/README.md" <<EOF
 # Records
 
@@ -136,13 +154,10 @@ ledger, and this README only.
 
 Stood up by journal on $(date +%Y-%m-%d).
 EOF
-  wrote_readme=1
+  after_write "$records_rel/README.md"
 fi
 
 echo "records: $records ($label)"
-[ "$wrote_script" -eq 1 ] && echo "wrote: $workspace_rel/journal/scripts/records.sh"
-[ "$wrote_ledger" -eq 1 ] && echo "wrote: $records_rel/history.tsv"
-[ "$wrote_readme" -eq 1 ] && echo "wrote: $records_rel/README.md"
 if ! "$deployed" --root "$root" --records-root "$records_rel" check; then
   echo "records check failed — tool layer is up; run the owning skill's migrate verb for legacy records, then /journal curate" >&2
 fi

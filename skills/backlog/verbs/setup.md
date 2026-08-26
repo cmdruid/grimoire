@@ -8,6 +8,8 @@
    the caller to author before commit.
 4. Parse every unique `wrote=` / `removed=` path. Standalone and nonempty → one
    `scripts/scoped-commit.sh <root> "Backlog: setup" <paths...>`; empty → no commit.
+   Inside an announced configuration sweep, remain write-only and return the paths to the caller;
+   no member commit may occur.
 
 Done when the staged engine is current, every selected builtin has both components, Backlog's
-route block is present when a tracker exists, and one scoped commit contains every changed path.
+route block is present when a tracker exists, and commit custody matches standalone or sweep mode.

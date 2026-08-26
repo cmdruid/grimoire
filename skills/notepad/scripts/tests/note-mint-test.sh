@@ -66,7 +66,7 @@ expect_eq "retired keys absent" "0" "$(grep -cE '^(created|updated|created_at|up
 expect_match "filled title" '^# Alpha fact$' "$(cat "$path")"
 expect_absent "no history.tsv after mint" "$RR/history.tsv"
 expect_absent "no scripts/ after mint" "$RR/scripts"
-expect_eq "owner-first dest copied" "1" "$([ -f "$AT/notes.md" ] && echo 1 || echo 0)"
+expect_absent "bundled fallback creates no project template" "$AT/notes.md"
 expect_absent "no flat templates/notes.md" "$RR/templates/notes.md"
 
 OUT2="$(/bin/bash "$MINT" mint "$ROOT" "$R" "$W" "Alpha fact")"
@@ -109,7 +109,7 @@ if [ -f "$JOURNAL_RS" ]; then
   expect_eq "records mode" "records" "$(kv mode "$OUT3")"
   rpath="$(kv path "$OUT3")"
   expect_eq "records path exists" "1" "$([ -f "$rpath" ] && echo 1 || echo 0)"
-  expect_eq "records owner-first dest" "1" "$([ -f "$AT2/notes.md" ] && echo 1 || echo 0)"
+  expect_absent "records mint keeps bundled fallback read-only" "$AT2/notes.md"
   expect_absent "records no flat notes.md" "$RR2/templates/notes.md"
   if /bin/sh "$ROOT/$W2/journal/scripts/records.sh" --root "$ROOT" --records-root "$R2" check >/dev/null 2>&1; then
     pass=$((pass + 1))
@@ -128,8 +128,8 @@ if [ -f "$JOURNAL_RS" ]; then
   : > "$RR3/history.tsv"
   OUT4="$(/bin/bash "$MINT" mint "$ROOT" "$R3" "$W3" "Nested dest")"
   expect_eq "nested-dest mode" "records" "$(kv mode "$OUT4")"
-  expect_eq "owner-first dest copied" "1" "$([ -f "$AT3/notes.md" ] && echo 1 || echo 0)"
-  expect_absent "no flat lazy-deploy" "$RR3/templates/notes.md"
+  expect_absent "nested mint does not implicitly deploy" "$AT3/notes.md"
+  expect_absent "no flat implicit deployment" "$RR3/templates/notes.md"
 
   STAMP_RS="$(/bin/bash "$MINT" stamp "$ROOT" "$R2" "$W2" "$rpath" --status superseded)"
   expect_eq "stamp records mode" "records" "$(kv mode "$STAMP_RS")"

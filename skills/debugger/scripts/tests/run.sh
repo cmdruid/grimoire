@@ -6,6 +6,8 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 rc=0
 echo "== bug-mint-test.sh"
 bash "$DIR/bug-mint-test.sh" || rc=1
+echo "== setup-test.sh"
+bash "$DIR/setup-test.sh" || rc=1
 
 if [ "$rc" -eq 0 ]; then
   echo "debugger tests: ALL GREEN"

@@ -42,7 +42,8 @@ memory.
   project-templates heading. Takes a
   `<library-root>` argument (default: the current directory) so it checks whatever
   library it's pointed at. Red-proofs for the records-writer checks live in
-  `scripts/tests/lint-records-writer-test.sh`.
+  `scripts/tests/lint-records-writer-test.sh`; a nonempty project-template inventory must route
+  setup and cover every declared file.
 ## Disposition (scored against its own doctrine)
 
 - **Self-init / home:** none — an **in-place steward**. It maintains the host library's own `skills/`

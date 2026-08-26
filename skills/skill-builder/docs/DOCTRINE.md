@@ -347,13 +347,15 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    package-owned schema identifier, validator, and migration chain. A project template is an
    optional, body-only authoring scaffold the skill actually resolves while working; it cannot
    declare or select a schema. A `## Project templates` list in `SKILL.md` names every bundled
-   file copied to `<agent-workspace>/<skill>/templates/`. Every listed file has a live read site.
-   Files not on the list are package-only and are never copied. Retired generic record shells do
-   not remain as unused project lock-ins.
+   file that the owning skill's explicit `setup` may deploy absent-only to
+   `<agent-workspace>/<skill>/templates/`. Every listed file has a live read site and setup
+   coverage. Files not on the list are package-only and are never deployed. Retired generic record
+   shells do not remain as unused project lock-ins.
 3. **Own-store standup.** On first write, `mkdir` that skill's store (and the agent-records
    home directory if needed). Do not create a deployed `records.sh`, `history.tsv`, other
    stores, the records README, or the *flat* `<agent-records>/templates/<doctype>.md`.
-   Creating `<agent-workspace>/<skill>/templates/` on first lock-in copy is required.
+   Ordinary writing never creates `<agent-workspace>`; only the owning skill's explicit setup may
+   deploy its project template.
 4. **No floor.** Missing `records.sh` is not an error. Journal standup is never a
    precondition. A description must not say the skill requires a stood-up records layer.
    A verb must not refuse and send the operator to journal standup.
@@ -392,8 +394,21 @@ never opens the front door):
    `<agent-records>/templates/<skill>/<file>` or an explicitly registered flat legacy path,
    refuse ordinary minting and name `/<skill> migrate <legacy-path>`. Reading never copies,
    adopts, or ignores a legacy customization.
-3. Else copy the bundled template to the canonical workspace path and use it. This is only for a
-   genuinely fresh project. A package-only template never enters this ladder.
+3. Else read and use the bundled template without writing to the project. A package-only template
+   never enters this ladder.
+
+Deployment is intentional: only `/<skill> setup` copies a declared project template to its
+canonical workspace path. Setup inventories the complete owned write set before creating anything,
+then rechecks every existing parent immediately before each write. Unsafe or incompatible entries
+refuse that write. If a later recheck fails after earlier safe writes, setup reports both the
+completed paths and the refusal; a rerun preserves those incumbents and finishes the remainder.
+Project-editable templates, hooks, doctrine, flows, tracker data, and README content are absent-only.
+Only package-managed executable tools that already define refresh semantics may be replaced.
+
+Each owner keeps its established reporting vocabulary. Standalone setup makes one pathspec-scoped
+commit containing exactly its reported writes and makes no commit on a no-op rerun. When the caller
+announces a larger configuration sweep, setup is write-only and the caller may make one aggregate
+commit over the approved destinations. A deployable asset with no live reader is not deployed.
 
 The owning skill's explicit `migrate` verb moves recognized active templates into the canonical
 home, strips retired record-shell front matter, and handles collisions conservatively. Schemas,
@@ -443,7 +458,9 @@ doctrine path is exactly as wrong as a writer that does.
    `<agent-workspace>/<its-own-name>/<owned-kind>/`. It must not create,
    inspect as configuration, or interpret another owner namespace. Before each
    creation, recheck every existing parent: a symlink or non-directory parent
-   is unsafe and the operation refuses without partial writes.
+   is unsafe. Preflight the complete write set before creating anything; if a later immediate
+   recheck fails after safe earlier writes, report the partial result and stop so a rerun can
+   preserve those incumbents and finish deterministically.
 
    **Records-layer owner exception.** A records-format steward may create a
    declared records home because standing up that distinct layer is its explicit

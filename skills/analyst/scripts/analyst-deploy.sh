@@ -43,9 +43,26 @@ valid_rel() {
   return 0
 }
 
-safe_tree() {
+check_tree() {
   local base="$1" rel="$2" current="$1" segment old_ifs
   valid_rel "$rel" || { echo "analyst-deploy.sh: unsafe workspace path: $rel" >&2; exit 2; }
+  old_ifs="$IFS"; IFS=/
+  for segment in $rel; do
+    [ -n "$segment" ] || continue
+    current="$current/$segment"
+    if [ -L "$current" ]; then
+      echo "analyst-deploy.sh: symlinked destination parent: $current" >&2; exit 2
+    elif [ -e "$current" ] && [ ! -d "$current" ]; then
+      echo "analyst-deploy.sh: destination parent is not a directory: $current" >&2; exit 2
+    elif [ ! -e "$current" ]; then
+      break
+    fi
+  done
+  IFS="$old_ifs"
+}
+
+ensure_tree() {
+  local rel="$2" current="$1" segment old_ifs
   old_ifs="$IFS"; IFS=/
   for segment in $rel; do
     [ -n "$segment" ] || continue
@@ -76,7 +93,7 @@ BUNDLED="$(cd "$(dirname "$0")/../templates" && pwd)"
 DEST="$WS/analyst/templates"
 PREV="$RR/templates/analyst"
 
-safe_tree "$ROOT" "$WS_REL/analyst/templates"
+check_tree "$ROOT" "$WS_REL/analyst/templates"
 if [ -d "$PREV" ] && [ "$PREV" != "$DEST" ]; then
   for f in "$PREV"/*.md; do
     [ -f "$f" ] || continue
@@ -87,6 +104,25 @@ if [ -d "$PREV" ] && [ "$PREV" != "$DEST" ]; then
     }
   done
 fi
+
+# Preflight every active source and incumbent before creating the owner tree.
+for f in "$BUNDLED"/*.md; do
+  [ -f "$f" ] && [ ! -L "$f" ] || continue
+  base="$(basename "$f")"
+  target="$DEST/$base"
+  [ ! -L "$target" ] || { echo "analyst-deploy.sh: incompatible destination: $target" >&2; exit 2; }
+  [ ! -e "$target" ] || [ -f "$target" ] || { echo "analyst-deploy.sh: incompatible destination: $target" >&2; exit 2; }
+  if [ -f "$target" ] && awk 'NR==1 && $0=="---"{fm=1;next} fm && $0=="---"{exit} fm && /^schema:/{found=1} END{exit !found}' "$target"; then
+    echo "analyst-deploy.sh: project template cannot select a schema: $target" >&2
+    exit 2
+  fi
+done
+
+if [ -n "${ANALYST_SETUP_TEST_AFTER_PREFLIGHT:-}" ]; then
+  [ -x "$ANALYST_SETUP_TEST_AFTER_PREFLIGHT" ] || { echo "analyst-deploy.sh: test hook is not executable" >&2; exit 2; }
+  "$ANALYST_SETUP_TEST_AFTER_PREFLIGHT" "$ROOT" "$WS_REL"
+fi
+ensure_tree "$ROOT" "$WS_REL/analyst/templates"
 
 deployed=0 kept=0
 for f in "$BUNDLED"/*.md; do
@@ -100,9 +136,20 @@ for f in "$BUNDLED"/*.md; do
     kept=$((kept + 1))
     echo "kept=$base"        # already the project's -- untouched
   else
+    check_tree "$ROOT" "$WS_REL/analyst/templates"
+    [ ! -L "$DEST/$base" ] && [ ! -e "$DEST/$base" ] || {
+      echo "analyst-deploy.sh: destination changed after preflight: $DEST/$base" >&2
+      exit 2
+    }
     cp "$f" "$DEST/$base"
     deployed=$((deployed + 1))
     echo "deployed=$base"
+    if [ -n "${ANALYST_SETUP_TEST_AFTER_WRITE:-}" ]; then
+      [ -x "$ANALYST_SETUP_TEST_AFTER_WRITE" ] || {
+        echo "analyst-deploy.sh: test post-write hook is not executable" >&2; exit 2;
+      }
+      "$ANALYST_SETUP_TEST_AFTER_WRITE" "$ROOT" "$WS_REL" "$base" "$deployed"
+    fi
   fi
 done
 

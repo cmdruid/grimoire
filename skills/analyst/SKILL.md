@@ -44,6 +44,10 @@ It refuses symlinked or non-directory parents before writing.
 If a previous-home template exists while the canonical file is absent, setup refuses and names
 `/analyst migrate <path>`; it never silently adopts a customization. A deployed template carrying
 front-matter `schema:` is invalid because schemas stay in this package.
+Standalone setup collects each `deployed=<file>` result and makes one pathspec-scoped commit over
+the corresponding `<agent-workspace>/analyst/templates/<file>` paths; no deployed results means no
+commit. Inside an announced configuration sweep, setup is write-only and the caller owns the one
+aggregate commit.
 
 Each template's front-matter carries `template:` (its token), `use-when:` (the routing
 descriptor), and `inputs:` (the facts it needs). Its body carries the gathering and synthesis

@@ -262,18 +262,17 @@ Answer these in order; the answers fill the *Slots* and shape the rubric:
 
 ## 10. Setup playbook
 
-**Full setup** (leaves-before-index, so each commit stays `<gate>`-green):
+**Full setup** (leaves before hub; the setup verb owns one final scoped commit):
 1. Fill the *Slots* (§2) via the *Decision walk* (§9); resolve `<home>` per the skill's entry
    probe: `<agent-workspace>/auditor/doctrine/test/workflows/audit/`.
 2. Copy the bundled generic `rules/` into `<home>/rules/`. Fill the `<language>` greps
    and *How to quantify* recipes. Write only `<native dimensions>` from the *Rule-file
    shape* (§6). (They reference `../GUIDE.md` in backticks, since it does not exist yet.)
 3. Write `GUIDE.md` from §12; fill the slots.
-4. Write `metrics.sh` from §13; run it for a baseline; wire `--check` if you have an invariant to gate.
-5. Add one pointer from the host's doc index or existing routing surface; never write another
-   owner's doctrine. Run `<gate>`.
-6. Run a **lean baseline pass** (one reader per Deep/Mid target) to produce the first pass
-   report and prove the rubric is usable.
+4. Write `metrics.sh` from §13; run it to validate the metric mechanics; wire `--check` if you have
+   an invariant to gate. This output is not an audit report.
+5. Run `<gate>` over the rubric. Do not write a host-index/routing pointer and do not run a baseline
+   audit pass during setup. The first pass is a separate explicit invocation.
 
 **Select exemplars (the deferred step).** Once the framework has landed, anchor it to real code:
 scan the source, nominate the best-documented / cleanest representative file(s) (often one

@@ -1,6 +1,6 @@
 ---
 name: debugger
-description: "Root-cause a bug, test failure, build break, or unexpected behavior before proposing any fix -- never patch a symptom. Reproduce it, read the actual error/stack trace in full, trace data flow backward to its origin, form one testable hypothesis, verify it with the smallest possible change, then fix the root cause. If three or more minimal fixes fail, stop and question whether the architecture itself is the problem. Also capture a standing repro (`/debugger file`, capture the repro, this is broken — capture) without investigating. Use when a test fails, a bug is reported, behavior is unexpected, a build breaks, a fix is about to be proposed before the cause is understood, or a repro needs filing."
+description: "Root-cause a bug, test failure, build break, or unexpected behavior before proposing any fix -- never patch a symptom. Reproduce it, trace data flow backward, form one testable hypothesis, verify it minimally, then fix the root cause after confirmation. Also capture a standing repro with `/debugger file`. `/debugger setup` deploys optional project templates and the diagnostics flow. Use for failed tests, reported bugs, unexpected behavior, broken builds, repro filing, or Debugger configuration."
 ---
 
 # debugger -- root-cause before you patch
@@ -20,6 +20,7 @@ invocation reads `verbs/file.md`. Bare investigate stays here (Phases 1–4).
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
 | `/debugger file` | `verbs/file.md` | Capture a standing repro → a dated `bugs` record. Do not investigate. | file / repro / "capture the repro" / "this is broken — capture" |
+| `/debugger setup [<root>]` | `verbs/setup.md` | Deploy active templates and diagnostics flow absent-only. | configure debugger |
 | `/debugger migrate <source-path>` | `verbs/migrate.md` | Preview and upgrade owned bug/investigation artifacts. | migrate debugger records |
 | `/debugger` | (this file, Phases 1–4) | Root-cause investigation | symptom / root-cause / "why is this failing" |
 
@@ -210,6 +211,10 @@ when one exists.
 
 - `investigation.md`
 - `bugs.md`
+
+Ordinary work uses a valid `<agent-workspace>/debugger/templates/<file>` incumbent, refuses a
+recognized legacy copy with `/debugger migrate <source-path>`, or reads the bundled template without
+creating `.spaces`. Only `setup` deploys these templates and the active `flows/diagnostics.md`.
 
 ## Edges
 

@@ -103,6 +103,121 @@ else
   pass=$((pass + 1))
 fi
 
+# A nonempty deployable inventory must have a route-shaped dispatch plus
+# file-by-file coverage in both its setup procedure and setup test.
+write_skill '## Project templates
+
+- `foo.md`
+
+Use foo.md at runtime.'
+run_lint
+if grep -q 'FAIL: widget: nonempty Project templates inventory has no routed setup' "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: missing setup route did not FAIL check 13" >&2
+  cat "$OUT" >&2
+  fail=$((fail + 1))
+fi
+
+mkdir -p "$sk/verbs" "$sk/scripts/tests"
+printf '# setup\n\nDeploy `foo.md` absent-only.\n' > "$sk/verbs/setup.md"
+printf '#!/bin/sh\n# covers foo.md\n' > "$sk/scripts/tests/setup-test.sh"
+write_skill 'Optional prose mentions `/widget setup` and `verbs/setup.md`, but does not dispatch it.
+
+```
+| `/widget setup` | `verbs/setup.md` | example only |
+```
+
+## Project templates
+
+- `foo.md`
+
+Use foo.md at runtime.'
+run_lint
+if grep -q 'FAIL: widget: nonempty Project templates inventory has no routed setup' "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: a prose-only setup mention bypassed check 13" >&2
+  cat "$OUT" >&2
+  fail=$((fail + 1))
+fi
+
+printf '# setup\n\nDeploy the active inventory.\n' > "$sk/verbs/setup.md"
+write_skill '| `setup [<root>]` | `verbs/setup.md` | deploy active templates |
+
+## Project templates
+
+- `foo.md`
+
+Use foo.md at runtime.'
+run_lint
+if grep -q 'FAIL: widget: declared project template lacks setup procedure coverage: foo.md' "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: missing per-file setup procedure coverage did not FAIL check 13" >&2
+  cat "$OUT" >&2
+  fail=$((fail + 1))
+fi
+
+printf '# setup\n\nDeploy `foo.md` absent-only.\n' > "$sk/verbs/setup.md"
+printf '#!/bin/sh\n# claims coverage for foo.md without exercising it\n' > "$sk/scripts/tests/setup-test.sh"
+run_lint
+if grep -q 'FAIL: widget: declared project template lacks setup test coverage: foo.md' "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: missing per-file setup test coverage did not FAIL check 13" >&2
+  cat "$OUT" >&2
+  fail=$((fail + 1))
+fi
+
+printf '#!/bin/sh\ntest -f "$root/foo.md"\n' > "$sk/scripts/tests/setup-test.sh"
+run_lint
+if grep -qE 'nonempty Project templates inventory has no routed setup|declared project template lacks setup (procedure|test) coverage|has no setup test carrier' "$OUT"; then
+  echo "FAIL: routed and covered setup still failed check 13" >&2
+  cat "$OUT" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+
+# Inline setup owners have no verbs/setup.md. Fenced usage examples must not
+# masquerade as their live route or procedure carrier.
+rm -f "$sk/verbs/setup.md"
+write_skill '```
+`/widget setup` runs an example deploy for foo.md.
+```
+
+## Project templates
+
+- `foo.md`
+
+Use foo.md at runtime.'
+run_lint
+if grep -q 'FAIL: widget: nonempty Project templates inventory has no routed setup' "$OUT"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: a fenced inline setup example bypassed check 13" >&2
+  cat "$OUT" >&2
+  fail=$((fail + 1))
+fi
+
+write_skill '`/widget setup` runs the package-local deployer for `foo.md`.
+
+## Project templates
+
+- `foo.md`
+
+Use foo.md at runtime.'
+run_lint
+if grep -qE 'nonempty Project templates inventory has no routed setup|declared project template lacks setup (procedure|test) coverage|has no setup test carrier' "$OUT"; then
+  echo "FAIL: live inline setup route and coverage still failed check 13" >&2
+  cat "$OUT" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+rm -rf "$sk/verbs" "$sk/scripts"
+
 # --- check 17: bare `records.sh new` mint ------------------------------------
 # Six assertions, in three opposed pairs. The pairing is the point: each
 # property is only proven by showing the check moves in BOTH directions.

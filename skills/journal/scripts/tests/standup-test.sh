@@ -29,6 +29,10 @@ expect "split self-check" "records check: OK (0 records)" "$OUT"
   echo "FAIL: records-home script dump created" >&2; fail=$((fail + 1)); }
 expect "README names staged engine" ".spaces/journal/scripts/records.sh" "$proj/.records/README.md"
 
+rc=0; run_default "$proj" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "zero-write rerun rc" "0" "$rc"
+expect_absent "zero-write rerun reports no write" "wrote:" "$OUT"
+
 # Re-run preserves project substrate and refreshes package bytes.
 printf '%s\n' 'keep-ledger' > "$proj/.records/history.tsv"
 printf '%s\n' 'project readme' > "$proj/.records/README.md"
@@ -92,5 +96,36 @@ for bad in /abs foo/../bar .; do
   "$STANDUP" "$proj" --workspace .spaces --records-root "$bad" >"$OUT" 2>"$ERR" || rc=$?
   expect_eq "bad records root $bad" "1" "$rc"
 done
+
+# Exchange the workspace owner after preflight; the immediate creation/write
+# recheck must refuse without following it.
+race="$TMP/race"
+mkdir -p "$race/.spaces/journal" "$race/elsewhere"
+hook="$TMP/journal-exchange.sh"
+printf '%s\n' '#!/bin/sh' 'mv "$1/$2/journal" "$1/held-journal"' \
+  'ln -s "$1/elsewhere" "$1/$2/journal"' > "$hook"
+chmod +x "$hook"
+rc=0
+JOURNAL_SETUP_TEST_AFTER_PREFLIGHT="$hook" run_default "$race" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "post-preflight exchange rejected" "2" "$rc"
+[ ! -e "$race/elsewhere/scripts/records.sh" ] && pass=$((pass + 1)) || {
+  echo "FAIL: journal wrote through exchanged parent" >&2; fail=$((fail + 1)); }
+
+# Stop after staging the engine, then prove the completed path is reported and
+# a clean rerun finishes the ledger and README.
+partial="$TMP/partial"
+mkdir -p "$partial"
+write_hook="$TMP/journal-stop-after-first.sh"
+printf '%s\n' '#!/bin/sh' '[ "$5" -eq 1 ] && exit 86' 'exit 0' > "$write_hook"
+chmod +x "$write_hook"
+rc=0
+JOURNAL_SETUP_TEST_AFTER_WRITE="$write_hook" run_default "$partial" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "post-first-write interruption exercised" "86" "$rc"
+expect "partial reports staged engine" "wrote: .spaces/journal/scripts/records.sh" "$OUT"
+[ ! -e "$partial/.records/history.tsv" ] && pass=$((pass + 1)) || fail=$((fail + 1))
+rc=0; run_default "$partial" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "partial rerun rc" "0" "$rc"
+[ -f "$partial/.records/history.tsv" ] && [ -f "$partial/.records/README.md" ] \
+  && pass=$((pass + 1)) || fail=$((fail + 1))
 
 report "standup-test"

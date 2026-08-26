@@ -27,6 +27,9 @@ expect "first deploy: lands the catalog"    "deployed=briefing.md"            "$
 expect "first deploy: nothing kept back"    "kept_count=0"                    "$OUT"
 expect_eq "first deploy: five active catalog kinds" "5" \
   "$(find "$FIX/.spaces/analyst/templates" -name '*.md' | wc -l | tr -d ' ')"
+for file in briefing.md status.md subsystem.md diagnostics.md guide.md; do
+  expect_eq "first deploy: lands $file" "1" "$([ -f "$FIX/.spaces/analyst/templates/$file" ] && echo 1 || echo 0)"
+done
 
 # --- customization survives a re-run -----------------------------------------
 
@@ -101,5 +104,42 @@ fi
 expect "symlink: refusal names the cause" "symlinked destination parent" "$OUT"
 expect_eq "symlink: no template written through link" "0" \
   "$(find "$UNSAFE/elsewhere" -name '*.md' | wc -l | tr -d ' ')"
+
+# Immediate recheck: exchange the owner parent after the whole-set preflight.
+RACE="$(mktemp -d)"
+trap 'rm -rf "$FIX" "$BARE" "$WS_ONLY" "$UNSAFE" "$RACE"' EXIT
+mkdir -p "$RACE/.spaces/analyst" "$RACE/elsewhere"
+HOOK="$RACE/exchange.sh"
+printf '%s\n' '#!/bin/sh' 'mv "$1/$2/analyst" "$1/held"' \
+  'ln -s "$1/elsewhere" "$1/$2/analyst"' > "$HOOK"
+chmod +x "$HOOK"
+if ANALYST_SETUP_TEST_AFTER_PREFLIGHT="$HOOK" "$DEPLOY" "$RACE" > "$OUT" 2>&1; then
+  echo "FAIL: post-preflight parent exchange accepted" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+expect "recheck: refusal names the cause" "symlinked destination parent" "$OUT"
+expect_eq "recheck: no template written through link" "0" \
+  "$(find "$RACE/elsewhere" -name '*.md' | wc -l | tr -d ' ')"
+
+# An interruption after the first safe copy reports that copy; rerun preserves
+# it and deterministically completes the catalog.
+PARTIAL="$(mktemp -d)"
+trap 'rm -rf "$FIX" "$BARE" "$WS_ONLY" "$UNSAFE" "$RACE" "$PARTIAL"' EXIT
+PHOOK="$PARTIAL/stop-after-first.sh"
+printf '%s\n' '#!/bin/sh' '[ "$4" -eq 1 ] && exit 86' 'exit 0' > "$PHOOK"
+chmod +x "$PHOOK"
+if ANALYST_SETUP_TEST_AFTER_WRITE="$PHOOK" "$DEPLOY" "$PARTIAL" > "$OUT" 2>&1; then
+  echo "FAIL: post-first-write interruption was not exercised" >&2; fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+expect "partial: completed path reported" "deployed=briefing.md" "$OUT"
+expect_eq "partial: exactly one safe copy remains" "1" \
+  "$(find "$PARTIAL/.spaces/analyst/templates" -type f | wc -l | tr -d ' ')"
+"$DEPLOY" "$PARTIAL" > "$OUT" 2>&1
+expect_eq "partial: rerun completes catalog" "5" \
+  "$(find "$PARTIAL/.spaces/analyst/templates" -type f | wc -l | tr -d ' ')"
 
 report "analyst deploy"

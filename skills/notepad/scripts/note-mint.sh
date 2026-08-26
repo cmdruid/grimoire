@@ -5,7 +5,8 @@
 #
 # Uses <agent-workspace>/journal/scripts/records.sh when that file is executable
 # (`new --schema notepad/note@1 --template <resolved>`); otherwise writes the contract shape itself.
-# Resolves notes.md through the project-templates rule. Never decides
+# Resolves notes.md through the project-templates rule, using the bundled file
+# read-only when no project incumbent exists. Never decides
 # update-vs-mint or whether to commit. Never writes history.tsv by hand.
 # Never writes the flat <agent-records>/templates/notes.md.
 set -euo pipefail
@@ -91,6 +92,23 @@ safe_tree() {
   IFS="$old_ifs"
 }
 
+check_existing_tree() {
+  local rel="$2" current="$1" segment old_ifs
+  valid_rel "$rel" || err "unsafe relative path: $rel"
+  old_ifs="$IFS"; IFS=/
+  for segment in $rel; do
+    [ -n "$segment" ] || continue
+    current="$current/$segment"
+    [ ! -L "$current" ] || err "symlinked destination parent: $current"
+    if [ -e "$current" ]; then
+      [ -d "$current" ] || err "destination parent is not a directory: $current"
+    else
+      break
+    fi
+  done
+  IFS="$old_ifs"
+}
+
 init_paths() {
   root="$1"; rr_rel="$2"; ws_rel="$3"; create="${4:-no}"
   case "$root" in /*) ;; *) err "root must be absolute: $root" ;; esac
@@ -100,8 +118,8 @@ init_paths() {
   valid_rel "$ws_rel" || err "unsafe workspace: $ws_rel"
   if [ "$create" = yes ]; then
     safe_tree "$root" "$rr_rel"
-    safe_tree "$root" "$ws_rel/$SKILL_NAME/templates"
   fi
+  check_existing_tree "$root" "$ws_rel/$SKILL_NAME/templates"
   rr="$root/$rr_rel"
   at="$root/$ws_rel/$SKILL_NAME/templates"
   engine="$root/$ws_rel/journal/scripts/records.sh"
@@ -118,6 +136,7 @@ resolve_notes_template() {
   local prev="$rr/templates/$SKILL_NAME/notes.md"
   local flat="$rr/templates/notes.md"
   [ -f "$BUNDLED_TPL" ] || err "bundled template missing: $BUNDLED_TPL"
+  [ ! -L "$dest" ] || err "project template is a symlink: $dest"
   if [ -f "$dest" ]; then
     if awk 'NR==1 && $0=="---"{fm=1;next} fm && $0=="---"{exit} fm && /^schema:/{found=1} END{exit !found}' "$dest"; then
       err "project template cannot select a schema: $dest"
@@ -125,11 +144,10 @@ resolve_notes_template() {
     printf '%s\n' "$dest"
     return 0
   fi
-  mkdir -p "$(dirname "$dest")"
-  [ ! -f "$prev" ] || err "legacy notes template found; run /notepad migrate $prev before minting"
-  [ ! -f "$flat" ] || err "legacy notes template found; run /notepad migrate $flat before minting"
-  cp "$BUNDLED_TPL" "$dest"
-  printf '%s\n' "$dest"
+  [ ! -e "$dest" ] || err "project template is not a regular file: $dest"
+  [ ! -L "$prev" ] && [ ! -e "$prev" ] || err "legacy notes template found; run /notepad migrate $prev before minting"
+  [ ! -L "$flat" ] && [ ! -e "$flat" ] || err "legacy notes template found; run /notepad migrate $flat before minting"
+  printf '%s\n' "$BUNDLED_TPL"
 }
 
 cmd_mint() {

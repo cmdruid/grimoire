@@ -27,6 +27,7 @@ eq "overlay cannot remove deliverable" "1" "$(printf '%s\n' "$prompt" | grep -c 
 eq "overlay cannot remove byproducts" "1" "$(printf '%s\n' "$prompt" | grep -c '^## Byproducts$')"
 
 if rg -n '/backlog|follow-up work|dev-experience observation|hooks/delegate' "$DOC" "$SKILL/references" "$SKILL/verbs" >/dev/null; then fail=$((fail+1)); else pass=$((pass+1)); fi
-eq "no runtime scripts" "0" "$(find "$SKILL/scripts" -maxdepth 1 -type f | wc -l | tr -d ' ')"
+eq "one setup mechanic" "1" "$(find "$SKILL/scripts" -maxdepth 1 -type f | wc -l | tr -d ' ')"
+eq "setup mechanic executable" "1" "$([ -x "$SKILL/scripts/delegate-setup.sh" ] && echo 1 || echo 0)"
 
 echo "contract-test: $pass passed, $fail failed"; [ "$fail" -eq 0 ]

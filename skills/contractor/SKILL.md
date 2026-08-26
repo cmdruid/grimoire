@@ -1,6 +1,6 @@
 ---
 name: contractor
-description: "Use when the user runs `/contractor`, or asks to write a roadmap, implementation plan, or runbook, or to execute a plan or runbook. One job: sequence work from an approved spec, optionally delegate slices, walk the job. Never writes a spec. Never ships to trunk. For a one-line patch, skip it."
+description: "Use when the user runs `/contractor`, asks to write or execute a roadmap, implementation plan, or runbook, or deploys Contractor's optional templates with `/contractor setup`. One job: sequence work from an approved spec, optionally staff slices, and walk the job. Never writes a spec or ships to trunk. For a one-line patch, skip it."
 ---
 
 # contractor — the job lead
@@ -21,8 +21,9 @@ and collides with none.
 `<agent-records>/plans/` on every host (first `agent-records:` or
 `records-root:` in `AGENTS.md` then `CLAUDE.md`, else `.records/`), with
 `tags:` exactly one writer kind among `plan`, `roadmap`, or `runbook`. Resolve active body scaffolds
-only at `<agent-workspace>/contractor/templates/`; a recognized legacy template requires
-`/contractor migrate <path>`. Mint with `records.sh --root <root> --records-root
+at `<agent-workspace>/contractor/templates/` when present; otherwise read the bundled scaffold
+without a project write. Only `/contractor setup` deploys fresh project copies. A recognized legacy
+template requires `/contractor migrate <path>`. Mint with `records.sh --root <root> --records-root
 <records-root-relative> new plans --schema contractor/<kind>@1 --template <resolved>` for plans and
 roadmaps (omit `--template` for a compiled runbook); else synthesize the same four-key profile, naming the
 file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the
@@ -50,6 +51,7 @@ or revision metadata.
 | `plan` | `verbs/plan.md` | tracer-bullet plan |
 | `runbook` | `verbs/runbook.md` | compile conductor |
 | `build` | `verbs/build.md` | execute plan or runbook |
+| `setup [<root>]` | `verbs/setup.md` | deploy active project templates absent-only |
 | `migrate <source-path>` | `verbs/migrate.md` | preview and upgrade owned plans/templates, including in place |
 | (bare) | — | **ask** which verb; do not default |
 

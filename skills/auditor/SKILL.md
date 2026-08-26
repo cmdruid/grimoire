@@ -11,9 +11,9 @@ Drive a **code-quality audit** over a project's own code against a **project-res
 and severity model live in the host's rubric and are the single source of truth — **re-read the
 host's `GUIDE.md` each pass**; this skill orchestrates the loop, it does not restate the rubric.
 
-If the host has **no rubric yet**, stand one up first (see *Setup mode*), then operate it. The
-skill is self-contained: it bundles the blueprint and generic rules so it can stand the system
-up anywhere.
+If the host has **no rubric yet**, offer the optional, time-intensive `/auditor setup` separately,
+then stop. The skill is self-contained: it bundles the blueprint and generic rules so it can stand
+the system up anywhere, but core project configuration never waits for it.
 
 ## One environment probe (at entry)
 
@@ -50,7 +50,8 @@ invariants). It is **not** a docs-system maintenance sweep. Different domain.
 
 ## Modes (selected by argument)
 
-- **`setup`** — stand up the rubric on a project that lacks one (home per the probe).
+- **`setup [<root>]`** — read `verbs/setup.md`; deploy the report template and interactively
+  calibrate the rubric without running an audit.
 - **(no arg) — a pass.** Run the audit loop, scoped to a risk-weighted target (or all).
 - **`metrics`** — run the host's `metrics.sh`: print the report. No scoring.
 - **`check`** — run `metrics.sh --check`: the invariant gate (a non-zero count of the host's
@@ -71,8 +72,9 @@ layer (or the dated report file) is the memory.
 **Every host**, per pass:
 
 - **The pass report** — one `reports` record under the agent-records home, tagged
-  `audit`. Resolve `reports.md` at `<agent-workspace>/auditor/templates/`; a recognized legacy
-  location requires `/auditor migrate <path>` rather than silent adoption.
+  `audit`. Resolve `reports.md` at `<agent-workspace>/auditor/templates/` when present; otherwise
+  read bundled `templates/reports.md` without a project write. Only `/auditor setup` deploys a
+  project copy. A recognized legacy location requires `/auditor migrate <path>` rather than silent adoption.
   `records.sh --root <root> --records-root <records-root-relative> new reports --schema auditor/audit@1 --template <resolved> --title "Audit: <scope>" --tag audit` when
   the tool exists; else file-mode with the same schema and resolved body, naming the file
   `YYYY-MM-DD-<slug>.md` (the record shape). Never write the flat
@@ -90,27 +92,9 @@ are also the signal that calibrates the rubric (exemplars, thresholds, false-pos
 
 ## Setup mode
 
-Follow the bundled `BOOTSTRAP.md`:
-
-1. **Decision-walk (`BOOTSTRAP.md §9`)** — with the user, fill the slots: the `<language>`,
-   the `<native dimensions>` (the host's sacred invariants), the `<targets>` (Deep/Mid/Light by
-   blast radius), the `<drains>` (records layer or the host's existing trackers), and the
-   audit's purpose (hygiene vs release-gating → severity model).
-2. **Confirm the home** — resolved: `<agent-workspace>/auditor/doctrine/test/workflows/audit/`
-   (no confirmation needed). An explicit setup may create only this Auditor-owned namespace;
-   refuse symlinked or non-directory parents before writing.
-3. **Author the rubric** — copy the bundled generic `rules/` into `<home>/rules/`, fill the
-   `<language>` greps and `How to quantify` recipes, and add a rule file per
-   `<native dimension>`, following the uniform rule-file shape in `BOOTSTRAP.md`.
-4. **Write the hub** (from `BOOTSTRAP.md` §12) — `<home>/GUIDE.md`: framing, the risk-weighted `<targets>` table, the
-   rubric index, scoring rules, the finding-entry shape, severity, drains.
-5. **Write `metrics.sh`** (`<home>/metrics.sh`, `BOOTSTRAP.md` §8 columns, copy §13 stub) for the `<language>`; run it
-   for a baseline report; wire `--check` on the native invariant.
-6. **Wire + gate** — add one pointer from the host's doc index or existing
-   routing surface; never write another skill's files. Run the host's gate.
-7. **Baseline pass + select exemplars** — run a lean pass to seed the first pass report, then
-   pin the score-5 `<exemplars>` in `GUIDE.md` and backfill calibrated examples
-   (`BOOTSTRAP.md §10`).
+`/auditor setup [<root>]` reads and follows `verbs/setup.md`. It seeds the active report template
+and rubric leaves, then performs `BOOTSTRAP.md`'s decision walk and rubric calibration with the user.
+It does not run the audit loop, mint the first report, or add a host-index/routing pointer.
 
 **Grimoire caveat (patient-zero):** never stand the system up in grimoire itself — exercise
 setup only against throwaway fixtures.
@@ -165,9 +149,8 @@ For a **pass**: reproducible `metrics.sh` numbers, targets scored against the `r
 contracts (every 5 evidence-backed, false-positives refuted), one pass report recorded, and
 **every** actionable finding drained (report record + the host's bug-filing lane for
 defects; tracker lines only when the tracker file exists; the report closed `consumed`).
-For a **setup**: a rubric home that passes the host's gate, a
-baseline pass report, pinned exemplars, and the wiring hook (routing/chore line or doc-index
-pointer) in place.
+For **setup**: the active report template and calibrated rubric pass their checks; no audit report
+or host-index/routing pointer was created. The first pass remains a separate explicit invocation.
 For **metrics**: `metrics.sh` printed its report; no scores filed.
 For **check**: show the script output. Exit 0 → stop. Non-zero → treat as a P0
 defect and drain it (stay in the report; host's bug-filing lane to promote), then stop.

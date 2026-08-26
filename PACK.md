@@ -54,6 +54,89 @@ house-style guide. None is part of the project's `clankshop` toolkit.
   the skill that defines them. Coarse owner-local edge types do not compose across owners merely
   because their names match. Pack installation never projects those files into a project.
 
+## Project configuration
+
+This is a human-readable runbook, not a pack lifecycle. Enter it only when the caller supplies a
+readable source manifest explicitly, for example: “Read `/path/to/grimoire/PACK.md` and configure
+Clankshop for `<project-root>`.” Installation does not cache or execute this section.
+
+### 1. Inspect and propose
+
+Read the target project's instructions. Resolve its agent workspace (default `.spaces`) and records
+home (default `.records`) without writing declarations for either default. Inspect installed members,
+both homes, front-door route blocks, recognized legacy locations, and Git state. Do not write yet.
+
+Propose one bounded profile that names every selected setup and every destination it may change:
+
+- Core records: Journal.
+- Delivery loop: Journal, selected Backlog trackers, Workstream, and optionally Delegate.
+- Optional customization: Architect, Contractor, Notepad, Analyst, Debugger, or Inspector only when
+  the project wants editable versions of their active surfaces.
+- Deferred enhancement: Auditor is optional and time-intensive. Never include it in the initial
+  delivery-loop sweep; ask separately when the project is ready to calibrate a rubric.
+
+Obtain approval before writing project policy. Record the pre-sweep Git state and the complete set of
+approved destinations. Refuse a destination that already contains unrelated changes.
+
+### 2. Run member-owned setup
+
+Announce a configuration sweep, then invoke only the approved member setup procedures in their
+write-only mode. Each member writes only its declared owner surface; Journal's records standup and
+Backlog's delimited route are the named exceptions. No member commits during the sweep, recursively
+sets up another member, writes a schema, or interprets a sibling namespace.
+
+Setup deploys only actively consumed project surfaces. Project-editable incumbents win byte-for-byte;
+package-managed tools may refresh only where their owner already defines refresh semantics. A
+recognized legacy file refuses and names that owner's `migrate` command. Report partial safe writes,
+correct the refusal, and rerun; never guess through a collision.
+
+### 3. Apply the approved delivery-loop glue
+
+These bodies are project-authored policy. Apply only the approved ones after their owning setup has
+created the file.
+
+`<agent-workspace>/workstream/hooks/feature-completion.md`:
+
+```markdown
+# Workstream — feature completion
+
+Before shipping or saving a completed feature, run `/backlog debrief` over that feature. Include
+actionable byproducts returned by Delegate during the feature. The debrief owns routing; do not file
+the same leftover directly from this hook.
+```
+
+`<agent-workspace>/workstream/hooks/after-eventful-ship.md`:
+
+```markdown
+# Workstream — after an eventful ship
+
+Run `/backlog debrief` over ship-specific friction only. Do not refile leftovers already handled by
+the feature-completion debrief.
+```
+
+When selected, `<agent-workspace>/delegate/hooks/byproducts.md`:
+
+```markdown
+Return each actionable byproduct with a proposed class (`task`, `issue`, or `feedback`), an evidence
+path or other concrete evidence, and why it matters. Do not file it directly; the calling workflow
+owns routing.
+```
+
+There is no direct Delegate-to-Backlog writer. Contractor plans remain typed Workstream queue sources,
+and the Architect → Inspector → Contractor flow remains invocation-only rather than deployed glue.
+
+### 4. Validate and optionally commit
+
+Rerun every selected setup in write-only mode and require zero writes. Run each advertised owner
+check, then Workspace's package-local `scripts/workspace-check.sh` against the resolved roots. Compare
+the complete Git diff, limited to the approved destinations, with the recorded pre-sweep state. Do
+not parse heterogeneous setup output to infer the final path set.
+
+If the user requested a commit, make one pathspec-scoped commit over the complete approved diff.
+Otherwise leave the reviewed changes uncommitted. Report exact created, preserved, refused, and
+project-authored paths. Never create a Clankshop skill face, marker, receipt, installed runbook copy,
+or pack-level configuration file.
+
 Install, inspect, or remove the pack with:
 
 ```text

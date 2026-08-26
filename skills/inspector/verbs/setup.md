@@ -7,6 +7,9 @@
    The script resolves bundled `kinds/` relative to its own package; it never scans a front door.
 3. Report each copied and incumbent kind. A collision may leave earlier safe copies in place;
    correct the collision and rerun. Never refresh an incumbent automatically.
+4. Standalone and nonempty: collect each `deployed=<path>` line and make one pathspec-scoped commit
+   over exactly those paths. No deployed paths means no commit. Inside an announced configuration
+   sweep, remain write-only and return the paths to the caller.
 
 Setup may create only `<agent-workspace>/inspector/doctrine/` and absent bundled kind files below
 it. It does not create hooks, scripts, templates, records, a door route, or another owner's

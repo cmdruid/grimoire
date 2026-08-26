@@ -17,7 +17,7 @@ When a verb is selected, **read its file and follow it**.
 
 This skill is **self-contained** and depends on no other skill.
 
-There is no `init`. Explicit `setup` deploys Inspector's bundled kinds
+There is no `init`. Explicit `/inspector setup [<root>]` deploys Inspector's bundled kinds
 for project customization. Missing `<agent-workspace>/inspector/doctrine/`
 is not a refuse — use the bundled `kinds/<kind>.md`.
 
@@ -49,7 +49,7 @@ This package does **not** mint records.
 |---|---|---|
 | `review` | `verbs/review.md` | two-axis critique; conversation verdict |
 | `refine` | `verbs/refine.md` | classify findings, propose amendments, fold on confirm; a failed-review chain re-reviews by default |
-| `setup` | `verbs/setup.md` | deploy all bundled kind doctrine absent-only |
+| `/inspector setup [<root>]` | `verbs/setup.md` | deploy all bundled kind doctrine absent-only |
 | (bare) | — | **ask** which verb; do not default |
 
 ```
