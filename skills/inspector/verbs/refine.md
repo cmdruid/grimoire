@@ -10,15 +10,16 @@ place, mints no successor, and does not write `published`.
 to sequence or walk against. Amending is how it becomes a
 candidate again.
 
-**Why re-review.** The fold is unverified content, so a later
-`review` is how the artifact becomes a candidate again.
-Unbidden same-turn `review` is still forbidden. Named re-review
-is authorized same-session running of the existing `review`
-procedure — not a different pair of eyes.
+**Why re-review.** The fold is unverified content. A refine entered
+directly from a failing document review carries re-review intent by
+default: approval of the proposal applies it and immediately runs the
+existing `review` procedure. A standalone refine does not carry that
+intent unless its confirmation names re-review. Either path is
+same-session review, not a different pair of eyes.
 
 This verb **stops** after the proposal until confirmed. After
-apply, it stops unless the confirmation named re-review. It
-does not walk a job.
+apply, it runs review when re-review intent is queued or named;
+otherwise it stops and offers review. It does not walk a job.
 
 ## Invocation
 
@@ -48,6 +49,14 @@ Resolver, in this order:
 Unknown kind → ask or refuse; do not invent a rubric. Kind only
 changes which sections get edited (kind file, refine legal
 locations).
+
+**Re-review intent.** Queue it when this verb is dispatched from
+`review.md`'s failing offer, including resolver rule 4 after this
+session's named `needs-rework` verdict. Leave it unqueued for a
+standalone invocation. An explicit “without re-review”, “don't
+re-review”, or “apply only” clears it. Carry the intent through
+question and adjustment stops until the proposal is accepted or
+rejected.
 
 ## Findings shapes
 
@@ -127,6 +136,7 @@ omitted, treat as must-fix.
    confident rows. Answering questions is **not** package confirm
    — even if the human says "do it" / "approved, re-review" in
    the same message. Still run step 6, then step 7 when material remains, and wait.
+   Carried re-review intent remains queued; answering questions never triggers it.
 6. **Empty material package.** After all questions are settled and parks
    acknowledged, determine the optional dispositions before presenting a
    proposal. If no `keep` and no `keep-optional` that the owner recommends
@@ -166,6 +176,8 @@ omitted, treat as must-fix.
    this?", "let's revise the spec", "apply now", "skip the
    proposal". There is no skip-proposal token. None of them
    apply in the same turn as the proposal.
+   End the proposal with `Re-review: queued after apply` when intent is
+   carried or named; otherwise say `Re-review: not queued`.
 8. **Confirm parse** (the wait **after the proposal** only).
    Compositional, not exclusive rows. A later `review` (or
    `/inspector review`) after stop-and-offer is a **new arrow**,
@@ -173,42 +185,45 @@ omitted, treat as must-fix.
 
    1. **Reject** (closed set): `stop` / `don't` / `not yet` →
       do not amend. Drop any carried re-review intent.
-   2. **Human-will-read is not the verb.** "I'll review it" /
+   2. **Explicit no agent re-review.** “Without re-review”, “don't
+      re-review”, or “apply only” clears queued or named intent. It is
+      compositional: the utterance must still accept under 5 before Apply;
+      “apply only” itself is a clear acceptance.
+   3. **Human-will-read is not the verb.** "I'll review it" /
       "let me read it" / "I'll look" without asking the agent
-      to run this skill's `review` → not named re-review. If
+      to run this skill's `review` → clear agent re-review intent. If
       they also accepted the package, apply then stop-and-offer.
-   3. **Except / adjust first.** Drop F2, take a listed
+   4. **Except / adjust first.** Drop F2, take a listed
       optional, rewrite a proposed edit. Never Apply.
       If the adjusted package is fully determined from the
       already-shown proposal, keep that package in memory
-      (no re-show) and continue to 4 / 5. Keep
-      named-re-review intent if present. If 4 / 5 do not
-      also match (except without accept), re-show the
-      adjusted package and wait. If the owner must invent
-      a new amendment, re-show, wait, and carry
-      named-re-review intent across that wait unless they
-      cancel it.
-   4. **Accept** (open set): any clear package acceptance.
+      (no re-show) and continue to 5 / 6. Keep queued or named
+      re-review intent if present. If 5 / 6 do not also match
+      (except without accept), re-show the adjusted package and
+      wait. If the owner must invent a new amendment, re-show,
+      wait, and carry re-review intent across that wait unless
+      they cancel it.
+   5. **Accept** (open set): any clear package acceptance.
       Examples, not a closed list: `approved`, `yes`, `looks
       good`, `do it`, `lgtm`, `ok`, `go ahead`, `apply`.
-      **Do:** apply, then step 10 else. Reject (1) wins over
-      this.
-   5. **Named re-review** (intent, same confirmation
+      **Do:** apply, then step 10 according to the current re-review
+      intent. Reject (1) wins over this.
+   6. **Named re-review** (intent, same confirmation
       utterance): extra conjunct on accept. They ask this
       skill's `review` procedure to run on the artifact
       after apply. Paraphrases count: "re-review", "then
       review", "then run review", "review it after",
       "approved, re-review the spec", `/inspector review` in
-      *this* utterance. Agent is the subject. **Do:** apply
-      (if 4 did not already), then step 10 named path *instead
-      of* step 10 else.
-   6. **`re-review` alone.** Pending `keep`s → ask once,
+      *this* utterance. Agent is the subject. **Do:** queue
+      re-review and apply (if 5 did not already), then step 10
+      queued path.
+   7. **`re-review` alone.** Pending `keep`s → ask once,
       recommended answer: apply these first, then re-review.
       Do not skip the fold. Do not review the unamended
       artifact from this verb. No pending `keep`s (nothing to
       fold) → skip Apply; follow `review` on the current
-      artifact (step 10 named path).
-   7. During the **questions** stop, "approved" /
+      artifact (step 10 queued path).
+   8. During the **questions** stop, "approved" /
       "approved, re-review" is not confirm. Finish asks (or
       say the package cannot be built yet). Do not apply. Do
       not start `review`.
@@ -235,7 +250,7 @@ omitted, treat as must-fix.
    row.
 10. **After confirm.**
 
-   - **Named re-review:** follow this skill's `review`
+   - **Queued or named re-review:** follow this skill's `review`
      procedure (`verbs/review.md`) on the artifact (amended
      if Apply ran; current if there was nothing to fold).
      Full procedure (two-axis, conversation verdict, stop).

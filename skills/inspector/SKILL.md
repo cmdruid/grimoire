@@ -48,18 +48,19 @@ This package does **not** mint records.
 | Invocation | Verb file | Does |
 |---|---|---|
 | `review` | `verbs/review.md` | two-axis critique; conversation verdict |
-| `refine` | `verbs/refine.md` | classify findings, propose amendments, fold on confirm |
+| `refine` | `verbs/refine.md` | classify findings, propose amendments, fold on confirm; a failed-review chain re-reviews by default |
 | `setup` | `verbs/setup.md` | deploy all bundled kind doctrine absent-only |
 | (bare) | — | **ask** which verb; do not default |
 
 ```
 document review  →  accept/publish   →  (host sequences / walk)
-                 →  refine next turn →  review  →  …
+needs-rework     →  refine proposal  →  approve/apply + queued review  →  …
 implementation review → verdict only
 ```
 
-Each arrow is a stop. No verb invokes the next, except a `refine`
-confirmation that asks for `review` after apply.
+Each arrow is a stop. A `refine` entered directly from a failing document review carries a queued
+re-review: approval applies the proposal and immediately runs the existing `review` procedure.
+Standalone `refine` invokes review only when its confirmation names re-review.
 
 ## Kind-detect (review and refine, once)
 
@@ -102,8 +103,8 @@ does not open with it. Verdict words stay conversation-only.
 - **One ask per stop.** After a passing `review`, accept is a
   stop; the publish write is that stop. After `refine`:
   questions (when they fire) are a stop; the proposal is a stop;
-  after apply without named re-review, the offer is a stop.
-  Named re-review is the exception.
+  approval of a failed-review fold runs its queued re-review; after
+  standalone apply without named re-review, the offer is a stop.
 - **Translate the closing code.** "The tests would go green and
   still encode the wrong scripts" not a bare `needs-rework`.
 

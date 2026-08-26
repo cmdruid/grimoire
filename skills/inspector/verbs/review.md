@@ -72,7 +72,8 @@ Unknown kind → ask or refuse; do not invent a rubric. Do not amend. Do not min
    write `status:` or `stage:` in this verdict turn.
 7. **Close exactly once.**
    - Document `needs-rework`: say, “If you want, I can fold these findings with `/inspector
-     refine`.” Stop. Do not refine in this turn.
+     refine`; if you approve the refinement proposal, I’ll re-review the amended document
+     automatically.” Stop. Do not refine in this turn.
    - Passing document: say, “If you accept, this session will publish `<path>`.” Stop. Do not
      publish in this turn.
    - Implementation: stop after the verdict and findings. Do not offer publish, refine, or
@@ -101,7 +102,9 @@ utterance requested further work.
 ### Failing offer
 
 1. **Refine** — a clear request to fold, amend, revise, or refine these findings → enter
-   `verbs/refine.md` on the next turn with the complete in-context findings and reviewed artifact.
+   `verbs/refine.md` on the next turn with the complete in-context findings, reviewed artifact,
+   and re-review queued by default. An explicit request to refine without re-review clears that
+   intent.
 2. **Reject** (`stop` / `don't` / `not yet`) → write nothing.
 3. **Unclear** → ask once whether to enter refine; write nothing.
 
