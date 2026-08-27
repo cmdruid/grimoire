@@ -16,17 +16,20 @@
    started.
 
 For a root launch, ask the calling session to use ordinary `/checkpoint save` with the goal record,
-current runbook step, and `/foreman goal resume <goal-record>` as its one next action. Foreman never
-writes `CHECKPOINT.md`. If that capability is unavailable, continue only with the explicit warning
-that project-level recovery across a reset is unavailable; do not create substitute state.
+current runbook step, and `/foreman goal resume <goal-record>` as its one next action.
+Foreman never writes `CHECKPOINT.md`. If that capability is unavailable, continue only with the
+explicit warning that project-level recovery across a reset is unavailable; do not create
+substitute state.
 
 ## Resume: `goal resume <goal-record>`
 
 Validate the published schema and recompute the closure source digest. Drift pauses for attended
-review. Run `scripts/runtime-context.sh`: dual Checkpoint/Workstream custody refuses before action;
-otherwise read the one current owner's state. Continue from its recorded step until a genuine
-decision, blocker, stop condition, or context boundary. Return completed work, evidence, current
-step, and one exact next action for that owner to save through its ordinary procedure.
+review. Run `scripts/runtime-context.sh`: for a Checkpoint owner, pass `--checkpoint` with the exact
+absolute root file from the current session's already-admitted stable handle; omit it rather than
+using file presence as admission. The probe's dual Checkpoint/Workstream custody refuses before
+action; otherwise read the one current owner's state. Continue from its recorded step until a
+genuine decision, blocker, stop condition, or context boundary. Return completed work, evidence,
+current step, and one exact next action for that owner to save through its ordinary procedure.
 
 The goal's Delegated decisions section bounds recommendations that the harness may auto-accept.
 Always stop for destructive action, credential selection or acquisition, policy change,

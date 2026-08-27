@@ -1,37 +1,26 @@
-# `anchor` — install the discoverability guarantee (the recovery-anchor convention)
+# `anchor` — propose guarded recovery instructions
 
-A compacted (or fresh) session only benefits from the checkpoint if something it *still reads*
-points at the file. That something is a short block in the host's **always-loaded front door**
-(`AGENTS.md` / `CLAUDE.md` / equivalent — re-injected every request, so it survives compaction
-by construction). Without it, automatic compaction recovery is undiscoverable — a save still
-produces a resumable save-state, but nothing routes a compacted session back to it.
+Resolve `templates/recovery-anchor.md` and `scripts/anchor-status.sh` from this package. The template
+is package-only; this verb may edit only a human-selected always-loaded project front door and only
+after approval.
 
-1. **Check**: scan the root's always-loaded front-door files for the block (a line matching
-   `^## Checkpoint recovery`). Present → report which file carries it; done.
-2. **Absent → propose the block below as a one-off edit** and apply it on the human's approval,
-   appended to the front door they pick. Never self-install without the approval, and never
-   commit it — whether the front door is tracked, and whether this edit ships, stays the
-   host's convention (this skill ships no registration machinery; the `anchor` verb is a
-   proposed, human-approved edit, not self-registration).
+1. Classify each actual front door with
+   `scripts/anchor-status.sh <template> <front-door>`:
+   - `current` — exact block; report and stop.
+   - `absent` or `missing` — no block.
+   - `drifted-current`, `obsolete-versioned`, or `obsolete-unversioned` — one replaceable block;
+     use the emitted `anchor_begin_line` and `anchor_end_line` as its exact extent. A versioned
+     block spans its ordered markers. An unversioned block spans the unique
+     `## Checkpoint recovery` H2 section through the byte before the next H2, or through EOF.
+   - `duplicate`, `malformed`, `invalid`, or `invalid-template` — refuse without guessing.
+2. For a replaceable block, show the exact bounded old and new content and ask approval. Replace only
+   that emitted extent, preserving every byte before and after it. If the reported extent cannot be
+   isolated exactly, refuse rather than expanding it.
+3. When absent everywhere, show the exact block and ask which front door should receive it. Append
+   only after approval.
 
-The copy-paste block:
+Anchor never reads any save-state file, self-installs, edits committed ignore rules, or commits the
+front-door change. Ordinary `save` only reports anchor status and points here.
 
-```markdown
-## Checkpoint recovery
-
-If `CHECKPOINT.md` exists at this project's root, it is the living save-state of work in
-flight (`/checkpoint`):
-- If your context was **just compacted/summarized** (a compaction/continuation summary sits
-  where conversation history should be), you are the session that work belongs to — STOP,
-  re-read `CHECKPOINT.md` in full, reconcile it against the durable trail (git, records),
-  and continue without a user round-trip if the next action is KNOWN.
-- If you are a **fresh session**, read it, echo its suggested first action, and **confirm
-  with the user** before continuing that work.
-```
-
-(An *installer* skill with a genuine install moment may automate its own instance of this
-recovery-anchor convention — `/workstream create` does, for its stream anchor; that automation
-belongs to the installer, not here.)
-
-**Done when:** the front door's anchor state was reported; if absent, the block was proposed
-and — on approval — applied to the file the human picked, verbatim.
+**Done when:** every candidate was classified and current was reported, an unsafe state refused, or
+the exact approved block was installed/replaced without changing surrounding content.

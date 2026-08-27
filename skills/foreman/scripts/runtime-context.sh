@@ -13,11 +13,25 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 [ -n "$root" ] && [ -n "$goal" ] && [ -d "$root" ] || usage; root="$(CDPATH='' cd -P "$root"&&pwd)"
-[ -n "$checkpoint" ] || checkpoint="$root/CHECKPOINT.md"; [ -n "$workstream" ] || workstream="$root/WORKSTREAM.md"
+[ -n "$workstream" ] || workstream="$root/WORKSTREAM.md"
+checkpoint_label=none
+if [ -n "$checkpoint" ]; then
+  checkpoint_parent="${checkpoint%/*}"
+  checkpoint_filename="${checkpoint##*/}"
+  [ -d "$checkpoint_parent" ] || { echo 'invalid root checkpoint path' >&2; exit 2; }
+  checkpoint_parent="$(CDPATH='' cd -P "$checkpoint_parent" && pwd)"
+  checkpoint="$checkpoint_parent/$checkpoint_filename"
+  if [ "$checkpoint" != "$root/CHECKPOINT.md" ]; then
+    echo 'invalid root checkpoint path' >&2
+    exit 2
+  fi
+  checkpoint_label="$checkpoint"
+fi
 cp_has=false; ws_has=false
-[ -f "$checkpoint" ] && [ ! -L "$checkpoint" ] && grep -qF -- "$goal" "$checkpoint" && cp_has=true
+[ -n "$checkpoint" ] && [ -f "$checkpoint" ] && [ ! -L "$checkpoint" ] &&
+  grep -qF -- "$goal" "$checkpoint" && cp_has=true
 [ -f "$workstream" ] && [ ! -L "$workstream" ] && grep -qF -- "$goal" "$workstream" && ws_has=true
-echo "goal=$goal"; echo "checkpoint=$checkpoint"; echo "workstream=$workstream"
+echo "goal=$goal"; echo "checkpoint=$checkpoint_label"; echo "workstream=$workstream"
 if [ "$cp_has" = true ] && [ "$ws_has" = true ]; then echo 'owner=conflict'; echo 'reason=dual-runtime-state'; exit 1; fi
 if [ "$ws_has" = true ]; then echo 'owner=workstream'; echo 'recovery=available'; exit 0; fi
 if [ "$cp_has" = true ]; then echo 'owner=checkpoint'; echo 'recovery=available'; exit 0; fi

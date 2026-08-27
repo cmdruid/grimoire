@@ -1,168 +1,112 @@
 ---
 name: checkpoint
-description: Keep a living save-state for the current session's work and recover it after context loss. Use when asked to save/checkpoint/snapshot the session's context or working state, to resume or pick up prior work, to recover after a compaction/continuation summary appears where conversation history should be, to install the recovery anchor, or to close out (done) a finished checkpoint. Writes one gitignored CHECKPOINT.md at the project root — presence means work in flight; an explicit path argument targets an unmanaged second file instead. Scoped to the single root session's save-state — a session driving an isolated stream saves through that stream's own hand-off and save verb, never this skill.
+description: "Keep one token-bound living save-state for a root project session and recover it safely after context loss. Use when asked to save, checkpoint, snapshot, resume, or finish root-session work; when a compaction or continuation summary replaces conversation history; or when asked to install the guarded recovery anchor. Manages only root CHECKPOINT.md."
 ---
 
 # Checkpoint skill
 
-Keep the session's work-in-progress in a **living save-state** — a file a future agent (any
-vendor) or a context-loss survivor can read as the entry point and continue from. The file is
-**gitignored per-machine scratch, rewritten at each save** — never merged, never a durable
-record. A *durable* record of
-*finished* work closes through the host's records layer (or its own done trail), not a
-checkpoint.
+Keep one root session's work-in-progress in `<root>/CHECKPOINT.md`. It is locally ignored scratch,
+rewritten at each save, and deleted by `done`; it is not a durable record. Parallel development uses
+an isolated worktree lifecycle rather than another root checkpoint.
 
-This `SKILL.md` is a **thin router**: scope, guards, and dispatch live here; each verb's
-procedure lives in `verbs/<verb>.md`, and the four disciplines — the skill's citable core,
-which other skills borrow by name — live in **`references/disciplines.md`**. When a verb is
-selected, **read its file and follow it**; read the disciplines file at any save/resume/
-recovery moment if it is not already in context. **Recovery load:** read
-`references/disciplines.md`; this skill's facts-gather (Recovery step 3, repo-state half) is
-`scripts/repo-snapshot.sh <root>` (resolve `scripts/` from this skill's own base directory).
-Do not read `verbs/*` unless the recipe calls `save` or `done`.
+This `SKILL.md` is a thin router. Read the selected file under `verbs/` and, at Save, Resume,
+Lifecycle, or Recovery moments, read `references/disciplines.md`. Resolve every bundled resource
+relative to this skill's own directory. `scripts/repo-snapshot.sh <root>` supplies repo facts;
+`scripts/checkpoint-file.sh` owns token-gated reads and every file mutation.
 
-## Scope — two layers, one owner
+## Scope and root
 
-**Two layers, by isolation** — pick by where the session lives:
-- A session **driving a stream** (its own worktree, or in-place custody of the main checkout —
-  an in-place stream is rooted at the root checkout, so "this is the root session" proves
-  nothing on its own) saves through that stream's own hand-off and save verb — never this
-  skill: a competing root save-state beside a stream hand-off corrupts the resume path. The save procedure's **stream
-  guard**, fed by this skill's `scripts/save-guard.sh` (the canonical probe for these sites),
-  is the mechanical form of this refusal.
-- **The single active root session** → `/checkpoint` → root `CHECKPOINT.md`.
+Resolve `<root>` in order: the project directory established by the conversation; otherwise the
+current path's Git toplevel; otherwise one unambiguous non-Git project directory already in context.
+Ask before choosing when none is established. The root must be an existing real directory.
 
-**One root checkpoint, one owner — and ownership must survive the very event this skill exists
-for.** Session memory is what compaction destroys, so "did I create this file?" cannot be the
-whole test. Four rules:
-1. **Ownership is conferred by creating the file, by completing a Resume** (steps 1–2 plus the
-   human's confirm — resume's transition clause), **or by running Recovery's reconcile** — a
-   compacted session that finds the root file and completes Recovery steps 1–4 IS
-   the owning session; the foreign guard must never fire against a post-compaction self.
-2. **Reading is not resuming.** A session that merely read the file while exploring has not
-   resumed it and gains no ownership.
-3. **Foreignness requires positive evidence of another session** — content describing work
-   unrelated to this session's, or a different root. A compacted session (a
-   compaction/continuation summary sits where history should be) that finds a checkpoint whose
-   content matches its own in-flight work runs **Recovery's reconcile** rather than treating
-   its own file as foreign — refusing there strands the session into the competing second file
-   this rule exists to prevent.
-4. A genuinely foreign checkpoint → `save` **stops and surfaces** (never overwrites another
-   session's only save-state; never silently): resume it (becoming its session) or stay out —
-   own work goes to an explicit-path file.
-(There is no named-session layer: concurrent parallel sessions are a stream driver's job; the
-rare legitimate second file is an **explicit path**, below, with no managed lifecycle.)
+The only managed target is `<root>/CHECKPOINT.md`. Arguments that supply another path, filename, or
+identifier are rejected. Do not search for, report, read, import, migrate, or delete any other
+save-state file.
 
-## Verb dispatch (read the file, then follow it)
+A session driving a worktree stream, or holding the root checkout through an in-place stream,
+refuses Checkpoint before reading or writing. `scripts/save-guard.sh <root>` is the package's
+read-only stream and Git preflight.
+
+## Identity and ownership
+
+A valid file begins exactly:
+
+```text
+# CHECKPOINT — file: <absolute-root-path>/CHECKPOINT.md
+checkpoint-token: <32-lowercase-hex-characters>
+```
+
+At successful save, confirmed resume, and Recovery seams, report exactly:
+
+```text
+CHECKPOINT — file: <absolute-path> — token: <token>
+```
+
+The token is a correlation identifier, not a secret. Creation establishes ownership. Refresh and
+done require the current context's exact stable handle. Confirmed Resume rotates the token before
+conferring ownership, invalidating every older handle. Admitted Recovery restores ownership to the
+compacted session. Presence, project instructions, or knowledge of the path never confers it.
+
+A tracked or unignored Git target, malformed identity, symlink, non-regular file, missing or
+mismatched handle, or mutation contention refuses without loading or overwriting checkpoint
+content.
+
+## Verb dispatch
 
 | Invocation | Verb file | Does |
 |---|---|---|
-| `save` | `verbs/save.md` | synthesize the conversation into the checkpoint file (create or refresh) |
-| `resume [<path>]` | `verbs/resume.md` | load the checkpoint and continue; never consumes the file |
-| `done` | `verbs/done.md` | gated close-out: confirm landed/abandoned, delete, say so |
-| `anchor` | `verbs/anchor.md` | check/install the front-door recovery anchor (human-approved edit) |
+| `save [next: ...]` | `verbs/save.md` | immediately create or refresh the root checkpoint |
+| `resume` | `verbs/resume.md` | explicitly read, confirm, and claim the root checkpoint |
+| `done` | `verbs/done.md` | gate and delete the active owned checkpoint |
+| `anchor` | `verbs/anchor.md` | classify or propose the guarded recovery anchor |
 
-**Recovery is a discipline, not a verb** (`references/disciplines.md`) — it fires on detecting
-a compaction, not on invocation.
+Recovery is a discipline, not a verb. It fires only when a compaction/continuation summary replaces
+conversation history.
 
-## When to use
+## Automatic Recovery admission
 
-- **save:** "save this context", "checkpoint this", "snapshot where we are" — and, unprompted,
-  at the Lifecycle discipline's checkpoint moments (see *Unprompted behaviors*).
-- **resume:** "resume our work", "pick up where we left off" — or a fresh session discovering a
-  root `CHECKPOINT.md` via the recovery anchor.
-- **done:** the checkpointed work has landed (or is deliberately abandoned) and the file should
-  stop signaling work-in-flight.
-- **anchor:** "install the recovery anchor", save's anchor warning, or standing up a project
-  where compaction recovery should be discoverable from day one.
-- **Recovery** (no verb): a compaction/continuation summary sits where your conversation
-  history should be.
+On detecting compaction, stop before task work or repo facts-gathering. Extract exactly one complete
+stable handle from the compacted context; an unscoped token-looking string is not a candidate.
+Require its path to equal this root's absolute `CHECKPOINT.md`, then call:
 
-Do not invoke for routine status updates within the same session, or for memory entries; a
-stream-driving session uses its stream's save verb (*Scope*).
+```text
+scripts/checkpoint-file.sh admit <absolute-root> <complete-stable-handle>
+```
 
-## Where it writes
+Only `token_match=true` admits the emitted body as Recovery's one full read. Never open the file
+again. Reconcile and continue under the generic Recovery discipline.
 
-Classify the trailing argument for the **target**, then (after peeling path tokens) classify any
-**named next action** from the invocation and the same-turn message. Path classification wins
-first. Next-action is an argument to `save`, not a second file or a second verb.
+No unique handle, wrong root or path, malformed handle or file, missing file or token, mismatch,
+unsafe target, or helper failure emits only `token_match=false`. Refuse without checkpoint content,
+facts-gathering, saving, or recovered-task continuation; direct the human to explicit
+`/checkpoint resume`. For Checkpoint only, failed admission disables Recovery's generic no-file
+fallback. A fresh session never loads based on presence.
 
-- **No argument** (no path-like token) → the root `CHECKPOINT.md`. Resolve the root in order: (1) the project
-  directory the conversation references, if any; (2) else if that path (else cwd) is inside a
-  git repo → that `git rev-parse --show-toplevel`; (3) else if `./CHECKPOINT.md` exists in cwd
-  → that directory (the file's parent); (4) else ask before generating. Step (2) is the first
-  save in a git repo — the file need not exist yet. Step (3) is discovery, not a prerequisite.
-- **A path-like argument** (contains `/` or ends in `.md`) → that literal path, verbatim — the
-  unmanaged escape hatch for a deliberate second checkpoint file. At most one; first wins.
-  Unmanaged end to end: no
-  anchor check, no lifecycle, `done <path>` rejected — and **only as fresh as its last save**:
-  living-memory behavior requires the caller to supply an update cadence (re-save after each
-  completed unit is the lightweight convention).
-- **A single bare word** with no next-action marker (`dev`, `research`, `next` with no colon
-  or remainder, …) → **reject and explain**: named checkpoints do not exist. Suggest the root
-  checkpoint, an explicit path, or — for a genuinely concurrent session — a stream with its
-  own hand-off. Never silently reinterpret a bare word as a path.
+## Lifecycle activation
 
-**Named next action** — after path tokens are peeled, from the invocation and the same-turn
-message:
+Checkpoint activates only when the human asks this session to maintain or save it, confirmed Resume
+completes, or Recovery is admitted. Anchor use, file presence, and merely loading this skill do not
+activate it. Once active: save early after meaningful work begins; refresh before a deliberate
+reset, at a human-visible work-unit completion, and on a context-pressure warning. Do not save
+routine replies or a polluted context.
 
-- `next:` plus the remainder of that span.
-- Remainder after `—` (the explicit delimiter form).
-- Same-turn prose that states the subsequent work ("checkpoint this, next we'll grill the spec";
-  "then we'll X").
+## Project templates
 
-`--` is not a marker. Politeness (`please`, `now`) and chatter are not named. Combinations are
-legal (`/checkpoint save ./notes.md next: grill the spec`). A named string that is not
-load-executable is not named (Save discipline).
-
-Write-guards (tracked-file, ignore-as-checked-mechanism) are save's: `verbs/save.md` → *The
-ignore mechanism*, fed by `scripts/save-guard.sh`.
-
-## The four disciplines (names + glosses — normative text in `references/disciplines.md`)
-
-- **Save discipline** — elide secrets; synthesize, don't transcribe; absolute dates; author a
-  single next action (named > KNOWN > best-guess).
-- **Resume discipline** — read in full, echo the next action, rewrite nothing; do not reopen
-  the next-action design.
-- **Lifecycle discipline** — first save early; refresh at the three checkpoint moments; ended
-  only by `done`; presence = work in flight; rollback exception for polluted contexts.
-- **Recovery discipline** — on compaction: stop, re-read, bounded facts-gather, reconcile,
-  continue without a round-trip if KNOWN; write-back only when grounded and this file is the
-  only mid-unit store; anchor-dependent for discoverability.
-
-## Unprompted behaviors (the during-the-session rules — no invocation needed)
-
-- **First save early**: once the session is demonstrably mid-work, create the checkpoint — the
-  window before the first save has no compaction protection. One first save; do not refresh
-  it on the next reply.
-- **Refresh at the checkpoint moments**: before a deliberate reset; at a work-unit
-  completion (a human-visible milestone — see Lifecycle in `references/disciplines.md`,
-  not every slice or status update); on a context-pressure warning (save now, recommend a
-  reset).
-- **Anchor-line repetition**: the path lives in the file. Speak it at `save` / `resume` /
-  Recovery, not as a prefix on ordinary replies (`references/disciplines.md`).
-- **Compaction summary detected → stop and run Recovery** (`references/disciplines.md`).
-
-## Done when
-
-Each verb's done-when closes its own file (`verbs/*.md`); Recovery's closes the discipline
-(`references/disciplines.md`).
+None. `templates/recovery-anchor.md` is package-only content proposed by `anchor`, never a
+project-editable template.
 
 ## Edges
 
-Checkpoint's **typed edges** declare a real **self-chain**: `save` produces the doc and `resume`
-consumes it back (consumes in the *edge*
-sense of reading -- the living file is never deleted by resume). No durable home (the root
-`CHECKPOINT.md` is gitignored scratch, lazily created) -- registration is optional and not
-implemented.
+Checkpoint has no durable home or setup floor. Its one root file is gitignored scratch.
 
 <!-- edges:checkpoint -->
-- produces: checkpoint-doc — the written save-state (root `CHECKPOINT.md`, or an explicit-path file)
-- handoff: — (none; the doc is picked up by *resume*, not handed to another skill)
-- consumes: checkpoint-doc — resume reads the doc back (intra-skill: same skill on both ends)
+- produces: checkpoint-doc — one living root-session save-state
+- handoff: — (none; Resume in this skill picks the document up)
+- consumes: checkpoint-doc — Resume reads the save-state back
 <!-- /edges:checkpoint -->
 
-**`checkpoint-doc` is a stated intra-skill chain** (a produces line AND a consumes line in one
-skill), which `skills-lint.sh` check 8's BL-4 exclusion deliberately covers — so a clean lint is
-the expected state. **A `checkpoint-doc` WARN appearing means the pair broke** (an edge-block
-typo dropped one side) and is a real finding, never a known false positive to wave through.
+## Done when
+
+The selected verb's procedure is complete, or Recovery either admitted and reconciled the exact
+token-bound file or refused without disclosing it.

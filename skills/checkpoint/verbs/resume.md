@@ -1,27 +1,21 @@
-# `resume` — load the checkpoint and continue
+# `resume` — explicitly read and claim the root checkpoint
 
-Steps 2–3 are the **Resume discipline** (`references/disciplines.md` — exportable). The file is
-already a synthesized summary — **do not re-summarize it**, and never consume it.
+`resume` accepts no argument. The generic **Resume discipline** in `references/disciplines.md` is
+read-only; Checkpoint adds a separate identity-only claim after human confirmation.
 
-1. **Locate the file** (per SKILL.md *Where it writes*): the root `CHECKPOINT.md` for a bare
-   `resume`; the literal path for `resume <path>`. If it does not exist, say so.
-2. **Read it in full** and load it as the working context for the session.
-3. **Confirm ready — briefly.** Reply that you've read it; at most echo the one-line *Suggested
-   first action* verbatim. **Do not reopen the next-action design** — a redirect ("do Y instead")
-   is new in-session intent, not a resume write; the next `save` captures Y. A resuming session
-   **confirms before continuing** (contrast Recovery, which continues without a round-trip — it
-   inherits the compacted session's standing confirmation; a fresh session must earn one). While
-   reconciling, apply the Lifecycle discipline's qualified states — resume itself stays read-only
-   in both:
-   - a **stale** file → **report** the discrepancy (what the file claims vs what disk shows);
-     on the human's confirm, transition into a separate **`save`** that refreshes it. Completing
-     resume steps 1–2 plus that confirm **confers ownership** (SKILL.md, the one-owner rules) —
-     the transition carries it, so save's foreign-checkpoint guard cannot fire against the
-     session mid-resume. If the save is refused anyway (stream guard; tracked file), **report
-     the refusal and leave the file stale** — disk remains truth for this session; a refused
-     refresh is a surfaced state, not a dead-end.
-   - work already landed → propose **`done`** instead of resuming ghost work.
+1. Resolve the root and run `scripts/checkpoint-file.sh inspect <root>`. The helper refuses before
+   body disclosure unless the target is the exact untracked, ignored, regular non-symlink root file
+   with a valid title and token. Only `checkpoint_valid=true` admits the emitted body. Retain its
+   token and opaque fingerprint.
+2. Load the body in full, reconcile it against durable evidence, report staleness or already-landed
+   work, and echo at most its one suggested first action. Do not emit an ownership handle yet. Wait
+   for human confirmation.
+3. On confirmation, call
+   `scripts/checkpoint-file.sh claim <root> <read-token> <read-fingerprint>`. This transaction
+   requires the file to be unchanged, rotates only its token, and emits the new stable handle. A
+   changed file refuses and requires Resume to restart. Rejection leaves the file unchanged.
+4. After a successful claim, continue from the reconciled action. A later content refresh is a
+   separate `save`; already-landed work routes to `done` instead of ghost continuation.
 
-**Done when:** the checkpoint is loaded into context, you've confirmed ready, and the file is
-untouched **by resume itself** — a confirmed stale-refresh is a separate `save` with its own
-done-when.
+**Done when:** the validated body was reconciled, the human confirmed, the identity-only claim
+rotated the token, and the new handle was reported—or the process refused without taking custody.

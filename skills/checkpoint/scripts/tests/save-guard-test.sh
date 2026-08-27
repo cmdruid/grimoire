@@ -35,8 +35,11 @@ rc="$(run_guard "$T/plain")"
 expect_eq "plain exit 0" 0 "$rc"
 expect "plain no worktree stream" "worktree_stream=false" "$OUT"
 expect "plain no inplace stream" "inplace_stream=none" "$OUT"
+expect "plain target reported" "checkpoint_target=CHECKPOINT.md" "$OUT"
 expect "plain not tracked" "checkpoint_tracked=false" "$OUT"
 expect "plain not ignored" "checkpoint_ignored=false" "$OUT"
+expect "plain temp not tracked" "temp_tracked=false" "$OUT"
+expect "plain temp not ignored" "temp_ignored=false" "$OUT"
 expect_match "plain exclude_file absolute" '^exclude_file=/' "$OUT"
 
 # ---- case 2: worktree stream — top-level WORKSTREAM.md ----------------------
@@ -75,19 +78,26 @@ rc="$(run_guard "$T/inp")"
 expect "in-place (released) still named" "inplace_stream=ts" "$OUT"
 expect "custody released: no branch match" "inplace_branch_match=false" "$OUT"
 
-# ---- case 4: tracked CHECKPOINT.md beats any ignore -------------------------
+# ---- case 4: tracked root checkpoint beats any ignore -----------------------
 echo wip > "$T/inp/CHECKPOINT.md"
-git -C "$T/inp" add CHECKPOINT.md && gitc "$T/inp" commit -qm "track checkpoint" -- CHECKPOINT.md
+git -C "$T/inp" add -f CHECKPOINT.md
+gitc "$T/inp" commit -qm "track checkpoint" -- CHECKPOINT.md
 rc="$(run_guard "$T/inp")"
 expect "tracked detected" "checkpoint_tracked=true" "$OUT"
+echo temp > "$T/inp/CHECKPOINT.md.tmp"
+git -C "$T/inp" add -f CHECKPOINT.md.tmp
+gitc "$T/inp" commit -qm "track checkpoint temp" -- CHECKPOINT.md.tmp
+rc="$(run_guard "$T/inp")"
+expect "tracked temp detected" "temp_tracked=true" "$OUT"
 
 # ---- case 5: ignored via info/exclude ---------------------------------------
 git init -q -b main "$T/ign"
 gitc "$T/ign" commit -q --allow-empty -m init
-echo "CHECKPOINT.md" >> "$T/ign/.git/info/exclude"
+printf '/CHECKPOINT.md\n/CHECKPOINT.md.tmp\n' >> "$T/ign/.git/info/exclude"
 rc="$(run_guard "$T/ign")"
 expect "ignored detected" "checkpoint_ignored=true" "$OUT"
 expect "ignored but not tracked" "checkpoint_tracked=false" "$OUT"
+expect "temp ignored detected" "temp_ignored=true" "$OUT"
 
 # ---- case 6: not a repo -----------------------------------------------------
 mkdir -p "$T/norepo"
