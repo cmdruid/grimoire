@@ -264,4 +264,136 @@ else
   echo "sha256 unavailable: host Git lacks --object-format=sha256"
 fi
 
+# Exact multi-resource inventories validate and release in one transaction.
+write_handoff ""
+multi_lines=""
+for resource in multi-a multi-b; do
+  multi_out="$TMP/$resource.out"
+  "$HELPER" acquire "$ROOT" skill stream/skill "$HANDOFF" "$resource" "$resource-intent" > "$multi_out"
+  multi_oid="$(sed -n 's/^oid=//p' "$multi_out")"
+  if [ -z "$multi_lines" ]; then
+    multi_lines="resource-lock: $resource $multi_oid"
+  else
+    multi_lines="$multi_lines
+resource-lock: $resource $multi_oid"
+  fi
+  write_handoff "$multi_lines"
+done
+if "$HELPER" validate "$ROOT" skill "$HANDOFF" > "$TMP/multi-validate.out"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: exact multi-resource set validates" >&2
+  fail=$((fail + 1))
+fi
+expect "multi-resource validate counts both" 'held_count=2' "$TMP/multi-validate.out"
+if "$HELPER" release-all "$ROOT" skill "$HANDOFF" > "$TMP/multi-release.out"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: exact multi-resource release succeeds" >&2
+  fail=$((fail + 1))
+fi
+expect "multi-resource transaction releases both" 'released=2' "$TMP/multi-release.out"
+write_handoff ""
+"$HELPER" validate "$ROOT" skill "$HANDOFF" > "$TMP/multi-empty.out"
+expect "post-cleanup inventory is empty" 'held_count=0' "$TMP/multi-empty.out"
+
+# A stale token rejects the whole batch and preserves every live ref.
+write_handoff ""
+stale_lines=""
+for resource in stale-a stale-b; do
+  stale_out="$TMP/$resource.out"
+  "$HELPER" acquire "$ROOT" skill stream/skill "$HANDOFF" "$resource" "$resource-intent" > "$stale_out"
+  stale_oid="$(sed -n 's/^oid=//p' "$stale_out")"
+  if [ -z "$stale_lines" ]; then stale_lines="resource-lock: $resource $stale_oid"; else stale_lines="$stale_lines
+resource-lock: $resource $stale_oid"; fi
+  write_handoff "$stale_lines"
+done
+stale_a_before="$(git -C "$ROOT" show-ref --verify --hash refs/workstream-resources/stale-a)"
+stale_b_before="$(git -C "$ROOT" show-ref --verify --hash refs/workstream-resources/stale-b)"
+wrong_stale="$(printf 'wrong-stale' | git -C "$ROOT" hash-object -w --stdin)"
+sed "s/resource-lock: stale-b $stale_b_before/resource-lock: stale-b $wrong_stale/" "$HANDOFF" > "$TMP/stale-handoff"
+mv "$TMP/stale-handoff" "$HANDOFF"
+if "$HELPER" release-all "$ROOT" skill "$HANDOFF" > "$TMP/stale-release.out"; then
+  echo "FAIL: stale batch must be rejected" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+expect_eq "stale batch preserves first ref" "$stale_a_before" "$(git -C "$ROOT" show-ref --verify --hash refs/workstream-resources/stale-a)"
+expect_eq "stale batch preserves second ref" "$stale_b_before" "$(git -C "$ROOT" show-ref --verify --hash refs/workstream-resources/stale-b)"
+git -C "$ROOT" update-ref -d refs/workstream-resources/stale-a "$stale_a_before"
+git -C "$ROOT" update-ref -d refs/workstream-resources/stale-b "$stale_b_before"
+write_handoff ""
+
+# Bidirectional validation catches duplicate, extra, wrong-owner, wrong-OID, and declared-free state.
+duplicate_oid="$(printf 'duplicate' | git -C "$ROOT" hash-object -w --stdin)"
+write_handoff "resource-lock: dup-dev $duplicate_oid
+resource-lock: dup-dev $duplicate_oid"
+if "$HELPER" validate "$ROOT" skill "$HANDOFF" > "$TMP/duplicate.out"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+
+write_handoff ""
+extra_out="$TMP/extra.out"
+"$HELPER" acquire "$ROOT" skill stream/skill "$HANDOFF" extra-dev config-a > "$extra_out"
+if "$HELPER" validate "$ROOT" skill "$HANDOFF" > "$TMP/extra-validate.out"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+break_ref extra-dev
+
+OTHER_HANDOFF="$TMP/other.md"
+write_owner_handoff "$OTHER_HANDOFF" other-stream ""
+other_out="$TMP/other.out"
+"$HELPER" acquire "$ROOT" other-stream stream/other-stream "$OTHER_HANDOFF" other-dev config-a > "$other_out"
+other_oid="$(sed -n 's/^oid=//p' "$other_out")"
+write_handoff "resource-lock: other-dev $other_oid"
+if "$HELPER" validate "$ROOT" skill "$HANDOFF" > "$TMP/wrong-owner.out"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+break_ref other-dev
+
+write_handoff "resource-lock: free-dev $duplicate_oid"
+if "$HELPER" validate "$ROOT" skill "$HANDOFF" > "$TMP/declared-free.out"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+write_handoff ""
+
+# Ordinary read-only Workstream facts never mutate a planted resource ref.
+neutral_out="$TMP/neutral.out"
+"$HELPER" acquire "$ROOT" skill stream/skill "$HANDOFF" neutral-dev config-a > "$neutral_out"
+neutral_oid="$(sed -n 's/^oid=//p' "$neutral_out")"
+write_handoff "resource-lock: neutral-dev $neutral_oid"
+"$SKILL/scripts/workstream-git.sh" stream-state "$WT" stream/skill main >/dev/null
+"$SKILL/scripts/workstream-git.sh" gate-facts "$WT" stream/skill main >/dev/null
+"$SKILL/scripts/workstream-git.sh" land-readiness "$ROOT" "$WT" stream/skill main >/dev/null
+expect_eq "read-only workstream helpers preserve resource ref" "$neutral_oid" "$(git -C "$ROOT" show-ref --verify --hash refs/workstream-resources/neutral-dev)"
+"$HELPER" release "$ROOT" skill "$HANDOFF" neutral-dev >/dev/null
+write_handoff ""
+
+# Direct teardown refuses a held claim even with --force.
+GUARD_WT="$ROOT/.workstreams/guard"
+git -C "$ROOT" worktree add -qb stream/guard "$GUARD_WT" main
+GUARD_HANDOFF="$GUARD_WT/WORKSTREAM.md"
+write_owner_handoff "$GUARD_HANDOFF" guard ""
+guard_out="$TMP/guard.out"
+"$HELPER" acquire "$ROOT" guard stream/guard "$GUARD_HANDOFF" guard-dev config-a > "$guard_out"
+guard_oid="$(sed -n 's/^oid=//p' "$guard_out")"
+write_owner_handoff "$GUARD_HANDOFF" guard "resource-lock: guard-dev $guard_oid"
+if "$SKILL/scripts/worktree-teardown.sh" "$ROOT" guard --force > "$TMP/guard-teardown.out" 2>&1; then
+  echo "FAIL: direct teardown bypassed held resource" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+expect_eq "refused teardown preserves worktree" 1 "$([ -d "$GUARD_WT" ] && echo 1 || echo 0)"
+"$HELPER" release "$ROOT" guard "$GUARD_HANDOFF" guard-dev >/dev/null
+write_owner_handoff "$GUARD_HANDOFF" guard ""
+"$SKILL/scripts/worktree-teardown.sh" "$ROOT" guard --force >/dev/null
+
+# The artifact absence check is red-proved against a copied package selected by override.
+package_before="$(find "$SKILL" -type f -exec cksum {} \; | sort | cksum)"
+fixture_skill="$TMP/workstream-skill-fixture"
+cp -R "$SKILL" "$fixture_skill"
+printf '\nExample forbidden mutation: git update-ref refs/workstream-resources/injected deadbeef\n' >> "$fixture_skill/verbs/resource.md"
+if WORKSTREAM_SKILL_UNDER_TEST="$fixture_skill" bash "$DIR/artifact-contract-test.sh" > "$TMP/artifact-red.out" 2>&1; then
+  echo "FAIL: namespace absence red-proof stayed green" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+package_after="$(find "$SKILL" -type f -exec cksum {} \; | sort | cksum)"
+expect_eq "absence red-proof leaves real package byte-identical" "$package_before" "$package_after"
+
 report "resource-test.sh"

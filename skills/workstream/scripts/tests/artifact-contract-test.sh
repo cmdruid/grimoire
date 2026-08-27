@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
-SKILL="$(cd "$DIR/../.." && pwd)"
+if [ -n "${WORKSTREAM_SKILL_UNDER_TEST:-}" ]; then
+  case "$WORKSTREAM_SKILL_UNDER_TEST" in
+    /*) SKILL="$WORKSTREAM_SKILL_UNDER_TEST" ;;
+    *) echo "WORKSTREAM_SKILL_UNDER_TEST must be absolute" >&2; exit 2 ;;
+  esac
+else
+  SKILL="$(cd "$DIR/../.." && pwd)"
+fi
 . "$DIR/lib.sh"
 
 expect "manifest template declared" '- `manifest.md`' "$SKILL/SKILL.md"
@@ -28,5 +35,10 @@ expect "teardown guards resources" 'workstream-resource.sh' "$SKILL/scripts/work
 expect "attended break dispatched" 'resource acquire|status|release|break' "$SKILL/SKILL.md"
 expect "attended break procedure" '## `break <resource>`' "$SKILL/verbs/resource.md"
 expect "break requires named confirmation" 'confirmation naming that exact resource' "$SKILL/verbs/resource.md"
+expect "save preserves resource inventory" 'complete single `## Resource locks` span byte-for-byte' "$SKILL/verbs/save.md"
+expect "recycle preserves resource inventory" 'complete single `## Resource locks` span byte-for-byte' "$SKILL/verbs/recycle.md"
+expect "close cleans inventory atomically" 'one atomic rewrite' "$SKILL/verbs/close.md"
+offenders="$(find "$SKILL" -type f ! -path "$SKILL/scripts/workstream-resource.sh" ! -path "$SKILL/scripts/tests/*" -exec grep -lF 'git update-ref refs/workstream-resources/' {} + 2>/dev/null || true)"
+expect_eq "resource namespace mutation is helper-only" "" "$offenders"
 
 report "artifact-contract-test.sh"

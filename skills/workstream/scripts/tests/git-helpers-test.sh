@@ -70,6 +70,10 @@ expect_eq "root remains on target" "true" "$(fact root_on_target "$OUT")"
 cat > "$WT/WORKSTREAM.md" <<'EOF'
 # fixture handoff
 
+## Resource locks
+
+No claims in this fixture.
+
 ## Cheat sheet
 
 - live: `README.md`

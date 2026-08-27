@@ -170,6 +170,7 @@ affected slice before writing code; do not force an aged plan onto a changed tre
   - Files:
     - Modify: `skills/workstream/scripts/workstream-resource.sh`
     - Modify: `skills/workstream/scripts/tests/resource-test.sh`
+    - Modify: `skills/workstream/scripts/tests/git-helpers-test.sh`
     - Modify: `skills/workstream/verbs/resource.md`
     - Modify: `skills/workstream/SKILL.md`
   - Change:
@@ -206,7 +207,7 @@ affected slice before writing code; do not force an aged plan onto a changed tre
     malformed/old/stale cases stay held, break succeeds only for the displayed OID, fixture restoration
     is byte-identical, and the suite exits 0. Commit the green slice.
 
-- [ ] **Slice 3: multi-resource custody across reset, recycle, and close** <requires: 2>
+- [x] **Slice 3: multi-resource custody across reset, recycle, and close** <requires: 2>
 
   - Files:
     - Modify: `skills/workstream/scripts/workstream-resource.sh`
