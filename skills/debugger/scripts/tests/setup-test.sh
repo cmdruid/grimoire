@@ -10,8 +10,9 @@ ROOT="$TMP/root"; mkdir -p "$ROOT"; OUT="$TMP/out"
 bash "$SETUP" --write-only "$ROOT" >"$OUT"
 eq "fresh asset count" 3 "$(find "$ROOT/.spaces/debugger" -type f | wc -l | tr -d ' ')"
 for file in bugs.md investigation.md; do test -f "$ROOT/.spaces/debugger/templates/$file" && pass=$((pass+1)) || fail=$((fail+1)); done
-has "flow title" 'title: Debugger diagnostics' "$ROOT/.spaces/debugger/flows/diagnostics.md"
-has "flow crawl key" 'use-when:' "$ROOT/.spaces/debugger/flows/diagnostics.md"
+has "operation schema" 'schema: foreman/operation@1' "$ROOT/.spaces/debugger/operations/diagnostics.md"
+has "operation evidence" 'verified-against: sha256:' "$ROOT/.spaces/debugger/operations/diagnostics.md"
+has "direct procedure" '## Procedure' "$ROOT/.spaces/debugger/operations/diagnostics.md"
 no "no schema deployment" "$ROOT/.spaces/debugger/schemas"
 no "no record shell" "$ROOT/.spaces/debugger/templates/reports.md"
 CUSTOM='PROJECT CUSTOM'; printf '\n%s\n' "$CUSTOM" >> "$ROOT/.spaces/debugger/templates/bugs.md"
@@ -45,7 +46,7 @@ eq "partial rerun converges" 3 "$(find "$PART/.spaces/debugger" -type f | wc -l 
 GITROOT="$TMP/git"; mkdir -p "$GITROOT"; git -C "$GITROOT" init -q; git -C "$GITROOT" config user.name Fixture; git -C "$GITROOT" config user.email fixture@example.invalid
 printf '# Fixture\n' > "$GITROOT/README.md"; git -C "$GITROOT" add README.md; git -C "$GITROOT" commit -qm init
 bash "$SETUP" "$GITROOT" >"$OUT"
-eq "standalone commit exact paths" "$(printf '%s\n' .spaces/debugger/flows/diagnostics.md .spaces/debugger/templates/bugs.md .spaces/debugger/templates/investigation.md)" "$(git -C "$GITROOT" show --pretty='' --name-only HEAD | sed '/^$/d' | sort)"
+eq "standalone commit exact paths" "$(printf '%s\n' .spaces/debugger/operations/diagnostics.md .spaces/debugger/templates/bugs.md .spaces/debugger/templates/investigation.md)" "$(git -C "$GITROOT" show --pretty='' --name-only HEAD | sed '/^$/d' | sort)"
 HEAD1="$(git -C "$GITROOT" rev-parse HEAD)"; bash "$SETUP" "$GITROOT" >"$OUT"; eq "standalone no-op makes no commit" "$HEAD1" "$(git -C "$GITROOT" rev-parse HEAD)"
 
 BOUND="$TMP/bound"; mkdir -p "$BOUND"

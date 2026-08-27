@@ -98,7 +98,7 @@ scoped to non-face skills.
   owning skill implements the reader and a project owns any local overlay body.
   **Project hook files** live at
   `<agent-workspace>/<skill>/hooks/<seam>.md`; there is no composer skill or
-  pack-level writer. The same ownership rule applies to `flows/`, `hooks/`, and
+  pack-level writer. The same ownership rule applies to `operations/`, `hooks/`, and
   `templates/`: a publisher writes only beneath its own skill namespace.
 
 - **Skills self-initialize and self-describe via typed edges; the composer wires the seams.** The
@@ -231,7 +231,7 @@ The **agent-workspace home** is where a project's skill-owned development
 environment lives. Its grammar is
 `<agent-workspace>/<skill>/<kind>/...`: owner names are open
 `[a-z0-9-]+`, while kinds are the closed set `doctrine`, `hooks`,
-`scripts`, `templates`, `trackers`, and `flows`. A skill materializes only
+`operations`, `scripts`, `templates`, and `trackers`. A skill materializes only
 the kinds it owns and writes only beneath its own namespace. Default `.spaces`.
 Declare it only as an override; there is **no** legacy synonym. A declared
 value of `.` is forbidden because it would mingle owner namespaces with the
@@ -402,7 +402,7 @@ canonical workspace path. Setup inventories the complete owned write set before 
 then rechecks every existing parent immediately before each write. Unsafe or incompatible entries
 refuse that write. If a later recheck fails after earlier safe writes, setup reports both the
 completed paths and the refusal; a rerun preserves those incumbents and finishes the remainder.
-Project-editable templates, hooks, doctrine, flows, tracker data, and README content are absent-only.
+Project-editable templates, hooks, doctrine, operations, tracker data, and README content are absent-only.
 Only package-managed executable tools that already define refresh semantics may be replaced.
 
 Each owner keeps its established reporting vocabulary. Standalone setup makes one pathspec-scoped
@@ -438,7 +438,7 @@ doctrine path is exactly as wrong as a writer that does.
 
    Doctrine: an audit rubric, a station chapter. Not
    doctrine: a spec (a dated `specs/` record), a captured project fact, an audit *report*,
-   a host procedure under `<agent-workspace>/<skill>/flows/`. The auditor rubric at
+   a host operation under `<agent-workspace>/<skill>/operations/`. The auditor rubric at
    `auditor/doctrine/test/workflows/audit/` remains doctrine (a parked nested tree). Host
    procedures are workspace-resident files copied by their owner skill — not a sixth
    landing class.
@@ -468,14 +468,14 @@ doctrine path is exactly as wrong as a writer that does.
    exception.
 
    **Independent seeding.** A skill copies only the workspace files it owns
-   (`flows/` / `hooks/` / `templates/` beneath its namespace, as applicable), including crawl keys
-   (`title` / `use-when`) on any flow it copies; incumbent wins. A finder
-   over `flows/` is not a seeder of pack or sibling payload. Minting a
+   (`operations/` / `hooks/` / `templates/` beneath its namespace, as applicable), including the
+   complete schema on any operation it copies; incumbent wins. A cross-owner finder over
+   `operations/` is not a seeder of pack or sibling payload. Minting a
    host-authored stub is not seeding.
 
    **Kind-local creation.** A publisher creates only the kind needed by the
-   authorized operation. A hooks publisher creates its own `hooks/`; a flow
-   publisher creates its own `flows/`; an Inspector setup creates
+   authorized operation. A hooks publisher creates its own `hooks/`; an operation
+   publisher creates its own `operations/`; an Inspector setup creates
    `inspector/doctrine/`. None may populate sibling kinds or another owner.
 
    Doctrine is **copy-bundled-then-customized**, not mint-and-accumulate: a skill seeds
@@ -563,6 +563,14 @@ files mean skip. It does not glob new runtime behavior into existence.
 4. **Optimization, not dependency.** The bare self-init + registration experience is complete on its
    own; a composer/runbook *enriches* (arranges, derives seams, drains accumulation) but is never
    required for a skill to **function**.
+
+### Optional composers call public procedures
+
+An explicitly invoked composer may call another installed skill's public procedure when composition
+is the requested job. It may not reproduce that procedure, write the other skill's state, require
+the other skill to be installed for its own bare operation, or bypass the called procedure's guards.
+The call is an optional runtime edge: absent capability degrades to a returned hand-off, never an
+installation floor. Seam ownership and typed-edge rules remain unchanged.
 
 **Name your floor.** Corollary 1 restated as an authoring discipline: when you scaffold a skill,
 state explicitly what it depends on to work — ideally *nothing* (no other skill's `init`, no composer

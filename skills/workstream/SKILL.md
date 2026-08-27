@@ -48,6 +48,11 @@ is the harm this rule exists to prevent. Two consequences follow, keyed on *what
   never drive it. This is the *only* way a second stream originates from inside a workstream; it fires
   **only** on that explicit, in-band request — never inferred, never for your own tangent, and never
   in an unattended/autonomous loop (no human is present to ask) — and it never touches your own loop.
+- **A root coordinator may seed, prime, and load that same stream as one launch.** This narrow
+  exception applies only when the session is not already driving any stream and an explicit caller
+  needs to set the initial queue unit before entry. The coordinator runs `create --seed-only`, the
+  generic prime helper, then `load` for exactly the stream it just created. It cannot switch targets
+  or use the exception after a stream is loaded.
 
 The `create`/`load` guards (in their verb files) enforce this mechanically.
 
@@ -61,7 +66,8 @@ shared tree (custody — `verbs/park.md`), so at most one exists per repo, enfor
   party at any time** (`/workstream sync` by hand works identically to the agent calling it
   mid-flow) — with one scope limit: an agent already inside a workstream must not invoke plain
   `create` (create-and-drive) nor `load` a *different* stream; it may only run `create --seed-only`,
-  and only on an explicit human request to stand a stream up for a separate session (see *Scope*).
+  and only on an explicit human request to stand a stream up for a separate session. A root
+  coordinator not yet driving a stream may use the same-stream seed/prime/load launch above.
 - **The flow** (`flow.md`) is the agent's orchestration — it calls verbs at the loop's seams and
   sequences saves/debriefs around the one event that matters, the **context reset**. Read it at
   every loop entry (`create` / `load` / `recycle`).
@@ -217,6 +223,10 @@ hashes that canonical known-file population and projects `## Hooks (compiled)` i
 across a template rewrite (`save` does not recompile). It also bundles
 `scripts/worktree-exclude.sh` (idempotent hand-off exclusion, used by
 `create`) and `scripts/worktree-teardown.sh` (the `close` mechanics).
+`scripts/workstream-prime.sh` is the opt-in launch bridge: given a validated absolute hand-off,
+its recorded source pointer, one current-unit sentence, and one literal next action, it atomically
+rewrites only TL;DR, Queue state, and What's next. It preserves Queue control lines and never invokes
+the action. Ordinary Workstream verbs do not call it.
 
 ## Project templates
 

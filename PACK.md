@@ -3,7 +3,7 @@ name: clankshop
 version: 4.0.0
 description: "Independent agent skills with a faceless composition runbook"
 required: journal
-optional: analyst, auditor, backlog, architect, contractor, inspector, debugger, delegate, checkpoint, mailbox, notepad, scheduler, shopbook, workspace, workstream
+optional: analyst, auditor, backlog, architect, contractor, inspector, debugger, delegate, checkpoint, foreman, mailbox, notepad, scheduler, workspace, workstream
 ---
 
 # clankshop — the faceless skills pack
@@ -13,7 +13,7 @@ identity, not a skill: there is no same-named skill directory, and installing
 the pack adds no implicit face member.
 
 The pack installs independent skills. It does not seed doctrine, publish project
-flows or hooks, write a project front door, initialize records or trackers, or
+operations or hooks, write a project front door, initialize records or trackers, or
 validate a deployed workshop. A skill that owns durable project state exposes
 and owns its own setup procedure.
 
@@ -25,7 +25,7 @@ All other members are optional and default-installed:
 - Work leads: `architect`, `contractor`, and `inspector`; Inspector reviews documents and completed
   implementations, publishes only accepted passing documents, and owns its project kind setup.
 - Project knowledge and follow-up: `journal`, `backlog`, `notepad`, and `analyst`.
-- Development operations: `workstream`, `auditor`, `debugger`, and `shopbook`.
+- Development operations: `workstream`, `auditor`, `debugger`, and `foreman`.
 - Utilities: `delegate`, `mailbox`, `checkpoint`, `scheduler`, and `workspace`.
 
 Three skills are intentionally outside the pack: `skill-builder` maintains skills libraries,
@@ -43,13 +43,23 @@ house-style guide. None is part of the project's `clankshop` toolkit.
   and Analyst reads records, reports, Backlog trackers, and git history into cited briefings.
 - A workstream owns its `WORKSTREAM.md` save-state. A root session may instead
   use the repository-level checkpoint file; one session never uses both.
+- Foreman compiles verified operation closures into immutable goal records. A root pursuit asks
+  Checkpoint to own mutable progress; a stream pursuit reads Workstream's hand-off. The harness goal
+  feature may drive either runbook, but Foreman never writes either runtime surface or expands tool
+  permission.
+- An opt-in stream launch treats one Foreman goal as one Workstream queue unit: the root coordinator
+  proves the record closure reachable, seeds the stream, primes its existing hand-off through
+  Workstream's generic helper, then loads that same stream. Normal Workstream use performs no
+  Foreman checks.
 - Backlog may suggest `tasks`, `issues`, and `feedback` during explicit setup; the pack
   installs no tracker, script, route, or debrief policy.
 - Delegate chooses whether and how to dispatch work and may expose its own optional
   `delegate/hooks/byproducts.md` policy through explicit setup. The pack never fills it.
   Mailbox is transport for a returned artifact, not the dispatch decision.
-- Workspace validates the owner-first layout without creating or repairing it. Shopbook owns only
-  host procedure discovery and stubs; Scheduler owns only local recurring-run state.
+- Workspace validates the owner-first layout without creating or repairing it. Foreman curates the
+  cross-owner operation catalog and writes only its own operations, doctrine, route, and goal
+  records; each publisher remains able to follow its own operations directly. Scheduler owns only
+  local recurring-run state.
 - Records, workspace files, hooks, doctrine, and review kinds remain owned by
   the skill that defines them. Coarse owner-local edge types do not compose across owners merely
   because their names match. Pack installation never projects those files into a project.

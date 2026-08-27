@@ -16,5 +16,7 @@ expect "records isolated" '<agent-records>/streams/' "$SKILL/SKILL.md"
 expect "helper classifies streams drafts" '$rec_re/streams/' "$SKILL/scripts/workstream-git.sh"
 expect "migrate refuses directory plan sweep" 'never sweep it from a directory' "$SKILL/verbs/migrate.md"
 expect "legacy template rename registered" '`plans.md` → `manifest.md`' "$SKILL/verbs/migrate.md"
+expect_eq "generic prime helper exists" 1 "$([ -x "$SKILL/scripts/workstream-prime.sh" ] && echo 1 || echo 0)"
+expect "prime helper documented" 'workstream-prime.sh' "$SKILL/SKILL.md"
 
 report "artifact-contract-test.sh"

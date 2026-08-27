@@ -928,7 +928,7 @@ done
 # vocabulary separate in this source: the test assembles broken fixtures, and a
 # literal absence sweep can therefore cover this package too.
 workspace_prefix='(<agent-workspace>|\.spaces)'
-workspace_kinds='(doctrine|hooks|scripts|templates|trackers|flows)'
+workspace_kinds='(doctrine|hooks|operations|scripts|templates|trackers)'
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   while IFS= read -r -d '' f; do

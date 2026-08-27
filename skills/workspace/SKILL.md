@@ -23,7 +23,7 @@ Managed paths have the shape `<agent-workspace>/<owner>/<kind>/...`. Owners matc
 `[a-z0-9-]+` and are open-ended. Kinds are closed:
 
 - `doctrine` and `templates`: nested Markdown trees.
-- `hooks` and `flows`: direct Markdown files.
+- `hooks` and `operations`: direct Markdown files.
 - `scripts`: direct executable shell files.
 - `trackers`: direct safe-named regular files; the owning engine defines their schema.
 

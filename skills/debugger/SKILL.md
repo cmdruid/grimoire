@@ -1,6 +1,6 @@
 ---
 name: debugger
-description: "Root-cause a bug, test failure, build break, or unexpected behavior before proposing any fix -- never patch a symptom. Reproduce it, trace data flow backward, form one testable hypothesis, verify it minimally, then fix the root cause after confirmation. Also capture a standing repro with `/debugger file`. `/debugger setup` deploys optional project templates and the diagnostics flow. Use for failed tests, reported bugs, unexpected behavior, broken builds, repro filing, or Debugger configuration."
+description: "Root-cause a bug, test failure, build break, or unexpected behavior before proposing any fix -- never patch a symptom. Reproduce it, trace data flow backward, form one testable hypothesis, verify it minimally, then fix the root cause after confirmation. Also capture a standing repro with `/debugger file`. `/debugger setup` deploys optional project templates and the diagnostics operation. Use for failed tests, reported bugs, unexpected behavior, broken builds, repro filing, or Debugger configuration."
 ---
 
 # debugger -- root-cause before you patch
@@ -20,7 +20,7 @@ invocation reads `verbs/file.md`. Bare investigate stays here (Phases 1–4).
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
 | `/debugger file` | `verbs/file.md` | Capture a standing repro → a dated `bugs` record. Do not investigate. | file / repro / "capture the repro" / "this is broken — capture" |
-| `/debugger setup [<root>]` | `verbs/setup.md` | Deploy active templates and diagnostics flow absent-only. | configure debugger |
+| `/debugger setup [<root>]` | `verbs/setup.md` | Deploy active templates and diagnostics operation absent-only. | configure debugger |
 | `/debugger migrate <source-path>` | `verbs/migrate.md` | Preview and upgrade owned bug/investigation artifacts. | migrate debugger records |
 | `/debugger` | (this file, Phases 1–4) | Root-cause investigation | symptom / root-cause / "why is this failing" |
 
@@ -37,10 +37,10 @@ enumerates doctype `bugs`** looking for work (a doctype is not a queue).
 
 ## Project-context probe (at entry)
 
-**Where is the diagnostics playbook?** Consult
-`<agent-workspace>/debugger/flows/diagnostics.md` **when that file exists** (symptom → first
-moves; a miss is a playbook gap). Absent → investigate
-without it. The playbook is a host procedure, not doctrine. A project with no playbook is
+**Where is the diagnostics operation?** Consult
+`<agent-workspace>/debugger/operations/diagnostics.md` **when that file exists** (symptom → first
+moves; a miss is an operation gap). Absent → investigate
+without it. The operation is publisher-owned, directly readable, and not doctrine. A project with no operation is
 investigated the same way, just without the shortcut.
 
 **May fixes land on this project?** Phase 4 starts only when the human confirms
@@ -214,12 +214,13 @@ when one exists.
 
 Ordinary work uses a valid `<agent-workspace>/debugger/templates/<file>` incumbent, refuses a
 recognized legacy copy with `/debugger migrate <source-path>`, or reads the bundled template without
-creating `.spaces`. Only `setup` deploys these templates and the active `flows/diagnostics.md`.
+creating `.spaces`. Only `setup` deploys these templates and the active
+`operations/diagnostics.md`.
 
 ## Edges
 
 <!-- edges:debugger -->
-- produces: report, bug — investigation record; filed repro record
+- produces: report, bug, operation — investigation record; filed repro; diagnostics procedure
 - handoff: — (none; the operator owns the fix)
 - consumes: bug — a routed repro when present
 <!-- /edges:debugger -->

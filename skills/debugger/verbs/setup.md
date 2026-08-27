@@ -5,10 +5,11 @@ when the caller has announced a larger configuration sweep. It deploys absent-on
 
 - `templates/bugs.md`
 - `templates/investigation.md`
-- `flows/diagnostics.md`
+- `operations/diagnostics.md`
 
 The deployer preflights the complete owned set and immediately rechecks parents before every write.
-Valid incumbents stay byte-for-byte; the flow retains its `title` and `use-when` crawl keys.
+Valid incumbents stay byte-for-byte; the operation retains its complete `foreman/operation@1`
+contract and remains directly readable by Debugger.
 Recognized legacy templates refuse and name `/debugger migrate <source-path>`. Standalone setup makes
 one pathspec-scoped commit over exactly its reported writes; sweep mode is write-only and a no-op
 rerun makes no commit. Never deploy schemas, record shells, package-only assets, or another owner.

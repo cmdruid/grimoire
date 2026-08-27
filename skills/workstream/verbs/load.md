@@ -9,6 +9,8 @@ _Read `flow.md` alongside this verb — `load` re-enters the loop it governs._
 > instead. `load` is for a **fresh** session entering a stream, or **re-entering the SAME stream** after
 > a context reset (the normal path — a context reset ends the session for this purpose, so re-entry
 > starts fresh with nothing loaded and passes) — never a way to pick up a second concurrent stream.
+> A root coordinator that just used the documented seed/prime launch still has no loaded stream and
+> may load only that exact newly seeded stream; changing the name before load is a scope violation.
 > **Note the asymmetry with `create`:** this guard deliberately **omits** `create`'s `rev-parse
 > --show-toplevel` cwd test, because the loop *always* re-enters from inside the worktree — a
 > cwd-under-`.workstreams/` check would falsely block every legitimate resume. Key **only** on *is a

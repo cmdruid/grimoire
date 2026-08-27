@@ -11,6 +11,8 @@ echo "== git-helpers-test.sh"
 bash "$DIR/git-helpers-test.sh" || rc=1
 echo "== artifact-contract-test.sh"
 bash "$DIR/artifact-contract-test.sh" || rc=1
+echo "== workstream-prime-test.sh"
+bash "$DIR/workstream-prime-test.sh" || rc=1
 echo "== setup-test.sh"
 bash "$DIR/setup-test.sh" || rc=1
 

@@ -66,7 +66,7 @@ warning() {
 }
 
 is_kind() {
-  case "$1" in doctrine|hooks|scripts|templates|trackers|flows) return 0 ;; *) return 1 ;; esac
+  case "$1" in doctrine|hooks|operations|scripts|templates|trackers) return 0 ;; *) return 1 ;; esac
 }
 
 valid_owner() {
@@ -110,7 +110,7 @@ validate_direct_kind() {
       failure "$entry" unsupported-entry
     else
       case "$kind" in
-        hooks|flows)
+        hooks|operations)
           safe_markdown "$base" || failure "$entry" markdown-required ;;
         scripts)
           printf '%s' "$base" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]*\.sh$' \
@@ -126,7 +126,7 @@ validate_direct_kind() {
 validate_kind() {
   case "$1" in
     doctrine|templates) validate_tree_markdown "$2" ;;
-    hooks|scripts|trackers|flows) validate_direct_kind "$1" "$2" ;;
+    hooks|operations|scripts|trackers) validate_direct_kind "$1" "$2" ;;
   esac
 }
 

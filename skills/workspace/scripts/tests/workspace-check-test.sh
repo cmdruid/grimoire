@@ -32,20 +32,20 @@ mkdir -p \
   "$case_root/.spaces/beta/scripts" \
   "$case_root/.spaces/beta/templates/nested" \
   "$case_root/.spaces/gamma/trackers" \
-  "$case_root/.spaces/delta/flows"
+  "$case_root/.spaces/delta/operations"
 printf '# policy\n' >"$case_root/.spaces/alpha/doctrine/nested/policy.md"
 printf '# hook\n' >"$case_root/.spaces/alpha/hooks/after.md"
 printf '#!/usr/bin/env bash\n' >"$case_root/.spaces/beta/scripts/run.sh"
 chmod +x "$case_root/.spaces/beta/scripts/run.sh"
 printf '# template\n' >"$case_root/.spaces/beta/templates/nested/item.md"
 printf 'id\tstate\n' >"$case_root/.spaces/gamma/trackers/tasks.tsv"
-printf '# flow\n' >"$case_root/.spaces/delta/flows/release.md"
+printf '# operation\n' >"$case_root/.spaces/delta/operations/release.md"
 run_check "$case_root" .spaces .records
 expect_eq "valid split tree passes" 0 "$rc"
 expect "split mode" "mode=split" "$OUT"
 expect "split no failures" "fails=0" "$OUT"
 
-for retired in doctrine hooks scripts templates trackers flows; do
+for retired in doctrine hooks operations scripts templates trackers; do
   fresh "retired-$retired"
   mkdir -p "$case_root/.spaces/$retired"
   run_check "$case_root" .spaces .records
@@ -87,12 +87,12 @@ mkdir -p \
   "$case_root/.spaces/c/scripts" \
   "$case_root/.spaces/d/templates" \
   "$case_root/.spaces/e/trackers/nested" \
-  "$case_root/.spaces/f/flows"
+  "$case_root/.spaces/f/operations"
 printf 'bad\n' >"$case_root/.spaces/a/doctrine/policy.txt"
 printf '#!/usr/bin/env bash\n' >"$case_root/.spaces/c/scripts/run.sh"
 printf '# template\n' >"$case_root/.spaces/d/templates/item.md"
 ln -s "$case_root/.spaces/d/templates/item.md" "$case_root/.spaces/d/templates/link.md"
-printf 'bad\n' >"$case_root/.spaces/f/flows/release.txt"
+printf 'bad\n' >"$case_root/.spaces/f/operations/release.txt"
 run_check "$case_root" .spaces .records
 expect_eq "malformed kind trees fail" 1 "$rc"
 for reason in markdown-required direct-files-only script-not-executable symlink-entry; do

@@ -28,6 +28,7 @@ lint() {
 
 old_angle="<agent-workspace>"'/doctrine/widget.md'
 old_default='.spaces'"/hooks/widget.md"
+old_operation="<agent-workspace>"'/operations/widget.md'
 needle='kind-first workspace path'
 
 mkdir -p "$LIB/skills"
@@ -43,7 +44,13 @@ expect "default kind-first path FAILs" "$needle" "$OUT"
 
 rm -rf "$LIB"
 mkdir -p "$LIB/skills"
-write_skill 'Read `<agent-workspace>/widget/doctrine/policy.md`, by default `.spaces/widget/doctrine/policy.md`.'
+write_skill "Read \`$old_operation\`."
+lint
+expect "operation kind-first path FAILs" "$needle" "$OUT"
+
+rm -rf "$LIB"
+mkdir -p "$LIB/skills"
+write_skill 'Read `<agent-workspace>/widget/doctrine/policy.md` and `<agent-workspace>/widget/operations/run.md`, by default `.spaces/widget/doctrine/policy.md`.'
 lint
 expect_absent "owner-first paths stay green" "$needle" "$OUT"
 

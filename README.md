@@ -32,8 +32,8 @@ The root, faceless `clankshop` pack binds most of them into one installable tool
 **helpers** — `architect` (specification spine), `contractor` (job lead), `inspector` (critique and fold), `journal` (the records format authority —
 the one required member), `backlog` (the follow-up lifecycle), `notepad` (project memory),
 `workstream` (development streams), `auditor` (code-quality audits), `debugger` (root-cause
-diagnostics), `analyst` (reports and briefings read back out of the records), `shopbook`
-(experimental — query or create host procedures under `flows/`); **utilities** —
+diagnostics), `analyst` (reports and briefings read back out of the records), `foreman`
+(project operations, brownfield curation, and goal runbooks); **utilities** —
 `checkpoint`, `mailbox`, `delegate`, `scheduler`, `workspace` (the owner-first workspace guard).
 Three skills sit outside the pack on
 purpose: `agent-council` (cross-vendor review panel), `skill-builder` (the **toolmaker** —
@@ -57,7 +57,7 @@ scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
-| `shopbook` | experimental finder + host-stub creator: query / list / search host procedures under `<agent-workspace>/<owner>/flows/`, mint a stub (`create`), repair the door pointer (`sync`), fill missing title/use-when (`upkeep`) |
+| `foreman` | curate project operations: inventory and run publisher-owned procedures, capture or ingest brownfield know-how, verify and compose operations, and compile immutable goal runbooks |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
 | `workspace` | read-only workspace format guard: validate open owner namespaces, closed kinds, safe paths, and split/coincident workspace and records roots |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
@@ -75,7 +75,9 @@ former role skills had already merged into the face
 
 A project has two independently resolved roots. **`<agent-workspace>`** (by default `.spaces`)
 holds skill-owned working files beneath `<skill>/<kind>/`; owners are open and the kinds are
-`doctrine`, `hooks`, `scripts`, `templates`, `trackers`, and `flows`. **`<agent-records>`**
+`doctrine`, `hooks`, `operations`, `scripts`, `templates`, and `trackers`. Operations are flat
+Markdown under the publishing owner's namespace and remain directly usable without a curator.
+**`<agent-records>`**
 (by default `.records`) holds work products:
 dated, typed records (`YYYY-MM-DD-<slug>.md` carrying front-matter that declares a `doctype`)
 in whatever directories their writers mint, plus the `history.tsv` closure ledger. Journal's
@@ -88,6 +90,14 @@ the pack installs skills but writes none of these project surfaces.
 
 Session checkpoints stay **gitignored scratch** (root `CHECKPOINT.md`, steward `checkpoint`) —
 not a `.records/` store.
+
+Foreman indexes those publisher-owned operations without copying them, learns accepted operations
+and doctrine from attended debriefs, and compiles verified closures into immutable
+`<agent-records>/goals/` runbooks. Mutable pursuit state stays with the root checkpoint or the active
+workstream, never with Foreman.
+For isolated pursuit, a root coordinator can opt into a lean bridge: prove the committed goal
+closure, seed a Workstream, prime its one queue unit, and resume Foreman from inside it. The bridge
+does not alter ordinary Workstream creation or add callbacks.
 
 ## The packs
 

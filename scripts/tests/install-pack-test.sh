@@ -37,6 +37,7 @@ lock="$tmp/project/grimoire.lock"
 "$repo/install.sh" --target "$target" --pack clankshop
 [ -L "$target/journal" ] || fail "required member was not installed"
 [ -L "$target/workspace" ] || fail "workspace member was not installed"
+[ -L "$target/foreman" ] || fail "foreman member was not installed"
 [ ! -e "$target/clankshop" ] && [ ! -L "$target/clankshop" ] \
   || fail "faceless pack installed an implicit face"
 assert_faceless_lock "$lock"
@@ -65,10 +66,11 @@ grep -q 'required-member-missing journal' "$tmp/check.out" \
   || fail "check did not report the missing required member"
 mv "$tmp/journal.link" "$target/journal"
 
-# Reinstall is the upgrade path from the old faced shape: the stale face entry
-# and link are removed as members no longer declared by the new release.
+# Reinstall removes stale links and lock entries no longer declared by the release.
 ln -s "$repo/skills/clankshop" "$target/clankshop"
-python3 - "$lock" <<'PY'
+retired_member="shop""book"
+ln -s "$repo/skills/$retired_member" "$target/$retired_member"
+python3 - "$lock" "$retired_member" <<'PY'
 import json, sys
 
 path = sys.argv[1]
@@ -78,6 +80,10 @@ lock["packs"]["clankshop"]["skills"]["clankshop"] = {
     "hash": "sha256:retired-face",
     "required": True,
 }
+lock["packs"]["clankshop"]["skills"][sys.argv[2]] = {
+    "hash": "sha256:retired-member",
+    "required": False,
+}
 with open(path, "w") as handle:
     json.dump(lock, handle, indent=2)
     handle.write("\n")
@@ -85,6 +91,8 @@ PY
 "$repo/install.sh" --target "$target" --pack clankshop
 [ ! -e "$target/clankshop" ] && [ ! -L "$target/clankshop" ] \
   || fail "reinstall retained the retired face"
+[ ! -e "$target/$retired_member" ] && [ ! -L "$target/$retired_member" ] \
+  || fail "reinstall retained a retired member"
 assert_faceless_lock "$lock"
 project_config_absent || fail "pack update created project configuration"
 

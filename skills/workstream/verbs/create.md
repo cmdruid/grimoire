@@ -8,7 +8,9 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
 > load`/`create` and have been looping), or if `git -C "$(pwd)" rev-parse --show-toplevel` resolves
 > under `.workstreams/`. This is a deterministic check — run it every time. If you are **not** inside a
 > workstream (a fresh coordinator session on the trunk — no hand-off loaded, cwd at the root), plain
-> `create` proceeds normally. If you **are** inside one, split by **what you were asked to do**:
+> `create` proceeds normally. That fresh coordinator may instead run `create --seed-only`, prime the
+> resulting hand-off, and load **that same stream** as one explicitly announced launch; it may not
+> change the stream between those steps. If you **are** inside one, split by **what you were asked to do**:
 >
 > - **Plain `create` (create-and-drive) → STOP.** `create` ends by *entering the loop*, and driving a
 >   second stream from this context splits your loop; standing up a stream to drive is the
@@ -239,8 +241,9 @@ in-workstream session stands one up on the human's explicit behalf (see the GUAR
    iteration. Instead print the recorded `integration-target` and the exact resume command for the
    human's separate session — **`/workstream load <stream>`** — then return to your own stream's loop.
 
-One session drives one stream is unchanged: seed-only never `load`s or drives the seeded stream from
-this session.
+One session drives one stream is unchanged. An agent already driving a stream never `load`s or drives
+the stream it seeds. The sole exception is a root coordinator with no loaded stream: it may prime and
+load exactly the same stream it just seeded as one launch.
 
 ## In-place mode (`--in-place`)
 

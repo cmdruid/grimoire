@@ -46,7 +46,7 @@ ws="$(resolve workspace .spaces)"; rr="$(resolve records .records)"
 valid_rel "$ws" || err "unsafe workspace path: $ws"; valid_rel "$rr" || err "unsafe records path: $rr"
 assets="templates/bugs.md
 templates/investigation.md
-flows/diagnostics.md"
+operations/diagnostics.md"
 [ -z "${DEBUGGER_SETUP_TEST_ASSET:-}" ] || assets="$assets
 $DEBUGGER_SETUP_TEST_ASSET"
 created=(); write_count=0
@@ -54,7 +54,7 @@ created=(); write_count=0
 # Whole-set preflight. Nothing above this point creates project paths.
 while IFS= read -r rel; do
   [ -n "$rel" ] || continue
-  case "$rel" in templates/bugs.md|templates/investigation.md|flows/diagnostics.md) ;; *) err "asset is not declared for project deployment: $rel" ;; esac
+  case "$rel" in templates/bugs.md|templates/investigation.md|operations/diagnostics.md) ;; *) err "asset is not declared for project deployment: $rel" ;; esac
   src="$skill_dir/$rel"; [ -f "$src" ] && [ ! -L "$src" ] || err "bundled asset is not a regular file: $src"
   case "$rel" in templates/*) schema_free "$src" || err "bundled project template selects a schema: $src" ;; esac
   dest_rel="$ws/debugger/$rel"; [ -z "${DEBUGGER_SETUP_TEST_DEST_REL:-}" ] || dest_rel="$DEBUGGER_SETUP_TEST_DEST_REL"
