@@ -118,6 +118,17 @@ valid_rfc3339_utc() {
   return 1
 }
 
+metadata_has_forbidden_control() {
+  od -An -t u1 "$1" | awk '
+    {
+      for (i = 1; i <= NF; i++) {
+        if (($i < 32 && $i != 10) || $i == 127) bad = 1
+      }
+    }
+    END { exit bad ? 0 : 1 }
+  '
+}
+
 validate_identity() {
   local stream="$1" branch="$2" handoff="$3"
   valid_stream "$stream" || return 1
@@ -182,6 +193,9 @@ claim_parse_v1() {
   [ "$type" = blob ] || return 1
   git -C "$repo" cat-file blob "$oid" > "$meta_file"
   [ -s "$meta_file" ] || return 1
+  if metadata_has_forbidden_control "$meta_file"; then
+    return 1
+  fi
   last="$(tail -c 1 "$meta_file" | od -An -t u1 | tr -d ' ')"
   [ "$last" = 10 ] || return 1
   lines="$(wc -l < "$meta_file" | tr -d ' ')"

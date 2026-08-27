@@ -280,6 +280,20 @@ expect "non-canonical epoch remains held" 'held=true' "$TMP/bad-epoch.out"
 expect "non-canonical epoch reports malformed" 'state=malformed' "$TMP/bad-epoch.out"
 "$HELPER" break "$ROOT" bad-epoch-dev "$bad_epoch_oid" >/dev/null
 
+nul_meta="$TMP/nul-meta"
+printf 'version=1\nresource=nul-dev\nowner=skill\nbranch=stream/skill\nhandoff=%s\nintent=config\000-a\nacquired_epoch=1\nacquired_at=1970-01-01T00:00:01Z\nnonce=nul-byte\n' "$HANDOFF" > "$nul_meta"
+nul_oid="$(git -C "$ROOT" hash-object -w --stdin < "$nul_meta")"
+git -C "$ROOT" update-ref refs/workstream-resources/nul-dev "$nul_oid"
+if "$HELPER" status "$ROOT" nul-dev > "$TMP/nul.out" 2>&1; then
+  echo "FAIL: a NUL-bearing metadata blob must be malformed" >&2
+  fail=$((fail + 1))
+else
+  expect_eq "NUL-bearing metadata exits 2" 2 "$?"
+fi
+expect "NUL-bearing metadata remains held" 'held=true' "$TMP/nul.out"
+expect "NUL-bearing metadata reports malformed" 'state=malformed' "$TMP/nul.out"
+"$HELPER" break "$ROOT" nul-dev "$nul_oid" >/dev/null
+
 # Object-format handling derives the OID length from the fixture repository.
 SHA_ROOT="$TMP/sha256"
 if git init -q --object-format=sha256 "$SHA_ROOT" 2>/dev/null; then
