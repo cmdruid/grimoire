@@ -27,6 +27,21 @@ fi
 
 worktree="$root/.workstreams/$stream"
 branch="stream/$stream"
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+resource_helper="$script_dir/workstream-resource.sh"
+handoff="$worktree/WORKSTREAM.md"
+
+# Fail closed before any destructive Git command. --force never bypasses this gate.
+validation="$($resource_helper validate "$root" "$stream" "$handoff")" || {
+  printf '%s\n' "$validation" >&2
+  echo "worktree-teardown.sh: resource validation refused teardown" >&2
+  exit 1
+}
+printf '%s\n' "$validation" | grep -q '^held_count=0$' || {
+  printf '%s\n' "$validation" >&2
+  echo "worktree-teardown.sh: held resources refuse teardown" >&2
+  exit 1
+}
 
 if [ "$force" = "--force" ]; then
   git -C "$root" worktree remove --force "$worktree"

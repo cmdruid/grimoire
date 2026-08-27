@@ -35,6 +35,10 @@ _Read `flow.md` alongside this verb — `load` re-enters the loop it governs._
    <target>`: `on_stream_branch=true` → proceed; `handoff_parked=true` with `on_target=true` →
    offer **unpark** (`verbs/park.md`) as the launch's KNOWN action; anything else is foreign
    movement → STOP and report, never auto-switch.
+   Then resolve this skill's bundled helper from its own package directory and run
+   `workstream-resource.sh validate <root> <stream> <this-hand-off>`. A matching zero/one/many
+   inventory proceeds and its held resources/intents are reported. Missing, extra, duplicate,
+   wrong-owner, wrong-OID, declared-but-free, or malformed state is a hard stop at the Blocker seam.
 3. **Diff the hand-off's claims against git before acting on them.** The launch facts
    (`stream-state`, step of the Confident launch) are truth for everything committed; the hand-off
    is truth only for intent. If its TL;DR/next-action contradicts git (claims work undone that

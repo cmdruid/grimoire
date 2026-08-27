@@ -15,8 +15,17 @@ completion hook if nonempty explicitly **before** closing — the user's call, n
    - **Non-empty** → surface the unshipped commits and ask **ship or discard** (**default discard** —
      never auto-land at close). On *ship*: run `ship` (`verbs/ship.md` — its Landing sequence) first
      so nothing is stranded, then teardown. On *discard*: teardown with `--force`.
-2. **Teardown** (the worktree-local `WORKSTREAM.md` is scratch — discarded here, never merged) —
-   once the step-1 ship-or-discard decision is settled, run this skill's bundled
+2. **Release shared resources before teardown.** Once step 1's ship-or-discard decision is settled,
+   resolve this skill's helper from its own package directory and run
+   `workstream-resource.sh release-all <root> <stream> <this-hand-off>`. Proceed only when exact-set
+   validation and the atomic transaction succeed. Then remove exactly the released
+   `resource-lock:` lines from the hand-off in one atomic rewrite and validate again; require
+   `held_count=0`. A validation/transaction failure stops before teardown. If ref release succeeds
+   but hand-off cleanup fails, stop and report that ownership is already gone; reacquire before any
+   protected work. `--force` never bypasses the resource gate — it controls Git WIP disposal only.
+   Apply this same ordering to both worktree and in-place teardown.
+3. **Teardown** (the worktree-local `WORKSTREAM.md` is scratch — discarded here, never merged) —
+   once the step-1 decision and step-2 release are settled, run this skill's bundled
    `scripts/worktree-teardown.sh <root> <stream> [--force]` (resolve `scripts/` from the skill's own
    base directory, not the host project), which does the three mechanical steps:
    - `git -C <root> worktree remove <root>/.workstreams/<stream>` — pass `--force` (the script's 3rd
@@ -28,8 +37,8 @@ completion hook if nonempty explicitly **before** closing — the user's call, n
      against the right ref is unneeded.
    - `git -C <root> worktree prune`.
 
-   **In-place teardown** (`isolation: in-place`) — no worktree to remove; once step 1's
-   ship-or-discard is settled: clear the tree first — a plain `git switch` CARRIES
+   **In-place teardown** (`isolation: in-place`) — no worktree to remove; once steps 1–2 are
+   settled and the empty inventory validates: clear the tree first — a plain `git switch` CARRIES
    uncommitted/untracked files (a drafted next plan, WIP) onto `<target>` as foreign dirt (or
    refuses on tracked changes); on *discard*, `git -C <root> reset --hard` + remove stray
    untracked files explicitly (never silently — name what you delete); on *ship*, the land itself

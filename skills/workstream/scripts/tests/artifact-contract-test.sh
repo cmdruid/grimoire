@@ -18,5 +18,12 @@ expect "migrate refuses directory plan sweep" 'never sweep it from a directory' 
 expect "legacy template rename registered" '`plans.md` → `manifest.md`' "$SKILL/verbs/migrate.md"
 expect_eq "generic prime helper exists" 1 "$([ -x "$SKILL/scripts/workstream-prime.sh" ] && echo 1 || echo 0)"
 expect "prime helper documented" 'workstream-prime.sh' "$SKILL/SKILL.md"
+expect "resource verb dispatched" 'resource acquire|status|release' "$SKILL/SKILL.md"
+expect "resource helper documented" 'workstream-resource.sh' "$SKILL/SKILL.md"
+expect "resource section bundled" '## Resource locks' "$SKILL/templates/workstream-handoff.md"
+expect "load validates resources" 'workstream-resource.sh validate' "$SKILL/verbs/load.md"
+expect "close releases resources" 'workstream-resource.sh release-all' "$SKILL/verbs/close.md"
+expect "force cannot bypass resources" '`--force` never bypasses the resource gate' "$SKILL/verbs/close.md"
+expect "teardown guards resources" 'workstream-resource.sh' "$SKILL/scripts/worktree-teardown.sh"
 
 report "artifact-contract-test.sh"

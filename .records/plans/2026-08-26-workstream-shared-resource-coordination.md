@@ -110,7 +110,7 @@ affected slice before writing code; do not force an aged plan onto a changed tre
 
 ## Slices
 
-- [ ] **Slice 1: one claim through the complete stream lifecycle (tracer)** <requires: Task 0>
+- [x] **Slice 1: one claim through the complete stream lifecycle (tracer)** <requires: Task 0>
 
   - Files:
     - Create: `skills/workstream/scripts/workstream-resource.sh`

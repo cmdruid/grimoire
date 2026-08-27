@@ -133,6 +133,8 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
        so the instance is self-contained; the per-unit sections (TL;DR, Queue state, What's been done)
        start blank.
      Write only Coordinates `this hand-off:`. Do NOT commit it; do NOT seed it on the root.
+     Instantiate the template's **Resource locks** section empty: create never infers, acquires, or
+     inherits a shared resource.
    - Make it ignored from inside the worktree — **idempotently** — by running this skill's bundled
      `scripts/worktree-exclude.sh <root>/.workstreams/<stream>` (resolve `scripts/` from the skill's
      own base directory, not the host project) (for a

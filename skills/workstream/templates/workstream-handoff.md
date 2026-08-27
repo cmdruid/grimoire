@@ -41,6 +41,10 @@ isolated worktree), never editing the shared tree.
                   instead of advancing locally; the queue advances when the PR merges.>
 - this hand-off: <abs path to .workstreams/<stream>/WORKSTREAM.md>   (ignored; never merges)
 
+## Resource locks
+_Repository-local ownership-token snapshot. Verify it against the registry before trusting it.
+No line means no held resource; a claim is recorded as `resource-lock: <resource> <oid>`._
+
 ## Hooks (compiled)
 hooks-compiled: none @ none
 

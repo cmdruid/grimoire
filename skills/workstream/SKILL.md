@@ -82,6 +82,7 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 |---|---|---|---|---|
 | `create <stream> [<src>] [--in-place]` | `verbs/create.md` | `flow.md` | seed worktree or in-place branch + hand-off, enter the loop (`--seed-only`: seed + hand back a `load` command, no loop) | root checkout (`--seed-only`: also from a workstream) |
 | `load <stream>` | `verbs/load.md` | `flow.md` | re-enter an existing stream after a reset | worktree |
+| `resource acquire|status|release …` | `verbs/resource.md` | — | atomically coordinate a repository-local shared resource | acquire/release: loaded workstream; status: anywhere |
 | `save` | `verbs/save.md` | — | checkpoint the hand-off in place (the stream's "save a checkpoint" — never `/checkpoint`) | worktree |
 | `sync` | `verbs/sync.md` | — | pull the trunk's movement into the worktree | worktree |
 | `park` / `unpark` | `verbs/park.md` | — | hand the shared tree back to the trunk / take it back (in-place only) | root (in-place) |
@@ -226,6 +227,9 @@ across a template rewrite (`save` does not recompile). It also bundles
 its recorded source pointer, one current-unit sentence, and one literal next action, it atomically
 rewrites only TL;DR, Queue state, and What's next. It preserves Queue control lines and never invokes
 the action. Ordinary Workstream verbs do not call it.
+`scripts/workstream-resource.sh` is the only supported writer of
+`refs/workstream-resources/`. The resource verb owns user judgment and hand-off edits; this bundled
+helper owns strict parsing, compact facts, and atomic compare-and-swap mutations.
 
 ## Project templates
 
