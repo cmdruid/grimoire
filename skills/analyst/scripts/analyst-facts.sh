@@ -104,10 +104,12 @@ setup() {
 }
 
 emit_tracker_facts() {
-  local api="$TR/tracker-api.sh" catalog stem page next
+  local api="$TR/tracker-api.sh" catalog stem page next description schema_lines
   if [ ! -x "$api" ] || [ -L "$api" ]; then echo "tracker_provider=absent"; return 0; fi
-  local run=("$api" --root "$ROOT" --records-root "$RR_REL" --workspace "$WS_REL" --trackers-root "$TR_REL")
-  if ! "${run[@]}" describe >/dev/null 2>&1; then echo "tracker_provider=invalid"; return 0; fi
+  local run=("$api")
+  description="$("${run[@]}" describe 2>/dev/null)" || { echo "tracker_provider=invalid"; return 0; }
+  schema_lines="$(printf '%s\n' "$description" | sed -n '/^schema=/p')"
+  [ "$schema_lines" = 'schema=tracker@1' ] || { echo "tracker_provider=invalid"; return 0; }
   echo "tracker_provider=present"
   catalog="$("${run[@]}" catalog 2>/dev/null)" || { echo "tracker_catalog=invalid"; return 0; }
   echo "--- tracker catalog ---"; printf '%s\n' "$catalog"

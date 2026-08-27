@@ -7,7 +7,7 @@ R="$T/root";mkdir -p "$R/.trackers";git -C "$R" init -q
 cp "$REPO/skills/backlog/scripts/tracker-api.sh" "$R/.trackers/tracker-api.sh";chmod +x "$R/.trackers/tracker-api.sh"
 printf 'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult\n' > "$R/.trackers/receipts.tsv"
 printf 'id\tcreated\ttext\tevidence\n' > "$R/.trackers/routines.tsv"
-API=("$R/.trackers/tracker-api.sh" --root "$R" --records-root .records --workspace .spaces --trackers-root .trackers)
+API=("$R/.trackers/tracker-api.sh")
 "${API[@]}" create --tracker routines --text 'release trigger and response' >/dev/null
 "${API[@]}" create --tracker routines --text 'similar release evidence' >/dev/null
 "${API[@]}" create --tracker routines --text 'insufficient sample' >/dev/null

@@ -193,6 +193,10 @@ remains usable with tracker data supplied directly by the caller. Analyst's stat
 facts use this contract instead of probing `.records/trackers`; Foreman's `consumes: tracker` edge
 and `tune` verb use the same provider without naming Backlog as a dependency.
 
+The installed provider self-locates from its canonical position inside `<agent-trackers>` and is
+invoked directly as shown below. It neither scans the front door nor accepts unrelated records or
+workspace roots. Mutation reports use paths relative to `<agent-trackers>`.
+
 The first contract stays deliberately small:
 
 ```text

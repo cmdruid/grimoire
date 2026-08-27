@@ -290,8 +290,10 @@ Three readers:
 - **Agents** need no mechanism at all: the front-door is always loaded, and front-door
   instructions outrank skill defaults. An agent substitutes the declared home when the
   front-door carries one. Zero rewording, zero indirection for the common case.
-- **Mint/write scripts** take the resolved paths as arguments and **do not scan the front
-  door**. The verb resolves; the script never opens `AGENTS.md` / `CLAUDE.md`.
+- **Package mint/write scripts** take resolved paths as arguments and **do not scan the front
+  door**. A staged first-class provider instead self-locates inside the one public layer it owns;
+  callers resolve that layer and invoke the provider directly, without passing unrelated roots.
+  Neither form opens `AGENTS.md` / `CLAUDE.md`.
 - **State-analysis helpers** that must emit `agent-records=` without a verb (today
   `workstream-git.sh`) inline the resolver and accept both records-declaration names.
   Print the resolved value as a fact (`agent-records=…`) so the agent sees which home

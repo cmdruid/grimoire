@@ -10,7 +10,10 @@ while [ $# -gt 0 ]; do case "$1" in
 case "$ROOT" in /*) ;; *) die unsafe-root "$ROOT";; esac
 [ -d "$ROOT" ] || die unsafe-root "$ROOT"; ROOT="$(CDPATH='' cd -P "$ROOT"&&pwd)"
 [ -n "$WS" ] && [ -n "$TR" ] || die usage
-DOOR="$ROOT/AGENTS.md"; [ ! -L "$DOOR" ] || die symlink "$DOOR"; [ ! -e "$DOOR" ] || [ -f "$DOOR" ] || die incompatible-entry "$DOOR"
+DOOR="$ROOT/AGENTS.md"
+check_door(){ [ ! -L "$DOOR" ] || die symlink "$DOOR"; [ ! -e "$DOOR" ] || [ -f "$DOOR" ] || die incompatible-entry "$DOOR"; }
+fresh_temp(){ [ ! -L "$1" ] || die symlink "$1"; [ ! -e "$1" ] || die incompatible-entry "$1"; }
+check_door
 
 facts(){
   if [ ! -f "$DOOR" ];then echo 'begin=0 end=0 valid=true';return;fi
@@ -30,7 +33,7 @@ write_block(){
 }
 
 ensure(){
-  [ -n "$STAMP" ]||die usage;facts >/dev/null;local tmp="$DOOR.tmp.$$" block="$DOOR.block.$$";write_block >"$block"
+  [ -n "$STAMP" ]||die usage;facts >/dev/null;local tmp="$DOOR.tmp.$$" block="$DOOR.block.$$";fresh_temp "$tmp";fresh_temp "$block";write_block >"$block"
   if [ ! -f "$DOOR" ];then
     { printf '# Agent instructions\n\n## Skill routes (self-registered)\n\n';cat "$block";} >"$tmp"
   elif grep -q '^<!-- skill:backlog BEGIN' "$DOOR";then
@@ -39,12 +42,12 @@ ensure(){
     cp "$DOOR" "$tmp";grep -q '^## Skill routes (self-registered)$' "$tmp"||printf '\n## Skill routes (self-registered)\n' >>"$tmp";printf '\n' >>"$tmp";cat "$block" >>"$tmp"
   fi
   rm "$block";if [ -f "$DOOR" ]&&cmp -s "$DOOR" "$tmp";then rm "$tmp";return;fi
-  mv "$tmp" "$DOOR";echo 'wrote=AGENTS.md'
+  check_door;mv "$tmp" "$DOOR";echo 'wrote=AGENTS.md'
 }
 
 remove(){
   facts >/dev/null;if [ ! -f "$DOOR" ] || ! grep -q '^<!-- skill:backlog BEGIN' "$DOOR";then echo 'reason=no-route';return 1;fi
-  local tmp="$DOOR.tmp.$$";awk '/^<!-- skill:backlog BEGIN/{skip=1;next}/^<!-- skill:backlog END -->$/{skip=0;next}!skip{print}' "$DOOR" >"$tmp";mv "$tmp" "$DOOR";echo 'wrote=AGENTS.md'
+  local tmp="$DOOR.tmp.$$";fresh_temp "$tmp";awk '/^<!-- skill:backlog BEGIN/{skip=1;next}/^<!-- skill:backlog END -->$/{skip=0;next}!skip{print}' "$DOOR" >"$tmp";check_door;mv "$tmp" "$DOOR";echo 'wrote=AGENTS.md'
 }
 
 case "$cmd" in preflight)facts;;ensure)ensure;;remove)remove;;*)die usage;;esac

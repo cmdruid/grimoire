@@ -7,7 +7,7 @@ legacy_record='LEGACY_RECORD_CANARY_8421';legacy_workspace='LEGACY_WORKSPACE_CAN
 printf '%s\n' "$legacy_record" > "$R/.records/trackers/old.md"
 printf '%s\n' "$legacy_workspace" > "$legacy_workspace_dir/tasks.tsv"
 SETUP="$B/scripts/backlog-setup.sh";"$SETUP" "$R" --workspace .spaces --records-root .records --apply tasks > "$T/setup.out"
-API=("$R/.trackers/tracker-api.sh" --root "$R" --records-root .records --workspace .spaces --trackers-root .trackers)
+API=("$R/.trackers/tracker-api.sh")
 "${API[@]}" create --tracker tasks --text "$live" > "$T/create.out"
 "${API[@]}" catalog > "$T/catalog.out";"${API[@]}" page --tracker tasks --status open --limit 20 > "$T/page.out"
 "$REPO/skills/analyst/scripts/analyst-facts.sh" status "$R" > "$T/analyst.out"

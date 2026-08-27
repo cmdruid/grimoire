@@ -8,8 +8,8 @@ Resolve roots and require the installed API. Work from bounded `page` output.
   --resolution <text> [--result <artifact-ref>]`. Consumption preserves source rows and is their
   normal exit from the open queue; there is no delete, complete, drop, or reorder action.
 
-Commit every reported changed path once through the scoped helper. Curation does not perform queued
-work or mint records.
+Prefix each API tracker-relative `wrote=` path with `<agent-trackers>`, then commit every changed
+path once through the scoped helper. Curation does not perform queued work or mint records.
 
 Done when page output reflects the intended current state and every reported mutation was committed
 once with exact paths.

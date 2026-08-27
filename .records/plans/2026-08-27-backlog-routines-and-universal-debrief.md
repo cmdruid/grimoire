@@ -76,11 +76,10 @@ Spec: `.records/specs/2026-08-27-backlog-routines-and-universal-debrief.md`
     `skills/backlog/scripts/tests/tracker-api-test.sh`; modify
     `skills/backlog/scripts/tests/run.sh`.
   - Change: implement the fixed provider CLI exactly as published: `describe`, `catalog`, `create`,
-    `page`, `update`, `observe`, and `consume`. At implementation grounding, the portable writer
-    doctrine requires callers to resolve the checkout and three roots, then pass them through the
-    provider's fixed `--root`, `--records-root`, `--workspace`, and `--trackers-root` prefix; the
-    installed writer does not scan the front door. It validates those roots and refuses unless its
-    layer is safe and canonical for the supplied tracker root. `describe` publishes the exact
+    `page`, `update`, `observe`, and `consume`. The staged provider self-locates from its canonical
+    position inside `<agent-trackers>` and refuses a symlinked invocation path; callers invoke it
+    directly without passing unrelated root arguments, and the provider does not scan the front
+    door. `describe` publishes the exact
     `tracker@1` queue/receipt headers, output facts, cursor rule, and command capability so consumers
     do not need Backlog instructions. Queue rows contain an ID that remains stable for the item's
     live lifetime, UTC creation time, text, and optional evidence; allocate `<stem>-N` above IDs

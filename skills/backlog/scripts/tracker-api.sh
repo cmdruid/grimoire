@@ -5,61 +5,44 @@ set -euo pipefail
 die() { echo "reason=$1${2:+ detail=$2}" >&2; exit 2; }
 usage() { die usage; }
 
-valid_rel() {
-  local value="$1" component old_ifs="$IFS"
-  [ -n "$value" ] && [ "$value" != . ] || return 1
-  case "$value" in /*) return 1 ;; esac
-  IFS=/; read -r -a components <<< "$value"; IFS="$old_ifs"
-  for component in "${components[@]}"; do
-    [ -n "$component" ] && [ "$component" != . ] && [ "$component" != .. ] || return 1
-  done
-}
-
 valid_stem() { [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]] && [ "$1" != receipts ]; }
 valid_consumer() { [[ "$1" =~ ^[a-z0-9][a-z0-9._/-]*$ ]]; }
 single_line() { [[ "$1" != *$'\t'* ]] && [[ "$1" != *$'\n'* ]] && [[ "$1" != *$'\r'* ]]; }
 valid_time() { [[ "$1" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]; }
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
-ROOT=""; RR_REL=""; WS_REL=""; TR_REL=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --root) ROOT="${2:-}"; shift 2 ;;
-    --records-root) RR_REL="${2:-}"; shift 2 ;;
-    --workspace) WS_REL="${2:-}"; shift 2 ;;
-    --trackers-root) TR_REL="${2:-}"; shift 2 ;;
-    *) break ;;
-  esac
-done
-[ -n "$ROOT" ] && [ -n "$RR_REL" ] && [ -n "$WS_REL" ] && [ -n "$TR_REL" ] && [ $# -gt 0 ] || usage
-case "$ROOT" in /*) ;; *) die unsafe-root "$ROOT" ;; esac
-[ -d "$ROOT" ] || die unsafe-root "$ROOT"
-ROOT="$(CDPATH='' cd -P "$ROOT" && pwd)"
-valid_rel "$RR_REL" || die unsafe-records-root "$RR_REL"
-valid_rel "$WS_REL" || die unsafe-workspace "$WS_REL"
-valid_rel "$TR_REL" || die unsafe-trackers-root "$TR_REL"
+case "$0" in /*) SCRIPT_PATH="$0";; *) SCRIPT_PATH="$PWD/$0";; esac
+SCRIPT_PARENT="${SCRIPT_PATH%/*}"
 
-overlap() {
-  [ "$1" = "$2" ] || [[ "$1" == "$2/"* ]] || [[ "$2" == "$1/"* ]]
-}
-overlap "$TR_REL" "$RR_REL" && die overlapping-roots "$TR_REL:$RR_REL"
-overlap "$TR_REL" "$WS_REL" && die overlapping-roots "$TR_REL:$WS_REL"
-overlap "$RR_REL" "$WS_REL" && die overlapping-roots "$RR_REL:$WS_REL"
-
-safe_existing_tree() {
-  local rel="$1" current="$ROOT" component old_ifs="$IFS"
+guard_provider_path() {
+  local project_root logical_root="" candidate physical rel current component old_ifs="$IFS"
+  [ ! -L "$SCRIPT_PATH" ] || die symlink "$SCRIPT_PATH"
+  [ -f "$SCRIPT_PATH" ] || die noncanonical-provider "$SCRIPT_PATH"
+  [ ! -L "$SCRIPT_PARENT" ] || die symlink "$SCRIPT_PARENT"
+  [ -d "$SCRIPT_PARENT" ] || die missing-layer "$SCRIPT_PARENT"
+  project_root="$(git -C "$SCRIPT_PARENT" rev-parse --show-toplevel 2>/dev/null || true)"
+  [ -n "$project_root" ] || return 0
+  project_root="$(CDPATH='' cd -P "$project_root" && pwd)"
+  candidate="$SCRIPT_PARENT"
+  while [ "$candidate" != / ]; do
+    physical="$(CDPATH='' cd -P "$candidate" 2>/dev/null && pwd)" || break
+    if [ "$physical" = "$project_root" ]; then logical_root="$candidate"; break; fi
+    candidate="${candidate%/*}"; [ -n "$candidate" ] || candidate=/
+  done
+  [ -n "$logical_root" ] || die noncanonical-provider "$SCRIPT_PATH"
+  rel="${SCRIPT_PARENT#"$logical_root"/}"; current="$logical_root"
   IFS=/; read -r -a components <<< "$rel"; IFS="$old_ifs"
   for component in "${components[@]}"; do
+    [ "$component" != .. ] || die unsafe-provider-path "$SCRIPT_PATH"
+    [ -n "$component" ] && [ "$component" != . ] || continue
     current="$current/$component"
     [ ! -L "$current" ] || die symlink "$current"
-    [ -d "$current" ] || die missing-layer "$rel"
+    [ -d "$current" ] || die missing-layer "$SCRIPT_PARENT"
   done
 }
 
-safe_existing_tree "$TR_REL"
-TRACKERS="$ROOT/$TR_REL"
-SCRIPT_DIR="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)"
-[ "$SCRIPT_DIR" = "$TRACKERS" ] || die noncanonical-provider "$SCRIPT_DIR"
+guard_provider_path
+TRACKERS="$(CDPATH='' cd -P "$SCRIPT_PARENT" && pwd)"
 QUEUE_HEADER=$'id\tcreated\ttext\tevidence'
 RECEIPT_HEADER=$'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult'
 RECEIPTS="$TRACKERS/receipts.tsv"
@@ -103,6 +86,31 @@ validate_queue() {
 
 validate_receipts
 
+fresh_temp() {
+  [ ! -L "$1" ] || die symlink "$1"
+  [ ! -e "$1" ] || die incompatible-entry "$1"
+}
+
+replace_canonical() {
+  local tmp="$1" destination="$2" reason="$3"
+  guard_provider_path
+  [ ! -L "$destination" ] || die symlink "$destination"
+  [ -f "$destination" ] || die "$reason"
+  mv "$tmp" "$destination"
+}
+
+PAGE_TMP=""
+cleanup_page_tmp() {
+  [ -n "$PAGE_TMP" ] || return 0
+  rm -f -- "$PAGE_TMP" 2>/dev/null || true
+  PAGE_TMP=""
+}
+
+open_page_tmp() {
+  PAGE_TMP="$(mktemp "${TMPDIR:-/tmp}/tracker-page-rows.XXXXXX")" || die temp-failure
+  trap cleanup_page_tmp EXIT
+}
+
 max_suffix() {
   local stem="$1" file="$2"
   awk -F '\t' -v stem="$stem" '
@@ -130,12 +138,13 @@ is_observed() {
 append_receipt() {
   local consumer="$1" stem="$2" item="$3" action="$4" resolution="$5" result="$6" tmp rid
   rid="$(next_receipt_id)"; tmp="$RECEIPTS.tmp.$$"
+  fresh_temp "$tmp"
   cp "$RECEIPTS" "$tmp"
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
     "$rid" "$(now)" "$consumer" "$stem" "$item" "$action" "$resolution" "$result" >> "$tmp"
-  mv "$tmp" "$RECEIPTS"
+  replace_canonical "$tmp" "$RECEIPTS" malformed-receipts
   echo "receipt=$rid"
-  echo "wrote=${RECEIPTS#"$ROOT"/}"
+  echo 'wrote=receipts.tsv'
 }
 
 cmd_describe() {
@@ -147,6 +156,7 @@ commands=describe,catalog,create,page,update,observe,consume
 page_envelope=schema,tracker,next,--,tsv
 cursor=last-returned-id
 status=open,consumed,all
+write_paths=tracker-relative
 EOF
 }
 
@@ -154,7 +164,9 @@ cmd_catalog() {
   local file stem open consumed all
   printf 'tracker\topen\tconsumed\tall\n'
   for file in "$TRACKERS"/*.tsv; do
-    [ -f "$file" ] || continue
+    [ -e "$file" ] || [ -L "$file" ] || continue
+    [ ! -L "$file" ] || die symlink "$file"
+    [ -f "$file" ] || die invalid-tracker-file "$file"
     stem="$(basename "$file" .tsv)"
     if [ "$stem" = receipts ]; then
       all=$(( $(wc -l < "$file") - 1 )); printf 'receipts\t0\t0\t%s\n' "$all"; continue
@@ -180,8 +192,8 @@ cmd_create() {
   single_line "$evidence" || die invalid-evidence
   file="$(tracker_file "$stem")"; validate_queue "$stem" "$file"
   max="$(max_suffix "$stem" "$file")"; id="$stem-$((max+1))"; tmp="$file.tmp.$$"
-  cp "$file" "$tmp"; printf '%s\t%s\t%s\t%s\n' "$id" "$(now)" "$text" "$evidence" >> "$tmp"; mv "$tmp" "$file"
-  echo "id=$id"; echo "wrote=${file#"$ROOT"/}"
+  fresh_temp "$tmp";cp "$file" "$tmp";printf '%s\t%s\t%s\t%s\n' "$id" "$(now)" "$text" "$evidence" >> "$tmp";replace_canonical "$tmp" "$file" no-tracker
+  echo "id=$id"; echo "wrote=$stem.tsv"
 }
 
 cmd_update() {
@@ -198,9 +210,12 @@ cmd_update() {
   is_consumed "$stem" "$id" && die consumed "$id"
   found="$(awk -F '\t' -v id="$id" 'NR>1&&$1==id{n++}END{print n+0}' "$file")"; [ "$found" -eq 1 ] || die missing-id "$id"
   tmp="$file.tmp.$$"
-  awk -F '\t' -v OFS='\t' -v id="$id" -v ts="$text_set" -v es="$evidence_set" -v text="$text" -v evidence="$evidence" \
-    '{if($1==id){if(ts=="true")$3=text;if(es=="true")$4=evidence}print}' "$file" > "$tmp"
-  mv "$tmp" "$file"; echo "wrote=${file#"$ROOT"/}"
+  fresh_temp "$tmp"
+  TRACKER_UPDATE_TEXT="$text" TRACKER_UPDATE_EVIDENCE="$evidence" \
+    awk -F '\t' -v OFS='\t' -v id="$id" -v ts="$text_set" -v es="$evidence_set" \
+      '{if($1==id){if(ts=="true")$3=ENVIRON["TRACKER_UPDATE_TEXT"];if(es=="true")$4=ENVIRON["TRACKER_UPDATE_EVIDENCE"]}print}' \
+      "$file" > "$tmp"
+  replace_canonical "$tmp" "$file" no-tracker; echo "wrote=$stem.tsv"
 }
 
 cmd_page() {
@@ -214,18 +229,18 @@ cmd_page() {
   if [ "$stem" = receipts ]; then
     [ "$status" = all ] || die receipts-status; [ -z "$consumer" ] && [ "$unobserved" = false ] || die receipts-filter
     echo 'schema=tracker@1'; echo 'tracker=receipts'
-    tmp_rows="${TMPDIR:-/tmp}/tracker-page-rows.$$"; : > "$tmp_rows"
+    open_page_tmp;tmp_rows="$PAGE_TMP"
     awk -F '\t' -v after="$after" -v limit="$limit" 'BEGIN{go=(after=="")} NR==1{next} !go{if($1==after)go=1;next} go&&n<limit+1{print;n++}' "$RECEIPTS" > "$tmp_rows"
-    if [ -n "$after" ] && ! awk -F '\t' -v id="$after" 'NR>1&&$1==id{yes=1}END{exit !yes}' "$RECEIPTS"; then rm "$tmp_rows"; die invalid-cursor "$after"; fi
+    if [ -n "$after" ] && ! awk -F '\t' -v id="$after" 'NR>1&&$1==id{yes=1}END{exit !yes}' "$RECEIPTS"; then cleanup_page_tmp;die invalid-cursor "$after";fi
     count="$(wc -l < "$tmp_rows"|tr -d ' ')";if [ "$count" -gt "$limit" ];then next="$(awk -F '\t' -v n="$limit" 'NR==n{print $1}' "$tmp_rows")";else next="";fi
-    echo "next=$next"; echo '--'; echo "$RECEIPT_HEADER"; head -n "$limit" "$tmp_rows"; rm "$tmp_rows"; return
+    echo "next=$next";echo '--';echo "$RECEIPT_HEADER";head -n "$limit" "$tmp_rows";cleanup_page_tmp;return
   fi
   valid_stem "$stem" || die invalid-stem "$stem"
   if [ "$unobserved" = true ]; then valid_consumer "$consumer" || die invalid-consumer "$consumer"; elif [ -n "$consumer" ]; then die consumer-without-unobserved; fi
   file="$(tracker_file "$stem")"; validate_queue "$stem" "$file"
   if [ -n "$after" ] && ! awk -F '\t' -v id="$after" 'NR>1&&$1==id{yes=1}END{exit !yes}' "$file"; then die invalid-cursor "$after"; fi
   echo 'schema=tracker@1'; echo "tracker=$stem"
-  tmp_rows="${TMPDIR:-/tmp}/tracker-page-rows.$$"; : > "$tmp_rows"; seen_after=false; [ -z "$after" ] && seen_after=true
+  open_page_tmp;tmp_rows="$PAGE_TMP";seen_after=false;[ -z "$after" ]&&seen_after=true
   while IFS=$'\t' read -r id created text evidence; do
     [ "$id" != id ] || continue
     if [ "$seen_after" = false ]; then [ "$id" = "$after" ] && seen_after=true; continue; fi
@@ -236,7 +251,7 @@ cmd_page() {
     rows=$((rows+1)); [ "$rows" -le "$limit" ] || break
   done < "$file"
   if [ "$rows" -gt "$limit" ];then next="$(awk -F '\t' -v n="$limit" 'NR==n{print $1}' "$tmp_rows")";else next="";fi
-  echo "next=$next"; echo '--'; printf '%s\tstatus\n' "$QUEUE_HEADER"; head -n "$limit" "$tmp_rows"; rm "$tmp_rows"
+  echo "next=$next";echo '--';printf '%s\tstatus\n' "$QUEUE_HEADER";head -n "$limit" "$tmp_rows";cleanup_page_tmp
 }
 
 parse_receipt_args() {
@@ -274,7 +289,7 @@ cmd_consume() {
   done
 }
 
-cmd="$1"; shift
+cmd="${1:-}"; [ -n "$cmd" ] || usage; shift
 case "$cmd" in
   describe) [ $# -eq 0 ] || usage; cmd_describe;;
   catalog) [ $# -eq 0 ] || usage; cmd_catalog;;

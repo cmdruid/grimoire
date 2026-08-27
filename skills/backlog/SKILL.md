@@ -32,9 +32,10 @@ reorder are not aliases.
 - All three roots are repo-relative, non-dot paths without `.` or `..` components and are pairwise
   non-overlapping. Backlog owns tracker-layer validation; never ask Workspace to validate it.
 - Except during setup and tracker administration, require executable
-  `<agent-trackers>/tracker-api.sh`. Invoke it with `--root <root> --records-root <R> --workspace
-  <W> --trackers-root <T>` followed by the public command. Missing or invalid provider state refuses
-  with `reason=setup-required`; never run the bundled API against project data.
+  `<agent-trackers>/tracker-api.sh` and invoke its public command directly. The staged provider
+  self-locates inside the tracker layer; it does not accept unrelated root arguments or scan the
+  front door. Missing or invalid provider state refuses with `reason=setup-required`; never run the
+  bundled API against project data. API `wrote=` values are relative to `<agent-trackers>`.
 - Never edit queue or receipt TSV bytes directly. Use the API for catalog, paging, row mutation,
   observation, and consumption. `receipts.tsv` is reserved and is never a configurable queue.
 - Setup and tracker add/remove run package-local `scripts/backlog-setup.sh` with the resolved roots.

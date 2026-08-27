@@ -35,7 +35,12 @@ has "$O/AGENTS.md" 'agent-trackers: project-trackers';[ -x "$O/project-trackers/
 no "$SETUP" "$O" "${BASE[@]}" --trackers-root elsewhere --apply tasks
 
 # Root grammar and all overlap directions refuse before writes.
-for bad in . ../escape /absolute;do B="$T/bad-${bad//\//x}";newroot "$B";no "$SETUP" "$B" "${BASE[@]}" --trackers-root "$bad" --apply tasks;[ ! -e "$B/.spaces" ]&&pass=$((pass+1))||fail=$((fail+1));done
+for bad in . ../escape /absolute custom/ custom//nested;do B="$T/bad-${bad//\//x}";newroot "$B";no "$SETUP" "$B" "${BASE[@]}" --trackers-root "$bad" --apply tasks;[ ! -e "$B/.spaces" ]&&pass=$((pass+1))||fail=$((fail+1));done
+for args in '--workspace .spaces/' '--records-root .records/';do
+  B="$(mktemp -d "$T/trailing.XXXXXX")";git -C "$B" init -q
+  # shellcheck disable=SC2086
+  no "$SETUP" "$B" $args --apply tasks
+done
 for args in '--trackers-root .records' '--trackers-root .records/nested' '--records-root .trackers/nested' '--trackers-root .spaces' '--workspace .trackers/nested';do
   B="$(mktemp -d "$T/overlap.XXXXXX")";git -C "$B" init -q
   # shellcheck disable=SC2086
@@ -51,6 +56,16 @@ M="$T/malformed";newroot "$M";printf '%s\n' '<!-- skill:backlog BEGIN broken -->
 P="$T/partial";newroot "$P";HOOK="$T/stop.sh";printf '%s\n' '#!/bin/sh' '[ "$4" -eq 1 ] && exit 86' 'exit 0' > "$HOOK";chmod +x "$HOOK"
 if BACKLOG_SETUP_TEST_AFTER_WRITE="$HOOK" "$SETUP" "$P" "${BASE[@]}" --apply tasks > "$T/partial.out" 2>&1;then echo 'FAIL injection missed' >&2;fail=$((fail+1));else pass=$((pass+1));fi
 has "$T/partial.out" 'wrote=.trackers/README.md';ok "$SETUP" "$P" "${BASE[@]}" --apply tasks;[ -f "$P/.trackers/tasks.tsv" ]&&pass=$((pass+1))||fail=$((fail+1))
+
+# Red-proof immediate destination checks: swap a later target after one safe write.
+Q="$T/raced";newroot "$Q";RACE="$T/race.sh";printf '%s\n' '#!/bin/sh' '[ "$4" -eq 1 ] || exit 0' 'mkdir -p "$1/outside"' 'ln -s "$1/outside/receipts.tsv" "$1/$2/receipts.tsv"' > "$RACE";chmod +x "$RACE"
+if BACKLOG_SETUP_TEST_AFTER_WRITE="$RACE" "$SETUP" "$Q" "${BASE[@]}" --apply tasks > "$T/race.out" 2>&1;then echo 'FAIL raced symlink accepted' >&2;fail=$((fail+1));else pass=$((pass+1));fi
+has "$T/race.out" 'wrote=.trackers/README.md';[ ! -e "$Q/outside/receipts.tsv" ]&&pass=$((pass+1))||{ echo 'FAIL wrote through raced symlink' >&2;fail=$((fail+1));}
+
+# Red-proof final validation: corrupt the last-written result after its write.
+F="$T/final-race";newroot "$F";FINAL_RACE="$T/final-race.sh";printf '%s\n' '#!/bin/sh' '[ "$4" -eq 6 ] || exit 0' 'mkdir -p "$1/outside"' 'mv "$1/$2/tasks.tsv" "$1/outside/tasks.tsv"' 'ln -s "$1/outside/tasks.tsv" "$1/$2/tasks.tsv"' > "$FINAL_RACE";chmod +x "$FINAL_RACE"
+if BACKLOG_SETUP_TEST_AFTER_WRITE="$FINAL_RACE" "$SETUP" "$F" "${BASE[@]}" --apply tasks > "$T/final-race.out" 2>&1;then echo 'FAIL unsafe final layer accepted' >&2;fail=$((fail+1));else pass=$((pass+1));fi
+[ -L "$F/.trackers/tasks.tsv" ]&&pass=$((pass+1))||{ echo 'FAIL final race fixture missed' >&2;fail=$((fail+1));}
 
 # Literal add/remove manages only that queue and prompt section; final removal drops route.
 A="$T/admin";newroot "$A";"$SETUP" "$A" "${BASE[@]}" --apply --custom alpha >/dev/null

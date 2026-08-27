@@ -1,10 +1,9 @@
 # `tune <tracker>` — curate a tracker batch
 
-Resolve `<root>`, `<agent-records>`, `<agent-workspace>`, and `<agent-trackers>`. Require the
-provider's executable `tracker-api.sh` and confirm `describe` advertises `tracker@1`. Invoke it with
-the resolved root arguments, then request one bounded open page using stable consumer key
-`foreman/tune`. Missing provider state degrades to an equivalent bounded batch supplied directly by
-the caller; do not require setup or create an adapter.
+Resolve `<agent-trackers>`. Require the provider's executable `tracker-api.sh` and confirm its exact
+`describe` schema is `tracker@1`. Invoke the installed provider directly, then request one bounded
+open page using stable consumer key `foreman/tune`. Missing provider state degrades to an equivalent
+bounded batch supplied directly by the caller; do not require setup or create an adapter.
 
 Reason over the page as a whole. Cluster related evidence, compare incumbent operations, and propose
 the smallest useful procedures, workflows, doctrine changes, or dismissals. The tracker is raw

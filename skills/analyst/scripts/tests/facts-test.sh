@@ -122,8 +122,21 @@ expect "status: reads live tracker row"      "live tracker row"            "$OUT
 expect_absent "status: ignores records tracker" "planted tracker line"       "$OUT"
 expect_absent "status: ignores owner-local tracker" "legacy owner-local canary" "$OUT"
 
+# BREAK: a successful provider advertising another schema is not tracker@1.
+cp "$FIX/.trackers/tracker-api.sh" "$FIX/tracker-api.before"
+schema_count="$(grep -cF 'schema=tracker@1' "$FIX/tracker-api.before")"
+expect_eq "status schema BREAK: mutation target count" "3" "$schema_count"
+sed 's/schema=tracker@1/schema=tracker@2/g' "$FIX/tracker-api.before" > "$FIX/.trackers/tracker-api.sh"
+chmod +x "$FIX/.trackers/tracker-api.sh"
+"$FACTS" status "$FIX" > "$OUT" 2>&1
+expect "status schema BREAK: rejects another version" "tracker_provider=invalid" "$OUT"
+expect_absent "status schema BREAK: does not accept provider" "tracker_provider=present" "$OUT"
+expect_absent "status schema BREAK: does not ingest rows" "live tracker row" "$OUT"
+cp "$FIX/tracker-api.before" "$FIX/.trackers/tracker-api.sh"
+cmp "$FIX/tracker-api.before" "$FIX/.trackers/tracker-api.sh" >/dev/null || { echo 'FAIL: provider restore drift' >&2; exit 1; }
+
 # BREAK: consume the live row through the provider; it must leave the open facts.
-API=("$FIX/.trackers/tracker-api.sh" --root "$FIX" --records-root .records --workspace .spaces --trackers-root .trackers)
+API=("$FIX/.trackers/tracker-api.sh")
 "${API[@]}" consume --consumer analyst/test --tracker tasks --ids tasks-1 --resolution resolved >/dev/null
 "$FACTS" status "$FIX" > "$OUT" 2>&1
 expect_absent "status BREAK: consumed row leaves open facts" "live tracker row" "$OUT"
