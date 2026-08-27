@@ -20,7 +20,10 @@ completion hook if nonempty explicitly **before** closing — the user's call, n
    `workstream-resource.sh release-all <root> <stream> <this-hand-off>`. Proceed only when exact-set
    validation and the atomic transaction succeed. Then remove exactly the released
    `resource-lock:` lines from the hand-off in one atomic rewrite and validate again; require
-   `held_count=0`. A validation/transaction failure stops before teardown. If ref release succeeds
+   `held_count=0`. A legacy hand-off with no `## Resource locks` section is equivalent to an empty
+   inventory only when it contains no `resource-lock:` line and the registry contains no claim owned
+   by that stream; any declared or live claim still fails closed. A validation/transaction failure
+   stops before teardown. If ref release succeeds
    but hand-off cleanup fails, stop and report that ownership is already gone; reacquire before any
    protected work. `--force` never bypasses the resource gate — it controls Git WIP disposal only.
    Apply this same ordering to both worktree and in-place teardown.

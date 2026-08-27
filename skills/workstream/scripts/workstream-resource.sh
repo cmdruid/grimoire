@@ -149,7 +149,7 @@ validate_identity() {
 }
 
 parse_handoff() {
-  local handoff="$1" sections section_file line resource oid duplicate
+  local handoff="$1" missing_mode="${2:-require-section}" sections section_file line resource oid duplicate
   : > "$locks_file"
   valid_abs_path "$handoff" || return 1
   [ -f "$handoff" ] && [ ! -L "$handoff" ] || return 1
@@ -157,6 +157,11 @@ parse_handoff() {
     return 1
   fi
   sections="$(grep -c '^## Resource locks$' "$handoff" || true)"
+  if [ "$sections" = 0 ]; then
+    [ "$missing_mode" = "allow-empty" ] || return 1
+    ! grep -q '^resource-lock:' "$handoff" || return 1
+    return 0
+  fi
   [ "$sections" = 1 ] || return 1
   section_file="$scratch/section"
   awk '
@@ -383,7 +388,7 @@ validate_sets() {
   local stream="$1" handoff="$2" live="$scratch/live" refs="$scratch/refs"
   local resource expected oid ref
   : > "$live"
-  parse_handoff "$handoff" || return 1
+  parse_handoff "$handoff" allow-empty || return 1
   while IFS="$(printf '\t')" read -r resource expected || [ -n "$resource" ]; do
     [ -n "$resource" ] || continue
     if ! oid="$(ref_oid "$resource")"; then

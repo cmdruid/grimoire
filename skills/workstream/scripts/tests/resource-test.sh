@@ -39,6 +39,45 @@ $1
 EOF
 }
 
+write_legacy_owner_handoff() { # path owner
+  local path="$1" owner="$2" owner_worktree
+  owner_worktree="$(dirname "$path")"
+  cat > "$path" <<EOF
+# $owner — workstream hand-off
+
+## Coordinates
+- stream:        $owner
+- branch:        stream/$owner
+- integration-target: main
+- worktree:      $owner_worktree
+- root checkout: $ROOT
+- this hand-off: $path
+
+## Queue state
+- Current feature: legacy fixture.
+EOF
+}
+
+write_legacy_handoff() {
+  write_legacy_owner_handoff "$HANDOFF" skill
+}
+
+write_legacy_handoff
+if "$HELPER" validate "$ROOT" skill "$HANDOFF" > "$TMP/legacy-validate.out"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: legacy hand-off without resource section validates as empty" >&2
+  fail=$((fail + 1))
+fi
+expect "legacy validation reports no claims" 'held_count=0' "$TMP/legacy-validate.out"
+if "$HELPER" release-all "$ROOT" skill "$HANDOFF" > "$TMP/legacy-release.out"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL: legacy hand-off without resource section releases zero claims" >&2
+  fail=$((fail + 1))
+fi
+expect "legacy release reports zero" 'released=0' "$TMP/legacy-release.out"
+
 write_handoff ""
 before_root="$(git -C "$ROOT" status --short)"
 before_wt="$(git -C "$WT" status --short)"
@@ -63,6 +102,22 @@ else
   fail=$((fail + 1))
 fi
 expect "validate reports one held" 'held_count=1' "$validate_out"
+
+write_legacy_handoff
+if "$HELPER" validate "$ROOT" skill "$HANDOFF" > "$TMP/legacy-held-validate.out"; then
+  echo "FAIL: legacy hand-off without section must not hide a live owned claim" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+if "$HELPER" release-all "$ROOT" skill "$HANDOFF" > "$TMP/legacy-held-release.out"; then
+  echo "FAIL: legacy hand-off without section must not release an undeclared live claim" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+expect_eq "legacy mismatch preserves claim" "$oid" "$(git -C "$ROOT" rev-parse refs/workstream-resources/ducat-dev)"
+write_handoff "resource-lock: ducat-dev $oid"
 
 for checkout in "$ROOT" "$WT"; do
   status_out="$TMP/status-$(basename "$checkout").out"
@@ -448,7 +503,7 @@ else
 fi
 expect_eq "refused teardown preserves worktree" 1 "$([ -d "$GUARD_WT" ] && echo 1 || echo 0)"
 "$HELPER" release "$ROOT" guard "$GUARD_HANDOFF" guard-dev >/dev/null
-write_owner_handoff "$GUARD_HANDOFF" guard ""
+write_legacy_owner_handoff "$GUARD_HANDOFF" guard
 "$SKILL/scripts/worktree-teardown.sh" "$ROOT" guard --force >/dev/null
 
 # The artifact absence check is red-proved against a copied package selected by override.
