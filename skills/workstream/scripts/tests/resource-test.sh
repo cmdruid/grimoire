@@ -294,6 +294,22 @@ expect "NUL-bearing metadata remains held" 'held=true' "$TMP/nul.out"
 expect "NUL-bearing metadata reports malformed" 'state=malformed' "$TMP/nul.out"
 "$HELPER" break "$ROOT" nul-dev "$nul_oid" >/dev/null
 
+write_handoff ""
+handoff_nul_out="$TMP/handoff-nul-acquire.out"
+"$HELPER" acquire "$ROOT" skill stream/skill "$HANDOFF" handoff-nul-dev config-a > "$handoff_nul_out"
+handoff_nul_oid="$(sed -n 's/^oid=//p' "$handoff_nul_out")"
+printf '# skill — workstream hand-off\n\n## Resource locks\nresource-lock: handoff-nul-dev %s\000\n\n## Queue state\n' "$handoff_nul_oid" > "$HANDOFF"
+if "$HELPER" validate "$ROOT" skill "$HANDOFF" > "$TMP/handoff-nul.out" 2>&1; then
+  echo "FAIL: a NUL-bearing hand-off lock line must be inconsistent" >&2
+  fail=$((fail + 1))
+else
+  expect_eq "NUL-bearing hand-off exits 2" 2 "$?"
+fi
+expect "NUL-bearing hand-off reports inconsistent" 'state=inconsistent' "$TMP/handoff-nul.out"
+expect_eq "NUL-bearing hand-off leaves claim held" "$handoff_nul_oid" "$(git -C "$ROOT" show-ref --verify --hash refs/workstream-resources/handoff-nul-dev)"
+"$HELPER" break "$ROOT" handoff-nul-dev "$handoff_nul_oid" >/dev/null
+write_handoff ""
+
 # Object-format handling derives the OID length from the fixture repository.
 SHA_ROOT="$TMP/sha256"
 if git init -q --object-format=sha256 "$SHA_ROOT" 2>/dev/null; then

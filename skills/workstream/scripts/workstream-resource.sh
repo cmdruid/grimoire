@@ -118,7 +118,7 @@ valid_rfc3339_utc() {
   return 1
 }
 
-metadata_has_forbidden_control() {
+file_has_forbidden_control() {
   od -An -t u1 "$1" | awk '
     {
       for (i = 1; i <= NF; i++) {
@@ -126,6 +126,17 @@ metadata_has_forbidden_control() {
       }
     }
     END { exit bad ? 0 : 1 }
+  '
+}
+
+file_has_nul() {
+  od -An -t u1 "$1" | awk '
+    {
+      for (i = 1; i <= NF; i++) {
+        if ($i == 0) found = 1
+      }
+    }
+    END { exit found ? 0 : 1 }
   '
 }
 
@@ -142,6 +153,9 @@ parse_handoff() {
   : > "$locks_file"
   valid_abs_path "$handoff" || return 1
   [ -f "$handoff" ] && [ ! -L "$handoff" ] || return 1
+  if file_has_nul "$handoff"; then
+    return 1
+  fi
   sections="$(grep -c '^## Resource locks$' "$handoff" || true)"
   [ "$sections" = 1 ] || return 1
   section_file="$scratch/section"
@@ -150,6 +164,9 @@ parse_handoff() {
     inside && /^## / { exit }
     inside { print }
   ' "$handoff" > "$section_file"
+  if file_has_forbidden_control "$section_file"; then
+    return 1
+  fi
   while IFS= read -r line || [ -n "$line" ]; do
     case "$line" in
       resource-lock:*)
@@ -193,7 +210,7 @@ claim_parse_v1() {
   [ "$type" = blob ] || return 1
   git -C "$repo" cat-file blob "$oid" > "$meta_file"
   [ -s "$meta_file" ] || return 1
-  if metadata_has_forbidden_control "$meta_file"; then
+  if file_has_forbidden_control "$meta_file"; then
     return 1
   fi
   last="$(tail -c 1 "$meta_file" | od -An -t u1 | tr -d ' ')"
