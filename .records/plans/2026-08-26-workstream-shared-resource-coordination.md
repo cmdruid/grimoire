@@ -165,7 +165,7 @@ affected slice before writing code; do not force an aged plan onto a changed tre
     Expected: every tracer/failure assertion passes, ShellCheck has no error/warning findings, and a
     deliberate wrong-token delete leaves the live ref unchanged. Commit the green slice.
 
-- [ ] **Slice 2: contention, malformed state, and attended break** <requires: 1>
+- [x] **Slice 2: contention, malformed state, and attended break** <requires: 1>
 
   - Files:
     - Modify: `skills/workstream/scripts/workstream-resource.sh`

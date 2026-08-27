@@ -25,5 +25,8 @@ expect "load validates resources" 'workstream-resource.sh validate' "$SKILL/verb
 expect "close releases resources" 'workstream-resource.sh release-all' "$SKILL/verbs/close.md"
 expect "force cannot bypass resources" '`--force` never bypasses the resource gate' "$SKILL/verbs/close.md"
 expect "teardown guards resources" 'workstream-resource.sh' "$SKILL/scripts/worktree-teardown.sh"
+expect "attended break dispatched" 'resource acquire|status|release|break' "$SKILL/SKILL.md"
+expect "attended break procedure" '## `break <resource>`' "$SKILL/verbs/resource.md"
+expect "break requires named confirmation" 'confirmation naming that exact resource' "$SKILL/verbs/resource.md"
 
 report "artifact-contract-test.sh"
