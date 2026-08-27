@@ -1,50 +1,37 @@
 # Ideal use — a worked arc through the spine
 
-A *"how to use me"* example, read on demand. It shows the spine verbs as
-**architect's own arc** on one concrete feature. The arc ends at the
-**accepted spec**. The spec is the terminal architect artifact.
+A *"how to use me"* example, read on demand. Both branches below are legitimate. The feature arc
+ends at the accepted specification; saved drafts and spike records are supporting artifacts, not
+feature handoffs.
 
----
+## The feature: JSON output for `report`
 
-## The feature: "add a `--json` output mode to the `report` command"
+`brainstorm "let users get report output as JSON"` harvests the conversation and reads the current
+command. It proposes a `--json` flag and a separate subcommand, recommending the flag because it
+reuses the existing parse and report model. The user gets a useful synthesis in conversation.
 
-**1. `brainstorm "let users get report output as JSON"`**
-Harvests the conversation first (the user already said a downstream tool will
-consume it → stability matters, version the shape), then reads the `report`
-command's code and the host's design context. Proposes two approaches — a new
-`--json` flag vs. a separate `report-json` subcommand — and recommends the
-flag (less surface, reuses the existing arg parse). Weight call: one phase, no
-cross-cutting decision → small feature; slices, if any, will live in the spec.
-*Output:* a draft design doc in the `specs/` store (`status: draft`), open
-questions at its foot. → proceed to `spec`.
+### Branch A: conversation was enough
 
-**2. `spec <draft>`**
-Synthesizes the draft, then **grills the gaps** — two rounds of numbered
-questions with recommended answers (*envelope versioning: a top-level `"v": 1`,
-or a header field?* — recommends the field; *pretty-print or compact?* —
-recommends compact + a `--pretty` flag deferred as YAGNI). Writes the argued
-spec: **Problem** (consumers can't machine-read report output), **Approach**
-(+ the subcommand alternative, rejected), **Mechanism** (serialize the
-already-computed report model; no new data path), **Verification** (a
-golden-file test of the envelope). Because this is a small feature, the spec
-carries an optional **Slices** stub (flag parsed → envelope emitted; golden
-test red-first). Self-reviews, then gates on the human reading it. The
-artifact stays `status: draft`. The caller publishes after a passing
-host's review they accept.
-*Output:* the accepted spec. **Architect stops here.**
+The user decides not to keep working on the idea. Architect stops. No draft, spec record, or other
+artifact was created. Duration, importance, and unresolved questions do not change that outcome.
 
----
+### Branch B: save, resume, and promote
 
-## Where the arc ends
+The user says `brainstorm save report-json`. Architect writes one current synthesis to
+`<agent-workspace>/architect/drafts/report-json.md`. A later agent resumes that explicit path,
+updates the same file, and may run a confirmed bounded spike only if cheap investigation cannot
+settle a material feasibility question. Completed spike evidence is linked from the draft.
 
-The accepted spec is the terminal architect artifact. Implementation
-sequencing is a different job; the host's build lane (or the human) consumes
-the spec from here.
+`spec <draft>` carries settled decisions and relied-on spike citations into a new `architect/spec@1`
+record. It does not copy transient experiment code or raw working notes. After the dated spec exists,
+Architect marks the draft `Disposition: promoted` and links the spec. It grills remaining gaps,
+self-reviews, and asks the human to read the result. The spec remains `status: draft` until the
+caller's accepted review publishes it.
+
+The accepted spec is Architect's sole feature baton. Implementation sequencing is a different job.
 
 ## Genesis (a different arc)
 
-The feature-spec arc above still ends at the accepted spec. Genesis is a
-different arc: `new` mints a founding-shaped working file, `grill` / `spec`
-fill its six map sections in place, `deploy` materializes a git repository
-(a new directory, or in place in a non-git folder that does not already
-hold the founding docs). Do not run this arc on a feature spec.
+The feature-spec arc above still ends at the accepted spec. Genesis is a different arc: `new` mints
+a founding-shaped working file, `grill` / `spec` fill its six map sections in place, and `deploy`
+materializes a git repository. Do not run this arc on a feature spec or workspace draft.

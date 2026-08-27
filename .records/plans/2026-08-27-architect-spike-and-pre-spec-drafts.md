@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -64,7 +64,7 @@ Spec: `→ specs/2026-08-26-architect-spike-and-pre-spec-drafts.md`
 
 ## Slices
 
-- [ ] **Slice 1: Confirmed spike tracer** <requires: Task 0>
+- [x] **Slice 1: Confirmed spike tracer** <requires: Task 0>
   - Files—create:
     - `skills/architect/verbs/spike.md`
     - `skills/architect/templates/draft.md`
@@ -128,7 +128,9 @@ Spec: `→ specs/2026-08-26-architect-spike-and-pre-spec-drafts.md`
     - `shellcheck skills/architect/scripts/architect-artifacts.sh
       skills/workspace/scripts/workspace-check.sh skills/foreman/scripts/operations-index.sh` → clean.
 
-- [ ] **Slice 2: Opt-in brainstorm persistence and specification promotion** <requires: 1>
+- [x] **Slice 2: Opt-in brainstorm persistence and specification promotion** <requires: 1>
+  - Files—create:
+    - `skills/architect/scripts/tests/procedure-contract-test.sh`
   - Files—modify:
     - `skills/architect/SKILL.md`
     - `skills/architect/verbs/brainstorm.md`
@@ -160,7 +162,7 @@ Spec: `→ specs/2026-08-26-architect-spike-and-pre-spec-drafts.md`
       authorized draft/spec/record paths and no sibling-owner writes.
     - `git diff --check -- skills/architect` → clean.
 
-- [ ] **Slice 3: Ownership, setup, migration, and distribution closure** <requires: 1, 2>
+- [x] **Slice 3: Ownership, setup, migration, and distribution closure** <requires: 1, 2>
   - Files—create:
     - `skills/architect/scripts/tests/migrate-contract-test.sh`
   - Files—modify:

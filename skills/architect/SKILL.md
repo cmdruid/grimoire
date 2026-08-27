@@ -1,17 +1,19 @@
 ---
 name: architect
-description: "Use when the user runs `/architect`, asks to brainstorm, grill, or write a spec for a feature or design, starts a new project (`new`, `deploy`), or deploys Architect's optional project templates with `/architect setup`. Does not write roadmaps or implementation plans and does not build. For a one-line patch, skip it."
+description: "Use when the user runs `/architect`, asks to brainstorm, save a design draft, test a design uncertainty with a bounded spike, grill, or write a spec, starts a new project (`new`, `deploy`), or deploys Architect's optional project templates with `/architect setup`. Does not write roadmaps, implementation plans, or production code. For a one-line patch, skip it."
 ---
 
 # architect — the specification spine
 
 `/architect <verb> [args]` runs the specification spine: divergent ideation
-(`brainstorm`), the interview that resolves every open decision (`grill`), the
+(`brainstorm`), optional saved idea drafts, bounded feasibility evidence
+(`spike`), the interview that resolves every open decision (`grill`), and the
 argued specification (`spec`). Genesis is two verbs around that
 spine: `new` mints a founding-shaped working file; `grill`/`spec` fill it in
 place; `deploy` materializes a git repository (new directory, or in place
-in a non-git folder). **Building is not
-architect's job**, and neither is sequencing implementation. Trunk landing
+in a non-git folder). **Production implementation is not architect's job**,
+and neither is sequencing implementation. A confirmed spike may execute a
+disposable experiment solely to measure design feasibility. Trunk landing
 and the debrief sweep stay with the orchestrator. `deploy` does not land
 onto a host trunk.
 
@@ -28,10 +30,15 @@ not the machinery. "Here are two approaches; I recommend A because…" /
 "The spec is at `<path>`. Please read it before we sequence work."
 `founding-shaped` and `status: draft` stay in the files.
 
-**Destination is not stamped.** Feature `spec` / `brainstorm` / ADR artifacts
+**Project homes.** Resolve the project root first. Resolve `<agent-workspace>` from the first
+line-start `agent-workspace:` declaration in `AGENTS.md`, then `CLAUDE.md`, else `.spaces`.
+Resolve `<agent-records>` from the first line-start `agent-records:` or `records-root:` declaration
+in the same file order, else `.records`. Values are repo-relative; pass both resolved roots
+explicitly to package scripts.
+
+**Destination is not stamped.** Feature `spec` / ADR artifacts
 land in `<agent-records>/specs/` and `<agent-records>/adr/` on every host
-(first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`,
-else `.records/`). Resolve `specs.md` / `adr.md` only from
+using *Project homes*. Resolve `specs.md` / `adr.md` only from
 `<agent-workspace>/architect/templates/`; when absent, read the bundled body scaffold without a
 project write. Only `/architect setup` deploys a fresh project copy. Recognized legacy locations
 require `/architect migrate <path>`.
@@ -46,19 +53,31 @@ Closure through `records.sh --root <root> --records-root <records-root-relative>
 file-mode stamp. Founding-shaped `grill` / `spec` stay on the named file
 (no records mint). `new` / `deploy` unchanged.
 
+**Drafts and spikes.** Brainstorm writes nothing by default. Only an explicit
+`brainstorm save [name]`, an explicit draft-resume request, or a confirmed spike writes
+`<agent-workspace>/architect/drafts/<slug>.md` through
+`scripts/architect-artifacts.sh draft-save`. Drafts are living Markdown files, not records; use
+the package-only `templates/draft.md` outline. A completed spike uses the package-only
+`templates/spikes.md` outline and the helper's `spike-publish` command to create a new
+`<agent-records>/spikes/YYYY-MM-DD-<slug>.md` record. It is direct evidence from the executing
+agent and is published without a review gate. Never overwrite a published spike.
+
 **Probe exemption.** The records-mint / output-home path above applies to
-`brainstorm`, feature `spec`, and ADRs. It does **not** apply to `new` or
+feature `spec` and ADRs. It does **not** apply to brainstorm drafts, spikes, `new`, or
 `deploy`, and it does **not** apply to `grill`/`spec` when the named file is
 founding-shaped (*Founding-shaped* below). Those stay on the cwd working file.
 
-**Status vocabulary.** Mint stays `draft`. The caller writes
+**Status vocabulary.** Specs and ADRs mint as `draft`. The caller writes
 `published` after a passing host's review they accept (one `published` spec
 per subject, as writer prose). This skill does not use `stage`.
 Founding-shaped working files stay `status: draft`. They are not the living
 feature spec. They carry `schema: architect/founding@1`; do not write `published` on them.
+Completed spike records are the exception: `spike-publish` writes `status: published` because
+the record is the executing agent's stable account, not a proposal awaiting endorsement.
 
 **Record contract.** Current records require `doctype`, `status`, `schema`, and `tags`.
-Architect owns `architect/spec@1`, `architect/adr@1`, and `architect/founding@1`. The filename is
+Architect owns `architect/spec@1`, `architect/adr@1`, `architect/founding@1`, and
+`architect/spike@1`. The filename is
 `YYYY-MM-DD-<slug>.md`; record links use `→ <store>/<file>.md`. Generic timestamps and revisions are
 not stamped. Optional extra keys remain legal.
 
@@ -66,8 +85,10 @@ not stamped. Optional extra keys remain legal.
 
 | Invocation | Verb file | Does |
 |---|---|---|
-| (none) | `verbs/brainstorm.md` | divergent ideation → `specs/` doc (`status: draft`) |
-| `brainstorm [topic]` | `verbs/brainstorm.md` | divergent ideation → a draft design doc |
+| (none) | `verbs/brainstorm.md` | divergent ideation in conversation; no write by default |
+| `brainstorm [topic]` | `verbs/brainstorm.md` | divergent ideation in conversation; no write by default |
+| `brainstorm save [name]` | `verbs/brainstorm.md` | explicitly save the current idea as a living Architect draft |
+| `spike [draft-or-question]` | `verbs/spike.md` | qualify, confirm, and run one bounded disposable feasibility experiment |
 | `new <name>` | `verbs/new.md` | mint `./<name>.md` — founding-shaped, empty of design content |
 | `grill [doc]` | `verbs/grill.md` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** |
 | `spec [doc]` | `verbs/spec.md` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) |
@@ -81,7 +102,9 @@ spec  →  (host's review)  →  (caller publishes)  →  (host sequences)
 
 Each arrow is a stop. No verb invokes the next.
 
-`brainstorm → spec` is the linear spine; `grill` is a primitive
+`brainstorm → spec` is the linear spine; an explicit save may persist the idea between them, and
+`spike` supplies feasibility evidence only when material design uncertainty warrants its cost.
+`grill` is a primitive
 callable at any point. Bare `/architect` stays `brainstorm`. Genesis is
 explicit `new`. Weight scales with the work: a **small feature** may stop
 at the accepted spec (the spec doubles as its plan — slices live **in**
@@ -138,14 +161,15 @@ is a gap. No italic / `TBD` / `<>` special cases.
 - **Scripts from this package.** `scripts/ground-check.sh` is this
   skill's copy — resolve it from this skill's own base directory,
   never a host path.
-- Mint stays `draft`. Do not write `published`.
+- Specs and ADRs mint as `draft`. Do not write `published`; completed spike records are the sole
+  exception and are published directly by `architect-artifacts.sh`.
 
 ## State between verbs = the artifacts
 
-There is no separate architect state file. Each verb consumes the previous
-verb's artifact by path: `brainstorm`'s draft → `spec` argues it — and each
-doc's front-matter `status` tracks its lifecycle. `grill` writes
-no new file.
+There is no separate architect state file. Conversation is transient. When the user explicitly
+saves or resumes an idea, its living file under
+`<agent-workspace>/architect/drafts/` carries the state; a spec may consume that file by path.
+Records carry their own lifecycle status. `grill` writes no new file.
 
 ## Composition (the orchestrator owns building, landing, capture)
 
@@ -160,9 +184,11 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 ## Structure, portability
 
 - A self-contained skill directory: `SKILL.md` + `templates/` (`specs.md`,
-  `adr.md`, `founding.md` — the bundled body shapes) + `verbs/brainstorm.md` +
+  `adr.md`, `founding.md`, plus package-only `draft.md` and `spikes.md` body shapes) + `verbs/brainstorm.md` +
   `verbs/grill.md` + `verbs/spec.md` + `verbs/new.md` +
-  `verbs/deploy.md` + `verbs/migrate.md` + `scripts/ground-check.sh` (the
+  `verbs/deploy.md` + `verbs/migrate.md` + `verbs/spike.md` +
+  `scripts/architect-artifacts.sh` (safe draft and spike writer) +
+  `scripts/ground-check.sh` (the
   re-grounding fact-checker) + `docs/ideal-use.md` (a worked arc).
 - **Portable:** no workshop dependency, no host paths baked in, travels as one
   unit wherever the skills are installed.
@@ -172,14 +198,14 @@ spec; genesis ends at the repo. The accepted spec is the feature baton.
 - `adr.md`
 - `specs.md`
 
-`founding.md` is package-only.
+`founding.md`, `draft.md`, and `spikes.md` are package-only.
 
 ## Edges
 
 <!-- edges:architect -->
-- produces: spec — an argued specification; deploy's repository is the terminal direct result of genesis, not a composition edge
+- produces: spec — an argued specification; draft — an explicitly saved living idea; spike — a published direct feasibility account; deploy's repository is the terminal direct result of genesis, not a composition edge
 - handoff: spec — the accepted spec is the feature baton; genesis ends at the repository
-- consumes: — (a conversation or named draft is direct input, not a typed project artifact)
+- consumes: — (a conversation, named draft, or implementation surface is direct input, not a typed project artifact)
 <!-- /edges:architect -->
 
 ## Done when

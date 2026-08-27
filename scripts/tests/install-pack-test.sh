@@ -13,6 +13,7 @@ fail() {
 
 project_config_absent() {
   [ ! -e "$tmp/project/.spaces" ] && [ ! -e "$tmp/project/.records" ] \
+    && [ ! -e "$tmp/project/.trackers" ] \
     && [ ! -e "$tmp/project/AGENTS.md" ] && [ ! -e "$tmp/project/.clankshop" ]
 }
 
@@ -38,6 +39,11 @@ lock="$tmp/project/grimoire.lock"
 [ -L "$target/journal" ] || fail "required member was not installed"
 [ -L "$target/workspace" ] || fail "workspace member was not installed"
 [ -L "$target/foreman" ] || fail "foreman member was not installed"
+[ -f "$target/architect/verbs/spike.md" ] || fail "Architect spike verb was not installed"
+[ -x "$target/architect/scripts/architect-artifacts.sh" ] || fail "Architect artifact helper was not installed executable"
+for outline in draft.md spikes.md; do
+  [ -f "$target/architect/templates/$outline" ] || fail "Architect package outline was not installed: $outline"
+done
 [ ! -e "$target/clankshop" ] && [ ! -L "$target/clankshop" ] \
   || fail "faceless pack installed an implicit face"
 assert_faceless_lock "$lock"
