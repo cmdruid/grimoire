@@ -1,11 +1,13 @@
 # `review` · critique a document or completed implementation
 
 Independent second-set-of-eyes on a document or completed change. Findings and the verdict stay in
-conversation. A document may later publish on acceptance; implementation review never mutates or
-remediates the change.
+conversation. A document may later use its existing acceptance/publication gate; implementation
+review never mutates or remediates the change.
 
 Kind-detect is the only target gate (SKILL.md *Kind-detect*). The seven bundled kinds are in scope.
-Unknown kind → ask or refuse; do not invent a rubric. Do not amend. Do not mint a record.
+Unknown kind → ask or refuse; do not invent a rubric. The review phase does not amend. Automatic
+continuation may enter `revise`, but its questions and proposal still stop before any edit. Do not
+mint a record.
 
 ## Procedure
 
@@ -70,28 +72,52 @@ Unknown kind → ask or refuse; do not invent a rubric. Do not amend. Do not min
 
    Verdict words stay **conversation-only**. Do not create or append `## Review history`. Do not
    write `status:` or `stage:` in this verdict turn.
-7. **Close exactly once.**
-   - Document `needs-rework`: say, “If you want, I can fold these findings with `/inspector
-     refine`; if you approve the refinement proposal, I’ll re-review the amended document
-     automatically.” Stop. Do not refine in this turn.
-   - Passing document: say, “If you accept, this session will publish `<path>`.” Stop. Do not
-     publish in this turn.
-   - Implementation: stop after the verdict and findings. Do not offer publish, refine, or
-     remediation; do not write code, status, or stage.
+7. **Resolve review continuation.** For a document, resolve the effective kind's
+   `revision-after-review` mode exactly as SKILL.md *Review-continuation policy* specifies. A bad
+   declaration is an error, not a fallback. `implementation` is always `unavailable`.
+8. **Close or continue exactly once.** Use the resolved mode and verdict:
+
+   | Target / verdict | `automatic-proposal` | `offered` | `unavailable` |
+   |---|---|---|---|
+   | document `approve` | existing accept/publish offer; stop | existing accept/publish offer; stop | existing accept/publish offer; stop |
+   | document `approve-with-changes` | enter revise with all recommended changes | offer accept/publish as-is or explicit revise; stop | offer accept/publish as-is; stop |
+   | document `needs-rework` | enter revise with all findings | offer explicit revise; stop | verdict only; stop |
+   | implementation, any verdict | verdict only; stop | verdict only; stop | verdict only; stop |
+
+   A passing publication offer says, “If you accept, this session will publish `<path>`.” A
+   founding-shaped document instead says acceptance leaves `<path>` draft; it performs no gate
+   write. For an `approve-with-changes` branch, say **accept/publish as-is** as applicable so
+   acceptance cannot be confused with approval of an amendment package. An offered
+   `needs-rework` branch says, “If you want, I can fold these findings with `/inspector revise`; if
+   you approve the revision proposal, I’ll re-review the amended document automatically.”
+   Implementation and unavailable
+   `needs-rework` stop after the verdict and findings. Do not offer publish, revise, or remediation
+   there; do not write code, status, or stage.
+
+   **Automatic entry.** After reporting the verdict and findings, immediately enter
+   `verbs/revise.md` with the reviewed artifact, detected kind, resolved effective policy, complete
+   findings, origin verdict, and re-review queued. Skip only revise's standalone invocation
+   resolver; run its verification, classification, questions, empty-package, and proposal steps.
+   This is the same turn, not an edit authorization. Questions are a stop. A non-empty proposal is
+   a stop. No body, `status`, or `stage` changes before proposal confirmation.
 
 ## Next-turn parse for document reviews
 
-The review turn has already stopped. Parse the next user utterance against the offer that made the
-stop; an utterance may compose acceptance with more requested work.
+When review stopped, parse the next user utterance against the offer that made the stop; an
+utterance may compose acceptance with more requested work. Automatic entry has not stopped at a
+review offer: its later proposal confirmation is parsed by `revise.md`.
 
 ### Passing offer
 
-1. **Reject** (`stop` / `don't` / `not yet` / `refine` / `needs work`) → write nothing; stay draft.
-2. **Accept** — any clear acceptance of the verdict, including `yes`, `looks good`, `approved`,
+1. **Refine instead.** A clear request to simplify or `/inspector refine` the reviewed spec or plan
+   enters `verbs/refine.md` on that exact artifact without accepting or publishing it. Unsupported
+   kinds refuse refinement and remain draft.
+2. **Reject** (`stop` / `don't` / `not yet` / `needs work`) → write nothing; stay draft.
+3. **Accept** — any clear acceptance of the verdict, including `yes`, `looks good`, `approved`,
    `proceed`, `do it`, `lgtm`, `ok`, or `go ahead`; a request to sequence or walk the accepted
    document also accepts. Write the gate on exactly the reviewed artifact first, then honor the
    remainder. Founding-shaped documents remain draft.
-3. **Unclear** → ask once whether they accept the verdict; write nothing.
+4. **Unclear** → ask once whether they accept the verdict; write nothing.
 
 On accept, use executable `<agent-workspace>/journal/scripts/records.sh` when present, passing
 `--root <root> --records-root <records-root-relative> touch --status published`; otherwise update
@@ -99,18 +125,23 @@ On accept, use executable `<agent-workspace>/journal/scripts/records.sh` when pr
 receive `stage: approved`; specs and ADRs receive `published` only. Then stop unless the same
 utterance requested further work.
 
-### Failing offer
+### Offered material-finding branch
 
-1. **Refine** — a clear request to fold, amend, revise, or refine these findings → enter
-   `verbs/refine.md` on the next turn with the complete in-context findings, reviewed artifact,
-   and re-review queued by default. An explicit request to refine without re-review clears that
-   intent.
-2. **Reject** (`stop` / `don't` / `not yet`) → write nothing.
-3. **Unclear** → ask once whether to enter refine; write nothing.
+1. **Revise** — a clear request to fold, amend, or revise these findings → enter
+   `verbs/revise.md` on the next turn with the complete in-context findings, reviewed artifact,
+   origin verdict, and re-review queued by default. An explicit request to revise without
+   re-review clears that intent.
+2. **Accept/publish as-is** — legal only for `approve-with-changes`. A clear acceptance of the
+   reviewed artifact without taking the recommendations uses exactly its existing *Passing offer*
+   gate. It never applies proposed changes. Founding-shaped remains draft; `needs-rework` cannot
+   publish or accept.
+3. **Reject** (`stop` / `don't` / `not yet`) → write nothing.
+4. **Unclear** → ask once whether to enter revise (or, for `approve-with-changes`, accept/publish
+   as-is); write nothing.
 
 Depth dial (default off): for a high-stakes artifact, dispatch a few **read-only** subagents in
 parallel — each a distinct lens, one a skeptic trying to refute the target's central claim — and
 synthesize. Never an editing subagent.
 
-This verb does not amend a body or code. Document fold is `refine`; implementation remediation is
-outside Inspector.
+The review phase does not amend a body or code. Document fold is `revise`; implementation
+remediation is outside Inspector.

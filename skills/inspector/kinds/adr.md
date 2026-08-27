@@ -25,7 +25,11 @@ Shared floor in `verbs/review.md`, plus:
 None beyond ground-check + re-read. On a workshop host, check
 against `core/` and live ADRs for contradiction.
 
-## Refine legal locations
+## Review continuation
+
+revision-after-review: offered
+
+## Revision legal locations
 
 Context / Decision / Alternatives / Consequences. Do not mint a
 successor ADR. A new decision that is not this ADR's subject →

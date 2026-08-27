@@ -23,7 +23,11 @@ plan critique of the referenced plans.
 None beyond ground-check + re-read of the referenced plan
 paths.
 
-## Refine legal locations
+## Review continuation
+
+revision-after-review: offered
+
+## Revision legal locations
 
 Named conductor step. Keep step ids stable. A coverage gap may
 append the next unused step. A new requirement → **park**. Do

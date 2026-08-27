@@ -29,7 +29,11 @@ plan claims a mechanism shaped by deletable substrate, then ask
 implementation?* Re-read every load-bearing signature at `HEAD`
 before trusting a size or path.
 
-## Refine legal locations
+## Review continuation
+
+revision-after-review: automatic-proposal
+
+## Revision legal locations
 
 Named slice. Keep slice ids stable. A coverage gap (a spec
 requirement with no slice) may append a slice with the next

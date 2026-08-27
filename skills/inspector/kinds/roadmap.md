@@ -22,7 +22,11 @@ Shared floor in `verbs/review.md`, plus:
 None beyond ground-check + re-read. Substrate-skeptic default
 off.
 
-## Refine legal locations
+## Review continuation
+
+revision-after-review: offered
+
+## Revision legal locations
 
 Named phase. Keep phase ids stable. A coverage gap may append
 the next unused phase id. A new requirement → **park** (belongs

@@ -1,263 +1,75 @@
-# `refine` · fold review findings into an artifact
+# `refine` · simplify a spec or plan
 
-The only legal path from a `needs-rework` **document** back to a
-candidate for `review`. It accepts the six bundled document kinds plus
-host-added document kinds. `implementation` has no legal refine path:
-refuse it without amending code. This verb amends the original file in
-place, mints no successor, and does not write `published`.
+An optional minimum-sufficiency pass. It removes, consolidates, or simplifies unnecessary content
+without changing the artifact's goal or losing required behavior. It accepts only specs and plans,
+always proposes before editing, and always runs a full review after an accepted change.
 
-**Why amend.** A failing verdict means the artifact is not safe
-to sequence or walk against. Amending is how it becomes a
-candidate again.
-
-**Why re-review.** The fold is unverified content. A refine entered
-directly from a failing document review carries re-review intent by
-default: approval of the proposal applies it and immediately runs the
-existing `review` procedure. A standalone refine does not carry that
-intent unless its confirmation names re-review. Either path is
-same-session review, not a different pair of eyes.
-
-This verb **stops** after the proposal until confirmed. After
-apply, it runs review when re-review intent is queued or named;
-otherwise it stops and offers review. It does not walk a job.
+Review findings are not refinement input. A request to correct findings belongs to `revise`;
+explain that distinction and stop rather than switching verbs automatically.
 
 ## Invocation
 
+```text
+/inspector refine [<spec-or-plan>]
 ```
-/inspector refine [<findings>] [<artifact>]
-```
 
-Resolver, in this order:
+Resolve a named readable artifact first. With no path, use only the last named spec or plan in the
+current session; otherwise ask. Never scan the current directory or infer a target from Git state.
+Kind-detect once through SKILL.md. Founding documents, ADRs, roadmaps, runbooks, host-added kinds,
+and implementation are unsupported.
 
-1. **Two readable paths.** Kind-detect each (SKILL.md
-   *Kind-detect*). If exactly one matches a known kind, that is
-   the target and the other is findings. If both match, ask. If
-   neither matches, ask which artifact they belong to. Fold
-   findings into the target.
-2. **One path that matches a known kind** and carries a Review
-   history with at least one open item — that file is both
-   findings and target. Open Review-history blocks already on
-   disk are a **read** source; they are not a write target and
-   are not required.
-3. **One path that is a findings file** (not a matching kind) —
-   ask which artifact they belong to.
-4. **No paths**, and this session just produced a `review`
-   verdict for a named artifact — use that in-context list;
-   still name the artifact in the opening line.
-5. **Otherwise** — ask. Do not guess an artifact in cwd.
-
-Unknown kind → ask or refuse; do not invent a rubric. Kind only
-changes which sections get edited (kind file, refine legal
-locations).
-
-**Re-review intent.** Queue it when this verb is dispatched from
-`review.md`'s failing offer, including resolver rule 4 after this
-session's named `needs-rework` verdict. Leave it unqueued for a
-standalone invocation. An explicit “without re-review”, “don't
-re-review”, or “apply only” clears it. Carry the intent through
-question and adjustment stops until the proposal is accepted or
-rejected.
-
-## Findings shapes
-
-Accept any of:
-
-- An in-context list from the `review` just run in this session
-  (or a human-pasted review).
-- A council `RESULT.md` — live opinions under `## Ranked
-  opinions` only (`## Rescinded` is not live).
-- Any other markdown findings file the human names — take each
-  discrete finding (heading + location / claim / action if
-  present). Do not invent structure the file does not have.
-- An open `## Review history` already on the artifact, if
-  present — read only. Skip any finding already marked
-  `resolved`, `rejected`, or `deferred`.
-
-Must-fix vs nice-to-have comes from the finding when present; if
-omitted, treat as must-fix.
+Do not begin while this session has unresolved must-fix review findings or a pending revision
+question or proposal for the artifact. Correction must be completed, rejected, or explicitly
+abandoned first. The kind's `revision-after-review:` value controls correction only; it does not
+control explicit refinement.
 
 ## Procedure
 
-1. **Resolve** inputs (above). Locate the artifact. Kind-detect.
-   Load the kind file. Summon context per SKILL.md after the
-   kind is known. Unknown kind → ask or refuse; stop.
-   `implementation` → refuse; implementation review never enters refine.
-2. **Inventory** open findings. Number them for the table (`F1`,
-   `F2`, …) even if the source used a different scheme — keep a
-   source id in parentheses when one exists (`F1 (C3)`).
-3. **Verify each finding** against the artifact and `HEAD`
-   before classifying. A review claim is a claim, not a
-   decision. Re-read the named location. If the finding cites
-   code, re-read that code (the same posture as `review`'s
-   groundedness pass; `scripts/ground-check.sh` is available,
-   not sufficient). Outcomes of verify:
-   - **already done** — classify `resolved` (no edit).
-   - **wrong / out of scope for this artifact** — classify
-     `push-back`.
-   - **park** — the kind file names what must park (a new
-     decision branch, a new requirement, an illegal location).
-     Do not invent the decision here. Tell the human where it
-     belongs. After they acknowledge the send-back, the rest of
-     the batch may proceed. The parked item stays unmarked
-     (open) until that branch is settled. Park is **not** `ask`.
-   - **unclear** — classify `ask`. Same classify word, not a
-     new one. Classify `ask` (not `keep`) until the remedy is
-     chosen; after the answer, `keep` with the chosen location.
-     - Unsure the finding is true or in scope (already `ask`).
-     - Two legal readings of the finding (already `ask`).
-     - Two legal **remedies** for an accepted finding (which
-       section/slice, which gate, which owner).
-     - A reviewer confidence note the owner cannot independently
-       verify against the artifact / `HEAD`.
-   - **otherwise** — classify `keep` (must-fix) or
-     `keep-optional` (nice-to-have that does not change the
-     artifact's goal).
-   A confident `keep` that changes what the artifact claims is
-   **not** an `ask`. It lives in the proposal, marked
-   product-class.
-4. **Classify the whole batch before editing any.** No
-   performative agreement. Grep before generalizing.
-   **Thrash brake.** If the **same finding** (same location +
-   same assertion) was already `resolved` or `rejected` by a
-   prior `refine` and has come back as must-fix on a later
-   `review`, do not silently fold or silently re-reject —
-   classify `ask`. The first return is the brake. Two treatments
-   without agreement is a disagreement, not a missing edit.
-5. **Questions, only if needed.** If any row is still classify-
-   `ask` after step 4, and/or a park still needs acknowledgment,
-   that is a stop. **Show only those rows** (grill shape:
-   recommended answer and why; multiple-choice when enumerable).
-   No keep-amendment text. No full remediation table. One round
-   unless an answer opens a new finding/remedy fork — then ask
-   that fork before proposing. **One unresolved `ask` holds the
-   proposal.** Park-ack does not use the `ask` exit
-   (`keep` / `push-back` / `keep-optional`); after acknowledgment
-   the item stays unmarked and the rest may proceed. Do not quiz
-   confident rows. Answering questions is **not** package confirm
-   — even if the human says "do it" / "approved, re-review" in
-   the same message. Still run step 6, then step 7 when material remains, and wait.
-   Carried re-review intent remains queued; answering questions never triggers it.
-6. **Empty material package.** After all questions are settled and parks
-   acknowledged, determine the optional dispositions before presenting a
-   proposal. If no `keep` and no `keep-optional` that the owner recommends
-   taking remains, say there is nothing material to fold and stop. Do not show
-   an empty remediation table, ask for package confirmation, amend the artifact,
-   or change status. Resolved, push-back, omitted nit/unsupported, parked, and
-   deferred-only rows do not manufacture a package.
-7. **Propose. Do not amend.** Conversation, not a file. The
-   proposal *is* the live table plus concrete amendments, not a
-   second artifact. Show:
+1. **Load the contract.** Read the complete artifact and its effective kind file. Use the kind
+   file's `## Revision legal locations` section only to learn which parts of the document may be
+   edited. Ignore its instructions for correcting findings, adding missing coverage, or classifying
+   findings; those belong to `revise`.
 
-   - One remediation table (Id, Finding, Action, Why) for the
-     whole batch, including `push-back`, already-done, and
-     parked (unmarked).
-   - Product-class `keep`s visually separated from nits (new or
-     dropped section, changed Done-when / Goal / Approach /
-     Verification bar).
-   - For every `keep` and every `keep-optional` the owner
-     **recommends taking**: a concrete amendment — location →
-     what will change. Concrete enough that a gap between this
-     proposal and the later edit is detectable. A small edit
-     shows the replacement. A larger rewrite states the delta in
-     that unit's terms. Not "fix F1."
+   For a plan, resolve and read the governing source named by the plan: a published spec or the
+   applicable approved roadmap phase. A missing or ambiguous source is an `ask` stop before any
+   proposal.
+2. **Ground the artifact.** Use the same posture as document review: run this package's
+   `scripts/ground-check.sh`, then re-read the load-bearing sources and signatures. A clean path
+   check is not proof that the prose is still correct.
+3. **Find supported simplifications.** Look for duplication, repeated verification, speculative
+   machinery not required by a goal or accepted decision, one-use abstractions with no independent
+   invariant, substrate-shaped mechanisms, repeated prose that adds no instruction, and mechanisms
+   or slices that can be combined without losing a distinct responsibility or failure boundary.
+   Refinement is not a copyedit; style-only shortening is out of scope.
+4. **Protect required content.** Propose a change only when:
+   - a spec still retains its goal, accepted decisions, constraints, required behavior, ownership
+     boundaries, decision-preserving rationale, and verification obligations; or
+   - a plan still retains every in-scope requirement from its governing source, its end-to-end
+     tracer, blocking order, independently testable slices, and a real verification gate for every
+     surviving slice.
 
-   **Legal for this kind.** Every proposed edit must already be a
-   legal in-place amend per the kind file. An illegal edit is
-   park/`ask`, never a proposed `keep`.
+   Never add a requirement, change the goal, settle a new decision, or move work to another
+   artifact. If whether something is required is unclear, ask one focused question and stop. An
+   answer settles the uncertainty but never confirms an edit package.
+5. **No-op.** If no supported simplification remains, say the artifact is already
+   minimum-sufficient under the available evidence. Stop without a proposal, write, status change,
+   or automatic review.
+6. **Propose; do not edit.** Show only the exact section or slice to remove, consolidate, or
+   simplify; the replacement when needed; and why the change preserves the contract. Do not list
+   retained content, assign classifications, calculate a compression score, or create another
+   artifact. Then stop. No invocation token skips this proposal boundary.
+7. **Parse confirmation.** Rejection writes nothing. An adjustment produces an updated proposal and
+   stops again. Any clear acceptance applies the shown package. `Apply only`, `without re-review`,
+   and equivalent wording may accept the package but cannot cancel the mandatory review.
+8. **Apply in place.** Amend the same file only after confirmation. Preserve surviving headings and
+   stable slice ids, remove obsolete cross-references, keep `status: draft`, and drop
+   `stage: approved` when present. Do not mint a successor or create `## Review history`.
+9. **Review.** Immediately follow the complete `verbs/review.md` procedure on the amended artifact.
+   This is a full two-axis review, not a delta check. Any correction then follows review's ordinary
+   transition to `revise`; refinement adds no restoration or oscillation protocol.
 
-   `keep-optional` rows state the recommended disposition
-   (take, or defer). Bare approval accepts that recommendation.
-   A `keep-optional` becomes `keep` only when the *proposal*
-   recommended taking it and the human approved, or when the
-   human promoted it in the confirm. Otherwise `deferred`.
+## Done when
 
-   Then **stop and wait**. Every invoke of `refine` takes this
-   path — "how should we refine this?", "how should we revise
-   this?", "let's revise the spec", "apply now", "skip the
-   proposal". There is no skip-proposal token. None of them
-   apply in the same turn as the proposal.
-   End the proposal with `Re-review: queued after apply` when intent is
-   carried or named; otherwise say `Re-review: not queued`.
-8. **Confirm parse** (the wait **after the proposal** only).
-   Compositional, not exclusive rows. A later `review` (or
-   `/inspector review`) after stop-and-offer is a **new arrow**,
-   not this exception.
-
-   1. **Reject** (closed set): `stop` / `don't` / `not yet` →
-      do not amend. Drop any carried re-review intent.
-   2. **Explicit no agent re-review.** “Without re-review”, “don't
-      re-review”, or “apply only” clears queued or named intent. It is
-      compositional: the utterance must still accept under 5 before Apply;
-      “apply only” itself is a clear acceptance.
-   3. **Human-will-read is not the verb.** "I'll review it" /
-      "let me read it" / "I'll look" without asking the agent
-      to run this skill's `review` → clear agent re-review intent. If
-      they also accepted the package, apply then stop-and-offer.
-   4. **Except / adjust first.** Drop F2, take a listed
-      optional, rewrite a proposed edit. Never Apply.
-      If the adjusted package is fully determined from the
-      already-shown proposal, keep that package in memory
-      (no re-show) and continue to 5 / 6. Keep queued or named
-      re-review intent if present. If 5 / 6 do not also match
-      (except without accept), re-show the adjusted package and
-      wait. If the owner must invent a new amendment, re-show,
-      wait, and carry re-review intent across that wait unless
-      they cancel it.
-   5. **Accept** (open set): any clear package acceptance.
-      Examples, not a closed list: `approved`, `yes`, `looks
-      good`, `do it`, `lgtm`, `ok`, `go ahead`, `apply`.
-      **Do:** apply, then step 10 according to the current re-review
-      intent. Reject (1) wins over this.
-   6. **Named re-review** (intent, same confirmation
-      utterance): extra conjunct on accept. They ask this
-      skill's `review` procedure to run on the artifact
-      after apply. Paraphrases count: "re-review", "then
-      review", "then run review", "review it after",
-      "approved, re-review the spec", `/inspector review` in
-      *this* utterance. Agent is the subject. **Do:** queue
-      re-review and apply (if 5 did not already), then step 10
-      queued path.
-   7. **`re-review` alone.** Pending `keep`s → ask once,
-      recommended answer: apply these first, then re-review.
-      Do not skip the fold. Do not review the unamended
-      artifact from this verb. No pending `keep`s (nothing to
-      fold) → skip Apply; follow `review` on the current
-      artifact (step 10 queued path).
-   8. During the **questions** stop, "approved" /
-      "approved, re-review" is not confirm. Finish asks (or
-      say the package cannot be built yet). Do not apply. Do
-      not start `review`.
-9. **Apply** (only after a confirm that authorizes apply).
-   Same path, same record. Do not mint a successor. Do not
-   write `published`. Keep `status: draft` (opportunistic
-   `records.sh --root <root> --records-root <records-root-relative> touch --status draft`, else file-mode
-   `status: draft` only). If `stage: approved` is
-   present, **drop it**. Do not create or append `## Review
-   history`.
-
-   Shared amend rules: Must-fix (`keep`) always. Nice-to-have
-   only when it does not change the artifact's goal, unless the
-   human promoted it. Re-ground any fold that cites code; if
-   you cannot verify it now, mark `(unverified — check at
-   walk)` on the edited line. Complete the argued section
-   (no "similar to section N", no "add error handling later").
-   Keep the claim falsifiable.
-
-   How, by kind: the kind file's refine legal locations.
-   Keep headings and ids stable. A coverage gap may fill the
-   named unit or append the next unused id when the kind
-   file allows it. A new requirement is park, not a `keep`
-   row.
-10. **After confirm.**
-
-   - **Queued or named re-review:** follow this skill's `review`
-     procedure (`verbs/review.md`) on the artifact (amended
-     if Apply ran; current if there was nothing to fold).
-     Full procedure (two-axis, conversation verdict, stop).
-     Not a delta mode and not a different file. Same-session
-     authorship is accepted; do not recuse; depth dial stays
-     default off. Do not start a walk.
-   - **Else:** stop. Always `status: draft`; `stage: approved`
-     dropped if it was present. One sentence the human can
-     act on, then the path, then the offer: `review`. Do not
-     run it.
+The target was a grounded spec or plan, every proposed change preserved its required contract, no
+write occurred before confirmation, and every accepted change completed a full review. A refusal,
+question, rejection, or supported no-op stopped without changing the artifact.

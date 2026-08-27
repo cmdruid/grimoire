@@ -33,7 +33,11 @@ A mechanism shaped by deletable substrate (a code built-in, an
 integer pipeline, a frozen baseline) is a finding even when
 every claim about `HEAD` is true.
 
-## Refine legal locations
+## Review continuation
+
+revision-after-review: automatic-proposal
+
+## Revision legal locations
 
 Named section: Problem / Goal / Approach / Mechanism /
 Verification / Slices. Keep section headings and slice ids

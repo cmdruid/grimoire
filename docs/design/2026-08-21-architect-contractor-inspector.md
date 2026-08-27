@@ -2,7 +2,7 @@
 doctype: design
 status: published
 created: 2026-08-21
-updated: 2026-08-24
+updated: 2026-08-27
 tags: [spec]
 ---
 
@@ -13,11 +13,11 @@ the lineage contract for three already-built skills, amended
 in place as their boundaries changed. It is not an implementation unit
 in the current portfolio and contains no slices.
 
-Current extension:
-`docs/design/2026-08-24-inspector-adequacy-and-review-close.md` owns all
-new Inspector behavior and setup. The skill-first workspace contract is
-`docs/design/2026-08-23-workspace-kinds.md`. Neither spec edits this
-lineage during implementation; alignment is folded before re-review.
+Current extensions: `docs/design/2026-08-24-inspector-adequacy-and-review-close.md` owns Inspector
+adequacy and setup; `.records/specs/2026-08-26-inspector-automatic-refinement-proposals.md` owns
+the original review-continuation behavior; `.records/specs/2026-08-27-inspector-revise-and-refine.md`
+owns the hard-cut correction/simplification split. The skill-first workspace contract is
+`docs/design/2026-08-23-workspace-kinds.md`.
 
 ## Problem
 
@@ -42,10 +42,10 @@ pack runbook or host procedure, not in their descriptions or setup.
   never writes implementation plans, builds, or reviews.
 - Contractor owns roadmap, plan, runbook, and build. It never writes a
   spec, reviews, or ships to trunk.
-- Inspector owns review and refine for the supported artifact kinds.
+- Inspector owns review, revise, and refine for the supported artifact kinds.
   Review is conversation-only until a passing document verdict is
-  accepted; refine is propose-then-apply and returns the artifact to
-  draft.
+  accepted; revise corrects supported findings, while explicit refine simplifies specs and plans.
+  Both mutation verbs propose before applying and return the artifact to draft.
 - A published spec is the gate into plan/build. Plans, roadmaps, and
   runbooks additionally use `stage: approved` after accepted review.
 - Kind policy is Inspector-owned project doctrine at:
@@ -69,18 +69,18 @@ pack runbook or host procedure, not in their descriptions or setup.
 **One job per actor.** Artifact creation and independent judgment are
 separate packages. Contractor begins only after the specification gate.
 
-**Kind files, not one mushed rubric.** Inspector's bundled/project kind
-files provide discriminators and judgment axes. The verb machine owns
-status custody, verdict vocabulary, stop boundaries, and confirmation.
+**Kind files, not one mushed rubric.** Inspector's bundled/project kind files provide
+discriminators, judgment axes, and the review-continuation selector. The verb machine owns the
+selector's meaning, status custody, verdict vocabulary, stop implementation, and confirmation.
 
 **Conversation verdict, artifact gate.** Review findings are ephemeral
-until refine folds them. Accepted passing review writes the artifact's
+until revise folds them. Accepted passing review writes the artifact's
 existing status/stage gate; no second review artifact is minted.
 
-**Propose before apply.** Refine verifies and classifies findings,
+**Propose before apply.** Revise verifies and classifies findings,
 surfaces required questions, proposes concrete amendments, stops, then
-applies only after confirmation. Named re-review is a separate full
-review after apply.
+applies only after confirmation. Refine proposes supported simplifications without a findings
+taxonomy. Every accepted refinement runs a full review.
 
 **Skill-first project ownership.** Each skill deploys only beneath its
 own workspace namespace. Architect/Contractor template deployment and
@@ -103,9 +103,13 @@ idea
   → host landing lane
 ```
 
-A failing review stops. A later `/inspector refine` may amend the same
-artifact and leaves it draft. The active Inspector extension specifies
-adequacy, review-close parsing, implementation review, and setup.
+A material document review follows its effective kind's continuation selector. Automatic kinds
+enter revision classification and reach questions or a proposal without another user command;
+offered kinds stop at an explicit choice; unavailable kinds do not revise. Every revision still
+stops before apply, and a confirmed fold leaves the artifact draft. Implementation review remains
+verdict-only. Refinement is an explicit spec/plan simplification pass and always re-reviews an
+accepted change. The active Inspector extensions specify adequacy, review-close parsing,
+continuation, implementation review, setup, and the revise/refine split.
 
 Founding-shaped work remains draft because it is a conversation driver,
 not a publish-gated job artifact.
@@ -147,23 +151,24 @@ Router surface:
 | Verb | Owns |
 |---|---|
 | `review` | independent two-axis judgment and conversation verdict |
-| `refine` | findings verification, proposal, confirmed in-place fold |
+| `revise` | findings verification, proposal, confirmed in-place correction |
+| `refine` | optional minimum-sufficiency proposal for a spec or plan |
 | `setup` | Inspector-owned project kind doctrine deployment |
 
 Bare Inspector asks. Unknown kinds ask/refuse; no rubric is invented.
-Normal review/refine are read-only with respect to project doctrine.
+Normal review/revise/refine are read-only with respect to project doctrine.
 
 ### Status custody
 
-| Artifact | Mint | Accepted review | Refine apply |
+| Artifact | Mint | Accepted review | Revise/refine apply |
 |---|---|---|---|
 | spec / ADR | `status: draft` | `status: published` | `status: draft` |
 | plan / roadmap / runbook | `status: draft`, no approved stage | `status: published`, `stage: approved` | `status: draft`, drop approved stage |
 | founding | `status: draft` | no status write | remains draft |
-| implementation | no artifact status | no write | refine unavailable |
+| implementation | no artifact status | no write | revise/refine unavailable |
 
 Review verdict words remain conversation-only. Review never appends
-Review history. Refine never mints a successor or findings record.
+Review history. Revise and refine never mint a successor or findings record.
 
 ### Project surfaces
 
@@ -182,20 +187,17 @@ ordinary project documentation.
 - Typed edges use artifact/capability types, never sibling names.
 - Cross-skill sequence is runbook/host-flow content.
 - No skill writes another skill's workspace namespace.
-- No implementation spec edits this lineage as a build task.
 
 ## Verification
 
 - Router/verb rosters match the three responsibility tables.
-- Architect and Contractor carry no review/refine verbs.
+- Architect and Contractor carry no review/revise/refine verbs.
 - Inspector does not author specs/plans or build.
 - Contractor build gates on status/stage, not Review history.
-- Accepted review and refine apply follow the status-custody table.
+- Accepted review and revise/refine apply follow the status-custody table.
 - Project paths are skill-first; zero kind-first Inspector/template
   paths in this file or live package prose.
 - Descriptions remain self-scoping; lint `fails=0`.
-- Active extension specs contain no implementation slice targeting this
-  lineage file.
 
 ## Out of scope
 
@@ -204,4 +206,4 @@ ordinary project documentation.
 - Workspace grammar and path migration.
 - Pack installation or composition.
 - Landing, shipping, or workstream custody.
-- Review records, automatic refinement, or compatibility aliases.
+- Review records, automatic simplification, or compatibility aliases.

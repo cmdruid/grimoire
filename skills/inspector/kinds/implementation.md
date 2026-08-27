@@ -30,7 +30,11 @@ does not become an implementation review merely because it contains code.
 
 Use the shared exact verdict mapping. The verdict is conversation-only.
 
-## Refine legal locations
+## Review continuation
 
-None. Implementation review never amends code, writes status, publishes, offers refine, or enters
+revision-after-review: unavailable
+
+## Revision legal locations
+
+None. Implementation review never amends code, writes status, publishes, offers revise, or enters
 automatic remediation.

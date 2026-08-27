@@ -17,7 +17,7 @@ Map H2s (exact strings, once each):
 - Working conventions & layout
 - Declared verification command (intended, not proven)
 
-**Parser** (one grammar; `review` / `refine` share it):
+**Parser** (one grammar; `review` / `revise` share it):
 
 1. **Front-matter.** If the file begins with a line `---`, YAML
    through the next line that is only `---`. `tags:` is a YAML
@@ -56,7 +56,11 @@ Against the inlined map and live behavior — not a library
 design doc. Ground-check + re-read still run. Do not promote
 `status`.
 
-## Refine legal locations
+## Review continuation
+
+revision-after-review: offered
+
+## Revision legal locations
 
 Location is a **mapped H2** string; no new H2. Fill the named
 mapped section. A coverage gap is "fill the mapped section". A
