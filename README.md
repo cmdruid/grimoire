@@ -37,8 +37,8 @@ diagnostics), `analyst` (reports and briefings read back out of the records), `f
 `checkpoint`, `mailbox`, `delegate`, `scheduler`, `workspace` (the owner-first workspace guard).
 Three skills sit outside the pack on
 purpose: `agent-council` (cross-vendor review panel), `skill-builder` (the **toolmaker** —
-scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
-(developer-docs house style). See *The packs* below.
+scaffold, audit, and calibrate authoring doctrine), and `developer-writing`
+(purpose-aware developer prose with Google documentation mechanics). See *The packs* below.
 
 | skill | what it does |
 |---|---|
@@ -51,7 +51,7 @@ scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
 | `contractor` | one job lead — roadmap, plan, runbook, build; never ships; never writes a spec |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
-| `google-developer-style` | write developer docs in Google's house style; snapshot, no live-site floor; standalone, outside every pack |
+| `developer-writing` | write and edit developer-facing prose with purpose-aware structure, human editorial judgment, and Google documentation mechanics; standalone, outside every pack |
 | `journal` | the records format authority: the record discriminator + contract + `records.sh` + the history ledger; setup, done, substrate curate |
 | `inspector` | material review of documents and completed implementations; revise folds supported document findings, refine simplifies specs and plans, and setup deploys Inspector-owned kind doctrine absent-only |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
@@ -109,7 +109,7 @@ a face skill or, as here, at repository root with no face. `install.sh --pack` i
 transactionally and records the install in the sidecar `grimoire.lock` beside the target dir.
 
 - **`clankshop`** (`PACK.md`) — the skills above (minus `agent-council`,
-  `google-developer-style`, and `skill-builder`) as a faceless toolkit. The manifest body is the
+  `developer-writing`, and `skill-builder`) as a faceless toolkit. The manifest body is the
   seam map; there is no `clankshop` skill or project assembler.
 
 ## Repo layout

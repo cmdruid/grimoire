@@ -29,8 +29,8 @@ All other members are optional and default-installed:
 - Utilities: `delegate`, `mailbox`, `checkpoint`, `scheduler`, and `workspace`.
 
 Three skills are intentionally outside the pack: `skill-builder` maintains skills libraries,
-`agent-council` is a standalone cross-vendor panel, and `google-developer-style` is a standalone
-house-style guide. None is part of the project's `clankshop` toolkit.
+`agent-council` is a standalone cross-vendor panel, and `developer-writing` is a standalone
+developer-writing guide. None is part of the project's `clankshop` toolkit.
 
 ## Composition seams
 
