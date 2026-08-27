@@ -39,8 +39,8 @@ affected slice before writing code; do not force an aged plan onto a changed tre
    git -C /Users/cscott/Repos/grimoire/.workstreams/skill log stream/skill..main --oneline
    ```
 
-   Expected at plan authoring: no existing resource-claim implementation; only the published spec
-   names the new ref protocol; the current Workstream package paths below exist; `main` has not moved.
+   Expected at plan authoring: no resource-claim implementation exists outside the published spec and
+   this plan; the current Workstream package paths below exist; `main` has not moved.
    A sibling worktree may exist, but its hand-off belongs to its own session and is not opened. The
    plan ground-check reports exactly three unresolved create targets — `workstream-resource.sh`,
    `resource-test.sh`, and `verbs/resource.md` — until Slice 1 creates them; every incumbent path
