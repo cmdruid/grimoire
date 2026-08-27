@@ -137,6 +137,20 @@ done
 break_ref alpha-dev
 break_ref beta-dev
 
+# Stream ownership follows create's kebab grammar; it does not inherit the resource's 63-byte cap.
+LONG_STREAM="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+LONG_HANDOFF="$TMP/long-stream.md"
+write_owner_handoff "$LONG_HANDOFF" "$LONG_STREAM" ""
+long_stream_out="$TMP/long-stream.out"
+if "$HELPER" acquire "$ROOT" "$LONG_STREAM" "stream/$LONG_STREAM" "$LONG_HANDOFF" long-stream-dev config-a > "$long_stream_out"; then
+  pass=$((pass + 1))
+  long_stream_oid="$(sed -n 's/^oid=//p' "$long_stream_out")"
+  "$HELPER" break "$ROOT" long-stream-dev "$long_stream_oid" >/dev/null
+else
+  echo "FAIL: resource ownership does not narrow the existing stream-name grammar" >&2
+  fail=$((fail + 1))
+fi
+
 # Same-owner acquire is idempotent only with the canonical token in the hand-off.
 idem_out="$TMP/idem.out"
 "$HELPER" acquire "$ROOT" skill stream/skill "$HANDOFF" idem-dev config-a > "$idem_out"
@@ -240,6 +254,31 @@ else
   fail=$((fail + 1))
 fi
 expect "break reports malformed displacement" 'displaced_state=malformed' "$TMP/malformed-break.out"
+
+# Time fields must be real, arithmetic-safe values rather than merely matching a textual shape.
+bad_time_oid="$(printf 'version=1\nresource=bad-time-dev\nowner=skill\nbranch=stream/skill\nhandoff=%s\nintent=config-a\nacquired_epoch=1\nacquired_at=2026-99-99T99:99:99Z\nnonce=bad-time\n' "$HANDOFF" | git -C "$ROOT" hash-object -w --stdin)"
+git -C "$ROOT" update-ref refs/workstream-resources/bad-time-dev "$bad_time_oid"
+if "$HELPER" status "$ROOT" bad-time-dev > "$TMP/bad-time.out" 2>&1; then
+  echo "FAIL: impossible RFC 3339 timestamp must be malformed" >&2
+  fail=$((fail + 1))
+else
+  expect_eq "impossible RFC 3339 timestamp exits 2" 2 "$?"
+fi
+expect "impossible timestamp remains held" 'held=true' "$TMP/bad-time.out"
+expect "impossible timestamp reports malformed" 'state=malformed' "$TMP/bad-time.out"
+"$HELPER" break "$ROOT" bad-time-dev "$bad_time_oid" >/dev/null
+
+bad_epoch_oid="$(printf 'version=1\nresource=bad-epoch-dev\nowner=skill\nbranch=stream/skill\nhandoff=%s\nintent=config-a\nacquired_epoch=08\nacquired_at=1970-01-01T00:00:08Z\nnonce=bad-epoch\n' "$HANDOFF" | git -C "$ROOT" hash-object -w --stdin)"
+git -C "$ROOT" update-ref refs/workstream-resources/bad-epoch-dev "$bad_epoch_oid"
+if "$HELPER" status "$ROOT" bad-epoch-dev > "$TMP/bad-epoch.out" 2>&1; then
+  echo "FAIL: non-canonical epoch must be malformed" >&2
+  fail=$((fail + 1))
+else
+  expect_eq "non-canonical epoch exits 2" 2 "$?"
+fi
+expect "non-canonical epoch remains held" 'held=true' "$TMP/bad-epoch.out"
+expect "non-canonical epoch reports malformed" 'state=malformed' "$TMP/bad-epoch.out"
+"$HELPER" break "$ROOT" bad-epoch-dev "$bad_epoch_oid" >/dev/null
 
 # Object-format handling derives the OID length from the fixture repository.
 SHA_ROOT="$TMP/sha256"

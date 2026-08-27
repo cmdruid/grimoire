@@ -74,7 +74,7 @@ valid_resource() {
 }
 
 valid_stream() {
-  valid_resource "$1"
+  printf '%s\n' "$1" | grep -Eq '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$'
 }
 
 valid_oid() {
@@ -96,6 +96,26 @@ valid_text() {
   if printf '%s' "$value" | grep -q '[[:cntrl:]]'; then
     return 1
   fi
+}
+
+valid_epoch() {
+  local value="$1"
+  [ "${#value}" -le 18 ] &&
+    printf '%s\n' "$value" | grep -Eq '^(0|[1-9][0-9]*)$'
+}
+
+valid_rfc3339_utc() {
+  local value="$1" parsed
+  printf '%s\n' "$value" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$' || return 1
+  if parsed="$(date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$value" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null)"; then
+    [ "$parsed" = "$value" ]
+    return
+  fi
+  if parsed="$(date -u -d "$value" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null)"; then
+    [ "$parsed" = "$value" ]
+    return
+  fi
+  return 1
 }
 
 validate_identity() {
@@ -189,8 +209,8 @@ claim_parse_v1() {
   [ "$META_BRANCH" = "stream/$META_OWNER" ] || return 1
   valid_abs_path "$META_HANDOFF" || return 1
   valid_text "$META_INTENT" 256 || return 1
-  printf '%s\n' "$META_EPOCH" | grep -Eq '^[0-9]+$' || return 1
-  printf '%s\n' "$META_AT" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$' || return 1
+  valid_epoch "$META_EPOCH" || return 1
+  valid_rfc3339_utc "$META_AT" || return 1
   valid_text "$META_NONCE" 512 || return 1
   return 0
 }
