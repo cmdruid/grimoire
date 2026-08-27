@@ -66,7 +66,7 @@ warning() {
 }
 
 is_kind() {
-  case "$1" in doctrine|hooks|operations|scripts|templates|trackers) return 0 ;; *) return 1 ;; esac
+  case "$1" in doctrine|drafts|hooks|operations|scripts|templates) return 0 ;; *) return 1 ;; esac
 }
 
 valid_owner() {
@@ -116,8 +116,6 @@ validate_direct_kind() {
           printf '%s' "$base" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]*\.sh$' \
             || failure "$entry" shell-required
           [ -x "$entry" ] || failure "$entry" script-not-executable ;;
-        trackers)
-          safe_stem "$base" || failure "$entry" unsafe-entry-name ;;
       esac
     fi
   done < <(find "$dir" -mindepth 1 -maxdepth 1 -print0)
@@ -125,8 +123,8 @@ validate_direct_kind() {
 
 validate_kind() {
   case "$1" in
-    doctrine|templates) validate_tree_markdown "$2" ;;
-    hooks|operations|scripts|trackers) validate_direct_kind "$1" "$2" ;;
+    doctrine|drafts|templates) validate_tree_markdown "$2" ;;
+    hooks|operations|scripts) validate_direct_kind "$1" "$2" ;;
   esac
 }
 

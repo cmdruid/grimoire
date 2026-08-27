@@ -28,30 +28,39 @@ expect "absent state" "state=absent" "$OUT"
 fresh split-valid
 mkdir -p \
   "$case_root/.spaces/alpha/doctrine/nested" \
+  "$case_root/.spaces/alpha/drafts/nested" \
   "$case_root/.spaces/alpha/hooks" \
   "$case_root/.spaces/beta/scripts" \
   "$case_root/.spaces/beta/templates/nested" \
-  "$case_root/.spaces/gamma/trackers" \
+  "$case_root/.trackers" \
   "$case_root/.spaces/delta/operations"
 printf '# policy\n' >"$case_root/.spaces/alpha/doctrine/nested/policy.md"
+printf '# idea\n' >"$case_root/.spaces/alpha/drafts/nested/idea.md"
 printf '# hook\n' >"$case_root/.spaces/alpha/hooks/after.md"
 printf '#!/usr/bin/env bash\n' >"$case_root/.spaces/beta/scripts/run.sh"
 chmod +x "$case_root/.spaces/beta/scripts/run.sh"
 printf '# template\n' >"$case_root/.spaces/beta/templates/nested/item.md"
-printf 'id\tstate\n' >"$case_root/.spaces/gamma/trackers/tasks.tsv"
+printf 'id\tstate\n' >"$case_root/.trackers/tasks.tsv"
 printf '# operation\n' >"$case_root/.spaces/delta/operations/release.md"
 run_check "$case_root" .spaces .records
 expect_eq "valid split tree passes" 0 "$rc"
 expect "split mode" "mode=split" "$OUT"
 expect "split no failures" "fails=0" "$OUT"
 
-for retired in doctrine hooks operations scripts templates trackers; do
+for retired in doctrine drafts hooks operations scripts templates; do
   fresh "retired-$retired"
   mkdir -p "$case_root/.spaces/$retired"
   run_check "$case_root" .spaces .records
   expect_eq "retired $retired fails" 1 "$rc"
   expect "retired $retired reason" "reason=retired-top-level-kind" "$OUT"
 done
+
+fresh owner-local-trackers
+owner_local_tracker="$case_root/.spaces/gamma/""trackers"
+mkdir -p "$owner_local_tracker"
+run_check "$case_root" .spaces .records
+expect_eq "owner-local trackers fail" 1 "$rc"
+expect "owner-local trackers reason" "reason=unknown-kind" "$OUT"
 
 fresh unknown-kind
 mkdir -p "$case_root/.spaces/alpha/cache"
@@ -83,12 +92,13 @@ expect "invalid owner reason" "reason=invalid-owner" "$OUT"
 fresh malformed-kinds
 mkdir -p \
   "$case_root/.spaces/a/doctrine" \
+  "$case_root/.spaces/a/drafts" \
   "$case_root/.spaces/b/hooks/nested" \
   "$case_root/.spaces/c/scripts" \
   "$case_root/.spaces/d/templates" \
-  "$case_root/.spaces/e/trackers/nested" \
   "$case_root/.spaces/f/operations"
 printf 'bad\n' >"$case_root/.spaces/a/doctrine/policy.txt"
+printf 'bad\n' >"$case_root/.spaces/a/drafts/idea.txt"
 printf '#!/usr/bin/env bash\n' >"$case_root/.spaces/c/scripts/run.sh"
 printf '# template\n' >"$case_root/.spaces/d/templates/item.md"
 ln -s "$case_root/.spaces/d/templates/item.md" "$case_root/.spaces/d/templates/link.md"

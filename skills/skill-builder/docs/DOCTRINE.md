@@ -207,7 +207,7 @@ nothing** (safe-by-default — never clobber hand-edited content).
 doc. Exercise `init`/registration against a throwaway fixture instead. The library that teaches the
 mechanism is not thereby a self-registering deployment of it.
 
-## Front-door variables — one declaration, two readers
+## Front-door variables — one declaration mechanism, three roots
 
 Some values genuinely vary per host project. The canonical example is the **agent-records
 home** — the directory typed records live under, default `.records/`: right for every fresh
@@ -230,12 +230,21 @@ A second variable stands on its own root. For example, a host may override the d
 The **agent-workspace home** is where a project's skill-owned development
 environment lives. Its grammar is
 `<agent-workspace>/<skill>/<kind>/...`: owner names are open
-`[a-z0-9-]+`, while kinds are the closed set `doctrine`, `hooks`,
-`operations`, `scripts`, `templates`, and `trackers`. A skill materializes only
+`[a-z0-9-]+`, while kinds are the closed set `doctrine`, `drafts`, `hooks`,
+`operations`, `scripts`, and `templates`. A skill materializes only
 the kinds it owns and writes only beneath its own namespace. Default `.spaces`.
 Declare it only as an override; there is **no** legacy synonym. A declared
 value of `.` is forbidden because it would mingle owner namespaces with the
 project root.
+
+A third variable names the **agent-trackers home**, the public data layer for durable queues:
+
+    agent-trackers: project-trackers
+
+Its default is `.trackers`. Declare it only as an override; it has no legacy synonym, may not be
+`.` or absolute, and must not overlap either the records home or the agent-workspace home. Backlog
+owns this layer and its staged provider. Consumer skills use that provider directly; tracker files
+are not an owner-local workspace kind.
 
 **`agent-templates` is retired.** It was a third variable that defaulted
 *inside* the records home (`<agent-records>/templates`). No host ever declared
@@ -254,7 +263,8 @@ one line; each skill still reads its own `doctrine/` kind.
 **`agent-workspace` maps to `.spaces`, and the singular/plural distinction is deliberate.**
 The variable names the whole project-level workspace; its default contains one owner-first
 space per skill. The plural also pairs with `.records`: `.records/` holds typed work products,
-while `.spaces/` holds skill-owned project support. Both defaults stay short and legible at
+while `.spaces/` holds skill-owned project support and `.trackers/` holds public queues. All three
+defaults stay short and legible at
 depth; for example, `.spaces/auditor/doctrine/test/workflows/audit/GUIDE.md`.
 
 Skill prose keeps naming each default path literally (`.records/plans/…`,
@@ -269,10 +279,10 @@ and a host that wants it elsewhere should not have to fork the library. That is 
 held openly rather than dressed as an evidence claim. The other two legs — a default right for
 every fresh project, and readers that consume it — hold today.
 
-**The `.spaces` default is a hard cut.** There is no legacy alias, previous-default probe,
-adoption ladder, or migration behavior. With no declaration, readers resolve `.spaces` directly.
-A host may still explicitly declare any valid repo-relative value, including `.dev`; that is an
-ordinary override, not compatibility behavior.
+**The `.spaces` and `.trackers` defaults are hard cuts.** There is no legacy alias,
+previous-default probe, adoption ladder, or migration behavior. With no declaration, readers
+resolve those defaults directly. A host may still explicitly declare any valid repo-relative
+value; that is an ordinary override, not compatibility behavior.
 
 One declaration mechanism, same precedence (declared value if present, else the default).
 Three readers:
@@ -317,6 +327,21 @@ back through another home, and it accepts only its own name:
         fi
       done
       printf '%s\n' "${decl:-.spaces}"
+    }
+
+The **agent-trackers** home is another independent flat default:
+
+    # Front-door variable `agent-trackers` (default `.trackers`). Public queues
+    # and the staged tracker provider live directly beneath this root.
+    resolve_agent_trackers() {
+      local root="$1" fd decl=""
+      for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
+        if [ -z "$decl" ] && [ -f "$fd" ]; then
+          decl="$(sed -n -E 's/^agent-trackers:[[:space:]]*//p' "$fd" \
+                  | head -n 1 | sed 's/[[:space:]]*$//')"
+        fi
+      done
+      printf '%s\n' "${decl:-.trackers}"
     }
 
     # Templates home: owner-local kind, not a variable.
@@ -423,15 +448,18 @@ A skill that reads **or writes** project doctrine follows these rules. Portable 
 library. Reading counts: you must resolve a path to read from it, so a reader that hardcodes a
 doctrine path is exactly as wrong as a writer that does.
 
-1. **Which home.** Five destinations, one test:
+1. **Which home.** Seven destinations, one test:
 
    > **Records** are dated, typed, closeable instances → `<agent-records>`.
    > **Templates** are project-editable authoring scaffolds actively read by their owner →
    > `<agent-workspace>/<skill>/templates/`.
    > **Doctrine** is living, normative, undated, and never closes →
    > `<agent-workspace>/<skill>/doctrine/`.
+   > **Drafts** are living, opt-in incubation files, not records →
+   > `<agent-workspace>/<skill>/drafts/`.
    > **Hooks** are seam overlays on a skill's own loop →
    > `<agent-workspace>/<skill>/hooks/<seam>.md`.
+   > **Trackers** are public durable queues and their shared provider → `<agent-trackers>`.
    > **Inspector kinds** are undated judgment templates
    > (not mint shells, not records, not the audit rubric)
    > → `<agent-workspace>/inspector/doctrine/<kind>.md`.
@@ -440,7 +468,7 @@ doctrine path is exactly as wrong as a writer that does.
    doctrine: a spec (a dated `specs/` record), a captured project fact, an audit *report*,
    a host operation under `<agent-workspace>/<skill>/operations/`. The auditor rubric at
    `auditor/doctrine/test/workflows/audit/` remains doctrine (a parked nested tree). Host
-   procedures are workspace-resident files copied by their owner skill — not a sixth
+   procedures are workspace-resident files copied by their owner skill — not an eighth
    landing class.
 
    **The test classifies where a thing LANDS, not where it ships from.** A skill's own
@@ -467,6 +495,10 @@ doctrine path is exactly as wrong as a writer that does.
    job. No skill assembles the whole agent workspace; there is no pack-level
    exception.
 
+   **Tracker-layer owner exception.** Backlog may create the declared trackers home because
+   standing up that distinct public data layer and its provider is its explicit job. Other skills
+   consume the provider; they do not seed or reinterpret the layer.
+
    **Independent seeding.** A skill copies only the workspace files it owns
    (`operations/` / `hooks/` / `templates/` beneath its namespace, as applicable), including the
    complete schema on any operation it copies; incumbent wins. A cross-owner finder over
@@ -491,7 +523,7 @@ doctrine path is exactly as wrong as a writer that does.
 
 5. **Use a sanctioned resolution literal.** Each home has a **small fixed set** of accepted
    phrasings; a conforming skill contains a member verbatim. For home `H` (one of
-   `agent-records`, `agent-workspace`), the set is:
+   `agent-records`, `agent-workspace`, `agent-trackers`), the set is:
 
        <H>                 <- the angle-bracket path form; PREFER THIS
        the H home

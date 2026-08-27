@@ -22,10 +22,9 @@ paths or create directories. A missing workspace is valid and reports `state=abs
 Managed paths have the shape `<agent-workspace>/<owner>/<kind>/...`. Owners match
 `[a-z0-9-]+` and are open-ended. Kinds are closed:
 
-- `doctrine` and `templates`: nested Markdown trees.
+- `doctrine`, `drafts`, and `templates`: nested Markdown trees.
 - `hooks` and `operations`: direct Markdown files.
 - `scripts`: direct executable shell files.
-- `trackers`: direct safe-named regular files; the owning engine defines their schema.
 
 Direct files under the workspace or owner, unknown kinds, symlinked owners/kinds/content, and
 the retired top-level kind directories fail. When workspace and records roots coincide,

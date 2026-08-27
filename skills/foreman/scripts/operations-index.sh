@@ -46,7 +46,7 @@ while IFS= read -r file; do
   [ -n "$file" ] || continue
   rel="${file#"$workspace_dir"/}"; owner="${rel%%/*}"; base="${file##*/}"; stem="${base%.md}"
   identity="$owner/$stem"
-  case "$owner" in doctrine|hooks|operations|scripts|templates|trackers) continue ;; esac
+  case "$owner" in doctrine|drafts|hooks|operations|scripts|templates) continue ;; esac
   printf '%s\n' "$identity" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*$' || {
     malformed=$((malformed + 1)); echo "malformed_operation=$identity|reason=bad-identity"; continue;
   }

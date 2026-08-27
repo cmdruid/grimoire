@@ -928,7 +928,7 @@ done
 # vocabulary separate in this source: the test assembles broken fixtures, and a
 # literal absence sweep can therefore cover this package too.
 workspace_prefix='(<agent-workspace>|\.spaces)'
-workspace_kinds='(doctrine|hooks|operations|scripts|templates|trackers)'
+workspace_kinds='(doctrine|drafts|hooks|operations|scripts|templates)'
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   while IFS= read -r -d '' f; do
@@ -937,6 +937,18 @@ for sk in "$skills_dir"/*/; do
       [ -n "$line" ] || continue
       fail "$name: $rel:$line: kind-first workspace path -- use <agent-workspace>/<skill>/<kind>/..."
     done < <(grep -nE "$workspace_prefix/$workspace_kinds(/|[^a-z0-9-]|$)" "$f" || true)
+  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
+done
+
+# Trackers are a first-class public layer, never an owner-local workspace kind.
+for sk in "$skills_dir"/*/; do
+  name="$(basename "$sk")"
+  while IFS= read -r -d '' f; do
+    rel="${f#"$sk"}"
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      fail "$name: $rel:$line: owner-local tracker path -- use <agent-trackers>/..."
+    done < <(grep -nE "$workspace_prefix/[a-z0-9][a-z0-9-]*/trackers(/|[^a-z0-9-]|$)" "$f" || true)
   done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
 done
 
