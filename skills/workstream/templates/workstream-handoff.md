@@ -147,6 +147,12 @@ The hand-off file's first heading carries its absolute path (`/checkpoint`'s
 anchor-line technique). Speak that path at `save` / `load` / Recovery — not
 as a prefix on ordinary status replies.
 
+For every host procedure that names a protected shared resource, acquire its literal resource and
+intent before the first protected operation. Validate a held claim before each protected command and
+after load/recovery; halt on held or inconsistent state, and release early when the protected work is
+finished. Save, sync, ship, park, recycle, and resets do not change ownership; close releases any
+remainder.
+
 **Reset ritual** (whether Scenario A *lands* depends on *Ship cadence* above):
 - **Feature complete, at a landing point (`per-stage` / a milestone / track end):** the independent
   compiled hook **Feature completion** (skip it if empty) -> `/workstream ship`

@@ -254,7 +254,7 @@ affected slice before writing code; do not force an aged plan onto a changed tre
     zero/one/many sets release; lifecycle rewrites preserve exact token lines; no direct or forced
     teardown bypass is possible. Commit the green slice.
 
-- [ ] **Slice 4: cold discovery and operational teaching** <requires: 3>
+- [x] **Slice 4: cold discovery and operational teaching** <requires: 3>
 
   - Files:
     - Modify: `skills/workstream/SKILL.md`
@@ -296,6 +296,19 @@ affected slice before writing code; do not force an aged plan onto a changed tre
     Expected: contract assertions and lint are green (`fails=0 warns=0`); both positive cold probes
     route to Workstream and recover the four operational moments; the control probe does not prescribe
     a resource lock. Commit the green slice.
+
+  - Fresh-context evidence (2026-08-27; selection used only this branch's staged
+    `skills/*/SKILL.md` frontmatter metadata):
+    - Prompt: `coordinate access to a shared Docker environment between workstreams` → selected
+      Workstream; acquire the named singleton/intent before first protected work, validate before each
+      later operation and after load/recovery, release immediately when finished, halt with holder
+      facts on held/malformed/inconsistent state; attended exact-OID break only.
+    - Prompt: `acquire an exclusive development-resource lock` → selected Workstream; the grouped
+      resource verb acquires from loaded Coordinates, records the exact OID only after success,
+      validates the hand-off/ref pair, exact-token releases, and halts on stale/inconsistent state or
+      failed compensation.
+    - Control: `two workstreams need to ship Git changes at the same time` → selected Workstream and
+      retained Git's ff-only contention path: the loser re-syncs/retries; no resource claim prescribed.
 
 ## Coverage
 

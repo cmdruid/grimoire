@@ -1,6 +1,6 @@
 ---
 name: workstream
-description: "Drive a long-lived development stream as a continuous loop, shipping queued features in a git worktree or in-place. `create`, `save`/`load`, `sync`, `ship`, `park`/`unpark`, `recycle`, `close`, and `status` own stream lifecycle. `/workstream setup` deploys optional active templates and empty hook points. Use when the user runs `/workstream`, asks to start or resume a continuous feature stream, manage its worktree lifecycle, ship its work, or configure its project surfaces."
+description: "Drive a long-lived development stream as a continuous loop, shipping queued features in a git worktree or in-place. Own stream creation, save/load, sync, landing, parking, recycling, teardown, and status. The grouped `resource acquire|status|release|break` verb atomically coordinates repository-local resource locks for shared development resources and shared or exclusive environments across workstreams. Use when the user runs `/workstream`, manages a stream lifecycle, ships its work, or needs that exclusive coordination."
 ---
 
 # workstream
@@ -244,7 +244,7 @@ templates.
 ## Edges
 
 <!-- edges:workstream -->
-- produces: plan, report — Workstream-owned schemas in `<agent-records>/streams/`
+- produces: plan, report, resource-claim — Workstream records plus repository-local coordination state
 - handoff: — (none; the loop is the skill)
 - consumes: plan, roadmap — typed queue sources; free-text briefs and intake templates are direct invocation inputs
 <!-- /edges:workstream -->
@@ -258,6 +258,6 @@ exhausted or deliberately closed and every landing point has passed the configur
 ## On-demand doctrine
 
 **`flow.md`** — the agent orchestration: execution modes (`delegate`/`manual`), the autonomy rule,
-the seam rule, confident launch, ship cadence, the reset ritual, the manual-mode phase loop, and
+the seam rule, confident launch, shared-resource timing, ship cadence, the reset ritual, the manual-mode phase loop, and
 eventful-ship handling. Read it at every loop entry (`create`/`load`/`recycle`); mid-loop verbs assume
 it is already in context.

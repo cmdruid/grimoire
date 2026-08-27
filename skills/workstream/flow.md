@@ -157,6 +157,23 @@ Two more ways a queued item can be wrong, beyond *already shipped*:
 After the single launch confirm, build to completion. (This is the same interaction for `create`'s
 tail, `load`'s resume, and `recycle`'s relaunch — there is no separate per-verb menu.)
 
+### Shared resources — acquire before protected work, release when finished
+
+A resource claim coordinates an external repository-local singleton only when a host procedure names
+the literal resource and intent. Workstream never infers one from an arbitrary command. Run the
+resource verb's acquire procedure before the first protected operation that can observe or mutate
+that declared singleton. Validate the exact held inventory before every later protected operation,
+and validate again after `load` or Scenario C recovery before protected work resumes. Release as soon
+as the protected work finishes; `close` atomically releases any remainder.
+
+A held, malformed, or inconsistent claim is the existing Blocker seam: report the helper's bounded
+holder facts and halt. Never poll, wait, infer that age permits takeover, or run an unattended
+`break`; another owner's claim persists until an attended exact-token break or its owner's release.
+
+Do not acquire a resource claim for Git landing, ordinary worktree files, read-only work, or
+independently addressable environments. Git already serializes its own ref advancement, files live in
+isolated worktrees, and separately addressable environments do not share one singleton.
+
 ### Ship cadence — when the loop lands (per-stream, recorded at create)
 
 `ship` is **expensive** (a full gate + a sync-rebase + the land sequence), so *how often* a stream
