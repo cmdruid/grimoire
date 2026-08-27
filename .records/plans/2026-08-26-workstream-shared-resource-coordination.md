@@ -1,6 +1,7 @@
 ---
 doctype: plans
-status: draft
+status: published
+stage: approved
 schema: contractor/plan@1
 tags: [plan]
 ---
