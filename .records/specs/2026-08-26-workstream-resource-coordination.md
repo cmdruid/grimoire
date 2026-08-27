@@ -32,7 +32,10 @@ scratch.
 
 Done means the claim survives command exit and context resets, never expires, cannot be released by a
 stale token, is automatically relinquished by a successful `/workstream close`, and requires explicit
-human authorization to break when its owner cannot release it.
+human authorization to break when its owner cannot release it. A fresh agent must also be able to
+discover the capability from Workstream's routing surface, distinguish situations that need a claim
+from those that do not, and execute the acquire/validate/release protocol without reconstructing it
+from this specification.
 
 ## Approach
 
@@ -92,6 +95,58 @@ internal hyphens, no leading or trailing hyphen. The owner must satisfy `create`
 grammar; this feature does not narrow it. Intent defaults to `(unspecified)`, is one non-empty argument
 of at most 256 bytes, and rejects CR, LF, NUL, and other control characters. Intent is diagnostic and
 must not contain secrets.
+
+### Discovery and agent teaching
+
+Resource coordination is a core Workstream capability, not a project-installed surface. It adds no
+front-door variable, registration block, setup step, or separate skill. The Workstream package must
+teach it through the same progressive-disclosure path as every other verb:
+
+- Revise `SKILL.md` frontmatter so natural-language requests about coordinating a shared development
+  resource, an exclusive environment, or a resource lock route to Workstream. The description remains
+  generic rather than naming DUCAT or Docker, stays within the frontmatter length budget, and continues
+  to describe stream lifecycle rather than promising OS-level enforcement.
+- Add one dispatch-table row for `resource acquire|status|release|break` that routes to
+  `verbs/resource.md`, names the grouped operation's purpose, and makes the per-subcommand location
+  rules visible. The new verb file is the procedural authority; the router must not duplicate its
+  implementation.
+- Add `resource-claim` to Workstream's `produces:` edge. It is repository-local coordination state,
+  not a record schema or an input another skill must consume.
+- List `workstream-resource.sh` in `SKILL.md`'s helper-script contract as the only supported writer of
+  `refs/workstream-resources/`. The entry distinguishes its mutations from the existing read-only Git
+  facts helper and says that the verb owns decisions while the helper owns validation and atomic state
+  changes.
+- Add a `Shared resources` section to `flow.md`. It tells an agent to acquire before the first
+  operation that can observe or mutate a declared singleton, validate before every later protected
+  operation and after load/recovery, and release as soon as the stream no longer needs it. A held or
+  inconsistent claim is a blocker seam: report the helper's holder facts and halt, with no polling,
+  waiting, unattended break, or inference that age permits takeover. Close performs the final release.
+- Teach when *not* to use the feature: Git landing, ordinary worktree files, read-only operations, and
+  independently addressable environments remain outside the lock protocol. Workstream never infers a
+  protected resource merely from an arbitrary shell command.
+- Put concise usage examples in `verbs/resource.md`, including the one-resource/multiple-intent
+  configuration pattern. The procedure shows the exact acquire, status, release, and human-confirmed
+  break forms, explains the successful/held/malformed outcomes, and tells the agent how to present a
+  conflict as a blocker without suggesting takeover.
+
+The bundled hand-off's `Loop routine` carries the durable operational reminder: obey each named host
+procedure's acquisition prerequisite, validate a held claim before its protected commands, and halt
+on conflict. Its `Resource locks` section remains the exact token inventory. This makes save/load and
+compaction recovery re-teach the active obligation without copying the full verb procedure into the
+hand-off.
+
+Because Workstream cannot discover which external commands share a singleton, the host procedure is
+the declaration boundary. A procedure that starts, stops, tests, or reconfigures one must name the
+resource and intent and show the literal prerequisite, for example:
+
+```text
+/workstream resource acquire ducat-dev --intent config-a
+```
+
+The acquisition appears before the first protected command, validation governs subsequent protected
+commands, and an early release appears when ownership need not last until close. Naming only a vague
+"lock" prerequisite is insufficient because the agent must not invent either the singleton identity
+or the configuration intent.
 
 ### Registry and claim format
 
@@ -204,10 +259,9 @@ handoff line must name a live ref with the same OID and owner, and every valid r
 metadata owner is this stream must appear in the hand-off. Any missing, extra, malformed, or mismatched
 claim is a hard stop. A passing validation reports the held resources and their current intents.
 
-Before a protected external-resource operation, the agent runs the same validation. Workstream cannot
-infer which host commands use which resources; the host procedure that starts, stops, tests, or
-reconfigures the singleton must name the resource acquisition as its prerequisite. This feature is a
-cooperative correctness protocol, not an OS security boundary.
+Before a protected external-resource operation, the agent runs the same validation. The teaching and
+host-procedure declaration contract above determines which operations are protected. This feature is
+a cooperative correctness protocol, not an OS security boundary.
 
 ### Close and teardown
 
@@ -277,6 +331,21 @@ The fixture suite proves:
 13. Ordinary `sync`/`ship` operations neither enumerate nor mutate `refs/workstream-resources/`, and
     active refs do not dirty either checkout.
 14. Status works from root and linked worktrees and resolves the same repository-local registry.
+15. Package-contract assertions prove that `SKILL.md` advertises shared-resource coordination in its
+    frontmatter, dispatches the grouped verb, declares the `resource-claim` produced edge, and lists
+    the mutation helper; the verb file, flow section, and hand-off reminder each contain their assigned
+    teaching rather than one file attempting to carry all of it.
+16. Teaching-contract fixtures prove that the documented singleton/intent example uses one resource
+    for competing configurations, that the flow halts on held or inconsistent state, and that the
+    negative-use cases do not instruct the agent to acquire a claim.
+17. A cold-context routing probe using only installed skill metadata must select Workstream for both
+    "coordinate access to a shared Docker environment between workstreams" and "acquire an exclusive
+    development-resource lock." After selection, a fresh-context procedure probe must find the
+    dispatch row and state when to acquire, validate, release, and halt. Record the prompts and
+    observed route with the implementation evidence.
+18. A control probe for concurrent Git shipping must retain Workstream's existing ship guidance and
+    must not prescribe a resource claim; this guards the boundary between Git's landing serialization
+    and external singleton coordination.
 
 The new concurrency assertion must be red-proven by deliberately replacing create-from-zero with an
 unguarded ref update, confirming that both contenders can report success, then restoring the
