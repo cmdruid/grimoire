@@ -1,16 +1,17 @@
-# `tracker` — add, remove, or list living trackers
+# `tracker` — add, remove, or list queues
 
-Resolve roots and require the staged engine per `SKILL.md`.
+Resolve all roots per `SKILL.md`.
 
-- `list [<stem>]`: invoke `list` (with `--tracker` when named) and summarize its output. Do not
-  open TSV files.
-- `add <stem>`: preflight registration, invoke `tracker-add <stem>`, then ensure the owned route
-  block. If a custom stub was created, author only that H2's routing body before committing.
-- `remove <stem>`: preflight registration, invoke `tracker-remove <stem>`, then remove the owned
-  route block only when `list` reports no trackers. Open rows refuse without changing the cookbook.
-  If neither component exists but a stale owned block does, remove that block as repair.
+- `list [<stem>]`: invoke installed API `catalog`; exclude reserved `receipts` from the configurable
+  population. When named, report that queue's counts or refuse if absent.
+- `add <stem>`: run package-local `scripts/backlog-setup.sh` with the resolved root arguments and
+  `tracker-add <stem>`. It creates exactly `<agent-trackers>/<stem>.tsv`, adds the absent prompt
+  section, and reconciles the route. `receipts` and incumbent stems refuse.
+- `remove <stem>`: run the same helper with `tracker-remove <stem>`. It deletes the named queue even
+  when rows remain, removes only its prompt section, preserves receipts, and removes the route block
+  when no configurable queues remain. Git is the recovery mechanism.
 
-Add/remove commits every reported path once through the scoped helper; list is read-only.
+Add/remove makes one scoped commit over reported paths; list is read-only.
 
-Done when `list` reflects the requested population, every tracker has both required components,
-the owned route block matches that population, and any changes were committed once.
+Done when API catalog reflects the requested population, prompt and route agree, and any mutation
+was committed once with exact paths.

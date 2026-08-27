@@ -8,6 +8,7 @@ for needle in '/foreman inventory' '/foreman run' '/foreman setup' 'verbs/invent
   '/foreman create' '/foreman import' '/foreman migrate' '/foreman activate' '/foreman project' \
   '/foreman debrief' '/foreman verify' \
   '/foreman compose' '/foreman goal' 'foreman/goal@1' '<agent-records>/goals/' \
+  '/foreman tune' 'verbs/tune.md' '<agent-trackers>' 'consumes: operation, session-evidence, tracker' \
   'templates/operation.md' 'None.' '<!-- edges:foreman -->'; do has "skill contract $needle" "$needle" "$S"; done
 lacks "template not deployed" '- `operation.md`' "$S"
 lacks "goal template not deployed" '- `goal.md`' "$S"

@@ -33,7 +33,7 @@ the phase model), so the build's per-phase model routing is off.
 
 Three rules the agent runs autonomously between user touches: the **autonomy rule** (build to
 completion), the **seam rule** (round-trip only at the catalogued seams), and the **reset ritual**
-(how saves + debriefs sequence around a reset).
+(how boundary duties and saves sequence around a reset).
 
 ### Autonomy rule — build a feature to completion (don't stop per task)
 
@@ -41,7 +41,7 @@ When you build a feature (executing its plan's tasks/phases), run **all** of the
 next, committing as you go. Do **not** stop after each task to ask "should I continue?" or to post a
 progress summary — the user asked you to build the feature, so build it; per-task check-ins waste
 their time. **Pause only at a seam** (below). When the plan is complete you enter the **reset ritual**
-(`debrief` -> `ship` -> `save` -> reset) — the one place the loop deliberately pauses, **between
+(`feature boundary` -> `ship` when due -> `save` -> reset) — the one place the loop deliberately pauses, **between
 features, never between tasks**. If you catch yourself about to end a turn mid-plan with no blocker
 and no question, that is the failure this rule exists to prevent — keep going.
 
@@ -73,7 +73,8 @@ unattended. Then `/contractor plan` **only when sequencing is required**
 (second phase, blocking edges, or a tracer sequence). Build: `/contractor build` when a
 contractor plan exists; otherwise the host lane executes the spec's own slices. Without those
 skills, author the spec/plan by hand per the lane. Either way the seam ownership is the
-contract: the build stops at gate-green and `/workstream` lands + debriefs.
+contract: the build stops at gate-green and `/workstream` owns landing. Any universally loaded
+agent cadence remains independent of Workstream.
 
 ### Seam rule — the only places the agent round-trips
 
@@ -85,9 +86,10 @@ round-trip/token payoff.
    action or offer an AMBIGUOUS pick (see *Confident launch*).
 2. **Blocker** — something you cannot resolve: surface it + ask.
 3. **Genuine fork mid-build** — a decision that changes *what* gets built: ask.
-4. **Feature completion** — debrief #1, then act on the stream's *Ship cadence*: at a landing point
+4. **Feature completion** — run the independent **Feature completion** hook if nonempty, then act on
+   the stream's *Ship cadence*: at a landing point
    (`per-stage`, an agent-nominated milestone, or track end) **confirm before `ship`** (the land is the
-   irreversible-ish step) and recommend a second debrief if the ship was *eventful*; **otherwise do
+   irreversible-ish step); **otherwise do
    not ship** — advance to the next feature (under `milestone`, first *propose* a land if this looks
    like a natural milestone). Either way, recommend a reset if context is heavy.
 
@@ -135,7 +137,7 @@ is the hole seed-only `create` documented and `load` must close.
   the `/model` swap, and you cannot reliably introspect which model you are, so state the target rather
   than trying to detect a mismatch.
 
-**Verify a queued item is still real before offering it *to build*.** A Backlog-tracker / roadmap item
+**Verify a queued item is still real before offering it *to build*.** A queue or roadmap item
 can already be **shipped** — by a sibling stream, with the entry never pruned. Before presenting such an
 item as buildable work (a KNOWN next-item *or* an AMBIGUOUS pick), cheaply confirm it isn't already done:
 on a workshop host `records.sh --root <root> --records-root <records-root-relative> history --grep <slug>` (the closure ledger), else grep the project's own
@@ -165,7 +167,7 @@ proposed-and-confirmed at `create` (like the delegation route) and recorded in t
 - **`milestone`** (default) — land at the **track end** (queue exhausted) and at **critical milestones
   the agent nominates** along the way: a coherent, independently-valuable slice; a point a *later*
   feature or another stream depends on; or a natural integration boundary. Between milestones,
-  completed features **accumulate on the branch** — each still debriefs and may trigger a reset, but
+  completed features **accumulate on the branch** — each may still trigger a reset, but
   does not ship. The agent **proposes** each mid-track land at the feature-completion seam ("Feature N
   done — natural milestone (X depends on it). Ship now, or keep accumulating?").
 - **`per-track`** — land **only** when the whole queue is exhausted; never mid-track. Every feature
@@ -175,9 +177,8 @@ proposed-and-confirmed at `create` (like the delegation route) and recorded in t
   highest land cost. Choose it when each feature must reach `<target>` promptly (a cross-stream
   dependency, a hot trunk).
 
-**Deferring the land does NOT defer the debrief or the reset.** Route-before-loss still fires per
-feature (debrief #1) and a heavy context still resets — those couple to the *reset*, not the *ship*.
-Only the land is deferred; the completed feature stays on the branch and you start the next. **The
+**Deferring the land does not defer a required reset.** Only the land is deferred; the completed
+feature stays on the branch and you start the next. **The
 agent may re-propose a one-off override** at a seam (a `milestone` stream hitting an unplanned natural
 boundary; a `per-track` stream grown risky to hold) — the recorded value governs by default, and an
 override is a single confirm, not a re-config. **Holding features on the branch raises divergence**, so
@@ -197,7 +198,7 @@ means loss can strike unannounced, so the saves are (1) a user manually invoking
 flow's single **pre-reset checkpoint**, (3) `park`'s custody hand-over (in-place streams — a parked
 stream may next be resumed by a *different* session, so parking without saving would strand the
 loop's state; `verbs/park.md`), and (4) the **feature-completion checkpoint** — `save` fires at
-every feature-completion seam (alongside debrief #1) even when no reset follows, bounding the
+every feature-completion seam even when no reset follows, bounding the
 hand-off's staleness to one in-flight feature should a compaction strike. No other verb saves —
 `sync` rebases + gates and nothing else; `ship` lands + advances and nothing else. Mid-feature
 freshness is deliberately **not** solved by more saves: git commits + the on-disk plan carry it,
@@ -209,23 +210,21 @@ PLAN/BUILD/SHIP seam — see *Manual mode: the phase loop*):
 **lands** here is governed by the stream's *Ship cadence*:
 
 > **at a landing point** (`per-stage`; a milestone; track end):
-> `debrief` #1 -> `ship` -> *(if ship was eventful)* `debrief` #2 -> **save** -> reset -> `load`
+> Feature completion hook if nonempty -> `ship` -> eventful-ship hook if applicable -> **save** -> reset -> `load`
 >
 > **between landing points** (`milestone`/`per-track`, not yet a milestone):
-> `debrief` #1 -> **save** (the feature-completion checkpoint) -> advance to the next feature *on
+> Feature completion hook if nonempty -> **save** (the feature-completion checkpoint) -> advance to the next feature *on
 > the same branch* -> *(if context is heavy)* reset -> `load`   *(no ship)*
 
-- **`debrief` #1** routes the *feature's* follow-ups; its tracker commits sit on the branch and
-  **ride the eventual ship's ff-merge for free** — whether that ship is now or a later milestone.
-- **`ship` — only at a landing point.** Lands **every accumulated feature** + their debrief commits.
+- **`ship` — only at a landing point.** Lands **every accumulated feature**.
   For plan / roadmap / brief: advances the queue and drafts the next plan into the working tree
   (uncommitted — it persists on disk across the reset; **in `manual` mode `ship` skips this draft** —
   the next PLAN session authors it). For `source-kind: template`: do not advance a queue and do not
   draft. After the reset ritual (`save` → reset → `load`) the next action is `recycle`
   (`verbs/recycle.md`) — `ship` does not invoke it. Between landing points there is **no ship**: the completed
   feature stays on the branch and you start the next.
-- **`debrief` #2 — conditional**: only if a `ship` actually ran *and* was *eventful* (see *Event-driven
-  debrief*); its commits ride the *next* ship.
+- **Eventful-ship hook — conditional**: run the independent hook only if a `ship` actually ran and
+  was eventful (see *Eventful ship*).
 - **save** — the single pre-reset checkpoint (advanced queue + any drafted next plan), then **reset**.
   A reset may happen between landing points too (heavy context); the unshipped features simply remain on
   the branch for the next milestone.
@@ -250,7 +249,7 @@ HERE guard, custody. Ritual:
 > (the orchestration rules live outside the hand-off; the compaction may have erased them) -> run
 > the hand-off's START HERE guard (in-place streams: the custody check; and never recover another
 > session's worktree) -> **facts-gather** (this overlay): `git -C <worktree> log` plus paths the
-> hand-off already names (tracker files, the plan, `.records/` — do not open a search) ->
+> hand-off already names (the plan and relevant durable records — do not open a search) ->
 > reconcile per Recovery -> **skip write-back** (commits + the on-disk plan are the mid-unit
 > store) -> continue the current task **without a user round-trip** if the next action is KNOWN.
 
@@ -289,14 +288,14 @@ hand-off's *Phase model map*). The three phases, each ending `save -> park -> re
 > (`/model <m>`), `/clear`, `/workstream load <stream>`."
 >
 > **BUILD** (build-model) — `/contractor build` when a contractor plan exists; otherwise the
-> host lane walks the spec's slices. Then debrief #1 (the compiled hook **Feature completion** —
-> skip the glue command if empty; the feature's follow-ups). Then act on *Ship cadence*: **at a landing point**, **save** (`Phase: ship`)
+> host lane walks the spec's slices. Run the compiled **Feature completion** hook if nonempty. Then
+> act on *Ship cadence*: **at a landing point**, **save** (`Phase: ship`)
 > -> park for the ship-model swap. **Between landing points**, **save** (`Phase: plan` for the *next*
 > feature) -> park for the plan-model swap. (Completed features still accumulate on the branch; only
 > SHIP lands.)
 >
-> **SHIP** (ship-model) — `/workstream ship` (land + advance the queue), *(if eventful)* debrief
-> #2 (the compiled hook **After eventful ship** — skip the glue command if empty). Under a deferred *Ship cadence* this one SHIP phase lands the **whole accumulated batch** (every
+> **SHIP** (ship-model) — `/workstream ship` (land + advance the queue), then, if eventful, the
+> compiled **After eventful ship** hook if nonempty. Under a deferred *Ship cadence* this one SHIP phase lands the **whole accumulated batch** (every
 > feature built since the last ship), not just one. Then **save** (`Phase: plan`) -> park for the
 > plan-model swap -> reset into the next feature's PLAN.
 
@@ -312,38 +311,16 @@ If a `manual` stream is run **unattended** (no human to swap `/model`), it canno
 boundary — it parks there. That is correct, not a failure: `manual` is the attended mode; use
 `delegate` for autonomous / `/loop` runs.
 
-### Event-driven debrief — route before loss
+### Eventful ship
 
-Debrief fires whenever a body of context worth routing is about to be lost (**route-before-loss**). A
-feature completing and an *eventful* ship are two **distinct** context-bodies, so two passes are not
-redundant:
+An **eventful ship** required conflict resolution, hit a contention reject-and-retry, took multiple
+syncs, or otherwise surfaced process friction. Run the independent **After eventful ship** hook when
+nonempty. A clean ff-merge with no conflicts does not trigger it. A contentious conflict band-aid
+remains risky code on the trunk and is captured at resolution through the `REVIEW(conflict):` marker
+and `[conflict band-aid]` friction entry from `sync`.
 
-- **#1 (before `ship`)** — the *feature's* follow-ups (implementation surprises, gotchas, follow-on
-  work). Commits ride the ff-merge free. **Also record a one-line delegation tally** in the hand-off's
-  *What's been done* — `delegations: N` by mode (`mailbox`/`codex`/`isolated`, or `0 — all inline`) — so
-  stream-wide `/delegate` adoption is **auditable at a glance** instead of vanishing into the loop. A
-  **persistent 0 across the stream** is itself skill feedback (`/delegate` not firing where substantial
-  delegable work existed) → route it to the skills' home feedback channel, tagged `[delegate]`. (A genuine
-  all-inline stream — small tasks, tight loops — is a legitimate 0; the tally is the fact, you judge.)
-  **In `manual` mode a low/0 tally is *expected*** — delegation there is fan-out-only, not the model
-  lever — so do **not** route it as `[delegate]` feedback; the per-phase model swaps are the model story.
-  **Forward-reference guard:** if a debrief-#1 follow-up references the feature being shipped *this*
-  cycle, cite it **by intent/slug, never by its closure** — `ship` step 1 flips the stream manifest and
-  writes the `history.tsv` ledger line *after* debrief, so a link to a not-yet-minted debrief report
-  dangles and a "closed" claim is transiently false (a dangling link is what the host doc-linter
-  rejects — the debrief commit gates on its own, before ship). Cite the slug in prose; the closure
-  materializes at ship.
-- **#2 (after `ship`, conditional)** — the *process* friction. **Recommended, not automatic:** flag
-  it at the feature-completion seam ("ship was eventful — worth a second debrief?").
-
-**Eventful ship** = `ship` required conflict resolution, hit a contention reject-and-retry, took
-multiple syncs, or otherwise surfaced friction/learnings worth an Issues/Feedback line, a Backlog `file repro:` remainder, or the host's bug-filing lane. A
-clean ff-merge with no conflicts -> no second debrief. **A contentious conflict band-aid makes a ship
-eventful** — distinct from process friction: it's risky *code* now on the trunk. The band-aid is
-captured **at the moment** of resolution (the `REVIEW(conflict):` marker + `[conflict band-aid]` friction
-entry from `sync`), so debrief #2 only **verifies** that capture happened (marker + entry present) — it
-does not re-derive it from memory.
-
-(Doctrine: the host's PLANNING doc says "debrief at done-when, *before* landing." The intent was always
-"before the context is lost"; in a workstream that loss event is the **reset**, and `ship` precedes it —
-so debrief#1-before-ship honors the doctrine while debrief#2 captures what ship itself surfaced.)
+General agent duties are outside this state machine. If root instructions register a universal
+debrief cadence, a healthy boundary runs it before the Workstream save. Workstream neither invokes
+that cadence nor records its state. During
+involuntary compaction or context-pressure emergencies, preserve and recover primary work first;
+the next safe boundary may perform any deferred general duty without adding it to the hand-off.

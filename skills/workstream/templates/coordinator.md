@@ -52,8 +52,8 @@ trunk). So the coordinator NEVER does iterative, scratch-generating work on the 
    - A stream reporting a green `ship` -> land it (`/workstream ship` from the stream, or confirm the
      merge), confirm trunk clean afterward.
    - A new design needed -> spin a `design` stream (don't design on the trunk).
-4. **Docs-system upkeep -- when the tree is quiet:** prune the issues tracker, drain the feedback
-   tracker, move shipped backlog items to done. Defer upkeep while many streams are live (a contended
+4. **Docs-system upkeep -- when the tree is quiet:** page follow-up queues through their first-class
+   provider and resolve rows through each row's current consumer workflow. Defer upkeep while many streams are live (a contended
    index makes pathspec discipline fiddly).
    `<project: upkeep commands -- see host AGENTS.md dev workflow section>`
 5. **Commit docs pathspec-scoped**, leave trunk clean, checkpoint the live hand-off.

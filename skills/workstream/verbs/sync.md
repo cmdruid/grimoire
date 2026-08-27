@@ -36,15 +36,11 @@
    point — config/module/system registry — build manifests, or shared `.records/` ledger files — usually
    "keep both"), then
    `git -C <worktree> add <file>` and `GIT_EDITOR=true git -C <worktree> rebase --continue`.
-   - **Keep-both is for two ADDITIONS — check what the incoming side did first.** Two inversions of
-     the additive default, both observed resurrecting dead content: (a) if an incoming commit is a
-     **tracker audit/drain** (a re-audit that PRUNED resolved entries), do NOT keep-both the tracker
-     file — rebuild it as the trunk's version plus only your new lines, then diff against `<target>`
-     to verify nothing pruned came back (pruned entries carry no IDs, so a duplicate-ID linter stays
-     silent); (b) if one side **deleted** content the other still carries (a sibling fixed the issue
+   - **Keep-both is for two ADDITIONS — check what the incoming side did first.** If one side
+     **deleted** content the other still carries (a sibling fixed the issue
      and removed its entry), find out why before keeping it — a reflexive keep-both resurrects a
-     dead entry and any stale references to it. Read the incoming commit subjects before trusting a
-     tracker-file resolution.
+     dead entry and any stale references to it. Read the incoming commit subjects before trusting
+     the resolution.
    - **Pre-flight the collision (from step 1's forecast).** You already hold `will_conflict` /
      `conflict_files:` — so resolve the named files deliberately and know up front whether a
      `REVIEW(conflict):` marker is coming, instead of being surprised mid-rebase. It's a forecast

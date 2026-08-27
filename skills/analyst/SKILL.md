@@ -82,6 +82,9 @@ question's *intent* is not. Keep it cheap and inline — never spend a dispatch 
    project's gate or test commands**. Gate state comes from what the project already recorded, or
    is reported unknown. If the script is missing or errors, say so and gather what you can by
    reading directly — degraded facts beat a stalled report.
+   Status and briefing resolve `<agent-trackers>` independently and read only an advertised
+   `tracker@1` provider through side-effect-free `describe`, `catalog`, and `page`. Missing provider
+   state reports absent; legacy record-owned or owner-local tracker paths are never probed.
 3. **Follow the links** — a ledger line is a closure *fact*; the substance is in the record it
    points at. Read what the facts point at, scaled to the template.
 4. **Curate and synthesize** — select what this developer needs, group it, and translate
@@ -163,5 +166,5 @@ For `/analyst migrate <source-path>`, read and follow `verbs/migrate.md`.
 <!-- edges:analyst -->
 - produces: report — a catalog briefing, in context or persisted as a reports record tagged `analyst` plus the resolved template token
 - handoff: — (none; a report informs, it does not start a workflow)
-- consumes: record, report, tracker — the records layer (ledger, stores, trackers) and git history; audit reports feed the health snapshot when present
+- consumes: record, report, tracker — the records layer (ledger and stores), the first-class tracker provider, and git history; audit reports feed the health snapshot when present
 <!-- /edges:analyst -->

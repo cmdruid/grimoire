@@ -88,13 +88,13 @@ Full harness guide + debug playbook: `<project: debug tooling docs -- see host A
 - **Trivial one-liner** (no design) -> directly on the integration trunk (Coordinates `integration-target`), pathspec-scoped
   (`<project: pathspec-scoped commit command -- see host AGENTS.md>`), after the full gate + a
   relevant scenario. Root index is contended -- never `git add -A`.
-- **A real fix needing isolation** -> in the debug workstream: build it, run the debrief sweep,
-  `/workstream ship`. **`/workstream sync` first** (the stream usually trails the trunk).
+- **A real fix needing isolation** -> in the debug workstream: build it, honor any general debrief
+  cadence registered by the project root, then `/workstream ship`. **`/workstream sync` first**
+  (the stream usually trails the trunk).
 - **A bug that grows into a multi-phase track** -> spin it into its OWN `/workstream`. Don't carry
   a feature in this intake stream.
-- **Capture-don't-lose:** file defects to the bug tracker; feature follow-ups to the backlog; dev-tool
-  friction to the issues tracker; qualitative notes to feedback. A flaky/transient bug -> capture
-  seed + scenario + log + screenshot and file it so the repro survives.
+- **Capture-don't-lose:** use the project's general debrief route at the work boundary. A
+  flaky/transient bug still needs a seed + scenario + log + screenshot so the repro survives.
   `<project: capture commands -- see host AGENTS.md dev workflow section>`
 
 ## Durable orientation pointers (NO line numbers -- they drift; re-verify per instance)

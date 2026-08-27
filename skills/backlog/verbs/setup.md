@@ -1,15 +1,15 @@
 # `setup` — deploy Backlog explicitly
 
-1. Resolve `<root>` and repo-relative `<workspace>` per `SKILL.md`.
-2. Run bundled `scripts/backlog-setup.sh <root> --workspace <workspace> --list`; present the
-   builtin suggestions and ask which to enable unless the invocation already names stems.
-3. Run `scripts/backlog-setup.sh <root> --workspace <workspace> --apply <builtin-stems...>
-   [--custom <custom-stems...>]`. Builtins use their suggestions; custom names receive stubs for
-   the caller to author before commit.
-4. Parse every unique `wrote=` / `removed=` path. Standalone and nonempty → one
-   `scripts/scoped-commit.sh <root> "Backlog: setup" <paths...>`; empty → no commit.
-   Inside an announced configuration sweep, remain write-only and return the paths to the caller;
-   no member commit may occur.
+1. Resolve `<root>`, `<agent-records>`, `<agent-workspace>`, and `<agent-trackers>` per `SKILL.md`.
+   A caller-supplied `--trackers-root <repo-relative-path>` is legal only for first setup. Pass it to
+   the helper; an incumbent declaration must match and existing tracker state prevents relocation.
+2. Bare setup uses `tasks`, `issues`, `feedback`, and `routines`. If the invocation explicitly names
+   builtin or custom stems, that selection replaces the defaults.
+3. Run package-local `scripts/backlog-setup.sh <root> --workspace <W> --records-root <R>
+   [--trackers-root <T>] --apply [<builtin-stems...>] [--custom <custom-stems...>]`.
+4. Parse unique `wrote=` / `removed=` paths. Standalone and nonempty → one
+   `scripts/scoped-commit.sh <root> "Backlog: setup" <paths...>`; inside an announced configuration
+   sweep, return the paths without committing; empty → no commit.
 
-Done when the staged engine is current, every selected builtin has both components, Backlog's
-route block is present when a tracker exists, and commit custody matches standalone or sweep mode.
+Done when the public layer has its README, API, receipt ledger, selected queues, preserved editable
+prompt, and bounded root route; a rerun changes only a drifted managed API.

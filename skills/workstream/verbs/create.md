@@ -122,10 +122,10 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
        `kind: workstream-template` doc path.)
      - "Stream / queue" section: the roadmap-section queue (plan-bound on a roadmap), a pointer to the plan
        (plan-file mode), or the verbatim brief (brief mode). **Sweep a transcribed queue for staleness
-       at authoring time:** when the queue's items were transcribed from tracker/backlog entries (a
-       roadmap seeded from a Backlog sweep), grep EACH item's key symbols/files against the done trail
+       at authoring time:** when the queue's items were transcribed from a follow-up source, grep
+       EACH item's key symbols/files against the done trail
        (`records.sh --root <root> --records-root <records-root-relative> history` / `git log` / the project's done records) **before** recording it — stale
-       tracker entries seed already-shipped queue items (observed 4× across two phases of one
+       stale follow-up entries seed already-shipped queue items (observed 4× across two phases of one
        roadmap), and the launch-time "verify the front item" check only ever catches them one wasted
        unit later. **Template mode:** there is no queue — write the
        no-queue/`recycle`-between-units note, and **embed the template's durable sections** (mission, governing

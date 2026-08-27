@@ -159,8 +159,8 @@ independent of what the root has checked out. Never hand-commit these records to
 4. The worktree and branch PERSIST — `ship` never tears down. Confirm the ff-merge carried no
    `WORKSTREAM.md`: `git -C <root> show --stat HEAD` lists no `.workstreams/...` path.
 5. **`ship` does not save.** Hand back to the flow's **reset ritual** (`flow.md`, Scenario A): if the
-   ship was
-   *eventful* run `debrief` #2, then make the single **pre-reset `save`** (plan-bound: advanced queue + drafted next plan; template: landed unit marked done, no draft), then STOP and advise a reset before the next feature (context is heavy). The save lives
+   ship was eventful, run the independent **After eventful ship** hook when nonempty, then make the
+   single **pre-reset `save`** (plan-bound: advanced queue + drafted next plan; template: landed unit marked done, no draft), then STOP and advise a reset before the next feature (context is heavy). The save lives
    in the ritual, not here — so a manual `/workstream ship` leaves no checkpoint behind unless a reset
    is actually imminent. (In `manual` mode the pre-reset save records `Phase: plan` and the park swaps
    to the plan-model for the next feature's PLAN — `flow.md` -> *Manual mode: the phase loop*.)

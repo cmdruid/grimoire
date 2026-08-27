@@ -22,7 +22,7 @@ is rare — only when the stream's queue is exhausted or the stream is paused.
 This `SKILL.md` is a **thin router**: it holds the scope rule, the dispatch table, and the
 discipline every verb shares. Each verb's procedure lives in `verbs/<verb>.md`, and the loop's
 orchestration doctrine (execution modes, autonomy/seam rules, confident launch, ship cadence, reset
-ritual, event-driven debrief) lives in **`flow.md`** — both **read on demand**. When a verb is
+ritual, eventful-ship handling) lives in **`flow.md`** — both **read on demand**. When a verb is
 selected, **read its file and follow it**; do not reconstruct a procedure from memory.
 
 ## Scope — one session drives exactly one workstream
@@ -69,7 +69,7 @@ shared tree (custody — `verbs/park.md`), so at most one exists per repo, enfor
   and only on an explicit human request to stand a stream up for a separate session. A root
   coordinator not yet driving a stream may use the same-stream seed/prime/load launch above.
 - **The flow** (`flow.md`) is the agent's orchestration — it calls verbs at the loop's seams and
-  sequences saves/debriefs around the one event that matters, the **context reset**. Read it at
+  sequences work and saves around the one event that matters, the **context reset**. Read it at
   every loop entry (`create` / `load` / `recycle`).
 
 **No verb auto-saves** (one exception: `park` embeds a save — its custody hand-over is a context-loss
@@ -164,9 +164,8 @@ of one.
   W1). Two rules: **(1) Don't hand-commit a stream's own records to the root at all** — the feature's
   plan closure + ledger line and roadmap-ledger row commit **on the branch** and reach the trunk
   via the **ff-merge**, the single root mutation (and `--ff-only` fails safe: rejected → re-`sync` +
-  retry). **(2) For the few commits that must touch the root** (debrief / tracker
-  captures from compiled hooks — `create`
-  seeds its plan **on the branch**, and `close` writes nothing), stage **and** commit in **one** tool call scoped with an
+  retry). **(2) If project-authored hook work must touch the root** (`create` seeds its plan **on the
+  branch**, and `close` writes nothing), stage **and** commit in **one** tool call scoped with an
   explicit pathspec: `git -C <root> add <p> && git -C <root> commit -m "…" -- <p>` — the `-- <p>`
   excludes anything that raced into the index. A **rename/move** (`git mv`) stages a delete + an
   add: the commit pathspec must name **both** paths (`git commit -- <old> <new>`) — naming only the
@@ -256,5 +255,5 @@ exhausted or deliberately closed and every landing point has passed the configur
 
 **`flow.md`** — the agent orchestration: execution modes (`delegate`/`manual`), the autonomy rule,
 the seam rule, confident launch, ship cadence, the reset ritual, the manual-mode phase loop, and
-event-driven debrief. Read it at every loop entry (`create`/`load`/`recycle`); mid-loop verbs assume
+eventful-ship handling. Read it at every loop entry (`create`/`load`/`recycle`); mid-loop verbs assume
 it is already in context.

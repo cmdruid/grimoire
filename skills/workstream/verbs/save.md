@@ -4,7 +4,7 @@
 — read it if not already in context): it exists to survive a context reset, and harness
 auto-compaction (`flow.md` -> *Scenario C*) means loss can strike unannounced. The saves are: a
 user invoking `save` directly, the flow's single pre-reset checkpoint, and the flow's
-**feature-completion checkpoint** (fires at every feature-completion seam alongside debrief #1,
+**feature-completion checkpoint** (fires at every feature-completion seam,
 reset or not — bounding the hand-off's staleness to one in-flight feature). No other verb calls it.
 
 1. **Verify the target path first:** the file you are about to write MUST equal the Coordinates

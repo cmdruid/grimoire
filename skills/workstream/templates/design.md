@@ -53,7 +53,8 @@ blocks every stream's `ship`).
 3. **Run the spine:** brainstorm the idea -> fork-driven dialogue -> write the argued spec.
    Optionally produce an implementation plan if this stream also owns turning the design into tasks;
    otherwise hand the design to a build stream.
-4. **Land the artifacts** per *Where designs land*, then run the debrief sweep to route follow-ups.
+4. **Land the artifacts** per *Where designs land*, then honor any general debrief cadence registered
+   by the project root.
 
 ## The toolbox (durable reference -> depth in the docs)
 - **The design spine:** brainstorm (divergent ideation), grill (resolve every decision branch),
@@ -66,9 +67,8 @@ blocks every stream's `ship`).
   from /contractor if installed; else equivalent>` Match the host repo's frontmatter schema
   (doctype / status / dates / tags).
 - **Change router:** `<project: change router doc (classifies any change -> the right lane) -- see host AGENTS.md>`
-- **Capture:** file feature follow-ups to the backlog; dev-tool friction to the issues tracker;
-  qualitative notes to feedback; defects to the bug tracker. Run the debrief sweep at the end of a
-  body of work.
+- **Capture:** at the work boundary, use the project's general debrief route. The Workstream hand-off
+  records only facts needed to resume the design.
   `<project: capture commands -- see host AGENTS.md dev workflow section>`
 
 ## Hard-won lessons (durable)

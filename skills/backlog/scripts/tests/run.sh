@@ -5,10 +5,14 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 rc=0
-echo "== trackers-test.sh"
-bash "$DIR/trackers-test.sh" || rc=1
+echo "== tracker-api-test.sh"
+bash "$DIR/tracker-api-test.sh" || rc=1
 echo "== deploy-test.sh"
 bash "$DIR/deploy-test.sh" || rc=1
+echo "== debrief-contract-test.sh"
+bash "$DIR/debrief-contract-test.sh" || rc=1
+echo "== hard-cut-test.sh"
+bash "$DIR/hard-cut-test.sh" || rc=1
 echo "== skill-doc-test.sh"
 bash "$DIR/skill-doc-test.sh" || rc=1
 

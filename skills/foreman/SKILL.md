@@ -16,6 +16,7 @@ Read only the selected verb file, then follow it.
 | Invocation | Read | Outcome |
 |---|---|---|
 | `/foreman inventory [query]` | `verbs/inventory.md` | List, search, and inspect operation health. |
+| `/foreman tune <tracker>` | `verbs/tune.md` | Curate one bounded tracker batch into operation proposals. |
 | `/foreman run <owner/stem>` | `verbs/run.md` | Follow one named operation in the current attended context. |
 | `/foreman setup [<root>]` | `verbs/setup.md` | Register Foreman's bounded project route. |
 | `/foreman create [procedure\|workflow]` | `verbs/create.md` | Curate one new Foreman-owned draft. |
@@ -45,6 +46,9 @@ Natural-language requests may route directly when the intended outcome is clear.
 - The bundled `templates/operation.md` is package-only. Never deploy it as a project template.
 - Goal records use `foreman/goal@1` under `<agent-records>/goals/`. Missing `records.sh` is not an
   error and records standup is never a precondition.
+- A tracker consumer resolves `<agent-trackers>` (line-start `agent-trackers:`, else `.trackers`)
+  and uses its advertised `tracker@1` API. Missing provider state degrades to rows supplied directly
+  by the caller; it is not a setup requirement.
 
 ## Project templates
 
@@ -54,5 +58,5 @@ None. The operation and goal templates are package-only schemas for mechanical w
 <!-- edges:foreman -->
 - produces: operation, doctrine, goal
 - handoff: goal-pursuit — an accepted immutable runbook ready for the current runtime owner
-- consumes: operation, session-evidence — project instructions and explicitly selected attended evidence
+- consumes: operation, session-evidence, tracker — project instructions, selected attended evidence, and bounded provider batches
 <!-- /edges:foreman -->

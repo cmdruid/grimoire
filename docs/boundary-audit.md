@@ -290,3 +290,13 @@ sibling name.
 | lint my skills directory | `skill-builder` |
 | this test just started failing | `debugger` |
 | check whether skill descriptions are self-scoped | `skill-builder` |
+
+**2026-08-27 (Architect, Backlog, Checkpoint, and Inspector descriptions)** — full Pass 2 scan found
+no sibling-name deferrals, duplicated sibling protocols, or seams missing from `PACK.md`. A fresh
+cold-router sub-agent read descriptions only and routed **12/12** ambiguous prompts correctly. The
+tested boundaries were Architect brainstorming/saved drafts/spikes vs Contractor planning;
+Backlog capture/debrief vs Analyst read-only tracker briefings; Checkpoint root-session saves vs
+Workstream stream saves; and Inspector review/revise/refine. Debugger served as the broken-build
+no-steal control. No description changes were needed after the probe. Pass 1 reported `fails=0`;
+the three residual Foreman-only `goal`, `goal-pursuit`, and `session-evidence` edge warnings remain
+documented rollout exceptions.

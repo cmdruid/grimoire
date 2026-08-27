@@ -47,6 +47,17 @@ resolve_workspace() {
   printf '%s\n' "${decl:-.spaces}"
 }
 
+resolve_trackers_root() {
+  local root="$1" fd decl=""
+  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
+    if [ -z "$decl" ] && [ -f "$fd" ]; then
+      decl="$(sed -n -E 's/^agent-trackers:[[:space:]]*//p' "$fd" \
+              | head -n 1 | sed 's/[[:space:]]*$//')"
+    fi
+  done
+  printf '%s\n' "${decl:-.trackers}"
+}
+
 usage() {
   cat >&2 <<'EOF'
 usage: analyst-facts.sh <subcommand> <root> [options]
@@ -73,18 +84,50 @@ setup() {
   [ -d "$ROOT" ] || err "no such directory: $ROOT"
   ROOT="$(cd "$ROOT" && pwd)"
   RR_REL="$(resolve_records_root "$ROOT")"
+  WS_REL="$(resolve_workspace "$ROOT")"
+  TR_REL="$(resolve_trackers_root "$ROOT")"
   RR="$ROOT/$RR_REL"
+  TR="$ROOT/$TR_REL"
   LEDGER="$RR/history.tsv"
   if [ -d "$RR" ]; then RECORDS_LAYER=present; else RECORDS_LAYER=absent; fi
   if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then GIT=present; else GIT=absent; fi
   echo "root=$ROOT"
   echo "records_root=$RR_REL"
+  echo "workspace=$WS_REL"
+  echo "trackers_root=$TR_REL"
   echo "records_layer=$RECORDS_LAYER"
   echo "ledger=$([ -f "$LEDGER" ] && echo present || echo absent)"
   echo "git=$GIT"
   if [ "$GIT" = present ]; then
     echo "git_shallow=$(git -C "$ROOT" rev-parse --is-shallow-repository 2>/dev/null || echo unknown)"
   fi
+}
+
+emit_tracker_facts() {
+  local api="$TR/tracker-api.sh" catalog stem page next
+  if [ ! -x "$api" ] || [ -L "$api" ]; then echo "tracker_provider=absent"; return 0; fi
+  local run=("$api" --root "$ROOT" --records-root "$RR_REL" --workspace "$WS_REL" --trackers-root "$TR_REL")
+  if ! "${run[@]}" describe >/dev/null 2>&1; then echo "tracker_provider=invalid"; return 0; fi
+  echo "tracker_provider=present"
+  catalog="$("${run[@]}" catalog 2>/dev/null)" || { echo "tracker_catalog=invalid"; return 0; }
+  echo "--- tracker catalog ---"; printf '%s\n' "$catalog"
+  while IFS=$'\t' read -r stem _; do
+    [ -n "$stem" ] && [ "$stem" != tracker ] && [ "$stem" != receipts ] || continue
+    echo "--- tracker open rows: $stem ---"
+    next=""
+    while :; do
+      if [ -n "$next" ]; then
+        page="$("${run[@]}" page --tracker "$stem" --status open --limit 200 --after "$next" 2>/dev/null)" || break
+      else
+        page="$("${run[@]}" page --tracker "$stem" --status open --limit 200 2>/dev/null)" || break
+      fi
+      printf '%s\n' "$page"
+      next="$(printf '%s\n' "$page"|sed -n 's/^next=//p'|head -n1)"
+      [ -n "$next" ] || break
+    done
+  done <<EOF
+$catalog
+EOF
 }
 
 # Records-root crawl, at any depth. A file is a record iff it is named
@@ -187,6 +230,8 @@ EOF
     printf '%s' "$touched_list"
   fi
 
+  emit_tracker_facts
+
   # Commit shape.
   if [ "$GIT" = present ]; then
     local commits
@@ -221,15 +266,7 @@ EOF
   echo "current_records=$current"
   [ -n "$open_list" ] && { echo "--- open records (path, status, git movement) ---"; printf '%s' "$open_list"; }
 
-  # Trackers are records too, but their LINES are the state.
-  if [ -d "$RR/trackers" ]; then
-    echo "--- tracker line counts ---"
-    for f in "$RR"/trackers/*.md; do
-      [ -f "$f" ] || continue
-      printf '%s\t%s\n' "$(rel_to_rr "$f")" \
-        "$(grep -c -E '^[-*] ' "$f" 2>/dev/null || echo 0)"
-    done
-  fi
+  emit_tracker_facts
 
   if [ "$GIT" = present ]; then
     echo "branch=$(git -C "$ROOT" branch --show-current 2>/dev/null || echo detached)"

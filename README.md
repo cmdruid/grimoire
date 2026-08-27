@@ -46,14 +46,14 @@ scaffold, audit, and calibrate authoring doctrine), and `google-developer-style`
 | `analyst` | reports and briefings for the developer: catch-ups, status, subsystem and health snapshots, guides — synthesized from the records layer and git, from a customizable template catalog |
 | `architect` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
-| `backlog` | extensible living TSV trackers: explicit setup, tracker add/remove/list, file, debrief cookbook, and curate — all under its owner-first workspace namespace |
+| `backlog` | first-class living TSV trackers: setup, extensible queues, receipts, paging, filing, universal debriefing, and curation through `tracker@1` |
 | `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
 | `contractor` | one job lead — roadmap, plan, runbook, build; never ships; never writes a spec |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `google-developer-style` | write developer docs in Google's house style; snapshot, no live-site floor; standalone, outside every pack |
 | `journal` | the records format authority: the record discriminator + contract + `records.sh` + the history ledger; setup, done, substrate curate |
-| `inspector` | adequate, material review of documents and completed implementations; accepted passing document reviews publish, refine folds findings, and setup deploys Inspector-owned kind doctrine absent-only |
+| `inspector` | material review of documents and completed implementations; revise folds supported document findings, refine simplifies specs and plans, and setup deploys Inspector-owned kind doctrine absent-only |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
@@ -73,9 +73,9 @@ former role skills had already merged into the face
 
 ### Storage convention: what skills may maintain in a project
 
-A project has two independently resolved roots. **`<agent-workspace>`** (by default `.spaces`)
+A project has three independently resolved roots. **`<agent-workspace>`** (by default `.spaces`)
 holds skill-owned working files beneath `<skill>/<kind>/`; owners are open and the kinds are
-`doctrine`, `hooks`, `operations`, `scripts`, `templates`, and `trackers`. Operations are flat
+`doctrine`, `drafts`, `hooks`, `operations`, `scripts`, and `templates`. Operations are flat
 Markdown under the publishing owner's namespace and remain directly usable without a curator.
 **`<agent-records>`**
 (by default `.records`) holds work products:
@@ -84,17 +84,20 @@ in whatever directories their writers mint, plus the `history.tsv` closure ledge
 staged engine lives at `<agent-workspace>/journal/scripts/records.sh`; the format is `journal`'s
 (templates arrive with the skills that mint them;
 `journal` ships the commons).
-**`AGENTS.md`** is the door and the one place `agent-workspace:` / `agent-records:` are declared
+**`<agent-trackers>`** (by default `.trackers`) holds public `tracker@1` queue TSVs, the shared
+receipt ledger, and their fixed API. Backlog owns that layer; consumer skills use its API directly.
+**`AGENTS.md`** is the door and the one place `agent-workspace:` / `agent-records:` /
+`agent-trackers:` are declared
 when they are not the defaults. Each durable-home skill owns its files and optional route block;
 the pack installs skills but writes none of these project surfaces.
 
-Session checkpoints stay **gitignored scratch** (root `CHECKPOINT.md`, steward `checkpoint`) —
+Session checkpoints stay **gitignored scratch** (one root `CHECKPOINT.md`, steward `checkpoint`) —
 not a `.records/` store.
 
 Foreman indexes those publisher-owned operations without copying them, learns accepted operations
 and doctrine from attended debriefs, and compiles verified closures into immutable
-`<agent-records>/goals/` runbooks. Mutable pursuit state stays with the root checkpoint or the active
-workstream, never with Foreman.
+`<agent-records>/goals/` runbooks. Mutable pursuit state stays with the one root checkpoint or the
+active workstream, never with Foreman.
 For isolated pursuit, a root coordinator can opt into a lean bridge: prove the committed goal
 closure, seed a Workstream, prime its one queue unit, and resume Foreman from inside it. The bridge
 does not alter ordinary Workstream creation or add callbacks.

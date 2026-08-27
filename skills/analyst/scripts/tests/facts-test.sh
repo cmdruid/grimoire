@@ -37,7 +37,9 @@ ${6:-Fixture body.}
 EOF
 }
 
-mkdir -p "$FIX/.records/scripts" "$FIX/.records/templates" "$FIX/.records/trackers"
+legacy_workspace_tracker="$FIX/.spaces/backlog/""trackers"
+mkdir -p "$FIX/.records/scripts" "$FIX/.records/templates" "$FIX/.records/trackers" \
+  "$legacy_workspace_tracker" "$FIX/.trackers"
 
 # Two closures in span, one long before it.
 mk_record plans   2026-08-10-planted-feature "archived"      2026-08-10
@@ -68,6 +70,12 @@ tags: []
 - planted tracker line one
 - planted tracker line two
 EOF
+printf '%s\n' 'legacy owner-local canary' > "$legacy_workspace_tracker/tasks.tsv"
+cp "$HERE/../../../backlog/scripts/tracker-api.sh" "$FIX/.trackers/tracker-api.sh"
+chmod +x "$FIX/.trackers/tracker-api.sh"
+printf 'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult\n' > "$FIX/.trackers/receipts.tsv"
+printf 'id\tcreated\ttext\tevidence\n' > "$FIX/.trackers/tasks.tsv"
+printf 'tasks-1\t2026-08-14T00:00:00Z\tlive tracker row\tdocs/live.md\n' >> "$FIX/.trackers/tasks.tsv"
 
 mkdir -p "$FIX/src/widget"
 echo 'fn main() {}' > "$FIX/src/widget/mod.rs"
@@ -109,7 +117,17 @@ printf '%s\n' "2026-08-10	done	plans/2026-08-10-planted-feature.md	plans	planted
 # Open: the design record, the stale bug, and the audit report.
 expect "status: counts open records"        "open_records=3"          "$OUT"
 expect "status: lists the open design"      "2026-08-14-open-design"  "$OUT"
-expect "status: counts tracker lines"       "trackers/2026-08-14-backlog.md	2"  "$OUT"
+expect "status: finds tracker provider"      "tracker_provider=present"    "$OUT"
+expect "status: reads live tracker row"      "live tracker row"            "$OUT"
+expect_absent "status: ignores records tracker" "planted tracker line"       "$OUT"
+expect_absent "status: ignores owner-local tracker" "legacy owner-local canary" "$OUT"
+
+# BREAK: consume the live row through the provider; it must leave the open facts.
+API=("$FIX/.trackers/tracker-api.sh" --root "$FIX" --records-root .records --workspace .spaces --trackers-root .trackers)
+"${API[@]}" consume --consumer analyst/test --tracker tasks --ids tasks-1 --resolution resolved >/dev/null
+"$FACTS" status "$FIX" > "$OUT" 2>&1
+expect_absent "status BREAK: consumed row leaves open facts" "live tracker row" "$OUT"
+printf 'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult\n' > "$FIX/.trackers/receipts.tsv"
 
 # BREAK: close the open design — the open count must drop.
 sed -i.bak 's/^status: draft/status: archived/' "$FIX/.records/specs/2026-08-14-open-design.md"

@@ -34,15 +34,17 @@ house-style guide. None is part of the project's `clankshop` toolkit.
 
 ## Composition seams
 
-- Architect produces the argued specification. Inspector reviews or refines specifications and
-  job artifacts without taking ownership; after the caller accepts a passing document review,
-  Contractor sequences an approved specification only when a plan is useful and can walk that job.
+- Architect produces the argued specification. Inspector reviews documents, revises supported
+  findings, and may simplify a spec or plan without taking ownership; after the caller accepts a
+  passing document review, Contractor sequences an approved specification only when a plan is
+  useful and can walk that job.
 - Contractor plans and roadmaps are queue sources for Workstream. Workstream owns isolation,
   landing, and the live stream loop; Contractor never ships.
 - Journal defines the record contract. Notepad writes notes, Auditor and Debugger write reports,
-  and Analyst reads records, reports, Backlog trackers, and git history into cited briefings.
-- A workstream owns its `WORKSTREAM.md` save-state. A root session may instead
-  use the repository-level checkpoint file; one session never uses both.
+  and Analyst reads records, reports, the first-class tracker provider, and git history into cited
+  briefings.
+- A workstream owns its `WORKSTREAM.md` save-state. The root checkout may instead carry one
+  token-bound `CHECKPOINT.md`; one session never uses both lifecycles.
 - Foreman compiles verified operation closures into immutable goal records. A root pursuit asks
   Checkpoint to own mutable progress; a stream pursuit reads Workstream's hand-off. The harness goal
   feature may drive either runbook, but Foreman never writes either runtime surface or expands tool
@@ -51,8 +53,10 @@ house-style guide. None is part of the project's `clankshop` toolkit.
   proves the record closure reachable, seeds the stream, primes its existing hand-off through
   Workstream's generic helper, then loads that same stream. Normal Workstream use performs no
   Foreman checks.
-- Backlog may suggest `tasks`, `issues`, and `feedback` during explicit setup; the pack
-  installs no tracker, script, route, or debrief policy.
+- Backlog's explicit setup defaults to `tasks`, `issues`, `feedback`, and `routines`; it owns the
+  first-class `<agent-trackers>` layer, its `tracker@1` provider, and a universally visible debrief
+  cadence. The pack itself installs no tracker, script, route, or debrief policy. Foreman consumes
+  tracker pages to develop operations, while Analyst reads the same provider without mutation.
 - Delegate chooses whether and how to dispatch work and may expose its own optional
   `delegate/hooks/byproducts.md` policy through explicit setup. The pack never fills it.
   Mailbox is transport for a returned artifact, not the dispatch decision.
@@ -60,7 +64,7 @@ house-style guide. None is part of the project's `clankshop` toolkit.
   cross-owner operation catalog and writes only its own operations, doctrine, route, and goal
   records; each publisher remains able to follow its own operations directly. Scheduler owns only
   local recurring-run state.
-- Records, workspace files, hooks, doctrine, and review kinds remain owned by
+- Records, tracker data, workspace files, hooks, doctrine, and review kinds remain owned by
   the skill that defines them. Coarse owner-local edge types do not compose across owners merely
   because their names match. Pack installation never projects those files into a project.
 
@@ -72,14 +76,15 @@ Clankshop for `<project-root>`.” Installation does not cache or execute this s
 
 ### 1. Inspect and propose
 
-Read the target project's instructions. Resolve its agent workspace (default `.spaces`) and records
-home (default `.records`) without writing declarations for either default. Inspect installed members,
-both homes, front-door route blocks, recognized legacy locations, and Git state. Do not write yet.
+Read the target project's instructions. Resolve its agent workspace (default `.spaces`), records
+home (default `.records`), and tracker home (default `.trackers`) without writing declarations for
+any default. Inspect installed members, all three homes, front-door route blocks, recognized legacy
+locations, and Git state. Do not write yet.
 
 Propose one bounded profile that names every selected setup and every destination it may change:
 
 - Core records: Journal.
-- Delivery loop: Journal, selected Backlog trackers, Workstream, and optionally Delegate.
+- Delivery loop: Journal, Backlog's default or selected trackers, Workstream, and optionally Delegate.
 - Optional customization: Architect, Contractor, Notepad, Analyst, Debugger, or Inspector only when
   the project wants editable versions of their active surfaces.
 - Deferred enhancement: Auditor is optional and time-intensive. Never include it in the initial
@@ -100,31 +105,12 @@ package-managed tools may refresh only where their owner already defines refresh
 recognized legacy file refuses and names that owner's `migrate` command. Report partial safe writes,
 correct the refusal, and rerun; never guess through a collision.
 
-### 3. Apply the approved delivery-loop glue
+### 3. Apply optional project policy
 
-These bodies are project-authored policy. Apply only the approved ones after their owning setup has
-created the file.
-
-`<agent-workspace>/workstream/hooks/feature-completion.md`:
-
-```markdown
-# Workstream — feature completion
-
-Before shipping or saving a completed feature, run `/backlog debrief` over that feature. Include
-actionable byproducts returned by Delegate during the feature. The debrief owns routing; do not file
-the same leftover directly from this hook.
-```
-
-`<agent-workspace>/workstream/hooks/after-eventful-ship.md`:
-
-```markdown
-# Workstream — after an eventful ship
-
-Run `/backlog debrief` over ship-specific friction only. Do not refile leftovers already handled by
-the feature-completion debrief.
-```
-
-When selected, `<agent-workspace>/delegate/hooks/byproducts.md`:
+Backlog setup registers its own universal cadence; do not duplicate it inside Workstream hooks.
+Workstream's empty hook points remain independent and are available for unrelated host policy.
+When Delegate is selected, the project may place this policy in
+`<agent-workspace>/delegate/hooks/byproducts.md`:
 
 ```markdown
 Return each actionable byproduct with a proposed class (`task`, `issue`, or `feedback`), an evidence
