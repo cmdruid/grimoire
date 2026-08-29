@@ -28,9 +28,10 @@ All other members are optional and default-installed:
 - Development operations: `workstream`, `auditor`, `debugger`, and `foreman`.
 - Utilities: `delegate`, `mailbox`, `checkpoint`, `scheduler`, and `workspace`.
 
-Three skills are intentionally outside the pack: `skill-builder` maintains skills libraries,
-`agent-council` is a standalone cross-vendor panel, and `developer-writing` is a standalone
-developer-writing guide. None is part of the project's `clankshop` toolkit.
+Four skills are intentionally outside the pack: `skill-builder` maintains skills libraries,
+`agent-council` is a standalone cross-vendor panel, `developer-writing` is a standalone
+developer-writing guide, and `code-humanizer` makes source a human can scan. None is part of
+the project's `clankshop` toolkit.
 
 ## Composition seams
 

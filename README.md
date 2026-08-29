@@ -35,10 +35,11 @@ the one required member), `backlog` (the follow-up lifecycle), `notepad` (projec
 diagnostics), `analyst` (reports and briefings read back out of the records), `foreman`
 (project operations, brownfield curation, and goal runbooks); **utilities** —
 `checkpoint`, `mailbox`, `delegate`, `scheduler`, `workspace` (the owner-first workspace guard).
-Three skills sit outside the pack on
+Four skills sit outside the pack on
 purpose: `agent-council` (cross-vendor review panel), `skill-builder` (the **toolmaker** —
-scaffold, audit, and calibrate authoring doctrine), and `developer-writing`
-(purpose-aware developer prose with Google documentation mechanics). See *The packs* below.
+scaffold, audit, and calibrate authoring doctrine), `developer-writing`
+(purpose-aware developer prose with Google documentation mechanics), and
+`code-humanizer` (make source a human can scan). See *The packs* below.
 
 | skill | what it does |
 |---|---|
@@ -48,6 +49,7 @@ scaffold, audit, and calibrate authoring doctrine), and `developer-writing`
 | `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
 | `backlog` | first-class living TSV trackers: setup, extensible queues, receipts, paging, filing, universal debriefing, and curation through `tracker@1` |
 | `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
+| `code-humanizer` | make source a human can scan: write-time landmarks, names, and shape; `mark` / `map` / `walk` on existing code; standalone, outside every pack |
 | `contractor` | one job lead — roadmap, plan, runbook, build; never ships; never writes a spec |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
@@ -109,7 +111,7 @@ a face skill or, as here, at repository root with no face. `install.sh --pack` i
 transactionally and records the install in the sidecar `grimoire.lock` beside the target dir.
 
 - **`clankshop`** (`PACK.md`) — the skills above (minus `agent-council`,
-  `developer-writing`, and `skill-builder`) as a faceless toolkit. The manifest body is the
+  `code-humanizer`, `developer-writing`, and `skill-builder`) as a faceless toolkit. The manifest body is the
   seam map; there is no `clankshop` skill or project assembler.
 
 ## Repo layout
