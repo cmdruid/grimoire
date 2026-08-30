@@ -6,7 +6,7 @@ Look up what is already written. Default visibility is **live**
 1. Resolve both homes (SKILL.md).
 2. If the operator asked for a closed or all notes, honor that; otherwise
    live only.
-3. If `<agent-workspace>/journal/scripts/records.sh` is executable: `records.sh
+3. If `<agent-records>/records.sh` is executable: `records.sh
    list --type notes` (live-set default) or with the requested `--status`.
    Else scan `<agent-records>/notes/*.md` and filter on `status:` —
    live is `draft` ∪ `published`; `archived` is closed (and still skip

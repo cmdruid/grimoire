@@ -115,30 +115,46 @@ A target checkout is **held** when either (a) `<toplevel>/WORKSTREAM.md` exists,
 `branch:` equals `git -C <toplevel> branch --show-current`. Codex (or any tree-writing executor)
 **must not** write a held tree.
 
+First inventory the dispatch capabilities actually exposed in this session: **native subagent
+dispatch**, **model override**, **cwd control**, and **isolated execution**. These are observable
+capabilities, not routing permission. Prefer native same-harness dispatch when those capabilities
+satisfy the unit's model and isolation needs. A different provider or model still requires the route
+confirmation above even when the mechanism can express it.
+
+**Select dispatch before transport.** Dispatch answers who executes and under which isolation;
+transport answers how that selected executor returns the result.
+
 ```
 About to do work →
   Delegable? (well-scoped • returns a conclusion/artifact • you CHECK, don't PRODUCE)
     no  → do it inline
-    yes → What is the shape / payoff?
-       ├─ read / analysis → a conclusion        → INLINE read-only sub-agent   (owned here)
-       ├─ file-work, want it back clean,          → MAILBOX slot                (→ mailbox skill)
-       │   or the target is held (single-writer)
-       ├─ mechanical CODING → a diff             → CODEX executor              (references/codex.md)
-       │   only if the target is NOT held; else mailbox or isolated worktree
-       ├─ N independent tasks at once            → PARALLEL fan-out            (owned here, below)
-       └─ delegate needs its own live build loop → ISOLATED worktree           (walk below)
+    yes → 1. Select dispatch from native dispatch • model override • cwd control • isolation
+              ├─ fitting native route → NATIVE subagent
+              ├─ external route required, or sandbox/cwd/output capture is material
+              │                       → HEADLESS executor (references/codex.md)
+              └─ no fitting route     → INLINE
+           Add an ISOLATED worktree when the executor needs a live build loop or held-tree writes.
+           For N independent units, repeat this selection and dispatch concurrently.
+           2. Select return transport
+              ├─ bounded conclusion / ordinary direct result → DIRECT return
+              ├─ file-work without target-tree writes         → MAILBOX transport,
+              │                                                  using the selected dispatch capability
+              └─ owned isolated-worktree changes               → branch diff for parent review
 ```
 
-- **Inline read-only sub-agent** -- for read/analysis grunt work that returns information, not a diff
-  (broad searches, log triage, summarizing files). Cheapest dispatch; no slot needed. Craft a focused
-  task that does **not** inherit your context; ask for a bounded summary.
+- **Native subagent** -- for work the session's native dispatch can isolate with the selected model,
+  cwd, and write posture. For read/analysis grunt work that returns information rather than a diff,
+  craft a focused task that does **not** inherit your context and ask for a bounded summary. A
+  same-harness, same-model route needs no provider/model confirmation.
 - **Mailbox slot** -- file-work you want back *without* polluting your context, or *safely when the
   target is held* (the delegate is tree-read-only; only you write the tree). The artifact travels as a
   path you `git apply`. See the **`mailbox`** skill for the protocol; don't re-document it. On a held
   target this is also the path for mechanical coding you do not want in an isolated worktree.
-- **Codex executor** -- mechanical *coding* → a reviewable diff you gate and commit, **only when the
-  target is not held**. See **`references/codex.md`**. If the target is held, do not point `codex exec
-  -C` at it — mailbox or isolated worktree instead.
+- **Headless executor** -- use `codex exec` only when no fitting native route exists, the confirmed
+  route explicitly requires an external process, or its sandbox/cwd/output-capture semantics are
+  material. See **`references/codex.md`** for read-only analysis and workspace-writing coding modes.
+  A tree-writing executor must never target a held checkout; use Mailbox transport or an owned
+  isolated worktree instead.
 - **Parallel fan-out** -- 2+ *independent* tasks (different files / subsystems / failures, no shared
   state). One read-only sub-agent per domain, all dispatched **concurrently in a single turn**, each
   with a self-contained prompt (no inherited context, no dependence on a sibling's result) and the
@@ -251,17 +267,14 @@ Byproducts section. A fallback is also a
 signal the confirmed route has gone stale and may need re-confirming -- the same observable fact,
 surfaced to whoever owns the route.
 
-## The spawn seam (the one harness-specific step)
+## The dispatch seam
 
-The protocol above is harness-neutral; only *how you spawn a sub-agent on the named model* differs.
-"Model" is an **opaque per-harness string** -- pass it to the spawn, never interpret it.
-
-- **Claude orchestrator** → native sub-agent (Task tool) with a model override. For coding: run the
-  held-tree check first. If the target is held → mailbox or isolated worktree; never `codex exec -C`
-  against the target. If the route is isolated worktree, `codex exec -C` is that worktree's
-  `<abs-path>`. If the target is unheld → `codex exec -C <target>` is allowed.
-- **Codex orchestrator** → no native model-routed sub-agent, so `codex exec --model <m>` subprocess **is**
-  the delegation primitive (for both analysis and coding), under the same held-tree refuse.
+Use the capability inventory from the decision tree; do not infer a fixed mechanism from the harness
+name. Pass the selected model as the dispatch capability's opaque model value and use its cwd and
+isolation controls when the unit requires them. Capability does not waive policy: different-provider
+or different-model routes still require confirmation, while same-harness same-model context isolation
+does not. If native dispatch cannot satisfy the selected route, use the headless executor only under
+the conditions above.
 
 ## Anti-patterns
 
@@ -286,7 +299,9 @@ The protocol above is harness-neutral; only *how you spawn a sub-agent on the na
 | Step | Action |
 |---|---|
 | delegable? | well-scoped • returns a conclusion/artifact • you check, don't produce |
-| pick mechanism | inline sub-agent / mailbox slot / codex / parallel fan-out / isolated worktree |
+| inventory capabilities | native dispatch / model override / cwd control / isolated execution |
+| select dispatch | fitting native route / headless executor / inline; add isolated worktree when required |
+| select transport | direct return / Mailbox using the selected dispatch / isolated-worktree branch diff |
 | route | compute checkable facts; **confirm the provider/model** with the human (once → session pref) |
 | dispatch | self-contained task, no inherited context; on the confirmed model |
 | return | exact Deliverable + Status + Byproducts headings; empty Byproducts is `- None.` |
@@ -296,8 +311,7 @@ The protocol above is harness-neutral; only *how you spawn a sub-agent on the na
 
 Delegate is **pure-mechanism plumbing**: no storage, no typed artifact edges (a dispatched task's deliverable is ephemeral and
 consumed inline by whoever called `/delegate`), and no registration -- it is ambient doctrine/routing
-with no captured items to surface, the exact thing registration exists for. All three edges are a
-stated empty, not an omission.
+with no captured items to surface, the exact thing registration exists for.
 
 <!-- edges:delegate -->
 - produces: — (a dispatch's deliverable is consumed inline by the caller, not a typed artifact)

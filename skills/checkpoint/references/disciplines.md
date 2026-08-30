@@ -21,18 +21,20 @@ determined queue step, or unsuperseded standing direction.
 
 Read the save-state in full, load it as context, echo its single next action, and rewrite nothing.
 Report stale or already-landed work. A refresh happens only through a later Save. Any ownership or
-custody claim is an owner-specific step after human confirmation, outside this read-only discipline.
+custody claim is owner-specific; the owner decides whether explicit Resume invocation itself
+authorizes that claim. This read-only primitive mandates no separate confirmation.
 
 ## Lifecycle discipline
 
-Create the first save early once work is meaningfully underway. Refresh at checkpoint moments:
-(1) before a deliberate reset, (2) at a human-visible work-unit completion, and (3) on a
-context-pressure warning, when the agent also recommends a reset. A work-unit is an expensive-to-
-reconstruct milestone, not a file edit, review pass, or status reply.
+The owner defines its explicit enrollment or creation event. The discipline creates no owner state
+before that event. Afterward, refresh at checkpoint moments: (1) before a deliberate reset, (2) at
+a human-visible work-unit completion, and (3) on a context-pressure warning, when the agent also
+recommends a reset. A work-unit is an expensive-to-reconstruct milestone, not a file edit, review
+pass, or status reply.
 
-Resume never consumes the file; only the owner's close procedure ends it. Presence means work in
-flight, qualified by stale state and forgotten close after work landed. A polluted context resets
-without saving, deliberately rolling back to the last trusted state.
+Resume never consumes the file. Landed work is a durable fact, not a completion heuristic; the
+save-state remains active until its explicit close procedure runs. A polluted context resets without
+saving, deliberately rolling back to the last trusted state.
 
 ## Recovery discipline
 
@@ -46,16 +48,17 @@ owner's save-state. The owner supplies its own discovery and admission rules.
    cited as in flight, not general orientation material. Do not open a search.
 4. **Reconcile.** Durable state wins for landed work; the file wins for last-saved intent; the
    summary contributes only later in-flight work that does not contradict durable state. Ask only
-   if two live intents remain plausible. Landed work routes to the owner's close procedure.
+   if two live intents remain plausible. Report landed work neutrally without inferring or
+   suggesting closure.
 5. **Working set.** Use the file's TL;DR, reconciled pending work, and suggested first action.
-6. **Write-back.** Save separately only when pending or the first action changed from durable
-   evidence and this file is the sole mid-unit store. Do not persist summary-only deltas or an
-   untrusted merge.
-7. **Reply.** Report the save-state path and next action, then work. Honor a still-visible context-
+6. **Reply.** Report the save-state path and next action, then work. Honor a still-visible context-
    pressure warning.
-8. **Continue without a round trip** when the next action is KNOWN. A fresh session instead uses
-   Resume and confirms before continuing. A failed compaction is a hard session boundary: Save if
+7. **Continue without a round trip** when the next action is KNOWN. A fresh session instead uses
+   Resume under the owner's claim rule. A failed compaction is a hard session boundary: Save if
    possible, reset, then Resume.
+
+Recovery itself never writes the save-state. Reconciled changes persist only at the owner's next
+ordinary Lifecycle refresh; summary-only deltas and an untrusted merge never become trusted state.
 
 **Done when (Recovery):** the compacted session is reconciled and continuing, or the owner's
 explicit no-file fallback completed.

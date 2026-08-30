@@ -8,12 +8,12 @@ context from the session's loop entry; if you are running one standalone and it 
 ## Execution mode — `delegate` (default) or `manual`, chosen at create
 
 A stream runs in one of two modes for matching *the right model to the right work*. Both pursue the
-same goal; they differ in **transport**, and the mode is proposed-and-confirmed at `create` (like the
+same goal; they differ in **execution**, and the mode is proposed-and-confirmed at `create` (like the
 delegation route and ship cadence) and recorded in the hand-off Coordinates `mode:`.
 
-- **`delegate`** (default) — **one resident orchestrator** (a strong main-loop model) that farms
-  model-matched pieces to `/mailbox` delegates per `/delegate`'s table (see *Per-phase model routing*
-  under the autonomy rule). Resets happen only at feature/heavy-context boundaries. This is the
+- **`delegate`** (default) — **one resident orchestrator** (a strong main-loop model) that submits
+  bounded units through `/delegate` and resumes the loop from each returned result. Resets happen
+  only at feature/heavy-context boundaries. This is the
   **autonomous-friendly** mode — the loop never needs a human to change models, so a `/loop`/cron run
   keeps moving on its own.
 - **`manual`** — the **main-loop model itself changes per phase**. A feature is built as three explicit
@@ -55,17 +55,14 @@ whole feature, exactly as above.
 red-first to gate-green, following the host's feature lane where one is documented
 (`<agent-workspace>/workstream/operations/feature.md` when that file exists — its walk's build step), else the plan
 template's own structure. The execution discipline is the loop's own: the main session is the
-**sole writer** of the tree, authoring is mode-routed per `/delegate` (inline, a `/mailbox` patch
-slot the orchestrator applies, or an isolated worktree merged back), the **gate stays
-single-location** in this worktree regardless of who authored the change, and progress is
-artifact-free (the plan's own checkboxes). **Per-phase model routing (`delegate` mode):** each
-work-unit may go to a model-matched delegate via `/mailbox`, routed per the `/delegate` skill's
-model-routing table. (**In `manual` mode this is off** — the BUILD session is already on the
-build-model, so the build runs inline; delegation stays available only for fan-out/grunt, never as
-the model lever.) The route is **confirmed once and recorded in the hand-off** (*Delegation route*
-section) so an autonomous loop never stalls re-asking it, and provider failures
-(quota/limit/outage) **degrade per `/delegate`'s fallback ladder -- down to inline on the
-orchestrator -- rather than blocking the loop**. The **planning stages** map to `/architect spec`
+**sole writer** of the tree. In `delegate` mode, submit each suitable bounded work-unit to
+`/delegate`, then validate its returned result, apply or merge any accepted artifact as the main
+session, and resume this loop. If Delegate or a capability it selects is unavailable, execute that
+unit inline. The **gate stays single-location** in this worktree regardless of who authored the
+change, and progress is artifact-free (the plan's own checkboxes). **In `manual` mode delegation as
+the model lever is off** — the BUILD session is already on the build-model, so the build runs inline;
+delegation stays available only for fan-out/grunt. The confirmed route state remains recorded in the
+hand-off so an autonomous loop does not repeat the route decision. The **planning stages** map to `/architect spec`
 when installed (the argued spec), then `/inspector review`. After a passing
 `/inspector review` the caller accepts, they write `published` (job artifacts:
 also `stage: approved`) before `/contractor plan` or `/contractor build`. Not
@@ -156,23 +153,6 @@ Two more ways a queued item can be wrong, beyond *already shipped*:
 
 After the single launch confirm, build to completion. (This is the same interaction for `create`'s
 tail, `load`'s resume, and `recycle`'s relaunch — there is no separate per-verb menu.)
-
-### Shared resources — acquire before protected work, release when finished
-
-A resource claim coordinates an external repository-local singleton only when a host procedure names
-the literal resource and intent. Workstream never infers one from an arbitrary command. Run the
-resource verb's acquire procedure before the first protected operation that can observe or mutate
-that declared singleton. Validate the exact held inventory before every later protected operation,
-and validate again after `load` or Scenario C recovery before protected work resumes. Release as soon
-as the protected work finishes; `close` atomically releases any remainder.
-
-A held, malformed, or inconsistent claim is the existing Blocker seam: report the helper's bounded
-holder facts and halt. Never poll, wait, infer that age permits takeover, or run an unattended
-`break`; another owner's claim persists until an attended exact-token break or its owner's release.
-
-Do not acquire a resource claim for Git landing, ordinary worktree files, read-only work, or
-independently addressable environments. Git already serializes its own ref advancement, files live in
-isolated worktrees, and separately addressable environments do not share one singleton.
 
 ### Ship cadence — when the loop lands (per-stream, recorded at create)
 

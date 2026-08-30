@@ -113,7 +113,7 @@ title="$(awk '/^# Goal: /{print substr($0,9);exit}' "$input")"; [ -n "$title" ] 
 rel="goals/$(date +%Y-%m-%d)-$(slugify "$title").md"; dest="$root/$records_root/$rel"
 [ ! -e "$dest" ] && [ ! -L "$dest" ] || die goal-exists
 body="$tmp/body"; awk 'NR==1&&$0=="---"{fm=1;next} fm&&$0=="---"{fm=0;next} !fm{if(!started&&$0=="")next;started=1;print}' "$input" >"$body"
-engine="$root/$workspace/journal/scripts/records.sh"
+engine="$root/$records_root/records.sh"
 ensure_safe_dir "$records_root"
 if [ -x "$engine" ]; then
   path="$("$engine" --root "$root" --records-root "$records_root" new goals --schema foreman/goal@1 --template "$body" --title "$title" --tag foreman --tag goal)"

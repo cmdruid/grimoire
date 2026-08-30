@@ -1,6 +1,6 @@
 ---
 name: journal
-description: "The records-layer format authority — defines what makes a file a record (a dated filename plus front-matter declaring its doctype), the record contract, the template convention, and the staged records.sh tool (search, query, lifecycle, and the history.tsv ledger) over the agent-records home (default `.records/`). Verbs: `setup` (stand up or refresh the tool layer), `search` (find records by content or metadata), `done` (close a record in place), `curate` (contract check, link rot, duplicate merge, prune proposals). Use when the user runs `/journal ...`, stands up or refreshes the records layer, searches or lists records, closes a record, asks about the record format/contract, or tidies the records home."
+description: "The records-layer format authority — defines what makes a file a record (a dated filename plus front-matter declaring its doctype), the record contract, the template convention, and the staged records.sh tool (search, query, lifecycle, and the history.tsv ledger) over the agent-records home (default `.records/`). Verbs: `setup` (durably reconcile the tool layer), `repair` (restore an initialized layer's provider and managed README block), `search`, `done`, and `curate`. Use when the user runs `/journal ...`, initializes or repairs the records layer, searches or lists records, closes a record, asks about the record contract, or tidies the records home."
 ---
 
 # journal — the records format authority
@@ -11,7 +11,8 @@ convention** (writers own schemas and may pass a body-only project template), an
 staged tool **`records.sh`** (search, query + lifecycle; sole writer of the `history.tsv` closure
 ledger). A skill creates only the directories it needs; the crawl knows no
 store list; `/journal setup` stands or refreshes the **tool layer** —
-`<agent-workspace>/journal/scripts/records.sh`, empty `history.tsv`, and the records README — and is never a floor for writers.
+`<agent-records>/records.sh`, empty `history.tsv`, and a Journal-owned delimited tool block in the
+records README — and is never a floor for writers.
 Writers state the in-package contract in their own package; they do not send
 the agent here for those bytes. At runtime they talk to the **staged**
 `records.sh` when that file is executable, never to this skill's bundled copy.
@@ -25,8 +26,9 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
   index — querying is a live scan, crawling the root at **any depth**.
 - **Nothing is reserved.** A skill creates only the directories it needs for its own
   work, so the set under the root is open-ended and unknown to this tool: it crawls rather
-  than matching a list. Journal owns `journal/scripts/` under the agent workspace (the tool)
-  and `history.tsv` at the records root (the ledger). Setup creates no writer directories and copies no templates.
+  than matching a list. Journal owns `records.sh`, `history.tsv`, and only the delimited
+  `journal:records-tool` block inside the records README. Setup creates no writer directories and
+  copies no templates; project prose outside that block remains the project's.
   `records.sh --root <root> --records-root <records-root-relative> new` writes under a **caller-named relative directory**: default is the
   `<doctype>` positional; `--dir <rel>` overrides (no leading `/`, no `..` segment).
   `mkdir -p` of that path is the caller creating the directory through the tool — journal
@@ -88,24 +90,35 @@ coherence), and record-link resolution. Tracker line form is a prose convention 
 | Invocation | Verb file | Does | Trigger |
 |---|---|---|---|
 | `/journal setup` | `verbs/setup.md` | Tool layer: first visit stands it up; later visit refreshes `records.sh` | "stand up the records", "refresh records.sh" |
+| `/journal repair` | `verbs/repair.md` | Restore only the provider and managed README block on an initialized layer | "repair records.sh", "restore the records tool" |
 | `/journal search` | `verbs/search.md` | Find records by content or metadata | "find/search/list/query records", "what's in the records about X" |
 | `/journal done <record>` | `verbs/done.md` | **Close** a record in place — disposition + note + the ledger line; write back inbound `→` links | "mark that done", "close out that plan" |
 | `/journal curate` | `verbs/curate.md` | **Substrate hygiene** — `check`, close what quietly finished, repair link rot, merge duplicates, propose prunes | "check the records", "tidy the records home" |
 
-`/journal` with no recognized verb: ask which of **setup / search / done / curate**. Filing a
+`/journal` with no recognized verb: ask which of **setup / repair / search / done / curate**. Filing a
 follow-up is not journal's job (scope boundary, below).
 
 ## Shared discipline (every verb relies on this — stated here once)
 
-- **Resolve both roots, then let `records.sh` own the facts.** The records home is
+- **Resolve the roots, run the ordered runtime preflight, then let `records.sh` own the facts.**
+  The records home is
   the first line-start `agent-records:` or `records-root:` in `AGENTS.md`, then
   `CLAUDE.md`; else `.records/`. (`agent-records:` preferred; `records-root:` still
-  accepted so already-declared hosts do not break.) The agent workspace is the first line-start
-  `agent-workspace:` in those same files, else `.spaces/`. The staged tool is
-  `<agent-workspace>/journal/scripts/records.sh`. If that file is **missing or not
-  executable**, stop, name `/journal setup`, and do not run this skill's bundled
-  copy. `search` also stops when the staged usage list has no `grep` line (a
-  later setup refreshes). Every invocation begins `records.sh --root <root>
+  accepted so already-declared hosts do not break.) Resolve `<agent-workspace>` from the first
+  line-start `agent-workspace:` in those files, else `.spaces`. Before search, done, or curate
+  invokes the staged tool, check in this order:
+  1. `<agent-workspace>/journal/setup.intent` present or unsafe → stop with exactly
+     `reason=setup-required action=/journal setup`.
+  2. `<agent-records>/history.tsv` absent, non-regular, or unsafe → the same setup-required
+     diagnostic.
+  3. `<agent-records>/records.sh` absent, non-regular, non-executable, byte-different from the
+     bundled provider, or failing the exact current bare-usage surface → stop with exactly
+     `reason=repair-required action=/journal repair`.
+  Compare bundled bytes when checking drift, but never execute the bundled provider against project
+  records. The staged usage probe uses the resolved roots, must exit 1, begin with the current usage
+  line, and name every current command; search additionally requires the `grep` line. Only after all
+  three checks pass may a runtime verb invoke the staged tool. Every invocation begins
+  `records.sh --root <root>
   --records-root <records-root-relative>`. Invoke **the staged tool** for every date, path, and
   conformance fact (`new --schema <owned-schema> [--template <resolved-body>]` / `touch` / `done` / `list` /
   `grep` / `history` / `prune-candidates` / `check`); never guess a date, never
@@ -156,5 +169,5 @@ absent — never demand the workshop as a precondition.
 
 ## Done when
 
-- **No recognized verb:** asked which of setup / search / done / curate; did not file a follow-up.
+- **No recognized verb:** asked which of setup / repair / search / done / curate; did not file a follow-up.
 - **A verb ran:** that verb file's Done when.

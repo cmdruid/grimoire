@@ -7,79 +7,144 @@ if [ "$#" -ne 2 ]; then
   echo "usage: anchor-status.sh <current-template> <front-door>" >&2
   exit 2
 fi
-template="$1"; front_door="$2"
+
+template="$1"
+front_door="$2"
+current_begin='<!-- checkpoint:recovery-anchor@2 -->'
 end_marker='<!-- /checkpoint:recovery-anchor -->'
-begin_re='^<!--[[:space:]]*checkpoint:recovery-anchor@[^[:space:]]+[[:space:]]*-->$'
+begin_re='^<!-- checkpoint:recovery-anchor@[^[:space:]]+ -->$'
+current_heading='## Checkpoint lifecycle and recovery'
+
+template_error() { echo "anchor_error=invalid-template"; exit 2; }
+target_error() { echo "anchor_error=$1"; exit 1; }
+
+reserved_heading_lines() {
+  awk '
+    function deindent(line,    count) {
+      count = 0
+      while (count < 3 && substr(line, 1, 1) == " ") {
+        line = substr(line, 2)
+        count++
+      }
+      return line
+    }
+    function marker_width(line, marker,    count) {
+      count = 0
+      while (substr(line, count + 1, 1) == marker) count++
+      return count
+    }
+    function begins_checkpoint(text) {
+      sub(/^[ \t]+/, "", text)
+      return substr(text, 1, 10) == "Checkpoint"
+    }
+    BEGIN {
+      fence_marker = ""
+      fence_width = 0
+    }
+    {
+      line = deindent($0)
+
+      if (fence_marker != "") {
+        width = marker_width(line, fence_marker)
+        rest = substr(line, width + 1)
+        if (width >= fence_width && rest ~ /^[ \t]*$/) {
+          fence_marker = ""
+          fence_width = 0
+        }
+        next
+      }
+
+      # Four-space or tab-indented lines are code, not top-level headings or fences.
+      if (substr(line, 1, 1) == " " || substr(line, 1, 1) == "\t") {
+        next
+      }
+
+      marker = substr(line, 1, 1)
+      if (marker == "`" || marker == "~") {
+        width = marker_width(line, marker)
+        rest = substr(line, width + 1)
+        if (width >= 3 && (marker == "~" || index(rest, "`") == 0)) {
+          fence_marker = marker
+          fence_width = width
+          next
+        }
+      }
+
+      # ATX H2: up to three leading spaces were removed above; exactly two hashes
+      # must be followed by whitespace or end-of-line.
+      if (substr(line, 1, 2) == "##" &&
+          (substr(line, 3, 1) == "" || substr(line, 3, 1) == " " ||
+           substr(line, 3, 1) == "\t")) {
+        content = substr(line, 3)
+        if (begins_checkpoint(content)) print NR
+      }
+    }
+  ' "$1"
+}
 
 if [ ! -f "$template" ] || [ -L "$template" ] || [ ! -r "$template" ]; then
-  echo "anchor_status=invalid-template"; exit 2
+  template_error
 fi
 template_begin="$(sed -n '1p' "$template")"
-if ! printf '%s\n' "$template_begin" | grep -Eq "$begin_re" ||
-  [ "$(grep -Ec "$begin_re" "$template" || true)" -ne 1 ] ||
-  [ "$(grep -Fc "$end_marker" "$template" || true)" -ne 1 ] ||
-  [ "$(grep -Ec '^##[[:space:]]+Checkpoint recovery[[:space:]]*$' "$template" || true)" -ne 1 ]; then
-  echo "anchor_status=invalid-template"; exit 2
-fi
-template_begin_line="$(grep -En "$begin_re" "$template" | cut -d: -f1)"
-template_end_line="$(grep -Fn "$end_marker" "$template" | cut -d: -f1)"
-template_heading_line="$(grep -En '^##[[:space:]]+Checkpoint recovery[[:space:]]*$' "$template" | cut -d: -f1)"
-if [ "$template_begin_line" -ne 1 ] || [ "$template_begin_line" -ge "$template_heading_line" ] ||
-  [ "$template_heading_line" -ge "$template_end_line" ]; then
-  echo "anchor_status=invalid-template"; exit 2
+template_begin_count="$(grep -Ec "$begin_re" "$template" || true)"
+template_end_count="$(grep -Fxc "$end_marker" "$template" || true)"
+template_heading_count="$(grep -Fxc "$current_heading" "$template" || true)"
+template_end_line="$(grep -Fn "$end_marker" "$template" | cut -d: -f1 || true)"
+template_lines="$(awk 'END { print NR }' "$template")"
+if [ "$template_begin" != "$current_begin" ] ||
+  [ "$template_begin_count" -ne 1 ] ||
+  [ "$template_end_count" -ne 1 ] ||
+  [ "$template_heading_count" -ne 1 ] ||
+  [ "$template_end_line" -ne "$template_lines" ]; then
+  template_error
 fi
 
-if [ ! -e "$front_door" ] && [ ! -L "$front_door" ]; then echo "anchor_status=missing"; exit 0; fi
+if [ ! -e "$front_door" ] && [ ! -L "$front_door" ]; then
+  echo "anchor_status=absent"
+  echo "anchor_target_missing=true"
+  exit 0
+fi
 if [ ! -f "$front_door" ] || [ -L "$front_door" ] || [ ! -r "$front_door" ]; then
-  echo "anchor_status=invalid"; exit 1
+  target_error invalid-target
 fi
 
 begins="$(grep -Ec "$begin_re" "$front_door" || true)"
-ends="$(grep -Fc "$end_marker" "$front_door" || true)"
-headings="$(grep -Ec '^##[[:space:]]+Checkpoint recovery[[:space:]]*$' "$front_door" || true)"
+ends="$(grep -Fxc "$end_marker" "$front_door" || true)"
+heading_lines="$(reserved_heading_lines "$front_door")"
+heading_count="$(printf '%s\n' "$heading_lines" | awk 'NF { count++ } END { print count + 0 }')"
 
 if [ "$begins" -eq 0 ] && [ "$ends" -eq 0 ]; then
-  if [ "$headings" -eq 0 ]; then echo "anchor_status=absent"; exit 0; fi
-  if [ "$headings" -eq 1 ]; then
-    begin_line="$(grep -En '^##[[:space:]]+Checkpoint recovery[[:space:]]*$' "$front_door" | cut -d: -f1)"
-    next_heading="$(awk -v start="$begin_line" 'NR > start && /^##[[:space:]]+/ { print NR; exit }' "$front_door")"
-    if [ -n "$next_heading" ]; then end_line=$((next_heading - 1));
-    else end_line="$(awk 'END { print NR }' "$front_door")"; fi
-    echo "anchor_status=obsolete-unversioned"
-    echo "anchor_begin_line=$begin_line"
-    echo "anchor_end_line=$end_line"
+  if [ "$heading_count" -eq 0 ]; then
+    echo "anchor_status=absent"
     exit 0
   fi
-  echo "anchor_status=duplicate"; exit 1
+  target_error reserved-heading
 fi
-if [ "$begins" -gt 1 ] || [ "$ends" -gt 1 ] || [ "$headings" -gt 1 ]; then
-  echo "anchor_status=duplicate"; exit 1
-fi
-if [ "$begins" -ne 1 ] || [ "$ends" -ne 1 ] || [ "$headings" -ne 1 ]; then
-  echo "anchor_status=malformed"; exit 1
+
+if [ "$begins" -ne 1 ] || [ "$ends" -ne 1 ]; then
+  target_error marker-structure
 fi
 
 begin_line="$(grep -En "$begin_re" "$front_door" | cut -d: -f1)"
 end_line="$(grep -Fn "$end_marker" "$front_door" | cut -d: -f1)"
-heading_line="$(grep -En '^##[[:space:]]+Checkpoint recovery[[:space:]]*$' "$front_door" | cut -d: -f1)"
-if [ "$begin_line" -ge "$heading_line" ] || [ "$heading_line" -ge "$end_line" ]; then
-  echo "anchor_status=malformed"; exit 1
-fi
+[ "$begin_line" -lt "$end_line" ] || target_error marker-order
 
-block="$(mktemp)"; trap 'rm -f "$block"' EXIT
+outside_headings="$(printf '%s\n' "$heading_lines" |
+  awk -v begin="$begin_line" -v end="$end_line" 'NF && ($1 < begin || $1 > end) { count++ } END { print count + 0 }')"
+[ "$outside_headings" -eq 0 ] || target_error mixed-heading
+
+block="$(mktemp)"
+trap 'rm -f "$block"' EXIT
 sed -n "${begin_line},${end_line}p" "$front_door" > "$block"
-
-if cmp -s "$template" "$block"; then
-  echo "anchor_status=current"
-  echo "anchor_begin_line=$begin_line"
-  echo "anchor_end_line=$end_line"
-  exit 0
-fi
 block_begin="$(sed -n '1p' "$block")"
-if [ "$block_begin" = "$template_begin" ]; then
-  echo "anchor_status=drifted-current"
+
+if [ "$block_begin" = "$current_begin" ]; then
+  if cmp -s "$template" "$block"; then status=current
+  else status=drifted-current; fi
 else
-  echo "anchor_status=obsolete-versioned"
+  status=conflict
 fi
+
+echo "anchor_status=$status"
 echo "anchor_begin_line=$begin_line"
 echo "anchor_end_line=$end_line"

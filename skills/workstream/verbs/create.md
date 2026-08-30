@@ -18,8 +18,8 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
 >   to "also" run the stream here. Instead **capture** the work through the host's bug-filing or follow-up lane, or
 >   **surface** it at a seam. Read the "all work is a workstream" doctrine correctly: it means *the
 >   coordinator gives each body of work its own stream*, **not** *you spawn-and-drive one mid-loop*. And
->   needing **isolation** for a *sub-task of your own feature* is not a new workstream either — that is a
->   delegate's own worktree via `/delegate` (read-only, merged back), not a second stream.
+>   needing **isolation** for a *sub-task of your own feature* is not a new workstream either — submit
+>   that bounded unit through `/delegate`; it is not a second stream.
 > - **`create --seed-only`, on an explicit human request to stand a stream up for a SEPARATE session →
 >   proceed.** This is the one sanctioned exception: the human has explicitly asked you to seed a
 >   *different* stream that **they** will drive in another session. You run the mechanical seed and
@@ -133,8 +133,6 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
        so the instance is self-contained; the per-unit sections (TL;DR, Queue state, What's been done)
        start blank.
      Write only Coordinates `this hand-off:`. Do NOT commit it; do NOT seed it on the root.
-     Instantiate the template's **Resource locks** section empty: create never infers, acquires, or
-     inherits a shared resource.
    - Make it ignored from inside the worktree — **idempotently** — by running this skill's bundled
      `scripts/worktree-exclude.sh <root>/.workstreams/<stream>` (resolve `scripts/` from the skill's
      own base directory, not the host project) (for a
@@ -185,15 +183,15 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
      the phase model map. (A `manual` stream still *records* a delegation route, but only for **fan-out**
      — default `inline-only`; its model lever is the phase map, not delegation.)
    - **Pre-confirm the delegation route** (so the autonomous loop delegates without per-dispatch friction,
-     and the per-feature tally is interpretable). Defer to `/delegate`'s route-confirmation — **don't
-     reimplement it here**: run its confirm-the-route step (self-check the checkable, propose a route
-     with the concrete available models **or `inline-only`** if there's no cheaper tier / no sub-agent
-     capability, get the human's OK). The per-phase model map is `/delegate`'s to define, not this file's. `create` runs on the root checkout **with the human present**,
-     so **confirm it now** (the human owns the unobservable cost/quota; one touch pays off across the whole
-     loop). Record the result in the hand-off's **`Delegation route`** section: the per-phase route +
-     fallback policy, or `inline-only` (a *deliberate* `0` tally, not a firing failure). **Unattended
+     and the per-feature tally is interpretable). Invoke `/delegate`'s public route-selection procedure;
+     do not reproduce its capability, provider/model, transport, or failure protocol here. `create`
+     runs on the root checkout **with the human present**, so confirm its selected route now and record
+     that route state in the hand-off's **`Delegation route`** section. If Delegate is absent or no
+     fitting capability is available, record `inline-only` (a *deliberate* `0` tally, not a firing
+     failure). **Unattended
      create** (no human to confirm) → record `unconfirmed — defaults to inline until confirmed` (distinct
-     from `inline-only`) so a later session re-confirms and a `0` tally isn't misread. (In `manual` mode
+     from `inline-only`) so a later session runs the same public procedure and a `0` tally isn't
+     misread. (In `manual` mode
      record the route as `inline-only` unless you specifically want **fan-out** delegation — the model
      lever there is the phase model map below, not the route.)
    - **Pre-confirm the phase model map** (`manual` mode only — skip in `delegate`). Propose the default

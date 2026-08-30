@@ -63,7 +63,7 @@ Decide these before reconstructing. They are what make the generic framework you
 | Slot | What it is | Example fill (replace) |
 |---|---|---|
 | `<language>` | The implementation language -> drives the anti-pattern greps + metrics recipes. | Rust / TypeScript / Python |
-| `<native dimensions>` | The host's sacred invariants, each promoted to a scored dimension atop the 12 portable ones. | "Determinism" (worldgen pure in `(seed, pos)`); "AI-boundary" |
+| `<native dimensions>` | The host's sacred invariants, each promoted to a scored dimension atop the 13 portable ones. | "Determinism" (worldgen pure in `(seed, pos)`); "AI-boundary" |
 | `<targets>` | The audited units, each tagged Deep / Mid / Light by blast radius. | `voxel/`, `content/` (Deep); `ai/` (Mid); `config.rs` (Light) |
 | `<drains>` | The host's **existing** capture homes a finding graduates into -- never a parallel queue. | report record + the host's bug-filing lane for defects; tracker lines only when the tracker file already exists |
 | `<exemplars>` | The in-repo files a score of 5 is measured against (often one library file + one service/system file). | filled by the *Select exemplars* step |
@@ -112,15 +112,16 @@ stays `<gate>`-green.
 
 ---
 
-## 5. The rubric -- 12 portable dimensions + your native ones
+## 5. The rubric -- 13 portable dimensions + your native ones
 
-Twelve language-neutral dimensions, each with a stable theme prefix (the Dimension tag on a finding, not an ID). Score
+Thirteen language-neutral dimensions, each with a stable theme prefix (the Dimension tag on a finding, not an ID). Score
 each **1-5** where 5 = matches the `<exemplars>`.
 
 | Dimension | Theme | Question it answers |
 |---|:--:|---|
 | Findability | `FND` | Can you locate a symbol from its name alone? |
 | Readability | `READ` | Can you read it top-to-bottom without backtracking? |
+| Complexity | `CPLX` | Is authored control-flow complexity proportionate, isolated, and adequately tested? |
 | Documentation | `DOC` | Is intent + public API documented to the exemplar bar? |
 | DRY | `DRY` | Is each rule expressed exactly once? |
 | God-files | `GOD` | Does any unit do more than one job? |
@@ -222,11 +223,13 @@ and add an exit gate. State which model you chose in `GUIDE.md`.
 
 ## 8. The metrics script (the `<language>` slot)
 
-`metrics.sh` turns the rule-file grep recipes into reproducible numbers and prints a Markdown
+`metrics.sh` turns the rule-file recipes into reproducible facts and prints a Markdown
 report -- quote it verbatim in the pass report, which is where the numbers persist (the report
 sequence is the trend; the script keeps no state of its own). It is the only deeply
-language-specific file. Compute the quantifiable dimensions; never guess a number the script can
-produce. Typical columns (rename per language):
+language-specific file. Its shell stays portable. It may invoke a parser-backed analyzer
+already pinned by the host toolchain. It performs no installation or network access. Compute the
+quantifiable dimensions; never guess a number the script can produce. Typical columns (rename per
+language):
 
 - **doc coverage** -- module-header coverage + public-item doc coverage.
 - **structure** -- count of files over a size threshold + the largest file.
@@ -234,12 +237,15 @@ produce. Typical columns (rename per language):
   casts, `unsafe`/`any`).
 - **debt** -- count of debt markers (`TODO`/`FIXME`/`HACK`).
 - **testing** -- a test-quantity proxy (test count or test:src ratio).
+- **complexity** -- analyzer identity and coverage status, attributed function rows, maximum,
+  nearest-rank p90 for complete populations of at least ten functions, an optional calibrated
+  threshold count, and the ten highest candidates. Partial and unavailable states remain explicit.
 - **invariant guard** -- a count of the host's `<native dimension>` smells in the sensitive
   modules. Wire this into an optional `--check` that **fails** when it is non-zero -- the one
   invariant worth gating even in a no-gate hygiene audit.
 
-Keep it dependency-free (shell + the language's own grep-able source). Document each column's recipe
-and its caveats (a coverage proxy is presence, not completeness).
+Use shell plus declared project tools. Document each column's recipe and its caveats (a coverage
+proxy is presence, not completeness).
 
 ---
 
@@ -249,14 +255,19 @@ Answer these in order; the answers fill the *Slots* and shape the rubric:
 
 1. **What `<language>`?** -> derive the anti-pattern greps and the metrics recipes. (What are its
    escape hatches: unchecked errors, raw casts, `unsafe`/`any`, dynamic eval?)
-2. **What is sacred here?** -> the host invariants that, if broken, break the project become your
+2. **Which complexity analyzer is already pinned?** -> record its stable invocation, version
+   command, declared source population, and exclusions. If none exists, record
+   `status: unavailable`; do not install one or derive a number from regex matches.
+   Include test code only when the host deliberately audits test maintainability; otherwise exclude
+   it from the main population or report it separately.
+3. **What is sacred here?** -> the host invariants that, if broken, break the project become your
    `<native dimensions>`. (Determinism? A fund-safety boundary? A latency budget? Backward-compat?)
-3. **What is the audit *for*?** -> hygiene (no gate, drain to trackers) vs release-gating (a hard
+4. **What is the audit *for*?** -> hygiene (no gate, drain to trackers) vs release-gating (a hard
    P0 gate). This sets the severity model (§7).
-4. **Where does blast radius concentrate?** -> tag each `<target>` Deep / Mid / Light.
-5. **Which existing trackers absorb findings?** -> the `<drains>`. If the host has none, the
+5. **Where does blast radius concentrate?** -> tag each `<target>` Deep / Mid / Light.
+6. **Which existing trackers absorb findings?** -> the `<drains>`. If the host has none, the
    pass report's own findings list is the queue.
-6. **What is the bar?** -> nominate `<exemplars>` (or defer to the *Select exemplars* step).
+7. **What is the bar?** -> nominate `<exemplars>` (or defer to the *Select exemplars* step).
 
 ---
 
@@ -273,6 +284,11 @@ Answer these in order; the answers fill the *Slots* and shape the rubric:
    an invariant to gate. This output is not an audit report.
 5. Run `<gate>` over the rubric. Do not write a host-index/routing pointer and do not run a baseline
    audit pass during setup. The first pass is a separate explicit invocation.
+
+On an explicit rerun against an incumbent rubric, absent-only seeding may add a new bundled leaf but
+never activates it. Preserve incumbent rules, `GUIDE.md`, and `metrics.sh`. Setup finishes only after
+the owner either approves calibration and indexing or explicitly leaves the new leaf inactive;
+ordinary passes score only rules indexed by the host guide.
 
 **Select exemplars (the deferred step).** Once the framework has landed, anchor it to real code:
 scan the source, nominate the best-documented / cleanest representative file(s) (often one
@@ -317,6 +333,7 @@ Copy into `<home>/GUIDE.md` and fill the slots. Do not invent extra stores.
 |---|---|---|
 | Findability | `rules/findability.md` | `FND` |
 | Readability | `rules/readability.md` | `READ` |
+| Complexity | `rules/complexity.md` | `CPLX` |
 | Documentation | `rules/documentation.md` | `DOC` |
 | DRY | `rules/dry.md` | `DRY` |
 | God-files | `rules/god-files.md` | `GOD` |
@@ -382,10 +399,11 @@ _Pin after the baseline pass. Until then, the written standard in each rule file
 
 ## 13. metrics.sh stub
 
-Copy into `<home>/metrics.sh`, fill `<language>` greps, `chmod +x`.
-Dependency-free (shell + the language's own grep-able source).
-Columns are presence proxies, not completeness. Quote the printed
-report in the pass report; this script keeps no state.
+Copy into `<home>/metrics.sh`, fill the project adapters, and `chmod +x`. Use shell plus tools
+already pinned in the project's normal toolchain; perform no installation or network access.
+Columns are presence proxies, not completeness. Quote the printed report in the pass report; this
+script keeps no state. The project-filled complexity adapter owns analyzer invocation and parsing.
+Copy the delimited validation and summary body verbatim.
 
 ```bash
 #!/usr/bin/env bash
@@ -408,6 +426,127 @@ unchecked=0; debt=0; tests=0; invariant=0
 
 # <fill each counter from the rule-file How-to-quantify recipes>
 
+# --- complexity adapter (fill; analyzer-specific) ---
+# Enumerate the declared source-file population before analysis. Invoke only the analyzer pinned by
+# the project, then normalize one authored function per row into complexity_rows:
+# <score><TAB><repo-relative-path><TAB><line><TAB><symbol>
+complexity_rows="$(mktemp "${TMPDIR:-/tmp}/audit-complexity.XXXXXX")"
+trap 'rm -f "$complexity_rows"' EXIT
+: >"$complexity_rows"
+complexity_analyzer="--"
+complexity_version="--"
+complexity_status="unavailable" # available | partial | unavailable
+complexity_population="<declared source population>"
+complexity_exclusions="generated,vendor,tests,<host exclusions>"
+complexity_expected_files="--"
+complexity_analyzed_files="--"
+complexity_skipped_files="--"
+complexity_parse_errors="--"
+complexity_threshold="" # empty until the host calibrates one
+
+# complexity-summary begin
+complexity_summary() {
+  local rows="${1:-}" status="${complexity_status:-}" counter count maximum p90 above
+  local ranked ascending tab rank
+  [ -f "$rows" ] || { echo "complexity-summary: normalized row file is missing" >&2; return 2; }
+  case "$status" in available|partial|unavailable) ;; *)
+    echo "complexity-summary: invalid status: $status" >&2; return 2;; esac
+  [ -n "${complexity_population:-}" ] && [ -n "${complexity_exclusions:-}" ] || {
+    echo "complexity-summary: population and exclusions are required" >&2; return 2;
+  }
+  if [ "$status" != unavailable ]; then
+    [ -n "${complexity_analyzer:-}" ] && [ "${complexity_analyzer:-}" != "--" ] \
+      && [ -n "${complexity_version:-}" ] && [ "${complexity_version:-}" != "--" ] || {
+      echo "complexity-summary: analyzer and version are required" >&2; return 2;
+    }
+  fi
+  for counter in "${complexity_expected_files:-}" "${complexity_analyzed_files:-}" \
+    "${complexity_skipped_files:-}" "${complexity_parse_errors:-}"; do
+    case "$counter" in --) [ "$status" != available ] || {
+      echo "complexity-summary: available coverage counters must be numeric" >&2; return 2; };;
+      ''|*[!0-9]*) echo "complexity-summary: invalid coverage counter: $counter" >&2; return 2;;
+    esac
+  done
+  if [ "$status" = available ]; then
+    [ "$complexity_expected_files" -eq "$complexity_analyzed_files" ] \
+      && [ "$complexity_skipped_files" -eq 0 ] && [ "$complexity_parse_errors" -eq 0 ] || {
+      echo "complexity-summary: available status requires complete coverage" >&2; return 2;
+    }
+  fi
+  if [ "$status" = partial ] && [ "$complexity_expected_files" != "--" ] \
+    && [ "$complexity_analyzed_files" != "--" ] && [ "$complexity_skipped_files" != "--" ] \
+    && [ "$complexity_parse_errors" != "--" ] \
+    && [ "$complexity_expected_files" -eq "$complexity_analyzed_files" ] \
+    && [ "$complexity_skipped_files" -eq 0 ] && [ "$complexity_parse_errors" -eq 0 ]; then
+    echo "complexity-summary: partial status requires incomplete or unproven coverage" >&2; return 2
+  fi
+  case "${complexity_threshold:-}" in '') ;; *[!0-9]*|0)
+    echo "complexity-summary: threshold must be a positive integer or empty" >&2; return 2;; esac
+  LC_ALL=C awk -F '\t' '
+    NF != 4 { print "complexity-summary: malformed row " NR > "/dev/stderr"; bad=1; next }
+    $1 !~ /^[0-9]+$/ || $1 < 1 { print "complexity-summary: invalid score at row " NR > "/dev/stderr"; bad=1 }
+    $2 == "" || $2 ~ /^\// || $2 ~ /\/$/ || $2 ~ /\/\// \
+      || $2 ~ /(^|\/)\.\.?($|\/)/ || $2 ~ /\\/ {
+      print "complexity-summary: invalid path at row " NR > "/dev/stderr"; bad=1
+    }
+    $3 !~ /^[0-9]+$/ || $3 < 1 { print "complexity-summary: invalid line at row " NR > "/dev/stderr"; bad=1 }
+    $4 == "" { print "complexity-summary: empty symbol at row " NR > "/dev/stderr"; bad=1 }
+    { key=$2 SUBSEP ($3 + 0) SUBSEP $4; if (seen[key]++) {
+        print "complexity-summary: duplicate identity at row " NR > "/dev/stderr"; bad=1
+      }
+    }
+    END { exit bad ? 1 : 0 }
+  ' "$rows" || return 2
+  count="$(awk 'END { print NR + 0 }' "$rows")"
+  if [ "$status" = unavailable ] && [ "$count" -ne 0 ]; then
+    echo "complexity-summary: unavailable status cannot attribute function rows" >&2; return 2
+  fi
+  tab="$(printf '\t')"
+  ranked="$(mktemp "${TMPDIR:-/tmp}/audit-complexity-ranked.XXXXXX")" || return 2
+  ascending="$(mktemp "${TMPDIR:-/tmp}/audit-complexity-ascending.XXXXXX")" || {
+    rm -f "$ranked"; return 2;
+  }
+  LC_ALL=C sort -t "$tab" -k1,1nr -k2,2 -k3,3n -k4,4 "$rows" >"$ranked"
+  LC_ALL=C sort -t "$tab" -k1,1n -k2,2 -k3,3n -k4,4 "$rows" >"$ascending"
+  maximum="--"; p90="--"; above="--"
+  if [ "$status" != unavailable ] && [ "$count" -gt 0 ]; then
+    maximum="$(awk -F '\t' 'NR == 1 { print $1; exit }' "$ranked")"
+  fi
+  if [ "$status" = available ] && [ "$count" -ge 10 ]; then
+    rank=$(( (9 * count + 9) / 10 ))
+    p90="$(awk -F '\t' -v rank="$rank" 'NR == rank { print $1; exit }' "$ascending")"
+  fi
+  if [ "$status" = available ] && [ -n "${complexity_threshold:-}" ]; then
+    above="$(awk -F '\t' -v threshold="$complexity_threshold" \
+      '$1 > threshold { n++ } END { print n + 0 }' "$rows")"
+  fi
+  printf '%s\n' '## Complexity'
+  printf 'complexity.analyzer=%s\n' "${complexity_analyzer:---}"
+  printf 'complexity.version=%s\n' "${complexity_version:---}"
+  printf 'complexity.status=%s\n' "$status"
+  printf 'complexity.population=%s\n' "$complexity_population"
+  printf 'complexity.exclusions=%s\n' "$complexity_exclusions"
+  printf 'complexity.expected_files=%s\n' "$complexity_expected_files"
+  printf 'complexity.analyzed_files=%s\n' "$complexity_analyzed_files"
+  printf 'complexity.skipped_files=%s\n' "$complexity_skipped_files"
+  printf 'complexity.parse_errors=%s\n' "$complexity_parse_errors"
+  if [ "$status" = unavailable ]; then
+    printf '%s\n' 'complexity.authored_functions=--'
+  else
+    printf 'complexity.authored_functions=%s\n' "$count"
+  fi
+  printf 'complexity.maximum=%s\n' "$maximum"
+  printf 'complexity.p90=%s\n' "$p90"
+  printf 'complexity.above_threshold=%s\n' "$above"
+  if [ "$status" != unavailable ]; then
+    awk -F '\t' 'NR <= 10 {
+      printf "complexity.hotspot=%s\t%s\t%s\t%s\n", $1, $2, $3, $4
+    }' "$ranked"
+  fi
+  rm -f "$ranked" "$ascending"
+}
+# complexity-summary end
+
 if [ "${1:-}" = "--check" ]; then
   echo "invariant_smells=$invariant"
   [ "$invariant" -eq 0 ]
@@ -427,4 +566,6 @@ cat <<EOF
 | unit tests | $tests |
 | native-invariant smells | $invariant |
 EOF
+
+complexity_summary "$complexity_rows"
 ```

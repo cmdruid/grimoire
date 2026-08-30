@@ -11,6 +11,13 @@ configuration sweep. Ask separately before starting it.
    `<agent-workspace>/auditor/doctrine/test/workflows/audit/GUIDE.md`, `metrics.sh`, native rule
    files, and edits to the seeded generic rules. Run metrics to validate its mechanics; the output is
    not an audit report.
+   When rerunning setup against an incumbent twelve-rule rubric, the seed may add the absent
+   Complexity leaf but must preserve `GUIDE.md`, `metrics.sh`, and every incumbent rule byte-for-byte.
+   Ask whether to adopt Complexity. Calibrate and index it only after the
+   owner explicitly approves adoption.
+   Otherwise report the seeded leaf as inactive and leave the incumbent guide and metrics unchanged.
+   Setup is not complete until one of those two dispositions is explicit; ordinary passes never
+   score an unindexed leaf.
 3. Do not run an audit pass, mint a `reports/` record, select findings, or write a pointer into the
    host's document index or routing surface. The first audit is a separate explicit invocation.
 4. Validate the rubric and report template. Standalone setup makes one pathspec-scoped commit over

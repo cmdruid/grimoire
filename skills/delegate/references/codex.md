@@ -1,13 +1,14 @@
-# Codex executor -- the mechanics
+# Codex headless executor -- the mechanics
 
-The Codex branch of `/delegate`: hand **mechanical coding** to the `codex` CLI, which writes a reviewable
-diff you gate and commit. This file is the executor detail; the delegate-or-not decision, the route gate,
-the return contract, and the trust principle live in `SKILL.md`. Reach here only once you've decided to
-route a coding task to Codex.
+The `codex exec` branch of `/delegate`: use the CLI for **read-only analysis** or **mechanical coding**
+when no fitting native route exists, the confirmed route explicitly requires an external process, or
+its sandbox/cwd/output-capture semantics are material. This file is executor detail; the
+delegate-or-not decision, capability inventory, route gate, return contract, and trust principle live
+in `SKILL.md`.
 
-**Core principle:** Codex writes code; you decide what's correct. It executes **literally** -- it has no
-judgment to refuse a scope instruction that would break working code. So the *instruction* must be correct
-before you delegate, and when Codex faithfully produces something wrong, suspect your prompt, not Codex.
+**Core principle:** Codex executes the bounded task; you decide what's correct. It works **literally** --
+it has no judgment to refuse a scope instruction that would produce a wrong conclusion or break working
+code. Make the instruction correct before dispatch, and suspect the prompt when a literal result is wrong.
 
 ## Preflight
 
@@ -15,18 +16,20 @@ before you delegate, and when Codex faithfully produces something wrong, suspect
    the work yourself.
 2. `codex exec --help` once per session -- confirm the flag surface for the installed version; flags drift
    between versions, so don't trust a memorized command.
-3. Capture a **whole-repo** baseline (`git status` across the entire tree, not just the target paths) so
-   any change -- including files outside the named scope -- is isolable. Don't ask Codex to work on top of
-   unrelated dirty files you can't separate.
-4. Have a plan file or a clearly-scoped task statement in hand.
+3. For coding, capture a **whole-repo** baseline (`git status` across the entire tree, not just the
+   target paths) so any change -- including files outside the named scope -- is isolable. Don't ask a
+   writing executor to work on top of unrelated dirty files you can't separate. Read-only analysis must
+   leave that status unchanged.
+4. Have a plan file or a clearly-scoped task statement in hand, and choose one executor mode below.
 
 ## The loop
 
-```
-choose granularity → prompt Codex → review diff + run gates → commit (you) → next
+```text
+analysis → prompt Codex → verify the conclusion against cited evidence → consume
+coding   → choose granularity → prompt Codex → review diff + run gates → commit (you) → next
 ```
 
-### 1. Choose granularity (risk-adaptive)
+### 1. Choose coding granularity (risk-adaptive)
 
 | Mode | Use for | What you do |
 |------|---------|-------------|
@@ -39,15 +42,22 @@ regression hides in the larger diff. Keep destructive units narrow, whole-tree r
 
 ### 2. Prompt Codex
 
-Canonical invocation -- non-interactive, sandboxed, **no model flag** unless the human's confirmed route
-named one (otherwise use Codex's own configured default; don't guess a model id). `-c
+Canonical invocations are non-interactive and sandboxed, with **no model flag** unless the human's
+confirmed route named one (otherwise use Codex's configured default; don't guess a model id). `-c
 approval_policy="never"` stops a headless run hanging on an approval it can't receive; `-o <file>`
 captures Codex's final message so you read its file-touched report deterministically instead of scraping
 stdout (also the source of truth if the run is backgrounded):
 
 ```bash
+# Analysis: the target tree is read-only.
+codex exec --sandbox read-only -c approval_policy="never" -C /ABS/REPO/PATH -o /tmp/codex-unit.txt "<prompt>"
+
+# Coding: only an unheld target or the delegate's owned isolated worktree is writable.
 codex exec --sandbox workspace-write -c approval_policy="never" -C /ABS/REPO/PATH -o /tmp/codex-unit.txt "<prompt>"
 ```
+
+Read-only analysis may inspect a held target because it cannot alter the tree. Workspace-writing
+coding may target only an unheld checkout or an isolated worktree owned by this dispatch.
 
 For a multi-unit plan, prefer a **fresh `codex exec` per unit** pointing at the plan file by path -- Codex
 re-reads the plan and working tree each time, so no context is lost. (`codex exec resume --last` exists but
@@ -67,7 +77,9 @@ referenced or live code.
 
 ### 3. Review (re-establish trust)
 
-- **Diff the entire working tree** against your pre-delegation baseline -- not just the in-scope paths.
+- For analysis, verify the bounded conclusion against the cited files, commands, or other evidence and
+  confirm the tree status did not change. Consume the result only after that check.
+- For coding, **diff the entire working tree** against your pre-delegation baseline -- not just the in-scope paths.
   Codex, and the commands it runs, can create or modify files *outside* the named scope (e.g. a generated
   config dir). Flag anything out of scope.
 - Run the unit's verification gate **yourself** -- evidence before assertion. Do not accept "all checks
@@ -79,22 +91,24 @@ referenced or live code.
   only that"). If it thrashes twice on the same unit, or keeps violating scope, take that unit over
   yourself -- cheaper than a third round-trip.
 
-### 4. Commit (you, never Codex)
+### 4. Commit coding work (you, never Codex)
 
 After review passes, you commit, in the repo's commit style. Stage by path, not `git add -A`, so Codex's
 work doesn't sweep in unrelated drift.
 
 ## Guardrails (hard rules)
 
-- **Codex never commits.** It writes to the working tree; you review and commit. State this in every
-  prompt, regardless of any project memory.
-- **Never `-C` / cwd a held tree.** A target is held when `<toplevel>/WORKSTREAM.md` exists, or a
+- **Codex never commits.** In coding mode it writes to the working tree; you review and commit. State
+  this in every coding prompt, regardless of any project memory.
+- **Never use workspace-writing mode with `-C` / cwd on a held tree.** A target is held when `<toplevel>/WORKSTREAM.md` exists, or a
   `<toplevel>/.workstreams/*/WORKSTREAM.md` records `isolation: in-place` and its Coordinates
   `branch:` equals `git -C <toplevel> branch --show-current`. If held → stop; the parent uses
   mailbox or an isolated worktree. When the route *is* isolated worktree, `-C` / cwd **is** that
   worktree's `<abs-path>`, never the held/target path.
-- **Always `--sandbox workspace-write`.** Never `--dangerously-bypass-approvals-and-sandbox` or
-  `danger-full-access` unless the human explicitly says so.
+- **Always use the mode's sandbox:** `--sandbox read-only` for analysis;
+  `--sandbox workspace-write` for coding. Never use
+  `--dangerously-bypass-approvals-and-sandbox` or `danger-full-access` unless the human explicitly
+  says so.
 - **No `-m`/model pin unless the confirmed route named one.** Otherwise use Codex's configured default;
   don't guess model ids.
 - Worktree isolation is **required** when the target is held (mailbox or isolated worktree). It is
@@ -102,7 +116,7 @@ work doesn't sweep in unrelated drift.
 
 ## Gotcha: the sandbox can't reach Docker/network
 
-`workspace-write` blocks network and outside-workspace access, so Codex cannot run stack-dependent or
+The sandbox blocks network and outside-workspace access, so Codex cannot run stack-dependent or
 container-backed verifications (anything that spins up services, hits the network, or needs Docker). Let
 Codex write the *code* for those units, but **run those gates yourself** outside Codex. Tell Codex to run
 only the non-stack checks and skip the rest.

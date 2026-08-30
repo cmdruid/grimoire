@@ -10,7 +10,13 @@ auditor_sentinel="$tmp/auditor-invoked"
 
 run_core_sweep(){
   AUDITOR_SETUP_TEST_INVOKED_SENTINEL="$auditor_sentinel" \
-    "$repo/skills/journal/scripts/standup.sh" "$root" --workspace .spaces --records-root .records >/dev/null
+    "$repo/skills/journal/scripts/standup.sh" setup "$root" --records-root .records \
+      --workspace-root .spaces >"$tmp/journal-setup.out"
+  if [ -f "$root/.spaces/journal/setup.intent" ]; then
+    sed -n 's/^wrote: //p' "$tmp/journal-setup.out" >>"$tmp/journal-write-custody"
+    "$repo/skills/journal/scripts/standup.sh" finalize "$root" --records-root .records \
+      --workspace-root .spaces
+  fi
   AUDITOR_SETUP_TEST_INVOKED_SENTINEL="$auditor_sentinel" \
     "$repo/skills/backlog/scripts/backlog-setup.sh" "$root" --workspace .spaces --records-root .records --apply >/dev/null
   AUDITOR_SETUP_TEST_INVOKED_SENTINEL="$auditor_sentinel" \
@@ -28,12 +34,33 @@ apply_delegate_policy(){
 before="$(git -C "$root" rev-parse HEAD)";run_core_sweep;apply_delegate_policy
 [ ! -e "$auditor_sentinel" ] || fail "core sweep invoked deferred Auditor"
 [ "$before" = "$(git -C "$root" rev-parse HEAD)" ] || fail "a member setup committed during the sweep"
-[ -x "$root/.spaces/journal/scripts/records.sh" ] || fail "Journal tool missing"
-[ -x "$root/.trackers/tracker-api.sh" ] || fail "Backlog provider missing"
-for file in README.md tracker-api.sh receipts.tsv tasks.tsv issues.tsv feedback.tsv routines.tsv;do [ -f "$root/.trackers/$file" ]||fail "Backlog tracker layer missing: $file";done
+[ -x "$root/.records/records.sh" ] || fail "Journal tool missing"
+[ ! -e "$root/.spaces/journal/setup.intent" ] || fail "Journal setup intent was not finalized"
+[ ! -d "$root/.records/notes" ] || fail "Journal setup created a writer directory"
+grep -qF 'Run `/journal repair`' "$root/.records/README.md" || fail "Journal repair guidance missing"
+"$root/.records/records.sh" --root "$root" --records-root .records list >/dev/null || fail "Journal README provider is unusable"
+[ -x "$root/.trackers/trackers.sh" ] || fail "Backlog provider missing"
+for file in README.md trackers.sh receipts.tsv tasks.tsv issues.tsv feedback.tsv routines.tsv;do [ -f "$root/.trackers/$file" ]||fail "Backlog tracker layer missing: $file";done
+[ ! -e "$root/.trackers/tracker-api.sh" ]||fail "Backlog installed the pre-cut provider"
+cmp -s "$repo/skills/backlog/scripts/trackers.sh" "$root/.trackers/trackers.sh"||fail "Backlog provider is not byte-identical"
+description="$($root/.trackers/trackers.sh describe)"
+[ "$(printf '%s\n' "$description"|grep -c '^schema=')" -eq 1 ]||fail "Backlog provider has ambiguous schema discovery"
+printf '%s\n' "$description"|grep -qxF 'schema=tracker@1'||fail "Backlog provider schema is wrong"
+"$root/.trackers/trackers.sh" catalog >/dev/null||fail "Backlog catalog is unusable"
+readme_facts="$("$repo/skills/backlog/scripts/tracker-readme-status.sh" \
+  "$repo/skills/backlog/templates/trackers-readme-block.md" "$root/.trackers/README.md")"
+grep -qxF 'readme_status=current' <(printf '%s\n' "$readme_facts")||fail "Backlog tracker guide is not current"
 grep -q '^## tasks$' "$root/.spaces/backlog/hooks/debrief.md"||fail "Backlog cookbook missing tasks"
 grep -q '^## routines$' "$root/.spaces/backlog/hooks/debrief.md"||fail "Backlog cookbook missing routines"
 grep -q '^<!-- skill:backlog BEGIN' "$root/AGENTS.md"||fail "Backlog route missing"
+route_facts="$("$repo/skills/backlog/scripts/route-status.sh" \
+  "$repo/skills/backlog/templates/debrief-anchor.md" "$root/AGENTS.md")"
+grep -qxF 'route_status=current' <(printf '%s\n' "$route_facts") || fail "Backlog route is not current"
+route_begin="$(printf '%s\n' "$route_facts" | sed -n 's/^route_begin_line=//p')"
+route_end="$(printf '%s\n' "$route_facts" | sed -n 's/^route_end_line=//p')"
+sed -n "${route_begin},${route_end}p" "$root/AGENTS.md" >"$tmp/configured-backlog-anchor.md"
+cmp -s "$repo/skills/backlog/templates/debrief-anchor.md" "$tmp/configured-backlog-anchor.md" || \
+  fail "Backlog route is not byte-identical to the package anchor"
 hooks="$tmp/hooks.out";"$repo/skills/workstream/scripts/hooks.sh" parse --dir "$root/.spaces/workstream/hooks" --known feature-completion --known after-eventful-ship >"$hooks"
 grep -q 'hook_feature_completion=empty' "$hooks"||fail "feature hook is not independent and empty"
 grep -q 'hook_after_eventful_ship=empty' "$hooks"||fail "ship hook is not independent and empty"
@@ -44,16 +71,101 @@ grep -q 'fails=0' "$tmp/workspace.out"||fail "Workspace check failed"
 if grep -qE '^(agent-workspace|agent-records|agent-trackers|records-root):' "$root/AGENTS.md";then fail "default roots were declared";fi
 
 # Derive the aggregate set from Git over approved destinations, not setup output.
-git -C "$root" add -N -- AGENTS.md .records .trackers .spaces/journal .spaces/backlog .spaces/workstream .spaces/delegate
+git -C "$root" add -N -- AGENTS.md .records .trackers .spaces/backlog .spaces/workstream .spaces/delegate
 paths=();while IFS= read -r path;do [ -n "$path" ]&&paths+=("$path");done \
   < <(git -C "$root" diff --name-only -- AGENTS.md .records .trackers .spaces/journal .spaces/backlog .spaces/workstream .spaces/delegate)
 [ "${#paths[@]}" -gt 0 ]||fail "aggregate path set is empty"
 git -C "$root" add -- "${paths[@]}";git -C "$root" commit -qm 'Configure Clankshop delivery loop' -- "${paths[@]}"
 [ "$(git -C "$root" rev-list --count HEAD)" -eq 2 ]||fail "configuration did not make exactly one aggregate commit"
+git -C "$root" show HEAD:AGENTS.md >"$tmp/committed-AGENTS.md"
+route_facts="$("$repo/skills/backlog/scripts/route-status.sh" \
+  "$repo/skills/backlog/templates/debrief-anchor.md" "$tmp/committed-AGENTS.md")"
+grep -qxF 'route_status=current' <(printf '%s\n' "$route_facts") || fail "committed Backlog route is not current"
+[ "$(grep -c '^<!-- skill:backlog BEGIN' "$tmp/committed-AGENTS.md")" -eq 1 ] || \
+  fail "committed configuration does not contain exactly one Backlog anchor"
 
 run_core_sweep;apply_delegate_policy
 [ -z "$(git -C "$root" status --porcelain)" ]||{ git -C "$root" status --short >&2;fail "second sweep is not diff-free"; }
 [ ! -e "$auditor_sentinel" ]||fail "second sweep invoked deferred Auditor"
+
+# Backlog repair is provider/README-only in the consuming project.
+printf '\n# stale-provider-fixture\n'>>"$root/.trackers/trackers.sh"
+sed 's/## Use the tracker tool/## Stale tracker tool/' "$root/.trackers/README.md">"$tmp/backlog-readme.stale"
+mv "$tmp/backlog-readme.stale" "$root/.trackers/README.md"
+git -C "$root" add -- .trackers/trackers.sh .trackers/README.md
+git -C "$root" commit -qm 'Seed Backlog repair fixture baseline'
+cp "$root/.trackers/tasks.tsv" "$tmp/backlog-repair-queue.before"
+cp "$root/.trackers/receipts.tsv" "$tmp/backlog-repair-receipts.before"
+cp "$root/.spaces/backlog/hooks/debrief.md" "$tmp/backlog-repair-hook.before"
+cp "$root/AGENTS.md" "$tmp/backlog-repair-route.before"
+"$repo/skills/backlog/scripts/backlog-setup.sh" "$root" --workspace .spaces --records-root .records repair >"$tmp/backlog-repair.out"
+sed -n 's/^wrote=//p' "$tmp/backlog-repair.out"|sort -u>"$tmp/backlog-repair.paths"
+printf '%s\n' '.trackers/README.md' '.trackers/trackers.sh'>"$tmp/backlog-repair.expected"
+cmp -s "$tmp/backlog-repair.expected" "$tmp/backlog-repair.paths"||fail "Backlog repair reported a path outside provider/README"
+git -C "$root" diff --name-only|sort>"$tmp/backlog-repair.diff"
+cmp -s "$tmp/backlog-repair.expected" "$tmp/backlog-repair.diff"||fail "Backlog repair diff escaped provider/README"
+cmp -s "$tmp/backlog-repair-queue.before" "$root/.trackers/tasks.tsv"||fail "Backlog repair changed queue bytes"
+cmp -s "$tmp/backlog-repair-receipts.before" "$root/.trackers/receipts.tsv"||fail "Backlog repair changed receipt bytes"
+cmp -s "$tmp/backlog-repair-hook.before" "$root/.spaces/backlog/hooks/debrief.md"||fail "Backlog repair changed prompt bytes"
+cmp -s "$tmp/backlog-repair-route.before" "$root/AGENTS.md"||fail "Backlog repair changed route bytes"
+git -C "$root" add -- .trackers/trackers.sh .trackers/README.md;git -C "$root" commit -qm 'Repair Backlog managed surfaces'
+rm "$root/.trackers/trackers.sh";"$repo/skills/backlog/scripts/backlog-setup.sh" "$root" --workspace .spaces --records-root .records repair >"$tmp/backlog-missing-provider.out"
+[ -x "$root/.trackers/trackers.sh" ]||fail "Backlog repair did not restore a missing provider"
+grep -qF 'wrote=.trackers/trackers.sh' "$tmp/backlog-missing-provider.out"||fail "Backlog missing provider was not reported"
+[ -z "$(git -C "$root" status --porcelain)" ]||fail "Backlog byte-identical provider restoration left a diff"
+
+# Repair is write-only inside the consuming-project sweep. Commit deliberately
+# stale managed surfaces as the baseline so the aggregate diff can observe both
+# allowed paths, while canaries prove every other owner remains byte-identical.
+mkdir -p "$root/.records/notes"
+cat >"$root/.records/notes/2026-08-28-repair-canary.md" <<'EOF'
+---
+doctype: notes
+status: published
+schema: notepad/note@1
+tags: [fixture]
+---
+
+# Repair canary
+
+record-byte-canary
+EOF
+printf '%s\n' '# stale-provider-fixture' >>"$root/.records/records.sh"
+sed -i.bak 's/## Use the records tool/## Stale records tool/' "$root/.records/README.md"
+rm "$root/.records/README.md.bak"
+git -C "$root" add -- .records/records.sh .records/README.md \
+  .records/notes/2026-08-28-repair-canary.md
+git -C "$root" commit -qm 'Seed Journal repair fixture baseline'
+cp "$root/.records/history.tsv" "$tmp/repair-history.before"
+cp "$root/.records/notes/2026-08-28-repair-canary.md" "$tmp/repair-record.before"
+cp "$root/.trackers/tasks.tsv" "$tmp/repair-queue.before"
+cp "$root/.spaces/backlog/hooks/debrief.md" "$tmp/repair-hook.before"
+cp "$root/AGENTS.md" "$tmp/repair-route.before"
+"$repo/skills/journal/scripts/standup.sh" repair "$root" --records-root .records \
+  --workspace-root .spaces >"$tmp/journal-repair.out"
+sed -n 's/^wrote: //p' "$tmp/journal-repair.out" | sort -u >"$tmp/journal-repair.paths"
+printf '%s\n' '.records/README.md' '.records/records.sh' >"$tmp/journal-repair.expected"
+cmp -s "$tmp/journal-repair.expected" "$tmp/journal-repair.paths" || fail "repair reported a path outside provider/README"
+git -C "$root" diff --name-only | sort >"$tmp/journal-repair.diff"
+cmp -s "$tmp/journal-repair.expected" "$tmp/journal-repair.diff" || fail "repair aggregate diff escaped provider/README"
+cmp -s "$tmp/repair-history.before" "$root/.records/history.tsv" || fail "repair changed ledger bytes"
+cmp -s "$tmp/repair-record.before" "$root/.records/notes/2026-08-28-repair-canary.md" || fail "repair changed record bytes"
+cmp -s "$tmp/repair-queue.before" "$root/.trackers/tasks.tsv" || fail "repair changed queue bytes"
+cmp -s "$tmp/repair-hook.before" "$root/.spaces/backlog/hooks/debrief.md" || fail "repair changed hook bytes"
+cmp -s "$tmp/repair-route.before" "$root/AGENTS.md" || fail "repair changed route bytes"
+[ ! -e "$root/.spaces/journal/setup.intent" ] || fail "repair created a setup intent"
+git -C "$root" add -- .records/records.sh .records/README.md
+git -C "$root" commit -qm 'Repair Journal managed surfaces'
+
+# Missing-provider restoration is a separate behavioral proof. Removing and
+# restoring committed bytes leaves no aggregate diff, so it is not used as the
+# path-boundary assertion above.
+rm "$root/.records/records.sh"
+"$repo/skills/journal/scripts/standup.sh" repair "$root" --records-root .records \
+  --workspace-root .spaces >"$tmp/journal-missing-provider.out"
+[ -x "$root/.records/records.sh" ] || fail "repair did not restore a missing provider"
+grep -qF 'wrote: .records/records.sh' "$tmp/journal-missing-provider.out" || fail "missing provider was not reported"
+[ -z "$(git -C "$root" status --porcelain)" ] || fail "byte-identical provider restoration left a diff"
 
 # Red-proof the guard: direct instrumented invocation must trip it.
 if AUDITOR_SETUP_TEST_INVOKED_SENTINEL="$auditor_sentinel" "$repo/skills/auditor/scripts/auditor-seed.sh" "$root" >/dev/null 2>&1;then fail "instrumented Auditor call unexpectedly succeeded";fi
@@ -63,7 +175,10 @@ if AUDITOR_SETUP_TEST_INVOKED_SENTINEL="$auditor_sentinel" "$repo/skills/auditor
 # separate consuming project. Package-only outlines travel with the skill but deploy no Architect
 # configuration of their own.
 spike_root="$tmp/spike-project";mkdir -p "$spike_root"
-"$repo/skills/journal/scripts/standup.sh" "$spike_root" --workspace .spaces --records-root .records >/dev/null
+"$repo/skills/journal/scripts/standup.sh" setup "$spike_root" --records-root .records \
+  --workspace-root .spaces >/dev/null
+"$repo/skills/journal/scripts/standup.sh" finalize "$spike_root" --records-root .records \
+  --workspace-root .spaces
 spike_body="$tmp/spike-body.md"
 awk '
   NR == 1 { sub(/<title>/, "Filesystem feasibility") }
@@ -77,7 +192,7 @@ awk '
 spike_out="$tmp/spike.out"
 "$repo/skills/architect/scripts/architect-artifacts.sh" spike-publish \
   --root "$spike_root" --records-root .records \
-  --records-tool "$spike_root/.spaces/journal/scripts/records.sh" \
+  --records-tool "$spike_root/.records/records.sh" \
   --title 'Filesystem feasibility' --body "$spike_body" >"$spike_out"
 spike_rel="$(sed -n 's/^path=//p' "$spike_out")";spike_file="$spike_root/$spike_rel"
 [ -f "$spike_file" ]||fail "Architect did not publish through deployed Journal"

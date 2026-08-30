@@ -1,6 +1,7 @@
 # `debrief` — route before substantive context is lost
 
-1. Resolve roots and require the installed API. Read
+1. Resolve roots and run package-local `scripts/tracker-runtime-check.sh` with them. Invoke only its
+   returned installed provider. Read
    `<agent-workspace>/backlog/hooks/debrief.md`. Gather only the completed work since the previous
    successful debrief in this context: visible conversation, bounded repository changes, tests, and
    unresolved decisions. Do not treat the current objective, resume instructions, or ordinary

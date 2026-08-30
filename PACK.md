@@ -1,9 +1,9 @@
 ---
 name: clankshop
-version: 4.0.0
+version: 4.1.0
 description: "Independent agent skills with a faceless composition runbook"
 required: journal
-optional: analyst, auditor, backlog, architect, contractor, inspector, debugger, delegate, checkpoint, foreman, mailbox, notepad, scheduler, workspace, workstream
+optional: analyst, auditor, backlog, architect, chiropractor, contractor, inspector, debugger, delegate, checkpoint, foreman, mailbox, notepad, scheduler, workspace, workstream
 ---
 
 # clankshop — the faceless skills pack
@@ -24,14 +24,15 @@ All other members are optional and default-installed:
 
 - Work leads: `architect`, `contractor`, and `inspector`; Inspector reviews documents and completed
   implementations, publishes only accepted passing documents, and owns its project kind setup.
-- Project knowledge and follow-up: `journal`, `backlog`, `notepad`, and `analyst`.
+- Project knowledge and follow-up: `journal`, `backlog`, `notepad`, `analyst`, and `chiropractor`.
 - Development operations: `workstream`, `auditor`, `debugger`, and `foreman`.
 - Utilities: `delegate`, `mailbox`, `checkpoint`, `scheduler`, and `workspace`.
 
 Four skills are intentionally outside the pack: `skill-builder` maintains skills libraries,
 `agent-council` is a standalone cross-vendor panel, `developer-writing` is a standalone
-developer-writing guide, and `code-humanizer` makes source a human can scan. None is part of
-the project's `clankshop` toolkit.
+developer-writing guide, and `code-humanizer` keeps durable product source fit for human ownership
+at write time while preserving explicit `mark` / `map` / `walk`. None is part of the project's
+`clankshop` toolkit.
 
 ## Composition seams
 
@@ -58,9 +59,16 @@ the project's `clankshop` toolkit.
   first-class `<agent-trackers>` layer, its `tracker@1` provider, and a universally visible debrief
   cadence. The pack itself installs no tracker, script, route, or debrief policy. Foreman consumes
   tracker pages to develop operations, while Analyst reads the same provider without mutation.
-- Delegate chooses whether and how to dispatch work and may expose its own optional
-  `delegate/hooks/byproducts.md` policy through explicit setup. The pack never fills it.
-  Mailbox is transport for a returned artifact, not the dispatch decision.
+- Chiropractor audits and confirmation-gates documentation-spine topology: task routes from
+  `AGENTS.md`, compatibility with `CLAUDE.md`, and links to authoritative procedures or runnable
+  entry points. It owns no setup and never repairs scripts or workflows; prose authoring, artifact
+  review, code quality, and operation curation remain with their respective skills.
+- Workstream may submit a bounded queue unit to Delegate, which chooses whether and how to dispatch
+  it and resumes Workstream from the returned result. When file-work needs out-of-band transport,
+  Delegate may use Mailbox; Mailbox transports the artifact but never chooses the route. Workstream's
+  main session remains the sole writer of its held target. Delegate and Mailbox are optional: if
+  either needed capability is absent, the unit runs inline. Delegate may expose its own optional
+  `delegate/hooks/byproducts.md` policy through explicit setup; the pack never fills it.
 - Workspace validates the owner-first layout without creating or repairing it. Foreman curates the
   cross-owner operation catalog and writes only its own operations, doctrine, route, and goal
   records; each publisher remains able to follow its own operations directly. Scheduler owns only
@@ -77,10 +85,8 @@ Clankshop for `<project-root>`.” Installation does not cache or execute this s
 
 ### 1. Inspect and propose
 
-Read the target project's instructions. Resolve its agent workspace (default `.spaces`), records
-home (default `.records`), and tracker home (default `.trackers`) without writing declarations for
-any default. Inspect installed members, all three homes, front-door route blocks, recognized legacy
-locations, and Git state. Do not write yet.
+Read the target project's instructions, resolve its agent workspace, records home, and tracker home,
+and inspect installed members plus Git state. Do not write yet.
 
 Propose one bounded profile that names every selected setup and every destination it may change:
 
@@ -91,20 +97,16 @@ Propose one bounded profile that names every selected setup and every destinatio
 - Deferred enhancement: Auditor is optional and time-intensive. Never include it in the initial
   delivery-loop sweep; ask separately when the project is ready to calibrate a rubric.
 
-Obtain approval before writing project policy. Record the pre-sweep Git state and the complete set of
-approved destinations. Refuse a destination that already contains unrelated changes.
+Obtain approval for the profile and every destination before writing project policy. Record the
+pre-sweep Git state and refuse an approved destination that already contains unrelated changes.
 
 ### 2. Run member-owned setup
 
-Announce a configuration sweep, then invoke only the approved member setup procedures in their
-write-only mode. Each member writes only its declared owner surface; Journal's records standup and
-Backlog's delimited route are the named exceptions. No member commits during the sweep, recursively
-sets up another member, writes a schema, or interprets a sibling namespace.
-
-Setup deploys only actively consumed project surfaces. Project-editable incumbents win byte-for-byte;
-package-managed tools may refresh only where their owner already defines refresh semantics. A
-recognized legacy file refuses and names that owner's `migrate` command. Report partial safe writes,
-correct the refusal, and rerun; never guess through a collision.
+Announce a configuration sweep, then invoke only the approved members' public setup procedures in
+write-only mode. Each member writes only its declared owner surface; no member commits or sets up a
+sibling. Project-authored surfaces are absent-only and incumbents remain byte-for-byte. Follow each
+member's own preflight, migration, and collision response; report any partial safe writes, correct the
+refusal, and rerun.
 
 ### 3. Apply optional project policy
 
@@ -124,10 +126,9 @@ and the Architect → Inspector → Contractor flow remains invocation-only rath
 
 ### 4. Validate and optionally commit
 
-Rerun every selected setup in write-only mode and require zero writes. Run each advertised owner
-check, then Workspace's package-local `scripts/workspace-check.sh` against the resolved roots. Compare
-the complete Git diff, limited to the approved destinations, with the recorded pre-sweep state. Do
-not parse heterogeneous setup output to infer the final path set.
+Rerun every selected setup in write-only mode and require zero writes. Invoke each advertised public
+owner check, then `/workspace check` against the resolved roots. Compare the complete Git diff over
+all approved destinations with the recorded pre-sweep state; setup output is not the final path set.
 
 If the user requested a commit, make one pathspec-scoped commit over the complete approved diff.
 Otherwise leave the reviewed changes uncommitted. Report exact created, preserved, refused, and

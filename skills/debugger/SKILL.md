@@ -76,7 +76,8 @@ flat `<agent-records>/templates/<doctype>.md`.
   resolves `<agent-workspace>/debugger/templates/` and does not scan the front door.
 - **`bug-mint.sh` is the one minter for `file`.** Always call it (from this
   skill's own `scripts/`). Signature: `mint <root> <records-root-relative>
-  <workspace-relative> <title>`. It uses staged Journal `records.sh` when that file is executable
+  <workspace-relative> <title>`. It uses staged `<agent-records>/records.sh` when that file is
+  executable
   (`new bugs --schema debugger/bug@1 --template <resolved> --title "…"`); otherwise it writes the
   contract shape (file-mode under `bugs/`). Never write `history.tsv` by
   hand. Never write the flat `<agent-records>/templates/bugs.md`. Never open

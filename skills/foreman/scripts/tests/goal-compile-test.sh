@@ -24,7 +24,7 @@ body_after="$T/body-after"; awk 'NR==1&&$0=="---"{fm=1;next} fm&&$0=="---"{fm=0;
 if "$GOAL" publish --root "$R" --workspace .spaces --records-root .records --input "$T/goal-a.md" >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi
 has "immutable destination" 'reason=goal-exists' "$OUT"; ok test ! -e "$R/.spaces/foreman/runtime"
 
-R2="$T/records-root"; prepare_root "$R2"; mkdir -p "$R2/.spaces/journal/scripts"; cp "$JOURNAL" "$R2/.spaces/journal/scripts/records.sh"; chmod +x "$R2/.spaces/journal/scripts/records.sh"
+R2="$T/records-root"; prepare_root "$R2"; mkdir -p "$R2/.records"; cp "$JOURNAL" "$R2/.records/records.sh"; chmod +x "$R2/.records/records.sh"
 "$GOAL" render --root "$R2" --workspace .spaces --operation foreman/release --objective 'Publish release evidence' --output "$T/goal-records.md" >/dev/null
 "$GOAL" publish --root "$R2" --workspace .spaces --records-root .records --input "$T/goal-records.md" >"$OUT"
 eq "staged records mode" records "$(fact mode "$OUT")"; has "staged published" 'status: published' "$R2/.records/$(fact path "$OUT")"

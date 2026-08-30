@@ -16,6 +16,8 @@ does not become an implementation review merely because it contains code.
 
 - behavior matches the governing design and acceptance criteria;
 - control and data flow are correct at boundaries and failure paths;
+- control-flow complexity is proportionate to the required behavior: changed code does not add
+  avoidable decision paths, interacting modes, or branches whose distinct outcomes are untested;
 - the change is cohesive and contains no compatibility substrate forbidden by the design;
 - tests exercise the real behavior, including required red-proofs;
 - no unrelated mutation or unresolved conflict marker remains.
@@ -27,6 +29,31 @@ does not become an implementation review merely because it contains code.
 - verify claimed deletions and absence assertions over the correct population;
 - inspect call sites and configuration affected by changed interfaces;
 - ask which passing test could still encode the wrong implementation.
+
+Inspect changed authored functions qualitatively for avoidable branch multiplication. Treat
+generated code, exhaustive dispatch, table-driven logic, parsers, explicit state machines, and
+sequential test setup as possible false positives; judge whether each path represents required
+behavior and is independently verifiable. Keep test code outside the numeric population unless
+effective project instructions deliberately include test maintainability; otherwise exclude it or
+report it separately.
+
+If effective project instructions name a complexity analyzer identity, version, configuration,
+population, and exclusions, it may provide supporting delta evidence. Compare materialized before
+and after endpoints. Use the same analyzer identity and version, configuration, population, and
+exclusions. Added or deleted functions use `--` for the absent endpoint. Analyze endpoints
+read-only; never apply the diff or mutate the reviewed tree to construct one. If either required
+endpoint cannot be materialized safely, record `endpoint-unavailable` and continue qualitatively.
+Do not install, configure, or discover an analyzer during review. When numeric comparison is
+available, report the analyzer identity, version, configuration, population, and exclusions. For
+each numeric delta, report
+the function or method identity, repo-relative source location, and value at each endpoint. Then
+identify newly introduced hotspots. When numeric comparison is not available, include the
+limitation as a confidence note when it matters.
+
+A raw value or threshold crossing is evidence, not an automatic finding. Report complexity only
+when the changed behavior creates a material maintainability or verification problem, and explain
+the concrete branch burden or missing path coverage. Analyzer absence, failure, or an unavailable
+endpoint is not itself a finding and does not prevent a verdict.
 
 Use the shared exact verdict mapping. The verdict is conversation-only.
 

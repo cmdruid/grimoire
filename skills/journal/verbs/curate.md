@@ -5,9 +5,10 @@ records, prune proposals. This is the **format's** half of curation — grooming
 line-items (dedupe, re-rank, flip, reword) is the follow-up workflow's half and lives with the
 client that owns the trackers, not here.
 
-1. Resolve the project root, workspace, and records root (SKILL.md discipline). Staged tool missing
-   or not executable → name `/journal setup`, stop. Prefix every invocation with
-   `records.sh --root <root> --records-root <records-root-relative>`. Run **`records.sh
+1. Resolve the project root, `<agent-workspace>`, and `<agent-records>` (SKILL.md discipline), then
+   run the ordered runtime preflight. Emit its one exact setup-required or repair-required diagnostic
+   and stop on the first failure; never execute the bundled provider against project records. Prefix
+   every invocation with `records.sh --root <root> --records-root <records-root-relative>`. Run **`records.sh
    check`** first — fix contract violations before anything cosmetic (a
    record `check` can't parse is invisible to every scan).
 2. **Records**: `records.sh --root <root> --records-root <records-root-relative> list` **once** (optional filters if the human scoped the pass).

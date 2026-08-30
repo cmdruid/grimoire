@@ -1,0 +1,15 @@
+01	neither-door	minimal grounded door proposal; no full Reach score
+02	claude-only	portable move; Claude remainder preserved; import skeleton after confirmation
+03	divergent-doors	authority conflict surfaced
+04	ambiguous-label	graph-reachable workflow fails Routing or Reach
+05	public-private-script	public caller routed; private helper internal
+06	archive-convention	store route sufficient; individual records grouped
+07	audit-only	findings and offer; no patch or write question
+08	direct-adjust	exact preview; byte-identical tree before approval
+09	dirty-target	surgical edit separates prior and new diff
+10	stale-proposal	changed digest invalidates approval
+11	subset-approval	identical subset applies; rebased subset reconfirms
+12	broken-script	reported outside docs adjustment; script untouched
+13	physical-completeness	missing candidate blocks verdict
+14	two-semantic-surfaces	both tasks required; surfaces cell nonblank
+15	homogeneous-group	population, sample, inspection, surface rule, evidence required

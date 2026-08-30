@@ -16,8 +16,8 @@ is parked (resume = unpark, `verbs/park.md`); anything else is foreign movement 
 never auto-switch.
 
 Discipline: every git command uses `git -C <worktree>`; every file op uses an absolute path;
-the main session is the sole writer — subagents author read-only (via `/mailbox` slots or their own
-isolated worktree), never editing the shared tree.
+the main session is the sole writer. Submit bounded units through `/delegate`, validate the returned
+result, and let the main session alone apply or merge accepted artifacts before resuming the loop.
 
 ## Coordinates (worktree/root/branch/target are immutable; `source`/`source-kind` may be updated by `recycle` on repurpose)
 - stream:        <stream>
@@ -30,7 +30,7 @@ isolated worktree), never editing the shared tree.
                   re-appliable intake source `/workstream recycle` reloads to start a fresh unit>
 - mode:          <delegate (default) | manual — execution mode (see the skill's *Execution mode*).
                   `manual` swaps the main-loop model per PLAN/BUILD/SHIP phase (attended); `delegate`
-                  keeps one orchestrator + `/mailbox` delegates (autonomous).>
+                  keeps one orchestrator that may submit bounded units through `/delegate` (autonomous).>
 - isolation:     <worktree (default) | in-place — where the stream lives. `worktree`: its own
                   checkout under `.workstreams/`. `in-place`: the branch is checked out in the ONE
                   shared tree, which the stream holds (custody — `verbs/park.md`); `worktree:` above
@@ -40,10 +40,6 @@ isolated worktree), never editing the shared tree.
                   `push`: also push `<target>` to the remote. `pr`: push the branch + open a PR
                   instead of advancing locally; the queue advances when the PR merges.>
 - this hand-off: <abs path to .workstreams/<stream>/WORKSTREAM.md>   (ignored; never merges)
-
-## Resource locks
-_Repository-local ownership-token snapshot. Verify it against the registry before trusting it.
-No line means no held resource; a claim is recorded as `resource-lock: <resource> <oid>`._
 
 ## Hooks (compiled)
 hooks-compiled: none @ none
@@ -55,19 +51,14 @@ after-eventful-ship:
 (empty)
 
 ## Delegation route (confirmed once at create — persists across resets)
-<Set at `create` (propose-and-confirm; see the skill's `create` step 6). **One of three states:**
-- **a route** — the per-phase model map `/delegate` uses (its defaults, or a per-phase override like
-  `implementation: <model>`). Models are opaque per-harness strings; the map itself is `/delegate`'s.
+<Set at `create` through `/delegate`'s public route-selection procedure. **One of three states:**
+- **a route** — the selected route state; `/delegate` owns its meaning and execution.
 - **`inline-only`** — this stream delegates nothing (small tasks / tight loops). A *deliberate* choice,
   so a `0` delegation tally is **correct**, not a firing failure.
 - **`unconfirmed`** — `create` ran unattended; defaults to inline until a human confirms. Re-confirm at
-  the next human-present moment. Distinct from `inline-only`.
-
-**Fallback policy** (provider failure is observable — handle it, don't stall): transient
-(rate-limit/5xx/timeout) → bounded retry; persistent (quota/limit/unavailable/bad id) → re-route to
-`<alternate, or inline>`; floor → **inline on the orchestrator** (always works); log each fallback as a
-byproduct. See `/delegate` → *Failure states & durability*. The gate stays single-location in this
-worktree regardless of who authored.>
+  the next human-present moment through `/delegate`. Distinct from `inline-only`. If Delegate or a
+  needed optional capability is unavailable, execute inline. The gate stays single-location in this
+  worktree regardless of who authored.>
 
 ## Ship cadence (confirmed once at create — persists across resets)
 <Set at `create` (propose-and-confirm; see the skill's `create` step 6, and *Ship cadence* in the
@@ -126,7 +117,7 @@ advance runs (see `verbs/sync.md` step 0).>
 
 ## What's been done
 <Shipped items; reconcile against `git -C <worktree> log` — it is the source of truth. Tag each shipped
-feature with its delegation tally, e.g. `- <feature> — delegations: mailbox×2` or
+feature with its delegation tally, e.g. `- <feature> — delegations: 2` or
 `- <feature> — delegations: 0 (all inline)`, so `/delegate` adoption is visible across the stream.>
 
 ## What's next
@@ -146,12 +137,6 @@ reason).
 The hand-off file's first heading carries its absolute path (`/checkpoint`'s
 anchor-line technique). Speak that path at `save` / `load` / Recovery — not
 as a prefix on ordinary status replies.
-
-For every host procedure that names a protected shared resource, acquire its literal resource and
-intent before the first protected operation. Validate a held claim before each protected command and
-after load/recovery; halt on held or inconsistent state, and release early when the protected work is
-finished. Save, sync, ship, park, recycle, and resets do not change ownership; close releases any
-remainder.
 
 **Reset ritual** (whether Scenario A *lands* depends on *Ship cadence* above):
 - **Feature complete, at a landing point (`per-stage` / a milestone / track end):** the independent

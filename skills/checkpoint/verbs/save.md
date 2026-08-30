@@ -8,9 +8,14 @@ ownership, Git, and publication rules.
    Checkpoint read or write. In Git, tracked `CHECKPOINT.md` or `CHECKPOINT.md.tmp` also refuses.
 2. Determine ownership without reading a body:
    - Absent target: create a token with `scripts/checkpoint-file.sh token`.
-   - Existing target: require exactly one stable handle in current context for the root path and
-     validate it with `scripts/checkpoint-file.sh match <root> <handle>`. Anything else refuses and
-     points to explicit `resume`.
+   - One complete stable handle for this root: validate it with
+     `scripts/checkpoint-file.sh match <root> <handle>`. A failed match stops as an ownership
+     mismatch without probing or overwriting the file.
+   - Existing target with no matching root handle: run
+     `scripts/checkpoint-file.sh occupancy <root>`. Only `checkpoint_occupancy=valid` may stop and
+     tell the user that another checkpoint occupies the singleton target and offer to overwrite it.
+     Retain the emitted opaque fingerprint. Unsafe or malformed occupancy refuses without an
+     overwrite offer. Never disclose the incumbent token or body.
 3. Elide secrets, synthesize rather than transcribe, use absolute dates, and reconcile shipped
    claims against durable evidence. A named load-executable next action wins, then a KNOWN
    continuation. At a genuine fork, record one safe instruction to ask the human which branch to
@@ -23,17 +28,22 @@ ownership, Git, and publication rules.
      only when they materially help a later session.
 5. Send the complete document on standard input to
    `scripts/checkpoint-file.sh save <root> new` for creation or
-   `scripts/checkpoint-file.sh save <root> <current-token>` for refresh. The helper establishes the
-   narrow local ignores, serializes mutation, validates the document, publishes without clobber on
-   creation, and replaces atomically on refresh. Never write the managed or temporary path around
-   the helper.
-6. Report the emitted stable handle and the one recorded next action. Classify the recovery anchor
-   through `anchor`; a missing or obsolete block is a warning and pointer to `/checkpoint anchor`,
-   never an automatic project-instruction edit.
+   `scripts/checkpoint-file.sh save <root> <current-token>` for refresh. For valid foreign
+   occupancy, rejection performs no mutation. Confirmation authorizes one replacement: generate a
+   fresh token, synthesize the complete document, and send it to
+   `scripts/checkpoint-file.sh overwrite <root> <expected-fingerprint>`. The helper revalidates the
+   incumbent and fingerprint under the mutation lock, requires the token to differ, and publishes
+   atomically without a backup. Never write the managed or temporary path around the helper.
+6. Report the emitted stable handle and the one recorded next action. Classify the lifecycle and
+   recovery anchor through `anchor`. A missing anchor, drifted-v2 anchor, or generic conflict is a
+   warning and pointer to `/checkpoint anchor`; an unsafe classifier error is reported as a refusal.
+   Save never edits project instructions or offers a compatibility or migration route.
 
-An explicit request to maintain Checkpoint activates first-save-early once work is meaningful; an
-explicit `save` writes now. After activation, automatic refreshes occur only at the three Lifecycle
-moments. Every automatic save reports the handle.
+Successful explicit Save enrolls the session. A request merely to maintain Checkpoint schedules
+nothing. After enrollment, automatic refreshes occur only at the three Lifecycle moments. Every
+successful refresh reports the complete handle and recorded next action without asking. A missing
+current handle is inert; a presented exact-root handle that no longer matches stops visibly. Never
+save a polluted context or infer that the session is complete.
 
 **Done when:** the helper published one independently resumable root file, the stable handle and next
 action were reported, and anchor status was surfaced without editing project instructions.

@@ -1,13 +1,18 @@
-<!-- checkpoint:recovery-anchor@1 -->
-## Checkpoint recovery
+<!-- checkpoint:recovery-anchor@2 -->
+## Checkpoint lifecycle and recovery
 
-- Presence of root `CHECKPOINT.md` never authorizes a read.
-- A fresh session does nothing unless the human explicitly invokes `/checkpoint resume`.
-- If context was just compacted or summarized, stop before task work. Recover only when the
-  compacted context contains exactly one complete
-  `CHECKPOINT — file: <absolute-root-path>/CHECKPOINT.md — token: <32-lowercase-hex>` handle and
-  `/checkpoint`'s guarded reader returns `token_match=true` for that exact root and handle.
-- With no unique handle, a wrong root or path, malformed or mismatched token, missing or invalid
-  file, or helper failure, do not load checkpoint content or continue recovered work. Ask the human
-  to invoke `/checkpoint resume` explicitly.
+- This anchor and the presence of `CHECKPOINT.md` never enroll a session. Enrollment begins only
+  through successful explicit `/checkpoint save`, `/checkpoint resume`, or token-matched Recovery.
+- An enrolled session refreshes after a human-visible work unit, before a healthy reset, and on a
+  context-pressure warning. Each refresh reports the complete handle and next action without
+  requesting a response. Never save a polluted context. The lifecycle never infers that work is
+  complete or suggests closure. Enrollment ends only through explicit `/checkpoint close`.
+- Absent an explicit Checkpoint verb, a fresh or compacted session without a complete stable handle
+  for this root receives no Checkpoint behavior and never reads the file.
+- After compaction with exactly one complete handle for this root, use Checkpoint's guarded reader.
+  On a match, read in full and reconcile using: committed or external systems of record, then current
+  files, then checkpoint, then compaction summary. Report the unchanged handle and next action,
+  write nothing, and continue when unambiguous.
+- On a token or identity mismatch, stop without disclosing checkpoint content and tell the user
+  Recovery failed.
 <!-- /checkpoint:recovery-anchor -->

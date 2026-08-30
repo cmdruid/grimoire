@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tracker-api.sh — guarded tracker@1 provider for one first-class tracker layer.
+# trackers.sh — guarded tracker@1 provider for one first-class tracker layer.
 set -euo pipefail
 
 die() { echo "reason=$1${2:+ detail=$2}" >&2; exit 2; }

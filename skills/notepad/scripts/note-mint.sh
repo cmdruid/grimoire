@@ -3,7 +3,7 @@
 #   note-mint.sh mint  <root> <records-root> <workspace> <title>
 #   note-mint.sh stamp <root> <records-root> <workspace> <abs-path> [--status <status>] [--note "<text>"]
 #
-# Uses <agent-workspace>/journal/scripts/records.sh when that file is executable
+# Uses <agent-records>/records.sh when that file is executable
 # (`new --schema notepad/note@1 --template <resolved>`); otherwise writes the contract shape itself.
 # Resolves notes.md through the project-templates rule, using the bundled file
 # read-only when no project incumbent exists. Never decides
@@ -122,7 +122,7 @@ init_paths() {
   check_existing_tree "$root" "$ws_rel/$SKILL_NAME/templates"
   rr="$root/$rr_rel"
   at="$root/$ws_rel/$SKILL_NAME/templates"
-  engine="$root/$ws_rel/journal/scripts/records.sh"
+  engine="$rr/records.sh"
 }
 
 has_records() {

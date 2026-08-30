@@ -6,7 +6,7 @@ in an `adr` record.
 
 1. Resolve both homes (SKILL.md). Locate `scripts/note-mint.sh` from
    this skill's own directory.
-2. **List live notes only.** If `<agent-workspace>/journal/scripts/records.sh` is
+2. **List live notes only.** If `<agent-records>/records.sh` is
    executable: `records.sh --root <root> --records-root <records-root-relative> list --type notes` (no `--status`; live-set
    default). Else scan `<agent-records>/notes/*.md` and skip any file
    whose `status:` is `archived`, and still skip `done`, `dropped`,

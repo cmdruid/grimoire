@@ -3,10 +3,10 @@
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "== mailbox-test.sh"
-if bash "$DIR/mailbox-test.sh"; then
-  echo "mailbox tests: ALL GREEN"
-else
-  echo "mailbox tests: FAILURES" >&2
-  exit 1
-fi
+rc=0
+for test in mailbox-test.sh contract-test.sh; do
+  echo "== $test"
+  bash "$DIR/$test" || rc=1
+done
+[ "$rc" -eq 0 ] && echo "mailbox tests: ALL GREEN" || echo "mailbox tests: FAILURES" >&2
+exit "$rc"

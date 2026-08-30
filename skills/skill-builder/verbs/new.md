@@ -83,27 +83,32 @@ verb's job).
      Fill in real types only where they're real; an honest all-`—` is a legitimate disposition for
      in-place-steward/scratch-only/pure-mechanism tiers (`docs/DOCTRINE.md` table).
 
-5. **Durable-home tier only — scaffold `init`:**
-   - Draft the new skill's own `<new-skill>/verbs/init.md`: an idempotent home-scaffold
+5. **Durable-home tier only — scaffold `setup`:**
+   - Draft the new skill's own `<new-skill>/verbs/setup.md`: an idempotent home-scaffold
      beneath `<agent-workspace>/<name>/<owned-kind>/` (create-if-absent for each store the skill
      owns; never touch existing content or another owner namespace) **plus** front-door self-registration, modeled on the
      front-door registration mechanism (`docs/DOCTRINE.md` § Typed edges & registration) — content-vs-
      arrangement split, absent→append / present→replace-between-delimiters / malformed→report-and-stop.
      A skill implementing it bundles its **own** registration script (self-containment: no runtime
      call-out to another skill's copy — it must work installed alone, BL-6).
-   - An explicit setup may create its declared workspace when absent. Before
+   - Setup may create its declared workspace when absent. Before
      each mkdir, recheck that every existing parent is a real directory and not
      a symlink; refuse unsafe parents without partial writes.
+   - Do not scaffold `repair` by default. Add it only when an initialized layer has a narrow
+     package-managed operational surface that can drift independently of project configuration or
+     data; it must call setup's reconciler with a smaller write set and direct missing prerequisites
+     back to setup.
    - State the `built-against` stamp formula as **path-scoped to the new skill's own directory** —
      `git -C <skill-dir> log -1 --format=%h -- .`, never `git -C <skill-dir> rev-parse --short HEAD`
      (the latter collapses to one value across every skill on a monorepo skills-root, BL-7) — else a
      version string, else `v0-<date>`.
-   - State the **fixture caveat** explicitly in the new skill's `init` verb if this scaffold is being built
+   - State the **fixture caveat** explicitly in the new skill's `setup` verb if this scaffold is being built
      *inside* the same library that authors the doctrine: never register against that library's own
      real front-door; exercise against a throwaway fixture.
 
-6. **Other tiers:** no `init` verb. State the "no home" disposition in the skill's body (one sentence)
-   so it's a recorded fact, not a silent gap.
+6. **Other tiers:** no `setup` merely because of tier. Keep setup only when steps 3 or 3b identified a
+   deployable project surface; otherwise state the "no home" disposition in the skill's body (one
+   sentence) so it is a recorded fact, not a silent gap.
 
 7. **Wire consumption:** add the skill to the host's install mechanism (however it lists/symlinks
    skills) and mention it in the library's own README/inventory, if one exists — `scripts/skills-lint.sh`
@@ -116,4 +121,4 @@ verb's job).
 
 `skills/<name>/SKILL.md` exists with a self-scoping description and a well-formed `## Edges` block
 (every kind stated, none empty by omission); a durable-home skill also has a working, idempotent
-`init` verb; the lint gate passes; the skill is wired into the host's consumption + inventory.
+`setup` verb; the lint gate passes; the skill is wired into the host's consumption + inventory.

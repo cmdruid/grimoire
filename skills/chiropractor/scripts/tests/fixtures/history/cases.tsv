@@ -1,0 +1,4 @@
+archive/old.md	historical-path	retained
+generated/api.md	generated-path	retained
+vendor/pkg/README.md	vendor-path	retained
+scripts/private/helper.sh	script-path	retained-for-agent-disposition

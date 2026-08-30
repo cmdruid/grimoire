@@ -5,7 +5,9 @@
 # admit <root> <stable-handle>                 guarded Recovery read
 # inspect <root>                               explicit Resume read
 # match <root> <stable-handle>                 body-free ownership check
+# occupancy <root>                             body/token-free foreign-file probe
 # save <root> <new|expected-token>             complete document on stdin
+# overwrite <root> <expected-fingerprint>      guarded foreign-file replacement
 # claim <root> <expected-token> <fingerprint>  confirmed Resume token rotation
 # delete <root> <expected-token>               owned lifecycle close
 set -euo pipefail
@@ -20,7 +22,7 @@ LOCK=""
 IS_GIT=false
 
 usage() {
-  echo "usage: checkpoint-file.sh token | admit <root> <handle> | inspect <root> | match <root> <handle> | save <root> <new|token> | claim <root> <token> <fingerprint> | delete <root> <token>" >&2
+  echo "usage: checkpoint-file.sh token | admit <root> <handle> | inspect <root> | match <root> <handle> | occupancy <root> | save <root> <new|token> | overwrite <root> <fingerprint> | claim <root> <token> <fingerprint> | delete <root> <token>" >&2
   exit 2
 }
 
@@ -158,6 +160,7 @@ fingerprint_file() {
 
 deny_token() { echo "token_match=false"; exit 1; }
 deny_checkpoint() { echo "checkpoint_valid=false"; exit 1; }
+deny_occupancy() { echo "checkpoint_occupancy=invalid"; exit 1; }
 
 [ "$#" -ge 1 ] || usage
 command_name="$1"
@@ -215,6 +218,19 @@ case "$command_name" in
     echo "token_match=true"
     ;;
 
+  occupancy)
+    [ "$#" -eq 2 ] || usage
+    init_root "$2" >/dev/null 2>&1 || deny_occupancy
+    guard_stream >/dev/null 2>&1 || deny_occupancy
+    check_git_read_guards || deny_occupancy
+    acquire_lock >/dev/null 2>&1 || deny_occupancy
+    validate_target_shape && validate_file "$TARGET" || deny_occupancy
+    fingerprint="$(fingerprint_file "$TARGET")" || deny_occupancy
+    valid_fingerprint "$fingerprint" || deny_occupancy
+    echo "checkpoint_occupancy=valid"
+    echo "checkpoint_fingerprint=$fingerprint"
+    ;;
+
   save)
     [ "$#" -eq 3 ] || usage
     init_root "$2" || fail "invalid project root"
@@ -250,6 +266,35 @@ case "$command_name" in
       [ "$current" = "$target_fingerprint" ] || fail "checkpoint changed during save"
       mv -f -- "$TEMP" "$TARGET"; TEMP_OWNED=false
     fi
+    echo "checkpoint_path=$TARGET"
+    echo "checkpoint_token=$token"
+    echo "CHECKPOINT — file: $TARGET — token: $token"
+    ;;
+
+  overwrite)
+    [ "$#" -eq 3 ] || usage
+    init_root "$2" || fail "invalid project root"
+    fingerprint="$3"; valid_fingerprint "$fingerprint" || usage
+    guard_stream || fail "workstream owns this checkout"
+    acquire_lock || exit 1
+    ensure_git_mutation_guards || fail "checkpoint paths must be untracked and ignored"
+    [ ! -e "$TEMP" ] && [ ! -L "$TEMP" ] || fail "checkpoint temporary path already exists"
+    validate_target_shape && validate_file "$TARGET" || fail "invalid checkpoint occupancy"
+    incumbent_token="$STORED_TOKEN"
+    current="$(fingerprint_file "$TARGET")" || fail "cannot fingerprint checkpoint"
+    [ "$current" = "$fingerprint" ] || fail "checkpoint changed after occupancy probe"
+    umask 077
+    TEMP_OWNED=true
+    cat > "$TEMP"
+    [ -f "$TEMP" ] && [ ! -L "$TEMP" ] || fail "invalid checkpoint temporary file"
+    validate_file "$TEMP" || fail "invalid checkpoint document"
+    token="$STORED_TOKEN"
+    [ "$token" != "$incumbent_token" ] || fail "replacement checkpoint must use a fresh token"
+    ensure_git_mutation_guards || fail "checkpoint paths must be untracked and ignored"
+    validate_target_shape && validate_file "$TARGET" "$incumbent_token" || fail "invalid checkpoint occupancy"
+    current="$(fingerprint_file "$TARGET")" || fail "cannot fingerprint checkpoint"
+    [ "$current" = "$fingerprint" ] || fail "checkpoint changed during overwrite"
+    mv -f -- "$TEMP" "$TARGET"; TEMP_OWNED=false
     echo "checkpoint_path=$TARGET"
     echo "checkpoint_token=$token"
     echo "CHECKPOINT — file: $TARGET — token: $token"

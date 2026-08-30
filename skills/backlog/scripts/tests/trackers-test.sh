@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-HERE="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)"; API="$HERE/../tracker-api.sh"
-T="$(mktemp -d "${TMPDIR:-/tmp}/tracker-api-test.XXXXXX")"; trap 'rm -rf "$T"' EXIT
+HERE="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)"; API="$HERE/../trackers.sh"
+T="$(mktemp -d "${TMPDIR:-/tmp}/trackers-test.XXXXXX")"; trap 'rm -rf "$T"' EXIT
 pass=0; fail=0
 ok(){ if "$@" >/dev/null 2>&1;then pass=$((pass+1));else echo "FAIL $*" >&2;fail=$((fail+1));fi;}
 no(){ if "$@" >/dev/null 2>&1;then echo "FAIL accepted $*" >&2;fail=$((fail+1));else pass=$((pass+1));fi;}
@@ -10,10 +10,10 @@ lacks(){ if grep -qF -- "$2" "$1";then echo "FAIL present: $2" >&2;fail=$((fail+
 eq(){ if [ "$2" = "$3" ];then pass=$((pass+1));else echo "FAIL $1 want=[$2] got=[$3]" >&2;fail=$((fail+1));fi;}
 
 R="$T/root"; mkdir -p "$R/.trackers"; git -C "$R" init -q
-cp "$API" "$R/.trackers/tracker-api.sh"; chmod +x "$R/.trackers/tracker-api.sh"
+cp "$API" "$R/.trackers/trackers.sh"; chmod +x "$R/.trackers/trackers.sh"
 printf 'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult\n' > "$R/.trackers/receipts.tsv"
 printf 'id\tcreated\ttext\tevidence\n' > "$R/.trackers/routines.tsv"
-RUN=("$R/.trackers/tracker-api.sh")
+RUN=("$R/.trackers/trackers.sh")
 OUT="$T/out"
 
 no "$API" describe
@@ -80,9 +80,9 @@ no "${RUN[@]}" catalog
 cp "$T/queue.before" "$R/.trackers/routines.tsv"; cmp "$T/queue.before" "$R/.trackers/routines.tsv" >/dev/null || { echo 'FAIL restore drift' >&2; fail=$((fail+1)); }
 ok "${RUN[@]}" catalog
 
-ln -s "$R/.trackers" "$R/link"; no "$R/link/tracker-api.sh" describe
-mkdir -p "$R/real/nested";cp "$API" "$R/real/nested/tracker-api.sh";chmod +x "$R/real/nested/tracker-api.sh"
+ln -s "$R/.trackers" "$R/link"; no "$R/link/trackers.sh" describe
+mkdir -p "$R/real/nested";cp "$API" "$R/real/nested/trackers.sh";chmod +x "$R/real/nested/trackers.sh"
 cp "$R/.trackers/receipts.tsv" "$R/real/nested/receipts.tsv";cp "$R/.trackers/routines.tsv" "$R/real/nested/routines.tsv"
-ln -s "$R/real" "$R/alias";no "$R/alias/nested/tracker-api.sh" describe
+ln -s "$R/real" "$R/alias";no "$R/alias/nested/trackers.sh" describe
 
-echo "tracker-api-test: $pass passed, $fail failed"; [ "$fail" -eq 0 ]
+echo "trackers-test: $pass passed, $fail failed"; [ "$fail" -eq 0 ]

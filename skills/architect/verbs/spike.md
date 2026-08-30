@@ -22,7 +22,7 @@ invocation asks Architect to consider a spike; it does not authorize execution.
 4. **Conclude.** A complete positive, negative, or inconclusive account uses the package-only
    `templates/spikes.md` outline and `scripts/architect-artifacts.sh spike-publish`. Resolve both
    project homes through SKILL.md *Project homes* and pass the executable
-   `<agent-workspace>/journal/scripts/records.sh` only when present; otherwise use file mode. Add the
+   `<agent-records>/records.sh` only when present; otherwise use file mode. Add the
    returned `→ spikes/YYYY-MM-DD-<slug>.md` link to the draft through `draft-save`.
 
 Incomplete or interrupted work remains only in draft notes and never calls `spike-publish`. Resume

@@ -1,6 +1,7 @@
 # `curate [<stem>]` — update or consume rows
 
-Resolve roots and require the installed API. Work from bounded `page` output.
+Resolve roots and run package-local `scripts/tracker-runtime-check.sh` with them. Invoke only its
+returned installed provider. Work from bounded `page` output.
 
 - Sharpen an open row with `update --tracker <stem> --id <id> [--text <text>]
   [--evidence <artifact-ref>]`.

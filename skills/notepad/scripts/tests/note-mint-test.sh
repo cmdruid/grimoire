@@ -100,9 +100,9 @@ if [ -f "$JOURNAL_RS" ]; then
   W2="ws-rs"
   RR2="$ROOT/$R2"
   AT2="$ROOT/$W2/notepad/templates"
-  mkdir -p "$RR2" "$ROOT/$W2/journal/scripts"
-  cp "$JOURNAL_RS" "$ROOT/$W2/journal/scripts/records.sh"
-  chmod +x "$ROOT/$W2/journal/scripts/records.sh"
+  mkdir -p "$RR2"
+  cp "$JOURNAL_RS" "$ROOT/$R2/records.sh"
+  chmod +x "$ROOT/$R2/records.sh"
   : > "$RR2/history.tsv"
 
   OUT3="$(/bin/bash "$MINT" mint "$ROOT" "$R2" "$W2" "Via records")"
@@ -111,7 +111,7 @@ if [ -f "$JOURNAL_RS" ]; then
   expect_eq "records path exists" "1" "$([ -f "$rpath" ] && echo 1 || echo 0)"
   expect_absent "records mint keeps bundled fallback read-only" "$AT2/notes.md"
   expect_absent "records no flat notes.md" "$RR2/templates/notes.md"
-  if /bin/sh "$ROOT/$W2/journal/scripts/records.sh" --root "$ROOT" --records-root "$R2" check >/dev/null 2>&1; then
+  if /bin/sh "$ROOT/$R2/records.sh" --root "$ROOT" --records-root "$R2" check >/dev/null 2>&1; then
     pass=$((pass + 1))
   else
     echo "FAIL: records.sh check after new" >&2
@@ -122,9 +122,9 @@ if [ -f "$JOURNAL_RS" ]; then
   W3="ws-rs-empty"
   RR3="$ROOT/$R3"
   AT3="$ROOT/$W3/notepad/templates"
-  mkdir -p "$RR3" "$ROOT/$W3/journal/scripts"
-  cp "$JOURNAL_RS" "$ROOT/$W3/journal/scripts/records.sh"
-  chmod +x "$ROOT/$W3/journal/scripts/records.sh"
+  mkdir -p "$RR3"
+  cp "$JOURNAL_RS" "$ROOT/$R3/records.sh"
+  chmod +x "$ROOT/$R3/records.sh"
   : > "$RR3/history.tsv"
   OUT4="$(/bin/bash "$MINT" mint "$ROOT" "$R3" "$W3" "Nested dest")"
   expect_eq "nested-dest mode" "records" "$(kv mode "$OUT4")"
@@ -137,7 +137,7 @@ if [ -f "$JOURNAL_RS" ]; then
   expect_eq "ledger exists" "1" "$([ -f "$RR2/history.tsv" ] && echo 1 || echo 0)"
   expect_eq "ledger one line" "1" "$(grep -c . "$RR2/history.tsv" || true)"
   expect_match "ledger --as superseded" '	superseded	' "$(cat "$RR2/history.tsv")"
-  if /bin/sh "$ROOT/$W2/journal/scripts/records.sh" --root "$ROOT" --records-root "$R2" check >/dev/null 2>&1; then
+  if /bin/sh "$ROOT/$R2/records.sh" --root "$ROOT" --records-root "$R2" check >/dev/null 2>&1; then
     pass=$((pass + 1))
   else
     echo "FAIL: records.sh check after done" >&2

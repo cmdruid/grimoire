@@ -23,7 +23,7 @@ memory.
 
 | Invocation | Verb file | Does |
 |---|---|---|
-| `new` | `verbs/new.md` | Scaffold a new skill's `SKILL.md` (+ `init` if durable-home tier) against `docs/DOCTRINE.md`'s pattern |
+| `new` | `verbs/new.md` | Scaffold a new skill's `SKILL.md` (+ `setup` if durable-home tier) against `docs/DOCTRINE.md`'s pattern |
 | `check` (alias `audit`) | `verbs/check.md` | Run `scripts/skills-lint.sh` + the boundary-audit workflow; report findings |
 | `review` | `verbs/review.md` | Judge a skill package's substance against the skill `review-brief`; optionally consume a `review` baton |
 | `calibrate` | `verbs/calibrate.md` | Fold accreted authoring decisions back into `docs/DOCTRINE.md` (milestone-triggered, human-curated) |

@@ -109,7 +109,7 @@ independent of what the root has checked out. Never hand-commit these records to
 1. **Commit the shipping records on the branch — BEFORE landing.** These are doc-only, so gate them
    with the host's fast doc-linter (from the worktree), not the full gate. A shipped unit's durable
    trace is a **plan close plus an optional debrief report**, under the agent-records home on
-   every host. If `<agent-workspace>/journal/scripts/records.sh` is executable, use it with
+   every host. If `<agent-records>/records.sh` is executable, use it with
    `--root <root> --records-root <records-root-relative>` (`done` / `new --schema <owned-schema>`);
    else file-mode stamp of `status:` only — do
    not write `history.tsv`. Ledger commit path only when `history.tsv` was actually written.

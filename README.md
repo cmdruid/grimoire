@@ -33,28 +33,30 @@ The root, faceless `clankshop` pack binds most of them into one installable tool
 the one required member), `backlog` (the follow-up lifecycle), `notepad` (project memory),
 `workstream` (development streams), `auditor` (code-quality audits), `debugger` (root-cause
 diagnostics), `analyst` (reports and briefings read back out of the records), `foreman`
-(project operations, brownfield curation, and goal runbooks); **utilities** —
+(project operations, brownfield curation, and goal runbooks), `chiropractor` (documentation-spine
+discoverability and confirmed route repair); **utilities** —
 `checkpoint`, `mailbox`, `delegate`, `scheduler`, `workspace` (the owner-first workspace guard).
 Four skills sit outside the pack on
 purpose: `agent-council` (cross-vendor review panel), `skill-builder` (the **toolmaker** —
 scaffold, audit, and calibrate authoring doctrine), `developer-writing`
 (purpose-aware developer prose with Google documentation mechanics), and
-`code-humanizer` (make source a human can scan). See *The packs* below.
+`code-humanizer` (keep durable source fit for human ownership). See *The packs* below.
 
 | skill | what it does |
 |---|---|
 | `agent-council` | three-family review panel: independent Claude, Grok, and Codex opinions on a skill package, clustered and ranked by agreement; standalone, outside every pack |
 | `analyst` | reports and briefings for the developer: catch-ups, status, subsystem and health snapshots, guides — synthesized from the records layer and git, from a customizable template catalog |
 | `architect` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
-| `auditor` | code-quality audit framework: per-dimension rubric, metrics, findings → trackers; standalone on any repo |
+| `auditor` | code-quality audit framework: per-dimension rubric and metrics; findings stay in the audit report and promote through the host capture lane; standalone on any repo |
 | `backlog` | first-class living TSV trackers: setup, extensible queues, receipts, paging, filing, universal debriefing, and curation through `tracker@1` |
-| `checkpoint` | living session save-state: `save` / `resume` / `done` + compaction recovery — the persistence disciplines other skills borrow |
-| `code-humanizer` | make source a human can scan: write-time landmarks, names, and shape; `mark` / `map` / `walk` on existing code; standalone, outside every pack |
+| `checkpoint` | living session save-state: `save` / `resume` / `close` + compaction recovery — the persistence disciplines other skills borrow |
+| `chiropractor` | audit documentation-spine discoverability and authority from `AGENTS.md`; trace task routes into docs, workflows, and helper scripts, then confirmation-gate minimal documentation-only repairs |
+| `code-humanizer` | keep durable application, service, library, shipped CLI, and maintained test source fit for human ownership at write time; `mark` / `map` / `walk` on supported existing code; standalone, outside every pack |
 | `contractor` | one job lead — roadmap, plan, runbook, build; never ships; never writes a spec |
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `developer-writing` | write and edit developer-facing prose with purpose-aware structure, human editorial judgment, and Google documentation mechanics; standalone, outside every pack |
-| `journal` | the records format authority: the record discriminator + contract + `records.sh` + the history ledger; setup, done, substrate curate |
+| `journal` | the records format authority: discriminator, contract, adjacent `records.sh`, and history ledger; durable setup, narrow repair, search, close, and substrate curation |
 | `inspector` | material review of documents and completed implementations; revise folds supported document findings, refine simplifies specs and plans, and setup deploys Inspector-owned kind doctrine absent-only |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
@@ -83,11 +85,13 @@ Markdown under the publishing owner's namespace and remain directly usable witho
 (by default `.records`) holds work products:
 dated, typed records (`YYYY-MM-DD-<slug>.md` carrying front-matter that declares a `doctype`)
 in whatever directories their writers mint, plus the `history.tsv` closure ledger. Journal's
-staged engine lives at `<agent-workspace>/journal/scripts/records.sh`; the format is `journal`'s
+staged engine lives at `<agent-records>/records.sh`, beside the introductory
+`<agent-records>/README.md`; the format is `journal`'s
 (templates arrive with the skills that mint them;
 `journal` ships the commons).
 **`<agent-trackers>`** (by default `.trackers`) holds public `tracker@1` queue TSVs, the shared
-receipt ledger, and their fixed API. Backlog owns that layer; consumer skills use its API directly.
+receipt ledger, and adjacent canonical provider `<agent-trackers>/trackers.sh`. Backlog owns that
+layer; consumer skills invoke the installed provider directly.
 **`AGENTS.md`** is the door and the one place `agent-workspace:` / `agent-records:` /
 `agent-trackers:` are declared
 when they are not the defaults. Each durable-home skill owns its files and optional route block;

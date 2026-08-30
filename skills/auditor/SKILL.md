@@ -42,7 +42,7 @@ lane exists, stay in the report. Tracker lines only when the tracker file alread
 - **`BOOTSTRAP.md`** — the portable blueprint: principles, slots, the uniform rule-file shape,
   the metrics-script structure, the decision-walk + setup playbook. The generic templates live
   inside it.
-- **`rules/`** — a generic, language-neutral rule-set for the 12 portable dimensions
+- **`rules/`** — a generic, language-neutral rule-set for the 13 portable dimensions
   (host-specific greps/exemplars as `<slots>`). The rubric `setup` stands up.
 
 **Scope boundary:** `/auditor` audits **project code** (quality + the host's sacred
@@ -107,11 +107,13 @@ Follow the host's `GUIDE.md` → *Process*; in brief:
    pinned score-5 exemplars; read each `rules/` file's anchors before scoring it.
 2. **Map / scope.** Pick targets by blast-radius depth (GUIDE's targets table), or honor a
    `<target>` arg. Plan the reading order Deep → Mid → Light.
-3. **Quantify.** Run `metrics.sh` for reproducible counts *before* scoring; quote its numbers
-   in the pass report.
+3. **Quantify.** Run `metrics.sh` for reproducible facts *before* scoring; quote its output
+   in the pass report. An explicit unavailable metric is reproducible when its analyzer identity,
+   population, exclusions, and limitation are stated; never invent a replacement number.
 4. **Score.** Each applicable dimension against its `rules/` file, one at a time. **Back every
    5 with a metric or `file:line`**; **refute each rule's known false-positives** before
-   filing; conservative bias when two anchors fit.
+   filing; conservative bias when two anchors fit. Score only a rule indexed by the host GUIDE;
+   an absent-only seeded leaf is inactive until the owner adopts and indexes it.
 5. **Record.** Write the pass report (reports record / dated file): scorecard + findings with
    evidence, per GUIDE's finding-entry shape.
 6. **Drain.** Route every actionable finding per *Deliverables*; then close the report
@@ -145,7 +147,7 @@ changes. There is no mirror to re-sync.
 
 ## Done when
 
-For a **pass**: reproducible `metrics.sh` numbers, targets scored against the `rules/`
+For a **pass**: reproducible `metrics.sh` facts, targets scored against the `rules/`
 contracts (every 5 evidence-backed, false-positives refuted), one pass report recorded, and
 **every** actionable finding drained (report record + the host's bug-filing lane for
 defects; tracker lines only when the tracker file exists; the report closed `consumed`).

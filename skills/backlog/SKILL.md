@@ -6,7 +6,7 @@ description: "Manage project-owned living follow-up trackers in a first-class tr
 # backlog — living follow-up trackers
 
 Backlog is the format and lifecycle authority for `<agent-trackers>` (default `.trackers`). The
-layer is public project state: `README.md`, package-managed `tracker-api.sh`, `receipts.tsv`, and one
+layer is public project state: `README.md`, package-managed `trackers.sh`, `receipts.tsv`, and one
 `<stem>.tsv` per queue. Backlog's editable routing prompt remains owner-local at
 `<agent-workspace>/backlog/hooks/debrief.md`.
 
@@ -14,7 +14,8 @@ layer is public project state: `README.md`, package-managed `tracker-api.sh`, `r
 
 | Invocation | Read | Does |
 |---|---|---|
-| `/backlog setup` | `verbs/setup.md` | Deploy the API, default or selected queues, prompt, and route |
+| `/backlog setup` | `verbs/setup.md` | Initialize or reconcile the tracker layer |
+| `/backlog repair` | `verbs/repair.md` | Restore the provider and managed tracker-root guide |
 | `/backlog tracker add\|remove\|list` | `verbs/tracker.md` | Manage or inspect queue files |
 | `/backlog file <stem> [text]` | `verbs/file.md` | Create one open item |
 | `/backlog query [<stem>]` | `verbs/query.md` | Catalog or page tracker state |
@@ -31,18 +32,19 @@ reorder are not aliases.
   `.records`, `.spaces`, and `.trackers`. Only records accepts legacy `records-root:`.
 - All three roots are repo-relative, non-dot paths without `.` or `..` components and are pairwise
   non-overlapping. Backlog owns tracker-layer validation; never ask Workspace to validate it.
-- Except during setup and tracker administration, require executable
-  `<agent-trackers>/tracker-api.sh` and invoke its public command directly. The staged provider
-  self-locates inside the tracker layer; it does not accept unrelated root arguments or scan the
-  front door. Missing or invalid provider state refuses with `reason=setup-required`; never run the
-  bundled API against project data. API `wrote=` values are relative to `<agent-trackers>`.
+- Before a Backlog verb invokes the provider, run package-local
+  `scripts/tracker-runtime-check.sh --root <root> --workspace <agent-workspace> --records-root
+  <agent-records> --trackers-root <agent-trackers>`. On success, invoke only the exact installed
+  `provider=` path it returns. On failure, pass through its recovery diagnostic and stop. Runtime
+  verbs never reproduce the classifier-to-diagnostic mapping, resume setup, or run bundled provider
+  bytes against project data. Provider `wrote=` values are relative to `<agent-trackers>`.
 - Never edit queue or receipt TSV bytes directly. Use the API for catalog, paging, row mutation,
   observation, and consumption. `receipts.tsv` is reserved and is never a configurable queue.
-- Setup and tracker add/remove run package-local `scripts/backlog-setup.sh` with the resolved roots.
+- Setup, repair, and tracker add/remove run package-local `scripts/backlog-setup.sh` with the resolved roots.
   That helper is the only queue-file lifecycle writer and the only package path that refreshes the
   installed API.
-- Standalone setup, tracker, file, and curate calls make one pathspec-scoped commit over unique
-  reported `wrote=` / `removed=` paths through `scripts/scoped-commit.sh`. Inside debrief or an
+- Standalone setup, repair, tracker, file, and curate calls make one pathspec-scoped commit over unique
+  reported `wrote=` / `reconciled=` / `removed=` paths through `scripts/scoped-commit.sh`. Inside debrief or an
   announced configuration sweep, remain write-only and return the paths to the caller. No changed
   paths means no commit.
 - Resolve commit custody before committing: detached HEAD or an unheld `stream/*` / `feature/*`
@@ -51,10 +53,11 @@ reorder are not aliases.
 
 ## Project state and defaults
 
-Bare setup initializes `tasks`, `issues`, `feedback`, and `routines`. An explicit selection replaces
-that default set. `suggestions/*.md` supplies absent prompt sections; custom stems receive editable
-stubs. Queue data, receipts, the layer README, and incumbent prompt bodies are preserved. Only the
-installed API refreshes.
+First setup always initializes `tasks`, `issues`, `feedback`, and `routines`; queue population changes
+only through `tracker add|remove` after initialization. A valid `receipts.tsv` is the initialization
+boundary. Initialized setup preserves the incumbent queue population and data while reconciling the
+provider, managed README block, and missing prompt sections for incumbent queues. Repair touches only
+the provider and managed README block.
 
 ## Edges
 
@@ -68,6 +71,11 @@ installed API refreshes.
 
 Backlog stores, routes, and exposes follow-ups. It does not diagnose defects, perform queued work,
 mint records, define another skill's domain judgment, or store session/workstream resume state.
+
+## Project templates
+
+None. `debrief-anchor.md` is package-only and is reconciled into Backlog's bounded root route; it is
+never deployed as a project-editable template.
 
 ## Done when
 

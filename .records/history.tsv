@@ -1,0 +1,2 @@
+2026-08-29	dropped	plans/2026-08-26-workstream-shared-resource-coordination.md	plans	Workstream shared-resource coordination — Implementation Plan	Resource locking was removed from Workstream; projects own resource coordination.
+2026-08-29	dropped	specs/2026-08-26-workstream-resource-coordination.md	specs	Workstream shared-resource coordination — Spec	Resource locking was removed from Workstream; projects own resource coordination.

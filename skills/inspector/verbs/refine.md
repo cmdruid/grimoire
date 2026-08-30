@@ -40,6 +40,14 @@ control explicit refinement.
    machinery not required by a goal or accepted decision, one-use abstractions with no independent
    invariant, substrate-shaped mechanisms, repeated prose that adds no instruction, and mechanisms
    or slices that can be combined without losing a distinct responsibility or failure boundary.
+   Also look qualitatively for branch multiplication: interacting flags or modes that create an
+   unnecessary state cross-product, fallback or retry paths with no distinct outcome, compatibility
+   branches not required by the design, repeated conditional requirements that one invariant could
+   replace, parallel mechanisms selected only by substrate, and exception branches whose ownership
+   or verification cannot be stated independently. Preserve branches that express a required safety
+   boundary, failure outcome, supported mode, ownership boundary, or verification obligation.
+   Refinement never runs a code analyzer. It must not assign a cyclomatic-complexity score, estimate,
+   or promised numeric reduction to a document.
    Refinement is not a copyedit; style-only shortening is out of scope.
 4. **Protect required content.** Propose a change only when:
    - a spec still retains its goal, accepted decisions, constraints, required behavior, ownership

@@ -5,12 +5,24 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 rc=0
-echo "== tracker-api-test.sh"
-bash "$DIR/tracker-api-test.sh" || rc=1
+echo "== trackers-test.sh"
+bash "$DIR/trackers-test.sh" || rc=1
 echo "== deploy-test.sh"
 bash "$DIR/deploy-test.sh" || rc=1
+echo "== readme-test.sh"
+bash "$DIR/readme-test.sh" || rc=1
+echo "== repair-test.sh"
+bash "$DIR/repair-test.sh" || rc=1
+echo "== setup-resume-test.sh"
+bash "$DIR/setup-resume-test.sh" || rc=1
+echo "== runtime-recovery-test.sh"
+bash "$DIR/runtime-recovery-test.sh" || rc=1
+echo "== route-test.sh"
+bash "$DIR/route-test.sh" || rc=1
 echo "== debrief-contract-test.sh"
 bash "$DIR/debrief-contract-test.sh" || rc=1
+echo "== debrief-anchor-contract-test.sh"
+bash "$DIR/debrief-anchor-contract-test.sh" || rc=1
 echo "== hard-cut-test.sh"
 bash "$DIR/hard-cut-test.sh" || rc=1
 echo "== skill-doc-test.sh"

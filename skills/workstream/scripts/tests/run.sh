@@ -9,10 +9,10 @@ rc=0
 bash "$DIR/hooks-test.sh" || rc=1
 echo "== git-helpers-test.sh"
 bash "$DIR/git-helpers-test.sh" || rc=1
-echo "== resource-test.sh"
-bash "$DIR/resource-test.sh" || rc=1
 echo "== artifact-contract-test.sh"
 bash "$DIR/artifact-contract-test.sh" || rc=1
+echo "== seam-contract-test.sh"
+bash "$DIR/seam-contract-test.sh" || rc=1
 echo "== workstream-prime-test.sh"
 bash "$DIR/workstream-prime-test.sh" || rc=1
 echo "== setup-test.sh"

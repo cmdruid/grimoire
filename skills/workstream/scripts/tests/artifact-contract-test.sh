@@ -25,32 +25,24 @@ expect "migrate refuses directory plan sweep" 'never sweep it from a directory' 
 expect "legacy template rename registered" '`plans.md` → `manifest.md`' "$SKILL/verbs/migrate.md"
 expect_eq "generic prime helper exists" 1 "$([ -x "$SKILL/scripts/workstream-prime.sh" ] && echo 1 || echo 0)"
 expect "prime helper documented" 'workstream-prime.sh' "$SKILL/SKILL.md"
-expect "resource verb dispatched" 'resource acquire|status|release' "$SKILL/SKILL.md"
-expect "resource helper documented" 'workstream-resource.sh' "$SKILL/SKILL.md"
-expect "resource section bundled" '## Resource locks' "$SKILL/templates/workstream-handoff.md"
-expect "load validates resources" 'workstream-resource.sh validate' "$SKILL/verbs/load.md"
-expect "close releases resources" 'workstream-resource.sh release-all' "$SKILL/verbs/close.md"
-expect "force cannot bypass resources" '`--force` never bypasses the resource gate' "$SKILL/verbs/close.md"
-expect "teardown guards resources" 'workstream-resource.sh' "$SKILL/scripts/worktree-teardown.sh"
-expect "attended break dispatched" 'resource acquire|status|release|break' "$SKILL/SKILL.md"
-expect "attended break procedure" '## `break <resource>`' "$SKILL/verbs/resource.md"
-expect "break requires named confirmation" 'confirmation naming that exact resource' "$SKILL/verbs/resource.md"
-expect "save preserves resource inventory" 'complete single `## Resource locks` span byte-for-byte' "$SKILL/verbs/save.md"
-expect "recycle preserves resource inventory" 'complete single `## Resource locks` span byte-for-byte' "$SKILL/verbs/recycle.md"
-expect "close cleans inventory atomically" 'one atomic rewrite' "$SKILL/verbs/close.md"
-offenders="$(find "$SKILL" -type f ! -path "$SKILL/scripts/workstream-resource.sh" ! -path "$SKILL/scripts/tests/*" -exec grep -lF 'git update-ref refs/workstream-resources/' {} + 2>/dev/null || true)"
-expect_eq "resource namespace mutation is helper-only" "" "$offenders"
-expect "frontmatter routes shared resources" 'shared development resources' "$SKILL/SKILL.md"
-expect "frontmatter routes exclusive environments" 'exclusive environments' "$SKILL/SKILL.md"
-expect "frontmatter routes resource locks" 'resource locks' "$SKILL/SKILL.md"
-expect "resource claim edge declared" 'produces: plan, report, resource-claim' "$SKILL/SKILL.md"
-expect "flow owns shared-resource timing" '### Shared resources' "$SKILL/flow.md"
-expect "flow acquires before protected work" 'before the first protected operation' "$SKILL/flow.md"
-expect "flow validates later operations" 'before every later protected operation' "$SKILL/flow.md"
-expect "flow releases early" 'protected work finishes' "$SKILL/flow.md"
-expect "flow excludes git landing" 'Git landing' "$SKILL/flow.md"
-expect "handoff carries compact resource reminder" 'Validate a held claim before each protected command' "$SKILL/templates/workstream-handoff.md"
-expect "one singleton supports competing intents" 'acquire ducat-dev --intent config-a' "$SKILL/verbs/resource.md"
-expect "negative-use cases remain outside claims" 'ordinary worktree files' "$SKILL/verbs/resource.md"
+for retired in \
+  "$SKILL/verbs/resource.md" \
+  "$SKILL/scripts/workstream-resource.sh" \
+  "$SKILL/scripts/tests/resource-test.sh"
+do
+  expect_eq "retired resource-locking file absent: $(basename "$retired")" 0 \
+    "$([ -e "$retired" ] && echo 1 || echo 0)"
+done
+resource_offenders="$(find "$SKILL" -type f ! -path "$SKILL/scripts/tests/*" \
+  -exec grep -Eil 'workstream-resource|refs/workstream-resources|resource-lock|resource locks|resource[- ]claim|resource acquire' {} + 2>/dev/null || true)"
+expect_eq "resource-locking surface is fully removed" "" "$resource_offenders"
+
+expect "workstream lifecycle has explicit manual save seam" 'user manually invoking `save`' "$SKILL/flow.md"
+expect "workstream lifecycle has explicit creation seam" 'every loop entry (`create` / `load` / `recycle`)' "$SKILL/SKILL.md"
+expect "workstream recovery skips write-back" 'skip write-back' "$SKILL/flow.md"
+if grep -Eq 'checkpoint-token|/checkpoint close|CHECKPOINT — file:' "$SKILL/templates/workstream-handoff.md"; then
+  echo "FAIL: root Checkpoint token or Close semantics leaked into Workstream hand-off" >&2
+  fail=$((fail + 1))
+else pass=$((pass + 1)); fi
 
 report "artifact-contract-test.sh"

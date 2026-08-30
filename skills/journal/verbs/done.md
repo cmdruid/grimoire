@@ -4,9 +4,10 @@ Completion is a **judgment**, then a mechanic. The judgment: is this really fini
 under which disposition? The mechanic: `records.sh --root <root> --records-root <records-root-relative> done` — closure in place (the file never
 moves; moves would dangle every path-based link) plus the one ledger line in `history.tsv`.
 
-1. Resolve the project root, workspace, and records root (SKILL.md discipline). Staged tool missing
-   or not executable → name `/journal setup`, stop. Then confirm the
-   record (`records.sh --root <root> --records-root <records-root-relative> list`/`show`).
+1. Resolve the project root, `<agent-workspace>`, and `<agent-records>` (SKILL.md discipline), then
+   run the ordered runtime preflight. Emit its one exact setup-required or repair-required diagnostic
+   and stop on the first failure; never execute the bundled provider against project records. Then
+   confirm the record (`records.sh --root <root> --records-root <records-root-relative> list`/`show`).
 2. **Pick the disposition** — the vocabulary is the contract:
    - `done` — completed as intended;
    - `dropped` — deliberately won't do / no longer true (say why in the note);

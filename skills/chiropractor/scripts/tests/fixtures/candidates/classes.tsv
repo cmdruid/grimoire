@@ -1,0 +1,8 @@
+documentation	README, Markdown, MDX, RST, AsciiDoc, extensionless conventional names
+script	scripts and bin paths
+executable	tracked or untracked executable bit
+task-entry	Makefile, Justfile, Taskfile
+manifest	package and build manifest
+workflow	CI and release workflow path
+operation	operations, runbooks, and playbooks path
+historical/generated	archive, history, generated, vendor evidence retained

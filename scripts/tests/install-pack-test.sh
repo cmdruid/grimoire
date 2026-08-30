@@ -29,7 +29,16 @@ assert entry["manifest"]["name"] == "clankshop", entry
 assert entry["manifest"]["required"] == "journal", entry
 assert "clankshop" not in entry["skills"], entry
 assert entry["skills"]["journal"]["required"] is True, entry
+assert entry["skills"]["chiropractor"]["required"] is False, entry
 PY
+}
+
+assert_chiropractor_member() {
+  local manifest="$1" installed="$2"
+  grep -Eq '^optional:.*[ ,]chiropractor([, ]|$)' "$manifest" &&
+    [ -x "$installed/chiropractor/scripts/spine-scan.sh" ] &&
+    [ -f "$installed/chiropractor/verbs/audit.md" ] &&
+    [ -f "$installed/chiropractor/verbs/adjust.md" ]
 }
 
 target="$tmp/project/skills"
@@ -41,6 +50,7 @@ lock="$tmp/project/grimoire.lock"
 [ -L "$target/foreman" ] || fail "foreman member was not installed"
 [ -f "$target/architect/verbs/spike.md" ] || fail "Architect spike verb was not installed"
 [ -x "$target/architect/scripts/architect-artifacts.sh" ] || fail "Architect artifact helper was not installed executable"
+assert_chiropractor_member "$repo/PACK.md" "$target" || fail "Chiropractor optional member canaries failed"
 for outline in draft.md spikes.md; do
   [ -f "$target/architect/templates/$outline" ] || fail "Architect package outline was not installed: $outline"
 done
@@ -48,6 +58,20 @@ done
   || fail "faceless pack installed an implicit face"
 assert_faceless_lock "$lock"
 project_config_absent || fail "pack install created project configuration"
+
+# Red-proof optional membership in a disposable manifest/target pair.
+red_manifest="$tmp/red-membership.PACK.md"
+red_target="$tmp/red-membership-target"
+cp "$repo/PACK.md" "$red_manifest"
+mkdir -p "$red_target"
+cp -R "$repo/skills/chiropractor" "$red_target/chiropractor"
+assert_chiropractor_member "$red_manifest" "$red_target" || fail "membership red-proof precondition failed"
+mv "$red_target/chiropractor" "$tmp/red-chiropractor.absent"
+if assert_chiropractor_member "$red_manifest" "$red_target"; then
+  fail "membership assertion accepted a missing Chiropractor"
+fi
+mv "$tmp/red-chiropractor.absent" "$red_target/chiropractor"
+assert_chiropractor_member "$red_manifest" "$red_target" || fail "membership assertion stayed red after restore"
 
 # Faceless-member canary red-proof: direct setup can create project config, so
 # the absence assertion is capable of detecting the forbidden side effect.

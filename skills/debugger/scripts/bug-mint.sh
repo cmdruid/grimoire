@@ -3,7 +3,7 @@
 #   bug-mint.sh mint  <root> <records-root> <workspace> <title>
 #   bug-mint.sh stamp <root> <records-root> <workspace> <abs-path> [--status <status>] [--note "<text>"]
 #
-# Uses <agent-workspace>/journal/scripts/records.sh when that file is executable
+# Uses <agent-records>/records.sh when that file is executable
 # (`new bugs --schema debugger/bug@1 --template <resolved> --title "…"`); otherwise writes the
 # contract shape itself. Resolves bugs.md through the project-templates
 # rule. Never decides update-vs-mint or whether to commit. Never writes
@@ -118,7 +118,7 @@ init_paths() {
   check_existing_tree "$root" "$ws_rel/$SKILL_NAME/templates"
   rr="$root/$rr_rel"
   at="$root/$ws_rel/$SKILL_NAME/templates"
-  engine="$root/$ws_rel/journal/scripts/records.sh"
+  engine="$rr/records.sh"
 }
 
 has_records() {

@@ -1,0 +1,4 @@
+document-relative	docs/setup.md	../scripts/release.sh	scripts/release.sh
+inward-nested-root	AGENTS.md	nested/docs/deep.md	nested-root-reference
+outward-escape	docs/deep.md	../../AGENTS.md	escaping-reference
+symlink-directory	docs/symlinked/leak.md	excluded	excluded

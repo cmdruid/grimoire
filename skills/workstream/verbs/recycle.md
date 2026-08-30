@@ -51,20 +51,16 @@ recycled slot; for a clean-named stream, `close`+`create` instead and pay the re
    4. Run this skill's `hooks.sh parse --dir "$HOOKS_DIR"` with
       `--known feature-completion --known after-eventful-ship`. `status=fail` → STOP.
       Missing hooks compile as empty; recycle never creates the hook directory.
-   5. Capture the complete single `## Resource locks` span byte-for-byte and preserve the Resource
-      locks section verbatim through regeneration. Do not validate, normalize, sort, release, or
-      reacquire claims here; ownership is stream-scoped rather than unit-scoped.
-   6. Then regenerate that file exactly as `create.md`'s **Hand-off instantiation**
+   5. Then regenerate that file exactly as `create.md`'s **Hand-off instantiation**
       (step 6) does for template mode, **but in place** (no `worktree add`, no exclude re-run —
       already done): **preserve the Coordinates block verbatim** (fixed for the stream's life); if a new
       template was passed, update Coordinates `source`/`source-kind` to match; re-read the template at
       `source:` and **re-embed its durable sections** (so an evolved template propagates), keeping recorded
-      `mode`/`Ship cadence`/`Delegation route` by default; restore the captured Resource locks span;
-      and **blank the per-unit sections** (TL;DR,
+      `mode`/`Ship cadence`/`Delegation route` by default; and **blank the per-unit sections** (TL;DR,
       Queue state, What's been done, What's next) **before** compile so the blank list cannot eat a
       just-written compiled span. Do **not** add `## Hooks (compiled)`
       to that blanked list.
-   7. `hooks.sh compile --dir "$HOOKS_DIR" --handoff <this hand-off:> --root <root>`
+   6. `hooks.sh compile --dir "$HOOKS_DIR" --handoff <this hand-off:> --root <root>`
       (`--root` optional; pass it). It is a FILE WRITE, never a commit — the hand-off is ignored.
 5. **Refresh the cheat sheet.** Run `workstream-git.sh cheatsheet-check <worktree>`; lift the template's
    current orientation pointers, prune/fix anything stale it flags, and set `built-against:` to the

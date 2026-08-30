@@ -11,8 +11,11 @@ trap 'rm -rf "$TMP"' EXIT
 OUT="$TMP/out"; ERR="$TMP/err"
 proj="$TMP/proj"
 mkdir -p "$proj"
-"$SKILL/scripts/standup.sh" "$proj" --workspace .spaces --records-root .records >/dev/null
-RS="$proj/.spaces/journal/scripts/records.sh"
+"$SKILL/scripts/standup.sh" setup "$proj" --records-root .records \
+  --workspace-root .spaces >/dev/null
+"$SKILL/scripts/standup.sh" finalize "$proj" --records-root .records \
+  --workspace-root .spaces
+RS="$proj/.records/records.sh"
 rs() { "$RS" --root "$proj" --records-root .records "$@"; }
 today="$(date +%Y-%m-%d)"
 

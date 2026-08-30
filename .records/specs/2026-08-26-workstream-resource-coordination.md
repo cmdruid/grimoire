@@ -1,6 +1,6 @@
 ---
 doctype: specs
-status: published
+status: archived
 schema: architect/spec@1
 tags: [spec, workstream, coordination, locks]
 ---

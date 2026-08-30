@@ -1,6 +1,6 @@
 ---
 name: workstream
-description: "Drive a long-lived development stream as a continuous loop, shipping queued features in a git worktree or in-place. Own stream creation, save/load, sync, landing, parking, recycling, teardown, and status. The grouped `resource acquire|status|release|break` verb atomically coordinates repository-local resource locks for shared development resources and shared or exclusive environments across workstreams. Use when the user runs `/workstream`, manages a stream lifecycle, ships its work, or needs that exclusive coordination."
+description: "Drive a long-lived development stream as a continuous loop, shipping queued features in a git worktree or in-place. Own stream creation, save/load, sync, landing, parking, recycling, teardown, and status. Use when the user runs `/workstream`, manages a stream lifecycle, or ships its work."
 ---
 
 # workstream
@@ -82,7 +82,6 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 |---|---|---|---|---|
 | `create <stream> [<src>] [--in-place]` | `verbs/create.md` | `flow.md` | seed worktree or in-place branch + hand-off, enter the loop (`--seed-only`: seed + hand back a `load` command, no loop) | root checkout (`--seed-only`: also from a workstream) |
 | `load <stream>` | `verbs/load.md` | `flow.md` | re-enter an existing stream after a reset | worktree |
-| `resource acquire|status|release|break …` | `verbs/resource.md` | — | atomically coordinate a repository-local shared resource | acquire/release: loaded workstream; status/break: anywhere (`break` attended only) |
 | `save` | `verbs/save.md` | — | checkpoint the hand-off in place (the stream's "save a checkpoint" — never `/checkpoint`) | worktree |
 | `sync` | `verbs/sync.md` | — | pull the trunk's movement into the worktree | worktree |
 | `park` / `unpark` | `verbs/park.md` | — | hand the shared tree back to the trunk / take it back (in-place only) | root (in-place) |
@@ -140,9 +139,10 @@ of one.
   Read it; do not guess.
 - **The main session is the sole writer of the shared worktree.** A subagent can't hold the worktree's
   cwd, so it must **never edit or commit in the shared tree directly** — a stray edit silently corrupts
-  the trunk. Authoring is still delegable **read-only**: a subagent may write a `/mailbox` patch slot
-  the main session applies (see the `mailbox` skill), or work in its **own isolated worktree** it merges
-  back. Delegate the authoring; never the writing of the shared tree.
+  the trunk. A bounded authoring unit may be submitted through `/delegate`; after its returned result,
+  the main session alone applies or merges any artifact and resumes this loop. If Delegate or a needed
+  optional transport is unavailable, execute the unit inline. Delegate the authoring; never the writing
+  of the shared tree.
 - **The live hand-off never merges.** The live hand-off **is** Coordinates
   `this hand-off:` — one absolute path; `.workstreams/<stream>/WORKSTREAM.md` is only its
   **ROOT-relative address** (a worktree stream's checkout lives AT `<root>/.workstreams/<stream>`,
@@ -227,10 +227,6 @@ across a template rewrite (`save` does not recompile). It also bundles
 its recorded source pointer, one current-unit sentence, and one literal next action, it atomically
 rewrites only TL;DR, Queue state, and What's next. It preserves Queue control lines and never invokes
 the action. Ordinary Workstream verbs do not call it.
-`scripts/workstream-resource.sh` is the only supported writer of
-`refs/workstream-resources/`. The resource verb owns user judgment and hand-off edits; this bundled
-helper owns strict parsing, compact facts, and atomic compare-and-swap mutations.
-
 ## Project templates
 
 - `manifest.md`
@@ -244,7 +240,7 @@ templates.
 ## Edges
 
 <!-- edges:workstream -->
-- produces: plan, report, resource-claim — Workstream records plus repository-local coordination state
+- produces: plan, report — Workstream execution records
 - handoff: — (none; the loop is the skill)
 - consumes: plan, roadmap — typed queue sources; free-text briefs and intake templates are direct invocation inputs
 <!-- /edges:workstream -->
@@ -258,6 +254,6 @@ exhausted or deliberately closed and every landing point has passed the configur
 ## On-demand doctrine
 
 **`flow.md`** — the agent orchestration: execution modes (`delegate`/`manual`), the autonomy rule,
-the seam rule, confident launch, shared-resource timing, ship cadence, the reset ritual, the manual-mode phase loop, and
+the seam rule, confident launch, ship cadence, the reset ritual, the manual-mode phase loop, and
 eventful-ship handling. Read it at every loop entry (`create`/`load`/`recycle`); mid-loop verbs assume
 it is already in context.

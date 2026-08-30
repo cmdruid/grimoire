@@ -44,6 +44,83 @@ if write_doc "$root" "$other" "CLOBBER" | bash "$FILE_SH" save "$root" new >"$OU
 expect_eq "second first-save refuses" 1 "$rc"
 cmp -s "$before" "$root/CHECKPOINT.md" && pass=$((pass + 1)) || fail=$((fail + 1))
 
+# A foreign-session probe is body/token-free; guarded overwrite replaces only the probed bytes.
+foreign="$T/foreign"; mkdir "$foreign"; foreign_token="$(token_for)"
+write_doc "$foreign" "$foreign_token" "FOREIGN PRIVATE BODY" |
+  bash "$FILE_SH" save "$foreign" new >/dev/null 2>&1
+run occupancy "$foreign"
+expect_eq "valid foreign occupancy succeeds" 0 "$rc"
+expect "valid foreign occupancy classified" "checkpoint_occupancy=valid" "$OUT"
+foreign_fingerprint="$(sed -n 's/^checkpoint_fingerprint=//p' "$OUT")"
+printf '%s\n' "$foreign_fingerprint" > "$T/foreign-fingerprint"
+expect_match "foreign occupancy emits opaque fingerprint" '^[0-9a-f]{64}$' "$T/foreign-fingerprint"
+expect_absent "foreign occupancy discloses no body" "FOREIGN PRIVATE BODY" "$OUT"
+expect_absent "foreign occupancy discloses no token" "$foreign_token" "$OUT"
+
+cp "$foreign/CHECKPOINT.md" "$T/foreign-before"
+foreign_new="$(token_for)"
+write_doc "$foreign" "$foreign_new" "REPLACEMENT BODY" |
+  bash "$FILE_SH" overwrite "$foreign" "$foreign_fingerprint" > "$OUT" 2>&1
+expect "overwrite reports replacement handle" "CHECKPOINT — file: $foreign/CHECKPOINT.md — token: $foreign_new" "$OUT"
+expect "overwrite publishes replacement body" "REPLACEMENT BODY" "$foreign/CHECKPOINT.md"
+expect_absent "overwrite removes foreign body" "FOREIGN PRIVATE BODY" "$foreign/CHECKPOINT.md"
+[ "$foreign_new" != "$foreign_token" ] && pass=$((pass + 1)) || fail=$((fail + 1))
+[ ! -e "$foreign/CHECKPOINT.md.tmp" ] && pass=$((pass + 1)) || fail=$((fail + 1))
+[ ! -e "$foreign/.CHECKPOINT.lock" ] && pass=$((pass + 1)) || fail=$((fail + 1))
+[ ! -e "$foreign/CHECKPOINT.md.bak" ] && pass=$((pass + 1)) || fail=$((fail + 1))
+
+run occupancy "$foreign"; same_fingerprint="$(sed -n 's/^checkpoint_fingerprint=//p' "$OUT")"
+cp "$foreign/CHECKPOINT.md" "$T/foreign-same-token-before"
+if write_doc "$foreign" "$foreign_new" "SAME TOKEN" |
+  bash "$FILE_SH" overwrite "$foreign" "$same_fingerprint" > "$OUT" 2>&1; then rc=0; else rc=$?; fi
+expect_eq "overwrite requires a fresh token" 1 "$rc"
+cmp -s "$T/foreign-same-token-before" "$foreign/CHECKPOINT.md" && pass=$((pass + 1)) || fail=$((fail + 1))
+
+missing="$T/missing-occupancy"; mkdir "$missing"
+run occupancy "$missing"
+expect_eq "missing occupancy refuses" 1 "$rc"
+expect_absent "missing occupancy emits no fingerprint" "checkpoint_fingerprint=" "$OUT"
+
+malformed="$T/malformed-occupancy"; mkdir "$malformed"
+printf 'MALFORMED PRIVATE BODY\ncheckpoint-token: %s\n' "$foreign_token" > "$malformed/CHECKPOINT.md"
+run occupancy "$malformed"
+expect_eq "malformed occupancy refuses" 1 "$rc"
+expect_absent "malformed occupancy discloses no body" "MALFORMED PRIVATE BODY" "$OUT"
+expect_absent "malformed occupancy discloses no token" "$foreign_token" "$OUT"
+
+symlinked="$T/symlinked-occupancy"; mkdir "$symlinked"
+printf 'SYMLINK PRIVATE BODY\n' > "$symlinked/private"
+ln -s private "$symlinked/CHECKPOINT.md"
+run occupancy "$symlinked"
+expect_eq "symlink occupancy refuses" 1 "$rc"
+expect_absent "symlink occupancy discloses no body" "SYMLINK PRIVATE BODY" "$OUT"
+
+# Overwrite revalidates the probed fingerprint after the complete candidate has been read.
+overwrite_race="$T/overwrite-race"; mkdir "$overwrite_race"
+overwrite_old="$(token_for)"; overwrite_new="$(token_for)"
+write_doc "$overwrite_race" "$overwrite_old" ORIGINAL |
+  bash "$FILE_SH" save "$overwrite_race" new >/dev/null 2>&1
+run occupancy "$overwrite_race"
+overwrite_fingerprint="$(sed -n 's/^checkpoint_fingerprint=//p' "$OUT")"
+mkfifo "$overwrite_race/input.fifo"
+bash "$FILE_SH" overwrite "$overwrite_race" "$overwrite_fingerprint" < "$overwrite_race/input.fifo" \
+  > "$T/overwrite-race.out" 2>&1 & overwrite_pid=$!
+exec 4>"$overwrite_race/input.fifo"
+tries=0
+while [ ! -f "$overwrite_race/CHECKPOINT.md.tmp" ] && [ "$tries" -lt 100 ]; do sleep 0.01; tries=$((tries + 1)); done
+if [ -f "$overwrite_race/CHECKPOINT.md.tmp" ]; then pass=$((pass + 1)); else
+  echo "FAIL: overwrite fixture never reached candidate render" >&2; fail=$((fail + 1))
+fi
+write_doc "$overwrite_race" "$overwrite_old" "FOREIGN CHANGE DURING OVERWRITE" > "$overwrite_race/CHECKPOINT.md"
+write_doc "$overwrite_race" "$overwrite_new" "OVERWRITE CANDIDATE" >&4
+exec 4>&-
+if wait "$overwrite_pid"; then overwrite_rc=0; else overwrite_rc=$?; fi
+expect_eq "overwrite refuses a target changed after probe" 1 "$overwrite_rc"
+expect "changed overwrite preserves foreign body" "FOREIGN CHANGE DURING OVERWRITE" "$overwrite_race/CHECKPOINT.md"
+expect_absent "changed overwrite does not publish candidate" "OVERWRITE CANDIDATE" "$overwrite_race/CHECKPOINT.md"
+[ ! -e "$overwrite_race/CHECKPOINT.md.tmp" ] && pass=$((pass + 1)) || fail=$((fail + 1))
+[ ! -e "$overwrite_race/.CHECKPOINT.lock" ] && pass=$((pass + 1)) || fail=$((fail + 1))
+
 handle="CHECKPOINT — file: $root/CHECKPOINT.md — token: $token"
 run admit "$root" "$handle"
 expect_eq "matching recovery handle admits" 0 "$rc"

@@ -15,6 +15,11 @@ and concern B -- they are forced to hold more context in working memory than the
 change requires. In blast-radius modules with the most invariant constraints, a
 readability failure is not cosmetic; it is a correctness risk.
 
+`READ` owns legibility, length, nesting, naming, signatures, and mental backtracking.
+`CPLX` owns independent-path count, avoidable decision multiplication, hotspot isolation, and the
+resulting verification burden. Give one defect one primary finding and dimension; adjacent evidence
+may support that finding, but do not file or score the same defect twice.
+
 ## Scoring anchors (1-5)
 
 - 5 -- Functions are short enough to read in one screenful. Nesting is at most

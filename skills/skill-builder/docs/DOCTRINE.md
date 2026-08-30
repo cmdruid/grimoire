@@ -103,7 +103,7 @@ scoped to non-face skills.
 
 - **Skills self-initialize and self-describe via typed edges; the composer wires the seams.** The
   tenets above govern what a skill's `description:` may *say*; this one — their extension from
-  **routing to initialization** — governs what a skill's `init` may *write* and what its edges may
+  **routing to initialization** — governs what a skill's `setup` may *write* and what its edges may
   *name*. A skill stands up **its own** home and registers **its own** route into the always-loaded
   front-door doc, so the constellation works **bare**, with no composer deployed. What it declares
   about its place in a workflow is a set of **typed edges** (`produces` / `consumes` / `handoff`) keyed
@@ -139,10 +139,26 @@ Four tiers, empirically derived from scoring an existing ten-skill library again
 | **scratch-only** | needs a working area but it's ephemeral | **none** — a gitignored dir, lazily created on first use; no protocol |
 | **pure mechanism** | a router/transport with no storage | **none** — nothing to create |
 
-Only the **durable-home** tier gets a real `init` verb (home-scaffold + front-door registration, per
-*Typed edges & registration* below). The other three declare their tier honestly in their `## Edges`
-block and skip the ceremony — "no home" and "all-`—` edges" are legitimate, recorded dispositions, not
-gaps to fill in later.
+Only the **durable-home** tier requires a real `setup` verb (home scaffold + front-door registration,
+per *Typed edges & registration* below). The other three do not gain setup merely from their tier,
+though a skill of any tier may route setup for a declared deployable project surface. With no such
+surface, skip the ceremony — "no home" and "all-`—` edges" are legitimate, recorded dispositions,
+not gaps to fill in later.
+
+### Setup and repair verbs
+
+`setup` is the explicit reconciliation verb for a skill-owned durable project surface. It creates
+missing owned pieces, preserves valid incumbents and user data, refreshes only declared
+package-managed artifacts, and is a no-op when current. A rerun completes only missing steps. Use a
+durable intent only when choices or completed-path custody cannot be reconstructed safely from
+resulting state; do not add receipts or transaction files by default.
+
+`repair` is optional, not the second half of a required pair. Add it only when an initialized layer
+has a small package-managed operational surface that can become missing or stale independently of
+its configuration and data. Repair uses the same reconciler with a smaller write set; it never
+initializes the layer, reselects configuration, migrates, or mutates user data. Missing prerequisites
+direct to `setup`. Skills with only absent-only templates, hooks, or doctrine normally need `setup`
+alone.
 
 **Registration tracks captured items / durable routes, not mere existence.** Register the durable-home
 + steward skills — the payoff (visibility without a composer) is real only where the skill has
@@ -204,7 +220,7 @@ nothing** (safe-by-default — never clobber hand-edited content).
 
 **If you are building/testing this mechanism inside the library that authors the doctrine itself**
 (the way this doctrine was proven here): never register against that library's own real front-door
-doc. Exercise `init`/registration against a throwaway fixture instead. The library that teaches the
+doc. Exercise `setup`/registration against a throwaway fixture instead. The library that teaches the
 mechanism is not thereby a self-registering deployment of it.
 
 ## Front-door variables — one declaration mechanism, three roots
@@ -243,7 +259,7 @@ A third variable names the **agent-trackers home**, the public data layer for du
 
 Its default is `.trackers`. Declare it only as an override; it has no legacy synonym, may not be
 `.` or absolute, and must not overlap either the records home or the agent-workspace home. Backlog
-owns this layer and its staged provider. Consumer skills use that provider directly; tracker files
+owns this layer and its staged `<agent-trackers>/trackers.sh` provider. Consumer skills use that provider directly; tracker files
 are not an owner-local workspace kind.
 
 **`agent-templates` is retired.** It was a third variable that defaulted
@@ -395,7 +411,7 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    send the agent to another skill's `SKILL.md` for those bytes.
    Pack composition (the face / runbook) still names journal as
    the format authority; leaves do not.
-6. **Opportunistic `records.sh`.** If `<agent-workspace>/journal/scripts/records.sh` is executable,
+6. **Opportunistic `records.sh`.** If `<agent-records>/records.sh` is executable,
    use it with explicit `--root <root> --records-root <records-root-relative>` before
    `new --schema <owned-schema> [--template <resolved-body>]` / `touch` / `done` / `list`.
    Otherwise write the same four-key front matter in file mode and use the resolved body scaffold.
@@ -429,8 +445,11 @@ canonical workspace path. Setup inventories the complete owned write set before 
 then rechecks every existing parent immediately before each write. Unsafe or incompatible entries
 refuse that write. If a later recheck fails after earlier safe writes, setup reports both the
 completed paths and the refusal; a rerun preserves those incumbents and finishes the remainder.
-Project-editable templates, hooks, doctrine, operations, tracker data, and README content are absent-only.
-Only package-managed executable tools that already define refresh semantics may be replaced.
+Project-editable templates, hooks, doctrine, operations, tracker data, and undelimited README prose
+are absent-only. A layer owner may append and refresh one explicitly delimited, package-managed
+README block while preserving content outside it; malformed or duplicate delimiters refuse.
+Only package-managed executable tools that already define refresh semantics may be replaced or,
+when their canonical path changes, removed after the replacement is safely installed.
 
 Each owner keeps its established reporting vocabulary. Standalone setup makes one pathspec-scoped
 commit containing exactly its reported writes and makes no commit on a no-op rerun. When the caller
@@ -589,7 +608,7 @@ files mean skip. It does not glob new runtime behavior into existence.
 ## Corollaries (four testable rules)
 
 1. **Self-init, no floor.** A durable-home skill can create its own home; it depends on no other
-   skill's `init` having scaffolded it first.
+   skill's `setup` having scaffolded it first.
 2. **Visibility by construction.** Registration lands in the *always-loaded* front-door, so a bare
    reader sees the route (and captured items) without a composer reading the skill.
 3. **Edges name types, not siblings.** The type namespace is shared; the sibling namespace is
@@ -607,7 +626,7 @@ The call is an optional runtime edge: absent capability degrades to a returned h
 installation floor. Seam ownership and typed-edge rules remain unchanged.
 
 **Name your floor.** Corollary 1 restated as an authoring discipline: when you scaffold a skill,
-state explicitly what it depends on to work — ideally *nothing* (no other skill's `init`, no composer
+state explicitly what it depends on to work — ideally *nothing* (no other skill's `setup`, no composer
 present). If a real dependency exists, name it as a **typed edge** (`consumes: T`), never as an
 assumption baked silently into the skill's own procedure. A writer that needs journal's *tool*
 names `consumes: records-tool` only when it *cannot* file-mode; the default is that it can.

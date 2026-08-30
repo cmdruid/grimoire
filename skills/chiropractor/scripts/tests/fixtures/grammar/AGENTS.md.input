@@ -1,0 +1,32 @@
+# Door
+[ordinary](docs/guide.md)
+[title](docs/guide.md "Guide")
+[space](<docs/space file (v2).md>)
+[escaped](docs/escaped\ file\ \(v1\).md)
+[explicit](docs/guide.md#explicit)
+[bad-anchor](docs/guide.md#not-there)
+[complex-anchor](docs/complex.md#linked)
+[nested](nested/docs/deep.md)
+[symlink](docs/symlinked/leak.md)
+[escape](../outside.md)
+[url](https://example.invalid/guide.md)
+[mail](mailto:maintainer@example.invalid)
+[absolute](/tmp/guide.md)
+@docs/import.md
+Run `scripts/run.sh:2` and read `docs/guide.md#same-1`; ignore `docs/*.md` and `docs/{{name}}.md`.
+Literal link syntax stays code: `[inline-code](docs/inline-code-missing.md)`.
+Literal import syntax stays code: `@docs/inline-import-missing.md`.
+Escaped backticks keep \`[escaped-tick-live](docs/escaped-tick-missing.md)\` live.
+[bad](docs/missing.md)
+[unknown](package.json#scripts)
+[reference][guide]
+<a href="docs/html.md">html</a>
+```markdown
+[fenced](docs/fenced-missing.md)
+`docs/fenced-code.md`
+```
+````markdown
+[long-fenced-one](docs/long-fenced-one.md)
+```   
+[long-fenced-two](docs/long-fenced-two.md)
+````

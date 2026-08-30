@@ -19,6 +19,9 @@ has "$REFINE" 'belongs to `revise`' "findings refusal does not name revise"
 has "$REFINE" 'No invocation token skips this proposal boundary.' "proposal boundary missing"
 has "$REFINE" 'cannot cancel the mandatory review' "mandatory review cancellation guard missing"
 has "$REFINE" 'style-only shortening is out of scope' "copyedit boundary missing"
+has "$REFINE" 'state cross-product' "branch-multiplication check missing"
+has "$REFINE" 'never runs a code analyzer' "document metric boundary missing"
+has "$REFINE" 'must not assign a cyclomatic-complexity score' "numeric document guard missing"
 has "$README" 'revise folds supported document findings, refine simplifies specs and plans' \
   "README verb split is stale"
 has "$PACK" 'Inspector reviews documents, revises supported' "pack revision seam is stale"
@@ -128,6 +131,29 @@ grep -vE '^mechanism:(duplicate|speculative):' "$ROOT/spec.full" > "$ROOT/spec.s
 spec_fixture_valid "$ROOT/spec.simplified" && pass=$((pass + 1)) || fail=$((fail + 1))
 grep -v '^mechanism:core:' "$ROOT/spec.simplified" > "$ROOT/spec.broken"
 rejects spec_fixture_valid "$ROOT/spec.broken"
+
+design_branch_valid() {
+  local original="$1" candidate="$2" branch
+  ! grep -q '^complexity-score:' "$candidate" || return 1
+  ! grep -q ':avoidable$' "$candidate" || return 1
+  while IFS= read -r branch; do
+    grep -qF "$branch" "$candidate" || return 1
+  done < <(grep ':required$' "$original")
+}
+printf '%s\n' 'branch:flag-cross-product:avoidable' 'branch:redundant-fallback:avoidable' \
+  'branch:substrate-alternative:avoidable' 'branch:safety-stop:required' \
+  'branch:failure-outcome:required' > "$ROOT/design.full"
+printf '%s\n' 'branch:safety-stop:required' 'branch:failure-outcome:required' \
+  > "$ROOT/design.simplified"
+design_branch_valid "$ROOT/design.full" "$ROOT/design.simplified" \
+  && pass=$((pass + 1)) || fail=$((fail + 1))
+: > "$ROOT/design.broken"
+rejects design_branch_valid "$ROOT/design.full" "$ROOT/design.broken"
+printf '%s\n' 'branch:safety-stop:required' 'complexity-score:2' > "$ROOT/design.broken"
+rejects design_branch_valid "$ROOT/design.full" "$ROOT/design.broken"
+printf '%s\n' 'branch:safety-stop:required' 'branch:failure-outcome:required' \
+  'branch:redundant-fallback:avoidable' > "$ROOT/design.broken"
+rejects design_branch_valid "$ROOT/design.full" "$ROOT/design.broken"
 grep -v '^verify:test:' "$ROOT/spec.simplified" > "$ROOT/spec.broken"
 rejects spec_fixture_valid "$ROOT/spec.broken"
 
@@ -206,7 +232,9 @@ contract_clean() {
     && ! grep -qF 'An ambiguous plan source may proceed.' "$1" \
     && ! grep -qF 'A no-op may produce a proposal.' "$1" \
     && ! grep -qF 'Refinement may change another artifact.' "$1" \
-    && ! grep -qF 'Style-only shortening is allowed.' "$1"
+    && ! grep -qF 'Style-only shortening is allowed.' "$1" \
+    && ! grep -qF 'Refinement may assign a cyclomatic-complexity score to a document.' "$1" \
+    && ! grep -qF 'Refinement may remove a required safety branch.' "$1"
 }
 cp "$REFINE" "$ROOT/refine.original"
 red_proof() {
@@ -225,6 +253,8 @@ red_proof 'An ambiguous plan source may proceed.'
 red_proof 'A no-op may produce a proposal.'
 red_proof 'Refinement may change another artifact.'
 red_proof 'Style-only shortening is allowed.'
+red_proof 'Refinement may assign a cyclomatic-complexity score to a document.'
+red_proof 'Refinement may remove a required safety branch.'
 cmp -s "$REFINE" "$ROOT/refine.original" && pass=$((pass + 1)) || fail=$((fail + 1))
 
 echo "refine-test: $pass passed, $fail failed"; [ "$fail" -eq 0 ]

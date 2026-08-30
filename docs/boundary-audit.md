@@ -300,3 +300,24 @@ Workstream stream saves; and Inspector review/revise/refine. Debugger served as 
 no-steal control. No description changes were needed after the probe. Pass 1 reported `fails=0`;
 the three residual Foreman-only `goal`, `goal-pursuit`, and `session-evidence` edge warnings remain
 documented rollout exceptions.
+
+**2026-08-27 (Clankshop seam tightening)** — the post-change lint pass reports
+`fails=0 warns=4`. Workstream's `resource-claim` is legal repository-local leaf state. Foreman's
+`goal`, `goal-pursuit`, and `session-evidence` are external-runtime edges whose consumers are outside
+the skills graph; they remain documented exceptions rather than prompting synthetic sibling edges.
+
+**2026-08-27 (Chiropractor restoration)** — descriptions-only boundary pass over Chiropractor,
+Developer Writing, Inspector, Auditor, and Foreman: **8/8 expected selections**. Chiropractor won
+only documentation-spine topology, authority, and confirmed route-repair prompts; the four adjacent
+outcomes stayed with their existing owners. No description change was needed.
+
+| prompt (abridged) | expects | pick |
+|---|---|---|
+| starting at AGENTS, where does an agent learn setup and release? | `chiropractor` | `chiropractor` |
+| audit whether operational docs are reachable from AGENTS | `chiropractor` | `chiropractor` |
+| reconcile duplicated CLAUDE and AGENTS instructions | `chiropractor` | `chiropractor` |
+| fix broken task-route links in the documentation spine | `chiropractor` | `chiropractor` |
+| review this one specification for material defects | `inspector` | `inspector` |
+| write a clearer README setup procedure | `developer-writing` | `developer-writing` |
+| score project code quality against its rubric | `auditor` | `auditor` |
+| curate the recurring deployment procedure as an operation | `foreman` | `foreman` |

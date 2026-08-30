@@ -17,12 +17,8 @@ reset or not — bounding the hand-off's staleness to one in-flight feature). No
    `<root>/.workstreams/<stream>/WORKSTREAM.md`. Never write `<root>/WORKSTREAM.md`.
    Then:
    1. Path check above unchanged.
-   2. Capture the complete single `## Resource locks` span byte-for-byte, including its heading,
-      reminder, and every `resource-lock:` line. Preserve the Resource locks section verbatim
-      through regeneration: do not validate, normalize, sort, release, reacquire, or silently repair
-      even malformed/stale evidence. Also run `hooks.sh compiled-get --handoff <this hand-off:>` →
-      compiled span (may be empty).
-   3. Classify any **named next action** from the invocation and the same-turn message (`next:`
+   2. Run `hooks.sh compiled-get --handoff <this hand-off:>` → compiled span (may be empty).
+      Classify any **named next action** from the invocation and the same-turn message (`next:`
       remainder, remainder after `—`, same-turn prose that states the subsequent work; `--` is
       not a marker; politeness is not named). Workstream `save` has no path hatch. Then apply
       `/checkpoint`'s **Save discipline** (scan/elide secrets; synthesize, don't transcribe;
@@ -68,8 +64,7 @@ reset or not — bounding the hand-off's staleness to one in-flight feature). No
    — authority is `workstream-git.sh stream-state` / Confident launch (`flow.md`); `behind>0` →
    sync is an example, not the set. Git/disk still vetoes a lie at save.
    Persist (only the write branches above): regenerate that same path in place from the composed
-   content, restore the captured Resource locks span at its one canonical section, then run
-   `hooks.sh compiled-put --handoff <this hand-off:>` with the saved compiled span
+   content, then run `hooks.sh compiled-put --handoff <this hand-off:>` with the saved compiled span
    (empty stdin + span present = no-op; placeholder stays).
 2. It is a FILE WRITE, not a commit — the hand-off is ignored (in `info/exclude`) and must never be staged.
 3. Confirm the path written and the recorded next action; also report whether the trunk

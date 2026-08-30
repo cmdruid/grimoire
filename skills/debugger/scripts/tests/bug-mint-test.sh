@@ -96,9 +96,9 @@ if [ -f "$JOURNAL_RS" ]; then
   W2="ws-rs"
   RR2="$ROOT/$R2"
   AT2="$ROOT/$W2/debugger/templates"
-  mkdir -p "$RR2" "$ROOT/$W2/journal/scripts"
-  cp "$JOURNAL_RS" "$ROOT/$W2/journal/scripts/records.sh"
-  chmod +x "$ROOT/$W2/journal/scripts/records.sh"
+  mkdir -p "$RR2"
+  cp "$JOURNAL_RS" "$ROOT/$R2/records.sh"
+  chmod +x "$ROOT/$R2/records.sh"
   : > "$RR2/history.tsv"
 
   OUT3="$(/bin/bash "$MINT" mint "$ROOT" "$R2" "$W2" "Need the key")"
@@ -108,7 +108,7 @@ if [ -f "$JOURNAL_RS" ]; then
   expect_absent "records mint keeps bundled fallback read-only" "$AT2/bugs.md"
   expect_absent "records no flat bugs.md" "$RR2/templates/bugs.md"
   expect_absent "records mint opened no trackers/" "$RR2/trackers"
-  if /bin/sh "$ROOT/$W2/journal/scripts/records.sh" --root "$ROOT" --records-root "$R2" check >/dev/null 2>&1; then
+  if /bin/sh "$ROOT/$R2/records.sh" --root "$ROOT" --records-root "$R2" check >/dev/null 2>&1; then
     pass=$((pass + 1))
   else
     echo "FAIL: records.sh check after new" >&2

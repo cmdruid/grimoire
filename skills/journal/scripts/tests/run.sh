@@ -5,7 +5,7 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 rc=0
-for t in standup-test.sh records-test.sh; do
+for t in standup-test.sh setup-transaction-test.sh repair-test.sh contract-test.sh records-test.sh; do
   echo "== $t"
   bash "$DIR/$t" || rc=1
 done

@@ -99,7 +99,7 @@ session scratch that must not persist.
 
 <!-- edges:notepad -->
 - produces: note — a notes/ record
-- handoff: note — write-only sweep: skip scoped-commit; return path= / rel=
+- handoff: — (write-only sweeps return `path=` / `rel=` inline to their caller; no typed handoff)
 - consumes: note — find/update/supersede/drop read existing notes
 <!-- /edges:notepad -->
 

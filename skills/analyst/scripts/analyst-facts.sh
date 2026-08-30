@@ -104,7 +104,7 @@ setup() {
 }
 
 emit_tracker_facts() {
-  local api="$TR/tracker-api.sh" catalog stem page next description schema_lines
+  local api="$TR/trackers.sh" catalog stem page next description schema_lines
   if [ ! -x "$api" ] || [ -L "$api" ]; then echo "tracker_provider=absent"; return 0; fi
   local run=("$api")
   description="$("${run[@]}" describe 2>/dev/null)" || { echo "tracker_provider=invalid"; return 0; }

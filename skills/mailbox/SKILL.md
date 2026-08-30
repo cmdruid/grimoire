@@ -44,7 +44,7 @@ Don't use when:
    it, and prints an **absolute** slot path; its basename is the unique handle. `ext` = `patch` for an
    apply-only artifact, `md`/`json` for a consume artifact. **The path is absolute on purpose** --
    that is what makes it cwd-proof for the dispatched sub-agent.
-2. **Dispatch** a sub-agent on the caller-chosen model (see *Realizing the spawn*), handing it the
+2. **Dispatch** a sub-agent through the caller-selected capability (see *Realizing the dispatch*), handing it the
    **absolute slot path** + a **self-contained** task, under one hard contract — use this phrasing,
    not a paraphrase:
    > "**Author your result as text in your own context**, then write it to `<abs slot path>` — you
@@ -125,34 +125,22 @@ Don't use when:
   slot against the current tree (hand-applying a stale patch from context pays the content the
   pattern exists to avoid).
 
-## Realizing the spawn (the one harness-specific step)
+## Realizing the dispatch
 
-The protocol above is harness-neutral. Only *how you spawn the sub-agent on the named model* differs,
-and it is the single place a harness is named:
+Use the dispatch capability the caller already selected. Pass it the absolute slot path, a
+self-contained task, the exact single-writer contract from step 2, and any cwd control that
+capability exposes. Mailbox neither selects nor reinterprets provider or model values.
 
-- **Claude agents** -> use the native sub-agent / Task tool with a **model override** (e.g. a Sonnet
-  delegate from an Opus orchestrator). The harness notifies the parent when the delegate completes;
-  the delegate's final message is the handle + summary. Lightest, integrated -- prefer it.
-- **Codex agents** -> run `codex exec --model <model> "<self-contained task incl. the abs slot path>"`
-  as a subprocess; it returns when done (its stdout / the slot is the result). Codex has no native
-  model-routed sub-agent, so the headless subprocess is the equivalent.
-
-**The delegate's cwd is an assumption, never a given.** A natively-spawned sub-agent often starts at
-the repo root; a spawn with an explicit working directory will not. The protocol survives either
-way — the absolute slot path makes the slot write cwd-proof, and the `-C <root>` prefix makes the
-delegate's git commands cwd-proof — but confirm (or force, where the harness allows) the cwd at
-spawn rather than relying on it.
-
-"Model" is an **opaque per-harness string** (`sonnet`/`opus`/... for Claude; a `gpt-...` id for Codex)
--- the **caller** chooses it; mailbox passes it to the spawn, never interprets it. Which model fits
-which work is delegation doctrine, not transport.
+**The delegate's cwd is an assumption, never a given.** The protocol survives any starting cwd: the
+absolute slot path makes the slot write cwd-proof, and the `-C <root>` prefix makes the delegate's git
+commands cwd-proof. Confirm or force the cwd when the selected dispatch capability allows it.
 
 ## Quick reference
 
 | Step | Command / action |
 |---|---|
 | mint a slot | `scripts/mailbox-slot.sh <root> [patch\|md\|json]` -> absolute slot path |
-| dispatch | spawn a sub-agent on the caller-chosen model; pass the abs slot path + self-contained task + the read-only contract |
+| dispatch | use the caller-selected capability; pass the abs slot path + self-contained task + the read-only contract |
 | apply a patch slot | `scripts/mailbox-apply.sh <root> <slot>` (add `--check` to dry-run) |
 | consume a doc slot | read the slot into context once, then delete it |
 
@@ -179,7 +167,7 @@ paid once and a delegate that writes only its slot can't corrupt anything.
 
 Mailbox is **pure-mechanism plumbing**: `.mailbox/` is gitignored scratch, no typed artifact edges (a slot's patch/verdict is
 ephemeral and consumed inline by the applying parent), and no registration -- transport, not a
-capture home. All three edges are stated empty, not an omission.
+capture home.
 
 <!-- edges:mailbox -->
 - produces: — (a slot's patch/verdict is consumed inline by the applying parent, not a typed artifact)

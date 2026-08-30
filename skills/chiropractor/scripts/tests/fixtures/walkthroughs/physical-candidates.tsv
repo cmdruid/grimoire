@@ -1,0 +1,4 @@
+AGENTS.md	1	AGENTS.md	door declaration	direct	AGENTS.md#setup	important	canonical door
+README.md	1	README.md	primary overview	direct	none	internal	no independent procedure
+docs/setup.md	1	docs/setup.md	linked setup guide	direct	docs/setup.md#setup,docs/setup.md#release	important	authoritative procedure
+scripts/release.sh	1	scripts/release.sh	setup guide command	direct	scripts/release.sh#release-entry	important	runnable entry point
