@@ -5,13 +5,13 @@ records, prune proposals. This is the **format's** half of curation — grooming
 line-items (dedupe, re-rank, flip, reword) is the follow-up workflow's half and lives with the
 client that owns the trackers, not here.
 
-1. Resolve the project root, `<agent-workspace>`, and `<agent-records>` (SKILL.md discipline), then
+1. Resolve the project root, `.spaces`, and `.records` (SKILL.md discipline), then
    run the ordered runtime preflight. Emit its one exact setup-required or repair-required diagnostic
    and stop on the first failure; never execute the bundled provider against project records. Prefix
-   every invocation with `records.sh --root <root> --records-root <records-root-relative>`. Run **`records.sh
+   every invocation with `.records/records.sh`. Run **`records.sh
    check`** first — fix contract violations before anything cosmetic (a
    record `check` can't parse is invisible to every scan).
-2. **Records**: `records.sh --root <root> --records-root <records-root-relative> list` **once** (optional filters if the human scoped the pass).
+2. **Records**: `.records/records.sh list` **once** (optional filters if the human scoped the pass).
    Unfiltered `list` is the live set (archived rows: `list --status archived`).
    Walk the one list; do not filter by doctype unless the human scoped the
    pass that way. Inspect each `check` **WARN**: repair files that were
@@ -24,7 +24,7 @@ client that owns the trackers, not here.
    the survivor named in the note.
 3. **Propose prunes, don't execute them unasked.** Journal has no default
    threshold and does not read doctrine for one. If the human named a
-   date, `records.sh --root <root> --records-root <records-root-relative> prune-candidates --until <date>` is the shortlist.
+   date, `.records/records.sh prune-candidates --until <date>` is the shortlist.
    Otherwise run `prune-candidates` unfiltered, present the closed set,
    and ask for a threshold before proposing any deletion. `prune-candidates`
    still walks the ledger, not `list`. The ledger line
@@ -32,11 +32,11 @@ client that owns the trackers, not here.
    confirms.
 4. **One scoped commit** over everything touched
    (`scripts/scoped-commit.sh <root> "Journal: curate" <paths…>`) when standalone; write-only
-   inside a larger sweep. End green: `records.sh --root <root> --records-root <records-root-relative> check`.
+   inside a larger sweep. End green: `.records/records.sh check`.
 
 ## Done when
 
-- `records.sh --root <root> --records-root <records-root-relative> check` was green at the end (remaining WARNs on legitimate
+- `.records/records.sh check` was green at the end (remaining WARNs on legitimate
   non-records are fine).
 - Quiet closures, link repairs, and merges this pass judged are done (`/journal done` where
   a record closed).

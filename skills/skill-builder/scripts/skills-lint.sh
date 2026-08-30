@@ -86,33 +86,23 @@
 #      templates/*.md must have a `## Project templates` heading in SKILL.md.
 #      A nonempty inventory must route `setup`; its setup procedure and test
 #      must name every declared project template. Pack faces are exempt.
-#  14. Doctrine home not resolved (FAIL). A skill declaring a `doctrine` typed
-#      edge must carry a sanctioned doctrine-home resolution literal. Fenced
-#      and indented blocks are stripped first (a quoted example must not
-#      satisfy it) and whitespace is normalized across newlines (the phrase
-#      members wrap in real skills; a line-based match would fail conforming
-#      ones). Edge-gated, so check 15 is the unconditional net beside it.
-#      skill-builder and pack faces are exempt. NARROWED: the retired
-#      `agent-doctrine` family is no longer accepted -- the consumers are
-#      flipped, so accepting it would let a regression back in silently.
+#  14. Doctrine home not fixed (FAIL). A skill declaring a `doctrine` typed
+#      edge must name `.spaces` in live prose. Fenced and indented blocks are
+#      stripped first so a quoted example cannot satisfy the check. Edge-gated,
+#      so check 15 is the unconditional net beside it. skill-builder and pack
+#      faces are exempt.
 #  15. Off-home doctrine literal. Any non-exempt skill's .md naming a
 #      `.handbook/{test,build,design,review}/` path or retired `docs/audit/`
 #      path -- doctrine that should be reached through the resolved home (FAIL).
 #      Unconditional: this is what
 #      catches a skill that hardcodes and never declares an edge. No per-skill
 #      exemption table. `.records/doctrine/` is also matched (FAIL): it stopped
-#      being any home's default when doctrine moved under `<agent-workspace>`,
+#      being any home's default when doctrine moved under `.spaces`,
 #      which is what made it decidable.
-#  16. Retired doctrine variable + workspace declaration guards. Three arms,
-#      three severities, staged PER ARM (see the block comment): the retired
-#      `agent-doctrine` literal anywhere under a non-exempt skill (FAIL -- the
-#      carriers are flipped, so this is the standing retirement guard); a
-#      front-door `agent-workspace: .`
-#      (FAIL always); and a front-door `agent-workspace:` restating the current
-#      default (WARN always -- advisory by design). Unconditional in SCOPE, not
-#      severity: unlike 14 it is not edge-gated and reads .sh as well as .md,
-#      comments included. Authoring-time half only — `seed.sh` is the runtime
-#      half that sees a consuming project's resolved `--workspace` (BL-30).
+#  16. Retired project-home surface (FAIL). Live Markdown and shell may not
+#      carry retired home declarations, symbolic tokens, resolver names, or
+#      home-selection flags. Tests, this guard's own implementation, and
+#      Journal's bounded records migration surface are excluded deliberately.
 #  17. Invalid `records.sh new` mint (FAIL). Two arms: (a) a backticked
 #      invocation carrying `records.sh new` and `--title` but no
 #      `--schema`; (b) `records.sh new` immediately followed by a
@@ -728,14 +718,8 @@ for sk in "$skills_dir"/*/; do
     *) continue ;;
   esac
   found=0
-  # NARROWED: the retired `agent-doctrine` family was accepted transitionally
-  # while the consumers were flipped, and is not accepted any more. Check 16's
-  # absence arm proves no carrier still uses it; leaving the family here would
-  # let a skill satisfy this check with the literal that check 16 bans.
   while IFS= read -r -d '' f; do
-    if strip_code "$f" | grep -qF -e '<agent-workspace>' \
-                                 -e 'the agent-workspace home' \
-                                 -e 'declared `agent-workspace:`'; then
+    if strip_code "$f" | grep -qF '.spaces'; then
       found=1
       break
     fi
@@ -766,7 +750,7 @@ done
 # skill review.
 #
 # `.records/doctrine/` USED to be excluded by exactly that argument, and no
-# longer is: once doctrine resolves through `<agent-workspace>/<skill>/doctrine`, that
+# longer is: once doctrine resolves through `.spaces/<skill>/doctrine`, that
 # path stops being any home's default, so it becomes decidable and is the
 # strongest guard this retirement buys. It shipped WARN while the five consumer
 # skills still carried it in their resolution prose, and is now FAIL -- they are
@@ -779,95 +763,49 @@ for sk in "$skills_dir"/*/; do
     rel="${f#"$sk"}"
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      fail "$name: $rel:$line: off-home doctrine literal (resolve <agent-workspace>/<skill>/doctrine instead)"
+      fail "$name: $rel:$line: off-home doctrine literal (resolve .spaces/<skill>/doctrine instead)"
     done < <(grep -nF -e '`.handbook/test/' -e '`.handbook/build/' \
                      -e '`.handbook/design/' -e '`.handbook/review/' \
                      -e '`docs/audit/' "$f" || true)
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      fail "$name: $rel:$line: stale doctrine default \`.records/doctrine/\` (resolve <agent-workspace>/<skill>/doctrine instead)"
+      fail "$name: $rel:$line: stale doctrine default \`.records/doctrine/\` (resolve .spaces/<skill>/doctrine instead)"
     done < <(grep -nF -e '`.records/doctrine/' "$f" || true)
   done < <(find "$sk" -name '*.md' -print0)
 done
 
-# ---- 16. retired doctrine variable + workspace declaration guards ------------
-# THREE ARMS, THREE SEVERITIES -- staged per arm, not per check. Only one arm has
-# a transitional population; staging the other two would be cargo-culting the
-# carve-out.
-#
-#   a. retired-literal absence -- FAIL. It shipped WARN while the twelve
-#      carriers were being flipped (failing then would have reddened the trunk
-#      gate for the whole window) and is now promoted: the flip is complete, so
-#      any occurrence is a regression. THIS ARM IS THE RETIREMENT PROOF -- it is
-#      what makes "the variable is retired" a verifiable fact.
-#   b. `agent-workspace: .` forbidden -- FAIL from the start. The variable is
-#      NEW, so nothing can have declared it before this change: there is no
-#      population to protect and no reason to soften it. `.` would place doctrine
-#      at `./doctrine`, colliding with real project directories.
-#   c. declared value equal to the current default -- WARN, always advisory. A
-#      deliberate `.spaces` declaration is legal but normally a no-op. Defaults
-#      should remain defaults: restating one creates sticky project configuration
-#      whose meaning changes if the library's default changes later.
-#
-# UNCONDITIONAL describes its SCOPE, not its severity: unlike check 14 this is
-# not edge-gated, and it reads .sh as well as .md. Comments count -- a textual
-# absence guard cannot tell a comment from code, so every occurrence of the
-# literal is a carrier regardless of syntactic role. That inclusiveness is the
-# point: it is what makes "the variable is retired" a verifiable fact rather than
-# an assertion. skill-builder (this doctrine documents the literal it bans
-# elsewhere) and pack faces are exempt -- the same name-based exemption checks 12
-# and 15 use.
-#
-# Arm (a) reports ONE line per file, with the occurrence count and line numbers,
-# rather than one per occurrence: a regression is fixed file-at-a-time, so the
-# per-file roll-up is the actionable unit.
-for sk in "$skills_dir"/*/; do
-  name="$(basename "$sk")"
-  case "$name" in skill-builder) continue ;; esac
-  is_pack_face "$name" && continue
-  while IFS= read -r -d '' f; do
-    rel="${f#"$sk"}"
-    hits="$(grep -nE 'agent[-_]doctrine|AGENT_DOCTRINE' "$f" | cut -d: -f1 | tr '\n' ',' \
-            | sed 's/,$//' || true)"
-    [ -n "$hits" ] || continue
-    n="$(printf '%s' "$hits" | tr ',' '\n' | grep -c . || true)"
-    fail "$name: $rel: $n occurrence(s) of the retired \`agent-doctrine\` literal (line(s) $hits) -- resolve <agent-workspace>/<skill>/doctrine instead"
-  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
-done
-
-# Arm (a2): retired `agent-templates` literal. Same exemption and roll-up
-# as (a). Templates resolve at `<agent-workspace>/<skill>/templates`.
-for sk in "$skills_dir"/*/; do
-  name="$(basename "$sk")"
-  case "$name" in skill-builder) continue ;; esac
-  is_pack_face "$name" && continue
-  while IFS= read -r -d '' f; do
-    rel="${f#"$sk"}"
-    hits="$(grep -nE 'agent[-_]templates|AGENT_TEMPLATES' "$f" | cut -d: -f1 | tr '\n' ',' \
-            | sed 's/,$//' || true)"
-    [ -n "$hits" ] || continue
-    n="$(printf '%s' "$hits" | tr ',' '\n' | grep -c . || true)"
-    fail "$name: $rel: $n occurrence(s) of the retired \`agent-templates\` literal (line(s) $hits) -- resolve <agent-workspace>/<skill>/templates instead"
-  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
-done
-
-# Arms (b) and (c): the front door itself. Same precedence as every front-door
-# resolver -- AGENTS.md then CLAUDE.md, first declaration wins.
-for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-  [ -f "$fd" ] || continue
-  ws_decl="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$fd" \
-             | head -n 1 | sed 's/[[:space:]]*$//')"
-  [ -n "$ws_decl" ] || continue
-  case "$ws_decl" in
-    .)
-      fail "front door ($(basename "$fd")): \`agent-workspace: .\` is forbidden -- it places doctrine at ./doctrine, colliding with real project directories"
-      ;;
-    .spaces)
-      warn "front door ($(basename "$fd")): \`agent-workspace: .spaces\` restates the current default -- probable no-op; declare only an actual override"
+# ---- 16. retired project-home surface (FAIL) ---------------------------------
+# This is the permanent hard-cut proof. Comments count because a textual absence
+# guard cannot distinguish commentary from operative instructions. Tests carry
+# deliberate rejection fixtures. The guard cannot scan itself, and Journal's
+# narrow migration verb is the one live surface authorized to read retired
+# records declarations.
+while IFS= read -r -d '' f; do
+  case "$f" in
+    */tests/*|*/skills/skill-builder/scripts/skills-lint.sh|\
+    */skills/journal/verbs/migrate.md|*/skills/journal/scripts/migrate-records-root.sh)
+      continue
       ;;
   esac
-  break
-done
+  rel="${f#"$root"/}"
+  hits="$(grep -nE \
+    -e 'agent[-_](records|workspace|trackers|doctrine|templates)' \
+    -e 'AGENT_(RECORDS|WORKSPACE|TRACKERS|DOCTRINE|TEMPLATES)' \
+    -e 'records-root:' \
+    -e '<agent-(records|workspace|trackers)>' \
+    -e 'records-root-relative|workspace-relative' \
+    -e '--(records-root|workspace-root|trackers-root|workspace)([[:space:]=)]|$)' \
+    -e 'resolve_(agent_)?(records|workspace|trackers)' \
+    "$f" | cut -d: -f1 | sort -nu | paste -sd, - || true)"
+  [ -n "$hits" ] || continue
+  fail "$rel: retired project-home surface (line(s) $hits) -- use fixed .records, .spaces, and .trackers"
+done < <(
+  for f in "$root/README.md" "$root/PACK.md" "$root/AGENTS.md" "$root/CLAUDE.md"; do
+    [ -f "$f" ] && printf '%s\0' "$f"
+  done
+  [ ! -d "$root/scripts" ] || find "$root/scripts" \( -name '*.md' -o -name '*.sh' \) -print0
+  find "$skills_dir" \( -name '*.md' -o -name '*.sh' \) -print0
+)
 
 # ---- 17. invalid `records.sh new` mint (FAIL) --------------------------------
 # A minting skill must pass its package-owned `--schema`. Project templates are
@@ -927,7 +865,7 @@ done
 # immediately beneath the workspace root. Keep the two prefixes and the kind
 # vocabulary separate in this source: the test assembles broken fixtures, and a
 # literal absence sweep can therefore cover this package too.
-workspace_prefix='(<agent-workspace>|\.spaces)'
+workspace_prefix='(.spaces|\.spaces)'
 workspace_kinds='(doctrine|drafts|hooks|operations|scripts|templates)'
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
@@ -935,7 +873,7 @@ for sk in "$skills_dir"/*/; do
     rel="${f#"$sk"}"
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      fail "$name: $rel:$line: kind-first workspace path -- use <agent-workspace>/<skill>/<kind>/..."
+      fail "$name: $rel:$line: kind-first workspace path -- use .spaces/<skill>/<kind>/..."
     done < <(grep -nE "$workspace_prefix/$workspace_kinds(/|[^a-z0-9-]|$)" "$f" || true)
   done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
 done
@@ -947,7 +885,7 @@ for sk in "$skills_dir"/*/; do
     rel="${f#"$sk"}"
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      fail "$name: $rel:$line: owner-local tracker path -- use <agent-trackers>/..."
+      fail "$name: $rel:$line: owner-local tracker path -- use .trackers/..."
     done < <(grep -nE "$workspace_prefix/[a-z0-9][a-z0-9-]*/trackers(/|[^a-z0-9-]|$)" "$f" || true)
   done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
 done

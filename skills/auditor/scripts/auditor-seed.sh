@@ -9,12 +9,11 @@ root="$1";[ -d "$root" ]||die "root is not a directory: $root";root="$(cd "$root
   : > "$AUDITOR_SETUP_TEST_INVOKED_SENTINEL"
   die "instrumented Auditor setup invocation"
 }
-resolve(){ local k="$1" d="$2" f v="";for f in "$root/AGENTS.md" "$root/CLAUDE.md";do if [ -z "$v" ]&&[ -f "$f" ];then case "$k" in ws)v="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$f"|head -n1|sed 's/[[:space:]]*$//')";;rr)v="$(sed -n -E 's/^(agent-records|records-root):[[:space:]]*//p' "$f"|head -n1|sed 's/[[:space:]]*$//')";;esac;fi;done;printf '%s\n' "${v:-$d}";}
 valid(){ [ -n "$1" ]&&[ "$1" != . ]||return 1;case "$1" in /*)return 1;;esac;case "/$1/" in */../*)return 1;;esac;}
 check(){ local r="$1" c="$root" p o="$IFS" m=no;valid "$r"||die "unsafe relative path: $r";IFS=/;for p in $r;do [ -n "$p" ]||continue;c="$c/$p";[ "$m" = no ]||continue;[ ! -L "$c" ]||die "symlinked destination parent: $c";if [ -e "$c" ];then [ -d "$c" ]||die "destination parent is not a directory: $c";else m=yes;fi;done;IFS="$o";}
 ensure(){ local r="$1" c="$root" p o="$IFS";IFS=/;for p in $r;do [ -n "$p" ]||continue;c="$c/$p";[ ! -L "$c" ]||die "symlinked destination parent: $c";if [ -e "$c" ];then [ -d "$c" ]||die "destination parent is not a directory: $c";else mkdir "$c";fi;done;IFS="$o";}
 schema_free(){ ! awk 'NR==1&&$0=="---"{f=1;next}f&&$0=="---"{exit}f&&/^schema:/{x=1}END{exit !x}' "$1";}
-ws="$(resolve ws .spaces)";rr="$(resolve rr .records)";valid "$ws"||die "unsafe workspace path: $ws";valid "$rr"||die "unsafe records path: $rr"
+ws=.spaces;rr=.records
 assets="templates/reports.md";while IFS= read -r src;do assets="$assets
 rules/$(basename "$src")";done < <(find "$base/rules" -maxdepth 1 -type f -name '*.md'|sort)
 [ -z "${AUDITOR_SETUP_TEST_ASSET:-}" ]||assets="$assets

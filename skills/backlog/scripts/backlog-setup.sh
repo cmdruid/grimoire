@@ -4,41 +4,30 @@ set -euo pipefail
 
 die(){ echo "reason=$1${2:+ detail=$2}" >&2;exit 2;}
 die_action(){ echo "reason=$1 action=$2" >&2;exit 2;}
-valid_rel(){ local v="$1" c o="$IFS";[ -n "$v" ]&&[ "$v" != . ]||return 1;[[ "$v" != /* && "$v" != */ && "$v" != *//* && "$v" != *$'\n'* && "$v" != *$'\t'* ]]||return 1;IFS=/;read -r -a a <<<"$v";IFS="$o";for c in "${a[@]}";do [ -n "$c" ]&&[ "$c" != . ]&&[ "$c" != .. ]||return 1;done;}
 valid_stem(){ [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]]&&[ "$1" != receipts ];}
-overlap(){ [ "$1" = "$2" ]||[[ "$1" == "$2/"* ]]||[[ "$2" == "$1/"* ]];}
 
 ROOT="${1:-}";[ -n "$ROOT" ]||die usage;shift
-WS="";RR="";TR="";TR_EXPLICIT=false;mode="";stem=""
+TR=.trackers;mode="";stem=""
 while [ $# -gt 0 ];do case "$1" in
-  --workspace)WS="${2:-}";shift 2;;--records-root)RR="${2:-}";shift 2;;
-  --trackers-root)TR="${2:-}";TR_EXPLICIT=true;shift 2;;--list)mode=list;shift;;
+  --list)mode=list;shift;;
   --apply)mode=setup;shift;[ $# -eq 0 ]||die queue-selection-retired;;
   repair)mode=repair;shift;[ $# -eq 0 ]||die usage;;
   tracker-add|tracker-remove)mode="$1";stem="${2:-}";shift 2;[ $# -eq 0 ]||die usage;;
   *)die usage;;esac;done
 case "$ROOT" in /*);;*)die unsafe-root;;esac;[ -d "$ROOT" ]||die unsafe-root
-ROOT="$(CDPATH='' cd -P "$ROOT"&&pwd)";[ -n "$WS" ]||WS=.spaces;[ -n "$RR" ]||RR=.records
-valid_rel "$WS"||die unsafe-workspace "$WS";valid_rel "$RR"||die unsafe-records-root "$RR"
-
-resolve_decl(){ local f v="";for f in "$ROOT/AGENTS.md" "$ROOT/CLAUDE.md";do if [ -z "$v" ]&&[ -f "$f" ];then v="$(sed -n -E 's/^agent-trackers:[[:space:]]*//p' "$f"|head -n1|sed 's/[[:space:]]*$//')";fi;done;printf '%s\n' "$v";}
-decl="$(resolve_decl)"
-if [ "$TR_EXPLICIT" = true ];then valid_rel "$TR"||die unsafe-trackers-root "$TR";[ -z "$decl" ]||[ "$decl" = "$TR" ]||die trackers-root-conflict "$decl:$TR"
-else TR="${decl:-.trackers}";valid_rel "$TR"||die unsafe-trackers-root "$TR";fi
-overlap "$TR" "$WS"&&die overlapping-roots "$TR:$WS";overlap "$TR" "$RR"&&die overlapping-roots "$TR:$RR";overlap "$WS" "$RR"&&die overlapping-roots "$WS:$RR"
+ROOT="$(CDPATH='' cd -P "$ROOT"&&pwd)"
 
 SKILL="$(CDPATH='' cd -P "$(dirname "$0")/.."&&pwd)"
 SOURCE="$SKILL/scripts/trackers.sh";CLASSIFIER="$SKILL/scripts/tracker-layer-status.sh"
 README_STATUS="$SKILL/scripts/tracker-readme-status.sh";README_TEMPLATE="$SKILL/templates/trackers-readme-block.md"
 REG="$SKILL/scripts/register-route.sh";LAYER="$ROOT/$TR";PROVIDER="$LAYER/trackers.sh"
-RECEIPTS="$LAYER/receipts.tsv";README="$LAYER/README.md";PROMPT="$ROOT/$WS/backlog/hooks/debrief.md";DOOR="$ROOT/AGENTS.md"
+RECEIPTS="$LAYER/receipts.tsv";README="$LAYER/README.md";PROMPT="$LAYER/DEBRIEF.md";DOOR="$ROOT/AGENTS.md"
 QUEUE_HEADER=$'id\tcreated\ttext\tevidence';RECEIPT_HEADER=$'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult'
 [ -n "$mode" ]||die usage
 if [ "$mode" = list ];then
   printf '%s\n' $'stem=feedback\ttitle=Feedback\tuse-when="Developer-experience friction and observations."' $'stem=issues\ttitle=Issues\tuse-when="Project problems, risks, and limitations."' $'stem=routines\ttitle=Routines\tuse-when="Repeatable responses to recognizable development triggers."' $'stem=tasks\ttitle=Tasks\tuse-when="Work someone should build or change."';exit
 fi
 case "$mode" in tracker-add|tracker-remove)valid_stem "$stem"||die invalid-stem "$stem";;esac
-if [ "$TR_EXPLICIT" = true ]&&[ -z "$decl" ]&&[ "$TR" != .trackers ]&&[ -d "$ROOT/.trackers" ];then die trackers-root-conflict .trackers;fi
 
 check_parent(){ local rel="$1" cur="$ROOT" c o="$IFS";IFS=/;read -r -a a <<<"$rel";IFS="$o";for c in "${a[@]}";do cur="$cur/$c";[ ! -L "$cur" ]||die symlink "$cur";[ ! -e "$cur" ]||[ -d "$cur" ]||die incompatible-entry "$cur";done;}
 check_file(){ [ ! -L "$1" ]||die symlink "$1";[ ! -e "$1" ]||[ -f "$1" ]||die incompatible-entry "$1";}
@@ -47,11 +36,10 @@ fresh_tmp(){ [ ! -L "$1" ]||die symlink "$1";[ ! -e "$1" ]||die incompatible-ent
 
 classifier_mode="$mode"
 case "$classifier_mode" in tracker-add|tracker-remove)classifier_mode=runtime;;esac
-facts="$("$CLASSIFIER" "$classifier_mode" --root "$ROOT" --workspace "$WS" --records-root "$RR" --trackers-root "$TR")"
+facts="$("$CLASSIFIER" "$classifier_mode" --root "$ROOT")"
 fact(){ printf '%s\n' "$facts"|sed -n "s/^$1=//p"|head -n1;}
 layer_status="$(fact layer_status)";provider_status="$(fact provider_status)";readme_state="$(fact readme_status)";recovery="$(fact recovery_action)"
 [ -n "$layer_status" ]&&[ -n "$provider_status" ]&&[ -n "$readme_state" ]&&[ -n "$recovery" ]||die classifier
-if [ "$mode" = setup ]&&[ "$TR_EXPLICIT" = true ]&&[ -z "$decl" ]&&[ "$TR" != .trackers ]&&[ "$layer_status" != absent ];then die trackers-root-conflict undeclared-state;fi
 
 case "$mode:$layer_status" in
   setup:absent|setup:resumable-prefix|setup:initialized|tracker-add:initialized|tracker-remove:initialized|repair:initialized);;
@@ -68,7 +56,7 @@ case "$mode" in tracker-add|tracker-remove)[ "$provider_status" = current ]||die
 check_parent "$TR";check_file "$PROVIDER";check_file "$RECEIPTS";check_file "$README"
 layer_preexisted=false;[ -d "$LAYER" ]&&layer_preexisted=true
 if [ "$mode" != repair ];then
-  check_parent "$WS/backlog/hooks";check_file "$PROMPT";check_file "$DOOR"
+  check_file "$PROMPT";check_file "$DOOR"
   "$REG" preflight --root "$ROOT" >/dev/null
 fi
 if [ "$mode" = tracker-remove ];then [ -f "$LAYER/$stem.tsv" ]&&[ ! -L "$LAYER/$stem.tsv" ]||die no-tracker "$stem";fi
@@ -143,21 +131,16 @@ if [ "$mode" = setup ];then
     for file in "$LAYER"/*.tsv;do s="$(basename "$file" .tsv)";[ "$s" = receipts ]&&continue;[ "$(grep -cFx -- "## $s" "$PROMPT"||true)" -gt 0 ]||prompt_will_change=true;done
     shopt -u nullglob
   fi
-  if [ "$prompt_will_change" = true ]&&[ -f "$PROMPT" ]&&head_differs "$WS/backlog/hooks/debrief.md"&&! cmp -s "$tmp_prompt" "$PROMPT";then die commit-custody-required "$WS/backlog/hooks/debrief.md";fi
+  if [ "$prompt_will_change" = true ]&&[ -f "$PROMPT" ]&&head_differs "$TR/DEBRIEF.md"&&! cmp -s "$tmp_prompt" "$PROMPT";then die commit-custody-required "$TR/DEBRIEF.md";fi
   tmp_door="$(mktemp "${TMPDIR:-/tmp}/backlog-door.XXXXXX")";printf '# Agent instructions\n\n## Skill routes (self-registered)\n\n'>"$tmp_door";cat "$SKILL/templates/debrief-anchor.md">>"$tmp_door";report_exact_reconciled "$DOOR" "$tmp_door"
   rm -f "$tmp_header" "$tmp_receipts" "$tmp_prompt" "$tmp_door"
 fi
 
-if [ "$mode" = setup ]&&[ "$TR_EXPLICIT" = true ]&&[ -z "$decl" ]&&[ "$TR" != .trackers ];then
-  tmp="$DOOR.tmp.$$";fresh_tmp "$tmp";if [ -f "$DOOR" ];then cp "$DOOR" "$tmp";else printf '# Agent instructions\n'>"$tmp";fi
-  printf '\nagent-trackers: %s\n' "$TR">>"$tmp";check_file "$DOOR";mv "$tmp" "$DOOR";report wrote AGENTS.md;decl="$TR"
-fi
 require_layer(){ check_parent "$TR";[ -d "$LAYER" ]&&[ ! -L "$LAYER" ]||die vanished-tracker-root "$TR";}
-require_prompt_parent(){ check_parent "$WS/backlog/hooks";[ -d "$ROOT/$WS/backlog/hooks" ]||die vanished-prompt-root "$WS/backlog/hooks";}
+require_prompt_parent(){ require_layer;}
 if [ "$layer_preexisted" = true ];then require_layer
 elif [ "$mode" = setup ];then ensure_tree "$TR"
 else die vanished-tracker-root "$TR";fi
-if [ "$mode" != repair ];then ensure_tree "$WS/backlog/hooks";fi
 
 write_atomic(){ local dest="$1" src="$2" rel tmp;rel="${dest#"$ROOT"/}";require_layer;tmp="$dest.tmp.$$";fresh_tmp "$tmp";cp "$src" "$tmp";require_layer;check_file "$dest";mv "$tmp" "$dest";report wrote "$rel";}
 write_line_atomic(){ local dest="$1" line="$2" rel tmp;rel="${dest#"$ROOT"/}";require_layer;tmp="$dest.tmp.$$";fresh_tmp "$tmp";printf '%s\n' "$line">"$tmp";require_layer;check_file "$dest";mv "$tmp" "$dest";report wrote "$rel";}
@@ -166,7 +149,7 @@ install_provider(){
   if [ ! -f "$PROVIDER" ]||! cmp -s "$SOURCE" "$PROVIDER";then write_atomic "$PROVIDER" "$SOURCE";fi
   require_layer;if [ ! -x "$PROVIDER" ];then chmod +x "$PROVIDER";report wrote "$TR/trackers.sh";fi
 }
-ensure_prompt(){ if [ ! -f "$PROMPT" ];then require_prompt_parent;tmp="$PROMPT.tmp.$$";fresh_tmp "$tmp";printf '%s\n' '# Backlog debrief routing' '' 'Edit each section to match this project. Debrief reads this file; the generic tracker API does not.'>"$tmp";require_prompt_parent;check_file "$PROMPT";mv "$tmp" "$PROMPT";report wrote "$WS/backlog/hooks/debrief.md";fi;}
+ensure_prompt(){ if [ ! -f "$PROMPT" ];then require_prompt_parent;tmp="$PROMPT.tmp.$$";fresh_tmp "$tmp";printf '%s\n' '# Backlog debrief routing' '' 'Edit each section to match this project. Debrief reads this file; the generic tracker API does not.'>"$tmp";require_prompt_parent;check_file "$PROMPT";mv "$tmp" "$PROMPT";report wrote "$TR/DEBRIEF.md";fi;}
 module_count(){ [ -f "$PROMPT" ]||{ echo 0;return;};grep -cFx -- "## $1" "$PROMPT"||true;}
 append_module(){
   local s="$1" src="$2" before module
@@ -185,10 +168,10 @@ append_module(){
     {if(have)print previous;previous=$0;have=1}
     END{if(have)print previous;if(!done){print "";emit()}}
   ' "$before">"$tmp"
-  require_prompt_parent;check_file "$PROMPT";if ! cmp -s "$before" "$PROMPT";then rm -f "$before" "$module" "$tmp";die concurrent-project-edit "$WS/backlog/hooks/debrief.md";fi
-  mv "$tmp" "$PROMPT";rm -f "$before" "$module";report wrote "$WS/backlog/hooks/debrief.md"
+  require_prompt_parent;check_file "$PROMPT";if ! cmp -s "$before" "$PROMPT";then rm -f "$before" "$module" "$tmp";die concurrent-project-edit "$TR/DEBRIEF.md";fi
+  mv "$tmp" "$PROMPT";rm -f "$before" "$module";report wrote "$TR/DEBRIEF.md"
 }
-remove_module(){ local s="$1" before;[ -f "$PROMPT" ]&&[ "$(module_count "$s")" -gt 0 ]||return 0;require_prompt_parent;before="$(mktemp "${TMPDIR:-/tmp}/backlog-prompt-before.XXXXXX")";cp "$PROMPT" "$before";tmp="$PROMPT.tmp.$$";fresh_tmp "$tmp";awk -v h="## $s" '/^## /{skip=($0==h)}!skip{print}' "$before">"$tmp";require_prompt_parent;check_file "$PROMPT";if ! cmp -s "$before" "$PROMPT";then rm -f "$before" "$tmp";die concurrent-project-edit "$WS/backlog/hooks/debrief.md";fi;mv "$tmp" "$PROMPT";rm -f "$before";report wrote "$WS/backlog/hooks/debrief.md";}
+remove_module(){ local s="$1" before;[ -f "$PROMPT" ]&&[ "$(module_count "$s")" -gt 0 ]||return 0;require_prompt_parent;before="$(mktemp "${TMPDIR:-/tmp}/backlog-prompt-before.XXXXXX")";cp "$PROMPT" "$before";tmp="$PROMPT.tmp.$$";fresh_tmp "$tmp";awk -v h="## $s" '/^## /{skip=($0==h)}!skip{print}' "$before">"$tmp";require_prompt_parent;check_file "$PROMPT";if ! cmp -s "$before" "$PROMPT";then rm -f "$before" "$tmp";die concurrent-project-edit "$TR/DEBRIEF.md";fi;mv "$tmp" "$PROMPT";rm -f "$before";report wrote "$TR/DEBRIEF.md";}
 create_queue(){ local s="$1" src="$2" file;file="$LAYER/$s.tsv";if [ ! -f "$file" ];then write_line_atomic "$file" "$QUEUE_HEADER";fi;require_layer;append_module "$s" "$src";}
 validate_preledger(){
   local s headings prefix_facts prefix_status
@@ -199,7 +182,7 @@ validate_preledger(){
   done
   headings="$(sed -n 's/^## //p' "$PROMPT")"
   while IFS= read -r s;do case "$s" in tasks|issues|feedback|routines);;*)die malformed-prompt "$s";;esac;done <<<"$headings"
-  prefix_facts="$("$CLASSIFIER" setup --root "$ROOT" --workspace "$WS" --records-root "$RR" --trackers-root "$TR")";prefix_status="$(printf '%s\n' "$prefix_facts"|sed -n 's/^layer_status=//p')"
+  prefix_facts="$("$CLASSIFIER" setup --root "$ROOT")";prefix_status="$(printf '%s\n' "$prefix_facts"|sed -n 's/^layer_status=//p')"
   [ "$prefix_status" = resumable-prefix ]||die malformed-prefix "$prefix_status"
 }
 
@@ -250,7 +233,7 @@ fi
 
 # Final validation after the last reported write.
 final_mode=setup;[ "$mode" = repair ]&&final_mode=repair
-final_facts="$("$CLASSIFIER" "$final_mode" --root "$ROOT" --workspace "$WS" --records-root "$RR" --trackers-root "$TR")"
+final_facts="$("$CLASSIFIER" "$final_mode" --root "$ROOT")"
 [ "$(printf '%s\n' "$final_facts"|sed -n 's/^layer_status=//p')" = initialized ]||die final-validation
 validate_provider
 if [ "$mode" != repair ];then "$REG" preflight --root "$ROOT" >/dev/null;fi

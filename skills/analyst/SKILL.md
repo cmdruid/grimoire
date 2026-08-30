@@ -26,7 +26,7 @@ kind is dropping in a file.
 
 ## Catalog
 
-The live catalog is `<agent-workspace>/analyst/templates/` when deployed, else this skill's bundled
+The live catalog is `.spaces/analyst/templates/` when deployed, else this skill's bundled
 `templates/`. **Deployed wins** — a project customizes its reports by editing the deployed copy,
 and host-added templates join the catalog the same way.
 The active bundled files are `briefing.md`, `status.md`, `subsystem.md`, `diagnostics.md`, and
@@ -45,7 +45,7 @@ If a previous-home template exists while the canonical file is absent, setup ref
 `/analyst migrate <path>`; it never silently adopts a customization. A deployed template carrying
 front-matter `schema:` is invalid because schemas stay in this package.
 Standalone setup collects each `deployed=<file>` result and makes one pathspec-scoped commit over
-the corresponding `<agent-workspace>/analyst/templates/<file>` paths; no deployed results means no
+the corresponding `.spaces/analyst/templates/<file>` paths; no deployed results means no
 commit. Inside an announced configuration sweep, setup is write-only and the caller owns the one
 aggregate commit.
 
@@ -82,7 +82,7 @@ question's *intent* is not. Keep it cheap and inline — never spend a dispatch 
    project's gate or test commands**. Gate state comes from what the project already recorded, or
    is reported unknown. If the script is missing or errors, say so and gather what you can by
    reading directly — degraded facts beat a stalled report.
-   Status and briefing resolve `<agent-trackers>` independently and read only an advertised
+   Status and briefing resolve `.trackers` independently and read only an advertised
    `tracker@1` provider through side-effect-free `describe`, `catalog`, and `page`. Missing provider
    state reports absent; legacy record-owned or owner-local tracker paths are never probed.
 3. **Follow the links** — a ledger line is a closure *fact*; the substance is in the record it
@@ -99,8 +99,8 @@ large, follows the delegation front-door's own doctrine — and never an editing
 ## Span anchor (`briefing`)
 
 An explicit span wins ("since Monday", "since v0.3"). Absent one, anchor to the **last persisted
-briefing** — `records.sh --root <root> --records-root <records-root-relative> list --type reports --tag briefing` when that tool is executable,
-newest first; else glob `<agent-records>/reports/YYYY-MM-DD-*.md` whose front-matter `tags`
+briefing** — `.records/records.sh list --type reports --tag briefing` when that tool is executable,
+newest first; else glob `.records/reports/YYYY-MM-DD-*.md` whose front-matter `tags`
 contain `briefing`, newest filename first. If neither yields a hit, **14 calendar days back
 from today**. Always name the anchor actually used in the output; there is no hidden state
 file. The records tool is never a floor.
@@ -115,18 +115,18 @@ person will see it. When in doubt, persist: a spare record costs a line in a sto
 evaporated briefing costs the whole run.
 
 To persist, use the resolved catalog template to author the report, then mint with
-`records.sh --root <root> --records-root <records-root-relative> new reports --schema analyst/report@1 --title "…" --tag analyst --tag <token>`
+`.records/records.sh new reports --schema analyst/report@1 --title "…" --tag analyst --tag <token>`
 when the tool exists (`<token>` is the resolved catalog token: `briefing`,
 `status`, `subsystem`, `diagnostics`, or `guide`) and replace only the minted body with the authored
 report; else file-mode with the same schema, naming the file `YYYY-MM-DD-<slug>.md` under
-`<agent-records>/reports/` (default `.records/reports/`; create the store on
+`.records/reports/` (default `.records/reports/`; create the store on
 first write) and write `tags: [analyst, <token>]` yourself. **The in-package
 contract:** front-matter keys `doctype`, `status`, `schema`, `tags`; schema
 `analyst/report@1`; live `draft` / `published`; closed `archived` (ledger `--as` is
 `done` / `dropped` / `superseded` / `consumed` when the tool exists).
 File-mode close changes only status. Generic timestamps and revisions are not written. The filename
 is `YYYY-MM-DD-<slug>.md`; links use `→ <store>/<file>.md`. Only a `briefing`-tagged report is a span anchor. On a host with no
-records tool, file-mode still writes under the agent-records home.
+records tool, file-mode still writes under fixed `.records`.
 
 ## Anti-patterns
 

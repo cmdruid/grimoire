@@ -18,20 +18,6 @@
 # argument, not the program name.
 set -euo pipefail
 
-# Front-door variable `agent-records` (default `.records`; also accepts
-# legacy `records-root:`) -- see the front-door-variables doctrine.
-# Prints the resolved repo-relative path.
-resolve_records_root() {
-  local root="$1" fd decl=""
-  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-    if [ -z "$decl" ] && [ -f "$fd" ]; then
-      decl="$(sed -n -E 's/^(agent-records|records-root):[[:space:]]*//p' "$fd" \
-              | head -n 1 | sed 's/[[:space:]]*$//')"
-    fi
-  done
-  printf '%s\n' "${decl:-.records}"
-}
-
 usage() {
   cat >&2 <<'EOF'
 usage: workstream-git.sh <subcommand> [args...]
@@ -84,7 +70,7 @@ cmd_stream_state() {
 
   local head_branch toplevel porcelain ahead behind drafts last_subj last_age rec_rel rec_re
   local staged rebase_ip gp
-  rec_rel="$(resolve_records_root "$wt")"
+  rec_rel=.records
   rec_re="${rec_rel//./\\.}"
   head_branch="$(git -C "$wt" rev-parse --abbrev-ref HEAD)"
   toplevel="$(git -C "$wt" rev-parse --show-toplevel)"
@@ -115,7 +101,7 @@ cmd_stream_state() {
   local wip
   wip="$(printf '%s\n' "$porcelain" | grep -v '^$' | grep -vE "^\?\? $rec_re/streams/[^/]+\.md\$" || true)"
 
-  echo "agent-records=$rec_rel"
+  echo "records=$rec_rel"
   echo "records-root=$rec_rel"
   echo "branch_matches=$([ "$head_branch" = "$branch" ] && echo true || echo false)"
   echo "toplevel_matches=$([ "$toplevel" = "$wt" ] && echo true || echo false)"

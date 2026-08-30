@@ -14,9 +14,9 @@ OUT="$TMP/out"; ERR="$TMP/err"
 setup_layer() {
   contract_root="$1"
   mkdir -p "$contract_root"
-  "$STANDUP" setup "$contract_root" --records-root .records --workspace-root .spaces \
+  "$STANDUP" setup "$contract_root" \
     >"$OUT" 2>"$ERR"
-  "$STANDUP" finalize "$contract_root" --records-root .records --workspace-root .spaces
+  "$STANDUP" finalize "$contract_root"
 }
 
 runtime_contract() {
@@ -27,7 +27,7 @@ runtime_contract() {
   for contract_verb in search "done" curate; do
     grep -qF 'ordered runtime preflight' "$contract_skill/verbs/$contract_verb.md" || return 1
   done
-  if grep -E 'scripts/records[.]sh.*--root' \
+  if grep -E 'scripts/records[.]sh' \
     "$contract_skill/verbs/search.md" "$contract_skill/verbs/done.md" \
     "$contract_skill/verbs/curate.md" >/dev/null; then
     return 1
@@ -43,7 +43,7 @@ mkdir -p "$runtime_copy/verbs"
 cp "$SKILL/SKILL.md" "$runtime_copy/SKILL.md"
 cp "$SKILL/verbs/search.md" "$SKILL/verbs/done.md" "$SKILL/verbs/curate.md" \
   "$runtime_copy/verbs/"
-canary='"$SKILL/scripts/records.sh" --root "$root" --records-root "$records" list'
+canary='"$SKILL/scripts/records.sh" list'
 expect_eq "bundled-runtime canary starts absent" "0" \
   "$(grep -Fhc -- "$canary" "$runtime_copy/verbs/"*.md | awk '{ total += $1 } END { print total + 0 }')"
 printf '%s\n' "$canary" >>"$runtime_copy/verbs/search.md"
@@ -87,12 +87,10 @@ for readme_text in 'YYYY-MM-DD-<slug>.md' '`doctype`, `status`, `schema`, and `t
   expect "README contract: $readme_text" "$readme_text" "$README"
 done
 
-snippet="$(sed -n '/^    records_root=/,/^    "\$records_root\/records.sh"/p' "$README" | \
-  sed 's/^    //' | sed "s#<absolute-project-root>#$root#")"
-rc=0; (cd "$root" && sh -c "$snippet" >"$OUT" 2>"$ERR") || rc=$?
+rc=0; (cd "$root" && .records/records.sh list >"$OUT" 2>"$ERR") || rc=$?
 expect_eq "rendered list invocation rc" "0" "$rc"
 
-rs() { "$RS" --root "$root" --records-root .records "$@"; }
+rs() { "$RS" "$@"; }
 today="$(date +%Y-%m-%d)"
 record="$(rs new notes --schema notepad/note@1 --title 'Contract sample' --tag sample)"
 printf '%s\n' 'body-search-canary' >>"$record"
@@ -149,7 +147,7 @@ for provider_mutation in bytes mode exit grep; do
   rc=0
   JOURNAL_PROVIDER_MUTATION="$provider_mutation" \
     JOURNAL_SETUP_TEST_AFTER_WRITE="$mutation_hook" \
-    "$STANDUP" setup "$invalid_root" --records-root .records --workspace-root .spaces \
+    "$STANDUP" setup "$invalid_root" \
     >"$OUT" 2>"$ERR" || rc=$?
   expect_eq "$provider_mutation provider gate refusal rc" "2" "$rc"
   [ ! -e "$invalid_root/.records/README.md" ] && pass=$((pass + 1)) || {
@@ -166,7 +164,7 @@ rm "$repair_gate/.records/README.md.bak"
 cp "$repair_gate/.records/README.md" "$TMP/repair-gate.before"
 rc=0
 JOURNAL_PROVIDER_MUTATION=mode JOURNAL_SETUP_TEST_AFTER_WRITE="$mutation_hook" \
-  "$STANDUP" repair "$repair_gate" --records-root .records --workspace-root .spaces \
+  "$STANDUP" repair "$repair_gate" \
   >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "repair provider gate refusal rc" "2" "$rc"
 if cmp -s "$TMP/repair-gate.before" "$repair_gate/.records/README.md"; then

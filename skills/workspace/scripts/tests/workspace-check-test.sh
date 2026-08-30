@@ -44,7 +44,7 @@ printf 'id\tstate\n' >"$case_root/.trackers/tasks.tsv"
 printf '# operation\n' >"$case_root/.spaces/delta/operations/release.md"
 run_check "$case_root" .spaces .records
 expect_eq "valid split tree passes" 0 "$rc"
-expect "split mode" "mode=split" "$OUT"
+expect "fixed mode" "mode=fixed" "$OUT"
 expect "split no failures" "fails=0" "$OUT"
 
 for retired in doctrine drafts hooks operations scripts templates; do
@@ -124,26 +124,20 @@ run_check "$case_root" .spaces .records
 expect_eq "symlink kind fails" 1 "$rc"
 expect "symlink kind reason" "reason=symlink-kind" "$OUT"
 
-fresh coincident
-mkdir -p "$case_root/.spaces/bugs" "$case_root/.spaces/alpha/hooks"
-printf 'closed\n' >"$case_root/.spaces/history.tsv"
-printf '%s\n' '---' 'doctype: bugs' '---' >"$case_root/.spaces/bugs/one.md"
-printf '# hook\n' >"$case_root/.spaces/alpha/hooks/x.md"
-run_check "$case_root" .spaces .spaces
-expect_eq "coincident roots pass" 0 "$rc"
-expect "coincident mode" "mode=coincident" "$OUT"
-expect "record store warns" "reason=coincident-unknown" "$OUT"
+# Noncanonical content is ignored; retired selectors refuse without changing it.
+fresh noncanonical-canary
+mkdir -p "$case_root/dev/alpha/hooks"; printf 'CANARY\n'>"$case_root/dev/alpha/hooks/x.md"
+run_check "$case_root" dev .records
+expect_eq "noncanonical canary does not affect fixed workspace" 0 "$rc"
+expect "fixed workspace remains absent" "state=absent" "$OUT"
+rc=0; "$CHECK" --root "$case_root" --workspace dev >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "retired workspace selector refuses" 2 "$rc"
+expect "noncanonical canary preserved" "CANARY" "$case_root/dev/alpha/hooks/x.md"
 
-fresh coincident-retired
-retired="$case_root/.spaces/"hooks
-mkdir -p "$retired"
-run_check "$case_root" .spaces .spaces
-expect_eq "coincident retired kind fails" 1 "$rc"
-expect "coincident retired reason" "reason=retired-top-level-kind" "$OUT"
-
-fresh bad-root-escape
-run_check "$case_root" ../escape .records
-expect_eq "root escape fails" 2 "$rc"
-expect "root escape error" "invalid workspace path" "$ERR"
+fresh symlink-workspace
+mkdir -p "$case_root/outside"; ln -s "$case_root/outside" "$case_root/.spaces"
+run_check "$case_root" .spaces .records
+expect_eq "symlink workspace fails" 1 "$rc"
+expect "symlink workspace reason" "reason=symlink-workspace" "$OUT"
 
 finish

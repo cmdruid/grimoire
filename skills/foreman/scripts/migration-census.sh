@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Read-only, content-free census of one explicit brownfield source.
 set -euo pipefail
-usage() { echo "usage: migration-census.sh --root <root> --workspace <relative> --source <file-or-directory>" >&2; exit 2; }
+usage() { echo "usage: migration-census.sh --root <root> --source <file-or-directory>" >&2; exit 2; }
 protocol_safe_path() {
   [ -n "$1" ] || return 1
   case "$1" in *'|'*|*$'\n'*) return 1 ;; esac
@@ -18,19 +18,16 @@ sha256_file() {
   else sha256sum "$1" | awk '{print $1}'
   fi
 }
-root=""; workspace=""; source_arg=""
+root=""; workspace=.spaces; source_arg=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || usage; root="$2"; shift 2 ;;
-    --workspace) [ "$#" -ge 2 ] || usage; workspace="$2"; shift 2 ;;
     --source) [ "$#" -ge 2 ] || usage; source_arg="$2"; shift 2 ;;
     *) usage ;;
   esac
 done
-[ -n "$root" ] && [ -n "$workspace" ] && [ -n "$source_arg" ] || usage
+[ -n "$root" ] && [ -n "$source_arg" ] || usage
 [ -d "$root" ] || usage; root="$(CDPATH='' cd -P "$root" && pwd)"
-case "$workspace" in ""|.|/*|*//*|*/../*|../*|*/..) usage ;; esac
-protocol_safe_path "$workspace" || usage
 protocol_safe_path "$source_arg" || { echo 'status=refused'; echo 'reason=unsafe-source-path'; exit 1; }
 case "$source_arg" in /*) source="$source_arg" ;; *) source="$root/$source_arg" ;; esac
 [ ! -L "$source" ] || { echo 'status=refused'; echo 'reason=symlink-source'; exit 1; }
@@ -81,7 +78,7 @@ while IFS= read -r file; do
   digest="sha256:$(sha256_file "$file")"
   case "$rel" in "$workspace"/*/operations/*.md)
     tail="${rel#"$workspace"/}"; owner="${tail%%/*}"; stem="${tail##*/}"; stem="${stem%.md}"; identity="$owner/$stem"
-    facts="$("$checker" --root "$root" --workspace "$workspace" --operation "$identity" 2>/dev/null || true)"
+    facts="$("$checker" --root "$root" --operation "$identity" 2>/dev/null || true)"
     if printf '%s\n' "$facts" | grep -q '^valid=true$'; then
       status="$(printf '%s\n' "$facts" | sed -n 's/^status=//p')"
       echo "conforming=$rel|identity=$identity|owner=$owner|status=$status|digest=$digest|valid=true"

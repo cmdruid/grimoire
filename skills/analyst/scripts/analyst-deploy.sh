@@ -2,7 +2,7 @@
 # analyst-deploy.sh <root> — explicitly deploy the bundled template catalog.
 #
 # Copies any actively used bundled template absent from
-# <agent-workspace>/analyst/templates/. A previous-home copy requires explicit migration.
+# .spaces/analyst/templates/. A previous-home copy requires explicit migration.
 # Never overwrites: a deployed template is the project's, customized or not, and
 # silently replacing it would discard the customization this deploy exists to
 # enable. An upgrade of a customized template is a judgment-assisted diff a human
@@ -13,28 +13,6 @@
 # symlinked or non-directory parents before writing. The destination is a
 # workspace subpath, so a records directory is not a deploy gate.
 set -euo pipefail
-
-resolve_records_root() {
-  local root="$1" fd decl=""
-  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-    if [ -z "$decl" ] && [ -f "$fd" ]; then
-      decl="$(sed -n -E 's/^(agent-records|records-root):[[:space:]]*//p' "$fd" \
-              | head -n 1 | sed 's/[[:space:]]*$//')"
-    fi
-  done
-  printf '%s\n' "${decl:-.records}"
-}
-
-resolve_workspace() {
-  local root="$1" fd decl=""
-  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-    if [ -z "$decl" ] && [ -f "$fd" ]; then
-      decl="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$fd" \
-              | head -n 1 | sed 's/[[:space:]]*$//')"
-    fi
-  done
-  printf '%s\n' "${decl:-.spaces}"
-}
 
 valid_rel() {
   [ -n "$1" ] || return 1
@@ -83,8 +61,8 @@ ROOT="${1:-}"
 [ -d "$ROOT" ] || { echo "analyst-deploy.sh: no such directory: $ROOT" >&2; exit 2; }
 ROOT="$(cd "$ROOT" && pwd)"
 
-RR_REL="$(resolve_records_root "$ROOT")"
-WS_REL="$(resolve_workspace "$ROOT")"
+RR_REL=.records
+WS_REL=.spaces
 valid_rel "$RR_REL" || { echo "analyst-deploy.sh: unsafe records path: $RR_REL" >&2; exit 2; }
 valid_rel "$WS_REL" || { echo "analyst-deploy.sh: unsafe workspace path: $WS_REL" >&2; exit 2; }
 RR="$ROOT/$RR_REL"

@@ -9,7 +9,7 @@ for f in "$B/scripts/trackers.sh" "$B/scripts/tracker-layer-status.sh" "$B/scrip
 [ -x "$B/scripts/tracker-runtime-check.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
 for f in "$B/templates/debrief-anchor.md" "$B/scripts/route-status.sh" "$B/scripts/register-route.sh"; do [ -f "$f" ] && pass=$((pass+1)) || fail=$((fail+1)); done
 if rg -n '/backlog (task|issue|feedback|promote)([^a-z-]|$)' "$ROOT/skills" >/dev/null; then fail=$((fail+1)); else pass=$((pass+1)); fi
-for needle in '<agent-trackers>' 'trackers.sh' '/backlog query' '/backlog repair' 'produces: tracker'; do grep -qF -- "$needle" "$B/SKILL.md" && pass=$((pass+1)) || fail=$((fail+1)); done
+for needle in '.trackers' 'trackers.sh' '/backlog query' '/backlog repair' 'produces: tracker'; do grep -qF -- "$needle" "$B/SKILL.md" && pass=$((pass+1)) || fail=$((fail+1)); done
 for f in tracker file query debrief curate;do grep -qF 'scripts/tracker-runtime-check.sh' "$B/verbs/$f.md"&&pass=$((pass+1))||fail=$((fail+1));done
 for needle in 'successful debrief in this context' 'do not create a durable cursor'; do grep -qF -- "$needle" "$B/verbs/debrief.md" && pass=$((pass+1)) || fail=$((fail+1)); done
 echo "skill-doc-test: $pass passed, $fail failed"; [ "$fail" -eq 0 ]

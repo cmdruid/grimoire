@@ -6,8 +6,7 @@ description: "Use when the user runs `/notepad`, asks to write down a project fa
 # notepad — project memory
 
 One skill: take, find, update, supersede, and drop durable project facts.
-Notes live at `<agent-records>/notes/` (declared `agent-records:` or
-legacy `records-root:`, else `.records/notes`). This skill creates that
+Notes live at the fixed `.records/notes/` path. This skill creates that
 directory. It does not stand up the rest of the records layer and does
 not refuse when `records.sh` is missing.
 
@@ -41,24 +40,21 @@ session scratch that must not persist.
 
 ## Shared discipline (every verb relies on this — stated here once)
 
-- **Resolve explicit roots** (resolver inlined): `<root>` is the project root; agent-records
-  home is first `^agent-records:` or `^records-root:` in `AGENTS.md`,
-  then `CLAUDE.md`, else `.records`. Agent workspace is declared
-  `agent-workspace:`, else `.spaces`. Pass `<root>`, the repo-relative records root,
-  and the repo-relative workspace into every `scripts/note-mint.sh` call. The script
-  resolves `<agent-workspace>/notepad/templates/` and does not scan the front door.
+- **Use fixed homes.** `<root>` is the project root. Notes live under `.records/notes/` and project
+  templates under `.spaces/notepad/templates/`. Pass only `<root>` and the operation's subject to
+  `scripts/note-mint.sh`; it never scans the front door.
 - **One fact per note** (the path is the ID).
 - **Template resolution is read-only.** A valid
-  `<agent-workspace>/notepad/templates/notes.md` incumbent wins; a recognized legacy copy refuses
+  `.spaces/notepad/templates/notes.md` incumbent wins; a recognized legacy copy refuses
   and names `/notepad migrate <source-path>`; otherwise ordinary work reads bundled
   `templates/notes.md` without creating `.spaces`. Only `setup` deploys it.
 - **`note-mint.sh` is the one minter.** Always call it (from this
   skill's own `scripts/`, never a host path). Signature:
-  `mint <root> <records-root-relative> <workspace-relative> <title>`. It uses staged
+  `mint <root> <title>`. It uses staged
   Journal `records.sh` when that file is executable (`new --schema notepad/note@1 --template
   <resolved>`); otherwise it writes the contract shape itself. Never
   write `history.tsv` by hand. Never write the flat
-  `<agent-records>/templates/notes.md`.
+  `.records/templates/notes.md`.
 - **The record contract (this package).** Front-matter keys:
   `doctype`, `status`, `schema`, `tags`; schema `notepad/note@1`. Live
   `draft`, `published`. Closed `archived` (ledger `--as` is `done` /

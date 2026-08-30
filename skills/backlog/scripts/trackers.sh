@@ -43,6 +43,9 @@ guard_provider_path() {
 
 guard_provider_path
 TRACKERS="$(CDPATH='' cd -P "$SCRIPT_PARENT" && pwd)"
+[ "${TRACKERS##*/}" = .trackers ] || die noncanonical-provider "$SCRIPT_PATH"
+PROJECT_ROOT="${TRACKERS%/.trackers}"
+[ -d "$PROJECT_ROOT" ] || die noncanonical-provider "$SCRIPT_PATH"
 QUEUE_HEADER=$'id\tcreated\ttext\tevidence'
 RECEIPT_HEADER=$'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult'
 RECEIPTS="$TRACKERS/receipts.tsv"

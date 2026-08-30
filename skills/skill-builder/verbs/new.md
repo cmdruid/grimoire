@@ -29,14 +29,14 @@ verb's job).
    - Is it a pure router/transport with no storage at all? → **pure mechanism**.
 
 3. **Record-writer?** — ask, orthogonal to the tier: *will this skill write typed records
-   into the agent-records home?* Not automatically durable-home; notepad is the worked
+   into fixed `.records`?* Not automatically durable-home; notepad is the worked
    example of a records-path client.
    - **Yes** → scaffold, in `SKILL.md` (see `docs/DOCTRINE.md` § Record-writing skills):
-     - the inlined agent-records resolver (default `.records/…`) and the
-       templates home as `<agent-workspace>/<name>/templates/` (default
+     - direct construction beneath fixed `.records/` and the
+       templates home as `.spaces/<name>/templates/` (default
        `.spaces/<name>/templates/`); and, for a skill that reads or writes
-       doctrine, the agent-workspace resolver — its doctrine home is
-       `<agent-workspace>/<name>/doctrine/`, default `.spaces/<name>/doctrine/`;
+       doctrine, direct construction beneath fixed `.spaces` — its doctrine home is
+       `.spaces/<name>/doctrine/`, default `.spaces/<name>/doctrine/`;
      - the four-key in-package contract — do not send the agent to another
        skill for those bytes. State: the four keys (`doctype`, `status`,
        `schema`, `tags`) and every package-owned schema identifier; `status`: `draft` | `published` live,
@@ -52,13 +52,13 @@ verb's job).
        "none"). A nonempty inventory also gets a routed `setup` procedure that names every listed
        file, deploys it absent-only, and preserves schemas, validators, and migrations in-package.
        Ordinary work resolves canonical incumbent → recognized-legacy refusal → bundled read-only
-       fallback and never creates `<agent-workspace>`.
+       fallback and never creates `.spaces`.
    - **No** → do not add those sections.
 
 3b. **Project hooks?** — ask, orthogonal to the tier and to record-writer: *does
     this skill have a named-seam loop a project might extend?*
     - **Yes** → document each known seam at
-      `<agent-workspace>/<name>/hooks/<seam>.md`. The owner may bundle an
+      `.spaces/<name>/hooks/<seam>.md`. The owner may bundle an
       absent-only skeleton and routes explicit `setup` when the hook is meaningful to predeploy;
       do not scaffold one generic hooks file and do not add a lint check that requires project files
       to exist.
@@ -85,7 +85,7 @@ verb's job).
 
 5. **Durable-home tier only — scaffold `setup`:**
    - Draft the new skill's own `<new-skill>/verbs/setup.md`: an idempotent home-scaffold
-     beneath `<agent-workspace>/<name>/<owned-kind>/` (create-if-absent for each store the skill
+     beneath `.spaces/<name>/<owned-kind>/` (create-if-absent for each store the skill
      owns; never touch existing content or another owner namespace) **plus** front-door self-registration, modeled on the
      front-door registration mechanism (`docs/DOCTRINE.md` § Typed edges & registration) — content-vs-
      arrangement split, absent→append / present→replace-between-delimiters / malformed→report-and-stop.

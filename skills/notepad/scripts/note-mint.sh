@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # note-mint.sh — mint or stamp a notes/ record. Facts only.
-#   note-mint.sh mint  <root> <records-root> <workspace> <title>
-#   note-mint.sh stamp <root> <records-root> <workspace> <abs-path> [--status <status>] [--note "<text>"]
+#   note-mint.sh mint  <root> <title>
+#   note-mint.sh stamp <root> <abs-path> [--status <status>] [--note "<text>"]
 #
-# Uses <agent-records>/records.sh when that file is executable
+# Uses .records/records.sh when that file is executable
 # (`new --schema notepad/note@1 --template <resolved>`); otherwise writes the contract shape itself.
 # Resolves notes.md through the project-templates rule, using the bundled file
 # read-only when no project incumbent exists. Never decides
 # update-vs-mint or whether to commit. Never writes history.tsv by hand.
-# Never writes the flat <agent-records>/templates/notes.md.
+# Never writes the flat .records/templates/notes.md.
 set -euo pipefail
 
 usage() {
-  echo "usage: note-mint.sh mint  <root> <records-root> <workspace> <title>" >&2
-  echo "       note-mint.sh stamp <root> <records-root> <workspace> <abs-path> [--status <status>] [--note \"<text>\"]" >&2
+  echo "usage: note-mint.sh mint  <root> <title>" >&2
+  echo "       note-mint.sh stamp <root> <abs-path> [--status <status>] [--note \"<text>\"]" >&2
   exit 2
 }
 
@@ -49,8 +49,7 @@ fill() {
 abs_dir() { (cd "$1" && pwd); }
 
 emit() {
-  printf 'agent-records=%s\n' "$1"
-  printf 'records-root=%s\n' "$1"
+  printf 'records=%s\n' "$1"
   printf 'path=%s\n' "$2"
   printf 'rel=%s\n' "$3"
   printf 'mode=%s\n' "$4"
@@ -110,7 +109,7 @@ check_existing_tree() {
 }
 
 init_paths() {
-  root="$1"; rr_rel="$2"; ws_rel="$3"; create="${4:-no}"
+  root="$1"; create="${2:-no}"; rr_rel=.records; ws_rel=.spaces
   case "$root" in /*) ;; *) err "root must be absolute: $root" ;; esac
   [ -d "$root" ] || err "root is not a directory: $root"
   root="$(abs_dir "$root")"
@@ -129,7 +128,7 @@ has_records() {
   [ -x "$engine" ]
 }
 
-# resolve_notes_template <agent-records> <templates-home>
+# resolve_notes_template <records-home> <templates-home>
 resolve_notes_template() {
   local rr="$1" at="$2"
   local dest="$at/notes.md"
@@ -151,14 +150,14 @@ resolve_notes_template() {
 }
 
 cmd_mint() {
-  [ $# -ge 4 ] || usage
-  init_paths "$1" "$2" "$3" yes
-  title="$4"
+  [ $# -eq 2 ] || usage
+  init_paths "$1" yes
+  title="$2"
   [ -n "$title" ] || err "empty title"
   tpl="$(resolve_notes_template "$rr" "$at")"
 
   if has_records; then
-    path="$("$engine" --root "$root" --records-root "$rr_rel" new notes --schema notepad/note@1 --template "$tpl" --title "$title")"
+    path="$("$engine" new notes --schema notepad/note@1 --template "$tpl" --title "$title")"
     rel="${path#"$rr"/}"
     emit "$rr" "$path" "$rel" "records"
     return 0
@@ -184,9 +183,9 @@ cmd_mint() {
 }
 
 cmd_stamp() {
-  [ $# -ge 4 ] || usage
-  init_paths "$1" "$2" "$3"
-  path="$4"; shift 4
+  [ $# -ge 2 ] || usage
+  init_paths "$1"
+  path="$2"; shift 2
   status=""
   note=""
   while [ $# -gt 0 ]; do
@@ -196,7 +195,7 @@ cmd_stamp() {
       *) usage ;;
     esac
   done
-  [ -d "$rr" ] || err "agent-records home not a directory: $rr"
+  [ -d "$rr" ] || err ".records is not a directory: $rr"
   rr="$(abs_dir "$rr")"
   [ -f "$path" ] || err "no such file: $path"
 
@@ -205,16 +204,16 @@ cmd_stamp() {
       "$rr"/*)
         if [ -n "$status" ] && is_disposition "$status"; then
           if [ -n "$note" ]; then
-            "$engine" --root "$root" --records-root "$rr_rel" "done" "$path" --as "$status" --note "$note" >/dev/null
+            "$engine" "done" "$path" --as "$status" --note "$note" >/dev/null
           else
-            "$engine" --root "$root" --records-root "$rr_rel" "done" "$path" --as "$status" >/dev/null
+            "$engine" "done" "$path" --as "$status" >/dev/null
           fi
           mode="records"
         else
           if [ -n "$status" ]; then
-            "$engine" --root "$root" --records-root "$rr_rel" touch "$path" --status "$status" >/dev/null
+            "$engine" touch "$path" --status "$status" >/dev/null
           else
-            "$engine" --root "$root" --records-root "$rr_rel" touch "$path" >/dev/null
+            "$engine" touch "$path" >/dev/null
           fi
           mode="records"
         fi

@@ -1,27 +1,19 @@
 # `setup` — stand up or refresh the records tool layer
 
-Stage `records.sh` at the agent-records root and stand up the empty ledger and records README in a
+Stage `records.sh` at `.records` and stand up the empty ledger and records README in a
 target project — or refresh `records.sh` on a later visit. Works standalone on any
 repo; this is also the records step a workshop setup delegates (the workshop
 never improvises a records layer of its own). It creates **no writer
 directory and no pre-seeded `templates/`**.
 
-1. **Resolve the three facts** (judgment stays here, mechanics are scripted):
+1. **Resolve the project root** (judgment stays here, mechanics are scripted):
    - `<root>`: `git rev-parse --show-toplevel` of the checkout that should
      hold the records; else a project directory the conversation
-     references; else ask. Read `AGENTS.md` / `CLAUDE.md` under that root.
-   - `<agent-records>`: first line-start `agent-records:` or `records-root:` in
-     `AGENTS.md`, then `CLAUDE.md`; else `.records`. Never invent a third location.
-     The relative path must have no leading `/` and no `..` segment (standup
-     refuses otherwise). Pass it as `--records-root`.
-   - `<agent-workspace>`: first line-start `agent-workspace:` in those same files;
-     else `.spaces`. Apply the same relative-path constraints and pass it as `--workspace-root`.
-     Setup derives the exact prior tool path `<agent-workspace>/journal/scripts/records.sh`
-     internally; callers never select a cleanup target.
-2. **Run or resume the mechanics**: `scripts/standup.sh setup <root> --records-root <rel>
-   --workspace-root <rel>` —
-   creates the agent-records home directory itself if needed, installs or
-   refreshes `records.sh` at `<agent-records>/records.sh`, seeds an empty
+     references; else ask. Journal uses only `<root>/.records` and
+     `<root>/.spaces/journal/setup.intent`.
+2. **Run or resume the mechanics**: `scripts/standup.sh setup <root>` —
+   creates `.records` itself if needed, installs or
+   refreshes `records.sh` at `.records/records.sh`, seeds an empty
    `history.tsv` only if missing, creates the records README if absent, refreshes only Journal's
    delimited `journal:records-tool` block when present, safely replaces the exact prior generated
    workspace-tool paragraph, and self-checks. Surrounding project prose is preserved. It is
@@ -29,7 +21,7 @@ directory and no pre-seeded `templates/`**.
    path, or a notepad-created `.records/notes/` with no tool — is fine). It
    does not `mkdir` writer directories, write `.gitkeep`, or copy templates.
    Every non-clean invocation atomically creates or resumes
-   `<agent-workspace>/journal/setup.intent` before changing the tool layer. It validates the
+   `.spaces/journal/setup.intent` before changing the tool layer. It validates the
    recorded roots and already-complete results, executes only incomplete steps, and reports the
    complete cross-attempt union as `wrote: <repo-relative-path>` lines. The intent is transient:
    never report, stage, or commit it. A clean invocation creates no intent and reports no writes.
@@ -52,8 +44,8 @@ directory and no pre-seeded `templates/`**.
    was untracked (the obsolete tool may have come from an interrupted, never-committed setup).
    Standalone →
    `scripts/scoped-commit.sh <root> "Stand up the records layer" <those
-   paths>`, then `scripts/standup.sh finalize <root> --records-root <rel>
-   --workspace-root <rel>`. Never pass the records-root directory as a pathspec. A ready rerun with
+   paths>`, then `scripts/standup.sh finalize <root>`. Never pass the entire `.records` directory as
+   a pathspec. A ready rerun with
    no outstanding Git change across its reported union revalidates and finalizes without attempting
    an empty commit. Inside a client's announced sweep → retain the complete union in the sweep's
    approved diff custody, then finalize without a nested commit. No intent means the setup was a

@@ -9,7 +9,7 @@ an ambiguous explicitly selected report still refuses. Active templates are `bug
 For registered schema-less input, require legacy `created` to equal the filename date, preserve
 lifecycle/tags/legal extra keys and authored bytes, add the classified schema, and remove every
 retired generic history key. A different declared schema refuses. Move recognized previous-home or
-flat active templates to `<agent-workspace>/debugger/templates/`, stripping legacy record-shell
+flat active templates to `.spaces/debugger/templates/`, stripping legacy record-shell
 front matter. Stock retired `reports.md` may be removed after preview; customized content requires
 an explicit mapping. Project templates cannot carry `schema:`.
 

@@ -5,7 +5,7 @@ Foreman-owned drafts. Source files are untrusted evidence and remain untouched.
 
 ## Walk
 
-1. Run package-local `scripts/migration-census.sh --root <root> --workspace <relative> --source
+1. Run package-local `scripts/migration-census.sh --root <root> --source
    <selection>`. Its facts are the complete traversal boundary. Do not broaden the source. Paths
    unsafe for the fact and TSV channels are skipped under an opaque digest, never copied into a
    candidate channel.

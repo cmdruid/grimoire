@@ -4,7 +4,7 @@ set -euo pipefail
 
 die() { echo "architect-artifacts.sh: $*" >&2; exit 2; }
 usage() {
-  die "usage: architect-artifacts.sh draft-save --root <root> --workspace <relative> --slug <slug> --title <title> --body <file> | spike-publish --root <root> --records-root <relative> --title <title> --body <file> [--records-tool <path>]"
+  die "usage: architect-artifacts.sh draft-save --root <root> --slug <slug> --title <title> --body <file> | spike-publish --root <root> --title <title> --body <file>"
 }
 
 active_tmp=""
@@ -207,30 +207,26 @@ repo_relative() {
 mode="${1:-}"
 [ -n "$mode" ] || usage
 shift
-root=""; workspace=""; records_root=""; slug=""; title=""; body=""; records_tool=""
+root=""; workspace=.spaces; records_root=.records; slug=""; title=""; body=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || usage; root="$2"; shift 2 ;;
-    --workspace) [ "$#" -ge 2 ] || usage; workspace="$2"; shift 2 ;;
-    --records-root) [ "$#" -ge 2 ] || usage; records_root="$2"; shift 2 ;;
     --slug) [ "$#" -ge 2 ] || usage; slug="$2"; shift 2 ;;
     --title) [ "$#" -ge 2 ] || usage; title="$2"; shift 2 ;;
     --body) [ "$#" -ge 2 ] || usage; body="$2"; shift 2 ;;
-    --records-tool) [ "$#" -ge 2 ] || usage; records_tool="$2"; shift 2 ;;
     *) usage ;;
   esac
 done
 
 [ -d "$root" ] || die "root is not a directory: $root"
 root="$(CDPATH='' cd -P "$root" && pwd)"
+records_tool="$root/.records/records.sh"
 [ -n "$title" ] && [ -n "$body" ] || usage
 case "$title" in *$'\n'*|*$'\r'*) die "title must be one line" ;; esac
 
 case "$mode" in
   draft-save)
-    [ -n "$workspace" ] && [ -n "$slug" ] || usage
-    [ -z "$records_root$records_tool" ] || usage
-    valid_rel "$workspace" no || die "unsafe workspace path: $workspace"
+    [ -n "$slug" ] || usage
     printf '%s\n' "$slug" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+)*$' || die "unsafe draft slug: $slug"
     validate_draft_body
     draft_dir="$workspace/architect/drafts"
@@ -251,25 +247,21 @@ case "$mode" in
     printf 'path=%s\n' "$draft_dir/$slug.md"
     ;;
   spike-publish)
-    [ -n "$records_root" ] || usage
-    [ -z "$workspace$slug" ] || usage
-    valid_rel "$records_root" yes || die "unsafe records path: $records_root"
+    [ -z "$slug" ] || usage
     validate_spike_body
     spike_dir="${records_root%/}/spikes"
     [ "$records_root" = . ] && spike_dir=spikes
     check_parents "$spike_dir"
-    if [ -n "$records_tool" ]; then
-      [ -x "$records_tool" ] && [ ! -L "$records_tool" ] || die "records tool is not an executable regular file: $records_tool"
-      created="$("$records_tool" --root "$root" --records-root "$records_root" new spikes --schema architect/spike@1 --title "$title" --tag spike --tag feasibility)"
+    if [ -x "$records_tool" ] && [ ! -L "$records_tool" ]; then
+      created="$("$records_tool" new spikes --schema architect/spike@1 --title "$title" --tag spike --tag feasibility)"
       [ -f "$created" ] && [ ! -L "$created" ] || die "records tool returned no regular record: $created"
       created="$(CDPATH='' cd -P "$(dirname "$created")" && pwd)/$(basename "$created")"
       expected_prefix="$root/$spike_dir/"
       case "$created" in "$expected_prefix"*) ;; *) die "records tool returned a path outside the spike store: $created" ;; esac
       validate_spike_record_meta "$created" draft
       replace_record_body "$created"
-      rel_to_records="${created#"$root"/}"
-      [ "$records_root" = . ] || rel_to_records="${rel_to_records#"$records_root"/}"
-      "$records_tool" --root "$root" --records-root "$records_root" touch "$rel_to_records" --status published >/dev/null
+      rel_to_records="${created#"$root/.records"/}"
+      "$records_tool" touch "$rel_to_records" --status published >/dev/null
       validate_spike_record_meta "$created" published
     else
       ensure_dir "$spike_dir"

@@ -15,7 +15,7 @@ A raw **roadmap** is not an input. Compile a runbook first.
    `approved`.** Missing / not `approved` / `implemented` → refuse.
    Do not read a Review-history verdict. An explicit human waive:
    the **caller** writes the **same** gate (`status: published` and
-   `stage: approved`) — via `records.sh --root <root> --records-root <records-root-relative> touch --status published`
+   `stage: approved`) — via `.records/records.sh touch --status published`
    plus a `stage: approved` front-matter write, or file-mode —
    notes the waive in conversation, **then** walks. It does not
    walk a `draft`. For a runbook: also run the conductor

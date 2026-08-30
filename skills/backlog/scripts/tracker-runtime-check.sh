@@ -4,13 +4,12 @@ set -euo pipefail
 
 die(){ echo "reason=$1${2:+ detail=$2}" >&2;exit 2;}
 
-ROOT="";WS="";RR="";TR=""
+ROOT="";TR=.trackers
 while [ $# -gt 0 ];do case "$1" in
-  --root)ROOT="${2:-}";shift 2;;--workspace)WS="${2:-}";shift 2;;
-  --records-root)RR="${2:-}";shift 2;;--trackers-root)TR="${2:-}";shift 2;;*)die usage;;esac;done
+  --root)ROOT="${2:-}";shift 2;;*)die usage;;esac;done
 
 SKILL="$(CDPATH='' cd -P "$(dirname "$0")/.."&&pwd)"
-facts="$("$SKILL/scripts/tracker-layer-status.sh" runtime --root "$ROOT" --workspace "$WS" --records-root "$RR" --trackers-root "$TR")"
+facts="$("$SKILL/scripts/tracker-layer-status.sh" runtime --root "$ROOT")"
 ROOT="$(CDPATH='' cd -P "$ROOT"&&pwd)"
 fact(){ printf '%s\n' "$facts"|sed -n "s/^$1=//p"|head -n1;}
 layer="$(fact layer_status)";provider="$(fact provider_status)";action="$(fact recovery_action)"

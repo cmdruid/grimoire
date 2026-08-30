@@ -6,17 +6,17 @@ SKILL="$(cd "$DIR/../.." && pwd)"
 . "$DIR/lib.sh"
 
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/journal-records-test.XXXXXX")"
-TMP="$(cd "$TMP" && pwd)"
+TMP="$(cd "$TMP" && pwd -P)"
 trap 'rm -rf "$TMP"' EXIT
 OUT="$TMP/out"; ERR="$TMP/err"
 proj="$TMP/proj"
 mkdir -p "$proj"
-"$SKILL/scripts/standup.sh" setup "$proj" --records-root .records \
-  --workspace-root .spaces >/dev/null
-"$SKILL/scripts/standup.sh" finalize "$proj" --records-root .records \
-  --workspace-root .spaces
+"$SKILL/scripts/standup.sh" setup "$proj" \
+ >/dev/null
+"$SKILL/scripts/standup.sh" finalize "$proj" \
+
 RS="$proj/.records/records.sh"
-rs() { "$RS" --root "$proj" --records-root .records "$@"; }
+rs() { "$RS" "$@"; }
 today="$(date +%Y-%m-%d)"
 
 # Journal synthesizes metadata. A project template is body-only and optional.

@@ -34,20 +34,20 @@ Natural-language requests may route directly when the intended outcome is clear.
 
 ## Shared contract
 
-- Resolve `agent-workspace:` from `AGENTS.md`, then `CLAUDE.md`; default `.spaces`.
+- Resolve the project root; workspace content lives only under its fixed `.spaces` directory.
 - Operations are direct files at
-  `<agent-workspace>/<owner>/operations/<stem>.md`; identity is `<owner>/<stem>`.
+  `.spaces/<owner>/operations/<stem>.md`; identity is `<owner>/<stem>`.
 - Foreman may read every owner's conforming operations. It writes operations and doctrine only under
-  `<agent-workspace>/foreman/` and owns only its `skill:foreman` front-door span.
+  `.spaces/foreman/` and owns only its `skill:foreman` front-door span.
 - Run package scripts from this skill's own `scripts/` directory. Scripts compute facts; the agent
   chooses candidates, interprets evidence, and asks for acceptance.
 - Missing workspace content is an empty catalog, not an installation failure. Setup creates no empty
   store; an accepted write creates only the needed Foreman-owned kind.
 - The bundled `templates/operation.md` is package-only. Never deploy it as a project template.
-- Goal records use `foreman/goal@1` under `<agent-records>/goals/`. Missing `records.sh` is not an
+- Goal records use `foreman/goal@1` under `.records/goals/`. Missing `records.sh` is not an
   error and records standup is never a precondition.
-- A tracker consumer resolves `<agent-trackers>` (line-start `agent-trackers:`, else `.trackers`)
-  and uses its advertised `tracker@1` API. Missing provider state degrades to rows supplied directly
+- A tracker consumer uses the fixed `.trackers` layer and its advertised `tracker@1` API. Missing
+  provider state degrades to rows supplied directly
   by the caller; it is not a setup requirement.
 
 ## Project templates

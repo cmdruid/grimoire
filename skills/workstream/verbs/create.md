@@ -86,8 +86,8 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    `git -C <root> worktree add -b stream/<stream> <root>/.workstreams/<stream> <target>`.
 5. **Seed the plan on the branch** (plan-bound, *new untracked plan file* only; `create` makes no root
    commit). If the source is an already-tracked doc, skip. If it's a new untracked plan file, move it
-   into the worktree as a Workstream manifest under `<agent-records>/streams/` (ensure it carries the
-   front-matter contract: `records.sh --root <root> --records-root <records-root-relative> new streams --dir streams --schema workstream/plan@1 --template <resolved> --tag plan` + fill if the tool
+   into the worktree as a Workstream manifest under `.records/streams/` (ensure it carries the
+   front-matter contract: `.records/records.sh new streams --dir streams --schema workstream/plan@1 --template <resolved> --tag plan` + fill if the tool
    exists; else file-mode fill from the resolved `manifest.md`, naming the file
    `YYYY-MM-DD-<slug>.md` — an undated filename is not a record). Run the host's doc-linter from
    the worktree, then commit it **on the stream branch** (it rides to `<target>` at first
@@ -98,11 +98,7 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    re-embedded by `recycle`), and only its **name or path** is recorded in Coordinates `source:`.
 6. **Hand-off instantiation** *(the template-mode part is re-applied in place by `recycle.md` — keep
    these labels)*: write the hand-off into the worktree, then exclude it locally:
-   - **Project hooks.** Resolve
-     `<agent-workspace>` in prose (do not paste a bash resolver): first
-     line-start `agent-workspace:` in `<root>/AGENTS.md` then `<root>/CLAUDE.md`,
-     else `.spaces`. Set
-     `HOOKS_DIR=<root>/<agent-workspace>/workstream/hooks` (absolute). Never a
+   - **Project hooks.** Set `HOOKS_DIR=<root>/.spaces/workstream/hooks` (absolute). Never a
      relative directory or a worktree-local twin. Resolve this skill's bundled
      `scripts/hooks.sh` from its own base directory, then run
      `hooks.sh parse --dir "$HOOKS_DIR" --known feature-completion --known
@@ -124,7 +120,7 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
        (plan-file mode), or the verbatim brief (brief mode). **Sweep a transcribed queue for staleness
        at authoring time:** when the queue's items were transcribed from a follow-up source, grep
        EACH item's key symbols/files against the done trail
-       (`records.sh --root <root> --records-root <records-root-relative> history` / `git log` / the project's done records) **before** recording it — stale
+       (`.records/records.sh history` / `git log` / the project's done records) **before** recording it — stale
        stale follow-up entries seed already-shipped queue items (observed 4× across two phases of one
        roadmap), and the launch-time "verify the front item" check only ever catches them one wasted
        unit later. **Template mode:** there is no queue — write the

@@ -35,10 +35,10 @@ source. It lives in the conversation unless the human asks to save it.
    as the source of truth.
 5. **Save only if asked.** Persistence is in SKILL.md *Record contract*.
    Author the conversational map as the body, mint
-   `records.sh --root <root> --records-root <records-root-relative> new maps
+   `.records/records.sh new maps
    --schema code-humanizer/map@1 --title "<scope>" --tag code-humanizer --tag map`
    when that tool is executable; otherwise file-mode the same four-key
-   shape at `<agent-records>/maps/YYYY-MM-DD-<slug>.md` (`status: published`
+   shape at `.records/maps/YYYY-MM-DD-<slug>.md` (`status: published`
    — the snapshot is the account of this run). Put `built-against: <sha>` in
    the body, not as a reserved front-matter key. Create `maps/` on first
    write. Do not commit unless this invocation is standalone *and* the human

@@ -4,8 +4,8 @@ set -euo pipefail
 usage() {
   cat >&2 <<'EOF'
 usage:
-  goal-compile.sh render --root <root> --workspace <relative> --operation <owner/stem> --objective <one-line> --output <file>
-  goal-compile.sh publish --root <root> --workspace <relative> --records-root <relative> --input <file>
+  goal-compile.sh render --root <root> --operation <owner/stem> --objective <one-line> --output <file>
+  goal-compile.sh publish --root <root> --input <file>
 EOF
   exit 2
 }
@@ -33,12 +33,10 @@ section_body() {
 }
 
 mode="${1:-}"; [ -n "$mode" ] || usage; shift
-root=""; workspace=""; records_root=""; operation=""; objective=""; output=""; input=""
+root=""; records_root=.records; operation=""; objective=""; output=""; input=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || usage; root="$2"; shift 2;;
-    --workspace) [ "$#" -ge 2 ] || usage; workspace="$2"; shift 2;;
-    --records-root) [ "$#" -ge 2 ] || usage; records_root="$2"; shift 2;;
     --operation) [ "$#" -ge 2 ] || usage; operation="$2"; shift 2;;
     --objective) [ "$#" -ge 2 ] || usage; objective="$2"; shift 2;;
     --output) [ "$#" -ge 2 ] || usage; output="$2"; shift 2;;
@@ -46,8 +44,8 @@ while [ "$#" -gt 0 ]; do
     *) usage;;
   esac
 done
-[ -n "$root" ] && [ -n "$workspace" ] || usage; [ -d "$root" ] || usage
-root="$(CDPATH='' cd -P "$root" && pwd)"; valid_rel "$workspace" || usage
+[ -n "$root" ] || usage; [ -d "$root" ] || usage
+root="$(CDPATH='' cd -P "$root" && pwd)"
 script_dir="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)"; checker="$script_dir/operation-check.sh"; template="$script_dir/../templates/goal.md"
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/foreman-goal.XXXXXX")"; trap 'rm -rf "$tmp"' EXIT HUP INT TERM
 
@@ -61,7 +59,7 @@ if [ "$mode" = render ]; then
     local identity="$1" stack="$2" facts path shape digest ref source_digest
     facts="$tmp/facts.$(printf '%s' "$1" | tr '/' '_')"
     case "$stack" in *"|$identity|"*) die cyclic-closure;; esac
-    "$checker" --root "$root" --workspace "$workspace" --operation "$identity" >"$facts" || die invalid-closure
+    "$checker" --root "$root" --operation "$identity" >"$facts" || die invalid-closure
     [ "$(sed -n 's/^goal_eligible=//p' "$facts")" = true ] || die ineligible-operation
     path="$(sed -n 's/^path=//p' "$facts")"; shape="$(sed -n 's/^shape=//p' "$facts")"; digest="$(sed -n 's/^digest=//p' "$facts")"
     if ! grep -qxF "$identity" "$seen"; then
@@ -106,7 +104,7 @@ EOF
 fi
 
 [ "$mode" = publish ] || usage
-[ -n "$records_root" ] && [ -n "$input" ] || usage; valid_records_rel "$records_root" || usage
+[ -n "$input" ] || usage
 [ -f "$input" ] && [ ! -L "$input" ] || die bad-input
 [ "$(fm_get "$input" doctype)" = goals ] && [ "$(fm_get "$input" status)" = draft ] && [ "$(fm_get "$input" schema)" = foreman/goal@1 ] || die bad-goal-record
 title="$(awk '/^# Goal: /{print substr($0,9);exit}' "$input")"; [ -n "$title" ] || die missing-goal-title
@@ -116,9 +114,9 @@ body="$tmp/body"; awk 'NR==1&&$0=="---"{fm=1;next} fm&&$0=="---"{fm=0;next} !fm{
 engine="$root/$records_root/records.sh"
 ensure_safe_dir "$records_root"
 if [ -x "$engine" ]; then
-  path="$("$engine" --root "$root" --records-root "$records_root" new goals --schema foreman/goal@1 --template "$body" --title "$title" --tag foreman --tag goal)"
+  path="$("$engine" new goals --schema foreman/goal@1 --template "$body" --title "$title" --tag foreman --tag goal)"
   [ "$path" = "$dest" ] || die staged-path-mismatch
-  "$engine" --root "$root" --records-root "$records_root" touch "$rel" --status published >/dev/null
+  "$engine" touch "$rel" --status published >/dev/null
   publish_mode='records'
 else
   dir="${dest%/*}"; ensure_safe_dir "$records_root/goals"

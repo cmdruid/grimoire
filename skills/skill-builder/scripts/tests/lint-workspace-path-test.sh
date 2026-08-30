@@ -26,10 +26,10 @@ lint() {
   bash "$LINT" "$LIB" > "$OUT" 2>&1 || true
 }
 
-old_angle="<agent-workspace>"'/doctrine/widget.md'
+old_angle=".spaces"'/doctrine/widget.md'
 old_default='.spaces'"/hooks/widget.md"
-old_operation="<agent-workspace>"'/operations/widget.md'
-old_draft="<agent-workspace>"'/drafts/widget.md'
+old_operation=".spaces"'/operations/widget.md'
+old_draft=".spaces"'/drafts/widget.md'
 needle='kind-first workspace path'
 tracker_needle='owner-local tracker path'
 
@@ -58,20 +58,20 @@ expect "draft kind-first path FAILs" "$needle" "$OUT"
 
 rm -rf "$LIB"
 mkdir -p "$LIB/skills"
-write_skill 'Read `<agent-workspace>/widget/doctrine/policy.md`, `<agent-workspace>/widget/drafts/idea.md`, and `<agent-workspace>/widget/operations/run.md`, by default `.spaces/widget/doctrine/policy.md`.'
+write_skill 'Read `.spaces/widget/doctrine/policy.md`, `.spaces/widget/drafts/idea.md`, and `.spaces/widget/operations/run.md`, by default `.spaces/widget/doctrine/policy.md`.'
 lint
 expect_absent "owner-first paths stay green" "$needle" "$OUT"
 
 rm -rf "$LIB"
 mkdir -p "$LIB/skills"
-old_tracker="<agent-workspace>"'/widget/'"trackers"'/tasks.tsv'
+old_tracker=".spaces"'/widget/'"trackers"'/tasks.tsv'
 write_skill "Read \`$old_tracker\`."
 lint
 expect "owner-local tracker path FAILs" "$tracker_needle" "$OUT"
 
 rm -rf "$LIB"
 mkdir -p "$LIB/skills"
-write_skill 'Read `<agent-trackers>/tasks.tsv` through the staged provider.'
+write_skill 'Read `.trackers/tasks.tsv` through the staged provider.'
 lint
 expect_absent "first-class tracker path stays green" "$tracker_needle" "$OUT"
 

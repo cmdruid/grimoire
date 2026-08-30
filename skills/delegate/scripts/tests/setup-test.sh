@@ -6,23 +6,22 @@ no(){ if "$@" >/dev/null 2>&1; then echo "FAIL accepted $*" >&2; fail=$((fail+1)
 eq(){ if [ "$2" = "$3" ]; then pass=$((pass+1)); else echo "FAIL $1 expected=$2 got=$3" >&2; fail=$((fail+1)); fi; }
 
 deploy() {
-  root="$1"; ws="$2"
-  [ "$ws" = .spaces ] || printf 'agent-workspace: %s\n' "$ws" > "$root/AGENTS.md"
+  root="$1"
   "$SETUP" --write-only "$root" >/dev/null
 }
 
 [ -f "$SKELETON" ] && [ ! -s "$SKELETON" ] && pass=$((pass+1)) || fail=$((fail+1))
 ROOT="$(mktemp -d)"; trap 'rm -rf "$ROOT"' EXIT
-ok deploy "$ROOT" .spaces; eq "fresh zero bytes" "0" "$(wc -c < "$ROOT/.spaces/delegate/hooks/byproducts.md" | tr -d ' ')"
-ok deploy "$ROOT" .spaces
-printf 'project policy\n' > "$ROOT/.spaces/delegate/hooks/byproducts.md"; sum="$(shasum "$ROOT/.spaces/delegate/hooks/byproducts.md" | awk '{print $1}')"; ok deploy "$ROOT" .spaces
+ok deploy "$ROOT"; eq "fresh zero bytes" "0" "$(wc -c < "$ROOT/.spaces/delegate/hooks/byproducts.md" | tr -d ' ')"
+ok deploy "$ROOT"
+printf 'project policy\n' > "$ROOT/.spaces/delegate/hooks/byproducts.md"; sum="$(shasum "$ROOT/.spaces/delegate/hooks/byproducts.md" | awk '{print $1}')"; ok deploy "$ROOT"
 eq "incumbent preserved" "$sum" "$(shasum "$ROOT/.spaces/delegate/hooks/byproducts.md" | awk '{print $1}')"
 
-DECL="$(mktemp -d)"; ok deploy "$DECL" ops; [ -f "$DECL/ops/delegate/hooks/byproducts.md" ] && pass=$((pass+1)) || fail=$((fail+1))
-ESC="$(mktemp -d)"; BAD="$(mktemp -d)"; ln -s "$ESC" "$BAD/.spaces"; no deploy "$BAD" .spaces; eq "parent symlink escape" "0" "$(find "$ESC" -mindepth 1 | wc -l | tr -d ' ')"
-DEST="$(mktemp -d)"; mkdir -p "$DEST/.spaces/delegate/hooks"; ln -s "$ESC/policy" "$DEST/.spaces/delegate/hooks/byproducts.md"; no deploy "$DEST" .spaces; [ ! -e "$ESC/policy" ] && pass=$((pass+1)) || fail=$((fail+1))
-FILEP="$(mktemp -d)"; mkdir "$FILEP/.spaces"; : > "$FILEP/.spaces/delegate"; no deploy "$FILEP" .spaces
-BADDECL="$(mktemp -d)"; printf 'agent-workspace: ../escape\n' > "$BADDECL/AGENTS.md"; no "$SETUP" --write-only "$BADDECL"
+DECL="$(mktemp -d)"; mkdir -p "$DECL/ops"; printf 'CANARY\n'>"$DECL/ops/keep"; no "$SETUP" --write-only "$DECL" --workspace ops; ok deploy "$DECL"; grep -qF CANARY "$DECL/ops/keep"&&pass=$((pass+1))||fail=$((fail+1))
+ESC="$(mktemp -d)"; BAD="$(mktemp -d)"; ln -s "$ESC" "$BAD/.spaces"; no deploy "$BAD"; eq "parent symlink escape" "0" "$(find "$ESC" -mindepth 1 | wc -l | tr -d ' ')"
+DEST="$(mktemp -d)"; mkdir -p "$DEST/.spaces/delegate/hooks"; ln -s "$ESC/policy" "$DEST/.spaces/delegate/hooks/byproducts.md"; no deploy "$DEST"; [ ! -e "$ESC/policy" ] && pass=$((pass+1)) || fail=$((fail+1))
+FILEP="$(mktemp -d)"; mkdir "$FILEP/.spaces"; : > "$FILEP/.spaces/delegate"; no deploy "$FILEP"
+BADDECL="$(mktemp -d)"; printf 'agent-workspace: ../escape\n' > "$BADDECL/AGENTS.md"; ok "$SETUP" --write-only "$BADDECL"; [ -f "$BADDECL/.spaces/delegate/hooks/byproducts.md" ]&&pass=$((pass+1))||fail=$((fail+1))
 
 GITROOT="$(mktemp -d)"; git -C "$GITROOT" init -q; git -C "$GITROOT" config user.email test@example.com; git -C "$GITROOT" config user.name Test
 printf '# Fixture\n' > "$GITROOT/README.md"; git -C "$GITROOT" add README.md; git -C "$GITROOT" commit -qm init; ok "$SETUP" "$GITROOT"

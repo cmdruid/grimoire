@@ -41,20 +41,18 @@ kv() { printf '%s\n' "$2" | sed -n "s/^$1=//p" | head -n 1; }
 
 today="$(date +%Y-%m-%d)"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/bug-mint-test.XXXXXX")"
+TMP="$(cd "$TMP" && pwd -P)"
 trap 'rm -rf "$TMP"' EXIT
 
 # --- no records.sh: file-mode mint -------------------------------------------
-ROOT="$TMP"
-R="bare"
-W="ws-bare"
-RR="$ROOT/$R"
-AT="$ROOT/$W/debugger/templates"
+ROOT="$TMP/bare"
+RR="$ROOT/.records"
+AT="$ROOT/.spaces/debugger/templates"
 mkdir -p "$RR"
 
-OUT="$(/bin/bash "$MINT" mint "$ROOT" "$R" "$W" "Alpha crash")"
+OUT="$(/bin/bash "$MINT" mint "$ROOT" "Alpha crash")"
 rr_abs="$(cd "$RR" && pwd)"
-expect_eq "mint agent-records" "$rr_abs" "$(kv agent-records "$OUT")"
-expect_eq "mint records-root compat" "$rr_abs" "$(kv records-root "$OUT")"
+expect_eq "mint fixed records" "$rr_abs" "$(kv records "$OUT")"
 expect_eq "mint mode=file" "file" "$(kv mode "$OUT")"
 expect_eq "mint rel" "bugs/$today-alpha-crash.md" "$(kv rel "$OUT")"
 path="$(kv path "$OUT")"
@@ -70,14 +68,14 @@ expect_absent "no history.tsv after mint" "$RR/history.tsv"
 expect_absent "no scripts/ after mint" "$RR/scripts"
 expect_absent "mint opened no trackers/" "$RR/trackers"
 
-OUT2="$(/bin/bash "$MINT" mint "$ROOT" "$R" "$W" "Alpha crash")"
+OUT2="$(/bin/bash "$MINT" mint "$ROOT" "Alpha crash")"
 expect_eq "collision rel" "bugs/$today-alpha-crash-2.md" "$(kv rel "$OUT2")"
 
 # missing bundled template → refuse
 FAKE="$TMP/no-tpl-skill"
 mkdir -p "$FAKE/scripts"
 cp "$MINT" "$FAKE/scripts/bug-mint.sh"
-if /bin/bash "$FAKE/scripts/bug-mint.sh" mint "$ROOT" "$R" "$W" "Nope" >/dev/null 2>&1; then
+if /bin/bash "$FAKE/scripts/bug-mint.sh" mint "$ROOT" "Nope" >/dev/null 2>&1; then
   echo "FAIL: missing doctype template — expected non-zero" >&2
   fail=$((fail + 1))
 else
@@ -85,37 +83,36 @@ else
 fi
 
 # file-mode close must not create history.tsv
-/bin/bash "$MINT" stamp "$ROOT" "$R" "$W" "$path" --status "done" --note "fixed" >/dev/null
+/bin/bash "$MINT" stamp "$ROOT" "$path" --status "done" --note "fixed" >/dev/null
 expect_match "file-mode close status" '^status: archived$' "$(cat "$path")"
 expect_absent "file-mode close no history.tsv" "$RR/history.tsv"
 expect_absent "stamp opened no trackers/" "$RR/trackers"
 
 # --- with records.sh ---------------------------------------------------------
 if [ -f "$JOURNAL_RS" ]; then
-  R2="with-rs"
-  W2="ws-rs"
-  RR2="$ROOT/$R2"
-  AT2="$ROOT/$W2/debugger/templates"
+  ROOT2="$TMP/with-rs"
+  RR2="$ROOT2/.records"
+  AT2="$ROOT2/.spaces/debugger/templates"
   mkdir -p "$RR2"
-  cp "$JOURNAL_RS" "$ROOT/$R2/records.sh"
-  chmod +x "$ROOT/$R2/records.sh"
+  cp "$JOURNAL_RS" "$RR2/records.sh"
+  chmod +x "$RR2/records.sh"
   : > "$RR2/history.tsv"
 
-  OUT3="$(/bin/bash "$MINT" mint "$ROOT" "$R2" "$W2" "Need the key")"
+  OUT3="$(/bin/bash "$MINT" mint "$ROOT2" "Need the key")"
   expect_eq "records mode" "records" "$(kv mode "$OUT3")"
   rpath="$(kv path "$OUT3")"
   expect_eq "records path exists" "1" "$([ -f "$rpath" ] && echo 1 || echo 0)"
   expect_absent "records mint keeps bundled fallback read-only" "$AT2/bugs.md"
   expect_absent "records no flat bugs.md" "$RR2/templates/bugs.md"
   expect_absent "records mint opened no trackers/" "$RR2/trackers"
-  if /bin/sh "$ROOT/$R2/records.sh" --root "$ROOT" --records-root "$R2" check >/dev/null 2>&1; then
+  if /bin/sh "$RR2/records.sh" check >/dev/null 2>&1; then
     pass=$((pass + 1))
   else
     echo "FAIL: records.sh check after new" >&2
     fail=$((fail + 1))
   fi
 
-  STAMP_RS="$(/bin/bash "$MINT" stamp "$ROOT" "$R2" "$W2" "$rpath" --status "done" --note "fixed")"
+  STAMP_RS="$(/bin/bash "$MINT" stamp "$ROOT2" "$rpath" --status "done" --note "fixed")"
   expect_eq "stamp records mode" "records" "$(kv mode "$STAMP_RS")"
   expect_match "stamp records status" '^status: archived$' "$(cat "$rpath")"
   expect_eq "ledger one line" "1" "$(grep -c . "$RR2/history.tsv" || true)"

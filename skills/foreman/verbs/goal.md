@@ -7,7 +7,7 @@
    order, retains source pointers, and computes one closure source digest.
 2. Preview the complete `foreman/goal@1` record. Explicit human acceptance authorizes publication,
    not a commit or any operation effect. Run `goal-compile.sh publish` only after acceptance.
-3. The writer publishes under `<agent-records>/goals/` through the staged records tool when it is
+3. The writer publishes under `.records/goals/` through the staged records tool when it is
    executable, otherwise by atomic file mode. The body is immutable; later progress belongs only to
    the current runtime owner.
 4. Return or invoke the harness goal objective:

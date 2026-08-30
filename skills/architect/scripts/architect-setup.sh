@@ -5,12 +5,11 @@ die(){ echo "architect-setup.sh: $*" >&2; exit 2; }; usage(){ die "usage: archit
 wo=no; case "${1:-}" in --write-only) wo=yes; shift;; esac; [ "$#" -eq 1 ] || usage
 root="$1"; [ -d "$root" ] || die "root is not a directory: $root"; root="$(cd "$root" && pwd -P)"
 base="$(cd "$(dirname "$0")/.." && pwd -P)"
-resolve(){ local k="$1" d="$2" f v=""; for f in "$root/AGENTS.md" "$root/CLAUDE.md"; do if [ -z "$v" ]&&[ -f "$f" ]; then case "$k" in ws) v="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$f"|head -n1|sed 's/[[:space:]]*$//')";; rr) v="$(sed -n -E 's/^(agent-records|records-root):[[:space:]]*//p' "$f"|head -n1|sed 's/[[:space:]]*$//')";; esac; fi; done; printf '%s\n' "${v:-$d}"; }
 valid(){ [ -n "$1" ]&&[ "$1" != . ]||return 1; case "$1" in /*)return 1;;esac; case "/$1/" in */../*)return 1;;esac; }
 check(){ local rel="$1" cur="$root" p old="$IFS" miss=no; valid "$rel"||die "unsafe relative path: $rel"; IFS=/; for p in $rel; do [ -n "$p" ]||continue; cur="$cur/$p"; [ "$miss" = no ]||continue; [ ! -L "$cur" ]||die "symlinked destination parent: $cur"; if [ -e "$cur" ];then [ -d "$cur" ]||die "destination parent is not a directory: $cur";else miss=yes;fi; done; IFS="$old"; }
 ensure(){ local rel="$1" cur="$root" p old="$IFS"; IFS=/; for p in $rel; do [ -n "$p" ]||continue; cur="$cur/$p"; [ ! -L "$cur" ]||die "symlinked destination parent: $cur"; if [ -e "$cur" ];then [ -d "$cur" ]||die "destination parent is not a directory: $cur";else mkdir "$cur";fi; done; IFS="$old"; }
 schema_free(){ ! awk 'NR==1&&$0=="---"{f=1;next} f&&$0=="---"{exit} f&&/^schema:/{x=1} END{exit !x}' "$1"; }
-ws="$(resolve ws .spaces)"; rr="$(resolve rr .records)"; valid "$ws"||die "unsafe workspace path: $ws"; valid "$rr"||die "unsafe records path: $rr"
+ws=.spaces; rr=.records
 files="adr.md
 specs.md"; [ -z "${ARCHITECT_SETUP_TEST_ASSET:-}" ]||files="$files
 $ARCHITECT_SETUP_TEST_ASSET"; made=(); n=0

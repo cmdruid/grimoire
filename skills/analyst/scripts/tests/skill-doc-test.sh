@@ -11,7 +11,7 @@ expect "normal report generation stays read-only" \
 expect_absent "lazy deployment is retired" 'Deploy is **lazy**' "$SKILL"
 expect_absent "normal engine does not invoke deploy" \
   'Run `scripts/analyst-deploy.sh <root>` first' "$SKILL"
-expect "tracker provider is first class" '<agent-trackers>' "$SKILL"
+expect "tracker provider is first class" '.trackers' "$SKILL"
 expect "tracker contract is generic" 'tracker@1' "$SKILL"
 expect "legacy homes stay dark" 'never probed' "$SKILL"
 

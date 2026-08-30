@@ -27,9 +27,9 @@ existing phase-plan paths — never task-level work invented here.
    - **Roadmap-sourced:** every unblocked phase has a plan path; order
      respects phase `requires:`; no raw implementation steps invented.
 5. **Land it** per SKILL.md *Shared discipline*. Compile the conductor body and mint
-   `records.sh --root <root> --records-root <records-root-relative> new plans --schema contractor/runbook@1
+   `.records/records.sh new plans --schema contractor/runbook@1
    --title "Runbook: <plan title>" --tag runbook` when the tool exists; else file-mode with that
-   schema into `<agent-records>/plans/`, naming the file `YYYY-MM-DD-<slug>.md`.
+   schema into `.records/plans/`, naming the file `YYYY-MM-DD-<slug>.md`.
 
 Output: the conductor file (`status: draft`). `build` still requires each
 referenced plan to be `published` with `stage: approved` (or a caller waive

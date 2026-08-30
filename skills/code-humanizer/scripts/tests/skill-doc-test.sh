@@ -75,7 +75,7 @@ expect_match "verification is reused" 'do not repeat it solely because code-huma
 expect_match "no-floor records.sh" 'Missing `records.sh` is not an error' "$router"
 expect_match "no-floor journal standup" 'Journal standup is never a precondition' "$router"
 expect_match "schema is package-owned" 'code-humanizer/map@1' "$router"
-expect_match "records home literal" '<agent-records>/maps/' "$router"
+expect_match "records home literal" '.records/maps/' "$router"
 expect_match "default cap 20" 'Default cap is 20' "$router"
 expect_match "scope script cited" 'scripts/scope.sh' "$router"
 expect_match "not-v1 excludes broad quality work" 'Review, debugging, audit, and broad refactoring' "$router"

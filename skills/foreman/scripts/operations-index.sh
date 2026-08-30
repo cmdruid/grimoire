@@ -3,26 +3,24 @@
 set -u
 
 usage() {
-  echo "usage: operations-index.sh list|search --root <root> --workspace <relative> [--query <text>] [--include-deprecated]" >&2
+  echo "usage: operations-index.sh list|search --root <root> [--query <text>] [--include-deprecated]" >&2
   exit 2
 }
 
 mode="${1:-}"; [ -n "$mode" ] || usage; shift
 case "$mode" in list|search) ;; *) usage ;; esac
-root=""; workspace=""; query=""; include_deprecated=false
+root=""; workspace=.spaces; query=""; include_deprecated=false
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || usage; root="$2"; shift 2 ;;
-    --workspace) [ "$#" -ge 2 ] || usage; workspace="$2"; shift 2 ;;
     --query) [ "$#" -ge 2 ] || usage; query="$2"; shift 2 ;;
     --include-deprecated) include_deprecated=true; shift ;;
     *) usage ;;
   esac
 done
-[ -n "$root" ] && [ -n "$workspace" ] || usage
+[ -n "$root" ] || usage
 [ -d "$root" ] || usage
 root="$(CDPATH='' cd -P "$root" && pwd)"
-case "$workspace" in ""|.|/*|*//*|*/../*|../*|*/..) usage ;; esac
 
 checker="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)/operation-check.sh"
 workspace_dir="$root/$workspace"
@@ -51,7 +49,7 @@ while IFS= read -r file; do
     malformed=$((malformed + 1)); echo "malformed_operation=$identity|reason=bad-identity"; continue;
   }
   facts="$tmp/facts"
-  if ! "$checker" --root "$root" --workspace "$workspace" --operation "$identity" >"$facts"; then
+  if ! "$checker" --root "$root" --operation "$identity" >"$facts"; then
     if ! grep -q '^schema:[[:space:]]*foreman/operation@1[[:space:]]*$' "$file" 2>/dev/null; then
       natives=$((natives + 1)); echo "native_candidate=$rel"
     else

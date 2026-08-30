@@ -3,15 +3,14 @@
 set -u
 
 usage() {
-  echo "usage: operation-check.sh --root <root> --workspace <relative> --operation <owner/stem> [--candidate <owner/stem>=<file>]..." >&2
+  echo "usage: operation-check.sh --root <root> --operation <owner/stem> [--candidate <owner/stem>=<file>]..." >&2
   exit 2
 }
 
-root=""; workspace=""; requested=""; candidate_specs=""
+root=""; workspace=.spaces; requested=""; candidate_specs=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || usage; root="$2"; shift 2 ;;
-    --workspace) [ "$#" -ge 2 ] || usage; workspace="$2"; shift 2 ;;
     --operation) [ "$#" -ge 2 ] || usage; requested="$2"; shift 2 ;;
     --candidate) [ "$#" -ge 2 ] || usage; candidate_specs="$candidate_specs
 $2"; shift 2 ;;
@@ -19,7 +18,7 @@ $2"; shift 2 ;;
     *) usage ;;
   esac
 done
-[ -n "$root" ] && [ -n "$workspace" ] && [ -n "$requested" ] || usage
+[ -n "$root" ] && [ -n "$requested" ] || usage
 [ -d "$root" ] || { echo "error=root-not-directory"; exit 2; }
 root="$(CDPATH='' cd -P "$root" && pwd)"
 
@@ -30,7 +29,6 @@ valid_relative() {
 valid_identity() {
   printf '%s\n' "$1" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*$'
 }
-valid_relative "$workspace" || { echo "error=unsafe-workspace"; exit 2; }
 valid_identity "$requested" || { echo "identity=$requested"; echo "valid=false"; echo "reason=bad-identity"; exit 1; }
 
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/foreman-operation-check.XXXXXX")"

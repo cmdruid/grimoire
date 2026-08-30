@@ -6,7 +6,7 @@ R="$T/root";legacy_workspace_dir="$R/.spaces/backlog/""trackers";mkdir -p "$R/.r
 legacy_record='LEGACY_RECORD_CANARY_8421';legacy_workspace='LEGACY_WORKSPACE_CANARY_9532';live='LIVE_TRACKER_CANARY_1064'
 printf '%s\n' "$legacy_record" > "$R/.records/trackers/old.md"
 printf '%s\n' "$legacy_workspace" > "$legacy_workspace_dir/tasks.tsv"
-SETUP="$B/scripts/backlog-setup.sh";"$SETUP" "$R" --workspace .spaces --records-root .records --apply > "$T/setup.out"
+SETUP="$B/scripts/backlog-setup.sh";"$SETUP" "$R" --apply > "$T/setup.out"
 API=("$R/.trackers/trackers.sh")
 "${API[@]}" create --tracker tasks --text "$live" > "$T/create.out"
 "${API[@]}" catalog > "$T/catalog.out";"${API[@]}" page --tracker tasks --status open --limit 20 > "$T/page.out"
@@ -21,6 +21,6 @@ has "$combined" "$live";lacks "$combined" "$legacy_record";lacks "$combined" "$l
 for cmd in complete drop reorder migrate-import;do no "${API[@]}" "$cmd";done
 [ -x "$B/scripts/trackers.sh" ]&&pass=$((pass+1))||fail=$((fail+1));[ ! -e "$B/scripts/tracker-api.sh" ]&&pass=$((pass+1))||fail=$((fail+1));[ ! -e "$B/verbs/migrate.md" ]&&pass=$((pass+1))||fail=$((fail+1))
 [ ! -e "$R/.trackers/tracker-api.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
-legacy_owner_path='<agent-workspace>/backlog/'"trackers"
+legacy_owner_path='.spaces/backlog/'"trackers"
 lacks "$B/SKILL.md" "$legacy_owner_path";lacks "$B/verbs/debrief.md" '.records/trackers'
 echo "hard-cut-test: $pass passed, $fail failed";[ "$fail" -eq 0 ]

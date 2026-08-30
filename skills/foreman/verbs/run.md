@@ -4,7 +4,7 @@ This is an attended walk in the calling context. It creates no runtime state.
 
 1. Require one exact identity. If the request is topical, use `inventory` first and resolve one
    operation before reading a body.
-2. Run package-local `scripts/operation-check.sh --root <root> --workspace <relative> --operation
+2. Run package-local `scripts/operation-check.sh --root <root> --operation
    <owner/stem>`. Refuse malformed, missing, or cyclic operations.
 3. Surface imported-source drift and stale verification. A named draft may run only after a concise
    warning. A deprecated operation requires explicit confirmation.

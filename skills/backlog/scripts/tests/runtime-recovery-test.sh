@@ -6,9 +6,9 @@ T="$(mktemp -d "${TMPDIR:-/tmp}/backlog-runtime-recovery.XXXXXX")";trap 'rm -rf 
 pass=0;fail=0
 eq(){ if [ "$2" = "$3" ];then pass=$((pass+1));else echo "FAIL $1 want=[$2] got=[$3]" >&2;fail=$((fail+1));fi;}
 newroot(){ mkdir -p "$1";git -C "$1" init -q;}
-diagnostic(){ "$RUNTIME" --root "$1" --workspace .spaces --records-root .records --trackers-root .trackers 2>&1||true;}
+diagnostic(){ "$RUNTIME" --root "$1" 2>&1||true;}
 
-R="$T/ready";newroot "$R";"$SETUP" "$R" --workspace .spaces --records-root .records --apply >/dev/null
+R="$T/ready";newroot "$R";"$SETUP" "$R" --apply >/dev/null
 R_CANON="$(CDPATH='' cd -P "$R"&&pwd)";eq ready "provider=$R_CANON/.trackers/trackers.sh" "$(diagnostic "$R")"
 for damage in missing nonexec drifted;do
   D="$T/$damage";cp -R "$R" "$D"
@@ -16,7 +16,7 @@ for damage in missing nonexec drifted;do
   eq "$damage" 'reason=repair-required action=/backlog repair' "$(diagnostic "$D")"
 done
 
-G="$T/git-loss";newroot "$G";"$SETUP" "$G" --workspace .spaces --records-root .records --apply >/dev/null;git -C "$G" add .;git -C "$G" -c user.name=test -c user.email=test@example.invalid commit -qm initialized;rm "$G/.trackers/receipts.tsv"
+G="$T/git-loss";newroot "$G";"$SETUP" "$G" --apply >/dev/null;git -C "$G" add .;git -C "$G" -c user.name=test -c user.email=test@example.invalid commit -qm initialized;rm "$G/.trackers/receipts.tsv"
 eq git-loss 'reason=ledger-recovery-required action=git-restore' "$(diagnostic "$G")"
 H="$T/readme-loss";cp -R "$R" "$H";rm "$H/.trackers/receipts.tsv";eq readme-loss 'reason=ledger-recovery-required action=human-review' "$(diagnostic "$H")"
 A="$T/absent";newroot "$A";eq absent 'reason=setup-required action=/backlog setup' "$(diagnostic "$A")"

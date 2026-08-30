@@ -1,13 +1,13 @@
 # `done` — close a record in place
 
 Completion is a **judgment**, then a mechanic. The judgment: is this really finished, and
-under which disposition? The mechanic: `records.sh --root <root> --records-root <records-root-relative> done` — closure in place (the file never
+under which disposition? The mechanic: `.records/records.sh done` — closure in place (the file never
 moves; moves would dangle every path-based link) plus the one ledger line in `history.tsv`.
 
-1. Resolve the project root, `<agent-workspace>`, and `<agent-records>` (SKILL.md discipline), then
+1. Resolve the project root, `.spaces`, and `.records` (SKILL.md discipline), then
    run the ordered runtime preflight. Emit its one exact setup-required or repair-required diagnostic
    and stop on the first failure; never execute the bundled provider against project records. Then
-   confirm the record (`records.sh --root <root> --records-root <records-root-relative> list`/`show`).
+   confirm the record (`.records/records.sh list`/`show`).
 2. **Pick the disposition** — the vocabulary is the contract:
    - `done` — completed as intended;
    - `dropped` — deliberately won't do / no longer true (say why in the note);
@@ -15,7 +15,7 @@ moves; moves would dangle every path-based link) plus the one ledger line in `hi
    - `consumed` — absorbed into the spec/doctrine (the note **names where**).
    Not sure it's finished? Then it isn't — leave it draft, or `touch --status
    draft|published`.
-3. **Close it**: `records.sh --root <root> --records-root <records-root-relative> done <path>
+3. **Close it**: `.records/records.sh done <path>
    [--as <disposition>] --note "<one line>"` — the
    script stamps `status: archived` and appends the ledger line (its sole writer;
    it refuses a double-close). Never hand-edit a status to `archived` — `check` flags a
@@ -23,13 +23,13 @@ moves; moves would dangle every path-based link) plus the one ledger line in `hi
 4. **Tracker line-items are not records.** Completing a line-item *on
    request* is the follow-up client's job, not this verb. Closing a
    *whole tracker* (rare — a retired concern) goes through
-   `records.sh --root <root> --records-root <records-root-relative> done` like any record.
-5. **Writebacks**: `records.sh --root <root> --records-root <records-root-relative> list` (no `--type`), then search each
+   `.records/records.sh done` like any record.
+5. **Writebacks**: `.records/records.sh list` (no `--type`), then search each
    body for `→ <rel>` where `<rel>` is the closed record's
-   records-root-relative path. Rewrite only **unchecked** tracker-item
+   path relative to `.records`. Rewrite only **unchecked** tracker-item
    lines under `## Items` that match the contract's live form (SKILL.md
    *The record contract* → Tracker line form). Leave prose and already
-   completed items. `records.sh --root <root> --records-root <records-root-relative> touch` each tracker you rewrote. Zero
+   completed items. `.records/records.sh touch` each tracker you rewrote. Zero
    hits: nothing to write back.
 6. **Commit** per the commit policy (SKILL.md): standalone → its own scoped commit
    (`Journal: done — <slug> (<disposition>)`); inside a client's sweep → write-only (the
@@ -40,7 +40,7 @@ Pruning closed records (deleting the file; ledger + git history remain the trace
 
 ## Done when
 
-- Record closed: `records.sh --root <root> --records-root <records-root-relative> done` wrote the disposition + ledger line;
+- Record closed: `.records/records.sh done` wrote the disposition + ledger line;
   writebacks rewrote only matching live tracker-item lines; standalone
   commit landed (or write-only inside a sweep).
 - Not finished: left draft (or `touch --status draft|published`); no close.

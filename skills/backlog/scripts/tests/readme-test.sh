@@ -26,11 +26,11 @@ cp "$TEMPLATE" "$T/broken-template";sed '1s/BEGIN/BROKEN/' "$T/broken-template">
 if "$STATUS" "$T/broken-template" "$T/current" >/dev/null 2>&1;then echo 'FAIL accepted broken package template' >&2;fail=$((fail+1));else pass=$((pass+1));fi
 
 R="$T/root";mkdir -p "$R/.trackers";git -C "$R" init -q;printf 'before canary\n'>"$R/.trackers/README.md"
-"$SETUP" "$R" --workspace .spaces --records-root .records --apply >/dev/null
+"$SETUP" "$R" --apply >/dev/null
 git -C "$R" add .;git -C "$R" -c user.name=test -c user.email=test@example.invalid commit -qm setup
 printf '\nafter canary\n'>>"$R/.trackers/README.md";git -C "$R" add .trackers/README.md;git -C "$R" -c user.name=test -c user.email=test@example.invalid commit -qm prose
 sed 's/## Use the tracker tool/## Drifted tracker tool/' "$R/.trackers/README.md">"$T/readme.drift";mv "$T/readme.drift" "$R/.trackers/README.md"
-"$SETUP" "$R" --workspace .spaces --records-root .records --apply >/dev/null
+"$SETUP" "$R" --apply >/dev/null
 eq managed current "$(state "$R/.trackers/README.md")";has "$R/.trackers/README.md" 'before canary';has "$R/.trackers/README.md" 'after canary'
 eq marker-count 1 "$(grep -cFx '<!-- backlog:trackers-tool BEGIN -->' "$R/.trackers/README.md")"
 for needle in 'current package-owned `tracker@1` tool contract' '`README.md` is this local guide' '`receipts.tsv` is the' 'Git owns history' '`trackers.sh` is the sole writer' 'Direct TSV inspection is allowed' 'never hand-edit' 'stable consumer keys' '`consume` requires a resolution' 'evidence and result references are optional' 'tracker-root-relative `wrote=` paths' '/backlog repair' 'Do not hand-repair' 'do not run the bundled provider';do has "$R/.trackers/README.md" "$needle";done

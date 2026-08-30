@@ -15,20 +15,6 @@ root="$1"
 [ -d "$root" ] || err "root is not a directory: $root"
 root="$(cd "$root" && pwd -P)"
 
-resolve_front_door() {
-  local key="$1" fallback="$2" fd decl=""
-  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-    if [ -z "$decl" ] && [ -f "$fd" ]; then
-      if [ "$key" = records ]; then
-        decl="$(sed -n -E 's/^(agent-records|records-root):[[:space:]]*//p' "$fd" | head -n 1 | sed 's/[[:space:]]*$//')"
-      else
-        decl="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$fd" | head -n 1 | sed 's/[[:space:]]*$//')"
-      fi
-    fi
-  done
-  printf '%s\n' "${decl:-$fallback}"
-}
-
 valid_rel() {
   [ -n "$1" ] || return 1
   [ "$1" != . ] || return 1
@@ -70,10 +56,8 @@ ensure_chain() {
   IFS="$old_ifs"
 }
 
-ws_rel="$(resolve_front_door workspace .spaces)"
-rr_rel="$(resolve_front_door records .records)"
-valid_rel "$ws_rel" || err "unsafe workspace path: $ws_rel"
-valid_rel "$rr_rel" || err "unsafe records path: $rr_rel"
+ws_rel=.spaces
+rr_rel=.records
 
 asset="${NOTEPAD_SETUP_TEST_ASSET:-notes.md}"
 [ "$asset" = notes.md ] || err "asset is not declared for project deployment: $asset"

@@ -1,9 +1,9 @@
 # `migrate <source-path>` — upgrade Architect artifacts
 
 Migrate only the explicitly selected file or directory tree. The argument is the source; canonical
-destinations remain `<agent-records>/specs/`, `<agent-records>/adr/`, and
-`<agent-workspace>/architect/templates/`. Current spike records remain in
-`<agent-records>/spikes/`. Workspace drafts are never migration sources or destinations. In-place
+destinations remain `.records/specs/`, `.records/adr/`, and
+`.spaces/architect/templates/`. Current spike records remain in
+`.records/spikes/`. Workspace drafts are never migration sources or destinations. In-place
 selection normalizes formatting.
 
 1. Resolve the project root, records home, and workspace. Reject paths outside the project and any
@@ -21,7 +21,7 @@ selection normalizes formatting.
    preserve status/tags/extra legal keys and authored body, add the classified schema, and remove
    `created`, `updated`, `created_at`, `updated_at`, and `revision`. Founding files have no filename
    comparison. There is no schema-less spike upgrade. For templates at
-   `<agent-records>/templates/architect/<file>` or an exact registered
+   `.records/templates/architect/<file>` or an exact registered
    flat legacy path, strip the old record-shell front matter and target the canonical workspace
    file. `founding.md` is package-only and is never deployed.
 4. Preview source, kind, old/current schema, destination, metadata/body changes, and skips. Stop on

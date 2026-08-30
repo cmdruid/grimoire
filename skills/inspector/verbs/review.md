@@ -119,8 +119,7 @@ review offer: its later proposal confirmation is parsed by `revise.md`.
    remainder. Founding-shaped documents remain draft.
 4. **Unclear** → ask once whether they accept the verdict; write nothing.
 
-On accept, use executable `<agent-records>/records.sh` when present, passing
-`--root <root> --records-root <records-root-relative> touch --status published`; otherwise update
+On accept, use executable `.records/records.sh touch --status published` when present; otherwise update
 `status: published` in file mode. Job artifacts (`plan`, `roadmap`, `runbook`) also
 receive `stage: approved`; specs and ADRs receive `published` only. Then stop unless the same
 utterance requested further work.

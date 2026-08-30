@@ -1,7 +1,7 @@
 # `inventory [query]` — discover operations
 
-Resolve `<root>` and `<agent-workspace>`, then run package-local
-`scripts/operations-index.sh list --root <root> --workspace <relative>` or use `search` with
+Resolve `<root>` and `.spaces`, then run package-local
+`scripts/operations-index.sh list --root <root>` or use `search` with
 `--query <query>`. Add `--include-deprecated` only when the user explicitly asks for retired entries.
 
 Present the smallest useful catalog: identity, title, use-when, areas, lifecycle, and verification

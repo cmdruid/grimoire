@@ -42,7 +42,7 @@ make_op "$R/.spaces/$public_layer_name/operations/visible.md" Visible draft visi
 printf '# Native instructions\n' >"$R/.spaces/alpha/operations/native.md"
 cp "$R/.spaces/alpha/operations/build.md" "$R/.spaces/alpha/operations/BAD.md"
 
-"$INDEX" list --root "$R" --workspace .spaces >"$OUT"
+"$INDEX" list --root "$R" >"$OUT"
 eq "default hides deprecated" 3 "$(fact matches "$OUT")"
 has "lists direct identity" 'operation=alpha/build|' "$OUT"
 has "trackers remains a valid owner name" 'operation=trackers/visible|' "$OUT"
@@ -50,13 +50,13 @@ lacks "body not emitted" 'BODY-MUST-NOT-LEAK' "$OUT"
 eq "native reported" 1 "$(fact native_candidates "$OUT")"
 eq "bad identity malformed" 1 "$(fact malformed "$OUT")"
 
-"$INDEX" search --root "$R" --workspace .spaces --query delivery >"$OUT"
+"$INDEX" search --root "$R" --query delivery >"$OUT"
 eq "direct topical lookup" 1 "$(fact matches "$OUT")"; has "release result" 'operation=beta/release|' "$OUT"
-"$INDEX" search --root "$R" --workspace .spaces --query work >"$OUT"
+"$INDEX" search --root "$R" --query work >"$OUT"
 eq "ambiguous search" 3 "$(fact matches "$OUT")"
-"$INDEX" search --root "$R" --workspace .spaces --query absent >"$OUT"
+"$INDEX" search --root "$R" --query absent >"$OUT"
 eq "absent search" 0 "$(fact matches "$OUT")"
-"$INDEX" list --root "$R" --workspace .spaces --include-deprecated >"$OUT"
+"$INDEX" list --root "$R" --include-deprecated >"$OUT"
 eq "explicit deprecated" 4 "$(fact matches "$OUT")"
 
 report operations-index-test

@@ -21,11 +21,10 @@ expect() {
 }
 
 run_check() {
-  local root="$1" workspace="$2" records="$3"
+  local root="$1"
   rc=0
   export rc
-  "$CHECK" --root "$root" --workspace "$workspace" --records-root "$records" \
-    >"$OUT" 2>"$ERR" || rc=$?
+  "$CHECK" --root "$root" >"$OUT" 2>"$ERR" || rc=$?
 }
 
 finish() {

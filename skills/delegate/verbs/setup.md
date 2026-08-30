@@ -1,7 +1,7 @@
 # `setup [<root>]` — create the optional byproducts policy point
 
 1. Resolve `<root>` from the argument, else the current repository root. It must exist; canonicalize
-   it. Resolve line-start `agent-workspace:` from root `AGENTS.md`, then `CLAUDE.md`, else `.spaces`.
+   it. Delegate uses the fixed `.spaces` workspace.
    Reject an empty, `.`, absolute, or `..`-containing workspace declaration.
 2. Run package-local `scripts/delegate-setup.sh <root>` standalone, or add `--write-only` inside an
    announced configuration sweep. It resolves the package skeleton at `templates/hooks/byproducts.md`, which must be an existing regular

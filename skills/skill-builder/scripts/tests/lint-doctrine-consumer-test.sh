@@ -52,9 +52,7 @@ lint() { bash "$LINT" "$lib" >"$OUT" 2>"$ERR" || true; }
 c14='declares a doctrine edge but carries no sanctioned doctrine-home resolution literal'
 c15='off-home doctrine literal'
 c15b='stale doctrine default'
-c16a='occurrence(s) of the retired `agent-doctrine` literal'
-c16b='`agent-workspace: .` is forbidden'
-c16c='restates the current default'
+c16='retired project-home surface'
 
 write_front_door() { # write_front_door <declaration-line>  (empty = no declaration)
   {
@@ -79,7 +77,7 @@ fi
 # --- check 14: green — angle-bracket member -----------------------------------
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'The playbook lives at `<agent-workspace>/widget/doctrine/core/POLICY.md`.'
+  'The playbook lives at `.spaces/widget/doctrine/core/POLICY.md`.'
 lint
 if grep -q "$c14" "$OUT"; then
   echo "FAIL: angle-bracket literal still matched check 14 (must stay green)" >&2
@@ -94,8 +92,8 @@ fi
 # the next. A line-based matcher fails a conforming skill here.
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'The report is written under the
-agent-workspace home, resolved per the front-door doctrine.'
+  'The report is written under `.spaces/widget/
+doctrine`, the fixed owner-local path.'
 lint
 if grep -q "$c14" "$OUT"; then
   echo "FAIL: wrapped phrase literal matched check 14 (normalization is broken)" >&2
@@ -129,7 +127,7 @@ run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
   'Example only:
 
-    <agent-workspace>/widget/doctrine/core/POLICY.md
+    .spaces/widget/doctrine/core/POLICY.md
 
 but this skill just reads a fixed path.'
 lint
@@ -198,7 +196,7 @@ fi
 # and prose is required to name defaults literally -- so this must never fire.
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'Doctrine lives under `<agent-workspace>/widget/doctrine`, by default `.spaces/widget/doctrine/`.'
+  'Doctrine lives under `.spaces/widget/doctrine`, by default `.spaces/widget/doctrine/`.'
 lint
 if grep -q "$c15" "$OUT"; then
   echo "FAIL: canonical default path matched check 15 (must stay green)" >&2
@@ -210,7 +208,7 @@ fi
 
 # --- check 15: FAIL — `.records/doctrine/` is newly decidable ------------------
 # This literal used to be excluded as "a home's canonical default". Once doctrine
-# resolves through <agent-workspace>/widget/doctrine it is nobody's default, so it
+# resolves through .spaces/widget/doctrine it is nobody's default, so it
 # becomes decidable -- the strongest guard the retirement buys. It shipped WARN
 # while the consumers were being flipped and is now FAIL.
 # RED-PROOF: the fixture carrying it must FAIL.
@@ -231,7 +229,7 @@ expect_absent "check 15 is silent once the stale default is gone" "$c15b" "$OUT"
 # --- check 14: green — the NEW literal family satisfies it ---------------------
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'The playbook lives at `<agent-workspace>/widget/doctrine/core/POLICY.md`.'
+  'The playbook lives at `.spaces/widget/doctrine/core/POLICY.md`.'
 lint
 expect_absent "check 14 accepts the agent-workspace angle-bracket member" "$c14" "$OUT"
 
@@ -244,7 +242,7 @@ write_skill widget 'doctrine — the diagnostics playbook' \
   'The playbook lives at `<agent-doctrine>/test/workflows/diagnostics.md`.'
 lint
 expect "check 14 rejects the retired angle-bracket member" "FAIL: widget: $c14" "$OUT"
-expect "…and check 16 independently FAILs the same fixture" "$c16a" "$OUT"
+expect "…and check 16 independently FAILs the same fixture" "$c16" "$OUT"
 
 # --- check 16a: FAIL — the retired literal anywhere under a skill -------------
 # THE RETIREMENT PROOF. It shipped WARN while the twelve carriers were flipped and
@@ -256,30 +254,27 @@ run_lint
 write_skill widget 'note — a captured fact' \
   'Resolve `agent-doctrine:` from the front door before reading the playbook.'
 lint
-expect "check 16a FAILs on the retired literal in a .md" "$c16a" "$OUT"
-expect "check 16a reports it as a FAIL, not a WARN (promoted)" \
-  "FAIL: widget: SKILL.md: 1 occurrence(s)" "$OUT"
-expect_absent "check 16a no longer warns" "WARN: widget: SKILL.md: 1 occurrence(s)" "$OUT"
+expect "check 16 FAILs on the retired literal in a .md" \
+  "FAIL: skills/widget/SKILL.md: $c16" "$OUT"
 
 # green control: no retired literal -> silent.
 run_lint
 write_skill widget 'note — a captured fact' \
-  'Resolve `<agent-workspace>/widget/doctrine` before reading the playbook.'
+  'Resolve `.spaces/widget/doctrine` before reading the playbook.'
 lint
-expect_absent "check 16a is silent on a flipped skill" "$c16a" "$OUT"
-
-c16a2='occurrence(s) of the retired `agent-templates` literal'
-run_lint
-write_skill widget 'note — a captured fact' \
-  'Resolve `agent-templates:` from the front door, else `<agent-records>/templates`.'
-lint
-expect "check 16a2 FAILs on the retired templates literal" "$c16a2" "$OUT"
+expect_absent "check 16 is silent on a fixed-path skill" "$c16" "$OUT"
 
 run_lint
 write_skill widget 'note — a captured fact' \
-  'Resolve `<agent-workspace>/widget/templates` before copying a lock-in.'
+  'Resolve `agent-templates:` from the front door, else `.records/templates`.'
 lint
-expect_absent "check 16a2 is silent on a flipped templates path" "$c16a2" "$OUT"
+expect "check 16 FAILs on the retired templates literal" "$c16" "$OUT"
+
+run_lint
+write_skill widget 'note — a captured fact' \
+  'Resolve `.spaces/widget/templates` before copying a lock-in.'
+lint
+expect_absent "check 16 is silent on a fixed templates path" "$c16" "$OUT"
 
 # --- check 16a: it reads .sh, and it counts COMMENTS --------------------------
 # The two journal carriers are comment-only occurrences inside a shell script.
@@ -288,61 +283,60 @@ expect_absent "check 16a2 is silent on a flipped templates path" "$c16a2" "$OUT"
 run_lint
 write_skill widget 'note — a captured fact' 'Nothing doctrinal in the prose here.'
 mkdir -p "$lib/skills/widget/scripts"
-printf '#!/bin/sh\n# The agent-doctrine home defaults to <agent-records>/doctrine\nexit 0\n' \
+printf '#!/bin/sh\n# The agent-doctrine home defaults to .records/doctrine\nexit 0\n' \
   > "$lib/skills/widget/scripts/tool.sh"
 lint
-expect "check 16a reads .sh files" "scripts/tool.sh: 1 occurrence(s)" "$OUT"
+expect "check 16 reads .sh files" "FAIL: skills/widget/scripts/tool.sh: $c16" "$OUT"
 
-# --- check 16a: skill-builder and pack faces are exempt -----------------------
+# --- check 16: no live skill or pack-face exemption ---------------------------
 run_lint
 write_skill skill-builder 'note — a captured fact' \
   'This doctrine documents `agent-doctrine` in order to ban it elsewhere.'
 lint
-expect_absent "check 16a exempts skill-builder" "$c16a" "$OUT"
+expect "check 16 gates skill-builder prose" "$c16" "$OUT"
 
 run_lint
 write_skill facade 'note — a captured fact' \
   'The pack face still names `agent-doctrine` while composing its members.'
 printf '# facade pack\n' > "$lib/skills/facade/PACK.md"
 lint
-expect_absent "check 16a exempts pack faces" "$c16a" "$OUT"
+expect "check 16 gates pack-face prose" "$c16" "$OUT"
 
-# --- check 16b: FAIL — `agent-workspace: .` is forbidden ----------------------
-# RED-PROOF. Not staged: the variable is new, so no host can have declared it.
+# --- check 16: every retired front-door declaration is forbidden --------------
 run_lint
 write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
 write_front_door 'agent-workspace: .'
 lint
-expect 'check 16b FAILs a dot-valued workspace declaration' \
-  "FAIL: front door (AGENTS.md): $c16b" "$OUT"
+expect 'check 16 FAILs a dot-valued workspace declaration' \
+  "FAIL: AGENTS.md: $c16" "$OUT"
 
-# Green controls: arbitrary declared values remain valid, including the former
-# default when a host deliberately chooses it. The hard cut removes implicit
-# `.dev` resolution; it does not reserve that otherwise-valid relative path.
+# Alternate and default-valued declarations fail identically; none is a selector.
 run_lint
 write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
 write_front_door 'agent-workspace: dev'
 lint
-expect_absent "check 16b is silent on an ordinary declaration" "$c16b" "$OUT"
-expect_absent "check 16c is silent on an ordinary declaration" "$c16c" "$OUT"
+expect "check 16 rejects an alternate workspace declaration" "$c16" "$OUT"
 
 run_lint
 write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
 write_front_door 'agent-workspace: .dev'
 lint
-expect_absent "check 16b accepts an explicit former-default path" "$c16b" "$OUT"
-expect_absent "check 16c treats an explicit former-default path as an override" "$c16c" "$OUT"
+expect "check 16 rejects a dot-prefixed workspace declaration" "$c16" "$OUT"
 
-# --- check 16c: WARN — a declaration restating the current default ------------
-# RED-PROOF: a syntactically valid declaration that merely freezes the current
-# default must be reported as the probable no-op it is.
+# The former default restatement is also invalid configuration.
 run_lint
 write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
 write_front_door 'agent-workspace: .spaces'
 lint
-expect "check 16c warns on a default-valued declaration" "$c16c" "$OUT"
-expect_absent "check 16c warns rather than fails (advisory by design)" \
-  "FAIL: front door (AGENTS.md): $c16c" "$OUT"
+expect "check 16 fails a default-valued declaration" "FAIL: AGENTS.md: $c16" "$OUT"
+
+# Root-selection flags are forbidden in live shell as well.
+run_lint
+write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
+mkdir -p "$lib/skills/widget/scripts"
+printf '%s\n' '#!/bin/sh' 'tool --records-root custom' >"$lib/skills/widget/scripts/tool.sh"
+lint
+expect "check 16 rejects a records selector" "FAIL: skills/widget/scripts/tool.sh: $c16" "$OUT"
 
 # --- check 16b/c: negative scope — no declaration at all ----------------------
 # The library itself is patient-zero: it never declares front-door variables in
@@ -351,7 +345,6 @@ run_lint
 write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
 write_front_door ''
 lint
-expect_absent "check 16b silent with no declaration" "$c16b" "$OUT"
-expect_absent "check 16c silent with no declaration" "$c16c" "$OUT"
+expect_absent "check 16 silent with no declaration" "$c16" "$OUT"
 
 report "lint-doctrine-consumer-test"

@@ -17,25 +17,23 @@ and follow it**.
 This skill is **self-contained and uniquely named**: it depends on no other skill
 and collides with none.
 
-**Destination is not stamped.** `roadmap` / `plan` / `runbook` land in
-`<agent-records>/plans/` on every host (first `agent-records:` or
-`records-root:` in `AGENTS.md` then `CLAUDE.md`, else `.records/`), with
+**Destination is not stamped.** `roadmap` / `plan` / `runbook` land in fixed
+`.records/plans/` on every host, with
 `tags:` exactly one writer kind among `plan`, `roadmap`, or `runbook`. Resolve active body scaffolds
-at `<agent-workspace>/contractor/templates/` when present; otherwise read the bundled scaffold
+at `.spaces/contractor/templates/` when present; otherwise read the bundled scaffold
 without a project write. Only `/contractor setup` deploys fresh project copies. A recognized legacy
-template requires `/contractor migrate <path>`. Mint with `records.sh --root <root> --records-root
-<records-root-relative> new plans --schema contractor/<kind>@1 --template <resolved>` for plans and
+template requires `/contractor migrate <path>`. Mint with `.records/records.sh new plans --schema contractor/<kind>@1 --template <resolved>` for plans and
 roadmaps (omit `--template` for a compiled runbook); else synthesize the same four-key profile, naming the
 file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the
 tool will not see it. Then
 fill the body from `plan.md`, `roadmap.md`, or the runbook conductor. Never write the flat
-`<agent-records>/templates/<doctype>.md`. The former generic `plans.md` shell is retired.
+`.records/templates/<doctype>.md`. The former generic `plans.md` shell is retired.
 
 **Status vocabulary.** Mint stays `draft`. The caller writes
 `published` and `stage: approved` after a passing host's review they
 accept. After a successful walk, this skill sets `stage: implemented`
 (the plan stays `published`). Closed is `archived`. Closure through
-`records.sh --root <root> --records-root <records-root-relative> done` when the tool exists; else file-mode stamp. Optional
+`.records/records.sh done` when the tool exists; else file-mode stamp. Optional
 `stage` (non-empty if present); writer `stage` values are in-package.
 
 **Record contract.** Current records require `doctype`, `status`, `schema`, and `tags`; use
@@ -86,7 +84,7 @@ The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
   the waive) then sequences. A spec with open decision branches is
   not settled — send those branches back to a grill on the spec.
 - **Land it** (minting verbs: `roadmap`, `plan`, `runbook`) under
-  `<agent-records>/plans/` per the destination rule above. Mint the
+  `.records/plans/` per the destination rule above. Mint the
   shell, then overwrite `tags:` and the body. Title missing → ask once.
 
 ## Hard seams
@@ -128,7 +126,7 @@ The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
 ## Edges
 
 <!-- edges:contractor -->
-- produces: plan, roadmap, runbook — job artifacts in `<agent-records>/plans/`
+- produces: plan, roadmap, runbook — job artifacts in `.records/plans/`
 - handoff: — (build executes in-place; ship is not this skill)
 - consumes: spec, plan, runbook — an approved specification or a job artifact this skill walks
 <!-- /edges:contractor -->

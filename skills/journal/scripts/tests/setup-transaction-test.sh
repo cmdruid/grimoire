@@ -20,11 +20,11 @@ STANDUP="$FIXTURE_SKILL/scripts/standup.sh"
 SCOPED="$SKILL/scripts/scoped-commit.sh"
 
 setup_only() {
-  "$STANDUP" setup "$1" --records-root .records --workspace-root .spaces
+  "$STANDUP" setup "$1"
 }
 
 finalize_only() {
-  "$STANDUP" finalize "$1" --records-root .records --workspace-root .spaces
+  "$STANDUP" finalize "$1"
 }
 
 writes_of() {
@@ -180,8 +180,8 @@ exercise_commit_point_crash() {
   chmod +x "$crash_skill/scripts/standup.sh" "$crash_skill/scripts/records.sh"
 
   rc=0
-  "$crash_skill/scripts/standup.sh" setup "$crash_root" --records-root .records \
-    --workspace-root .spaces >"$TMP/commit-point-$crash_name.first" 2>"$ERR" || rc=$?
+  "$crash_skill/scripts/standup.sh" setup "$crash_root" \
+ >"$TMP/commit-point-$crash_name.first" 2>"$ERR" || rc=$?
   expect_eq "$crash_name commit-point interruption rc" "86" "$rc"
   expect "$crash_name has write-ahead custody" "pending=$crash_path" \
     "$crash_root/.spaces/journal/setup.intent"
@@ -360,7 +360,7 @@ mutation_case() {
     chmod +x "$MUTATED_STANDUP"
   fi
   rc=0
-  "$MUTATED_STANDUP" setup "$mutation_root" --records-root .records --workspace-root .spaces \
+  "$MUTATED_STANDUP" setup "$mutation_root" \
     >"$OUT" 2>"$ERR" || rc=$?
   if [ "$rc" -eq 0 ] && [ -x "$mutation_root/.records/records.sh" ]; then
     pass=$((pass + 1))

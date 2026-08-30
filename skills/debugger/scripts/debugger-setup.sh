@@ -8,18 +8,6 @@ write_only=no; case "${1:-}" in --write-only) write_only=yes; shift ;; esac
 root="$1"; [ -d "$root" ] || err "root is not a directory: $root"; root="$(cd "$root" && pwd -P)"
 skill_dir="$(cd "$(dirname "$0")/.." && pwd -P)"
 
-resolve() {
-  local kind="$1" fallback="$2" fd value=""
-  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-    if [ -z "$value" ] && [ -f "$fd" ]; then
-      case "$kind" in
-        workspace) value="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$fd" | head -n1 | sed 's/[[:space:]]*$//')" ;;
-        records) value="$(sed -n -E 's/^(agent-records|records-root):[[:space:]]*//p' "$fd" | head -n1 | sed 's/[[:space:]]*$//')" ;;
-      esac
-    fi
-  done
-  printf '%s\n' "${value:-$fallback}"
-}
 valid_rel() { [ -n "$1" ] && [ "$1" != . ] || return 1; case "$1" in /*) return 1;; esac; case "/$1/" in */../*) return 1;; esac; }
 check_chain() {
   local rel="$1" cur="$root" part old="$IFS" missing=no
@@ -42,8 +30,7 @@ ensure_chain() {
 }
 schema_free() { ! awk 'NR==1&&$0=="---"{fm=1;next} fm&&$0=="---"{exit} fm&&/^schema:/{x=1} END{exit !x}' "$1"; }
 
-ws="$(resolve workspace .spaces)"; rr="$(resolve records .records)"
-valid_rel "$ws" || err "unsafe workspace path: $ws"; valid_rel "$rr" || err "unsafe records path: $rr"
+ws=.spaces; rr=.records
 assets="templates/bugs.md
 templates/investigation.md
 operations/diagnostics.md"

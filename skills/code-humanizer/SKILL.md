@@ -11,7 +11,7 @@ density, landmarks.
 
 Disposition: **in-place steward of source** — no project home, no setup, no
 front-door registration. Map snapshots, when asked, are records under
-`<agent-records>/maps/`. Missing `records.sh` is not an error. Journal standup
+`.records/maps/`. Missing `records.sh` is not an error. Journal standup
 is never a precondition.
 
 This `SKILL.md` is a **thin router**. The write-time standard lives here because
@@ -145,15 +145,14 @@ cap. Markdown and other non-source files are out of v1.
 ## Record contract (map save only)
 
 Ordinary `mark` / `map` / `walk` write no records. A map is saved only when
-the human asks. Then mint under `<agent-records>/maps/` (first line-start
-`agent-records:` or `records-root:` in `AGENTS.md`, then `CLAUDE.md`, else
-`.records/`). Front-matter keys: `doctype`, `status`, `schema`, `tags`; schema
+the human asks. Then mint under fixed `.records/maps/`. Front-matter keys: `doctype`, `status`,
+`schema`, `tags`; schema
 `code-humanizer/map@1`; live `draft` / `published`; closed `archived` (ledger
 `--as` is `done` / `dropped` / `superseded` / `consumed` when the tool exists).
 File-mode close changes only status. Ordinary edits stamp no generic date or
 revision. Filenames are `YYYY-MM-DD-<slug>.md`; record links are
 `→ <store>/<file>.md`. Optional `stage` is non-empty if present. Use
-`records.sh --root <root> --records-root <records-root-relative> new maps
+`.records/records.sh new maps
 --schema code-humanizer/map@1 --title "…"` when that tool is executable;
 otherwise write the same four-key shape in file mode. Never write
 `history.tsv` by hand.

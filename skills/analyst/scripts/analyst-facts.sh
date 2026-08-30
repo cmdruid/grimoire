@@ -23,41 +23,6 @@
 # character classes -- never `\b` (a GNU extension that matches nothing on BSD).
 set -euo pipefail
 
-# Front-door variable `agent-records` (default `.records`; also accepts
-# legacy `records-root:`).
-resolve_records_root() {
-  local root="$1" fd decl=""
-  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-    if [ -z "$decl" ] && [ -f "$fd" ]; then
-      decl="$(sed -n -E 's/^(agent-records|records-root):[[:space:]]*//p' "$fd" \
-              | head -n 1 | sed 's/[[:space:]]*$//')"
-    fi
-  done
-  printf '%s\n' "${decl:-.records}"
-}
-
-resolve_workspace() {
-  local root="$1" fd decl=""
-  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-    if [ -z "$decl" ] && [ -f "$fd" ]; then
-      decl="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$fd" \
-              | head -n 1 | sed 's/[[:space:]]*$//')"
-    fi
-  done
-  printf '%s\n' "${decl:-.spaces}"
-}
-
-resolve_trackers_root() {
-  local root="$1" fd decl=""
-  for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-    if [ -z "$decl" ] && [ -f "$fd" ]; then
-      decl="$(sed -n -E 's/^agent-trackers:[[:space:]]*//p' "$fd" \
-              | head -n 1 | sed 's/[[:space:]]*$//')"
-    fi
-  done
-  printf '%s\n' "${decl:-.trackers}"
-}
-
 usage() {
   cat >&2 <<'EOF'
 usage: analyst-facts.sh <subcommand> <root> [options]
@@ -83,9 +48,9 @@ setup() {
   [ -n "$ROOT" ] || usage
   [ -d "$ROOT" ] || err "no such directory: $ROOT"
   ROOT="$(cd "$ROOT" && pwd)"
-  RR_REL="$(resolve_records_root "$ROOT")"
-  WS_REL="$(resolve_workspace "$ROOT")"
-  TR_REL="$(resolve_trackers_root "$ROOT")"
+  RR_REL=.records
+  WS_REL=.spaces
+  TR_REL=.trackers
   RR="$ROOT/$RR_REL"
   TR="$ROOT/$TR_REL"
   LEDGER="$RR/history.tsv"
@@ -388,7 +353,7 @@ EOF
 cmd_catalog() {
   setup "$@"
   local deployed bundled
-  deployed="$ROOT/$(resolve_workspace "$ROOT")/analyst/templates"
+  deployed="$ROOT/.spaces/analyst/templates"
   bundled="$(cd "$(dirname "$0")/../templates" && pwd)"
   echo "bundled_dir=$bundled"
   echo "deployed_dir=$deployed"

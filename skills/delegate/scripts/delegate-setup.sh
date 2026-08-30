@@ -3,8 +3,7 @@
 set -euo pipefail
 die(){ echo "delegate-setup.sh: $*" >&2;exit 2;};wo=no;case "${1:-}" in --write-only)wo=yes;shift;;esac;[ "$#" -eq 1 ]||die "usage: delegate-setup.sh [--write-only] <root>"
 root="$1";[ -d "$root" ]||die "root is not a directory: $root";root="$(cd "$root"&&pwd -P)";base="$(cd "$(dirname "$0")/.."&&pwd -P)";src="$base/templates/hooks/byproducts.md";[ -f "$src" ]&&[ ! -L "$src" ]&&[ ! -s "$src" ]||die "bundled hook must be a zero-byte regular file"
-ws="";for fd in "$root/AGENTS.md" "$root/CLAUDE.md";do if [ -z "$ws" ]&&[ -f "$fd" ];then ws="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$fd"|head -n1|sed 's/[[:space:]]*$//')";fi;done;ws="${ws:-.spaces}"
-valid(){ [ -n "$1" ]&&[ "$1" != . ]||return 1;case "$1" in /*)return 1;;esac;case "/$1/" in */../*)return 1;;esac;};valid "$ws"||die "unsafe workspace path: $ws"
+ws=.spaces
 check(){ local r="$1" c="$root" p o="$IFS" m=no;IFS=/;for p in $r;do [ -n "$p" ]||continue;c="$c/$p";[ "$m" = no ]||continue;[ ! -L "$c" ]||die "symlinked destination parent: $c";if [ -e "$c" ];then [ -d "$c" ]||die "destination parent is not a directory: $c";else m=yes;fi;done;IFS="$o";}
 ensure(){ local r="$1" c="$root" p o="$IFS";IFS=/;for p in $r;do [ -n "$p" ]||continue;c="$c/$p";[ ! -L "$c" ]||die "symlinked destination parent: $c";if [ -e "$c" ];then [ -d "$c" ]||die "destination parent is not a directory: $c";else mkdir "$c";fi;done;IFS="$o";}
 rel="$ws/delegate/hooks/byproducts.md";[ -z "${DELEGATE_SETUP_TEST_DEST_REL:-}" ]||rel="$DELEGATE_SETUP_TEST_DEST_REL";case "$rel" in "$ws/delegate/hooks/byproducts.md");;*)die "destination escapes delegate ownership: $rel";;esac;check "${rel%/*}";dst="$root/$rel";[ ! -L "$dst" ]||die "destination is a symlink: $dst";[ ! -e "$dst" ]||[ -f "$dst" ]||die "destination is not a regular file: $dst"

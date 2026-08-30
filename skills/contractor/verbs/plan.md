@@ -16,7 +16,7 @@ unsettled, stop and send those branches back.
    files stay `draft` and are not this input. `status:` missing
    / not `published` → refuse. An explicit human waive: the
    caller writes `published` on that spec (opportunistic
-   `records.sh --root <root> --records-root <records-root-relative> touch --status published`, else file-mode),
+   `.records/records.sh touch --status published`, else file-mode),
    notes the waive, **then** plans. It does not plan against a
    `draft`.
 2. **Read project context.** Load the host's own planning and implementation
@@ -66,9 +66,9 @@ unsettled, stop and send those branches back.
    list gaps), placeholder scan, type/name consistency. Add a slice for any
    uncovered requirement.
 7. **Land it** per SKILL.md *Shared discipline*. Resolve `plan.md` via the
-   project-templates rule, then mint `records.sh --root <root> --records-root <records-root-relative> new plans --schema contractor/plan@1 --template <resolved>
+   project-templates rule, then mint `.records/records.sh new plans --schema contractor/plan@1 --template <resolved>
    --title "<title> — Implementation Plan" --tag plan` when the tool exists; else
-   file-mode with the same schema and resolved body into the agent-records `plans/` home
+   file-mode with the same schema and resolved body into fixed `.records/plans/`
    (SKILL.md destination rule), naming the file `YYYY-MM-DD-<slug>.md` (the
    record shape).
 

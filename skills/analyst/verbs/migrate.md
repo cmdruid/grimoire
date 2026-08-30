@@ -1,7 +1,7 @@
 # `migrate <source-path>` — upgrade Analyst artifacts
 
-Select one file or directory tree. Canonical report records remain in `<agent-records>/reports/`;
-active catalog templates live in `<agent-workspace>/analyst/templates/`.
+Select one file or directory tree. Canonical report records remain in `.records/reports/`;
+active catalog templates live in `.spaces/analyst/templates/`.
 
 Resolve the effective catalog with deployed-wins semantics, then inventory stably. Analyst owns
 only `doctype: reports` records tagged `analyst` plus exactly one safe token present in that catalog.

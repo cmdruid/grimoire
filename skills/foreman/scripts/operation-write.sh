@@ -5,11 +5,11 @@ set -euo pipefail
 usage() {
   cat >&2 <<'EOF'
 usage:
-  operation-write.sh put --root <root> --workspace <relative> --identity foreman/<stem> --candidate <file>
-  operation-write.sh migrate-batch --root <root> --workspace <relative> --batch <tsv> [--deny-list <file>]
-  operation-write.sh lifecycle --root <root> --workspace <relative> --identity <owner/stem> --status active|deprecated --expected-digest sha256:<digest>
-  operation-write.sh verify --root <root> --workspace <relative> --identity <owner/stem> --expected-digest sha256:<digest> --evidence-file <file>
-  operation-write.sh doctrine --root <root> --workspace <relative> --stem <stem> --candidate <file> [--deny-list <file>]
+  operation-write.sh put --root <root> --identity foreman/<stem> --candidate <file>
+  operation-write.sh migrate-batch --root <root> --batch <tsv> [--deny-list <file>]
+  operation-write.sh lifecycle --root <root> --identity <owner/stem> --status active|deprecated --expected-digest sha256:<digest>
+  operation-write.sh verify --root <root> --identity <owner/stem> --expected-digest sha256:<digest> --evidence-file <file>
+  operation-write.sh doctrine --root <root> --stem <stem> --candidate <file> [--deny-list <file>]
 EOF
   exit 2
 }
@@ -89,11 +89,10 @@ atomic_copy() {
 }
 
 mode="${1:-}"; [ -n "$mode" ] || usage; shift
-root=""; workspace=""; identity=""; candidate=""; batch=""; deny_list=""; new_status=""; expected_digest=""; evidence_file=""; stem=""
+root=""; workspace=.spaces; identity=""; candidate=""; batch=""; deny_list=""; new_status=""; expected_digest=""; evidence_file=""; stem=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || usage; root="$2"; shift 2 ;;
-    --workspace) [ "$#" -ge 2 ] || usage; workspace="$2"; shift 2 ;;
     --identity) [ "$#" -ge 2 ] || usage; identity="$2"; shift 2 ;;
     --candidate) [ "$#" -ge 2 ] || usage; candidate="$2"; shift 2 ;;
     --batch) [ "$#" -ge 2 ] || usage; batch="$2"; shift 2 ;;
@@ -105,9 +104,8 @@ while [ "$#" -gt 0 ]; do
     *) usage ;;
   esac
 done
-[ -n "$root" ] && [ -n "$workspace" ] || usage
+[ -n "$root" ] || usage
 [ -d "$root" ] || usage; root="$(CDPATH='' cd -P "$root" && pwd)"
-valid_relative "$workspace" || usage
 script_dir="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)"; checker="$script_dir/operation-check.sh"
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/foreman-operation-write.XXXXXX")"; trap 'rm -rf "$tmp"' EXIT HUP INT TERM
 filtered_deny="$tmp/deny"; : >"$filtered_deny"
@@ -125,7 +123,7 @@ case "$mode" in
     [ -f "$candidate" ] && [ ! -L "$candidate" ] || die bad-candidate
     candidate_tainted "$candidate" && die tainted-candidate
     validate_candidate_shape "$candidate"
-    "$checker" --root "$root" --workspace "$workspace" --operation "$identity" \
+    "$checker" --root "$root" --operation "$identity" \
       --candidate "$identity=$candidate" >"$tmp/check" || die invalid-candidate
     destination_for "$identity"; dest_rel="$DEST_REL"; check_chain "${dest_rel%/*}"; dest="$root/$dest_rel"
     [ ! -L "$dest" ] || die symlink-destination
@@ -162,7 +160,7 @@ case "$mode" in
     done <"$batch"
     [ -s "$rows" ] || { echo "status=empty"; echo "writes=0"; exit 0; }
     while IFS="$(printf '\t')" read -r row_identity row_candidate row_source row_source_digest dest_rel; do
-      "$checker" --root "$root" --workspace "$workspace" --operation "$row_identity" "${specs[@]}" >"$tmp/check" \
+      "$checker" --root "$root" --operation "$row_identity" "${specs[@]}" >"$tmp/check" \
         || die incomplete-or-invalid-closure
     done <"$rows"
     writes=0; preserved=0
@@ -189,13 +187,13 @@ case "$mode" in
     if [ "${identity%%/*}" != foreman ]; then
       echo "status=proposed"; echo "identity=$identity"; echo "requested_transition=$new_status"; echo "write=false"; exit 1
     fi
-    "$checker" --root "$root" --workspace "$workspace" --operation "$identity" >"$tmp/check" || die invalid-operation
+    "$checker" --root "$root" --operation "$identity" >"$tmp/check" || die invalid-operation
     [ "$(sed -n 's/^digest=//p' "$tmp/check")" = "$expected_digest" ] || die operation-drift
     if [ "$new_status" = active ]; then [ "$(sed -n 's/^verification=//p' "$tmp/check")" = current ] || die stale-verification; fi
     file="$(sed -n 's/^path=//p' "$tmp/check")"; before="$(sha256_file "$file")"
     candidate="$tmp/lifecycle.md"
     awk -v status="$new_status" 'NR==1&&$0=="---"{fm=1} fm&&/^status:/{print "status: " status;next} {print}' "$file" >"$candidate"
-    "$checker" --root "$root" --workspace "$workspace" --operation "$identity" \
+    "$checker" --root "$root" --operation "$identity" \
       --candidate "$identity=$candidate" >"$tmp/recheck" || die invalid-transition-result
     [ "$(sha256_file "$file")" = "$before" ] || die destination-drift
     [ -z "${FOREMAN_WRITE_TEST_BEFORE_REPLACE:-}" ] || "$FOREMAN_WRITE_TEST_BEFORE_REPLACE" "$root" "$workspace" "$identity"
@@ -213,7 +211,7 @@ case "$mode" in
     if [ "${identity%%/*}" != foreman ]; then
       echo "status=proposed"; echo "identity=$identity"; echo "requested_verification=$expected_digest"; echo "evidence_file=$evidence_file"; echo "write=false"; exit 1
     fi
-    "$checker" --root "$root" --workspace "$workspace" --operation "$identity" >"$tmp/check" || die invalid-operation
+    "$checker" --root "$root" --operation "$identity" >"$tmp/check" || die invalid-operation
     [ "$(sed -n 's/^digest=//p' "$tmp/check")" = "$expected_digest" ] || die operation-drift
     [ "$(sed -n 's/^source_current=//p' "$tmp/check")" = true ] || die source-drift
     file="$(sed -n 's/^path=//p' "$tmp/check")"; before="$(sha256_file "$file")"; candidate="$tmp/verified.md"
@@ -227,7 +225,7 @@ case "$mode" in
     ' "$file" >"$candidate"
     while [ -s "$candidate" ] && [ "$(tail -c 1 "$candidate" | od -An -tx1 | tr -d ' \n')" != 0a ]; do printf '\n' >>"$candidate"; done
     printf '\n## Verification evidence\n\n' >>"$candidate"; awk '{print}' "$evidence_file" >>"$candidate"
-    "$checker" --root "$root" --workspace "$workspace" --operation "$identity" --candidate "$identity=$candidate" >"$tmp/recheck" \
+    "$checker" --root "$root" --operation "$identity" --candidate "$identity=$candidate" >"$tmp/recheck" \
       || die invalid-verification-result
     [ "$(sed -n 's/^verification=//p' "$tmp/recheck")" = current ] || die evidence-not-bound
     [ "$(sha256_file "$file")" = "$before" ] || die destination-drift

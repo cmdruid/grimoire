@@ -97,7 +97,7 @@ scoped to non-face skills.
 - **Glue is content vs. mechanism.** A runbook may describe the seam, while the
   owning skill implements the reader and a project owns any local overlay body.
   **Project hook files** live at
-  `<agent-workspace>/<skill>/hooks/<seam>.md`; there is no composer skill or
+  `.spaces/<skill>/hooks/<seam>.md`; there is no composer skill or
   pack-level writer. The same ownership rule applies to `operations/`, `hooks/`, and
   `templates/`: a publisher writes only beneath its own skill namespace.
 
@@ -120,7 +120,7 @@ scoped to non-face skills.
 2. **Ideal-use examples** — self-contained *"how to use me"* route/workflow a composer or role skill
    can ingest to understand usage. **Enrichment.**
 3. **Deployable seed** — project-customizable assets (for example,
-   `<agent-workspace>/<skill>/templates/`) plus an authoring verb. **Enrichment.**
+   `.spaces/<skill>/templates/`) plus an authoring verb. **Enrichment.**
 
 Edges are the minimum; layers 2–3 are optional. **Examples stay self-contained** — a cross-skill
 workflow is a seam the composer *generates* from edges, never a hardcoded sibling reference. A
@@ -223,181 +223,57 @@ nothing** (safe-by-default — never clobber hand-edited content).
 doc. Exercise `setup`/registration against a throwaway fixture instead. The library that teaches the
 mechanism is not thereby a self-registering deployment of it.
 
-## Front-door variables — one declaration mechanism, three roots
+## Fixed project homes
 
-Some values genuinely vary per host project. The canonical example is the **agent-records
-home** — the directory typed records live under, default `.records/`: right for every fresh
-project, but a brownfield host may have years of history under another name. Hardcoding such a
-value everywhere turns the default into a constant; a **front-door variable** keeps it *a
-pointer with a safe default*.
+Project-owned skill state uses three canonical roots beneath the project root:
 
-A front-door variable is **one line in the host project's front-door doc** (`AGENTS.md`, or
-`CLAUDE.md` where that is the front-door), at line start, kebab-case name:
+- `.records/` holds dated typed records, Journal's adjacent `records.sh`, and `history.tsv`.
+- `.spaces/` holds owner-first skill support at `.spaces/<skill>/<kind>/...`; owner names are open
+  `[a-z0-9-]+`, while kinds are the closed set `doctrine`, `drafts`, `hooks`, `operations`,
+  `scripts`, and `templates`.
+- `.trackers/` holds public tracker queues, receipts, Backlog's adjacent `trackers.sh`, and the
+  editable `DEBRIEF.md` routing prompt.
 
-    agent-records: dev
+These are constants, not defaults. Project front doors do not select alternate homes, and package
+scripts do not accept home-selection arguments. A skill constructs its owned path directly from the
+project root and the relevant canonical literal. Adjacent first-class providers self-locate and
+require their canonical parent; callers invoke the installed provider rather than bundled bytes.
 
-The records home also accepts the legacy synonym `records-root:` — first match of either name
-wins (`AGENTS.md` then `CLAUDE.md`).
+The three layers remain semantically distinct even though their locations are fixed. Typed work
+products belong in `.records`; owner-local support belongs in `.spaces`; public queues and their
+routing surface belong in `.trackers`. A skill materializes only the paths it owns. Skill prose
+names canonical paths literally—for example `.records/plans/`,
+`.spaces/auditor/doctrine/test/workflows/audit/`, and `.trackers/tasks.tsv`—rather than inventing a
+root placeholder or resolver.
 
-A second variable stands on its own root. For example, a host may override the default with:
+Brownfield layout is a migration concern, not a runtime configuration feature. A skill may expose a
+narrow, explicit migration for content it owns, but ordinary setup and runtime code never probes,
+adopts, aliases, or dual-reads a prior home. Historical evidence may retain retired spellings; live
+instructions and implementations may name them only in a bounded rejection or migration surface.
 
-    agent-workspace: project-tools
-
-The **agent-workspace home** is where a project's skill-owned development
-environment lives. Its grammar is
-`<agent-workspace>/<skill>/<kind>/...`: owner names are open
-`[a-z0-9-]+`, while kinds are the closed set `doctrine`, `drafts`, `hooks`,
-`operations`, `scripts`, and `templates`. A skill materializes only
-the kinds it owns and writes only beneath its own namespace. Default `.spaces`.
-Declare it only as an override; there is **no** legacy synonym. A declared
-value of `.` is forbidden because it would mingle owner namespaces with the
-project root.
-
-A third variable names the **agent-trackers home**, the public data layer for durable queues:
-
-    agent-trackers: project-trackers
-
-Its default is `.trackers`. Declare it only as an override; it has no legacy synonym, may not be
-`.` or absolute, and must not overlap either the records home or the agent-workspace home. Backlog
-owns this layer and its staged `<agent-trackers>/trackers.sh` provider. Consumer skills use that provider directly; tracker files
-are not an owner-local workspace kind.
-
-**`agent-templates` is retired.** It was a third variable that defaulted
-*inside* the records home (`<agent-records>/templates`). No host ever declared
-it. A skill's templates now resolve at
-`<agent-workspace>/<skill>/templates/`, and its doctrine at
-`<agent-workspace>/<skill>/doctrine/`; one `agent-workspace:` line moves every
-owner namespace. Do not restore the variable or declare `agent-templates:` on
-a front door.
-
-**Doctrine is an owner-local kind, not a variable of its own.** Its former
-variable had no demonstrated variance case, and defaulting it inside the records
-home forced that layer to disown a subdirectory it did not own. A host that
-wants its development environment somewhere else moves the whole workspace in
-one line; each skill still reads its own `doctrine/` kind.
-
-**`agent-workspace` maps to `.spaces`, and the singular/plural distinction is deliberate.**
-The variable names the whole project-level workspace; its default contains one owner-first
-space per skill. The plural also pairs with `.records`: `.records/` holds typed work products,
-while `.spaces/` holds skill-owned project support and `.trackers/` holds public queues. All three
-defaults stay short and legible at
-depth; for example, `.spaces/auditor/doctrine/test/workflows/audit/GUIDE.md`.
-
-Skill prose keeps naming each default path literally (`.records/plans/…`,
-`.spaces/backlog/templates/…`, `.spaces/auditor/doctrine/test/workflows/audit/…`) —
-never `$RECORDS_ROOT/plans/…`.
-
-**A note on `agent-workspace`'s justification, so a later reader can re-weigh it.** The bar
-below demands that a value *truly vary per host*. For `agent-records`, brownfield reality
-established that variance. For `agent-workspace`, the variable is carried on **architecture**:
-the front door should express where the skill-owned project environment lives as one declaration,
-and a host that wants it elsewhere should not have to fork the library. That is a design position,
-held openly rather than dressed as an evidence claim. The other two legs — a default right for
-every fresh project, and readers that consume it — hold today.
-
-**The `.spaces` and `.trackers` defaults are hard cuts.** There is no legacy alias,
-previous-default probe, adoption ladder, or migration behavior. With no declaration, readers
-resolve those defaults directly. A host may still explicitly declare any valid repo-relative
-value; that is an ordinary override, not compatibility behavior.
-
-One declaration mechanism, same precedence (declared value if present, else the default).
-Three readers:
-
-- **Agents** need no mechanism at all: the front-door is always loaded, and front-door
-  instructions outrank skill defaults. An agent substitutes the declared home when the
-  front-door carries one. Zero rewording, zero indirection for the common case.
-- **Package mint/write scripts** take resolved paths as arguments and **do not scan the front
-  door**. A staged first-class provider instead self-locates inside the one public layer it owns;
-  callers resolve that layer and invoke the provider directly, without passing unrelated roots.
-  Neither form opens `AGENTS.md` / `CLAUDE.md`.
-- **State-analysis helpers** that must emit `agent-records=` without a verb (today
-  `workstream-git.sh`) inline the resolver and accept both records-declaration names.
-  Print the resolved value as a fact (`agent-records=…`) so the agent sees which home
-  the run used. Existing `records-root=` fact keys stay until that script is edited.
-
-The canonical records resolver (bash-3.2 safe; both declaration names):
-
-    # Front-door variable `agent-records` (default `.records`; also accepts
-    # legacy `records-root:`) -- see the front-door-variables doctrine.
-    # Prints the resolved repo-relative path.
-    resolve_agent_records() {
-      local root="$1" fd decl=""
-      for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-        if [ -z "$decl" ] && [ -f "$fd" ]; then
-          decl="$(sed -n -E 's/^(agent-records|records-root):[[:space:]]*//p' "$fd" \
-                  | head -n 1 | sed 's/[[:space:]]*$//')"
-        fi
-      done
-      printf '%s\n' "${decl:-.records}"
-    }
-
-The **agent-workspace** home uses the same mechanism but a **flat default** — it does not fall
-back through another home, and it accepts only its own name:
-
-    # Front-door variable `agent-workspace` (default `.spaces`). Skill-owned
-    # content lives at `<agent-workspace>/<skill>/<kind>/...`.
-    resolve_agent_workspace() {
-      local root="$1" fd decl=""
-      for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-        if [ -z "$decl" ] && [ -f "$fd" ]; then
-          decl="$(sed -n -E 's/^agent-workspace:[[:space:]]*//p' "$fd" \
-                  | head -n 1 | sed 's/[[:space:]]*$//')"
-        fi
-      done
-      printf '%s\n' "${decl:-.spaces}"
-    }
-
-The **agent-trackers** home is another independent flat default:
-
-    # Front-door variable `agent-trackers` (default `.trackers`). Public queues
-    # and the staged tracker provider live directly beneath this root.
-    resolve_agent_trackers() {
-      local root="$1" fd decl=""
-      for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-        if [ -z "$decl" ] && [ -f "$fd" ]; then
-          decl="$(sed -n -E 's/^agent-trackers:[[:space:]]*//p' "$fd" \
-                  | head -n 1 | sed 's/[[:space:]]*$//')"
-        fi
-      done
-      printf '%s\n' "${decl:-.trackers}"
-    }
-
-    # Templates home: owner-local kind, not a variable.
-    resolve_templates_home() {
-      local root="$1" owner="$2"
-      printf '%s/%s/templates\n' "$(resolve_agent_workspace "$root")" "$owner"
-    }
-
-Rules of the road: **declare once** — first match wins; when *documenting* a variable (this doc,
-skill prose) keep the literal off line start or inside indented code, so documentation never
-parses as declaration; the value is a repo-relative path (or plain token), never absolute. And
-the **bar for adding one is high** — *prefer the simplest portable rule over a configurable one*
-still governs. A variable is justified only when the value truly varies per host (usually
-brownfield reality), the default is right for every fresh project (nobody *must* set it), and
-the readers consume it. A skills library that authors this doctrine never declares variables in
-its own front-door (patient-zero, as with registration above).
+The hard-cut rule is intentionally easy to audit: fixed construction is visible at each reader and
+writer, while the library lint rejects retired declarations, selectors, and symbolic-home tokens.
 
 ## Record-writing skills
 
 A skill that mints a typed record follows these rules. Portable — any skills library, not just
 this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them.
 
-1. **Destination.** A typed record is written under the agent-records home (resolver above).
-   Skill prose keeps naming the default path literally. Mint/write scripts take resolved
-   paths as arguments and do not scan the front door. State-analysis helpers that must emit
-   `agent-records=` without a verb inline the resolver and accept both declaration names.
+1. **Destination.** A typed record is written under fixed `.records/`.
+   Skill prose names the fixed path literally. Mint/write scripts derive it from the project root
+   and do not scan the front door.
 2. **Carry schemas and active templates; keep them distinct.** Each record format has a
    package-owned schema identifier, validator, and migration chain. A project template is an
    optional, body-only authoring scaffold the skill actually resolves while working; it cannot
    declare or select a schema. A `## Project templates` list in `SKILL.md` names every bundled
    file that the owning skill's explicit `setup` may deploy absent-only to
-   `<agent-workspace>/<skill>/templates/`. Every listed file has a live read site and setup
+   `.spaces/<skill>/templates/`. Every listed file has a live read site and setup
    coverage. Files not on the list are package-only and are never deployed. Retired generic record
    shells do not remain as unused project lock-ins.
-3. **Own-store standup.** On first write, `mkdir` that skill's store (and the agent-records
-   home directory if needed). Do not create a deployed `records.sh`, `history.tsv`, other
-   stores, the records README, or the *flat* `<agent-records>/templates/<doctype>.md`.
-   Ordinary writing never creates `<agent-workspace>`; only the owning skill's explicit setup may
+3. **Own-store standup.** On first write, `mkdir` that skill's store (and `.records`
+   if needed). Do not create a deployed `records.sh`, `history.tsv`, other
+   stores, the records README, or the *flat* `.records/templates/<doctype>.md`.
+   Ordinary writing never creates `.spaces`; only the owning skill's explicit setup may
    deploy its project template.
 4. **No floor.** Missing `records.sh` is not an error. Journal standup is never a
    precondition. A description must not say the skill requires a stood-up records layer.
@@ -411,17 +287,16 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    send the agent to another skill's `SKILL.md` for those bytes.
    Pack composition (the face / runbook) still names journal as
    the format authority; leaves do not.
-6. **Opportunistic `records.sh`.** If `<agent-records>/records.sh` is executable,
-   use it with explicit `--root <root> --records-root <records-root-relative>` before
+6. **Opportunistic `records.sh`.** If `.records/records.sh` is executable, use it directly before
    `new --schema <owned-schema> [--template <resolved-body>]` / `touch` / `done` / `list`.
    Otherwise write the same four-key front matter in file mode and use the resolved body scaffold.
    Resolution is the **project-templates rule** below.
    Never write a second copy at the *flat*
-   `<agent-records>/templates/<doctype>.md`.
+   `.records/templates/<doctype>.md`.
 7. **Never hand-write `history.tsv`.** File-mode close rewrites `status:` only; ordinary edits
-   never stamp generic dates or revisions. After a later journal standup, `records.sh --root <root> --records-root <records-root-relative> check` will flag a closed record with
+   never stamp generic dates or revisions. After a later journal standup, `.records/records.sh check` will flag a closed record with
    no ledger line. Repair is journal `curate`: rewrite `status:` back to `draft`, then
-   `records.sh --root <root> --records-root <records-root-relative> done`. `records.sh --root <root> --records-root <records-root-relative> done` refuses an already-archived status — that is why
+   `.records/records.sh done`. `.records/records.sh done` refuses an already-archived status — that is why
    the writer must not pretend file-mode close is a ledger close.
 8. **Pack installation is not project policy.** A pack lock records installed
    content, not whether a project has opted into a workflow. Writers never gate
@@ -432,9 +307,9 @@ The **project-templates** resolution, per declared project template `<file>` (th
 resolves the records home and the templates home and passes them in; the mint script
 never opens the front door):
 
-1. `<agent-workspace>/<skill>/templates/<file>` present → validate and use it (incumbent; never overwrite).
+1. `.spaces/<skill>/templates/<file>` present → validate and use it (incumbent; never overwrite).
 2. Else, if a recognized legacy template exists at
-   `<agent-records>/templates/<skill>/<file>` or an explicitly registered flat legacy path,
+   `.records/templates/<skill>/<file>` or an explicitly registered flat legacy path,
    refuse ordinary minting and name `/<skill> migrate <legacy-path>`. Reading never copies,
    adopts, or ignores a legacy customization.
 3. Else read and use the bundled template without writing to the project. A package-only template
@@ -471,23 +346,23 @@ doctrine path is exactly as wrong as a writer that does.
 
 1. **Which home.** Seven destinations, one test:
 
-   > **Records** are dated, typed, closeable instances → `<agent-records>`.
+   > **Records** are dated, typed, closeable instances → `.records`.
    > **Templates** are project-editable authoring scaffolds actively read by their owner →
-   > `<agent-workspace>/<skill>/templates/`.
+   > `.spaces/<skill>/templates/`.
    > **Doctrine** is living, normative, undated, and never closes →
-   > `<agent-workspace>/<skill>/doctrine/`.
+   > `.spaces/<skill>/doctrine/`.
    > **Drafts** are living, opt-in incubation files, not records →
-   > `<agent-workspace>/<skill>/drafts/`.
+   > `.spaces/<skill>/drafts/`.
    > **Hooks** are seam overlays on a skill's own loop →
-   > `<agent-workspace>/<skill>/hooks/<seam>.md`.
-   > **Trackers** are public durable queues and their shared provider → `<agent-trackers>`.
+   > `.spaces/<skill>/hooks/<seam>.md`.
+   > **Trackers** are public durable queues and their shared provider → `.trackers`.
    > **Inspector kinds** are undated judgment templates
    > (not mint shells, not records, not the audit rubric)
-   > → `<agent-workspace>/inspector/doctrine/<kind>.md`.
+   > → `.spaces/inspector/doctrine/<kind>.md`.
 
    Doctrine: an audit rubric, a station chapter. Not
    doctrine: a spec (a dated `specs/` record), a captured project fact, an audit *report*,
-   a host operation under `<agent-workspace>/<skill>/operations/`. The auditor rubric at
+   a host operation under `.spaces/<skill>/operations/`. The auditor rubric at
    `auditor/doctrine/test/workflows/audit/` remains doctrine (a parked nested tree). Host
    procedures are workspace-resident files copied by their owner skill — not an eighth
    landing class.
@@ -504,7 +379,7 @@ doctrine path is exactly as wrong as a writer that does.
 3. **Standup — explicit, narrow, and incumbent wins.** Normal reads never
    create directories. An explicit setup/deploy verb may create its declared
    workspace when absent, then only
-   `<agent-workspace>/<its-own-name>/<owned-kind>/`. It must not create,
+   `.spaces/<its-own-name>/<owned-kind>/`. It must not create,
    inspect as configuration, or interpret another owner namespace. Before each
    creation, recheck every existing parent: a symlink or non-directory parent
    is unsafe. Preflight the complete write set before creating anything; if a later immediate
@@ -542,30 +417,10 @@ doctrine path is exactly as wrong as a writer that does.
    precondition. A description must not claim a deployed layer is required, and a verb must
    not refuse and send the operator away to stand one up.
 
-5. **Use a sanctioned resolution literal.** Each home has a **small fixed set** of accepted
-   phrasings; a conforming skill contains a member verbatim. For home `H` (one of
-   `agent-records`, `agent-workspace`, `agent-trackers`), the set is:
-
-       <H>                 <- the angle-bracket path form; PREFER THIS
-       the H home
-       declared `H:`
-
-   **Prefer the angle-bracket form.** It is a single token, so it cannot straddle a line
-   wrap — and these documents wrap near 95 columns, so a multi-word literal frequently
-   breaks across lines. A checker matching the phrase members **must normalize whitespace
-   across newlines first**, or it will FAIL conforming skills purely on where their text
-   happened to wrap. That failure mode is not hypothetical: a live skill writes "the" at the
-   end of one line and "agent-records home." at the start of the next.
-
-   **Why a set and not one blessed sentence.** All three members were derived from what
-   conforming skills already say, not invented. One writes "under the agent-records home
-   (first `agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
-   `.records/`)"; another writes "declared `agent-records:` or `records-root:` (front-door
-   `AGENTS.md`), else `.records/`"; several write only `<agent-records>/specs/`. All
-   resolve correctly. A single blessed sentence would fail most of them, and no one sentence
-   fits a setup walk, a probe section, and a host-layout table without contortion. The set is
-   greppable and bounded; adding a member is a deliberate edit *here*, never a free-form
-   reword at the call site.
+5. **Name the fixed home.** A doctrine producer or consumer names its literal owner-local path,
+   `.spaces/<skill>/doctrine/`, in operative prose. The mechanical gate checks for `.spaces`; skill
+   review confirms that the procedure uses the correct owner namespace and does not accept a
+   caller-selected home.
 
 6. **Declare the edge.** `produces: doctrine` / `consumes: doctrine` in the `## Edges` block,
    per the typed-edge mechanics above. **The edge type stays `doctrine` — it does not become
@@ -582,8 +437,7 @@ missing sentence lives.
 
 ## Project hooks
 
-**Hooks** are seam overlays on a skill's own loop →
-`<agent-workspace>/<skill>/hooks/<seam>.md`. Default
+**Hooks** are seam overlays on a skill's own loop at
 `.spaces/<skill>/hooks/<seam>.md`. The `<skill>` stem matches that skill's
 frontmatter `name:`; `<seam>` is a safe Markdown filename known by that owner.
 Neither is a front-door variable.

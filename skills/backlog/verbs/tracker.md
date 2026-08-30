@@ -6,7 +6,7 @@ Resolve all roots per `SKILL.md`.
   invoke `catalog` on its returned installed provider; exclude reserved `receipts` from the configurable
   population. When named, report that queue's counts or refuse if absent.
 - `add <stem>`: run package-local `scripts/backlog-setup.sh` with the resolved root arguments and
-  `tracker-add <stem>`. It creates exactly `<agent-trackers>/<stem>.tsv`, adds the absent prompt
+  `tracker-add <stem>`. It creates exactly `.trackers/<stem>.tsv`, adds the absent prompt
   section, and reconciles the route. `receipts` and incumbent stems refuse.
 - `remove <stem>`: run the same helper with `tracker-remove <stem>`. It deletes the named queue even
   when rows remain, removes only its prompt section, preserves receipts, and removes the route block

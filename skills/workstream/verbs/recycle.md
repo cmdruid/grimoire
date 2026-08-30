@@ -44,9 +44,9 @@ recycled slot; for a clean-named stream, `close`+`create` instead and pay the re
    write. Inherit of create step 6 is **not** a transclude. After the path check (cwd is
    the worktree, line 1):
    1. `<root>` = Coordinates `root checkout:` (not `pwd`).
-   2. Resolve `<agent-workspace>` the same way as create (first line-start
-      `agent-workspace:` in `<root>/AGENTS.md` then `<root>/CLAUDE.md`, else `.spaces`).
-   3. Set `HOOKS_DIR=<root>/<agent-workspace>/workstream/hooks` (absolute).
+   2. Resolve `.spaces` the same way as create (first line-start
+      fixed `<root>/.spaces`).
+   3. Set `HOOKS_DIR=<root>/.spaces/workstream/hooks` (absolute).
       Never a relative directory.
    4. Run this skill's `hooks.sh parse --dir "$HOOKS_DIR"` with
       `--known feature-completion --known after-eventful-ship`. `status=fail` → STOP.

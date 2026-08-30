@@ -38,7 +38,7 @@ enumerates doctype `bugs`** looking for work (a doctype is not a queue).
 ## Project-context probe (at entry)
 
 **Where is the diagnostics operation?** Consult
-`<agent-workspace>/debugger/operations/diagnostics.md` **when that file exists** (symptom → first
+`.spaces/debugger/operations/diagnostics.md` **when that file exists** (symptom → first
 moves; a miss is an operation gap). Absent → investigate
 without it. The operation is publisher-owned, directly readable, and not doctrine. A project with no operation is
 investigated the same way, just without the shortcut.
@@ -47,14 +47,13 @@ investigated the same way, just without the shortcut.
 the root cause and that a fix should land. No pack marker or deployed workshop
 is consulted.
 
-The report is a record on every host, under the agent-records home (first
-`agent-records:` or `records-root:` in `AGENTS.md` then `CLAUDE.md`, else
-`.records/`). Resolve `investigation.md` via the project-templates rule;
-`records.sh --root <root> --records-root <records-root-relative> new reports --schema debugger/investigation@1 --template <resolved>` when the tool exists; else
+The report is a record on every host under fixed `.records/`. Resolve `investigation.md` via the
+project-templates rule;
+`.records/records.sh new reports --schema debugger/investigation@1 --template <resolved>` when the tool exists; else
 file-mode with that schema and resolved body, naming
 the file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the
 tool will not see it. Never write the
-flat `<agent-records>/templates/<doctype>.md`.
+flat `.records/templates/<doctype>.md`.
 
 ## When to Use
 
@@ -69,18 +68,16 @@ flat `<agent-records>/templates/<doctype>.md`.
 
 ## Shared discipline (`file` and the report mint)
 
-- **Resolve explicit roots.** `<root>` is the project root. Agent-records home: first line-start `agent-records:`
-  or `records-root:` in `AGENTS.md`, then `CLAUDE.md`; else `.records`.
-  Agent workspace is declared `agent-workspace:`, else `.spaces`. Pass `<root>`, the repo-relative
-  records root, and the repo-relative workspace into every `scripts/bug-mint.sh` call. The script
-  resolves `<agent-workspace>/debugger/templates/` and does not scan the front door.
+- **Use fixed homes.** `<root>` is the project root. Reports live under `.records/reports/`, bugs
+  under `.records/bugs/`, and templates under `.spaces/debugger/templates/`. Pass only `<root>` and
+  the operation's subject into `scripts/bug-mint.sh`; it never scans the front door.
 - **`bug-mint.sh` is the one minter for `file`.** Always call it (from this
-  skill's own `scripts/`). Signature: `mint <root> <records-root-relative>
-  <workspace-relative> <title>`. It uses staged `<agent-records>/records.sh` when that file is
+  skill's own `scripts/`). Signature: `mint <root> <title>`. It uses staged
+  `.records/records.sh` when that file is
   executable
   (`new bugs --schema debugger/bug@1 --template <resolved> --title "…"`); otherwise it writes the
   contract shape (file-mode under `bugs/`). Never write `history.tsv` by
-  hand. Never write the flat `<agent-records>/templates/bugs.md`. Never open
+  hand. Never write the flat `.records/templates/bugs.md`. Never open
   a `trackers/` path.
 - **Record contract.** Current front matter requires `doctype`, `status`, `schema`, and `tags`.
   Filed bugs use `debugger/bug@1`; investigations use `debugger/investigation@1`. Filenames are
@@ -187,15 +184,15 @@ and the proposed fix (not yet applied). Stop for confirm. After Phase 4, add how
 If Phase 4 hit the three-fix threshold, say so explicitly and name the architectural question
 instead of a fix.
 
-**Every host:** the durable record is a reports record under the agent-records
-home. Resolve `investigation.md` via the project-templates rule; `records.sh --root <root> --records-root <records-root-relative> new
+**Every host:** the durable record is a report under fixed `.records/reports/`
+home. Resolve `investigation.md` via the project-templates rule; `.records/records.sh new
 reports --schema debugger/investigation@1 --template <resolved> --title "<investigation title>"` when the tool
 exists; else file-mode with that schema, naming the file `YYYY-MM-DD-<slug>.md`
 (the record shape). Fill the body from the resolved
 `investigation.md` (reproduction, root cause, evidence, fix + verification,
 then a keyed `#### <key> — <title>` heading per actionable finding; keys
 match `[a-z0-9-]+`, unique within the report). Close it `consumed`
-(`records.sh --root <root> --records-root <records-root-relative> done` when the tool exists; else file-mode stamp) when its
+(`.records/records.sh done` when the tool exists; else file-mode stamp) when its
 substance lands somewhere durable, and link it from a tracker line only
 when one exists.
 
@@ -213,7 +210,7 @@ when one exists.
 - `investigation.md`
 - `bugs.md`
 
-Ordinary work uses a valid `<agent-workspace>/debugger/templates/<file>` incumbent, refuses a
+Ordinary work uses a valid `.spaces/debugger/templates/<file>` incumbent, refuses a
 recognized legacy copy with `/debugger migrate <source-path>`, or reads the bundled template without
 creating `.spaces`. Only `setup` deploys these templates and the active
 `operations/diagnostics.md`.

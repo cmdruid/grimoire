@@ -1,8 +1,8 @@
 # `migrate <source-path>` — separate Workstream records
 
 The source is one file or directory tree. Current Workstream records live only in
-`<agent-records>/streams/`; active templates are
-`<agent-workspace>/workstream/templates/manifest.md` and `debrief.md`.
+`.records/streams/`; active templates are
+`.spaces/workstream/templates/manifest.md` and `debrief.md`.
 
 Inventory stably. Own current `doctype: streams` records with `workstream/plan@1` plus tag `plan`
 or `workstream/debrief@1` plus tag `debrief`. A schema-less legacy `reports` record tagged

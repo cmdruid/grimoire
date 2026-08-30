@@ -8,7 +8,7 @@ ok(){ if "$@" >/dev/null 2>&1;then pass=$((pass+1));else echo "FAIL $*" >&2;fail
 no(){ if "$@" >"$T/out" 2>&1;then echo "FAIL accepted $*" >&2;fail=$((fail+1));else pass=$((pass+1));fi;}
 has(){ if grep -qF -- "$2" "$1";then pass=$((pass+1));else echo "FAIL missing $2" >&2;fail=$((fail+1));fi;}
 newroot(){ mkdir -p "$1";git -C "$1" init -q;}
-complete(){ "$SETUP" "$1" --workspace .spaces --records-root .records --apply;}
+complete(){ "$SETUP" "$1" --apply;}
 initialized(){ [ -x "$1/.trackers/trackers.sh" ]&&[ -f "$1/.trackers/receipts.tsv" ]&&[ "$(find "$1/.trackers" -name '*.tsv' ! -name receipts.tsv|wc -l|tr -d ' ')" -eq 4 ];}
 HEADER=$'id\tcreated\ttext\tevidence'
 
@@ -24,11 +24,11 @@ for provider in 0 1;do for code in $(seq 0 80);do
     [ "$state" -eq 2 ]&&prompt=true
   done
   if [ "$prompt" = true ];then
-    mkdir -p "$R/.spaces/backlog/hooks"
-    printf '%s\n' '# Backlog debrief routing' '' 'Edit each section to match this project. Debrief reads this file; the generic tracker API does not.'>"$R/.spaces/backlog/hooks/debrief.md"
+    mkdir -p "$R/.trackers"
+    printf '%s\n' '# Backlog debrief routing' '' 'Edit each section to match this project. Debrief reads this file; the generic tracker API does not.'>"$R/.trackers/DEBRIEF.md"
     n="$code";for stem in tasks issues feedback routines;do
       state=$((n%3));n=$((n/3))
-      if [ "$state" -eq 2 ];then printf '\n'>>"$R/.spaces/backlog/hooks/debrief.md";awk 'BEGIN{p=0}/^## /{p=1}p{print}' "$SKILL/suggestions/$stem.md">>"$R/.spaces/backlog/hooks/debrief.md";fi
+      if [ "$state" -eq 2 ];then printf '\n'>>"$R/.trackers/DEBRIEF.md";awk 'BEGIN{p=0}/^## /{p=1}p{print}' "$SKILL/suggestions/$stem.md">>"$R/.trackers/DEBRIEF.md";fi
     done
   fi
   ok complete "$R";initialized "$R"&&pass=$((pass+1))||{ echo "FAIL prefix $provider/$code did not converge" >&2;fail=$((fail+1));}
@@ -37,14 +37,14 @@ done
 
 CANON="$T/canonical-prompt";printf '%s\n' '# Backlog debrief routing' '' 'Edit each section to match this project. Debrief reads this file; the generic tracker API does not.'>"$CANON"
 for stem in tasks issues feedback routines;do printf '\n'>>"$CANON";awk 'BEGIN{p=0}/^## /{p=1}p{print}' "$SKILL/suggestions/$stem.md">>"$CANON";done
-cmp "$CANON" "$T/prefix-0-18/.spaces/backlog/hooks/debrief.md" >/dev/null&&pass=$((pass+1))||{ echo 'FAIL relationship prefix did not normalize canonically' >&2;fail=$((fail+1));}
+cmp "$CANON" "$T/prefix-0-18/.trackers/DEBRIEF.md" >/dev/null&&pass=$((pass+1))||{ echo 'FAIL relationship prefix did not normalize canonically' >&2;fail=$((fail+1));}
 
 # Failure after each setup-owned durable mutation leaves a state that the next run converges.
 HOOK="$T/stop-at.sh";printf '%s\n' '#!/bin/sh' '[ "$4" -ne "$STOP_AT" ] || exit 86'>"$HOOK";chmod +x "$HOOK"
 
 # A retry also recognizes prompt bytes inserted while reconciling a non-leading section subset.
-REL="$T/relationship-interrupt";newroot "$REL";mkdir -p "$REL/.trackers" "$REL/.spaces/backlog/hooks";printf '%s\n' "$HEADER">"$REL/.trackers/feedback.tsv"
-printf '%s\n' '# Backlog debrief routing' '' 'Edit each section to match this project. Debrief reads this file; the generic tracker API does not.' ''>"$REL/.spaces/backlog/hooks/debrief.md";awk 'BEGIN{p=0}/^## /{p=1}p{print}' "$SKILL/suggestions/feedback.md">>"$REL/.spaces/backlog/hooks/debrief.md"
+REL="$T/relationship-interrupt";newroot "$REL";mkdir -p "$REL/.trackers";printf '%s\n' "$HEADER">"$REL/.trackers/feedback.tsv"
+printf '%s\n' '# Backlog debrief routing' '' 'Edit each section to match this project. Debrief reads this file; the generic tracker API does not.' ''>"$REL/.trackers/DEBRIEF.md";awk 'BEGIN{p=0}/^## /{p=1}p{print}' "$SKILL/suggestions/feedback.md">>"$REL/.trackers/DEBRIEF.md"
 if STOP_AT=3 BACKLOG_SETUP_TEST_AFTER_WRITE="$HOOK" complete "$REL" >/dev/null 2>&1;then echo 'FAIL relationship interruption missed' >&2;fail=$((fail+1));else pass=$((pass+1));fi
 ok complete "$REL"
 for stop in $(seq 1 12);do
@@ -70,10 +70,10 @@ LS="$T/late-parent-swap";newroot "$LS";LATE_OUTSIDE="$T/late-swapped-layer"
 if OUTSIDE="$LATE_OUTSIDE" BACKLOG_SETUP_TEST_AFTER_WRITE="$LATE_SWAP" complete "$LS" >"$T/late-parent-swap.out" 2>&1;then echo 'FAIL late tracker-parent swap survived' >&2;fail=$((fail+1));else pass=$((pass+1));fi
 [ ! -e "$LS/AGENTS.md" ]&&pass=$((pass+1))||{ echo 'FAIL route changed after tracker custody was lost' >&2;fail=$((fail+1));}
 
-# The custom-root declaration is the first durable change and makes a bare retry resolvable.
-C="$T/custom-interrupt";newroot "$C";if STOP_AT=1 BACKLOG_SETUP_TEST_AFTER_WRITE="$HOOK" "$SETUP" "$C" --workspace .spaces --records-root .records --trackers-root project-trackers --apply >"$T/custom.out" 2>&1;then fail=$((fail+1));else pass=$((pass+1));fi
-has "$C/AGENTS.md" 'agent-trackers: project-trackers';[ ! -e "$C/project-trackers" ]&&pass=$((pass+1))||fail=$((fail+1))
-ok complete "$C";[ -f "$C/project-trackers/receipts.tsv" ]&&[ ! -e "$C/.trackers" ]&&pass=$((pass+1))||fail=$((fail+1))
+# Retired selectors refuse before the first durable change; a normal retry uses `.trackers`.
+C="$T/selector-refusal";newroot "$C";no "$SETUP" "$C" --trackers-root project-trackers --apply
+[ ! -e "$C/project-trackers" ]&&[ ! -e "$C/.trackers" ]&&pass=$((pass+1))||fail=$((fail+1))
+ok complete "$C";[ -f "$C/.trackers/receipts.tsv" ]&&pass=$((pass+1))||fail=$((fail+1))
 
 # Non-prefix content refuses before mutation.
 for kind in custom nonempty malformed-provider malformed-queue;do
@@ -88,7 +88,7 @@ for kind in custom nonempty malformed-provider malformed-queue;do
 done
 
 # A prompt file is a resumable prefix only when it has the exact package base.
-Z="$T/arbitrary-prompt";newroot "$Z";mkdir -p "$Z/.spaces/backlog/hooks";printf 'unrelated project prompt\n'>"$Z/.spaces/backlog/hooks/debrief.md"
+Z="$T/arbitrary-prompt";newroot "$Z";mkdir -p "$Z/.trackers";printf 'unrelated project prompt\n'>"$Z/.trackers/DEBRIEF.md"
 no complete "$Z";has "$T/out" 'reason=ambiguous-state';[ ! -e "$Z/.trackers/receipts.tsv" ]&&pass=$((pass+1))||{ echo 'FAIL arbitrary prompt published ledger' >&2;fail=$((fail+1));}
 
 # Git and README witnesses keep missing-ledger recovery branches distinct.
@@ -99,10 +99,10 @@ W="$T/unwitnessed";newroot "$W";if STOP_AT=11 BACKLOG_SETUP_TEST_AFTER_WRITE="$H
 rm "$W/.trackers/receipts.tsv";ok complete "$W";[ "$(wc -l <"$W/.trackers/receipts.tsv"|tr -d ' ')" -eq 1 ]&&pass=$((pass+1))||fail=$((fail+1))
 
 # Initialized setup preserves custom and deliberately empty populations.
-P="$T/population";newroot "$P";complete "$P" >/dev/null;"$SETUP" "$P" --workspace .spaces --records-root .records tracker-add decisions >/dev/null
-for stem in tasks issues feedback routines;do "$SETUP" "$P" --workspace .spaces --records-root .records tracker-remove "$stem" >/dev/null;done
+P="$T/population";newroot "$P";complete "$P" >/dev/null;"$SETUP" "$P" tracker-add decisions >/dev/null
+for stem in tasks issues feedback routines;do "$SETUP" "$P" tracker-remove "$stem" >/dev/null;done
 cp "$P/.trackers/decisions.tsv" "$T/decisions";complete "$P" >/dev/null;cmp "$T/decisions" "$P/.trackers/decisions.tsv" >/dev/null&&[ "$(find "$P/.trackers" -name '*.tsv' ! -name receipts.tsv|wc -l|tr -d ' ')" -eq 1 ]&&pass=$((pass+1))||fail=$((fail+1))
-"$SETUP" "$P" --workspace .spaces --records-root .records tracker-remove decisions >/dev/null;complete "$P" >/dev/null
+"$SETUP" "$P" tracker-remove decisions >/dev/null;complete "$P" >/dev/null
 [ "$(find "$P/.trackers" -name '*.tsv' ! -name receipts.tsv|wc -l|tr -d ' ')" -eq 0 ]&&pass=$((pass+1))||fail=$((fail+1))
 
 # A resumed run reports prior exact package results; a committed rerun is silent.
@@ -125,7 +125,7 @@ has "$T/readme-custody.out" 'reconciled=.trackers/README.md';grep -qFx 'project 
 
 # A project edit after an interrupted package prompt write refuses before another write.
 E="$T/prompt-custody";newroot "$E";if STOP_AT=4 BACKLOG_SETUP_TEST_AFTER_WRITE="$HOOK" complete "$E" >/dev/null 2>&1;then echo 'FAIL prompt interruption missed' >&2;fail=$((fail+1));else pass=$((pass+1));fi
-printf '\nproject prompt edit\n'>>"$E/.spaces/backlog/hooks/debrief.md";no complete "$E";has "$T/out" 'reason=commit-custody-required detail=.spaces/backlog/hooks/debrief.md'
+printf '\nproject prompt edit\n'>>"$E/.trackers/DEBRIEF.md";no complete "$E";has "$T/out" 'reason=commit-custody-required detail=.trackers/DEBRIEF.md'
 [ ! -e "$E/.trackers/issues.tsv" ]&&pass=$((pass+1))||{ echo 'FAIL setup wrote after losing prompt custody' >&2;fail=$((fail+1));}
 
 echo "setup-resume-test: $pass passed, $fail failed";[ "$fail" -eq 0 ]

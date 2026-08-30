@@ -12,16 +12,14 @@ trap 'rm -rf "$TMP"' EXIT
 OUT="$TMP/out"; ERR="$TMP/err"
 
 setup_layer() {
-  layer_root="$1"; layer_records="${2:-.records}"; layer_workspace="${3:-.spaces}"
+  layer_root="$1"
   mkdir -p "$layer_root"
-  "$STANDUP" setup "$layer_root" --records-root "$layer_records" \
-    --workspace-root "$layer_workspace" >/dev/null
-  "$STANDUP" finalize "$layer_root" --records-root "$layer_records" \
-    --workspace-root "$layer_workspace"
+  "$STANDUP" setup "$layer_root" >/dev/null
+  "$STANDUP" finalize "$layer_root"
 }
 
 repair_layer() {
-  "$STANDUP" repair "$1" --records-root "${2:-.records}" --workspace-root "${3:-.spaces}"
+  "$STANDUP" repair "$1"
 }
 
 assert_protected() {
@@ -76,7 +74,7 @@ cat >"$absent/.records/README.md" <<'EOF'
 
 project-prefix
 `.spaces/journal/scripts/records.sh` is the query and lifecycle engine;
-every invocation passes `--root <root> --records-root .records`. It is the
+every invocation passes `--root <root>`. It is the
 sole writer of `history.tsv`, the closure ledger.
 project-suffix
 EOF
@@ -114,16 +112,14 @@ else
   echo "FAIL: managed refresh changed the unowned EOF suffix" >&2; fail=$((fail + 1))
 fi
 
-# Custom roots and shell metacharacters retain a runnable, bounded repair.
-custom="$TMP/custom"
-custom_records='team'"'"'s [records] $pace'
-custom_workspace='agent [space] $pace'
-setup_layer "$custom" "$custom_records" "$custom_workspace"
-rm "$custom/$custom_records/records.sh"
-repair_layer "$custom" "$custom_records" "$custom_workspace" >"$OUT" 2>"$ERR"
-expect "custom repair reports provider" "wrote: $custom_records/records.sh" "$OUT"
-[ -x "$custom/$custom_records/records.sh" ] && pass=$((pass + 1)) || {
-  echo "FAIL: custom-root provider was not restored" >&2; fail=$((fail + 1)); }
+# Shell metacharacters in the project path retain a runnable, bounded repair.
+custom="$TMP/team's [project] \$pace"
+setup_layer "$custom"
+rm "$custom/.records/records.sh"
+repair_layer "$custom" >"$OUT" 2>"$ERR"
+expect "spaced-project repair reports provider" "wrote: .records/records.sh" "$OUT"
+[ -x "$custom/.records/records.sh" ] && pass=$((pass + 1)) || {
+  echo "FAIL: fixed-path provider was not restored" >&2; fail=$((fail + 1)); }
 
 # Every entry refusal happens before provider or README mutation.
 missing_ledger="$TMP/missing-ledger"
@@ -139,16 +135,16 @@ active="$TMP/active-intent"
 setup_layer "$active"
 rm "$active/.records/records.sh"
 rc=0
-JOURNAL_SETUP_TEST_STOP_AFTER=intent "$STANDUP" setup "$active" --records-root .records \
-  --workspace-root .spaces >"$OUT" 2>"$ERR" || rc=$?
+JOURNAL_SETUP_TEST_STOP_AFTER=intent "$STANDUP" setup "$active" \
+ >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "active intent fixture stop rc" "86" "$rc"
 rc=0; repair_layer "$active" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "active intent repair refusal rc" "2" "$rc"
 expect "active intent directs setup" "run /journal setup" "$ERR"
 [ ! -e "$active/.records/records.sh" ] && pass=$((pass + 1)) || {
   echo "FAIL: repair resumed an active setup" >&2; fail=$((fail + 1)); }
-"$STANDUP" setup "$active" --records-root .records --workspace-root .spaces >/dev/null
-"$STANDUP" finalize "$active" --records-root .records --workspace-root .spaces
+"$STANDUP" setup "$active" >/dev/null
+"$STANDUP" finalize "$active"
 
 malformed="$TMP/malformed"
 setup_layer "$malformed"
@@ -230,8 +226,8 @@ awk -v needle="$needle" '$0 == needle { print "  :"; changed++; next } { print }
 mv "$mutation_skill/scripts/standup.sh.tmp" "$mutation_skill/scripts/standup.sh"
 chmod +x "$mutation_skill/scripts/standup.sh" "$mutation_skill/scripts/records.sh"
 rc=0
-"$mutation_skill/scripts/standup.sh" repair "$missing_ledger" --records-root .records \
-  --workspace-root .spaces >"$OUT" 2>"$ERR" || rc=$?
+"$mutation_skill/scripts/standup.sh" repair "$missing_ledger" \
+ >"$OUT" 2>"$ERR" || rc=$?
 if [ "$rc" -eq 0 ] && [ -x "$missing_ledger/.records/records.sh" ]; then
   pass=$((pass + 1))
 else
@@ -245,7 +241,7 @@ setup_layer "$active_mutation_root"
 rm "$active_mutation_root/.records/records.sh"
 rc=0
 JOURNAL_SETUP_TEST_STOP_AFTER=intent "$STANDUP" setup "$active_mutation_root" \
-  --records-root .records --workspace-root .spaces >"$OUT" 2>"$ERR" || rc=$?
+ >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "active mutation fixture stop rc" "86" "$rc"
 active_mutation_skill="$TMP/active-mutation-skill/journal"
 mkdir -p "$active_mutation_skill/scripts"
@@ -260,7 +256,7 @@ mv "$active_mutation_skill/scripts/standup.sh.tmp" "$active_mutation_skill/scrip
 chmod +x "$active_mutation_skill/scripts/standup.sh" "$active_mutation_skill/scripts/records.sh"
 rc=0
 "$active_mutation_skill/scripts/standup.sh" repair "$active_mutation_root" \
-  --records-root .records --workspace-root .spaces >"$OUT" 2>"$ERR" || rc=$?
+ >"$OUT" 2>"$ERR" || rc=$?
 if [ "$rc" -eq 0 ] && [ -x "$active_mutation_root/.records/records.sh" ]; then
   pass=$((pass + 1))
 else

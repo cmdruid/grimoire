@@ -5,10 +5,10 @@ description: "Manage project-owned living follow-up trackers in a first-class tr
 
 # backlog — living follow-up trackers
 
-Backlog is the format and lifecycle authority for `<agent-trackers>` (default `.trackers`). The
+Backlog is the format and lifecycle authority for the fixed `.trackers` layer. The
 layer is public project state: `README.md`, package-managed `trackers.sh`, `receipts.tsv`, and one
-`<stem>.tsv` per queue. Backlog's editable routing prompt remains owner-local at
-`<agent-workspace>/backlog/hooks/debrief.md`.
+`<stem>.tsv` per queue. Backlog's editable routing prompt lives beside those queues at
+`.trackers/DEBRIEF.md`.
 
 ## Verb dispatch
 
@@ -27,20 +27,17 @@ reorder are not aliases.
 
 ## Shared discipline
 
-- Resolve `<root>` as the project checkout. Resolve line-start `agent-records:`,
-  `agent-workspace:`, and `agent-trackers:` from `AGENTS.md`, then `CLAUDE.md`; defaults are
-  `.records`, `.spaces`, and `.trackers`. Only records accepts legacy `records-root:`.
-- All three roots are repo-relative, non-dot paths without `.` or `..` components and are pairwise
-  non-overlapping. Backlog owns tracker-layer validation; never ask Workspace to validate it.
+- Resolve `<root>` as the project checkout. Records, owner-local support, and trackers live only at
+  `<root>/.records`, `<root>/.spaces`, and `<root>/.trackers`.
+- Backlog owns tracker-layer validation; never ask Workspace to validate it.
 - Before a Backlog verb invokes the provider, run package-local
-  `scripts/tracker-runtime-check.sh --root <root> --workspace <agent-workspace> --records-root
-  <agent-records> --trackers-root <agent-trackers>`. On success, invoke only the exact installed
+  `scripts/tracker-runtime-check.sh --root <root>`. On success, invoke only the exact installed
   `provider=` path it returns. On failure, pass through its recovery diagnostic and stop. Runtime
   verbs never reproduce the classifier-to-diagnostic mapping, resume setup, or run bundled provider
-  bytes against project data. Provider `wrote=` values are relative to `<agent-trackers>`.
+  bytes against project data. Provider `wrote=` values are relative to `.trackers`.
 - Never edit queue or receipt TSV bytes directly. Use the API for catalog, paging, row mutation,
   observation, and consumption. `receipts.tsv` is reserved and is never a configurable queue.
-- Setup, repair, and tracker add/remove run package-local `scripts/backlog-setup.sh` with the resolved roots.
+- Setup, repair, and tracker add/remove run package-local `scripts/backlog-setup.sh <root>`.
   That helper is the only queue-file lifecycle writer and the only package path that refreshes the
   installed API.
 - Standalone setup, repair, tracker, file, and curate calls make one pathspec-scoped commit over unique

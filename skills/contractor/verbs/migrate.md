@@ -1,7 +1,7 @@
 # `migrate <source-path>` — upgrade Contractor artifacts
 
 The argument selects one source file or directory tree; canonical records remain in
-`<agent-records>/plans/` and active templates in `<agent-workspace>/contractor/templates/`.
+`.records/plans/` and active templates in `.spaces/contractor/templates/`.
 
 Inventory stably and own only a `doctype: plans` record with exactly one writer-kind tag (`plan`,
 `roadmap`, or `runbook`) or active `plan.md`/`roadmap.md` templates. Preserve optional non-empty

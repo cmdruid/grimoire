@@ -1,25 +1,22 @@
 #!/usr/bin/env bash
-# tracker-layer-status.sh setup|repair|runtime --root <root> --workspace <W> --records-root <R> --trackers-root <T>
+# tracker-layer-status.sh setup|repair|runtime --root <root>
 set -euo pipefail
 
 die(){ echo "reason=$1${2:+ detail=$2}" >&2;exit 2;}
-valid_rel(){ local v="$1" c o="$IFS";[ -n "$v" ]&&[ "$v" != . ]||return 1;[[ "$v" != /* && "$v" != */ && "$v" != *//* && "$v" != *$'\n'* && "$v" != *$'\t'* ]]||return 1;IFS=/;read -r -a a <<<"$v";IFS="$o";for c in "${a[@]}";do [ -n "$c" ]&&[ "$c" != . ]&&[ "$c" != .. ]||return 1;done;}
 valid_stem(){ [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]]&&[ "$1" != receipts ];}
 
 MODE="${1:-}";shift||true
 case "$MODE" in setup|repair|runtime);;*)die usage;;esac
-ROOT="";WS="";RR="";TR=""
+ROOT="";TR=.trackers
 while [ $# -gt 0 ];do case "$1" in
-  --root)ROOT="${2:-}";shift 2;;--workspace)WS="${2:-}";shift 2;;
-  --records-root)RR="${2:-}";shift 2;;--trackers-root)TR="${2:-}";shift 2;;*)die usage;;esac;done
+  --root)ROOT="${2:-}";shift 2;;*)die usage;;esac;done
 case "$ROOT" in /*);;*)die unsafe-root;;esac
 [ -d "$ROOT" ]||die unsafe-root
 ROOT="$(CDPATH='' cd -P "$ROOT"&&pwd)"
-valid_rel "$WS"||die unsafe-workspace "$WS";valid_rel "$RR"||die unsafe-records-root "$RR";valid_rel "$TR"||die unsafe-trackers-root "$TR"
 
 SKILL="$(CDPATH='' cd -P "$(dirname "$0")/.."&&pwd)"
 LAYER="$ROOT/$TR";PROVIDER="$LAYER/trackers.sh";SOURCE="$SKILL/scripts/trackers.sh"
-README="$LAYER/README.md";LEDGER="$LAYER/receipts.tsv";PROMPT="$ROOT/$WS/backlog/hooks/debrief.md"
+README="$LAYER/README.md";LEDGER="$LAYER/receipts.tsv";PROMPT="$LAYER/DEBRIEF.md"
 README_STATUS="$SKILL/scripts/tracker-readme-status.sh";README_TEMPLATE="$SKILL/templates/trackers-readme-block.md"
 QUEUE_HEADER=$'id\tcreated\ttext\tevidence'
 RECEIPT_HEADER=$'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult'

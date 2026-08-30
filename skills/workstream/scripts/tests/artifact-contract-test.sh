@@ -19,7 +19,7 @@ expect_eq "legacy plans shell absent" 0 "$([ -e "$SKILL/templates/plans.md" ] &&
 expect_eq "legacy reports shell absent" 0 "$([ -e "$SKILL/templates/reports.md" ] && echo 1 || echo 0)"
 expect "plan schema minted" 'schema workstream/plan@1' "$SKILL/verbs/create.md"
 expect "debrief schema minted" 'schema workstream/debrief@1' "$SKILL/verbs/ship.md"
-expect "records isolated" '<agent-records>/streams/' "$SKILL/SKILL.md"
+expect "records isolated" '.records/streams/' "$SKILL/SKILL.md"
 expect "helper classifies streams drafts" '$rec_re/streams/' "$SKILL/scripts/workstream-git.sh"
 expect "migrate refuses directory plan sweep" 'never sweep it from a directory' "$SKILL/verbs/migrate.md"
 expect "legacy template rename registered" '`plans.md` → `manifest.md`' "$SKILL/verbs/migrate.md"

@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, and drain actionable findings. The rubric resolves under Auditor's agent-workspace doctrine home. Pass reports land in the agent-records home; defects stay in the report and promote via the host's bug-filing lane. Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
+description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, and drain actionable findings. The rubric resolves under Auditor's fixed `.spaces` doctrine home. Pass reports land in fixed `.records`; defects stay in the report and promote via the host's bug-filing lane. Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
 ---
 
 # auditor — the code-quality audit driver
@@ -17,23 +17,20 @@ the system up anywhere, but core project configuration never waits for it.
 
 ## One environment probe (at entry)
 
-The rubric is Auditor-owned doctrine, so its home is the fixed
-subpath `<agent-workspace>/auditor/doctrine`, and `<agent-workspace>` is the declared
-`agent-workspace:` (front-door `AGENTS.md` then `CLAUDE.md`), else `.spaces` — so by default
-`.spaces/auditor/doctrine/`. Resolving the home is not finding the rubric — resolve it, **then**
+The rubric is Auditor-owned doctrine, so its fixed home is
+`.spaces/auditor/doctrine/`. Locating the home is not finding the rubric — locate it, **then**
 detect `GUIDE.md`. No pack lifecycle is a prerequisite; rubric setup is this
 skill's explicit operation.
 
 Detect `GUIDE.md` only at
-`<agent-workspace>/auditor/doctrine/test/workflows/audit/` (by default
-`.spaces/auditor/doctrine/test/workflows/audit/`). The rubric is project doctrine
+`.spaces/auditor/doctrine/test/workflows/audit/`. The rubric is project doctrine
 (`GUIDE.md`, `rules/`, `metrics.sh`) and is loaded directly for each pass. If it is absent,
 ask once; do not scan the repo.
 
 `setup` stands the rubric up at the resolved home; **incumbent wins** — an existing rubric is
 never overwritten, since a re-run would otherwise destroy the host's accumulated calibration.
 
-Pass reports are agent-records `reports/` records on every host (file-mode if no tool).
+Pass reports are `.records/reports/` records on every host (file-mode if no tool).
 Findings stay in the report; promote a defect via the host's bug-filing lane. If no
 lane exists, stay in the report. Tracker lines only when the tracker file already exists.
 
@@ -71,17 +68,17 @@ layer (or the dated report file) is the memory.
 
 **Every host**, per pass:
 
-- **The pass report** — one `reports` record under the agent-records home, tagged
-  `audit`. Resolve `reports.md` at `<agent-workspace>/auditor/templates/` when present; otherwise
+- **The pass report** — one record under `.records/reports/`, tagged
+  `audit`. Resolve `reports.md` at `.spaces/auditor/templates/` when present; otherwise
   read bundled `templates/reports.md` without a project write. Only `/auditor setup` deploys a
   project copy. A recognized legacy location requires `/auditor migrate <path>` rather than silent adoption.
-  `records.sh --root <root> --records-root <records-root-relative> new reports --schema auditor/audit@1 --template <resolved> --title "Audit: <scope>" --tag audit` when
+  `.records/records.sh new reports --schema auditor/audit@1 --template <resolved> --title "Audit: <scope>" --tag audit` when
   the tool exists; else file-mode with the same schema and resolved body, naming the file
   `YYYY-MM-DD-<slug>.md` (the record shape). Never write the flat
-  `<agent-records>/templates/reports.md`. A project template carrying `schema:` refuses. Current front matter requires `doctype`, `status`,
+  `.records/templates/reports.md`. A project template carrying `schema:` refuses. Current front matter requires `doctype`, `status`,
   `schema`, and `tags`; ordinary edits stamp no generic date or revision. The reports store *is* the trend
   history. Close it `consumed` once its actionable findings are drained
-  (`records.sh --root <root> --records-root <records-root-relative> done` when the tool exists; else file-mode stamp).
+  (`.records/records.sh done` when the tool exists; else file-mode stamp).
 - **Defects stay in the report.** Do not mint `bugs/`. Promote a defect via
   the host's bug-filing lane. If no lane exists, stay in the report. Tracker
   lines only when the tracker file already exists; else the report is the queue.
@@ -117,7 +114,7 @@ Follow the host's `GUIDE.md` → *Process*; in brief:
 5. **Record.** Write the pass report (reports record / dated file): scorecard + findings with
    evidence, per GUIDE's finding-entry shape.
 6. **Drain.** Route every actionable finding per *Deliverables*; then close the report
-   (`records.sh --root <root> --records-root <records-root-relative> done <report> --as consumed` on a workshop host).
+   (`.records/records.sh done <report> --as consumed` on a workshop host).
 
 ## Relationship to neighboring skills
 

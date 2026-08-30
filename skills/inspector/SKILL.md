@@ -18,10 +18,10 @@ When a verb is selected, **read its file and follow it**.
 This skill is **self-contained** and depends on no other skill.
 
 There is no `init`. Explicit `/inspector setup [<root>]` deploys Inspector's bundled kinds
-for project customization. Missing `<agent-workspace>/inspector/doctrine/`
+for project customization. Missing `.spaces/inspector/doctrine/`
 is not a refuse — use the bundled `kinds/<kind>.md`.
 
-**Kind doctrine** lands at `<agent-workspace>/inspector/doctrine/<kind>.md`
+**Kind doctrine** lands at `.spaces/inspector/doctrine/<kind>.md`
 (default `.spaces/inspector/doctrine/<kind>.md`). No new front-door variable.
 Incumbent wins; upgrade is a judgment-assisted diff. Load the complete
 workspace copy when it is a readable regular file, else the bundled
@@ -75,8 +75,7 @@ Kind-detect is the **only** target gate. Unknown kind → ask or refuse;
 do not invent a rubric. The seven bundled kinds are in-scope. Hosts
 add document-kind files; they do not invent a rubric at runtime.
 
-1. Resolve `<agent-workspace>` (front-door `agent-workspace:`, else
-   `.spaces`) and the optional `inspector/doctrine/` directory. Never create
+1. Resolve the optional `.spaces/inspector/doctrine/` directory. Never create
    it here. For each bundled stem, a readable regular project file is
    the complete effective policy; absence uses bundled `kinds/<kind>.md`.
    Symlinks, directories, other incompatible entries, and unreadable

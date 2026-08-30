@@ -1,10 +1,9 @@
 # `repair` — restore the initialized tool surface
 
-1. Resolve all roots per `SKILL.md` and run package-local
-   `scripts/backlog-setup.sh <root> --workspace <W> --records-root <R>
-   [--trackers-root <T>] repair`.
+1. Resolve `<root>` per `SKILL.md` and run package-local
+   `scripts/backlog-setup.sh <root> repair`.
 2. Repair requires a valid receipt ledger and valid incumbent queue schemas. It may write only
-   `<agent-trackers>/trackers.sh`, that file's executable bit, and Backlog's managed
+   `.trackers/trackers.sh`, that file's executable bit, and Backlog's managed
    `backlog:trackers-tool` README block. It never creates roots or changes declarations, queues,
    receipts, prompts, routes, or unrelated README prose.
 3. Parse unique `wrote=` paths. Standalone and nonempty → one scoped commit with `Backlog: repair`;

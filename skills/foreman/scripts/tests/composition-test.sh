@@ -29,7 +29,7 @@ tags: [composition]
 EOF
 }
 activate() {
-  id="$1"; file="$O/${id#*/}.md"; "$CHECK" --root "$R" --workspace .spaces --operation "$id" >"$OUT" || return 1; d="$(fact digest "$OUT")"
+  id="$1"; file="$O/${id#*/}.md"; "$CHECK" --root "$R" --operation "$id" >"$OUT" || return 1; d="$(fact digest "$OUT")"
   sed -i.bak -e 's/status: draft/status: active/' -e "/^tags:/a\\
 verified-against: $d" "$file"; rm "$file.bak"
 }
@@ -59,16 +59,16 @@ tags: [composition]
 - Resume the failed operation.
 EOF
 activate foreman/sequence
-"$GOAL" render --root "$R" --workspace .spaces --operation foreman/sequence --objective 'Exercise ordered composition' --output "$T/goal.md" >"$OUT"
+"$GOAL" render --root "$R" --operation foreman/sequence --objective 'Exercise ordered composition' --output "$T/goal.md" >"$OUT"
 second_line="$(grep -n '### `foreman/second`' "$T/goal.md"|head -n1|cut -d: -f1)"; first_line="$(grep -n '### `foreman/first`' "$T/goal.md"|head -n1|cut -d: -f1)"
 ok test "$second_line" -lt "$first_line"
 eq "nested closure count" 3 "$(fact operations "$OUT")"
 
 sed -i.bak 's/foreman\/first/foreman\/missing/' "$O/sequence.md"; rm "$O/sequence.md.bak"
-if "$CHECK" --root "$R" --workspace .spaces --operation foreman/sequence >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi
+if "$CHECK" --root "$R" --operation foreman/sequence >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi
 has "missing closure rejected" missing-operation "$OUT"
 sed -i.bak 's/foreman\/missing/foreman\/sequence/' "$O/sequence.md"; rm "$O/sequence.md.bak"
-if "$CHECK" --root "$R" --workspace .spaces --operation foreman/sequence >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi
+if "$CHECK" --root "$R" --operation foreman/sequence >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi
 has "cycle rejected" cycle "$OUT"
 
 for needle in 'duplicated instruction' 'ordered list' 'Missing references' 'Nested workflows' \

@@ -1,21 +1,20 @@
 #!/usr/bin/env bash
-# kinds-deploy.sh --root <root> --workspace <repo-relative-home>
+# kinds-deploy.sh --root <root>
 # Copy every bundled Inspector kind absent-only into inspector/doctrine/.
 set -euo pipefail
 
 die() { echo "kinds-deploy.sh: $1${2:+: $2}" >&2; exit 2; }
 
 ROOT=""
-WORKSPACE=""
+WORKSPACE=.spaces
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || die usage; ROOT="$2"; shift 2 ;;
-    --workspace) [ "$#" -ge 2 ] || die usage; WORKSPACE="$2"; shift 2 ;;
     *) die usage "$1" ;;
   esac
 done
 
-[ -n "$ROOT" ] && [ -n "$WORKSPACE" ] || die usage
+[ -n "$ROOT" ] || die usage
 [ -d "$ROOT" ] || die "root is not a directory" "$ROOT"
 ROOT="$(CDPATH='' cd -P "$ROOT" && pwd)"
 
@@ -31,7 +30,6 @@ valid_relative() {
   done
 }
 
-valid_relative "$WORKSPACE" || die "unsafe workspace path" "$WORKSPACE"
 SKILL="$(CDPATH='' cd -P "$(dirname "$0")/.." && pwd)"
 BUNDLED="$SKILL/kinds"
 [ -d "$BUNDLED" ] && [ ! -L "$BUNDLED" ] || die "missing bundled kinds" "$BUNDLED"

@@ -1,11 +1,10 @@
 #!/bin/sh
 # standup.sh — reconcile Journal's records tool layer.
 #
-#   standup.sh setup|repair|finalize <target-root> \
-#     --records-root <rel> --workspace-root <rel>
+#   standup.sh setup|repair|finalize <target-root>
 #
 # Setup is resumable. Every non-clean run records its roots and completed path
-# union at <agent-workspace>/journal/setup.intent before changing the tool
+# union at .spaces/journal/setup.intent before changing the tool
 # layer. Finalize removes only a ready, revalidated intent after its caller has
 # taken commit custody of that union.
 set -eu
@@ -15,7 +14,7 @@ SKILL="$(CDPATH='' cd "$(dirname "$0")/.." && pwd -P)"
 INTENT_SCHEMA="journal/setup-intent@1"
 
 usage() {
-  echo "usage: standup.sh setup|repair|finalize <target-root> --records-root <rel> --workspace-root <rel>" >&2
+  echo "usage: standup.sh setup|repair|finalize <target-root>" >&2
   exit 1
 }
 
@@ -30,12 +29,6 @@ valid_rel_dir() {
 '*) return 1 ;; esac
   case "/$1/" in */../*|*/./*|*//*) return 1 ;; esac
   return 0
-}
-
-shell_quote() {
-  printf "'"
-  printf '%s' "$1" | sed "s/'/'\\\\''/g"
-  printf "'"
 }
 
 safe_tree() { # verify existing parents from root to target
@@ -273,7 +266,6 @@ render_readme() {
   block_tmp="$(mktemp "${TMPDIR:-/tmp}/journal-records-block.XXXXXX")"
   readme_candidate="$(mktemp "${TMPDIR:-/tmp}/journal-records-readme.XXXXXX")"
   remember_tmp "$block_tmp"; remember_tmp "$readme_candidate"
-  records_shell="$(shell_quote "$records_rel")"
   cat > "$block_tmp" <<EOF
 <!-- journal:records-tool BEGIN -->
 ## Use the records tool
@@ -287,17 +279,16 @@ Record paths are relative to this records root. The tool discovers records by a 
 any depth; directories belong to their writers, not to a stored roster. \`history.tsv\` is the
 closure ledger and is never a substitute for the live record set.
 
-Run the tool from the project root with an absolute project path. The first line safely
-quotes this project's repo-relative records path:
+Run the adjacent tool from the project root. It locates the project from its fixed
+\`.records\` home:
 
-    records_root=$records_shell
-    "\$records_root/records.sh" --root "<absolute-project-root>" --records-root "\$records_root" list
+    .records/records.sh list
 
 Start with these read-only commands:
 
 - \`list [filters]\` lists live records (\`draft\` and \`published\`) as TSV.
 - \`grep [filters] <pattern>\` searches record bodies; metadata belongs in filters.
-- \`show <path>\` prints one record; paths may be records-root-relative.
+- \`show <path>\` prints one record; paths may be relative to \`.records\`.
 - \`history [filters]\` reads the closure ledger.
 - \`check\` validates record metadata, links, and ledger coherence.
 
@@ -311,7 +302,7 @@ Lifecycle commands write records:
 - \`relocate <source> --to <destination-relative>\` moves a record while updating
   internal links and ledger paths.
 
-Every command uses the same prefix shown above. Run \`records.sh\` without a command
+Every command uses the adjacent self-locating provider. Run \`records.sh\` without a command
 to see the complete usage. Never edit \`history.tsv\` by hand; \`records.sh done\` is
 its sole writer.
 
@@ -328,9 +319,9 @@ EOF
 
 The directory layout under this root belongs to record writers. The engine
 crawls records at any depth and knows no store roster. Project templates live
-at \`<agent-workspace>/<skill>/templates/\` (for example,
+at \`.spaces/<skill>/templates/\` (for example,
 \`.spaces/notepad/templates/\`); project doctrine lives at
-\`<agent-workspace>/<skill>/doctrine/\`. Journal setup deploys the engine,
+\`.spaces/<skill>/doctrine/\`. Journal setup deploys the engine,
 ledger, and this README only.
 
 Stood up by journal on $(date +%Y-%m-%d).
@@ -344,12 +335,12 @@ EOF
       !inside { print }
     ' "$readme" > "$readme_candidate"
   elif [ "$mode" = setup ]; then
-    awk -v block="$block_tmp" -v prior="$legacy_rel" -v records_root="$records_rel" '
+    awk -v block="$block_tmp" -v prior="$legacy_rel" '
       function emit( line) { while ((getline line < block) > 0) print line; close(block); emitted = 1 }
       $0 == "`" prior "` is the query and lifecycle engine;" {
         first = $0; got_second = (getline second) > 0; got_third = (getline third) > 0
         if (got_second && got_third &&
-            second == "every invocation passes `--root <root> --records-root " records_root "`. It is the" &&
+            second ~ /^every invocation passes .*\. It is the$/ &&
             third == "sole writer of `history.tsv`, the closure ledger.") { emit(); next }
         print first; if (got_second) print second; if (got_third) print third; next
       }
@@ -388,11 +379,11 @@ EOF
 provider_valid() {
   [ -f "$provider" ] && [ ! -L "$provider" ] && [ -x "$provider" ] &&
     cmp -s "$source_engine" "$provider" || return 1
-  provider_usage="$("$provider" --root "$root" --records-root "$records_rel" 2>&1)" &&
+  provider_usage="$("$provider" 2>&1)" &&
     provider_rc=0 || provider_rc=$?
   [ "$provider_rc" -eq 1 ] || return 1
   provider_first="$(printf '%s\n' "$provider_usage" | sed -n '1p')"
-  [ "$provider_first" = "usage: records.sh --root <abs> --records-root <rel> <command> [args]" ] || return 1
+  [ "$provider_first" = "usage: .records/records.sh <command> [args]" ] || return 1
   for provider_command in list grep show new touch "done" history prune-candidates check relocate; do
     printf '%s\n' "$provider_usage" | awk -v command="$provider_command" '$1 == command { found = 1 } END { exit !found }' || return 1
   done
@@ -429,7 +420,7 @@ layer_is_current() {
 
 run_content_check() {
   echo "records: $records ($label)"
-  if ! "$provider" --root "$root" --records-root "$records_rel" check; then
+  if ! "$provider" check; then
     echo "records check failed — tool layer is up; run the record owner's explicit migrate verb for legacy records, then /journal curate" >&2
   fi
 }
@@ -469,20 +460,10 @@ atomic_install_readme() {
   mv "$readme_tmp" "$readme"
 }
 
-[ $# -ge 2 ] || usage
+[ $# -eq 2 ] || usage
 mode="$1"; root="$2"; shift 2
 case "$mode" in setup|repair|finalize) ;; *) usage ;; esac
-records_rel=""; workspace_rel=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --records-root) [ $# -ge 2 ] || usage; records_rel="$2"; shift 2 ;;
-    --workspace-root) [ $# -ge 2 ] || usage; workspace_rel="$2"; shift 2 ;;
-    *) usage ;;
-  esac
-done
-[ -n "$records_rel" ] && [ -n "$workspace_rel" ] || usage
-valid_rel_dir "$records_rel" || { echo "standup.sh: --records-root must be relative, non-dot, and contain no .. segment" >&2; exit 1; }
-valid_rel_dir "$workspace_rel" || { echo "standup.sh: --workspace-root must be relative, non-dot, and contain no .. segment" >&2; exit 1; }
+records_rel=.records; workspace_rel=.spaces
 [ -d "$root" ] && [ ! -L "$root" ] || die "no safe target directory: $root"
 root="$(CDPATH='' cd "$root" && pwd -P)"
 source_engine="$SKILL/scripts/records.sh"

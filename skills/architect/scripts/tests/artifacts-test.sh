@@ -42,14 +42,14 @@ expect_match "writer uses securely created temporary files" 'mktemp ' "$writer_t
 expect_absent_match "writer has no predictable PID temporary path" 'tmp\.\$\$' "$writer_text"
 
 draft_body "$INPUT/draft.md" 'Cache design'
-run_writer draft-save --root "$ROOT" --workspace .spaces --slug cache-design \
+run_writer draft-save --root "$ROOT" --slug cache-design \
   --title 'Cache design' --body "$INPUT/draft.md"
 expect_eq "draft save succeeds" 0 "$rc"
 expect_eq "draft path is owner-first" 'path=.spaces/architect/drafts/cache-design.md' "$(cat "$OUT")"
 expect_match "draft keeps title" '^# Cache design$' "$(cat "$ROOT/.spaces/architect/drafts/cache-design.md")"
 
 printf '\nSaved detail.\n' >>"$INPUT/draft.md"
-run_writer draft-save --root "$ROOT" --workspace .spaces --slug cache-design \
+run_writer draft-save --root "$ROOT" --slug cache-design \
   --title 'Cache design' --body "$INPUT/draft.md"
 expect_eq "same-title draft updates" 0 "$rc"
 expect_match "draft update is visible" 'Saved detail\.' "$(cat "$ROOT/.spaces/architect/drafts/cache-design.md")"
@@ -57,7 +57,7 @@ expect_match "draft update is visible" 'Saved detail\.' "$(cat "$ROOT/.spaces/ar
 sentinel="$T/temp-sentinel"; printf 'unchanged\n' >"$sentinel"
 planted="$ROOT/.spaces/architect/drafts/.cache-design.md.tmp.planted"
 ln -s "$sentinel" "$planted"
-run_writer draft-save --root "$ROOT" --workspace .spaces --slug cache-design \
+run_writer draft-save --root "$ROOT" --slug cache-design \
   --title 'Cache design' --body "$INPUT/draft.md"
 expect_eq "planted temporary symlink does not block safe save" 0 "$rc"
 expect_eq "planted temporary symlink target is untouched" 'unchanged' "$(cat "$sentinel")"
@@ -65,30 +65,30 @@ expect_eq "writer does not consume planted temporary symlink" "$sentinel" "$(rea
 rm -f "$planted"
 
 draft_body "$INPUT/other.md" 'Other design'
-run_writer draft-save --root "$ROOT" --workspace .spaces --slug cache-design \
+run_writer draft-save --root "$ROOT" --slug cache-design \
   --title 'Other design' --body "$INPUT/other.md"
 expect_eq "different title cannot claim slug" 2 "$rc"
 expect_match "collision explains refusal" 'different title' "$(cat "$ERR")"
 
-run_writer draft-save --root "$ROOT" --workspace .spaces --slug ../escape \
+run_writer draft-save --root "$ROOT" --slug ../escape \
   --title 'Cache design' --body "$INPUT/draft.md"
 expect_eq "unsafe draft slug refuses" 2 "$rc"
 
-mkdir -p "$ROOT/outside"; ln -s "$ROOT/outside" "$ROOT/link"
-run_writer draft-save --root "$ROOT" --workspace link --slug cache-design \
+symlink_root="$T/symlink-root"; mkdir -p "$symlink_root/outside"; ln -s "$symlink_root/outside" "$symlink_root/.spaces"
+run_writer draft-save --root "$symlink_root" --slug cache-design \
   --title 'Cache design' --body "$INPUT/draft.md"
 expect_eq "symlinked workspace refuses" 2 "$rc"
 expect_eq "interrupted draft has no spike" 0 "$(count_spikes)"
 
 sed 's/<title>/Empty feasibility/' "$SKILL/templates/spikes.md" >"$INPUT/empty-spike.md"
-run_writer spike-publish --root "$ROOT" --records-root .records \
+run_writer spike-publish --root "$ROOT" \
   --title 'Empty feasibility' --body "$INPUT/empty-spike.md"
 expect_eq "empty spike refuses publication" 2 "$rc"
 expect_match "empty spike names missing evidence" 'section must contain evidence' "$(cat "$ERR")"
 expect_eq "empty spike creates no record" 0 "$(count_spikes)"
 
 spike_body "$INPUT/spike.md" 'Cache feasibility' positive
-run_writer spike-publish --root "$ROOT" --records-root .records \
+run_writer spike-publish --root "$ROOT" \
   --title 'Cache feasibility' --body "$INPUT/spike.md"
 expect_eq "file-mode spike publishes" 0 "$rc"
 first="$(sed -n 's/^path=//p' "$OUT")"
@@ -101,7 +101,7 @@ expect_match "spike records executor context" '^Executor: fixture-agent; baselin
 expect_match "spike records positive conclusion" '^Result: positive\.' "$first_text"
 first_sum="$(cksum "$ROOT/$first")"
 
-run_writer spike-publish --root "$ROOT" --records-root .records \
+run_writer spike-publish --root "$ROOT" \
   --title 'Cache feasibility' --body "$INPUT/spike.md"
 expect_eq "same-title spike creates successor" 0 "$rc"
 second="$(sed -n 's/^path=//p' "$OUT")"
@@ -112,7 +112,7 @@ result_root="$T/result-root"; mkdir -p "$result_root"
 for result in negative inconclusive; do
   case "$result" in negative) result_title='Negative feasibility' ;; *) result_title='Inconclusive feasibility' ;; esac
   spike_body "$INPUT/$result.md" "$result_title" "$result"
-  run_writer spike-publish --root "$result_root" --records-root .records \
+  run_writer spike-publish --root "$result_root" \
     --title "$result_title" --body "$INPUT/$result.md"
   expect_eq "$result spike publishes" 0 "$rc"
   result_path="$(sed -n 's/^path=//p' "$OUT")"
@@ -121,14 +121,14 @@ done
 
 spike_body "$INPUT/successor.md" 'Cache feasibility follow-up'
 printf '\nSupersedes evidence in → %s.\n' "${first#.records/}" >>"$INPUT/successor.md"
-run_writer spike-publish --root "$ROOT" --records-root .records \
+run_writer spike-publish --root "$ROOT" \
   --title 'Cache feasibility follow-up' --body "$INPUT/successor.md"
 expect_eq "linked successor publishes" 0 "$rc"
 successor="$(sed -n 's/^path=//p' "$OUT")"
 expect_match "successor cites predecessor" "→ ${first#.records/}" "$(cat "$ROOT/$successor")"
 
 printf '\n→ %s\n' "${successor#.records/}" >>"$INPUT/draft.md"
-run_writer draft-save --root "$ROOT" --workspace .spaces --slug cache-design \
+run_writer draft-save --root "$ROOT" --slug cache-design \
   --title 'Cache design' --body "$INPUT/draft.md"
 expect_eq "draft accepts spike link" 0 "$rc"
 expect_match "draft links completed spike" "→ ${successor#.records/}" "$(cat "$ROOT/.spaces/architect/drafts/cache-design.md")"
@@ -136,7 +136,7 @@ expect_match "draft links completed spike" "→ ${successor#.records/}" "$(cat "
 cp "$INPUT/spike.md" "$INPUT/bad-spike.md"
 sed -i.bak '/^## Conclusion, limitations, and remaining uncertainty$/d' "$INPUT/bad-spike.md"
 before="$(count_spikes)"
-run_writer spike-publish --root "$ROOT" --records-root .records \
+run_writer spike-publish --root "$ROOT" \
   --title 'Cache feasibility' --body "$INPUT/bad-spike.md"
 expect_eq "malformed spike refuses" 2 "$rc"
 expect_eq "malformed spike creates no record" "$before" "$(count_spikes)"
@@ -144,8 +144,7 @@ expect_eq "malformed spike creates no record" "$before" "$(count_spikes)"
 STUB="$T/records.sh"
 # shellcheck disable=SC2016 # The quoted text below is the generated stub's source.
 {
-  printf '%s\n' '#!/usr/bin/env bash' 'set -eu' 'root=""; records=""'
-  printf '%s\n' 'while [ "$1" != new ] && [ "$1" != touch ]; do case "$1" in --root) root="$2"; shift 2 ;; --records-root) records="$2"; shift 2 ;; *) exit 2 ;; esac; done'
+  printf '%s\n' '#!/usr/bin/env bash' 'set -eu' 'root="${0%/.records/records.sh}"; records=.records'
   printf '%s\n' 'mode="$1"; shift' 'if [ "$mode" = new ]; then'
   printf '%s\n' '  mkdir -p "$root/$records/spikes"' '  path="$root/$records/spikes/2099-01-01-tool-spike.md"'
   printf '%s\n' "  printf '%s\\n' '---' 'doctype: spikes' 'status: draft' 'schema: architect/spike@1' 'tags: [spike, feasibility]' '---' '' '# placeholder' >\"\$path\""
@@ -156,9 +155,9 @@ STUB="$T/records.sh"
   printf '%s\n' '  mv "$tmp" "$root/$records/$rel"' 'fi'
 } >"$STUB"
 chmod +x "$STUB"
-tool_root="$T/tool-root"; mkdir -p "$tool_root"
-run_writer spike-publish --root "$tool_root" --records-root .records \
-  --records-tool "$STUB" --title 'Cache feasibility' --body "$INPUT/spike.md"
+tool_root="$T/tool-root"; mkdir -p "$tool_root/.records"; cp "$STUB" "$tool_root/.records/records.sh"; chmod +x "$tool_root/.records/records.sh"
+run_writer spike-publish --root "$tool_root" \
+  --title 'Cache feasibility' --body "$INPUT/spike.md"
 expect_eq "tool-mode spike publishes" 0 "$rc"
 tool_path="$(sed -n 's/^path=//p' "$OUT")"
 tool_text="$(cat "$tool_root/$tool_path")"
@@ -166,48 +165,27 @@ expect_eq "tool-mode stays in spike store" '.records/spikes/2099-01-01-tool-spik
 expect_match "tool-mode body replaces placeholder" '^# Cache feasibility$' "$tool_text"
 expect_match "tool-mode status matches file mode" '^status: published$' "$tool_text"
 
-dot_root="$T/dot-root"; mkdir -p "$dot_root"
-run_writer spike-publish --root "$dot_root" --records-root . \
-  --records-tool "$STUB" --title 'Cache feasibility' --body "$INPUT/spike.md"
-expect_eq "tool mode accepts a coincident dot records root" 0 "$rc"
-expect_eq "dot-root tool mode emits no error" '' "$(cat "$ERR")"
-expect_eq "dot-root tool path is normalized" 'path=spikes/2099-01-01-tool-spike.md' "$(cat "$OUT")"
-
-fail_root="$T/fail-root"; mkdir -p "$fail_root"
-FAIL_TOUCH=1 "$WRITER" spike-publish --root "$fail_root" --records-root .records \
-  --records-tool "$STUB" --title 'Cache feasibility' --body "$INPUT/spike.md" \
+fail_root="$T/fail-root"; mkdir -p "$fail_root/.records"; cp "$STUB" "$fail_root/.records/records.sh"; chmod +x "$fail_root/.records/records.sh"
+FAIL_TOUCH=1 "$WRITER" spike-publish --root "$fail_root" \
+  --title 'Cache feasibility' --body "$INPUT/spike.md" \
   >"$OUT" 2>"$ERR"; rc=$?
 expect_eq "tool failure is returned" 9 "$rc"
 failed_record="$fail_root/.records/spikes/2099-01-01-tool-spike.md"
 expect_match "tool failure leaves a draft" '^status: draft$' "$(cat "$failed_record")"
 expect_match "failed draft still has complete body" '^# Cache feasibility$' "$(cat "$failed_record")"
 
-coincident_root="$T/coincident-root"; mkdir -p "$coincident_root"
-run_writer draft-save --root "$coincident_root" --workspace .spaces --slug cache-design \
-  --title 'Cache design' --body "$INPUT/draft.md"
-expect_eq "coincident fixture draft saves" 0 "$rc"
-run_writer spike-publish --root "$coincident_root" --records-root .spaces \
-  --title 'Cache feasibility' --body "$INPUT/spike.md"
-expect_eq "coincident fixture spike publishes" 0 "$rc"
-expect_match "coincident roots keep owner and store separate" '^path=\.spaces/spikes/' "$(cat "$OUT")"
-
-override_root="$T/override-root"; mkdir -p "$override_root"
-printf '%s\n' 'agent-workspace: project-tools' 'agent-records: project-records' \
-  >"$override_root/AGENTS.md"
-run_writer draft-save --root "$override_root" --workspace project-tools --slug cache-design \
-  --title 'Cache design' --body "$INPUT/draft.md"
-expect_eq "resolved workspace override reaches helper" 0 "$rc"
-expect_eq "workspace override owns draft path" 'path=project-tools/architect/drafts/cache-design.md' "$(cat "$OUT")"
-run_writer spike-publish --root "$override_root" --records-root project-records \
-  --title 'Cache feasibility' --body "$INPUT/spike.md"
-expect_eq "resolved records override reaches helper" 0 "$rc"
-expect_match "records override owns spike path" '^path=project-records/spikes/' "$(cat "$OUT")"
-expect_eq "override use creates no default workspace" no "$([ -e "$override_root/.spaces" ] && printf yes || printf no)"
-expect_eq "override use creates no default records root" no "$([ -e "$override_root/.records" ] && printf yes || printf no)"
+# Retired home selectors refuse, while noncanonical canaries remain untouched.
+for selector in --workspace --records-root --workspace-root --records-tool; do
+  rejected="$T/rejected-${selector#--}"; mkdir -p "$rejected/custom"; printf 'CANARY\n'>"$rejected/custom/keep"
+  run_writer draft-save --root "$rejected" "$selector" custom --slug rejected --title Rejected --body "$INPUT/draft.md"
+  expect_eq "$selector refuses" 2 "$rc"
+  expect_eq "$selector preserves canary" CANARY "$(cat "$rejected/custom/keep")"
+  expect_eq "$selector creates no fixed roots" no "$([ -e "$rejected/.spaces" ] || [ -e "$rejected/.records" ] && printf yes || printf no)"
+done
 
 PROMO_ROOT="$T/promo-root"; mkdir -p "$PROMO_ROOT"
 draft_body "$INPUT/promo.md" 'Promotable idea'
-run_writer draft-save --root "$PROMO_ROOT" --workspace .spaces --slug promotable-idea \
+run_writer draft-save --root "$PROMO_ROOT" --slug promotable-idea \
   --title 'Promotable idea' --body "$INPUT/promo.md"
 expect_eq "promotion source begins active" 0 "$rc"
 expect_match "source is active before spec exists" '^Disposition: active$' \
@@ -218,7 +196,7 @@ printf '%s\n' '---' 'doctype: specs' 'status: draft' 'schema: architect/spec@1' 
   >"$PROMO_ROOT/.records/specs/2099-01-01-promotable-idea.md"
 sed 's/^Disposition: active$/Disposition: promoted/' "$INPUT/promo.md" >"$INPUT/promoted.md"
 printf '\n→ specs/2099-01-01-promotable-idea.md\n' >>"$INPUT/promoted.md"
-run_writer draft-save --root "$PROMO_ROOT" --workspace .spaces --slug promotable-idea \
+run_writer draft-save --root "$PROMO_ROOT" --slug promotable-idea \
   --title 'Promotable idea' --body "$INPUT/promoted.md"
 expect_eq "draft promotes after spec creation" 0 "$rc"
 promo_text="$(cat "$PROMO_ROOT/.spaces/architect/drafts/promotable-idea.md")"

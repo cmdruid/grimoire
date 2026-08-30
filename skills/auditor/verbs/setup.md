@@ -8,7 +8,7 @@ configuration sweep. Ask separately before starting it.
    The deployer preflights the complete owned set, immediately rechecks parents, preserves every
    incumbent, and refuses recognized legacy content with `/auditor migrate <source-path>`.
 2. Follow `BOOTSTRAP.md`'s decision walk with the user. Author only
-   `<agent-workspace>/auditor/doctrine/test/workflows/audit/GUIDE.md`, `metrics.sh`, native rule
+   `.spaces/auditor/doctrine/test/workflows/audit/GUIDE.md`, `metrics.sh`, native rule
    files, and edits to the seeded generic rules. Run metrics to validate its mechanics; the output is
    not an audit report.
    When rerunning setup against an incumbent twelve-rule rubric, the seed may add the absent

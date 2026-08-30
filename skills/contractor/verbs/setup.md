@@ -2,7 +2,7 @@
 
 Run package-local `scripts/contractor-setup.sh <root>` standalone, or add `--write-only` in an
 announced configuration sweep. It preflights and immediately rechecks every write, then deploys
-`plan.md` and `roadmap.md` absent-only beneath `<agent-workspace>/contractor/templates/`. Valid
+`plan.md` and `roadmap.md` absent-only beneath `.spaces/contractor/templates/`. Valid
 incumbents win; recognized legacy copies refuse with `/contractor migrate <source-path>`.
 
 Runbooks remain compiled and no generic runbook template is deployed. Schemas, record shells,

@@ -30,36 +30,33 @@ not the machinery. "Here are two approaches; I recommend A because…" /
 "The spec is at `<path>`. Please read it before we sequence work."
 `founding-shaped` and `status: draft` stay in the files.
 
-**Project homes.** Resolve the project root first. Resolve `<agent-workspace>` from the first
-line-start `agent-workspace:` declaration in `AGENTS.md`, then `CLAUDE.md`, else `.spaces`.
-Resolve `<agent-records>` from the first line-start `agent-records:` or `records-root:` declaration
-in the same file order, else `.records`. Values are repo-relative; pass both resolved roots
-explicitly to package scripts.
+**Project homes.** Resolve the project root first. Project support and records live only under its
+fixed `.spaces` and `.records` directories; package scripts derive both from the project root.
 
 **Destination is not stamped.** Feature `spec` / ADR artifacts
-land in `<agent-records>/specs/` and `<agent-records>/adr/` on every host
+land in `.records/specs/` and `.records/adr/` on every host
 using *Project homes*. Resolve `specs.md` / `adr.md` only from
-`<agent-workspace>/architect/templates/`; when absent, read the bundled body scaffold without a
+`.spaces/architect/templates/`; when absent, read the bundled body scaffold without a
 project write. Only `/architect setup` deploys a fresh project copy. Recognized legacy locations
 require `/architect migrate <path>`.
-Mint specs with `records.sh --root <root> --records-root <records-root-relative> new specs --schema architect/spec@1 --template <resolved>`
+Mint specs with `.records/records.sh new specs --schema architect/spec@1 --template <resolved>`
 and ADRs with `new adr --schema architect/adr@1 --template <resolved>` when the tool exists;
 else synthesize the same four-key front matter in file mode, naming the
 file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the tool
 will not see it. Templates supply bodies only and cannot select schemas. Never write the flat
-`<agent-records>/templates/<doctype>.md`. Mint stays `status: draft`.
+`.records/templates/<doctype>.md`. Mint stays `status: draft`.
 The caller writes `published` after a passing host's review they accept.
-Closure through `records.sh --root <root> --records-root <records-root-relative> done` when the tool exists; else
+Closure through `.records/records.sh done` when the tool exists; else
 file-mode stamp. Founding-shaped `grill` / `spec` stay on the named file
 (no records mint). `new` / `deploy` unchanged.
 
 **Drafts and spikes.** Brainstorm writes nothing by default. Only an explicit
 `brainstorm save [name]`, an explicit draft-resume request, or a confirmed spike writes
-`<agent-workspace>/architect/drafts/<slug>.md` through
+`.spaces/architect/drafts/<slug>.md` through
 `scripts/architect-artifacts.sh draft-save`. Drafts are living Markdown files, not records; use
 the package-only `templates/draft.md` outline. A completed spike uses the package-only
 `templates/spikes.md` outline and the helper's `spike-publish` command to create a new
-`<agent-records>/spikes/YYYY-MM-DD-<slug>.md` record. It is direct evidence from the executing
+`.records/spikes/YYYY-MM-DD-<slug>.md` record. It is direct evidence from the executing
 agent and is published without a review gate. Never overwrite a published spike.
 
 **Probe exemption.** The records-mint / output-home path above applies to
@@ -168,7 +165,7 @@ is a gap. No italic / `TBD` / `<>` special cases.
 
 There is no separate architect state file. Conversation is transient. When the user explicitly
 saves or resumes an idea, its living file under
-`<agent-workspace>/architect/drafts/` carries the state; a spec may consume that file by path.
+`.spaces/architect/drafts/` carries the state; a spec may consume that file by path.
 Records carry their own lifecycle status. `grill` writes no new file.
 
 ## Composition (the orchestrator owns building, landing, capture)

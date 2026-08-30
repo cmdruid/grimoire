@@ -1,6 +1,6 @@
 ---
 name: journal
-description: "The records-layer format authority — defines what makes a file a record (a dated filename plus front-matter declaring its doctype), the record contract, the template convention, and the staged records.sh tool (search, query, lifecycle, and the history.tsv ledger) over the agent-records home (default `.records/`). Verbs: `setup` (durably reconcile the tool layer), `repair` (restore an initialized layer's provider and managed README block), `search`, `done`, and `curate`. Use when the user runs `/journal ...`, initializes or repairs the records layer, searches or lists records, closes a record, asks about the record contract, or tidies the records home."
+description: "The records-layer format authority — defines what makes a file a record (a dated filename plus front-matter declaring its doctype), the record contract, the template convention, and the staged records.sh tool (search, query, lifecycle, and the history.tsv ledger) in fixed `.records/`. Verbs: `setup` (durably reconcile the tool layer), `repair` (restore an initialized layer's provider and managed README block), `search`, `done`, and `curate`. Use when the user runs `/journal ...`, initializes or repairs the records layer, searches or lists records, closes a record, asks about the record contract, or tidies the records home."
 ---
 
 # journal — the records format authority
@@ -11,7 +11,7 @@ convention** (writers own schemas and may pass a body-only project template), an
 staged tool **`records.sh`** (search, query + lifecycle; sole writer of the `history.tsv` closure
 ledger). A skill creates only the directories it needs; the crawl knows no
 store list; `/journal setup` stands or refreshes the **tool layer** —
-`<agent-records>/records.sh`, empty `history.tsv`, and a Journal-owned delimited tool block in the
+`.records/records.sh`, empty `history.tsv`, and a Journal-owned delimited tool block in the
 records README — and is never a floor for writers.
 Writers state the in-package contract in their own package; they do not send
 the agent here for those bytes. At runtime they talk to the **staged**
@@ -29,14 +29,12 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
   than matching a list. Journal owns `records.sh`, `history.tsv`, and only the delimited
   `journal:records-tool` block inside the records README. Setup creates no writer directories and
   copies no templates; project prose outside that block remains the project's.
-  `records.sh --root <root> --records-root <records-root-relative> new` writes under a **caller-named relative directory**: default is the
+  `.records/records.sh new` writes under a **caller-named relative directory**: default is the
   `<doctype>` positional; `--dir <rel>` overrides (no leading `/`, no `..` segment).
   `mkdir -p` of that path is the caller creating the directory through the tool — journal
   does not enumerate, reserve, or advertise a store set. `templates/`, `scripts/`, a
   `doctrine/` tree — none need reserving, because their files fail one conjunct or the other
-  and simply are not records. This is what lets the records home be **coincident** with the workspace:
-  a host may point `<agent-workspace>` and `<agent-records>` at the same directory
-  without a carve-out. The **authoritative doctype is the front-matter key**, never the
+  and simply are not records. The **authoritative doctype is the front-matter key**, never the
   parent directory — there is no second copy of the fact to disagree with.
 - **Micro-items are tracker lines, not records.** A tracker record's body holds one-line
   items in the contract's line form (below); detailed material — a bug repro, a durable fact —
@@ -50,7 +48,7 @@ The layer's shape (the deployed `.records/README.md` restates it in-project):
 
 ## The record contract
 
-`records.sh --root <root> --records-root <records-root-relative> check` enforces front-matter, the status vocabulary (including ledger
+`.records/records.sh check` enforces front-matter, the status vocabulary (including ledger
 coherence), and record-link resolution. Tracker line form is a prose convention —
 `check` does not scan it. `new` synthesizes shared metadata; project templates supply body prose.
 
@@ -65,9 +63,9 @@ coherence), and record-link resolution. Tracker line form is a prose convention 
 - **Status vocabulary**: `draft` | `published` while live; `archived` to close. A closing
   status is `archived` and **requires a** `history.tsv` ledger line (disposition is the
   ledger `--as` word, not the file status). `check` flags a hand-closed record; the ledger
-  line is six tab-separated fields — date, disposition, records-root-relative path, doctype,
-  title, note — written only by `records.sh --root <root> --records-root <records-root-relative> done`.
-- **Record links**: `→ <dir>/<file>.md` — the record's records-root-relative path, whatever
+  line is six tab-separated fields — date, disposition, path relative to `.records`, doctype,
+  title, note — written only by `.records/records.sh done`.
+- **Record links**: `→ <dir>/<file>.md` — the record's path relative to `.records`, whatever
   directory its writer put it in; `check` flags rot.
 - **Tracker line form**: under `## Items`, newest last. Live and completed (same optional
   ` → <dir>/<file>.md` before the completion date):
@@ -75,13 +73,12 @@ coherence), and record-link resolution. Tracker line form is a prose convention 
       - [ ] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md
       - [x] 2026-08-01 — wire the alpha → notes/2026-08-01-fact.md — 2026-08-17
 
-  Completing a line is that rewrite + a `records.sh --root <root> --records-root <records-root-relative> touch` of the tracker (no ledger line).
-- **Schema and template convention**: `records.sh --root <root> --records-root
-  <records-root-relative> new <doctype> --schema <owned-schema> --title <title>`
+  Completing a line is that rewrite + a `.records/records.sh touch` of the tracker (no ledger line).
+- **Schema and template convention**: `.records/records.sh new <doctype> --schema <owned-schema> --title <title>`
   `[--template <resolved-body>] [--dir <rel>] [--tag t]...` synthesizes the four shared keys.
   `--template` is optional and supplies body-only authoring scaffolding; literal `<title>` and
   `<date>` slots are filled, while `<schema>` or `<tags>` slots refuse. The minting skill resolves
-  declared active templates only at `<agent-workspace>/<skill>/templates/`; recognized legacy
+  declared active templates only at `.spaces/<skill>/templates/`; recognized legacy
   locations require its explicit `migrate` verb. Schema identifiers, validators, and migration
   chains stay in the skill package and are never project-customizable. Setup copies nothing.
 
@@ -100,31 +97,26 @@ follow-up is not journal's job (scope boundary, below).
 
 ## Shared discipline (every verb relies on this — stated here once)
 
-- **Resolve the roots, run the ordered runtime preflight, then let `records.sh` own the facts.**
-  The records home is
-  the first line-start `agent-records:` or `records-root:` in `AGENTS.md`, then
-  `CLAUDE.md`; else `.records/`. (`agent-records:` preferred; `records-root:` still
-  accepted so already-declared hosts do not break.) Resolve `<agent-workspace>` from the first
-  line-start `agent-workspace:` in those files, else `.spaces`. Before search, done, or curate
-  invokes the staged tool, check in this order:
-  1. `<agent-workspace>/journal/setup.intent` present or unsafe → stop with exactly
+- **Use the fixed homes, run the ordered runtime preflight, then let `records.sh` own the facts.**
+  Records live at `<root>/.records`; Journal's setup intent lives at
+  `<root>/.spaces/journal/setup.intent`. Before search, done, or curate invokes the staged tool,
+  check in this order:
+  1. `.spaces/journal/setup.intent` present or unsafe → stop with exactly
      `reason=setup-required action=/journal setup`.
-  2. `<agent-records>/history.tsv` absent, non-regular, or unsafe → the same setup-required
+  2. `.records/history.tsv` absent, non-regular, or unsafe → the same setup-required
      diagnostic.
-  3. `<agent-records>/records.sh` absent, non-regular, non-executable, byte-different from the
+  3. `.records/records.sh` absent, non-regular, non-executable, byte-different from the
      bundled provider, or failing the exact current bare-usage surface → stop with exactly
      `reason=repair-required action=/journal repair`.
   Compare bundled bytes when checking drift, but never execute the bundled provider against project
-  records. The staged usage probe uses the resolved roots, must exit 1, begin with the current usage
+  records. The staged usage probe must exit 1, begin with the current usage
   line, and name every current command; search additionally requires the `grep` line. Only after all
   three checks pass may a runtime verb invoke the staged tool. Every invocation begins
-  `records.sh --root <root>
-  --records-root <records-root-relative>`. Invoke **the staged tool** for every date, path, and
+  `.records/records.sh`. Invoke **the staged tool** for every date, path, and
   conformance fact (`new --schema <owned-schema> [--template <resolved-body>]` / `touch` / `done` / `list` /
   `grep` / `history` / `prune-candidates` / `check`); never guess a date, never
   hand-stamp front-matter, never write `history.tsv` by hand. `search` / `done` /
-  `curate` use this same scan so a host that only declared `agent-records:` is
-  not silently aimed at `.records/`.
+  `curate` use this same scan.
 - **Scripts compute facts; the verb prose decides.** Whether a record is really done and under
   which disposition, what merges with what — that judgment lives in the verb files. The scripts
   (`records.sh`, `scripts/standup.sh`, `scripts/scoped-commit.sh`) do only deterministic
@@ -155,7 +147,7 @@ host's follow-up lifecycle; do not file from here. Journal owns no judgment beyo
 formats.
 
 **Standalone by default, framework-aware when present.** Every verb works on any repo: the
-records live under the agent-records home, and no verb refuses or stalls for lack of a workshop.
+records live under fixed `.records`, and no verb refuses or stalls for lack of a workshop.
 On a workshop host the deployed doctrine's routing applies downstream; elsewhere it is simply
 absent — never demand the workshop as a precondition.
 

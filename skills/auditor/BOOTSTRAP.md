@@ -8,7 +8,7 @@ project's *own code* for quality and invariant-conformance, surfaces findings wi
 is re-runnable each cycle. Drop this file into any project and an agent can **reconstruct the
 whole system**, or **borrow a piece**.
 
-The rubric home is `<agent-workspace>/auditor/doctrine/test/workflows/audit/`
+The rubric home is `.spaces/auditor/doctrine/test/workflows/audit/`
 (project doctrine, loaded on demand). `<home>` below means that directory.
 
 It is a sibling to any companion dev-system blueprint (one that blueprints the surrounding deployed doc-system, if the host has one). This
@@ -80,7 +80,7 @@ The system splits cleanly by how often each part changes.
   metric-computation tool). Re-read each pass; revised only when the *method* changes, not when
   findings do. Hand-curated doctrine.
 - **Per-pass deliverables -- drained, never stored by the audit.** Each pass produces one
-  **pass report** (a `reports` record under the agent-records home, tagged `audit`)
+  **pass report** (a record under `.records/reports/`, tagged `audit`)
   holding the scorecard, the quoted metrics, and every finding with
   evidence -- then every actionable finding **drains** to its `<drain>` and the report closes.
   The sequence of pass reports *is* the trend history; there is no separate findings tracker,
@@ -98,14 +98,14 @@ One authored home (the rubric); deliverables drain per §3:
 
 ```
 <home>/               -- the rubric (hand-curated, source of truth)
-                         resolved: <agent-workspace>/auditor/doctrine/test/workflows/audit/
+                         resolved: .spaces/auditor/doctrine/test/workflows/audit/
   GUIDE.md            -- the hub: framing, risk-weighted scope, the rubric index, scoring
                          rules, process, the finding-entry shape, severity, drains
   rules/              -- one file per dimension, all in the uniform shape (§6)
   metrics.sh          -- the <language> objective-metrics script (§8)
 ```
 
-Pass reports are `reports` records under the agent-records home and never live
+Pass reports are records under `.records/reports/` and never live
 in `<home>`. Dependency
 direction: `GUIDE` -> `rules/`. Build leaves before indexes (rules before GUIDE) so each commit
 stays `<gate>`-green.
@@ -211,7 +211,7 @@ path is the ID, and a finding is cited as `<report-path>` + its heading.
   field as it graduates. There is **no parallel work queue** -- the audit surfaces,
   the host trackers schedule. Do not mint `bugs/`.
 - **Close the report.** Once every actionable finding is drained, close the pass report
-  (`records.sh --root <root> --records-root <records-root-relative> done <report> --as consumed --note "findings drained"` when the tool
+  (`.records/records.sh done <report> --as consumed --note "findings drained"` when the tool
   exists; else file-mode stamp).
 
 Severity is **scaled to the audit's purpose**. For an ongoing-hygiene audit (no release gate): P0 =
@@ -275,7 +275,7 @@ Answer these in order; the answers fill the *Slots* and shape the rubric:
 
 **Full setup** (leaves before hub; the setup verb owns one final scoped commit):
 1. Fill the *Slots* (§2) via the *Decision walk* (§9); resolve `<home>` per the skill's entry
-   probe: `<agent-workspace>/auditor/doctrine/test/workflows/audit/`.
+   probe: `.spaces/auditor/doctrine/test/workflows/audit/`.
 2. Copy the bundled generic `rules/` into `<home>/rules/`. Fill the `<language>` greps
    and *How to quantify* recipes. Write only `<native dimensions>` from the *Rule-file
    shape* (§6). (They reference `../GUIDE.md` in backticks, since it does not exist yet.)

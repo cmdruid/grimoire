@@ -77,24 +77,22 @@ former role skills had already merged into the face
 
 ### Storage convention: what skills may maintain in a project
 
-A project has three independently resolved roots. **`<agent-workspace>`** (by default `.spaces`)
+A project has three fixed, independent roots. **`.spaces`**
 holds skill-owned working files beneath `<skill>/<kind>/`; owners are open and the kinds are
 `doctrine`, `drafts`, `hooks`, `operations`, `scripts`, and `templates`. Operations are flat
 Markdown under the publishing owner's namespace and remain directly usable without a curator.
-**`<agent-records>`**
-(by default `.records`) holds work products:
+**`.records`** holds work products:
 dated, typed records (`YYYY-MM-DD-<slug>.md` carrying front-matter that declares a `doctype`)
 in whatever directories their writers mint, plus the `history.tsv` closure ledger. Journal's
-staged engine lives at `<agent-records>/records.sh`, beside the introductory
-`<agent-records>/README.md`; the format is `journal`'s
+staged engine lives at `.records/records.sh`, beside the introductory
+`.records/README.md`; the format is `journal`'s
 (templates arrive with the skills that mint them;
 `journal` ships the commons).
-**`<agent-trackers>`** (by default `.trackers`) holds public `tracker@1` queue TSVs, the shared
-receipt ledger, and adjacent canonical provider `<agent-trackers>/trackers.sh`. Backlog owns that
+**`.trackers`** holds public `tracker@1` queue TSVs, the shared
+receipt ledger, and adjacent canonical provider `.trackers/trackers.sh`. Backlog owns that
 layer; consumer skills invoke the installed provider directly.
-**`AGENTS.md`** is the door and the one place `agent-workspace:` / `agent-records:` /
-`agent-trackers:` are declared
-when they are not the defaults. Each durable-home skill owns its files and optional route block;
+These canonical homes are constants, not front-door configuration. Each durable-home skill owns
+its files and optional route block;
 the pack installs skills but writes none of these project surfaces.
 
 Session checkpoints stay **gitignored scratch** (one root `CHECKPOINT.md`, steward `checkpoint`) —
@@ -102,7 +100,7 @@ not a `.records/` store.
 
 Foreman indexes those publisher-owned operations without copying them, learns accepted operations
 and doctrine from attended debriefs, and compiles verified closures into immutable
-`<agent-records>/goals/` runbooks. Mutable pursuit state stays with the one root checkpoint or the
+`.records/goals/` runbooks. Mutable pursuit state stays with the one root checkpoint or the
 active workstream, never with Foreman.
 For isolated pursuit, a root coordinator can opt into a lean bridge: prove the committed goal
 closure, seed a Workstream, prime its one queue unit, and resume Foreman from inside it. The bridge

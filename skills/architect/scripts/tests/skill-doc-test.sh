@@ -68,15 +68,15 @@ expect_match "save heuristics are forbidden" 'not duration, importance, open que
 expect_match "brainstorm creates no record" 'Brainstorm never creates a record' "$brainstorm_text"
 
 spec_text="$(cat "$SKILL/verbs/spec.md")"
-expect_match "workspace draft is recognized" '<agent-workspace>/architect/drafts/' "$spec_text"
+expect_match "workspace draft is recognized" '.spaces/architect/drafts/' "$spec_text"
 expect_match "spec exists before promotion" 'Promote a workspace draft after the spec exists' "$spec_text"
 expect_match "failed spec leaves draft active" 'spec creation fails, leave the' "$spec_text"
 expect_match "transient spike material is excluded" 'Do not copy raw spike notes, transient experiment code' "$spec_text"
 expect_match "historical draft specs remain inputs" 'Existing draft spec records remain ordinary spec inputs' "$spec_text"
 
 router_text="$(tr '\n' ' ' <"$SKILL/SKILL.md")"
-expect_match "workspace resolution names front-door order" 'agent-workspace:.*AGENTS\.md.*CLAUDE\.md.*else `.spaces`' "$router_text"
-expect_match "records resolution names front-door order" 'agent-records:.*records-root:.*same file order.*else `.records`' "$router_text"
+expect_match "workspace is fixed" 'fixed `.spaces`' "$router_text"
+expect_match "records are fixed" 'fixed `.spaces` and `.records`' "$router_text"
 expect_match "brainstorm uses shared home resolution" 'SKILL.md \*Project homes\*' "$brainstorm_text"
 expect_match "spike uses shared home resolution" 'SKILL.md \*Project homes\*' "$spike_text"
 expect_match "spec uses shared home resolution" 'SKILL.md \*Project homes\*' "$spec_text"

@@ -6,24 +6,22 @@ BEGIN='<!-- skill:foreman BEGIN -->'
 END='<!-- skill:foreman END -->'
 
 usage() {
-  echo "usage: foreman-door.sh check|apply --root <root> --workspace <relative> [--allow-create]" >&2
+  echo "usage: foreman-door.sh check|apply --root <root> [--allow-create]" >&2
   exit 2
 }
 
 mode="${1:-}"; [ -n "$mode" ] || usage; shift
-root=""; workspace=""; allow_create=false
+root=""; workspace=.spaces; allow_create=false
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || usage; root="$2"; shift 2 ;;
-    --workspace) [ "$#" -ge 2 ] || usage; workspace="$2"; shift 2 ;;
     --allow-create) allow_create=true; shift ;;
     *) usage ;;
   esac
 done
-[ -n "$root" ] && [ -n "$workspace" ] || usage
+[ -n "$root" ] || usage
 [ -d "$root" ] || usage
 root="$(CDPATH='' cd -P "$root" && pwd)"
-case "$workspace" in ""|.|/*|*//*|*/../*|../*|*/..) echo "refusing=unsafe-workspace" >&2; exit 2 ;; esac
 door="$root/AGENTS.md"
 route="Route project operations through \`/foreman inventory\`; identities are \`<owner>/<stem>\` under \`$workspace/<owner>/operations/<stem>.md\`."
 
