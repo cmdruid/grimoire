@@ -31,7 +31,9 @@ shift 2
 # Every remaining argument is a pathspec. Stage and commit scoped to exactly those.
 # If the commit fails (hook, identity, nothing to commit), unstage the named paths
 # again -- the shared index must never be left holding this call's staged residue.
-git -C "$root" add -- "$@"
+# `-A` is still bounded by the exact pathspecs, and lets a caller name an
+# absent directory endpoint after a whole-tree `git mv`.
+git -C "$root" add -A -- "$@"
 if ! git -C "$root" commit -m "$msg" -- "$@"; then
   git -C "$root" reset -q -- "$@" || true
   echo "scoped-commit.sh: commit failed; unstaged the named paths again." >&2

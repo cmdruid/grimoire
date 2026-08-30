@@ -56,7 +56,7 @@ scaffold, audit, and calibrate authoring doctrine), `developer-writing`
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `developer-writing` | write and edit human-facing developer prose with purpose-aware structure, human editorial judgment, and Google documentation mechanics; agent-executed operational artifacts get wording-only help on explicit request; standalone, outside every pack |
-| `journal` | the records format authority: discriminator, contract, adjacent `records.sh`, and history ledger; durable setup, narrow repair, search, close, and substrate curation |
+| `journal` | the records format authority: discriminator, contract, adjacent `records.sh`, and history ledger; durable setup, narrow repair, dedicated-root migration, search, close, and substrate curation |
 | `inspector` | material review of documents and completed implementations; revise folds supported document findings, refine simplifies specs and plans, and setup deploys Inspector-owned kind doctrine absent-only |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |

@@ -162,7 +162,7 @@ must not supply implementation requirements.
     caller/declaration input are both visible in the same implementation. Commit this steady-state
     cut atomically.
 
-- [ ] **Slice 2: Add the thin dedicated-records-root move** <requires: 1>
+- [x] **Slice 2: Add the thin dedicated-records-root move** <requires: 1>
   - Files: modify `skills/journal/SKILL.md`, `skills/journal/scripts/standup.sh`,
     `skills/journal/scripts/tests/run.sh`, and current Journal setup/contract tests as required;
     create `skills/journal/verbs/migrate.md`,

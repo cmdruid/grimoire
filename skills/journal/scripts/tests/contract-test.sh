@@ -24,6 +24,8 @@ runtime_contract() {
   grep -qF 'reason=setup-required action=/journal setup' "$contract_skill/SKILL.md" || return 1
   grep -qF 'reason=repair-required action=/journal repair' "$contract_skill/SKILL.md" || return 1
   grep -qF '| `/journal repair` | `verbs/repair.md` |' "$contract_skill/SKILL.md" || return 1
+  grep -qF '| `/journal migrate [<source-root>]` | `verbs/migrate.md` |' \
+    "$contract_skill/SKILL.md" || return 1
   for contract_verb in search "done" curate; do
     grep -qF 'ordered runtime preflight' "$contract_skill/verbs/$contract_verb.md" || return 1
   done
