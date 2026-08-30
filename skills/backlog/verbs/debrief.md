@@ -2,7 +2,7 @@
 
 1. Resolve roots and run package-local `scripts/tracker-runtime-check.sh` with them. Invoke only its
    returned installed provider. Read
-   `.spaces/backlog/hooks/debrief.md`. Gather only the completed work since the previous
+   `.trackers/DEBRIEF.md`. Gather only the completed work since the previous
    successful debrief in this context: visible conversation, bounded repository changes, tests, and
    unresolved decisions. Do not treat the current objective, resume instructions, or ordinary
    in-flight work as leftovers. Pure Q&A, routine status, and child/delegate contexts do not file;
