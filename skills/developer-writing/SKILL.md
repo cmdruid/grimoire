@@ -1,6 +1,6 @@
 ---
 name: developer-writing
-description: "Use when the requested outcome is developer-facing prose: writing or editing documentation, API reference, tutorials, README procedures, PR descriptions, release notes, design explanations, and technical summaries. Applies purpose-aware structure, human editorial judgment, and Google developer documentation mechanics. Trigger on a writing outcome, not a request whose outcome is project investigation or technical correctness review. Keywords: developer writing, technical writing, developer docs, PR description, release notes, Google style, /developer-writing."
+description: "Use when the requested outcome is human-facing developer prose: documentation, API reference, tutorials, README procedures, PR descriptions, release notes, design explanations, and technical summaries. Trigger on a writing outcome, not project investigation or technical correctness review. Do not trigger for agent-executed operational artifacts such as implementation plans, runbooks, task queues, handoffs, or workflow state unless the user explicitly requests editorial help on one. Applies purpose-aware structure, human editorial judgment, and Google developer documentation mechanics. Keywords: developer writing, technical writing, developer docs, PR description, release notes, Google style, /developer-writing."
 ---
 
 # Developer writing
@@ -30,6 +30,20 @@ read [`references/human-editing.md`](references/human-editing.md).
 Lead with the outcome and why it matters. Organize around the reader's likely questions, not the
 author's investigation or validation sequence. Include proof or validation details only when the
 reader needs them to evaluate a claim or act safely.
+
+## Operational artifacts
+
+An operational artifact's primary job is to control future execution rather than explain something
+to a human. This skill does not normally apply to implementation plans, runbooks, task queues, agent
+handoffs, or workflow state.
+
+When the user explicitly requests editorial help on one, edit only explanatory prose outside its
+protected control content. The artifact's governing schema and project conventions win. Preserve
+verbatim and in place its execution order, dependencies, exact paths, local constraints,
+verification steps, expected results, structured fields and checkboxes, and completion or
+resumption state. Don't delete, merge, relocate, rephrase, narrow, generalize, or deduplicate those
+elements. Their placement and repetition are part of the execution contract, including when a
+critical constraint appears beside every action it governs.
 
 ## Draft
 

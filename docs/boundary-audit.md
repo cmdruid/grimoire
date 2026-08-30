@@ -321,3 +321,21 @@ outcomes stayed with their existing owners. No description change was needed.
 | write a clearer README setup procedure | `developer-writing` | `developer-writing` |
 | score project code quality against its rubric | `auditor` | `auditor` |
 | curate the recurring deployment procedure as an operation | `foreman` | `foreman` |
+
+**2026-08-30 (Developer Writing operational-artifact boundary)** — Developer Writing's description
+now excludes agent-executed operational artifacts by default and admits wording-only help when the
+user explicitly requests it. A fresh cold-router sub-agent read only the Developer Writing,
+Contractor, and Inspector descriptions and routed **6/6 at high confidence**. Ordinary plan creation
+and execution stayed with Contractor; explicit wording-only plan editing selected Developer Writing;
+substantive plan/spec review selected Inspector; and ordinary README writing stayed with Developer
+Writing. The changed leaf names no sibling, re-documents no sibling protocol, and asserts no new
+pack seam.
+
+| prompt (abridged) | expects | pick |
+|---|---|---|
+| write a plan from an approved spec | `contractor` | `contractor` |
+| execute an approved plan slice by slice | `contractor` | `contractor` |
+| edit plan wording; preserve schema, steps, and verification | `developer-writing` | `developer-writing` |
+| review plan defects, then simplify its scope | `inspector` | `inspector` |
+| write a clearer README setup procedure | `developer-writing` | `developer-writing` |
+| review a spec for contradictions and unsupported requirements | `inspector` | `inspector` |
