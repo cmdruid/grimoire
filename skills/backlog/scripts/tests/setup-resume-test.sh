@@ -105,6 +105,10 @@ cp "$P/.trackers/tables/decisions.tsv" "$T/decisions";complete "$P" >/dev/null;c
 "$SETUP" "$P" tracker-remove decisions >/dev/null;complete "$P" >/dev/null
 [ "$(find "$P/.trackers/tables" -name '*.tsv'|wc -l|tr -d ' ')" -eq 0 ]&&[ -f "$P/.trackers/tables/.gitkeep" ]&&pass=$((pass+1))||fail=$((fail+1))
 
+# A retry claims custody of the marker written before the first interruption.
+M="$T/marker-custody";newroot "$M";if STOP_AT=1 BACKLOG_SETUP_TEST_AFTER_WRITE="$HOOK" complete "$M" >/dev/null 2>&1;then fail=$((fail+1));else pass=$((pass+1));fi
+complete "$M">"$T/marker-custody.out";has "$T/marker-custody.out" 'reconciled=.trackers/tables/.gitkeep'
+
 # A resumed run reports prior exact package results; a committed rerun is silent.
 K="$T/custody";newroot "$K";if STOP_AT=5 BACKLOG_SETUP_TEST_AFTER_WRITE="$HOOK" complete "$K" >/dev/null 2>&1;then fail=$((fail+1));else pass=$((pass+1));fi
 complete "$K">"$T/custody.out";has "$T/custody.out" 'reconciled=.trackers/trackers.sh';has "$T/custody.out" 'wrote=.trackers/tables/feedback.tsv'

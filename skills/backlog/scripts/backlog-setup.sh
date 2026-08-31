@@ -114,6 +114,7 @@ report_readme_reconciled(){
   rm -f "$head_file" "$expected";die commit-custody-required "$rel"
 }
 if [ "$mode" = setup ];then
+  report_exact_reconciled "$MARKER" /dev/null
   report_exact_reconciled "$PROVIDER" "$SOURCE"
   tmp_header="$(mktemp "${TMPDIR:-/tmp}/backlog-queue-header.XXXXXX")";printf '%s\n' "$QUEUE_HEADER">"$tmp_header"
   for s in tasks issues feedback routines;do report_exact_reconciled "$TABLES/$s.tsv" "$tmp_header";done
