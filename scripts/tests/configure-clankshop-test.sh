@@ -39,12 +39,13 @@ before="$(git -C "$root" rev-parse HEAD)";run_core_sweep;apply_delegate_policy
 grep -qF 'Run `/journal repair`' "$root/.records/README.md" || fail "Journal repair guidance missing"
 "$root/.records/records.sh" list >/dev/null || fail "Journal README provider is unusable"
 [ -x "$root/.trackers/trackers.sh" ] || fail "Backlog provider missing"
-for file in README.md trackers.sh receipts.tsv tasks.tsv issues.tsv feedback.tsv routines.tsv;do [ -f "$root/.trackers/$file" ]||fail "Backlog tracker layer missing: $file";done
+for file in README.md trackers.sh history.tsv;do [ -f "$root/.trackers/$file" ]||fail "Backlog tracker layer missing: $file";done
+for file in .gitkeep tasks.tsv issues.tsv feedback.tsv routines.tsv;do [ -f "$root/.trackers/tables/$file" ]||fail "Backlog tracker table missing: $file";done
 [ ! -e "$root/.trackers/tracker-api.sh" ]||fail "Backlog installed the pre-cut provider"
 cmp -s "$repo/skills/backlog/scripts/trackers.sh" "$root/.trackers/trackers.sh"||fail "Backlog provider is not byte-identical"
 description="$($root/.trackers/trackers.sh describe)"
 [ "$(printf '%s\n' "$description"|grep -c '^schema=')" -eq 1 ]||fail "Backlog provider has ambiguous schema discovery"
-printf '%s\n' "$description"|grep -qxF 'schema=tracker@1'||fail "Backlog provider schema is wrong"
+printf '%s\n' "$description"|grep -qxF 'schema=tracker@2'||fail "Backlog provider schema is wrong"
 "$root/.trackers/trackers.sh" catalog >/dev/null||fail "Backlog catalog is unusable"
 readme_facts="$("$repo/skills/backlog/scripts/tracker-readme-status.sh" \
   "$repo/skills/backlog/templates/trackers-readme-block.md" "$root/.trackers/README.md")"
@@ -93,8 +94,8 @@ sed 's/## Use the tracker tool/## Stale tracker tool/' "$root/.trackers/README.m
 mv "$tmp/backlog-readme.stale" "$root/.trackers/README.md"
 git -C "$root" add -- .trackers/trackers.sh .trackers/README.md
 git -C "$root" commit -qm 'Seed Backlog repair fixture baseline'
-cp "$root/.trackers/tasks.tsv" "$tmp/backlog-repair-queue.before"
-cp "$root/.trackers/receipts.tsv" "$tmp/backlog-repair-receipts.before"
+cp "$root/.trackers/tables/tasks.tsv" "$tmp/backlog-repair-queue.before"
+cp "$root/.trackers/history.tsv" "$tmp/backlog-repair-history.before"
 cp "$root/.trackers/DEBRIEF.md" "$tmp/backlog-repair-hook.before"
 cp "$root/AGENTS.md" "$tmp/backlog-repair-route.before"
 "$repo/skills/backlog/scripts/backlog-setup.sh" "$root" repair >"$tmp/backlog-repair.out"
@@ -103,8 +104,8 @@ printf '%s\n' '.trackers/README.md' '.trackers/trackers.sh'>"$tmp/backlog-repair
 cmp -s "$tmp/backlog-repair.expected" "$tmp/backlog-repair.paths"||fail "Backlog repair reported a path outside provider/README"
 git -C "$root" diff --name-only|sort>"$tmp/backlog-repair.diff"
 cmp -s "$tmp/backlog-repair.expected" "$tmp/backlog-repair.diff"||fail "Backlog repair diff escaped provider/README"
-cmp -s "$tmp/backlog-repair-queue.before" "$root/.trackers/tasks.tsv"||fail "Backlog repair changed queue bytes"
-cmp -s "$tmp/backlog-repair-receipts.before" "$root/.trackers/receipts.tsv"||fail "Backlog repair changed receipt bytes"
+cmp -s "$tmp/backlog-repair-queue.before" "$root/.trackers/tables/tasks.tsv"||fail "Backlog repair changed queue bytes"
+cmp -s "$tmp/backlog-repair-history.before" "$root/.trackers/history.tsv"||fail "Backlog repair changed history bytes"
 cmp -s "$tmp/backlog-repair-hook.before" "$root/.trackers/DEBRIEF.md"||fail "Backlog repair changed prompt bytes"
 cmp -s "$tmp/backlog-repair-route.before" "$root/AGENTS.md"||fail "Backlog repair changed route bytes"
 git -C "$root" add -- .trackers/trackers.sh .trackers/README.md;git -C "$root" commit -qm 'Repair Backlog managed surfaces'
@@ -137,7 +138,7 @@ git -C "$root" add -- .records/records.sh .records/README.md \
 git -C "$root" commit -qm 'Seed Journal repair fixture baseline'
 cp "$root/.records/history.tsv" "$tmp/repair-history.before"
 cp "$root/.records/notes/2026-08-28-repair-canary.md" "$tmp/repair-record.before"
-cp "$root/.trackers/tasks.tsv" "$tmp/repair-queue.before"
+cp "$root/.trackers/tables/tasks.tsv" "$tmp/repair-queue.before"
 cp "$root/.trackers/DEBRIEF.md" "$tmp/repair-hook.before"
 cp "$root/AGENTS.md" "$tmp/repair-route.before"
 "$repo/skills/journal/scripts/standup.sh" repair "$root" \
@@ -149,7 +150,7 @@ git -C "$root" diff --name-only | sort >"$tmp/journal-repair.diff"
 cmp -s "$tmp/journal-repair.expected" "$tmp/journal-repair.diff" || fail "repair aggregate diff escaped provider/README"
 cmp -s "$tmp/repair-history.before" "$root/.records/history.tsv" || fail "repair changed ledger bytes"
 cmp -s "$tmp/repair-record.before" "$root/.records/notes/2026-08-28-repair-canary.md" || fail "repair changed record bytes"
-cmp -s "$tmp/repair-queue.before" "$root/.trackers/tasks.tsv" || fail "repair changed queue bytes"
+cmp -s "$tmp/repair-queue.before" "$root/.trackers/tables/tasks.tsv" || fail "repair changed queue bytes"
 cmp -s "$tmp/repair-hook.before" "$root/.trackers/DEBRIEF.md" || fail "repair changed hook bytes"
 cmp -s "$tmp/repair-route.before" "$root/AGENTS.md" || fail "repair changed route bytes"
 [ ! -e "$root/.spaces/journal/setup.intent" ] || fail "repair created a setup intent"

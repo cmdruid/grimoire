@@ -16,11 +16,11 @@ for damage in missing nonexec drifted;do
   eq "$damage" 'reason=repair-required action=/backlog repair' "$(diagnostic "$D")"
 done
 
-G="$T/git-loss";newroot "$G";"$SETUP" "$G" --apply >/dev/null;git -C "$G" add .;git -C "$G" -c user.name=test -c user.email=test@example.invalid commit -qm initialized;rm "$G/.trackers/receipts.tsv"
+G="$T/git-loss";newroot "$G";"$SETUP" "$G" --apply >/dev/null;git -C "$G" add .;git -C "$G" -c user.name=test -c user.email=test@example.invalid commit -qm initialized;rm "$G/.trackers/history.tsv"
 eq git-loss 'reason=ledger-recovery-required action=git-restore' "$(diagnostic "$G")"
-H="$T/readme-loss";cp -R "$R" "$H";rm "$H/.trackers/receipts.tsv";eq readme-loss 'reason=ledger-recovery-required action=human-review' "$(diagnostic "$H")"
+H="$T/readme-loss";cp -R "$R" "$H";rm "$H/.trackers/history.tsv";eq readme-loss 'reason=ledger-recovery-required action=human-review' "$(diagnostic "$H")"
 A="$T/absent";newroot "$A";eq absent 'reason=setup-required action=/backlog setup' "$(diagnostic "$A")"
-P="$T/prefix";newroot "$P";mkdir -p "$P/.trackers";printf 'id\tcreated\ttext\tevidence\n'>"$P/.trackers/tasks.tsv";eq prefix 'reason=setup-required action=/backlog setup' "$(diagnostic "$P")"
+P="$T/prefix";newroot "$P";mkdir -p "$P/.trackers/tables";touch "$P/.trackers/tables/.gitkeep";printf 'id\tcreated\ttext\tevidence\n'>"$P/.trackers/tables/tasks.tsv";eq prefix 'reason=setup-required action=/backlog setup' "$(diagnostic "$P")"
 M="$T/ambiguous";newroot "$M";mkdir -p "$M/.trackers";printf 'bad\n'>"$M/.trackers/tasks.tsv";eq ambiguous 'reason=ledger-recovery-required action=human-review' "$(diagnostic "$M")"
 
 # Every provider-using entrypath binds to the executable runtime helper, and each binding is red-proved.
@@ -35,7 +35,7 @@ done
 entrypaths_valid "$COPY"&&pass=$((pass+1))||{ echo 'FAIL entrypath restoration drifted' >&2;fail=$((fail+1));}
 
 # Classification is read-only and a drifted executable is never run for discovery.
-X="$T/no-exec";cp -R "$R" "$X";printf '%s\n' '#!/bin/sh' 'touch "$(dirname "$0")/EXECUTED"' 'echo schema=tracker@1'>"$X/.trackers/trackers.sh";chmod +x "$X/.trackers/trackers.sh"
+X="$T/no-exec";cp -R "$R" "$X";printf '%s\n' '#!/bin/sh' 'touch "$(dirname "$0")/EXECUTED"' 'echo schema=tracker@2'>"$X/.trackers/trackers.sh";chmod +x "$X/.trackers/trackers.sh"
 eq no-exec 'reason=repair-required action=/backlog repair' "$(diagnostic "$X")";[ ! -e "$X/.trackers/EXECUTED" ]&&pass=$((pass+1))||{ echo 'FAIL classifier executed drifted provider' >&2;fail=$((fail+1));}
 
 echo "runtime-recovery-test: $pass passed, $fail failed";[ "$fail" -eq 0 ]

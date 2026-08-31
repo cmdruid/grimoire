@@ -83,7 +83,7 @@ question's *intent* is not. Keep it cheap and inline — never spend a dispatch 
    is reported unknown. If the script is missing or errors, say so and gather what you can by
    reading directly — degraded facts beat a stalled report.
    Status and briefing resolve `.trackers` independently and read only an advertised
-   `tracker@1` provider through side-effect-free `describe`, `catalog`, and `page`. Missing provider
+   `tracker@2` provider through side-effect-free `describe`, `catalog`, and `page`. Missing provider
    state reports absent; legacy record-owned or owner-local tracker paths are never probed.
 3. **Follow the links** — a ledger line is a closure *fact*; the substance is in the record it
    points at. Read what the facts point at, scaled to the template.

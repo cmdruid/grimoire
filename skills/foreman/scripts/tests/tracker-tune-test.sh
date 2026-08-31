@@ -3,10 +3,10 @@ set -euo pipefail
 HERE="$(CDPATH='' cd -P "$(dirname "$0")"&&pwd)";BASE="$(CDPATH='' cd -P "$HERE/../.."&&pwd)";REPO="$(CDPATH='' cd -P "$BASE/../.."&&pwd)"
 . "$HERE/lib.sh"
 T="$(mktemp -d "${TMPDIR:-/tmp}/foreman-tune-test.XXXXXX")";trap 'rm -rf "$T"' EXIT
-R="$T/root";mkdir -p "$R/.trackers";git -C "$R" init -q
+R="$T/root";mkdir -p "$R/.trackers/tables";touch "$R/.trackers/tables/.gitkeep";git -C "$R" init -q
 cp "$REPO/skills/backlog/scripts/trackers.sh" "$R/.trackers/trackers.sh";chmod +x "$R/.trackers/trackers.sh"
-printf 'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult\n' > "$R/.trackers/receipts.tsv"
-printf 'id\tcreated\ttext\tevidence\n' > "$R/.trackers/routines.tsv"
+printf 'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult\n' > "$R/.trackers/history.tsv"
+printf 'id\tcreated\ttext\tevidence\n' > "$R/.trackers/tables/routines.tsv"
 API=("$R/.trackers/trackers.sh")
 "${API[@]}" create --tracker routines --text 'release trigger and response' >/dev/null
 "${API[@]}" create --tracker routines --text 'similar release evidence' >/dev/null

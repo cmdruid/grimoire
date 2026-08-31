@@ -56,8 +56,8 @@ at write time while preserving explicit `mark` / `map` / `walk`. None is part of
   Workstream's generic helper, then loads that same stream. Normal Workstream use performs no
   Foreman checks.
 - Backlog's explicit setup defaults to `tasks`, `issues`, `feedback`, and `routines`; it owns the
-  first-class `.trackers` layer, its `tracker@1` provider, and a universally visible debrief
-  cadence. The pack itself installs no tracker, script, route, or debrief policy. Foreman consumes
+  first-class `.trackers` layer, its `tracker@2` provider, queue tables, lifecycle history, and a
+  universally visible debrief cadence. The pack itself installs no tracker, script, route, or debrief policy. Foreman consumes
   tracker pages to develop operations, while Analyst reads the same provider without mutation.
 - Chiropractor audits and confirmation-gates documentation-spine topology: task routes from
   `AGENTS.md`, compatibility with `CLAUDE.md`, and links to authoritative procedures or runnable

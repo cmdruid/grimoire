@@ -14,12 +14,12 @@ grep -qF 'reason=setup-required action=/backlog setup' "$T/out"&&pass=$((pass+1)
 
 R="$T/root";newroot "$R";"$SETUP" "$R" --apply >/dev/null
 printf 'DOOR_CANARY\n'>>"$R/AGENTS.md";printf 'PROMPT_CANARY\n'>>"$R/.trackers/DEBRIEF.md"
-cp "$R/AGENTS.md" "$T/door";cp "$R/.trackers/DEBRIEF.md" "$T/prompt";cp "$R/.trackers/tasks.tsv" "$T/queue";cp "$R/.trackers/receipts.tsv" "$T/receipts"
+cp "$R/AGENTS.md" "$T/door";cp "$R/.trackers/DEBRIEF.md" "$T/prompt";cp "$R/.trackers/tables/tasks.tsv" "$T/queue";cp "$R/.trackers/history.tsv" "$T/history"
 for damage in missing nonexec wrong drifted;do
   case "$damage" in
     missing) rm "$R/.trackers/trackers.sh";;
     nonexec) chmod -x "$R/.trackers/trackers.sh";;
-    wrong) sed 's/schema=tracker@1/schema=tracker@2/' "$SOURCE">"$R/.trackers/trackers.sh";chmod +x "$R/.trackers/trackers.sh";;
+    wrong) sed 's/schema=tracker@2/schema=tracker@1/' "$SOURCE">"$R/.trackers/trackers.sh";chmod +x "$R/.trackers/trackers.sh";;
     drifted) printf '\n# drift\n'>>"$R/.trackers/trackers.sh";;
   esac
   printf '\n<!-- project prose %s -->\n' "$damage">>"$R/.trackers/README.md"
@@ -27,7 +27,7 @@ for damage in missing nonexec wrong drifted;do
   cmp "$SOURCE" "$R/.trackers/trackers.sh" >/dev/null&&[ -x "$R/.trackers/trackers.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
   [ "$(grep -cFx '<!-- backlog:trackers-tool BEGIN -->' "$R/.trackers/README.md")" -eq 1 ]&&pass=$((pass+1))||fail=$((fail+1))
 done
-cmp "$T/door" "$R/AGENTS.md" >/dev/null&&cmp "$T/prompt" "$R/.trackers/DEBRIEF.md" >/dev/null&&cmp "$T/queue" "$R/.trackers/tasks.tsv" >/dev/null&&cmp "$T/receipts" "$R/.trackers/receipts.tsv" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
+cmp "$T/door" "$R/AGENTS.md" >/dev/null&&cmp "$T/prompt" "$R/.trackers/DEBRIEF.md" >/dev/null&&cmp "$T/queue" "$R/.trackers/tables/tasks.tsv" >/dev/null&&cmp "$T/history" "$R/.trackers/history.tsv" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
 grep -qF '<!-- project prose drifted -->' "$R/.trackers/README.md"&&pass=$((pass+1))||fail=$((fail+1))
 
 # Repair accepts initialized default-with-removal, custom, and zero-queue populations.
@@ -38,8 +38,8 @@ for population in removed custom zero;do
     custom)"$SETUP" "$V" tracker-add decisions >/dev/null;for s in tasks issues feedback routines;do "$SETUP" "$V" tracker-remove "$s" >/dev/null;done;;
     zero)for s in tasks issues feedback routines;do "$SETUP" "$V" tracker-remove "$s" >/dev/null;done;;
   esac
-  before_count="$(find "$V/.trackers" -name '*.tsv' ! -name receipts.tsv|wc -l|tr -d ' ')";printf 'bad\n'>"$V/.trackers/trackers.sh";chmod +x "$V/.trackers/trackers.sh"
-  ok "$SETUP" "$V" repair;[ "$before_count" -eq "$(find "$V/.trackers" -name '*.tsv' ! -name receipts.tsv|wc -l|tr -d ' ')" ]&&pass=$((pass+1))||fail=$((fail+1))
+  before_count="$(find "$V/.trackers/tables" -name '*.tsv'|wc -l|tr -d ' ')";printf 'bad\n'>"$V/.trackers/trackers.sh";chmod +x "$V/.trackers/trackers.sh"
+  ok "$SETUP" "$V" repair;[ "$before_count" -eq "$(find "$V/.trackers/tables" -name '*.tsv'|wc -l|tr -d ' ')" ]&&pass=$((pass+1))||fail=$((fail+1))
 done
 
 # An injected repair failure can leave only an allowed provider write; retry completes the README.
@@ -49,7 +49,7 @@ if BACKLOG_SETUP_TEST_AFTER_WRITE="$STOP" "$SETUP" "$I" repair >/dev/null 2>&1;t
 cmp "$SOURCE" "$I/.trackers/trackers.sh" >/dev/null&&pass=$((pass+1))||fail=$((fail+1));ok "$SETUP" "$I" repair
 
 # Malformed data and ownership markers refuse before any repair write.
-Q="$T/malformed-queue";newroot "$Q";"$SETUP" "$Q" --apply >/dev/null;printf 'bad\n'>"$Q/.trackers/tasks.tsv";cp "$Q/.trackers/trackers.sh" "$T/provider.before";no "$SETUP" "$Q" repair;cmp "$T/provider.before" "$Q/.trackers/trackers.sh" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
+Q="$T/malformed-queue";newroot "$Q";"$SETUP" "$Q" --apply >/dev/null;printf 'bad\n'>"$Q/.trackers/tables/tasks.tsv";cp "$Q/.trackers/trackers.sh" "$T/provider.before";no "$SETUP" "$Q" repair;cmp "$T/provider.before" "$Q/.trackers/trackers.sh" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
 M="$T/malformed-readme";newroot "$M";"$SETUP" "$M" --apply >/dev/null;printf '\n<!-- backlog:trackers-tool BEGIN -->\n'>>"$M/.trackers/README.md";rm "$M/.trackers/trackers.sh";no "$SETUP" "$M" repair;[ ! -e "$M/.trackers/trackers.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
 
 # Repair never recreates a tracker root that vanishes after classification.

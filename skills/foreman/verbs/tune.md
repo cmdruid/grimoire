@@ -1,7 +1,7 @@
 # `tune <tracker>` — curate a tracker batch
 
 Resolve `.trackers`. Require the provider's executable `trackers.sh` and confirm its exact
-`describe` schema is `tracker@1`. Invoke the installed provider directly, then request one bounded
+`describe` schema is `tracker@2`. Invoke the installed provider directly, then request one bounded
 open page using stable consumer key `foreman/tune`. Missing provider state degrades to an equivalent
 bounded batch supplied directly by the caller; do not require setup or create an adapter.
 

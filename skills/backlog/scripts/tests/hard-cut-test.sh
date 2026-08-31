@@ -16,6 +16,7 @@ pass=0;fail=0
 has(){ if grep -qF -- "$2" "$1";then pass=$((pass+1));else echo "FAIL missing $2" >&2;fail=$((fail+1));fi;}
 lacks(){ if grep -qF -- "$2" "$1";then echo "FAIL surfaced $2" >&2;fail=$((fail+1));else pass=$((pass+1));fi;}
 no(){ if "$@" >/dev/null 2>&1;then echo "FAIL accepted retired command" >&2;fail=$((fail+1));else pass=$((pass+1));fi;}
+ok(){ if "$@" >/dev/null 2>&1;then pass=$((pass+1));else echo "FAIL rejected current command" >&2;fail=$((fail+1));fi;}
 has "$R/.records/trackers/old.md" "$legacy_record";has "$legacy_workspace_dir/tasks.tsv" "$legacy_workspace"
 has "$combined" "$live";lacks "$combined" "$legacy_record";lacks "$combined" "$legacy_workspace"
 for cmd in complete drop reorder migrate-import;do no "${API[@]}" "$cmd";done
@@ -23,4 +24,29 @@ for cmd in complete drop reorder migrate-import;do no "${API[@]}" "$cmd";done
 [ ! -e "$R/.trackers/tracker-api.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
 legacy_owner_path='.spaces/backlog/'"trackers"
 lacks "$B/SKILL.md" "$legacy_owner_path";lacks "$B/verbs/debrief.md" '.records/trackers'
+
+# tracker@1 data is incompatible until an operator performs the documented Git conversion.
+OLD="$T/tracker1";mkdir -p "$OLD/.trackers";git -C "$OLD" init -q
+printf '%s\n' $'id\tcreated\ttext\tevidence' $'tasks-1\t2026-08-30T00:00:00Z\tfirst row\tdocs/one' $'tasks-2\t2026-08-30T00:01:00Z\tsecond row\tdocs/two' >"$OLD/.trackers/tasks.tsv"
+printf '%s\n' $'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult' $'receipt-1\t2026-08-30T00:02:00Z\tanalyst/status\ttasks\ttasks-1\tobserved\t\t' $'receipt-2\t2026-08-30T00:03:00Z\tcontractor/build\ttasks\ttasks-1\tconsumed\tdone\tdocs/result' >"$OLD/.trackers/receipts.tsv"
+cp -R "$OLD/.trackers" "$T/tracker1.before"
+no "$SETUP" "$OLD" --apply
+diff -r "$T/tracker1.before" "$OLD/.trackers" >/dev/null&&pass=$((pass+1))||{ echo 'FAIL old layout changed during refusal' >&2;fail=$((fail+1));}
+mkdir -p "$OLD/.trackers/tables";touch "$OLD/.trackers/tables/.gitkeep"
+git -C "$OLD" add .trackers;git -C "$OLD" -c user.name=test -c user.email=test@example.invalid commit -qm tracker1
+git -C "$OLD" mv .trackers/tasks.tsv .trackers/tables/tasks.tsv
+git -C "$OLD" mv .trackers/receipts.tsv .trackers/history.tsv
+perl -pe 's/\Areceipt-([1-9][0-9]*)\t/event-$1\t/' "$OLD/.trackers/history.tsv" >"$T/history.converted"
+mv "$T/history.converted" "$OLD/.trackers/history.tsv"
+cmp "$T/tracker1.before/tasks.tsv" "$OLD/.trackers/tables/tasks.tsv" >/dev/null&&pass=$((pass+1))||{ echo 'FAIL queue bytes changed during conversion' >&2;fail=$((fail+1));}
+cut -f2- "$T/tracker1.before/receipts.tsv" >"$T/history.fields.before";cut -f2- "$OLD/.trackers/history.tsv" >"$T/history.fields.after"
+cmp "$T/history.fields.before" "$T/history.fields.after" >/dev/null&&pass=$((pass+1))||{ echo 'FAIL non-ID history bytes changed' >&2;fail=$((fail+1));}
+ok "$SETUP" "$OLD" --apply
+"$OLD/.trackers/trackers.sh" page --tracker tasks --status consumed --limit 20 >"$T/converted-page"
+"$OLD/.trackers/trackers.sh" history --limit 20 >"$T/converted-history"
+has "$T/converted-page" $'tasks-1\t';has "$T/converted-history" $'event-1\t';has "$T/converted-history" $'event-2\t'
+
+if rg -n 'tracker@1|receipt-[1-9]|receipts\.tsv' "$B/scripts/trackers.sh" "$B/scripts/backlog-setup.sh" "$B/scripts/tracker-layer-status.sh" >/dev/null;then
+  echo 'FAIL live runtime retains tracker@1 compatibility' >&2;fail=$((fail+1))
+else pass=$((pass+1));fi
 echo "hard-cut-test: $pass passed, $fail failed";[ "$fail" -eq 0 ]

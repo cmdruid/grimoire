@@ -46,7 +46,7 @@ Natural-language requests may route directly when the intended outcome is clear.
 - The bundled `templates/operation.md` is package-only. Never deploy it as a project template.
 - Goal records use `foreman/goal@1` under `.records/goals/`. Missing `records.sh` is not an
   error and records standup is never a precondition.
-- A tracker consumer uses the fixed `.trackers` layer and its advertised `tracker@1` API. Missing
+- A tracker consumer uses the fixed `.trackers` layer and its advertised `tracker@2` API. Missing
   provider state degrades to rows supplied directly
   by the caller; it is not a setup requirement.
 

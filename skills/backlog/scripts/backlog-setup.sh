@@ -4,7 +4,7 @@ set -euo pipefail
 
 die(){ echo "reason=$1${2:+ detail=$2}" >&2;exit 2;}
 die_action(){ echo "reason=$1 action=$2" >&2;exit 2;}
-valid_stem(){ [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]]&&[ "$1" != receipts ];}
+valid_stem(){ [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]];}
 
 ROOT="${1:-}";[ -n "$ROOT" ]||die usage;shift
 TR=.trackers;mode="";stem=""
@@ -22,9 +22,9 @@ if [ -n "$GIT_ROOT" ];then GIT_ROOT="$(CDPATH='' cd -P "$GIT_ROOT"&&pwd)";[ "$GI
 SKILL="$(CDPATH='' cd -P "$(dirname "$0")/.."&&pwd)"
 SOURCE="$SKILL/scripts/trackers.sh";CLASSIFIER="$SKILL/scripts/tracker-layer-status.sh"
 README_STATUS="$SKILL/scripts/tracker-readme-status.sh";README_TEMPLATE="$SKILL/templates/trackers-readme-block.md"
-REG="$SKILL/scripts/register-route.sh";LAYER="$ROOT/$TR";PROVIDER="$LAYER/trackers.sh"
-RECEIPTS="$LAYER/receipts.tsv";README="$LAYER/README.md";PROMPT="$LAYER/DEBRIEF.md";DOOR="$ROOT/AGENTS.md"
-QUEUE_HEADER=$'id\tcreated\ttext\tevidence';RECEIPT_HEADER=$'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult'
+REG="$SKILL/scripts/register-route.sh";LAYER="$ROOT/$TR";TABLES="$LAYER/tables";PROVIDER="$LAYER/trackers.sh"
+HISTORY="$LAYER/history.tsv";MARKER="$TABLES/.gitkeep";README="$LAYER/README.md";PROMPT="$LAYER/DEBRIEF.md";DOOR="$ROOT/AGENTS.md"
+QUEUE_HEADER=$'id\tcreated\ttext\tevidence';HISTORY_HEADER=$'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult'
 [ -n "$mode" ]||die usage
 if [ "$mode" = list ];then
   printf '%s\n' $'stem=feedback\ttitle=Feedback\tuse-when="Developer-experience friction and observations."' $'stem=issues\ttitle=Issues\tuse-when="Project problems, risks, and limitations."' $'stem=routines\ttitle=Routines\tuse-when="Repeatable responses to recognizable development triggers."' $'stem=tasks\ttitle=Tasks\tuse-when="Work someone should build or change."';exit
@@ -55,14 +55,14 @@ esac
 case "$mode" in tracker-add|tracker-remove)[ "$provider_status" = current ]||die_action repair-required '/backlog repair';;esac
 
 # Complete preflight before the first durable write.
-check_parent "$TR";check_file "$PROVIDER";check_file "$RECEIPTS";check_file "$README"
+check_parent "$TR";check_parent "$TR/tables";check_file "$PROVIDER";check_file "$HISTORY";check_file "$MARKER";check_file "$README"
 layer_preexisted=false;[ -d "$LAYER" ]&&layer_preexisted=true
 if [ "$mode" != repair ];then
   check_file "$PROMPT";check_file "$DOOR"
   "$REG" preflight --root "$ROOT" >/dev/null
 fi
-if [ "$mode" = tracker-remove ];then [ -f "$LAYER/$stem.tsv" ]&&[ ! -L "$LAYER/$stem.tsv" ]||die no-tracker "$stem";fi
-if [ "$mode" = tracker-add ];then check_file "$LAYER/$stem.tsv";[ ! -e "$LAYER/$stem.tsv" ]||die incumbent "$stem";fi
+if [ "$mode" = tracker-remove ];then [ -f "$TABLES/$stem.tsv" ]&&[ ! -L "$TABLES/$stem.tsv" ]||die no-tracker "$stem";fi
+if [ "$mode" = tracker-add ];then check_file "$TABLES/$stem.tsv";[ ! -e "$TABLES/$stem.tsv" ]||die incumbent "$stem";fi
 [ -z "${BACKLOG_SETUP_TEST_AFTER_PREFLIGHT:-}" ]||{ [ -x "$BACKLOG_SETUP_TEST_AFTER_PREFLIGHT" ]||die test-hook;"$BACKLOG_SETUP_TEST_AFTER_PREFLIGHT" "$ROOT" "$TR";}
 
 writes=0;reported=""
@@ -91,7 +91,7 @@ render_readme(){
   else block_facts="$("$README_STATUS" "$README_TEMPLATE" "$input")";block_status="$(printf '%s\n' "$block_facts"|sed -n 's/^readme_status=//p')";fi
   case "$block_status" in
     absent)
-      if [ "$input" = - ];then printf '%s\n\n' '# Project trackers' 'Public tracker@1 queues and their shared receipt ledger.'>"$output"
+      if [ "$input" = - ];then printf '%s\n\n' '# Project trackers' 'Public tracker@2 tables and their shared lifecycle history.'>"$output"
       else cp "$input" "$output";if [ -s "$input" ];then last="$(tail -c 1 "$input"|od -An -tuC|tr -d '[:space:]')";[ "$last" = 10 ]||printf '\n'>>"$output";printf '\n'>>"$output";fi;fi
       cat "$README_TEMPLATE">>"$output"
       ;;
@@ -116,8 +116,8 @@ report_readme_reconciled(){
 if [ "$mode" = setup ];then
   report_exact_reconciled "$PROVIDER" "$SOURCE"
   tmp_header="$(mktemp "${TMPDIR:-/tmp}/backlog-queue-header.XXXXXX")";printf '%s\n' "$QUEUE_HEADER">"$tmp_header"
-  for s in tasks issues feedback routines;do report_exact_reconciled "$LAYER/$s.tsv" "$tmp_header";done
-  tmp_receipts="$(mktemp "${TMPDIR:-/tmp}/backlog-receipts-header.XXXXXX")";printf '%s\n' "$RECEIPT_HEADER">"$tmp_receipts";report_exact_reconciled "$RECEIPTS" "$tmp_receipts"
+  for s in tasks issues feedback routines;do report_exact_reconciled "$TABLES/$s.tsv" "$tmp_header";done
+  tmp_history="$(mktemp "${TMPDIR:-/tmp}/backlog-history-header.XXXXXX")";printf '%s\n' "$HISTORY_HEADER">"$tmp_history";report_exact_reconciled "$HISTORY" "$tmp_history"
   report_readme_reconciled
   tmp_prompt="$(mktemp "${TMPDIR:-/tmp}/backlog-prompt.XXXXXX")";printf '%s\n' '# Backlog debrief routing' '' 'Edit each section to match this project. Debrief reads this file; the generic tracker API does not.'>"$tmp_prompt"
   if [ -f "$PROMPT" ];then
@@ -130,22 +130,26 @@ if [ "$mode" = setup ];then
   if [ "$layer_status" != initialized ];then prompt_will_change=true
   elif [ -f "$PROMPT" ];then
     shopt -s nullglob
-    for file in "$LAYER"/*.tsv;do s="$(basename "$file" .tsv)";[ "$s" = receipts ]&&continue;[ "$(grep -cFx -- "## $s" "$PROMPT"||true)" -gt 0 ]||prompt_will_change=true;done
+    for file in "$TABLES"/*.tsv;do s="$(basename "$file" .tsv)";[ "$(grep -cFx -- "## $s" "$PROMPT"||true)" -gt 0 ]||prompt_will_change=true;done
     shopt -u nullglob
   fi
   if [ "$prompt_will_change" = true ]&&[ -f "$PROMPT" ]&&head_differs "$TR/DEBRIEF.md"&&! cmp -s "$tmp_prompt" "$PROMPT";then die commit-custody-required "$TR/DEBRIEF.md";fi
   tmp_door="$(mktemp "${TMPDIR:-/tmp}/backlog-door.XXXXXX")";printf '# Agent instructions\n\n## Skill routes (self-registered)\n\n'>"$tmp_door";cat "$SKILL/templates/debrief-anchor.md">>"$tmp_door";report_exact_reconciled "$DOOR" "$tmp_door"
-  rm -f "$tmp_header" "$tmp_receipts" "$tmp_prompt" "$tmp_door"
+  rm -f "$tmp_header" "$tmp_history" "$tmp_prompt" "$tmp_door"
 fi
 
 require_layer(){ check_parent "$TR";[ -d "$LAYER" ]&&[ ! -L "$LAYER" ]||die vanished-tracker-root "$TR";}
+require_tables(){ require_layer;[ -d "$TABLES" ]&&[ ! -L "$TABLES" ]||die vanished-tables-root "$TR/tables";}
 require_prompt_parent(){ require_layer;}
 if [ "$layer_preexisted" = true ];then require_layer
 elif [ "$mode" = setup ];then ensure_tree "$TR"
 else die vanished-tracker-root "$TR";fi
+if [ "$mode" = setup ];then ensure_tree "$TR/tables";else require_tables;fi
 
-write_atomic(){ local dest="$1" src="$2" rel tmp;rel="${dest#"$ROOT"/}";require_layer;tmp="$dest.tmp.$$";fresh_tmp "$tmp";cp "$src" "$tmp";require_layer;check_file "$dest";mv "$tmp" "$dest";report wrote "$rel";}
-write_line_atomic(){ local dest="$1" line="$2" rel tmp;rel="${dest#"$ROOT"/}";require_layer;tmp="$dest.tmp.$$";fresh_tmp "$tmp";printf '%s\n' "$line">"$tmp";require_layer;check_file "$dest";mv "$tmp" "$dest";report wrote "$rel";}
+require_destination_parent(){ case "$1" in "$TABLES"/*)require_tables;;*)require_layer;;esac;}
+write_atomic(){ local dest="$1" src="$2" rel tmp;rel="${dest#"$ROOT"/}";require_destination_parent "$dest";tmp="$dest.tmp.$$";fresh_tmp "$tmp";cp "$src" "$tmp";require_destination_parent "$dest";check_file "$dest";mv "$tmp" "$dest";report wrote "$rel";}
+write_line_atomic(){ local dest="$1" line="$2" rel tmp;rel="${dest#"$ROOT"/}";require_destination_parent "$dest";tmp="$dest.tmp.$$";fresh_tmp "$tmp";printf '%s\n' "$line">"$tmp";require_destination_parent "$dest";check_file "$dest";mv "$tmp" "$dest";report wrote "$rel";}
+write_empty_atomic(){ local dest="$1" rel tmp;rel="${dest#"$ROOT"/}";require_destination_parent "$dest";tmp="$dest.tmp.$$";fresh_tmp "$tmp";:>"$tmp";require_destination_parent "$dest";check_file "$dest";mv "$tmp" "$dest";report wrote "$rel";}
 
 install_provider(){
   if [ ! -f "$PROVIDER" ]||! cmp -s "$SOURCE" "$PROVIDER";then write_atomic "$PROVIDER" "$SOURCE";fi
@@ -174,12 +178,12 @@ append_module(){
   mv "$tmp" "$PROMPT";rm -f "$before" "$module";report wrote "$TR/DEBRIEF.md"
 }
 remove_module(){ local s="$1" before;[ -f "$PROMPT" ]&&[ "$(module_count "$s")" -gt 0 ]||return 0;require_prompt_parent;before="$(mktemp "${TMPDIR:-/tmp}/backlog-prompt-before.XXXXXX")";cp "$PROMPT" "$before";tmp="$PROMPT.tmp.$$";fresh_tmp "$tmp";awk -v h="## $s" '/^## /{skip=($0==h)}!skip{print}' "$before">"$tmp";require_prompt_parent;check_file "$PROMPT";if ! cmp -s "$before" "$PROMPT";then rm -f "$before" "$tmp";die concurrent-project-edit "$TR/DEBRIEF.md";fi;mv "$tmp" "$PROMPT";rm -f "$before";report wrote "$TR/DEBRIEF.md";}
-create_queue(){ local s="$1" src="$2" file;file="$LAYER/$s.tsv";if [ ! -f "$file" ];then write_line_atomic "$file" "$QUEUE_HEADER";fi;require_layer;append_module "$s" "$src";}
-validate_preledger(){
+create_queue(){ local s="$1" src="$2" file;file="$TABLES/$s.tsv";if [ ! -f "$file" ];then write_line_atomic "$file" "$QUEUE_HEADER";fi;require_tables;append_module "$s" "$src";}
+validate_prehistory(){
   local s headings prefix_facts prefix_status
   require_layer;require_prompt_parent;check_file "$PROVIDER";[ -x "$PROVIDER" ]&&cmp -s "$SOURCE" "$PROVIDER"||die malformed-provider
   for s in tasks issues feedback routines;do
-    check_file "$LAYER/$s.tsv";[ -f "$LAYER/$s.tsv" ]&&[ "$(wc -l <"$LAYER/$s.tsv"|tr -d ' ')" -eq 1 ]&&[ "$(head -n 1 "$LAYER/$s.tsv")" = "$QUEUE_HEADER" ]||die malformed-tracker "$s"
+    check_file "$TABLES/$s.tsv";[ -f "$TABLES/$s.tsv" ]&&[ "$(wc -l <"$TABLES/$s.tsv"|tr -d ' ')" -eq 1 ]&&[ "$(head -n 1 "$TABLES/$s.tsv")" = "$QUEUE_HEADER" ]||die malformed-tracker "$s"
     [ -f "$PROMPT" ]&&[ "$(grep -cFx -- "## $s" "$PROMPT"||true)" -eq 1 ]||die malformed-prompt "$s"
   done
   headings="$(sed -n 's/^## //p' "$PROMPT")"
@@ -192,7 +196,7 @@ validate_provider(){
   require_layer;[ -x "$PROVIDER" ]&&[ ! -L "$PROVIDER" ]&&cmp -s "$SOURCE" "$PROVIDER"||die malformed-provider
   description="$("$PROVIDER" describe)"||die malformed-provider
   schema_lines="$(printf '%s\n' "$description"|sed -n '/^schema=/p')"
-  [ "$schema_lines" = 'schema=tracker@1' ]||die malformed-provider
+  [ "$schema_lines" = 'schema=tracker@2' ]||die malformed-provider
   "$PROVIDER" catalog >/dev/null||die malformed-provider
 }
 reconcile_readme(){
@@ -211,25 +215,26 @@ reconcile_readme(){
 if [ "$mode" = repair ];then
   install_provider;validate_provider;reconcile_readme
 elif [ "$mode" = setup ];then
+  if [ ! -f "$MARKER" ];then write_empty_atomic "$MARKER";fi
   install_provider
   if [ "$layer_status" = initialized ];then
     shopt -s nullglob
-    for file in "$LAYER"/*.tsv;do s="$(basename "$file" .tsv)";[ "$s" = receipts ]&&continue;src="$SKILL/suggestions/$s.md";[ -f "$src" ]||src="";append_module "$s" "$src";done
+    for file in "$TABLES"/*.tsv;do s="$(basename "$file" .tsv)";src="$SKILL/suggestions/$s.md";[ -f "$src" ]||src="";append_module "$s" "$src";done
     shopt -u nullglob
   else
     for s in tasks issues feedback routines;do create_queue "$s" "$SKILL/suggestions/$s.md";done
-    if [ ! -f "$RECEIPTS" ];then validate_preledger;write_line_atomic "$RECEIPTS" "$RECEIPT_HEADER";fi
+    if [ ! -f "$HISTORY" ];then validate_prehistory;write_line_atomic "$HISTORY" "$HISTORY_HEADER";fi
   fi
   validate_provider;reconcile_readme
 elif [ "$mode" = tracker-add ];then
   validate_provider;create_queue "$stem" "$( [ -f "$SKILL/suggestions/$stem.md" ]&&printf '%s' "$SKILL/suggestions/$stem.md"||true )"
 else
-  validate_provider;require_layer;rm "$LAYER/$stem.tsv";report removed "$TR/$stem.tsv";require_layer;remove_module "$stem"
+  validate_provider;require_tables;rm "$TABLES/$stem.tsv";report removed "$TR/tables/$stem.tsv";require_tables;remove_module "$stem"
 fi
 
 if [ "$mode" != repair ];then
   require_layer
-  count=0;shopt -s nullglob;for file in "$LAYER"/*.tsv;do [ "$(basename "$file")" = receipts.tsv ]||count=$((count+1));done;shopt -u nullglob
+  count=0;shopt -s nullglob;for file in "$TABLES"/*.tsv;do count=$((count+1));done;shopt -u nullglob
   if [ "$count" -gt 0 ];then "$REG" ensure --root "$ROOT";else "$REG" remove --root "$ROOT";fi
 fi
 

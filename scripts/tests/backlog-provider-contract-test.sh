@@ -19,6 +19,14 @@ validate(){
   [ "$legacy_count" -eq 7 ]&&[ -z "$unexpected" ]||{ fail 'live source or unnamed fixture names the pre-cut provider';return 1;}
   [ -x "$root/skills/backlog/scripts/trackers.sh" ]||{ fail 'canonical package provider missing';return 1;}
   [ ! -e "$root/skills/backlog/scripts/tracker-api.sh" ]||{ fail 'pre-cut package provider remains';return 1;}
+  if rg -n 'tracker@1|receipts\.tsv|receipt-[1-9]' \
+    "$root/skills/backlog/scripts/trackers.sh" \
+    "$root/skills/backlog/scripts/backlog-setup.sh" \
+    "$root/skills/backlog/scripts/tracker-layer-status.sh" >/dev/null;then
+    fail 'live tracker runtime retains tracker@1 compatibility';return 1
+  fi
+  grep -qF 'tracker@2' "$root/skills/analyst/SKILL.md"||{ fail 'Analyst does not require tracker@2';return 1;}
+  grep -qF 'tracker@2' "$root/skills/foreman/SKILL.md"||{ fail 'Foreman does not require tracker@2';return 1;}
   repair_defs="$(rg -o '^install_provider\(\)' "$root/skills/backlog/scripts" --glob '!**/tests/**'|wc -l|tr -d ' ')"
   [ "$repair_defs" -eq 1 ]||{ fail 'provider reconciliation is not singular';return 1;}
   grep -qF 'scripts/backlog-setup.sh' "$root/skills/backlog/verbs/repair.md"||{ fail 'repair bypasses shared setup reconciler';return 1;}
@@ -47,6 +55,8 @@ red_proof "$FIX/scripts/tests/configure-clankshop-test.sh" '"$root/.trackers/tra
 red_proof "$FIX/skills/foreman/SKILL.md" 'invoke /backlog repair'
 red_proof "$FIX/AGENTS.md" '<!-- skill:backlog BEGIN -->'
 red_proof "$FIX/skills/backlog/scripts/backlog-setup.sh" 'install_provider(){ :; }'
+red_proof "$FIX/skills/backlog/scripts/trackers.sh" '# tracker@1 compatibility'
+red_proof "$FIX/skills/backlog/scripts/tracker-layer-status.sh" '# receipts.tsv fallback'
 validate "$FIX"
-[ "$mutations" -eq 6 ]||{ echo 'FAIL: mutation count drifted' >&2;exit 1;}
+[ "$mutations" -eq 8 ]||{ echo 'FAIL: mutation count drifted' >&2;exit 1;}
 echo "backlog-provider-contract-test: $mutations red proofs passed"

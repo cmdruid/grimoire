@@ -12,7 +12,7 @@ expect_absent "lazy deployment is retired" 'Deploy is **lazy**' "$SKILL"
 expect_absent "normal engine does not invoke deploy" \
   'Run `scripts/analyst-deploy.sh <root>` first' "$SKILL"
 expect "tracker provider is first class" '.trackers' "$SKILL"
-expect "tracker contract is generic" 'tracker@1' "$SKILL"
+expect "tracker contract is current" 'tracker@2' "$SKILL"
 expect "legacy homes stay dark" 'never probed' "$SKILL"
 
 report "analyst skill docs"

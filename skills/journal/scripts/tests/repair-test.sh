@@ -186,11 +186,11 @@ expect "prior path prose preserved" "outside block names .spaces/journal/scripts
 # The aggregate Git diff is exactly the two allowed repair paths.
 bounded="$TMP/bounded"
 setup_layer "$bounded"
-mkdir -p "$bounded/.records/notes" "$bounded/.spaces/journal/scripts" "$bounded/.trackers"
+mkdir -p "$bounded/.records/notes" "$bounded/.spaces/journal/scripts" "$bounded/.trackers/tables"
 printf '%s\n' 'ledger-byte' >"$bounded/.records/history.tsv"
 printf '%s\n' 'record-byte' >"$bounded/.records/notes/keep.md"
 printf '%s\n' 'prior-byte' >"$bounded/.spaces/journal/scripts/records.sh"
-printf '%s\n' 'tracker-byte' >"$bounded/.trackers/tasks.tsv"
+printf '%s\n' 'tracker-byte' >"$bounded/.trackers/tables/tasks.tsv"
 git -C "$bounded" init -q
 git -C "$bounded" config user.name Fixture
 git -C "$bounded" config user.email fixture@example.invalid

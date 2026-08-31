@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -60,7 +60,7 @@ implementation requirements.
 
 ## Slices
 
-- [ ] **Slice 0: Re-ground and classify the tracker@2 cut** <requires: —>
+- [x] **Slice 0: Re-ground and classify the tracker@2 cut** <requires: —>
   - Files: read-only inspection of the governing ADR; `.trackers/`; `README.md`; `PACK.md`;
     `scripts/tests/`; `skills/backlog/`; `skills/analyst/`; `skills/foreman/`;
     `skills/journal/scripts/tests/`; `skills/workspace/scripts/tests/`; and
@@ -89,7 +89,7 @@ implementation requirements.
     unrelated status entry is named and excluded from this job. Explain any population change
     before Slice 1.
 
-- [ ] **Slice 1: Cut the complete tracker layer to tables and lifecycle history** <requires: 0>
+- [x] **Slice 1: Cut the complete tracker layer to tables and lifecycle history** <requires: 0>
   - Files:
     - Modify provider/setup/recovery:
       `skills/backlog/scripts/trackers.sh`, `skills/backlog/scripts/backlog-setup.sh`, and

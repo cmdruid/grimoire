@@ -12,9 +12,8 @@ extract_route(){ local facts begin end;facts="$("$STATUS" "$TEMPLATE" "$1")";beg
 
 R="$T/default";newroot "$R";out="$("$SETUP" "$R" --apply)"
 has <(printf '%s\n' "$out") 'wrote=.trackers/trackers.sh'
-for f in README.md trackers.sh receipts.tsv tasks.tsv issues.tsv feedback.tsv routines.tsv;do
-  [ -f "$R/.trackers/$f" ]&&pass=$((pass+1))||{ echo "FAIL missing $f" >&2;fail=$((fail+1));}
-done
+for f in README.md trackers.sh history.tsv;do [ -f "$R/.trackers/$f" ]&&pass=$((pass+1))||{ echo "FAIL missing $f" >&2;fail=$((fail+1));};done
+for f in .gitkeep tasks.tsv issues.tsv feedback.tsv routines.tsv;do [ -f "$R/.trackers/tables/$f" ]&&pass=$((pass+1))||{ echo "FAIL missing tables/$f" >&2;fail=$((fail+1));};done
 [ -x "$R/.trackers/trackers.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
 [ ! -e "$R/.trackers/tracker-api.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
 for s in tasks issues feedback routines;do has "$R/.trackers/DEBRIEF.md" "## $s";done
@@ -23,12 +22,14 @@ extract_route "$R/AGENTS.md">"$T/route";cmp "$TEMPLATE" "$T/route" >/dev/null&&p
 # Initialized setup preserves data and an intentionally removed default queue.
 "$R/.trackers/trackers.sh" create --tracker tasks --text 'keep me' >/dev/null
 "$SETUP" "$R" tracker-remove issues >/dev/null
-cp "$R/.trackers/tasks.tsv" "$T/tasks.before";cp "$R/.trackers/receipts.tsv" "$T/receipts.before"
+cp "$R/.trackers/tables/tasks.tsv" "$T/tasks.before";cp "$R/.trackers/history.tsv" "$T/history.before"
 printf 'legacy residue\n'>"$R/.trackers/tracker-api.sh";printf '\nproject prompt tail\n'>>"$R/.trackers/DEBRIEF.md"
+rm "$R/.trackers/tables/.gitkeep"
 "$SETUP" "$R" --apply >/dev/null
-cmp "$T/tasks.before" "$R/.trackers/tasks.tsv" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
-cmp "$T/receipts.before" "$R/.trackers/receipts.tsv" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
-[ ! -e "$R/.trackers/issues.tsv" ]&&pass=$((pass+1))||fail=$((fail+1))
+cmp "$T/tasks.before" "$R/.trackers/tables/tasks.tsv" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
+cmp "$T/history.before" "$R/.trackers/history.tsv" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
+[ ! -e "$R/.trackers/tables/issues.tsv" ]&&pass=$((pass+1))||fail=$((fail+1))
+[ -f "$R/.trackers/tables/.gitkeep" ]&&[ ! -s "$R/.trackers/tables/.gitkeep" ]&&pass=$((pass+1))||fail=$((fail+1))
 has "$R/.trackers/tracker-api.sh" 'legacy residue';has "$R/.trackers/DEBRIEF.md" 'project prompt tail'
 
 # First setup has no selection surface; administration owns later population changes.

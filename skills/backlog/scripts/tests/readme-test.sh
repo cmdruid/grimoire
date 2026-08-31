@@ -33,16 +33,16 @@ sed 's/## Use the tracker tool/## Drifted tracker tool/' "$R/.trackers/README.md
 "$SETUP" "$R" --apply >/dev/null
 eq managed current "$(state "$R/.trackers/README.md")";has "$R/.trackers/README.md" 'before canary';has "$R/.trackers/README.md" 'after canary'
 eq marker-count 1 "$(grep -cFx '<!-- backlog:trackers-tool BEGIN -->' "$R/.trackers/README.md")"
-for needle in 'current package-owned `tracker@1` tool contract' '`README.md` is this local guide' '`receipts.tsv` is the' 'Git owns history' '`trackers.sh` is the sole writer' 'Direct TSV inspection is allowed' 'never hand-edit' 'stable consumer keys' '`consume` requires a resolution' 'evidence and result references are optional' 'tracker-root-relative `wrote=` paths' '/backlog repair' 'Do not hand-repair' 'do not run the bundled provider';do has "$R/.trackers/README.md" "$needle";done
-for cmd in describe catalog page create update observe consume;do has "$R/.trackers/README.md" "./trackers.sh $cmd";done
+for needle in 'current package-owned `tracker@2` tool contract' '`README.md` is this local guide' '`history.tsv`' 'Git owns file history' '`trackers.sh` is the sole writer' 'Direct TSV inspection is allowed' 'never hand-edit' 'Mutation uses stable' 'consumer keys' '`consume` requires a resolution' 'evidence and result references are optional' 'tracker-root-relative `wrote=` paths' '/backlog repair' 'Do not hand-repair' 'do not run the bundled provider';do has "$R/.trackers/README.md" "$needle";done
+for cmd in describe catalog history page create update observe consume;do has "$R/.trackers/README.md" "./trackers.sh $cmd";done
 
 # Execute each representative command family against the installed adjacent provider.
-P="$R/.trackers/trackers.sh";"$P" describe >/dev/null;"$P" catalog >/dev/null;"$P" page --tracker tasks --status open --limit 20 >/dev/null
+P="$R/.trackers/trackers.sh";"$P" describe >/dev/null;"$P" catalog >/dev/null;"$P" history --limit 20 >/dev/null;"$P" page --tracker tasks --status open --limit 20 >/dev/null
 "$P" create --tracker tasks --text 'README exercise' --evidence doc >/dev/null
 "$P" update --tracker tasks --id tasks-1 --text 'README exercise updated' --evidence doc >/dev/null
 "$P" observe --consumer example/review --tracker tasks --ids tasks-1 >/dev/null
 "$P" consume --consumer example/review --tracker tasks --ids tasks-1 --resolution Resolved --result doc >/dev/null
-grep -qF 'README exercise updated' "$R/.trackers/tasks.tsv"&&pass=$((pass+1))||fail=$((fail+1))
-[ "$(wc -l <"$R/.trackers/receipts.tsv"|tr -d ' ')" -eq 3 ]&&pass=$((pass+1))||fail=$((fail+1))
+grep -qF 'README exercise updated' "$R/.trackers/tables/tasks.tsv"&&pass=$((pass+1))||fail=$((fail+1))
+[ "$(wc -l <"$R/.trackers/history.tsv"|tr -d ' ')" -eq 3 ]&&pass=$((pass+1))||fail=$((fail+1))
 
 echo "readme-test: $pass passed, $fail failed";[ "$fail" -eq 0 ]

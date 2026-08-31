@@ -71,7 +71,7 @@ expect "owner-local tracker path FAILs" "$tracker_needle" "$OUT"
 
 rm -rf "$LIB"
 mkdir -p "$LIB/skills"
-write_skill 'Read `.trackers/tasks.tsv` through the staged provider.'
+write_skill 'Read `.trackers/tables/tasks.tsv` through the staged provider.'
 lint
 expect_absent "first-class tracker path stays green" "$tracker_needle" "$OUT"
 

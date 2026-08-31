@@ -32,7 +32,7 @@ mkdir -p \
   "$case_root/.spaces/alpha/hooks" \
   "$case_root/.spaces/beta/scripts" \
   "$case_root/.spaces/beta/templates/nested" \
-  "$case_root/.trackers" \
+  "$case_root/.trackers/tables" \
   "$case_root/.spaces/delta/operations"
 printf '# policy\n' >"$case_root/.spaces/alpha/doctrine/nested/policy.md"
 printf '# idea\n' >"$case_root/.spaces/alpha/drafts/nested/idea.md"
@@ -40,7 +40,7 @@ printf '# hook\n' >"$case_root/.spaces/alpha/hooks/after.md"
 printf '#!/usr/bin/env bash\n' >"$case_root/.spaces/beta/scripts/run.sh"
 chmod +x "$case_root/.spaces/beta/scripts/run.sh"
 printf '# template\n' >"$case_root/.spaces/beta/templates/nested/item.md"
-printf 'id\tstate\n' >"$case_root/.trackers/tasks.tsv"
+printf 'id\tstate\n' >"$case_root/.trackers/tables/tasks.tsv"
 printf '# operation\n' >"$case_root/.spaces/delta/operations/release.md"
 run_check "$case_root" .spaces .records
 expect_eq "valid split tree passes" 0 "$rc"

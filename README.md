@@ -48,7 +48,7 @@ scaffold, audit, and calibrate authoring doctrine), `developer-writing`
 | `analyst` | reports and briefings for the developer: catch-ups, status, subsystem and health snapshots, guides — synthesized from the records layer and git, from a customizable template catalog |
 | `architect` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
 | `auditor` | code-quality audit framework: per-dimension rubric and metrics; findings stay in the audit report and promote through the host capture lane; standalone on any repo |
-| `backlog` | first-class living TSV trackers: setup, extensible queues, receipts, paging, filing, universal debriefing, and curation through `tracker@1` |
+| `backlog` | first-class living TSV trackers: setup, extensible queue tables, lifecycle history, paging, filing, universal debriefing, and curation through `tracker@2` |
 | `checkpoint` | living session save-state: `save` / `resume` / `close` + compaction recovery — the persistence disciplines other skills borrow |
 | `chiropractor` | audit documentation-spine discoverability and authority from `AGENTS.md`; trace task routes into docs, workflows, and helper scripts, then confirmation-gate minimal documentation-only repairs |
 | `code-humanizer` | keep durable application, service, library, shipped CLI, and maintained test source fit for human ownership at write time; `mark` / `map` / `walk` on supported existing code; standalone, outside every pack |
@@ -88,8 +88,8 @@ staged engine lives at `.records/records.sh`, beside the introductory
 `.records/README.md`; the format is `journal`'s
 (templates arrive with the skills that mint them;
 `journal` ships the commons).
-**`.trackers`** holds public `tracker@1` queue TSVs, the shared
-receipt ledger, and adjacent canonical provider `.trackers/trackers.sh`. Backlog owns that
+**`.trackers`** holds public `tracker@2` queue TSVs under `tables/`, the shared
+`history.tsv` lifecycle ledger, and adjacent canonical provider `.trackers/trackers.sh`. Backlog owns that
 layer; consumer skills invoke the installed provider directly.
 These canonical homes are constants, not front-door configuration. Each durable-home skill owns
 its files and optional route block;

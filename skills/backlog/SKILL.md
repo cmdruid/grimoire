@@ -1,14 +1,13 @@
 ---
 name: backlog
-description: "Manage project-owned living follow-up trackers in a first-class tracker layer. Setup deploys the tracker@1 API and default queues; tracker add|remove|list manages extensible queues; file and debrief capture follow-ups; query pages them; curate updates or consumes them. Use for `/backlog ...`, filing or grooming follow-ups, and sweeping completed work before substantive context is lost."
+description: "Manage project-owned living follow-up trackers in a first-class tracker layer. Setup deploys the tracker@2 API, lifecycle history, and default tables; tracker add|remove|list manages extensible queues; file and debrief capture follow-ups; query pages them; curate updates or consumes them. Use for `/backlog ...`, filing or grooming follow-ups, and sweeping completed work before substantive context is lost."
 ---
 
 # backlog — living follow-up trackers
 
 Backlog is the format and lifecycle authority for the fixed `.trackers` layer. The
-layer is public project state: `README.md`, package-managed `trackers.sh`, `receipts.tsv`, and one
-`<stem>.tsv` per queue. Backlog's editable routing prompt lives beside those queues at
-`.trackers/DEBRIEF.md`.
+layer is public project state: `README.md`, package-managed `trackers.sh`, `history.tsv`, and one
+`tables/<stem>.tsv` per queue. Backlog's editable routing prompt lives at `.trackers/DEBRIEF.md`.
 
 ## Verb dispatch
 
@@ -18,7 +17,7 @@ layer is public project state: `README.md`, package-managed `trackers.sh`, `rece
 | `/backlog repair` | `verbs/repair.md` | Restore the provider and managed tracker-root guide |
 | `/backlog tracker add\|remove\|list` | `verbs/tracker.md` | Manage or inspect queue files |
 | `/backlog file <stem> [text]` | `verbs/file.md` | Create one open item |
-| `/backlog query [<stem>]` | `verbs/query.md` | Catalog or page tracker state |
+| `/backlog query [<stem>\|--history]` | `verbs/query.md` | Catalog or page tracker and lifecycle state |
 | `/backlog debrief` | `verbs/debrief.md` | Route completed-work leftovers once |
 | `/backlog curate [<stem>]` | `verbs/curate.md` | Update or consume current rows |
 
@@ -35,8 +34,8 @@ reorder are not aliases.
   `provider=` path it returns. On failure, pass through its recovery diagnostic and stop. Runtime
   verbs never reproduce the classifier-to-diagnostic mapping, resume setup, or run bundled provider
   bytes against project data. Provider `wrote=` values are relative to `.trackers`.
-- Never edit queue or receipt TSV bytes directly. Use the API for catalog, paging, row mutation,
-  observation, and consumption. `receipts.tsv` is reserved and is never a configurable queue.
+- Never edit table or history TSV bytes directly. Use the API for catalog, paging, row mutation,
+  observation, consumption, and bounded lifecycle-history reads.
 - Setup, repair, and tracker add/remove run package-local `scripts/backlog-setup.sh <root>`.
   That helper is the only queue-file lifecycle writer and the only package path that refreshes the
   installed API.
@@ -51,7 +50,7 @@ reorder are not aliases.
 ## Project state and defaults
 
 First setup always initializes `tasks`, `issues`, `feedback`, and `routines`; queue population changes
-only through `tracker add|remove` after initialization. A valid `receipts.tsv` is the initialization
+only through `tracker add|remove` after initialization. A valid `history.tsv` is the initialization
 boundary. Initialized setup preserves the incumbent queue population and data while reconciling the
 provider, managed README block, and missing prompt sections for incumbent queues. Repair touches only
 the provider and managed README block.
@@ -59,7 +58,7 @@ the provider and managed README block.
 ## Edges
 
 <!-- edges:backlog -->
-- produces: tracker — first-class project follow-up queues and receipt state
+- produces: tracker — first-class project follow-up tables and lifecycle history
 - handoff: — (none; rows remain queued until an explicit consumer selects them)
 - consumes: — (debrief reads the caller's bounded completed-work context)
 <!-- /edges:backlog -->

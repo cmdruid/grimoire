@@ -231,8 +231,8 @@ Project-owned skill state uses three canonical roots beneath the project root:
 - `.spaces/` holds owner-first skill support at `.spaces/<skill>/<kind>/...`; owner names are open
   `[a-z0-9-]+`, while kinds are the closed set `doctrine`, `drafts`, `hooks`, `operations`,
   `scripts`, and `templates`.
-- `.trackers/` holds public tracker queues, receipts, Backlog's adjacent `trackers.sh`, and the
-  editable `DEBRIEF.md` routing prompt.
+- `.trackers/` holds public tracker tables under `tables/`, lifecycle events in `history.tsv`,
+  Backlog's adjacent `trackers.sh`, and the editable `DEBRIEF.md` routing prompt.
 
 These are constants, not defaults. Project front doors do not select alternate homes, and package
 scripts do not accept home-selection arguments. A skill constructs its owned path directly from the
@@ -243,7 +243,7 @@ The three layers remain semantically distinct even though their locations are fi
 products belong in `.records`; owner-local support belongs in `.spaces`; public queues and their
 routing surface belong in `.trackers`. A skill materializes only the paths it owns. Skill prose
 names canonical paths literally—for example `.records/plans/`,
-`.spaces/auditor/doctrine/test/workflows/audit/`, and `.trackers/tasks.tsv`—rather than inventing a
+`.spaces/auditor/doctrine/test/workflows/audit/`, and `.trackers/tables/tasks.tsv`—rather than inventing a
 root placeholder or resolver.
 
 Brownfield layout is a migration concern, not a runtime configuration feature. A skill may expose a
