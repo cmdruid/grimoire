@@ -63,7 +63,7 @@ scaffold, audit, and calibrate authoring doctrine), `developer-writing`
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
 | `foreman` | curate project operations: inventory and run publisher-owned procedures, capture or ingest brownfield know-how, verify and compose operations, and compile immutable goal runbooks |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
-| `workspace` | read-only workspace format guard: validate open owner namespaces, closed kinds, safe paths, and split/coincident workspace and records roots |
+| `workspace` | read-only `.spaces` format guard: validate open owner namespaces, closed kinds, and safe owner-first paths |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
 The v2 rebuild (`docs/design/2026-08-12-clankshop-v2.md`) once shaped the pack as a faced

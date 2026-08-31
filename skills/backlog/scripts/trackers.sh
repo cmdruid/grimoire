@@ -16,6 +16,7 @@ SCRIPT_PARENT="${SCRIPT_PATH%/*}"
 
 guard_provider_path() {
   local project_root logical_root="" candidate physical rel current component old_ifs="$IFS"
+  [ "${SCRIPT_PATH##*/}" = trackers.sh ] || die noncanonical-provider "$SCRIPT_PATH"
   [ ! -L "$SCRIPT_PATH" ] || die symlink "$SCRIPT_PATH"
   [ -f "$SCRIPT_PATH" ] || die noncanonical-provider "$SCRIPT_PATH"
   [ ! -L "$SCRIPT_PARENT" ] || die symlink "$SCRIPT_PARENT"
@@ -30,6 +31,7 @@ guard_provider_path() {
     candidate="${candidate%/*}"; [ -n "$candidate" ] || candidate=/
   done
   [ -n "$logical_root" ] || die noncanonical-provider "$SCRIPT_PATH"
+  [ "$SCRIPT_PARENT" = "$logical_root/.trackers" ] || die noncanonical-provider "$SCRIPT_PATH"
   rel="${SCRIPT_PARENT#"$logical_root"/}"; current="$logical_root"
   IFS=/; read -r -a components <<< "$rel"; IFS="$old_ifs"
   for component in "${components[@]}"; do

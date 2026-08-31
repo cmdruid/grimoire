@@ -47,6 +47,11 @@ for selector in --trackers-root --records-root --workspace --workspace-root;do
   [ ! -e "$U/.trackers" ]&&[ ! -e "$U/.spaces" ]&&pass=$((pass+1))||fail=$((fail+1))
 done
 
+# A nested directory inside a Git checkout is not a second project root.
+N="$T/nested-root";newroot "$N";mkdir -p "$N/child"
+no "$SETUP" "$N/child" --apply
+[ ! -e "$N/child/.trackers" ]&&[ ! -e "$N/child/AGENTS.md" ]&&pass=$((pass+1))||fail=$((fail+1))
+
 # The explicit brownfield prompt move preserves project customizations; setup has no old-path probe.
 U="$T/upgrade";newroot "$U";ok "$SETUP" "$U" --apply
 printf '\nPROJECT_CUSTOMIZATION\n'>>"$U/.trackers/DEBRIEF.md";git -C "$U" add .;git -C "$U" -c user.name=test -c user.email=test@example.invalid commit -qm pre-cut

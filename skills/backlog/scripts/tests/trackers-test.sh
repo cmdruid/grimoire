@@ -85,4 +85,18 @@ mkdir -p "$R/real/nested";cp "$API" "$R/real/nested/trackers.sh";chmod +x "$R/re
 cp "$R/.trackers/receipts.tsv" "$R/real/nested/receipts.tsv";cp "$R/.trackers/routines.tsv" "$R/real/nested/routines.tsv"
 ln -s "$R/real" "$R/alias";no "$R/alias/nested/trackers.sh" describe
 
+mkdir -p "$R/child/.trackers"
+cp "$API" "$R/child/.trackers/trackers.sh";chmod +x "$R/child/.trackers/trackers.sh"
+cp "$R/.trackers/receipts.tsv" "$R/child/.trackers/receipts.tsv"
+cp "$R/.trackers/routines.tsv" "$R/child/.trackers/routines.tsv"
+no "$R/child/.trackers/trackers.sh" describe
+
+mkdir -p "$T/outside/.trackers" "$T/symlink-root"
+git -C "$T/symlink-root" init -q
+cp "$API" "$T/outside/.trackers/trackers.sh";chmod +x "$T/outside/.trackers/trackers.sh"
+cp "$R/.trackers/receipts.tsv" "$T/outside/.trackers/receipts.tsv"
+cp "$R/.trackers/routines.tsv" "$T/outside/.trackers/routines.tsv"
+ln -s "$T/outside/.trackers" "$T/symlink-root/.trackers"
+no "$T/symlink-root/.trackers/trackers.sh" describe
+
 echo "trackers-test: $pass passed, $fail failed"; [ "$fail" -eq 0 ]

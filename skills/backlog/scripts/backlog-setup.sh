@@ -16,6 +16,8 @@ while [ $# -gt 0 ];do case "$1" in
   *)die usage;;esac;done
 case "$ROOT" in /*);;*)die unsafe-root;;esac;[ -d "$ROOT" ]||die unsafe-root
 ROOT="$(CDPATH='' cd -P "$ROOT"&&pwd)"
+GIT_ROOT="$(git -C "$ROOT" rev-parse --show-toplevel 2>/dev/null||true)"
+if [ -n "$GIT_ROOT" ];then GIT_ROOT="$(CDPATH='' cd -P "$GIT_ROOT"&&pwd)";[ "$GIT_ROOT" = "$ROOT" ]||die noncanonical-project-root "$GIT_ROOT";fi
 
 SKILL="$(CDPATH='' cd -P "$(dirname "$0")/.."&&pwd)"
 SOURCE="$SKILL/scripts/trackers.sh";CLASSIFIER="$SKILL/scripts/tracker-layer-status.sh"

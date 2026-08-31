@@ -11,7 +11,8 @@ links, changes record or ledger bytes, or offers a compatibility path.
 2. **Preview without writing.** Run
    `scripts/migrate-records-root.sh preview --root <root> [--source <source-root>]`. It requires a
    clean attached-branch worktree, absent `.records`, a fully tracked non-symlink source, and no
-   ignored source entries. It lists every tracked source path. The source may contain only records
+   ignored source entries. It lists every filesystem path. Empty directories refuse because Git
+   cannot track them. The source may contain only records
    matching Journal's dated-filename-plus-`doctype` discriminator, the root controls
    `history.tsv`, `README.md`, and `records.sh`, and containing directories. A foreign entry makes
    the source mixed and refuses the whole move.
@@ -31,7 +32,7 @@ links, changes record or ledger bytes, or offers a compatibility path.
 
 ## Done when
 
-- Preview: the exact dedicated source and every tracked path were shown; no byte, index, or commit
+- Preview: the exact dedicated source and every filesystem path were shown; no byte, index, or commit
   changed; explicit confirmation is still required.
 - Apply: the source is absent, `.records` contains the wholesale move with record and ledger bytes
   unchanged, retired declarations are gone, the installed provider is current and passes `check`,

@@ -24,10 +24,9 @@ Managed paths have the shape `.spaces/<owner>/<kind>/...`. Owners match
 - `hooks` and `operations`: direct Markdown files.
 - `scripts`: direct executable shell files.
 
-Direct files under the workspace or owner, unknown kinds, symlinked owners/kinds/content, and
-the retired top-level kind directories fail. When workspace and records roots coincide,
-record stores and `history.tsv` may coexist: entries without recognized kind children warn as
-`coincident-unknown`; recognized owner trees receive full validation.
+Direct files under `.spaces` or an owner, unknown kinds, symlinked owners/kinds/content, and
+the retired top-level kind directories fail. Every recognized owner tree receives full
+validation; records and tracker entries belong only in their separate fixed homes.
 
 This skill is an in-place steward over a host layout. It owns no durable home, has no setup
 verb, and writes nothing.

@@ -51,7 +51,7 @@ lint() { bash "$LINT" "$lib" >"$OUT" 2>"$ERR" || true; }
 
 c14='declares a doctrine edge but carries no sanctioned doctrine-home resolution literal'
 c15='off-home doctrine literal'
-c15b='stale doctrine default'
+c15b='retired doctrine path'
 c16='retired project-home surface'
 
 write_front_door() { # write_front_door <declaration-line>  (empty = no declaration)
@@ -337,6 +337,28 @@ mkdir -p "$lib/skills/widget/scripts"
 printf '%s\n' '#!/bin/sh' 'tool --records-root custom' >"$lib/skills/widget/scripts/tool.sh"
 lint
 expect "check 16 rejects a records selector" "FAIL: skills/widget/scripts/tool.sh: $c16" "$OUT"
+
+# Journal's migration exception is line-local and records-declaration-only. It
+# must not hide a workspace or tracker selector elsewhere in the same file.
+run_lint
+write_skill journal 'record — migrated records' 'Move one dedicated records directory.'
+mkdir -p "$lib/skills/journal/scripts"
+printf '%s\n' '#!/bin/sh' \
+  "awk '/^(agent-records|records-root):[[:space:]]*/ { print }' input; tool --workspace-root alternate # lint: allow retired-records-declaration" \
+  >"$lib/skills/journal/scripts/migrate-records-root.sh"
+lint
+expect "check 16 still gates non-records selectors in Journal migration" \
+  "FAIL: skills/journal/scripts/migrate-records-root.sh: $c16" "$OUT"
+
+# The marked declaration parser itself remains the one bounded exception.
+run_lint
+write_skill journal 'record — migrated records' 'Move one dedicated records directory.'
+mkdir -p "$lib/skills/journal/scripts"
+printf '%s\n' '#!/bin/sh' \
+  "awk '/^(agent-records|records-root):[[:space:]]*/ { print }' input # lint: allow retired-records-declaration" \
+  >"$lib/skills/journal/scripts/migrate-records-root.sh"
+lint
+expect_absent "check 16 permits only the marked records-declaration parser" "$c16" "$OUT"
 
 # --- check 16b/c: negative scope — no declaration at all ----------------------
 # The library itself is patient-zero: it never declares front-door variables in

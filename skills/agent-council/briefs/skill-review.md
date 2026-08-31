@@ -21,8 +21,8 @@ templates it actually names. Do not tour the rest of any repo.
   script should, or a script to decide what an agent should?
 - **Scope** — does it know when to stop?
 - **Output shape** — if it produces something, is that shape specified?
-  If it produces a record, the destination is `.records/<store>/`
-  (default `.records/<store>/`), not a confirmed `docs/` fallback and
+  If it produces a record, the destination is fixed `.records/<store>/`,
+  not a confirmed `docs/` fallback and
   not "skip, write nowhere." The in-package contract (four keys including the writer-owned schema, dated
   slug) is specified in the package. Every store it mints has
   `templates/<doctype>.md` in the package. A `## Project templates` list

@@ -1,28 +1,27 @@
 #!/bin/sh
-# records.sh — record query + lifecycle over an explicitly named records root.
+# records.sh — record query + lifecycle for the canonical .records layer.
 # Journal's deployed asset: the source of truth lives in the journal skill;
-# setup stages it at <agent-records>/records.sh beside the README and ledger. Every
-# invocation supplies --root and --records-root; deployment location and cwd
-# never select the data root. The script owns the facts —
+# setup stages it at .records/records.sh beside the README and ledger. The
+# canonical installed location selects the project and data roots. The script owns the facts —
 # dates, paths, conformance — so agents never guess them.
 #
-#   records.sh --root <abs> --records-root <rel> list [--type t] ...
-#   records.sh --root <root> --records-root <records-root-relative> grep [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s] <pattern>
-#   records.sh --root <root> --records-root <records-root-relative> show <path>
-#   records.sh --root <root> --records-root <records-root-relative> new <doctype> --schema <writer/artifact@N> --title "..." [--template <body-path>] [--dir rel] [--tag t]...
-#   records.sh --root <root> --records-root <records-root-relative> touch <path> [--status draft|published]
-#   records.sh --root <root> --records-root <records-root-relative> done <path> [--as done|dropped|superseded|consumed] [--note "..."]
-#   records.sh --root <root> --records-root <records-root-relative> history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
-#   records.sh --root <root> --records-root <records-root-relative> prune-candidates [--until d]
-#   records.sh --root <root> --records-root <records-root-relative> check
-#   records.sh --root <root> --records-root <records-root-relative> relocate <source> --to <destination-relative> [--staged <path>]
+#   .records/records.sh list [--type t] ...
+#   .records/records.sh grep [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s] <pattern>
+#   .records/records.sh show <path>
+#   .records/records.sh new <doctype> --schema <writer/artifact@N> --title "..." [--template <body-path>] [--dir rel] [--tag t]...
+#   .records/records.sh touch <path> [--status draft|published]
+#   .records/records.sh done <path> [--as done|dropped|superseded|consumed] [--note "..."]
+#   .records/records.sh history [--type t] [--disposition d] [--since d] [--until d] [--grep pat]
+#   .records/records.sh prune-candidates [--until d]
+#   .records/records.sh check
+#   .records/records.sh relocate <source> --to <destination-relative> [--staged <path>]
 #
 # A file is a RECORD iff it is named YYYY-MM-DD-<slug>.md AND carries a
 # front-matter block that declares a doctype. That is the whole discriminator:
 # the tool crawls the root at any depth and knows no store names, so directory
-# layout is the caller's business and a root shared with other homes (doctrine,
-# templates, scripts) needs no reserved names — those files are simply not
-# records. The authoritative doctype is the front-matter key, never the parent
+# layout beneath fixed `.records` is the writers' business. Journal's README,
+# provider, ledger, and any other non-record files simply fail the discriminator.
+# The authoritative doctype is the front-matter key, never the parent
 # directory. `list`/`history` emit TSV — grep/awk-friendly, no parser needed.
 # Querying is a live scan (no stored index). Closure stamps the file `archived`
 # and appends `--as` to history.tsv — the ledger's sole writer. `list` default
@@ -36,7 +35,7 @@ NL="${NL%/}"
 
 usage() {
   cat >&2 <<'EOF'
-usage: records.sh --root <abs> --records-root <rel> <command> [args]
+usage: .records/records.sh <command> [args]
   list    [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s]
   grep    [--type t] [--status s] [--tag g] [--since d] [--until d] [--stage s] <pattern>
   show    <path>
@@ -78,23 +77,20 @@ safe_components() { # <base> <relative>; reject every existing symlink component
   done
 }
 
-ROOT=""
-RR_REL=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --root) [ $# -ge 2 ] || usage; ROOT="$2"; shift 2 ;;
-    --records-root) [ $# -ge 2 ] || usage; RR_REL="$2"; shift 2 ;;
-    *) break ;;
-  esac
-done
-[ -n "$ROOT" ] && [ -n "$RR_REL" ] || usage
-case "$ROOT" in /*) ;; *) err "--root must be absolute: $ROOT" ;; esac
-[ -d "$ROOT" ] || err "--root is not a directory: $ROOT"
-valid_rel_dir "$RR_REL" || err "--records-root must be repo-relative with no .. segment: $RR_REL"
-ROOT="$(cd "$ROOT" && pwd)"
-RR="$ROOT/$RR_REL"
-case "$RR" in "$ROOT"/*) ;; *) err "records root escapes --root: $RR_REL" ;; esac
-[ -d "$RR" ] || err "records root is not a directory: $RR"
+case "$0" in /*) SCRIPT_PATH="$0" ;; *) SCRIPT_PATH="$PWD/$0" ;; esac
+SCRIPT_PARENT="${SCRIPT_PATH%/*}"
+[ "${SCRIPT_PATH##*/}" = records.sh ] || err "provider must be installed at <project-root>/.records/records.sh"
+[ ! -L "$SCRIPT_PATH" ] && [ -f "$SCRIPT_PATH" ] || err "provider path is unsafe: $SCRIPT_PATH"
+[ "${SCRIPT_PARENT##*/}" = .records ] && [ ! -L "$SCRIPT_PARENT" ] && [ -d "$SCRIPT_PARENT" ] ||
+  err "provider must be installed at <project-root>/.records/records.sh"
+RR="$(CDPATH='' cd -P "$SCRIPT_PARENT" && pwd)"
+ROOT="$(CDPATH='' cd -P "$RR/.." && pwd)"
+[ "$RR" = "$ROOT/.records" ] || err "provider must be installed at <project-root>/.records/records.sh"
+GIT_ROOT="$(git -C "$RR" rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -n "$GIT_ROOT" ]; then
+  GIT_ROOT="$(CDPATH='' cd -P "$GIT_ROOT" && pwd)"
+  [ "$GIT_ROOT" = "$ROOT" ] || err "provider must be installed at the Git project root's .records/records.sh"
+fi
 LEDGER="$RR/history.tsv"
 
 is_disposition() { case "$1" in done|dropped|superseded|consumed) return 0 ;; *) return 1 ;; esac; }
@@ -102,7 +98,7 @@ is_archived()    { [ "$1" = archived ]; }
 is_status()      { case "$1" in draft|published|archived) return 0 ;; *) return 1 ;; esac; }
 is_schema()      { printf '%s\n' "$1" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*@[1-9][0-9]*$'; }
 
-# resolve <path-arg>: sets abs + rel (rel is records-root-relative, the ledger form).
+# resolve <path-arg>: sets abs + rel (rel is relative to .records, the ledger form).
 resolve() {
   if [ -f "$1" ]; then
     abs="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
@@ -124,13 +120,10 @@ resolve() {
 #      what makes the path an ID;
 #   2. a front-matter block DECLARING a doctype.
 #
-# Neither alone is enough. Front-matter alone would swallow the record
-# TEMPLATES, which necessarily carry a doctype block (that block is what `new`
-# copies into the minted record) -- and templates share this root whenever a
-# host points its workspace and records homes at the same directory. The shape
-# alone would swallow any dated prose file. Together they need no reserved
-# names: doctrine pages, templates, and scripts fail one conjunct or the other,
-# so a shared root is legal and the directory layout is the caller's business.
+# Neither alone is enough. Front matter alone would swallow any non-record
+# Markdown file that happens to declare a doctype. The shape alone would swallow
+# dated prose. Together they keep the open writer-owned directory layout beneath
+# fixed `.records` independent of a reserved store-name roster.
 is_record() {
   case "${1##*/}" in
     [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md) ;;
@@ -140,7 +133,7 @@ is_record() {
   [ -n "$(fm_field "$1" doctype)" ]
 }
 
-# records: records-root-relative paths of every record, one per line. A crawl at
+# records: paths relative to .records for every record, one per line. A crawl at
 # any depth -- this tool knows no store names (a skill creates only the
 # directories it needs, so the set is open-ended and unknown here).
 records() {
@@ -515,8 +508,8 @@ cmd_relocate() {
       *) usage ;;
     esac
   done
-  [ -n "$to" ] || err "relocate requires --to <records-root-relative-path>"
-  valid_rel_file "$to" || err "relocation destination must be records-root-relative with no .. segment: $to"
+  [ -n "$to" ] || err "relocate requires --to <record-relative-path>"
+  valid_rel_file "$to" || err "relocation destination must be relative to .records with no .. segment: $to"
   case "${to##*/}" in
     [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md) ;;
     *) err "relocation destination is not a dated record path: $to" ;;

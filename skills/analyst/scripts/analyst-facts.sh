@@ -100,8 +100,8 @@ EOF
 # Records-root crawl, at any depth. A file is a record iff it is named
 # YYYY-MM-DD-<slug>.md AND carries front-matter declaring a doctype -- journal's
 # discriminator, and the only one. There is no reserved-name list to keep in
-# step any more: doctrine pages, templates and scripts fail one conjunct or the
-# other, so a records home shared with other homes needs no carve-out here.
+# step: non-record files beneath fixed `.records` fail one conjunct or the
+# other, so open writer-owned store names need no carve-out here.
 # This MUST stay in step with `records.sh`'s `is_record()`; as a denylist it
 # drifted once by omitting `doctrine/` (BL-28), which is why it is now the same
 # positive test rather than a second copy of an exclusion set.

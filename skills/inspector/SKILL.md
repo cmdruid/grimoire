@@ -21,8 +21,8 @@ There is no `init`. Explicit `/inspector setup [<root>]` deploys Inspector's bun
 for project customization. Missing `.spaces/inspector/doctrine/`
 is not a refuse — use the bundled `kinds/<kind>.md`.
 
-**Kind doctrine** lands at `.spaces/inspector/doctrine/<kind>.md`
-(default `.spaces/inspector/doctrine/<kind>.md`). No new front-door variable.
+**Kind doctrine** lands at the fixed `.spaces/inspector/doctrine/<kind>.md` path.
+There is no front-door variable.
 Incumbent wins; upgrade is a judgment-assisted diff. Load the complete
 workspace copy when it is a readable regular file, else the bundled
 `kinds/<kind>.md` when absent. A symlink, directory, other incompatible

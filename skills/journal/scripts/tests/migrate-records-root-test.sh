@@ -67,6 +67,7 @@ head_before="$(git -C "$success" rev-parse HEAD)"
 index_before="$(git -C "$success" write-tree)"
 "$MIGRATE" preview --root "$success" >"$OUT" 2>"$ERR"
 expect "preview source" 'source=docs/records' "$OUT"
+expect "preview containing directory" 'path=docs/records/notes' "$OUT"
 expect "preview record path" 'path=docs/records/notes/2026-08-30-kept.md' "$OUT"
 expect "preview ready" 'ready=yes' "$OUT"
 expect_eq "preview preserves HEAD" "$head_before" "$(git -C "$success" rev-parse HEAD)"
@@ -131,6 +132,35 @@ printf '%s\n' ignored >"$ignored/docs/records/cache.bin"
 expect_refusal "ignored source" ignored-source-entry preview --root "$ignored" \
   --source docs/records
 expect_clean "$ignored" "ignored refusal"
+
+# Git cannot track an empty directory. Filesystem inventory must still see it
+# and refuse rather than silently moving an unpreviewed path.
+empty_dir="$TMP/empty-dir"; init_repo "$empty_dir"; seed_dedicated "$empty_dir"
+commit_all "$empty_dir"; mkdir -p "$empty_dir/docs/records/untracked-empty"
+expect_refusal "empty source directory" untracked-source-directory preview \
+  --root "$empty_dir" --source docs/records
+expect "empty source directory listed" 'foreign=docs/records/untracked-empty' "$ERR"
+expect_clean "$empty_dir" "empty-directory refusal"
+
+# A source is a literal repository-relative path, never a Git pathspec.
+literal="$TMP/literal"; init_repo "$literal"; seed_dedicated "$literal" 'old*'
+seed_dedicated "$literal" oldx; commit_all "$literal"
+"$MIGRATE" preview --root "$literal" --source 'old*' >"$OUT" 2>"$ERR"
+expect "literal source record" 'path=old*/notes/2026-08-30-kept.md' "$OUT"
+expect_absent "literal source excludes pathspec sibling" 'path=oldx/' "$OUT"
+cp "$literal/oldx/notes/2026-08-30-kept.md" "$TMP/literal-sibling.before"
+"$MIGRATE" apply --root "$literal" --source 'old*' --confirmed >"$OUT" 2>"$ERR"
+if [ -d "$literal/.records" ] && [ ! -e "$literal/old*" ]; then pass=$((pass + 1));
+else echo 'FAIL: literal metacharacter source did not move' >&2; fail=$((fail + 1)); fi
+if cmp -s "$TMP/literal-sibling.before" "$literal/oldx/notes/2026-08-30-kept.md"; then
+  pass=$((pass + 1))
+else echo 'FAIL: literal migration changed pathspec sibling' >&2; fail=$((fail + 1)); fi
+if git -C "$literal" diff-tree --no-commit-id --name-only -r HEAD | grep -q '^oldx/'; then
+  echo 'FAIL: literal migration commit swept pathspec sibling' >&2; fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+expect_clean "$literal" "literal-source apply"
 
 dirty="$TMP/dirty"; init_repo "$dirty"; seed_dedicated "$dirty"; commit_all "$dirty"
 printf '%s\n' dirty >>"$dirty/docs/records/README.md"

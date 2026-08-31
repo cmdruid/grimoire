@@ -97,12 +97,13 @@
 #      Unconditional: this is what
 #      catches a skill that hardcodes and never declares an edge. No per-skill
 #      exemption table. `.records/doctrine/` is also matched (FAIL): it stopped
-#      being any home's default when doctrine moved under `.spaces`,
+#      being a canonical home when doctrine moved under `.spaces`,
 #      which is what made it decidable.
 #  16. Retired project-home surface (FAIL). Live Markdown and shell may not
 #      carry retired home declarations, symbolic tokens, resolver names, or
 #      home-selection flags. Tests, this guard's own implementation, and
-#      Journal's bounded records migration surface are excluded deliberately.
+#      Journal's two marked records-declaration parser lines are excluded
+#      deliberately; the rest of that migration surface remains gated.
 #  17. Invalid `records.sh new` mint (FAIL). Two arms: (a) a backticked
 #      invocation carrying `records.sh new` and `--title` but no
 #      `--schema`; (b) `records.sh new` immediately followed by a
@@ -740,8 +741,8 @@ done
 # skill-builder (this doctrine documents the literals it bans elsewhere); that is
 # the same name-based exemption check 12 uses, and it is the whole of it.
 #
-# STILL NOT attempted: a check on a home's canonical DEFAULT path. Skill prose is
-# required to name default paths literally, so a hardcoded default is textually
+# STILL NOT attempted: a check on a home's canonical fixed path. Skill prose is
+# required to name fixed paths literally, so a hardcoded path is textually
 # identical to a documented one. Only OFF-home literals are decidable. For the
 # same reason there is no check on "prose that directs creating .handbook/": the
 # only occurrences in the corpus are prohibitions ("Do not create `.handbook/`"),
@@ -750,8 +751,8 @@ done
 # skill review.
 #
 # `.records/doctrine/` USED to be excluded by exactly that argument, and no
-# longer is: once doctrine resolves through `.spaces/<skill>/doctrine`, that
-# path stops being any home's default, so it becomes decidable and is the
+# longer is: once doctrine lives at `.spaces/<skill>/doctrine`, that
+# path stops being canonical, so it becomes decidable and is the
 # strongest guard this retirement buys. It shipped WARN while the five consumer
 # skills still carried it in their resolution prose, and is now FAIL -- they are
 # flipped, so any reappearance is a regression, not a leftover.
@@ -769,7 +770,7 @@ for sk in "$skills_dir"/*/; do
                      -e '`docs/audit/' "$f" || true)
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      fail "$name: $rel:$line: stale doctrine default \`.records/doctrine/\` (resolve .spaces/<skill>/doctrine instead)"
+      fail "$name: $rel:$line: retired doctrine path \`.records/doctrine/\` (use .spaces/<skill>/doctrine instead)"
     done < <(grep -nF -e '`.records/doctrine/' "$f" || true)
   done < <(find "$sk" -name '*.md' -print0)
 done
@@ -782,13 +783,33 @@ done
 # records declarations.
 while IFS= read -r -d '' f; do
   case "$f" in
-    */tests/*|*/skills/skill-builder/scripts/skills-lint.sh|\
-    */skills/journal/verbs/migrate.md|*/skills/journal/scripts/migrate-records-root.sh)
+    */tests/*|*/skills/skill-builder/scripts/skills-lint.sh)
       continue
       ;;
   esac
   rel="${f#"$root"/}"
-  hits="$(grep -nE \
+  hits=""
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    line_no="${hit%%:*}"
+    line_text="${hit#*:}"
+    case "$rel:$line_text" in
+      skills/journal/scripts/migrate-records-root.sh:*'(agent-records|records-root):[[:space:]]*'*'# lint: allow retired-records-declaration'*)
+        remaining="$(printf '%s\n' "$line_text" | sed -e 's/agent-records//g' -e 's/records-root//g')"
+        if ! printf '%s\n' "$remaining" | grep -Eq \
+          -e 'agent[-_](records|workspace|trackers|doctrine|templates)' \
+          -e 'AGENT_(RECORDS|WORKSPACE|TRACKERS|DOCTRINE|TEMPLATES)' \
+          -e 'records-root:' \
+          -e '<agent-(records|workspace|trackers)>' \
+          -e 'records-root-relative|workspace-relative' \
+          -e '--(records-root|workspace-root|trackers-root|workspace)([[:space:]=)]|$)' \
+          -e 'resolve_(agent_)?(records|workspace|trackers)'; then
+          continue
+        fi
+        ;;
+    esac
+    if [ -z "$hits" ]; then hits="$line_no"; else hits="$hits,$line_no"; fi
+  done < <(grep -nE \
     -e 'agent[-_](records|workspace|trackers|doctrine|templates)' \
     -e 'AGENT_(RECORDS|WORKSPACE|TRACKERS|DOCTRINE|TEMPLATES)' \
     -e 'records-root:' \
@@ -796,7 +817,7 @@ while IFS= read -r -d '' f; do
     -e 'records-root-relative|workspace-relative' \
     -e '--(records-root|workspace-root|trackers-root|workspace)([[:space:]=)]|$)' \
     -e 'resolve_(agent_)?(records|workspace|trackers)' \
-    "$f" | cut -d: -f1 | sort -nu | paste -sd, - || true)"
+    "$f" || true)
   [ -n "$hits" ] || continue
   fail "$rel: retired project-home surface (line(s) $hits) -- use fixed .records, .spaces, and .trackers"
 done < <(

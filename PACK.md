@@ -85,8 +85,8 @@ Clankshop for `<project-root>`.” Installation does not cache or execute this s
 
 ### 1. Inspect and propose
 
-Read the target project's instructions, resolve its agent workspace, records home, and tracker home,
-and inspect installed members plus Git state. Do not write yet.
+Read the target project's instructions, inspect the fixed `.spaces`, `.records`, and `.trackers`
+homes, and inspect installed members plus Git state. Do not write yet.
 
 Propose one bounded profile that names every selected setup and every destination it may change:
 

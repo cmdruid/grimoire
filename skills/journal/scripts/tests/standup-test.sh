@@ -166,6 +166,31 @@ mkdir -p "$noncanonical/other"; cp "$SKILL/scripts/records.sh" "$noncanonical/ot
 rc=0; "$noncanonical/other/records.sh" list >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "noncanonical provider refusal rc" "2" "$rc"
 
+# A Git checkout has exactly one project root. Setup and the installed provider
+# must not accept a nested directory as a second live project layer.
+nested_git="$TMP/nested-git"
+mkdir -p "$nested_git/child/.records"
+git -C "$nested_git" init -q
+rc=0; run_default "$nested_git/child" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "nested Git setup refusal rc" "2" "$rc"
+[ ! -e "$nested_git/child/.spaces" ] && [ ! -e "$nested_git/child/.records/records.sh" ] \
+  && pass=$((pass + 1)) || {
+    echo "FAIL: nested Git setup wrote a project layer" >&2; fail=$((fail + 1)); }
+cp "$SKILL/scripts/records.sh" "$nested_git/child/.records/records.sh"
+chmod +x "$nested_git/child/.records/records.sh"
+rc=0; "$nested_git/child/.records/records.sh" list >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "nested Git provider refusal rc" "2" "$rc"
+
+# The canonical spelling does not make a symlinked layer canonical.
+symlink_provider="$TMP/symlink-provider"
+mkdir -p "$symlink_provider/project" "$symlink_provider/outside/.records"
+git -C "$symlink_provider/project" init -q
+cp "$SKILL/scripts/records.sh" "$symlink_provider/outside/.records/records.sh"
+chmod +x "$symlink_provider/outside/.records/records.sh"
+ln -s "$symlink_provider/outside/.records" "$symlink_provider/project/.records"
+rc=0; "$symlink_provider/project/.records/records.sh" list >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "symlinked canonical provider refusal rc" "2" "$rc"
+
 # Malformed ownership markers refuse before any tool-layer write.
 malformed="$TMP/malformed"
 mkdir -p "$malformed/.records"

@@ -30,7 +30,7 @@ Group by **theme, not by store** — a reader thinks in features and problems, n
 Judge what earns a line: a shipped feature, a reversed decision, a new constraint, a blocker
 that appeared. Routine churn (formatting, dependency bumps, docs typos) belongs in one summary
 sentence, if at all. **Translate** — "closed plan: records-root declaration" becomes "projects
-can now declare a custom records directory."
+now keep records at the fixed `.records` path."
 
 Cite every claim with the record path or `file:line` that supports it. A briefing the reader
 cannot check is gossip.

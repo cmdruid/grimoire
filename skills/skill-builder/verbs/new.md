@@ -33,10 +33,9 @@ verb's job).
    example of a records-path client.
    - **Yes** → scaffold, in `SKILL.md` (see `docs/DOCTRINE.md` § Record-writing skills):
      - direct construction beneath fixed `.records/` and the
-       templates home as `.spaces/<name>/templates/` (default
-       `.spaces/<name>/templates/`); and, for a skill that reads or writes
+       fixed templates home `.spaces/<name>/templates/`; and, for a skill that reads or writes
        doctrine, direct construction beneath fixed `.spaces` — its doctrine home is
-       `.spaces/<name>/doctrine/`, default `.spaces/<name>/doctrine/`;
+       `.spaces/<name>/doctrine/`;
      - the four-key in-package contract — do not send the agent to another
        skill for those bytes. State: the four keys (`doctype`, `status`,
        `schema`, `tags`) and every package-owned schema identifier; `status`: `draft` | `published` live,

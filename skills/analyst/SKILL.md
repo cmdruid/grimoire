@@ -119,7 +119,7 @@ To persist, use the resolved catalog template to author the report, then mint wi
 when the tool exists (`<token>` is the resolved catalog token: `briefing`,
 `status`, `subsystem`, `diagnostics`, or `guide`) and replace only the minted body with the authored
 report; else file-mode with the same schema, naming the file `YYYY-MM-DD-<slug>.md` under
-`.records/reports/` (default `.records/reports/`; create the store on
+the fixed `.records/reports/` store (create it on
 first write) and write `tags: [analyst, <token>]` yourself. **The in-package
 contract:** front-matter keys `doctype`, `status`, `schema`, `tags`; schema
 `analyst/report@1`; live `draft` / `published`; closed `archived` (ledger `--as` is

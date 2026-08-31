@@ -10,7 +10,8 @@ directory and no pre-seeded `templates/`**.
    - `<root>`: `git rev-parse --show-toplevel` of the checkout that should
      hold the records; else a project directory the conversation
      references; else ask. Journal uses only `<root>/.records` and
-     `<root>/.spaces/journal/setup.intent`.
+     `<root>/.spaces/journal/setup.intent`. In a Git checkout, a nested directory
+     is not a second project root and must refuse before any write.
 2. **Run or resume the mechanics**: `scripts/standup.sh setup <root>` —
    creates `.records` itself if needed, installs or
    refreshes `records.sh` at `.records/records.sh`, seeds an empty
@@ -30,9 +31,9 @@ directory and no pre-seeded `templates/`**.
    copy has drifted (`current` vs `refreshed`); restores the executable bit
    if needed; removes the obsolete workspace-staged engine; then `check`; never migrates records,
    truncates the ledger, or overwrites prose outside Journal's block.
-   **Exit 2**: missing target directory, or missing skill-side `records.sh`
+   **Exit 2**: missing or noncanonical target directory, unsafe paths, or missing skill-side `records.sh`
    → STOP and report.
-   **Exit 1**: usage, a bad root, or an unsafe/symlinked destination.
+   **Exit 1**: usage.
    If standup wrote the tool and then `check` failed, the tool layer **is
    up** — report that and point at `/journal curate`. That is not a setup
    refuse.

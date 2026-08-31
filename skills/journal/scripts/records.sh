@@ -19,9 +19,9 @@
 # A file is a RECORD iff it is named YYYY-MM-DD-<slug>.md AND carries a
 # front-matter block that declares a doctype. That is the whole discriminator:
 # the tool crawls the root at any depth and knows no store names, so directory
-# layout is the caller's business and a root shared with other homes (doctrine,
-# templates, scripts) needs no reserved names — those files are simply not
-# records. The authoritative doctype is the front-matter key, never the parent
+# layout beneath fixed `.records` is the writers' business. Journal's README,
+# provider, ledger, and any other non-record files simply fail the discriminator.
+# The authoritative doctype is the front-matter key, never the parent
 # directory. `list`/`history` emit TSV — grep/awk-friendly, no parser needed.
 # Querying is a live scan (no stored index). Closure stamps the file `archived`
 # and appends `--as` to history.tsv — the ledger's sole writer. `list` default
@@ -77,10 +77,20 @@ safe_components() { # <base> <relative>; reject every existing symlink component
   done
 }
 
-RR="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)"
-[ "${RR##*/}" = .records ] || err "provider must be installed at <project-root>/.records/records.sh"
-ROOT="${RR%/.records}"
-[ -d "$ROOT" ] || err "project root is not a directory: $ROOT"
+case "$0" in /*) SCRIPT_PATH="$0" ;; *) SCRIPT_PATH="$PWD/$0" ;; esac
+SCRIPT_PARENT="${SCRIPT_PATH%/*}"
+[ "${SCRIPT_PATH##*/}" = records.sh ] || err "provider must be installed at <project-root>/.records/records.sh"
+[ ! -L "$SCRIPT_PATH" ] && [ -f "$SCRIPT_PATH" ] || err "provider path is unsafe: $SCRIPT_PATH"
+[ "${SCRIPT_PARENT##*/}" = .records ] && [ ! -L "$SCRIPT_PARENT" ] && [ -d "$SCRIPT_PARENT" ] ||
+  err "provider must be installed at <project-root>/.records/records.sh"
+RR="$(CDPATH='' cd -P "$SCRIPT_PARENT" && pwd)"
+ROOT="$(CDPATH='' cd -P "$RR/.." && pwd)"
+[ "$RR" = "$ROOT/.records" ] || err "provider must be installed at <project-root>/.records/records.sh"
+GIT_ROOT="$(git -C "$RR" rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -n "$GIT_ROOT" ]; then
+  GIT_ROOT="$(CDPATH='' cd -P "$GIT_ROOT" && pwd)"
+  [ "$GIT_ROOT" = "$ROOT" ] || err "provider must be installed at the Git project root's .records/records.sh"
+fi
 LEDGER="$RR/history.tsv"
 
 is_disposition() { case "$1" in done|dropped|superseded|consumed) return 0 ;; *) return 1 ;; esac; }
@@ -110,13 +120,10 @@ resolve() {
 #      what makes the path an ID;
 #   2. a front-matter block DECLARING a doctype.
 #
-# Neither alone is enough. Front-matter alone would swallow the record
-# TEMPLATES, which necessarily carry a doctype block (that block is what `new`
-# copies into the minted record) -- and templates share this root whenever a
-# host points its workspace and records homes at the same directory. The shape
-# alone would swallow any dated prose file. Together they need no reserved
-# names: doctrine pages, templates, and scripts fail one conjunct or the other,
-# so a shared root is legal and the directory layout is the caller's business.
+# Neither alone is enough. Front matter alone would swallow any non-record
+# Markdown file that happens to declare a doctype. The shape alone would swallow
+# dated prose. Together they keep the open writer-owned directory layout beneath
+# fixed `.records` independent of a reserved store-name roster.
 is_record() {
   case "${1##*/}" in
     [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md) ;;

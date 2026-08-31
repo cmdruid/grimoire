@@ -19,6 +19,8 @@ valid_rel() {
   case "/$1/" in */../*|*/./*|*//*) return 1 ;; esac
 }
 
+literal_pathspec() { printf ':(literal)%s' "$1"; }
+
 has_doctype() {
   awk '
     NR == 1 && $0 == "---" { fm = 1; next }
@@ -84,7 +86,7 @@ for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
     declarations+=("$value")
     declaration_files+=("$fd")
   done < <(awk '
-    /^(agent-records|records-root):[[:space:]]*/ {
+    /^(agent-records|records-root):[[:space:]]*/ { # lint: allow retired-records-declaration
       value = $0; sub(/^[^:]+:[[:space:]]*/, "", value); sub(/[[:space:]]*$/, "", value)
       printf "%d\t%s\n", NR, value
     }
@@ -122,29 +124,43 @@ preflight() {
   [ -d "$source_abs" ] || refuse source-not-directory "$source"
   [ -z "$(find "$source_abs" -type l -print -quit)" ] || refuse symlink-source "$source"
 
-  ignored="$(git -C "$root" ls-files --others --ignored --exclude-standard -- "$source" || true)"
+  source_pathspec="$(literal_pathspec "$source")"
+  ignored="$(git -C "$root" ls-files --others --ignored --exclude-standard -- "$source_pathspec" || true)"
   if [ -n "$ignored" ]; then
     while IFS= read -r ignored_path; do [ -z "$ignored_path" ] || echo "foreign=$ignored_path" >&2; done <<<"$ignored"
     refuse ignored-source-entry
   fi
 
-  tracked=(); foreign=()
-  while IFS= read -r -d '' rel; do
-    tracked+=("$rel")
+  inventory=(); foreign=(); tracked_count=0; empty_directory=no
+  while IFS= read -r -d '' path; do
+    inside="${path#"$source_abs"/}"
+    rel="$source/$inside"
+    inventory+=("$rel")
     case "$rel" in *$'\n'*) foreign+=("$rel"); continue ;; esac
-    path="$root/$rel"
+    if [ -d "$path" ]; then
+      if [ -z "$(find "$path" -mindepth 1 -print -quit)" ]; then
+        foreign+=("$rel")
+        empty_directory=yes
+      fi
+      continue
+    fi
     [ -f "$path" ] && [ ! -L "$path" ] || { foreign+=("$rel"); continue; }
-    inside="${rel#"$source"/}"
+    if ! git -C "$root" ls-files --error-unmatch -- "$(literal_pathspec "$rel")" >/dev/null 2>&1; then
+      foreign+=("$rel")
+      continue
+    fi
+    tracked_count=$((tracked_count + 1))
     case "$inside" in
       history.tsv|README.md|records.sh) continue ;;
     esac
     base="${inside##*/}"
     if is_record_name "$base" && has_doctype "$path"; then continue; fi
     foreign+=("$rel")
-  done < <(git -C "$root" ls-files -z -- "$source")
-  [ "${#tracked[@]}" -gt 0 ] || refuse source-has-no-tracked-files "$source"
+  done < <(find "$source_abs" -mindepth 1 -print0)
+  [ "$tracked_count" -gt 0 ] || refuse source-has-no-tracked-files "$source"
   if [ "${#foreign[@]}" -gt 0 ]; then
     for foreign_path in "${foreign[@]}"; do echo "foreign=$foreign_path" >&2; done
+    [ "$empty_directory" = no ] || refuse untracked-source-directory
     refuse mixed-source
   fi
 }
@@ -153,8 +169,8 @@ preflight
 echo "mode=$mode"
 echo "source=$source"
 echo "destination=.records"
-for tracked_path in "${tracked[@]}"; do echo "path=$tracked_path"; done
-echo "paths=${#tracked[@]}"
+for inventory_path in "${inventory[@]}"; do echo "path=$inventory_path"; done
+echo "paths=${#inventory[@]}"
 [ "$mode" = apply ] || { echo "ready=yes"; exit 0; }
 
 # Apply repeats the complete read-only gate immediately before the first write.
@@ -183,7 +199,7 @@ for fd in ${declaration_files[@]+"${declaration_files[@]}"}; do
     {
       emit_current(0)
       current = $0; have = 1; drop = 0
-      if (current ~ /^(agent-records|records-root):[[:space:]]*/) {
+      if (current ~ /^(agent-records|records-root):[[:space:]]*/) { # lint: allow retired-records-declaration
         value = current
         sub(/^[^:]+:[[:space:]]*/, "", value)
         sub(/[[:space:]]*$/, "", value)
@@ -219,7 +235,10 @@ while IFS= read -r wrote; do [ -z "$wrote" ] || pathspecs+=("$wrote"); done \
 # `git mv` stages the rename immediately. Restore only its two endpoint
 # pathspecs to HEAD so the shared helper can stage and commit the complete
 # change through the same explicit union as every other Journal write.
-git -C "$root" reset -q HEAD -- "$source" .records
+git -C "$root" reset -q HEAD -- "$(literal_pathspec "$source")" "$(literal_pathspec .records)"
+for pathspec_index in "${!pathspecs[@]}"; do
+  pathspecs[pathspec_index]="$(literal_pathspec "${pathspecs[pathspec_index]}")"
+done
 "$SCOPED" "$root" "Journal: migrate records root to .records" "${pathspecs[@]}"
 if [ -f "$root/.spaces/journal/setup.intent" ]; then "$STANDUP" finalize "$root"; fi
 [ -z "$(git -C "$root" status --porcelain --untracked-files=all)" ] || die "migration commit left a dirty worktree"

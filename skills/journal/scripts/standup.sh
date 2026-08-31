@@ -466,6 +466,11 @@ case "$mode" in setup|repair|finalize) ;; *) usage ;; esac
 records_rel=.records; workspace_rel=.spaces
 [ -d "$root" ] && [ ! -L "$root" ] || die "no safe target directory: $root"
 root="$(CDPATH='' cd "$root" && pwd -P)"
+git_root="$(git -C "$root" rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -n "$git_root" ]; then
+  git_root="$(CDPATH='' cd "$git_root" && pwd -P)"
+  [ "$git_root" = "$root" ] || die "target root is not the Git top level: $root"
+fi
 source_engine="$SKILL/scripts/records.sh"
 [ -f "$source_engine" ] || die "records.sh missing beside this script: $source_engine"
 
