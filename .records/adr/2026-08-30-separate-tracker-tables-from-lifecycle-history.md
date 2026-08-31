@@ -53,8 +53,10 @@ provider contract, so it must not masquerade as a compatible implementation deta
    `history --limit <n> [--after <event-id>]`; it emits `schema=tracker@2`, `next=`, `--`, then the
    eight-column history TSV headed `id`, `created`, `consumer`, `tracker`, `item`, `action`,
    `resolution`, and `result`. Other history filters are deferred. Mutations report paths relative
-   to `.trackers`, including `tables/<stem>.tsv` and `history.tsv`. Receipt terminology, receipt
-   IDs, and the receipt pseudo-tracker leave the live contract.
+   to `.trackers`, including `tables/<stem>.tsv` and `history.tsv`. Lifecycle mutations identify
+   each newly appended history row as `event=event-N`. Configurable tracker stems use the ordinary
+   stem grammar without any ledger-name reservation. Receipt terminology, receipt IDs, and the
+   receipt pseudo-tracker leave the live contract.
 5. **D5 — Hard cut without compatibility state.** Setup and runtime recognize only the new layout
    and `tracker@2`; root-level queue TSVs and `receipts.tsv` are incompatible incumbent data and
    cause a write-free refusal. There is no alias, dual read, fallback, automatic adoption, version
@@ -63,10 +65,10 @@ provider contract, so it must not masquerade as a compatible implementation deta
    receipt row IDs to event IDs, then install the current provider and guide. Git is the recovery
    surface, and the implementation instructions must preserve row order and all non-ID field bytes.
 6. **D6 — Supersede only the replaced contract.** This ADR supersedes the related specs' flat queue
-   layout, receipts path and vocabulary, receipt pseudo-tracker, `tracker@1` marker and command
-   roster, initialization-boundary path, and path-bearing output. Their queue schema, setup and
-   repair recovery, README ownership, consumer keys, lifecycle behavior, safety guards, and other
-   unrelated requirements remain authoritative.
+   layout, receipts path and vocabulary, receipt pseudo-tracker, receipt-specific stem reservation,
+   `tracker@1` marker and command roster, initialization-boundary path, and path-bearing output.
+   Their queue schema, setup and repair recovery, README ownership, consumer keys, lifecycle
+   behavior, safety guards, and other unrelated requirements remain authoritative.
 
 ## Alternatives considered
 
