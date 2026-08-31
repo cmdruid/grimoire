@@ -85,11 +85,8 @@ verb's job).
 5. **Durable-home tier only — scaffold `setup`:**
    - Draft the new skill's own `<new-skill>/verbs/setup.md`: an idempotent home-scaffold
      beneath `.spaces/<name>/<owned-kind>/` (create-if-absent for each store the skill
-     owns; never touch existing content or another owner namespace) **plus** front-door self-registration, modeled on the
-     front-door registration mechanism (`docs/DOCTRINE.md` § Typed edges & registration) — content-vs-
-     arrangement split, absent→append / present→replace-between-delimiters / malformed→report-and-stop.
-     A skill implementing it bundles its **own** registration script (self-containment: no runtime
-     call-out to another skill's copy — it must work installed alone, BL-6).
+     owns; never touch existing content or another owner namespace). Durable state does not imply a
+     front-door route.
    - Setup may create its declared workspace when absent. Before
      each mkdir, recheck that every existing parent is a real directory and not
      a symlink; refuse unsafe parents without partial writes.
@@ -97,13 +94,18 @@ verb's job).
      package-managed operational surface that can drift independently of project configuration or
      data; it must call setup's reconciler with a smaller write set and direct missing prerequisites
      back to setup.
-   - State the `built-against` stamp formula as **path-scoped to the new skill's own directory** —
-     `git -C <skill-dir> log -1 --format=%h -- .`, never `git -C <skill-dir> rev-parse --short HEAD`
-     (the latter collapses to one value across every skill on a monorepo skills-root, BL-7) — else a
-     version string, else `v0-<date>`.
-   - State the **fixture caveat** explicitly in the new skill's `setup` verb if this scaffold is being built
-     *inside* the same library that authors the doctrine: never register against that library's own
-     real front-door; exercise against a throwaway fixture.
+   - Separately decide whether the skill owns a justified always-loaded route. When it does, model
+     the front-door registration mechanism in `docs/DOCTRINE.md` § Typed edges & registration:
+     content-vs-arrangement split, absent→append / present→replace-between-delimiters /
+     malformed→report-and-stop. Bundle the skill's **own** registration script (self-containment: no
+     runtime call-out to another skill's copy — it must work installed alone, BL-6), and state the
+     `built-against` stamp formula as **path-scoped to the new skill's own directory** —
+     `git -C <skill-dir> log -1 --format=%h -- .`, never
+     `git -C <skill-dir> rev-parse --short HEAD` (the latter collapses to one value across every skill
+     on a monorepo skills-root, BL-7) — else a version string, else `v0-<date>`.
+   - State the **fixture caveat** explicitly when this scaffold is being built *inside* the same
+     library that authors the doctrine and registration was selected: never register against that
+     library's own real front door; exercise against a throwaway fixture.
 
 6. **Other tiers:** no `setup` merely because of tier. Keep setup only when steps 3 or 3b identified a
    deployable project surface; otherwise state the "no home" disposition in the skill's body (one

@@ -25,6 +25,13 @@ validate(){
     "$root/skills/backlog/scripts/tracker-layer-status.sh" >/dev/null;then
     fail 'live tracker runtime retains tracker@1 compatibility';return 1
   fi
+  for retired in scripts/register-route.sh scripts/route-status.sh templates/debrief-anchor.md;do
+    [ ! -e "$root/skills/backlog/$retired" ]||{ fail "retired Backlog route surface remains: $retired";return 1;}
+  done
+  if rg -n 'AGENTS\.md|CLAUDE\.md|register-route|route-status|debrief-anchor|skill:backlog' \
+    "$root/skills/backlog/scripts" --glob '!**/tests/**' >/dev/null;then
+    fail 'Backlog production scripts retain front-door ownership';return 1
+  fi
   grep -qF 'tracker@2' "$root/skills/analyst/SKILL.md"||{ fail 'Analyst does not require tracker@2';return 1;}
   grep -qF 'tracker@2' "$root/skills/foreman/SKILL.md"||{ fail 'Foreman does not require tracker@2';return 1;}
   repair_defs="$(rg -o '^install_provider\(\)' "$root/skills/backlog/scripts" --glob '!**/tests/**'|wc -l|tr -d ' ')"
@@ -57,6 +64,7 @@ red_proof "$FIX/AGENTS.md" '<!-- skill:backlog BEGIN -->'
 red_proof "$FIX/skills/backlog/scripts/backlog-setup.sh" 'install_provider(){ :; }'
 red_proof "$FIX/skills/backlog/scripts/trackers.sh" '# tracker@1 compatibility'
 red_proof "$FIX/skills/backlog/scripts/tracker-layer-status.sh" '# receipts.tsv fallback'
+red_proof "$FIX/skills/backlog/scripts/backlog-setup.sh" '# inspect AGENTS.md before setup'
 validate "$FIX"
-[ "$mutations" -eq 8 ]||{ echo 'FAIL: mutation count drifted' >&2;exit 1;}
+[ "$mutations" -eq 9 ]||{ echo 'FAIL: mutation count drifted' >&2;exit 1;}
 echo "backlog-provider-contract-test: $mutations red proofs passed"

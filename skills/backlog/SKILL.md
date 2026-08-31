@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: "Manage project-owned living follow-up trackers in a first-class tracker layer. Setup deploys the tracker@2 API, lifecycle history, and default tables; tracker add|remove|list manages extensible queues; file and debrief capture follow-ups; query pages them; curate updates or consumes them. Use for `/backlog ...`, filing or grooming follow-ups, and sweeping completed work before substantive context is lost."
+description: "Manage project-owned living follow-up trackers in a first-class tracker layer. Setup deploys the tracker@2 API, lifecycle history, and default tables; migrate converts one exact tracker@1 installation; tracker add|remove|list manages extensible queues; file and debrief capture follow-ups; query pages them; curate updates or consumes them. Use for `/backlog ...`, filing or grooming follow-ups, and sweeping completed work before substantive context is lost."
 ---
 
 # backlog — living follow-up trackers
@@ -15,14 +15,15 @@ layer is public project state: `README.md`, package-managed `trackers.sh`, `hist
 |---|---|---|
 | `/backlog setup` | `verbs/setup.md` | Initialize or reconcile the tracker layer |
 | `/backlog repair` | `verbs/repair.md` | Restore the provider and managed tracker-root guide |
+| `/backlog migrate [<source-root>]` | `verbs/migrate.md` | Convert one exact tracker@1 TSV installation |
 | `/backlog tracker add\|remove\|list` | `verbs/tracker.md` | Manage or inspect queue files |
 | `/backlog file <stem> [text]` | `verbs/file.md` | Create one open item |
 | `/backlog query [<stem>\|--history]` | `verbs/query.md` | Catalog or page tracker and lifecycle state |
 | `/backlog debrief` | `verbs/debrief.md` | Route completed-work leftovers once |
 | `/backlog curate [<stem>]` | `verbs/curate.md` | Update or consume current rows |
 
-Bare `/backlog` asks which verb. Unknown verbs refuse; migration, import, complete, drop, and
-reorder are not aliases.
+Bare `/backlog` asks which verb. Unknown verbs refuse; import, complete, drop, and reorder are not
+aliases.
 
 ## Shared discipline
 
@@ -39,6 +40,10 @@ reorder are not aliases.
 - Setup, repair, and tracker add/remove run package-local `scripts/backlog-setup.sh <root>`.
   That helper is the only queue-file lifecycle writer and the only package path that refreshes the
   installed API.
+- Migrate runs package-local `scripts/migrate-trackers.sh`; it is the only tracker@1 reader. All
+  other Backlog commands remain tracker@2-only.
+- Backlog never creates, reads, edits, removes, or commits a project front door. Tracker state is
+  self-described by `.trackers/README.md`; workflow composition belongs outside this skill.
 - Standalone setup, repair, tracker, file, and curate calls make one pathspec-scoped commit over unique
   reported `wrote=` / `reconciled=` / `removed=` paths through `scripts/scoped-commit.sh`. Inside debrief or an
   announced configuration sweep, remain write-only and return the paths to the caller. No changed
@@ -70,11 +75,10 @@ mint records, define another skill's domain judgment, or store session/workstrea
 
 ## Project templates
 
-None. `debrief-anchor.md` is package-only and is reconciled into Backlog's bounded root route; it is
-never deployed as a project-editable template.
+None.
 
 ## Done when
 
-The selected verb's done-when holds; every tracker mutation used the installed API or guarded
-queue-lifecycle helper; the route and prompt population match configured queues; and standalone
-changes used one exact pathspec-scoped commit.
+The selected verb's done-when holds; every tracker mutation used the installed API, guarded
+queue-lifecycle helper, or bounded migration helper; the prompt population matches configured
+queues; no front door changed; and standalone changes used one exact pathspec-scoped commit.

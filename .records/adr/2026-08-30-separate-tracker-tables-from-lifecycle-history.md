@@ -68,22 +68,25 @@ current format.
    tracker@1 TSV installation to tracker@2 in a clean Git worktree. The initial converter accepts
    tracker@1 at `.trackers`, or one explicitly supplied safe repo-relative prior tracker root that
    is dedicated and fully tracked. For an external source, `.trackers` must be absent; migration
-   moves the complete source there and removes only a matching retired `agent-trackers:`
-   declaration. It then moves queues under `tables/`, moves `receipts.tsv` to `history.tsv`,
-   rewrites only receipt IDs to event IDs, and reconciles the current provider and guide. Unknown,
-   mixed, untracked, colliding, malformed, record-based, and Markdown formats refuse without
-   best-effort conversion. There is no alias, dual read, fallback, automatic adoption, or runtime
-   version bridge. Git is the recovery surface, and conversion preserves row order and every non-ID
-   field byte.
+   moves the complete source there. It then moves queues under `tables/`, moves `receipts.tsv` to
+   `history.tsv`, rewrites only receipt IDs to event IDs, and reconciles the current provider and
+   guide. No Backlog command reads, writes, removes, or commits `AGENTS.md`, `CLAUDE.md`, or another
+   project front door; retired declarations and installed route blocks are cleanup outside this
+   migration. Unknown, mixed, untracked, colliding, malformed, record-based, and Markdown formats
+   refuse without best-effort conversion. There is no alias, dual read, fallback, automatic
+   adoption, or runtime version bridge. Git is the recovery surface, and conversion preserves row
+   order and every non-ID field byte.
 6. **D6 — Supersede only the replaced contract.** This ADR supersedes the related specs' flat queue
    layout, receipts path and vocabulary, receipt pseudo-tracker, receipt-specific stem reservation,
    `tracker@1` marker and command roster, initialization-boundary path, and path-bearing output.
    It also supersedes the fixed-homes ADR's prohibition on a tracker migration engine only for this
    explicitly invoked, dedicated-root Backlog migration. Fixed canonical homes, retired runtime
    selectors, the prohibition on workspace movers, and every other fixed-homes clause remain
-   authoritative. The related specs' queue schema, setup and repair recovery, README ownership,
-   consumer keys, lifecycle behavior, safety guards, and other unrelated requirements also remain
-   authoritative.
+   authoritative. It supersedes Backlog route-registration and debrief-anchor requirements: the
+   tracker layer is self-described by `.trackers/README.md`, while workflow composition is external
+   to Backlog and deferred. The related specs' queue schema, setup and repair recovery, README
+   ownership, consumer keys, lifecycle behavior, safety guards, and other unrelated requirements
+   also remain authoritative.
 
 ## Alternatives considered
 

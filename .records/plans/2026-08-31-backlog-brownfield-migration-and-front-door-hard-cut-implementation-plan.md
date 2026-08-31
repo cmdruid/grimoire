@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -79,7 +79,7 @@ Input exceptions:
 
 ## Slices
 
-- [ ] **Slice 0: Re-ground migration and front-door ownership** <requires: —>
+- [x] **Slice 0: Re-ground migration and front-door ownership** <requires: —>
   - Files: read-only inspection of the governing ADR; the published Callback and Backlog
     debrief-anchor specs; `README.md`; `PACK.md`; `skills/backlog/`;
     `skills/skill-builder/docs/DOCTRINE.md`; `skills/skill-builder/verbs/new.md`; and
@@ -103,7 +103,7 @@ Input exceptions:
     assertion is accounted for; there is one current tracker@2 provider; and all unrelated worktree
     entries are named and excluded.
 
-- [ ] **Slice 1: Add the narrow converter and remove Backlog's front-door subsystem atomically** <requires: 0>
+- [x] **Slice 1: Add the narrow converter and remove Backlog's front-door subsystem atomically** <requires: 0>
   - Files:
     - Amend governing records:
       `.records/adr/2026-08-30-separate-tracker-tables-from-lifecycle-history.md` and

@@ -64,11 +64,11 @@ S="$T/parent-swap";newroot "$S";OUTSIDE="$T/swapped-layer"
 if OUTSIDE="$OUTSIDE" BACKLOG_SETUP_TEST_AFTER_WRITE="$SWAP" complete "$S" >"$T/parent-swap.out" 2>&1;then echo 'FAIL tracker-parent swap survived' >&2;fail=$((fail+1));else pass=$((pass+1));fi
 [ ! -e "$OUTSIDE/tables/tasks.tsv" ]&&[ ! -e "$OUTSIDE/history.tsv" ]&&pass=$((pass+1))||{ echo 'FAIL write escaped through swapped tracker parent' >&2;fail=$((fail+1));}
 
-# A swap after the final tracker-root write refuses before route reconciliation.
+# A swap after the final tracker-root write refuses without touching a front door.
 LATE_SWAP="$T/swap-after-readme.sh";printf '%s\n' '#!/bin/sh' '[ "$3" != "$2/README.md" ] || { mv "$1/$2" "$OUTSIDE"; ln -s "$OUTSIDE" "$1/$2"; }'>"$LATE_SWAP";chmod +x "$LATE_SWAP"
 LS="$T/late-parent-swap";newroot "$LS";LATE_OUTSIDE="$T/late-swapped-layer"
 if OUTSIDE="$LATE_OUTSIDE" BACKLOG_SETUP_TEST_AFTER_WRITE="$LATE_SWAP" complete "$LS" >"$T/late-parent-swap.out" 2>&1;then echo 'FAIL late tracker-parent swap survived' >&2;fail=$((fail+1));else pass=$((pass+1));fi
-[ ! -e "$LS/AGENTS.md" ]&&pass=$((pass+1))||{ echo 'FAIL route changed after tracker custody was lost' >&2;fail=$((fail+1));}
+[ ! -e "$LS/AGENTS.md" ]&&pass=$((pass+1))||{ echo 'FAIL setup created a front door after tracker custody was lost' >&2;fail=$((fail+1));}
 
 # Retired selectors refuse before the first durable change; a normal retry uses `.trackers`.
 C="$T/selector-refusal";newroot "$C";no "$SETUP" "$C" --trackers-root project-trackers --apply
@@ -118,7 +118,7 @@ if grep -Eq '^(wrote|reconciled)=' "$T/clean.out";then echo 'FAIL clean rerun cl
 # A resumed managed README with an indistinguishable project edit refuses custody.
 J="$T/mixed-custody";newroot "$J";if STOP_AT=13 BACKLOG_SETUP_TEST_AFTER_WRITE="$HOOK" complete "$J" >/dev/null 2>&1;then fail=$((fail+1));else pass=$((pass+1));fi
 printf '\nproject edit after interrupted setup\n'>>"$J/.trackers/README.md";no complete "$J";has "$T/out" 'reason=commit-custody-required detail=.trackers/README.md'
-[ ! -e "$J/AGENTS.md" ]&&pass=$((pass+1))||{ echo 'FAIL mixed custody wrote route before refusal' >&2;fail=$((fail+1));}
+[ ! -e "$J/AGENTS.md" ]&&pass=$((pass+1))||{ echo 'FAIL mixed custody created a front door before refusal' >&2;fail=$((fail+1));}
 
 # A tracked project README changed only by the interrupted package write resumes safely.
 L="$T/readme-custody";newroot "$L";mkdir -p "$L/.trackers";printf 'project guide\n'>"$L/.trackers/README.md"

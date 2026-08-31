@@ -4,7 +4,10 @@ set -euo pipefail
 repo="$(CDPATH='' cd "$(dirname "$0")/../.." && pwd -P)"
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/clankshop-config.XXXXXX")";trap 'rm -rf "$tmp"' EXIT
 root="$tmp/project";mkdir -p "$root";git -C "$root" init -q;git -C "$root" config user.name Fixture;git -C "$root" config user.email fixture@example.invalid
-printf '# Existing project\n'>"$root/README.md";git -C "$root" add README.md;git -C "$root" commit -qm init
+printf '# Existing project\n'>"$root/README.md"
+printf '# Existing agent instructions\n' >"$root/AGENTS.md"
+git -C "$root" add README.md AGENTS.md;git -C "$root" commit -qm init
+cp "$root/AGENTS.md" "$tmp/agents.before"
 fail(){ echo "FAIL: $*" >&2;exit 1;}
 auditor_sentinel="$tmp/auditor-invoked"
 
@@ -52,15 +55,7 @@ readme_facts="$("$repo/skills/backlog/scripts/tracker-readme-status.sh" \
 grep -qxF 'readme_status=current' <(printf '%s\n' "$readme_facts")||fail "Backlog tracker guide is not current"
 grep -q '^## tasks$' "$root/.trackers/DEBRIEF.md"||fail "Backlog cookbook missing tasks"
 grep -q '^## routines$' "$root/.trackers/DEBRIEF.md"||fail "Backlog cookbook missing routines"
-grep -q '^<!-- skill:backlog BEGIN' "$root/AGENTS.md"||fail "Backlog route missing"
-route_facts="$("$repo/skills/backlog/scripts/route-status.sh" \
-  "$repo/skills/backlog/templates/debrief-anchor.md" "$root/AGENTS.md")"
-grep -qxF 'route_status=current' <(printf '%s\n' "$route_facts") || fail "Backlog route is not current"
-route_begin="$(printf '%s\n' "$route_facts" | sed -n 's/^route_begin_line=//p')"
-route_end="$(printf '%s\n' "$route_facts" | sed -n 's/^route_end_line=//p')"
-sed -n "${route_begin},${route_end}p" "$root/AGENTS.md" >"$tmp/configured-backlog-anchor.md"
-cmp -s "$repo/skills/backlog/templates/debrief-anchor.md" "$tmp/configured-backlog-anchor.md" || \
-  fail "Backlog route is not byte-identical to the package anchor"
+cmp -s "$tmp/agents.before" "$root/AGENTS.md" || fail "core setup changed the project front door"
 hooks="$tmp/hooks.out";"$repo/skills/workstream/scripts/hooks.sh" parse --dir "$root/.spaces/workstream/hooks" --known feature-completion --known after-eventful-ship >"$hooks"
 grep -q 'hook_feature_completion=empty' "$hooks"||fail "feature hook is not independent and empty"
 grep -q 'hook_after_eventful_ship=empty' "$hooks"||fail "ship hook is not independent and empty"
@@ -71,18 +66,14 @@ grep -q 'fails=0' "$tmp/workspace.out"||fail "Workspace check failed"
 if grep -qE '^(agent-workspace|agent-records|agent-trackers|records-root):' "$root/AGENTS.md";then fail "default roots were declared";fi
 
 # Derive the aggregate set from Git over approved destinations, not setup output.
-git -C "$root" add -N -- AGENTS.md .records .trackers .spaces/workstream .spaces/delegate
+git -C "$root" add -N -- .records .trackers .spaces/workstream .spaces/delegate
 paths=();while IFS= read -r path;do [ -n "$path" ]&&paths+=("$path");done \
-  < <(git -C "$root" diff --name-only -- AGENTS.md .records .trackers .spaces/journal .spaces/workstream .spaces/delegate)
+  < <(git -C "$root" diff --name-only -- .records .trackers .spaces/journal .spaces/workstream .spaces/delegate)
 [ "${#paths[@]}" -gt 0 ]||fail "aggregate path set is empty"
 git -C "$root" add -- "${paths[@]}";git -C "$root" commit -qm 'Configure Clankshop delivery loop' -- "${paths[@]}"
 [ "$(git -C "$root" rev-list --count HEAD)" -eq 2 ]||fail "configuration did not make exactly one aggregate commit"
 git -C "$root" show HEAD:AGENTS.md >"$tmp/committed-AGENTS.md"
-route_facts="$("$repo/skills/backlog/scripts/route-status.sh" \
-  "$repo/skills/backlog/templates/debrief-anchor.md" "$tmp/committed-AGENTS.md")"
-grep -qxF 'route_status=current' <(printf '%s\n' "$route_facts") || fail "committed Backlog route is not current"
-[ "$(grep -c '^<!-- skill:backlog BEGIN' "$tmp/committed-AGENTS.md")" -eq 1 ] || \
-  fail "committed configuration does not contain exactly one Backlog anchor"
+cmp -s "$tmp/agents.before" "$tmp/committed-AGENTS.md" || fail "configuration commit changed AGENTS.md"
 
 run_core_sweep;apply_delegate_policy
 [ -z "$(git -C "$root" status --porcelain)" ]||{ git -C "$root" status --short >&2;fail "second sweep is not diff-free"; }

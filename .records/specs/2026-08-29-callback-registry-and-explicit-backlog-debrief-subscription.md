@@ -2,19 +2,17 @@
 doctype: specs
 status: published
 schema: architect/spec@1
-tags: [callback, backlog, agent-events]
+tags: [callback, agent-events]
 ---
 
-# Callback registry and explicit Backlog debrief subscription — Spec
+# Callback registry — Spec
 
 ## Problem
 
-Backlog currently owns both follow-up routing and the always-loaded agent-event instructions that
-decide when `/backlog debrief` runs. The event contract is useful beyond Backlog: another skill may
-need an agent to perform closure work at the same observable boundary, but today it must either
-duplicate Backlog's front-door trigger, couple itself to Backlog, or invent a harness-specific hook.
-Those alternatives create multiple dispatchers, inconsistent boundary definitions, and no common
-answer for action order or failure handling.
+Agent-event instructions currently lack a common owner. A skill that needs an agent to perform
+closure work at an observable boundary must invent its own front-door trigger or a harness-specific
+hook. Those alternatives create multiple dispatchers, inconsistent boundary definitions, and no
+common answer for action order or failure handling.
 
 The successful prototype spike proved that current Grok and Codex harnesses can follow one generic
 anchor through a registry dispatcher and then execute ordered Markdown instructions and skill
@@ -26,14 +24,14 @@ separately proved Backlog's direct boundary trigger
 production contract that gives the shared mechanism one owner without turning arbitrary shell
 hooks, dynamic events, or implicit subscriber setup into project policy.
 
-Two published Backlog addenda describe the incumbent design. The debrief-anchor reliability spec
+Two published Backlog addenda described the former incumbent design. The debrief-anchor reliability spec
 (→ `specs/2026-08-28-backlog-debrief-anchor-reliability.md`) makes Backlog the event owner, and the
 tracker-provider discoverability spec
 (→ `specs/2026-08-28-backlog-tracker-provider-discoverability.md`) requires Backlog setup to
-reconcile that anchor. Once this specification is reviewed, accepted, and published, it supersedes
-the former and overrides only the latter's `debrief-anchor@1` route-reconciliation requirements.
-The tracker provider, queues, receipts, README, and Backlog debrief behavior remain independently
-owned by Backlog.
+reconcile that anchor. This specification supersedes the former and overrides the latter's
+`debrief-anchor@1` route-reconciliation requirements. The later tracker-layout ADR
+(→ `adr/2026-08-30-separate-tracker-tables-from-lifecycle-history.md`) hard-cuts Backlog's entire
+front-door surface; Callback does not replace it with a Backlog route or subscription.
 
 ## Goal
 
@@ -43,12 +41,8 @@ versioned front-door `callback-anchor@1`. Its fixed v1 catalog recognizes only
 agent instructions or skill commands in stable relative order and applies each registration's
 `advise` or `block` failure policy.
 
-Backlog retains its ordinary self-registered route and all tracker behavior, but no longer owns or
-installs the boundary trigger. Automatic debrief becomes an explicit composition choice: an
-operator registers `/backlog debrief` through Callback after both skills are available. Neither
-skill's setup mutates the other's state, the pack remains a runbook rather than an installer, and
-no lifecycle owner, harness hook, arbitrary executable handler, or durable work-unit cursor becomes
-a second dispatcher.
+Callback remains independent of tracker or workflow policy. No lifecycle owner, harness hook,
+arbitrary executable handler, or durable work-unit cursor becomes a second dispatcher.
 
 ## Approach
 
@@ -86,12 +80,9 @@ surface—provider, managed README block, and anchor—that can become stale ind
 registry. Repair shares setup's reconciler with a narrower write set and never creates, infers, or
 rewrites registration data. Loss of `registry.tsv` is data loss and requires Git recovery.
 
-Backlog makes a deliberate hard cut. Its self-route becomes a lean `backlog-route@1` block with no
-event language. The old `debrief-anchor@1` extent is ordinary replaceable package-managed Backlog
-state and is replaced wholesale on the next Backlog setup or tracker-administration reconciliation;
-it is never parsed into Callback registration. Automatic debrief remains off until the operator
-explicitly registers the skill command. This pays down the misplaced event ownership instead of
-designing a permanent compatibility path around it.
+Backlog makes a deliberate hard cut: its route helper, anchor template, and front-door writes are
+deleted wholesale and are never parsed into Callback registration. This pays down the misplaced
+event ownership instead of designing a permanent compatibility path around it.
 
 Alternatives rejected:
 
@@ -142,7 +133,7 @@ provider self-locates from `.callbacks/`.
 Callback declares a `consumes: callback-action` typed edge: registrations supply agent actions for
 its dispatcher. A subscriber may declare `produces: callback-action` when it exposes a stable agent
 instruction or skill command intended for registration. Those leaf edges never name another skill.
-The Clankshop pack seam map may match the types and name the concrete Backlog composition.
+A future composer may match the types and propose a concrete composition under its own contract.
 
 ### Registry contract
 
@@ -154,7 +145,7 @@ event\tsubscriber\tkind\ttarget\ton_failure
 
 Rows are the ordered data. In v1 every `event` is exactly `work-unit-boundary@1`. `subscriber` is a
 stable lowercase identifier matching `[a-z0-9]([a-z0-9.-]*[a-z0-9])?` and is unique within an event;
-examples include `backlog.debrief` and `project.release-note`. `kind` is exactly `instruction` or
+examples include `project.release-note` and `project.security-check`. `kind` is exactly `instruction` or
 `skill-command`. `on_failure` is exactly `advise` or `block`. Fields are nonempty single-line text
 without tabs, carriage returns, NUL bytes, or other control characters.
 
@@ -377,64 +368,18 @@ never reconciles an earlier invocation. An announced configuration sweep receive
 Neither verb touches subscriber-owned instruction files, Backlog, trackers, records, or any sibling
 workspace namespace.
 
-### Backlog hard cut and explicit composition
+### Backlog boundary
 
-Backlog replaces its current template with this lean package-owned route:
-
-```markdown
-<!-- skill:backlog BEGIN built-against:backlog-route@1 -->
-### /backlog — project follow-up trackers
-Route: Inspect project trackers with `/backlog query` or `/backlog tracker list`; capture
-completed-work leftovers with `/backlog debrief`.
-Edges: produces `tracker`, `callback-action`.
-<!-- skill:backlog END -->
-```
-
-Backlog continues to install that route whenever its initialized tracker layer has at least one
-queue and to remove it when the last queue is removed. Its existing reserved `skill:backlog` family
-makes `debrief-anchor@1` a `replaceable-managed` extent, so current reconciliation replaces it
-without a legacy-specific parser. The replacement carries forward no event or failure prose.
-Backlog's `SKILL.md`, setup verb, route scripts, route tests, and integration fixtures name
-`backlog-route@1`; Backlog deletes the package-only `debrief-anchor.md` and its Backlog-owned anchor
-contract scenarios after equivalent callback coverage exists. `/backlog debrief` retains its
-bounded sweep, routing judgment, zero-row success, and current-context duplicate discipline; it no
-longer claims ownership of the trigger.
-
-Backlog exposes `/backlog debrief` as a stable `callback-action` and declares that type in its
-package edge block without naming Callback. It does not inspect `.callbacks/`, invoke a Callback
-verb, create a registration, or change callback order during setup, repair, tracker administration,
-debrief, or curation.
-
-The Clankshop pack adds `callback` as an optional member and owns the concrete seam. Its composition
-runbook explains that automatic Backlog debrief requires an explicit operator action after Callback
-and Backlog setup:
-
-```text
-/callback register --event work-unit-boundary@1 --subscriber backlog.debrief \
-  --kind skill-command --target '/backlog debrief' --on-failure block --last
-```
-
-The pack exposes this seam as a named `automatic-backlog-debrief` composition profile. Installing
-the optional Callback and Backlog members does not select or run that profile. During an attended
-configuration proposal, the pack inventories the `.callbacks/` layer, both managed route extents,
-the exact registry row, its relative position, and its blocking policy; only explicit operator
-approval of that profile authorizes its writes. The selected configuration sweep runs Callback
-setup, Backlog setup, and then the explicit registration in that order. On an incumbent project,
-this briefly places the new generic anchor beside the old Backlog anchor, then replaces the old
-block with the lean route before the registration becomes active. The sweep treats those operations
-as one attended configuration unit and performs no autonomous project work between them. The pack
-itself still installs no route, layer, provider, or registration and writes no project file.
-
-There is no automatic migration of the old debrief behavior. Updating Backlog alone yields the lean
-route and therefore disables automatic debrief; updating or setting up Callback alone yields an
-empty registry. The explicit registration is the activation boundary. Historical specs, records,
-and plans retain the terms that were true when written; current package docs, README inventory,
-pack seams, and live tests use Callback ownership.
+Backlog owns no project front door and is outside Callback's implementation scope. This
+specification does not define, install, advertise, or test a Backlog route, Callback registration,
+or automatic debrief composition. Backlog's explicit `/backlog debrief` verb remains usable when a
+caller invokes it, but any future workflow composition belongs to a separately reviewed change.
+Neither Callback nor Backlog setup mutates the other's state.
 
 ## Verification
 
 All setup, registry, route, and integration proofs operate on throwaway consuming projects. No test
-or setup invocation installs either route in grimoire's real `AGENTS.md`.
+or setup invocation installs Callback's route in grimoire's real `AGENTS.md`.
 
 - **Provider schema and operations.** Exhaustive fixtures cover empty describe/list/dispatch;
   register default-last, first, last, before, and after; multi-row relative move; no-op moves;
@@ -471,39 +416,30 @@ or setup invocation installs either route in grimoire's real `AGENTS.md`.
   global provider/registry failure, count/frame mismatch, target disappearance, deferred emergency
   recovery, fresh-snapshot retry, and no callback recursion. Controlled broken-template copies
   remove each instruction class and must make its assertion fail.
-- **Backlog independence and hard cut.** Backlog route fixtures prove current lean setup, replacement
-  of `debrief-anchor@1` through the generic reserved family, no legacy content carry-forward, last
-  queue removal, and preservation of Callback and unrelated route bytes. Source guards reject any
-  `.callbacks` access or `/callback` invocation from Backlog and any `/backlog debrief` dispatch from
-  Callback, Checkpoint, Workstream, or another lifecycle owner. Red proofs plant each forbidden
-  coupling in temporary live-source copies.
-- **Composition.** A fresh Clankshop consuming-project fixture first proves that installing Callback
-  and Backlog without selecting `automatic-backlog-debrief` creates no project Callback state or
-  registration. An explicitly approved profile then sets up Callback and Backlog, applies the exact
-  registration, compares both installed route blocks and both staged providers byte-for-byte with
-  their packages, confirms the registry row/order/policy, reruns the sweep with zero writes, and
-  proves the pack created no face or project-owned state itself. A Backlog-only fixture has no
-  Callback layer or automatic boundary; a Callback-only fixture dispatches zero actions.
+- **Backlog independence and hard cut.** Source guards reject any Backlog production access to
+  `.callbacks/`, `/callback`, `AGENTS.md`, `CLAUDE.md`, or route-management helpers. Callback has no
+  built-in `/backlog debrief` dispatch. Red proofs plant each forbidden coupling in temporary
+  live-source copies.
 - **Hosted acceptance.** Repeat the attended four-scenario matrix under the current Grok and Codex
-  harnesses using the implemented provider and installed anchor: completion with ordered instruction
-  then Backlog debrief; autonomous two-unit transition; pure Q&A; and advisory-then-blocking failure.
+  harnesses using the implemented provider and installed anchor: completion with ordered actions;
+  autonomous two-unit transition; pure Q&A; and advisory-then-blocking failure.
   Omit the deferred canary from transition fixtures. All eight cells must be unambiguous from logs,
   exact files, tracker state, Git ordering, and final worktree state; any failed or ambiguous cell
   blocks implementation acceptance and publication of its acceptance spike.
 - **Repository gates.** Callback's complete harness, Backlog's complete harness, repository
   integration tests (`scripts/tests/run.sh`), `skills/skill-builder/scripts/skills-lint.sh`,
   ShellCheck, the consuming-project fixture, and `git diff --check` pass. README and PACK inventory
-  agree that Callback is an optional Clankshop utility and Backlog owns trackers rather than the
-  event boundary. A live-source search confirms no production `debrief-anchor@1`, no arbitrary
+  agree that Callback is an optional Clankshop utility and Backlog owns only tracker-layer state. A
+  live-source search confirms no production `debrief-anchor@1`, no arbitrary
   executable callback kind, no commit-derived route marker, and no `skill:callback` or
   `skill:backlog` block in grimoire's authored front door. Each absence assertion is mutation-red-
-  proved in an isolated live-source copy: plant a legacy Backlog anchor, arbitrary executable kind,
+  proved in an isolated live-source copy: plant a Backlog front-door access, arbitrary executable kind,
   commit-derived marker, patient-zero Callback or Backlog block, hidden registration path, and
   second dispatcher one at a time; require its guard to fail, then restore the exact copied source
   population before the next mutation.
 
 The feature is complete when Callback is the sole owner and dispatcher of
 `work-unit-boundary@1`, registry mutations are explicit and race-safe, agent instructions and skill
-commands obey stable relative order and declared failure policy, Backlog's route is lean and its
-debrief action is registered only by an explicit composition step, all deterministic and hosted
-acceptance gates pass, and no second dispatcher or hidden registration path exists.
+commands obey stable relative order and declared failure policy, Backlog remains outside Callback's
+route and registration contract, all deterministic and hosted acceptance gates pass, and no second
+dispatcher or hidden registration path exists.

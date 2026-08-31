@@ -104,8 +104,10 @@ scoped to non-face skills.
 - **Skills self-initialize and self-describe via typed edges; the composer wires the seams.** The
   tenets above govern what a skill's `description:` may *say*; this one — their extension from
   **routing to initialization** — governs what a skill's `setup` may *write* and what its edges may
-  *name*. A skill stands up **its own** home and registers **its own** route into the always-loaded
-  front-door doc, so the constellation works **bare**, with no composer deployed. What it declares
+  *name*. A skill stands up **its own** home so its state works **bare**, with no composer deployed.
+  Front-door registration is a separate, optional public surface: a skill owns one only when
+  always-loaded routing is independently justified, never merely because the skill persists data.
+  What it declares
   about its place in a workflow is a set of **typed edges** (`produces` / `consumes` / `handoff`) keyed
   on artifact/capability **types, never sibling names**; a composer **derives** the cross-skill seams
   by *matching* one skill's edges against another's. A skill that names its successor has authored a
@@ -139,8 +141,9 @@ Four tiers, empirically derived from scoring an existing ten-skill library again
 | **scratch-only** | needs a working area but it's ephemeral | **none** — a gitignored dir, lazily created on first use; no protocol |
 | **pure mechanism** | a router/transport with no storage | **none** — nothing to create |
 
-Only the **durable-home** tier requires a real `setup` verb (home scaffold + front-door registration,
-per *Typed edges & registration* below). The other three do not gain setup merely from their tier,
+Only the **durable-home** tier requires a real `setup` verb for its home scaffold. Front-door
+registration is independent of tier, per *Typed edges & registration* below. The other three do not
+gain setup merely from their tier,
 though a skill of any tier may route setup for a declared deployable project surface. With no such
 surface, skip the ceremony — "no home" and "all-`—` edges" are legitimate, recorded dispositions,
 not gaps to fill in later.
@@ -160,14 +163,12 @@ initializes the layer, reselects configuration, migrates, or mutates user data. 
 direct to `setup`. Skills with only absent-only templates, hooks, or doctrine normally need `setup`
 alone.
 
-**Registration tracks captured items / durable routes, not mere existence.** Register the durable-home
-+ steward skills — the payoff (visibility without a composer) is real only where the skill has
-something durable to surface. Make it **optional** for scratch-only skills and **skip it** for
-pure-mechanism plumbing: registering a transport with no captured items would only bloat the
-front-door section this doctrine fights to keep lean. **Exception:** an in-place steward
-with no durable home and nothing to surface (a finder over host files already in the
-tree) **skips** front-door `skill:` registration the same way — it is not a captured-item
-route.
+**Registration tracks a justified always-loaded route, not mere existence or durable state.** Any
+skill tier may own registration when agents must discover or execute a concise route before loading
+the skill, but that public surface must be selected and justified independently. Otherwise skip it:
+the skill's own routing metadata and a self-describing durable home are sufficient, and an extra
+block would only bloat the front door. Persisting captured items does not by itself confer front-door
+ownership.
 
 ## Typed edges & registration — the mechanics
 
@@ -201,8 +202,8 @@ consumer with no producer takes its input from outside the skill set. **A and B 
 other** — the composer supplies both names after matching on `T`. Types are plain, open strings;
 prefer coarse, shared types (`plan`, not `feature-plan-v2`) over a precise-but-lonely one per skill.
 
-**Registration** (durable-home/steward tier only) idempotently projects a route into the host's
-always-loaded front-door doc, inside a `## Skill routes (self-registered)` section:
+**Registration**, when independently declared by a skill of any tier, idempotently projects a route
+into the host's always-loaded front-door doc, inside a `## Skill routes (self-registered)` section:
 
 ```markdown
 <!-- skill:<name> BEGIN built-against:<sha-or-version> -->
@@ -463,13 +464,14 @@ files mean skip. It does not glob new runtime behavior into existence.
 
 1. **Self-init, no floor.** A durable-home skill can create its own home; it depends on no other
    skill's `setup` having scaffolded it first.
-2. **Visibility by construction.** Registration lands in the *always-loaded* front-door, so a bare
-   reader sees the route (and captured items) without a composer reading the skill.
+2. **Visibility is explicit.** A selected registration lands in the *always-loaded* front door; a
+   skill without one remains discoverable through its routing metadata and self-describing owned
+   state. Durable state alone never silently selects the former.
 3. **Edges name types, not siblings.** The type namespace is shared; the sibling namespace is
    invisible to a leaf.
-4. **Optimization, not dependency.** The bare self-init + registration experience is complete on its
-   own; a composer/runbook *enriches* (arranges, derives seams, drains accumulation) but is never
-   required for a skill to **function**.
+4. **Optimization, not dependency.** Bare self-init, plus registration only when declared, is
+   complete on its own; a composer/runbook *enriches* (arranges, derives seams, drains accumulation)
+   but is never required for a skill to **function**.
 
 ### Optional composers call public procedures
 

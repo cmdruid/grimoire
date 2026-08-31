@@ -22,8 +22,8 @@ if [ -n "$GIT_ROOT" ];then GIT_ROOT="$(CDPATH='' cd -P "$GIT_ROOT"&&pwd)";[ "$GI
 SKILL="$(CDPATH='' cd -P "$(dirname "$0")/.."&&pwd)"
 SOURCE="$SKILL/scripts/trackers.sh";CLASSIFIER="$SKILL/scripts/tracker-layer-status.sh"
 README_STATUS="$SKILL/scripts/tracker-readme-status.sh";README_TEMPLATE="$SKILL/templates/trackers-readme-block.md"
-REG="$SKILL/scripts/register-route.sh";LAYER="$ROOT/$TR";TABLES="$LAYER/tables";PROVIDER="$LAYER/trackers.sh"
-HISTORY="$LAYER/history.tsv";MARKER="$TABLES/.gitkeep";README="$LAYER/README.md";PROMPT="$LAYER/DEBRIEF.md";DOOR="$ROOT/AGENTS.md"
+LAYER="$ROOT/$TR";TABLES="$LAYER/tables";PROVIDER="$LAYER/trackers.sh"
+HISTORY="$LAYER/history.tsv";MARKER="$TABLES/.gitkeep";README="$LAYER/README.md";PROMPT="$LAYER/DEBRIEF.md"
 QUEUE_HEADER=$'id\tcreated\ttext\tevidence';HISTORY_HEADER=$'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult'
 [ -n "$mode" ]||die usage
 if [ "$mode" = list ];then
@@ -58,8 +58,7 @@ case "$mode" in tracker-add|tracker-remove)[ "$provider_status" = current ]||die
 check_parent "$TR";check_parent "$TR/tables";check_file "$PROVIDER";check_file "$HISTORY";check_file "$MARKER";check_file "$README"
 layer_preexisted=false;[ -d "$LAYER" ]&&layer_preexisted=true
 if [ "$mode" != repair ];then
-  check_file "$PROMPT";check_file "$DOOR"
-  "$REG" preflight --root "$ROOT" >/dev/null
+  check_file "$PROMPT"
 fi
 if [ "$mode" = tracker-remove ];then [ -f "$TABLES/$stem.tsv" ]&&[ ! -L "$TABLES/$stem.tsv" ]||die no-tracker "$stem";fi
 if [ "$mode" = tracker-add ];then check_file "$TABLES/$stem.tsv";[ ! -e "$TABLES/$stem.tsv" ]||die incumbent "$stem";fi
@@ -135,8 +134,7 @@ if [ "$mode" = setup ];then
     shopt -u nullglob
   fi
   if [ "$prompt_will_change" = true ]&&[ -f "$PROMPT" ]&&head_differs "$TR/DEBRIEF.md"&&! cmp -s "$tmp_prompt" "$PROMPT";then die commit-custody-required "$TR/DEBRIEF.md";fi
-  tmp_door="$(mktemp "${TMPDIR:-/tmp}/backlog-door.XXXXXX")";printf '# Agent instructions\n\n## Skill routes (self-registered)\n\n'>"$tmp_door";cat "$SKILL/templates/debrief-anchor.md">>"$tmp_door";report_exact_reconciled "$DOOR" "$tmp_door"
-  rm -f "$tmp_header" "$tmp_history" "$tmp_prompt" "$tmp_door"
+  rm -f "$tmp_header" "$tmp_history" "$tmp_prompt"
 fi
 
 require_layer(){ check_parent "$TR";[ -d "$LAYER" ]&&[ ! -L "$LAYER" ]||die vanished-tracker-root "$TR";}
@@ -233,15 +231,8 @@ else
   validate_provider;require_tables;rm "$TABLES/$stem.tsv";report removed "$TR/tables/$stem.tsv";require_tables;remove_module "$stem"
 fi
 
-if [ "$mode" != repair ];then
-  require_layer
-  count=0;shopt -s nullglob;for file in "$TABLES"/*.tsv;do count=$((count+1));done;shopt -u nullglob
-  if [ "$count" -gt 0 ];then "$REG" ensure --root "$ROOT";else "$REG" remove --root "$ROOT";fi
-fi
-
 # Final validation after the last reported write.
 final_mode=setup;[ "$mode" = repair ]&&final_mode=repair
 final_facts="$("$CLASSIFIER" "$final_mode" --root "$ROOT")"
 [ "$(printf '%s\n' "$final_facts"|sed -n 's/^layer_status=//p')" = initialized ]||die final-validation
 validate_provider
-if [ "$mode" != repair ];then "$REG" preflight --root "$ROOT" >/dev/null;fi

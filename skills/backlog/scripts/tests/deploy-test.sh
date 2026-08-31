@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 HERE="$(CDPATH='' cd -P "$(dirname "$0")"&&pwd)";SKILL="$(CDPATH='' cd -P "$HERE/../.."&&pwd)";SETUP="$SKILL/scripts/backlog-setup.sh"
-TEMPLATE="$SKILL/templates/debrief-anchor.md";STATUS="$SKILL/scripts/route-status.sh"
 T="$(mktemp -d "${TMPDIR:-/tmp}/backlog-deploy-test.XXXXXX")";trap 'rm -rf "$T"' EXIT
 pass=0;fail=0
 ok(){ if "$@" >/dev/null 2>&1;then pass=$((pass+1));else echo "FAIL $*" >&2;fail=$((fail+1));fi;}
 no(){ if "$@" >/dev/null 2>&1;then echo "FAIL accepted $*" >&2;fail=$((fail+1));else pass=$((pass+1));fi;}
 has(){ if grep -qF -- "$2" "$1";then pass=$((pass+1));else echo "FAIL missing $2" >&2;fail=$((fail+1));fi;}
 newroot(){ mkdir -p "$1";git -C "$1" init -q;}
-extract_route(){ local facts begin end;facts="$("$STATUS" "$TEMPLATE" "$1")";begin="$(printf '%s\n' "$facts"|sed -n 's/^route_begin_line=//p')";end="$(printf '%s\n' "$facts"|sed -n 's/^route_end_line=//p')";sed -n "${begin},${end}p" "$1";}
 
 R="$T/default";newroot "$R";out="$("$SETUP" "$R" --apply)"
 has <(printf '%s\n' "$out") 'wrote=.trackers/trackers.sh'
@@ -17,7 +15,7 @@ for f in .gitkeep tasks.tsv issues.tsv feedback.tsv routines.tsv;do [ -f "$R/.tr
 [ -x "$R/.trackers/trackers.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
 [ ! -e "$R/.trackers/tracker-api.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
 for s in tasks issues feedback routines;do has "$R/.trackers/DEBRIEF.md" "## $s";done
-extract_route "$R/AGENTS.md">"$T/route";cmp "$TEMPLATE" "$T/route" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
+[ ! -e "$R/AGENTS.md" ]&&pass=$((pass+1))||{ echo 'FAIL setup created AGENTS.md' >&2;fail=$((fail+1));}
 
 # Initialized setup preserves data and an intentionally removed default queue.
 "$R/.trackers/trackers.sh" create --tracker tasks --text 'keep me' >/dev/null
@@ -61,7 +59,9 @@ git -C "$U" mv .spaces/backlog/hooks/debrief.md .trackers/DEBRIEF.md;cp "$U/.tra
 cmp "$T/upgrade.before" "$U/.trackers/DEBRIEF.md" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
 [ ! -e "$U/.spaces/backlog/hooks/debrief.md" ]&&pass=$((pass+1))||fail=$((fail+1))
 
-# Malformed route ownership still refuses before creating the tracker layer.
-M="$T/malformed";newroot "$M";printf '%s\n' '<!-- skill:backlog BEGIN broken -->'>"$M/AGENTS.md";no "$SETUP" "$M" --apply;[ ! -e "$M/.trackers" ]&&pass=$((pass+1))||fail=$((fail+1))
+# Front-door state is outside Backlog ownership, including malformed old markers.
+M="$T/malformed";newroot "$M";printf '%s\n' '<!-- skill:backlog BEGIN broken -->'>"$M/AGENTS.md";cp "$M/AGENTS.md" "$T/malformed-agents.before"
+ok "$SETUP" "$M" --apply;ok "$SETUP" "$M" tracker-add decisions;ok "$SETUP" "$M" tracker-remove decisions
+cmp "$T/malformed-agents.before" "$M/AGENTS.md" >/dev/null&&pass=$((pass+1))||{ echo 'FAIL Backlog administration changed AGENTS.md' >&2;fail=$((fail+1));}
 
 echo "deploy-test: $pass passed, $fail failed";[ "$fail" -eq 0 ]

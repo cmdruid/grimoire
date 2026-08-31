@@ -17,12 +17,10 @@ echo "== setup-resume-test.sh"
 bash "$DIR/setup-resume-test.sh" || rc=1
 echo "== runtime-recovery-test.sh"
 bash "$DIR/runtime-recovery-test.sh" || rc=1
-echo "== route-test.sh"
-bash "$DIR/route-test.sh" || rc=1
+echo "== migrate-test.sh"
+bash "$DIR/migrate-test.sh" || rc=1
 echo "== debrief-contract-test.sh"
 bash "$DIR/debrief-contract-test.sh" || rc=1
-echo "== debrief-anchor-contract-test.sh"
-bash "$DIR/debrief-anchor-contract-test.sh" || rc=1
 echo "== hard-cut-test.sh"
 bash "$DIR/hard-cut-test.sh" || rc=1
 echo "== skill-doc-test.sh"

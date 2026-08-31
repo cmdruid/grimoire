@@ -48,7 +48,7 @@ scaffold, audit, and calibrate authoring doctrine), `developer-writing`
 | `analyst` | reports and briefings for the developer: catch-ups, status, subsystem and health snapshots, guides — synthesized from the records layer and git, from a customizable template catalog |
 | `architect` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
 | `auditor` | code-quality audit framework: per-dimension rubric and metrics; findings stay in the audit report and promote through the host capture lane; standalone on any repo |
-| `backlog` | first-class living TSV trackers: setup, extensible queue tables, lifecycle history, paging, filing, universal debriefing, and curation through `tracker@2` |
+| `backlog` | first-class living TSV trackers: setup, bounded tracker@1 migration, extensible queue tables, lifecycle history, paging, filing, explicit debriefing, and curation through `tracker@2` |
 | `checkpoint` | living session save-state: `save` / `resume` / `close` + compaction recovery — the persistence disciplines other skills borrow |
 | `chiropractor` | audit documentation-spine discoverability and authority from `AGENTS.md`; trace task routes into docs, workflows, and helper scripts, then confirmation-gate minimal documentation-only repairs |
 | `code-humanizer` | keep durable application, service, library, shipped CLI, and maintained test source fit for human ownership at write time; `mark` / `map` / `walk` on supported existing code; standalone, outside every pack |
@@ -92,8 +92,8 @@ staged engine lives at `.records/records.sh`, beside the introductory
 `history.tsv` lifecycle ledger, and adjacent canonical provider `.trackers/trackers.sh`. Backlog owns that
 layer; consumer skills invoke the installed provider directly.
 These canonical homes are constants, not front-door configuration. Each durable-home skill owns
-its files and optional route block;
-the pack installs skills but writes none of these project surfaces.
+its files; any front-door route is a separately justified public surface rather than a consequence
+of persistence. The pack installs skills but writes none of these project surfaces.
 
 Session checkpoints stay **gitignored scratch** (one root `CHECKPOINT.md`, steward `checkpoint`) —
 not a `.records/` store.

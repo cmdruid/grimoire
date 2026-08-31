@@ -56,8 +56,9 @@ at write time while preserving explicit `mark` / `map` / `walk`. None is part of
   Workstream's generic helper, then loads that same stream. Normal Workstream use performs no
   Foreman checks.
 - Backlog's explicit setup defaults to `tasks`, `issues`, `feedback`, and `routines`; it owns the
-  first-class `.trackers` layer, its `tracker@2` provider, queue tables, lifecycle history, and a
-  universally visible debrief cadence. The pack itself installs no tracker, script, route, or debrief policy. Foreman consumes
+  first-class `.trackers` layer, its `tracker@2` provider, queue tables, lifecycle history, and
+  editable debrief-routing prompt. The pack itself installs no tracker, script, route, or debrief
+  policy. Foreman consumes
   tracker pages to develop operations, while Analyst reads the same provider without mutation.
 - Chiropractor audits and confirmation-gates documentation-spine topology: task routes from
   `AGENTS.md`, compatibility with `CLAUDE.md`, and links to authoritative procedures or runnable
@@ -110,8 +111,8 @@ refusal, and rerun.
 
 ### 3. Apply optional project policy
 
-Backlog setup registers its own universal cadence; do not duplicate it inside Workstream hooks.
-Workstream's empty hook points remain independent and are available for unrelated host policy.
+Backlog setup configures only `.trackers`; it does not author a project front door or Workstream
+hooks. Workstream's hook points remain independently owned and unchanged by this profile.
 When Delegate is selected, the project may place this policy in
 `.spaces/delegate/hooks/byproducts.md`:
 
