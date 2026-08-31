@@ -19,7 +19,7 @@ exact_paths(){
   sed -n 's/^path=//p' "$output"|sort >"$actual"
   printf '%s\n' "$@"|sort >"$expected"
   cmp "$expected" "$actual" >/dev/null&&pass_one||fail_one 'preview path inventory differs'
-  has "$output" "paths=$#"
+  grep -qxF -- "paths=$#" "$output"&&pass_one||fail_one 'preview path count differs'
 }
 
 new_repo(){
