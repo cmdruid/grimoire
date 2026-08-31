@@ -7,7 +7,7 @@ tags: [trackers, storage]
 
 # Separate tracker tables from lifecycle history
 
-- **Deciders:** Project owner, 2026-08-30
+- **Deciders:** Project owner, 2026-08-30; amended 2026-08-31
 - **Related:** → `adr/2026-08-30-fix-project-owned-homes-at-canonical-roots.md`;
   → `specs/2026-08-27-backlog-routines-and-universal-debrief.md`;
   → `specs/2026-08-28-backlog-tracker-provider-discoverability.md`
@@ -28,6 +28,10 @@ Git, and receipts do not attempt to duplicate that history.
 Now that `.trackers` is a canonical fixed home, its internal structure should express these two
 different responsibilities directly. The change affects persisted project data and the public
 provider contract, so it must not masquerade as a compatible implementation detail.
+
+The original hard cut documented brownfield conversion as a manual procedure. That keeps runtime
+small, but leaves no discoverable command for safely moving a recognized older installation to the
+current format.
 
 ## Decision
 
@@ -57,18 +61,29 @@ provider contract, so it must not masquerade as a compatible implementation deta
    each newly appended history row as `event=event-N`. Configurable tracker stems use the ordinary
    stem grammar without any ledger-name reservation. Receipt terminology, receipt IDs, and the
    receipt pseudo-tracker leave the live contract.
-5. **D5 — Hard cut without compatibility state.** Setup and runtime recognize only the new layout
-   and `tracker@2`; root-level queue TSVs and `receipts.tsv` are incompatible incumbent data and
-   cause a write-free refusal. There is no alias, dual read, fallback, automatic adoption, version
-   bridge, or permanent migration verb. A brownfield project performs one explicit, reviewed,
-   Git-backed conversion: move queue tables under `tables/`, move receipts to `history.tsv`, convert
-   receipt row IDs to event IDs, then install the current provider and guide. Git is the recovery
-   surface, and the implementation instructions must preserve row order and all non-ID field bytes.
+5. **D5 — Hard cut with an explicit migration edge.** Setup, repair, and runtime recognize only the
+   current layout and `tracker@2`; root-level queue TSVs and `receipts.tsv` remain incompatible
+   incumbent data and cause a write-free refusal. `/backlog migrate [<source-root>]` is the sole
+   legacy reader. It previews and, after explicit confirmation, converts one exact recognized
+   tracker@1 TSV installation to tracker@2 in a clean Git worktree. The initial converter accepts
+   tracker@1 at `.trackers`, or one explicitly supplied safe repo-relative prior tracker root that
+   is dedicated and fully tracked. For an external source, `.trackers` must be absent; migration
+   moves the complete source there and removes only a matching retired `agent-trackers:`
+   declaration. It then moves queues under `tables/`, moves `receipts.tsv` to `history.tsv`,
+   rewrites only receipt IDs to event IDs, and reconciles the current provider and guide. Unknown,
+   mixed, untracked, colliding, malformed, record-based, and Markdown formats refuse without
+   best-effort conversion. There is no alias, dual read, fallback, automatic adoption, or runtime
+   version bridge. Git is the recovery surface, and conversion preserves row order and every non-ID
+   field byte.
 6. **D6 — Supersede only the replaced contract.** This ADR supersedes the related specs' flat queue
    layout, receipts path and vocabulary, receipt pseudo-tracker, receipt-specific stem reservation,
    `tracker@1` marker and command roster, initialization-boundary path, and path-bearing output.
-   Their queue schema, setup and repair recovery, README ownership, consumer keys, lifecycle
-   behavior, safety guards, and other unrelated requirements remain authoritative.
+   It also supersedes the fixed-homes ADR's prohibition on a tracker migration engine only for this
+   explicitly invoked, dedicated-root Backlog migration. Fixed canonical homes, retired runtime
+   selectors, the prohibition on workspace movers, and every other fixed-homes clause remain
+   authoritative. The related specs' queue schema, setup and repair recovery, README ownership,
+   consumer keys, lifecycle behavior, safety guards, and other unrelated requirements also remain
+   authoritative.
 
 ## Alternatives considered
 
@@ -82,8 +97,9 @@ provider contract, so it must not masquerade as a compatible implementation deta
 - **Log creation and every update.** Turns the provider into a full event-sourcing system and
   duplicates history already carried by table rows and Git. The ledger needs only the events from
   which runtime lifecycle views are derived.
-- **Read or migrate the old layout automatically.** Reduces the immediate operator step by making
-  legacy discovery and compatibility a permanent concern in ordinary setup and runtime.
+- **Detect or migrate old layouts from setup or repair.** Reduces the immediate operator step by
+  making legacy discovery and compatibility a permanent concern in ordinary reconciliation and
+  runtime recovery.
 
 ## Consequences
 
@@ -99,8 +115,10 @@ Every live `tracker@1`, root-level queue, and receipts assumption must change to
 receipt-page cursors and receipt IDs do not survive conversion; item IDs and all substantive ledger
 fields do.
 
-Brownfield conversion is deliberate operator work and must happen before ordinary Backlog use.
-That cost buys a small steady state with no compatibility subsystem. `.records/history.tsv` and
-`.trackers/history.tsv` share a filename but not an authority: the former is Journal's record-closure
-ledger, while the latter is Backlog's tracker-lifecycle ledger, so operative prose and diagnostics
-name them with their layer-qualified paths.
+Brownfield conversion is deliberate operator work and must happen before ordinary Backlog use. The
+generic migration command is discoverable, while its converter remains version-specific and outside
+the steady-state setup, repair, and runtime paths. The initial scope is tracker@1 TSV data only;
+supporting another historical format requires another explicit converter. `.records/history.tsv`
+and `.trackers/history.tsv` share a filename but not an authority: the former is Journal's
+record-closure ledger, while the latter is Backlog's tracker-lifecycle ledger, so operative prose
+and diagnostics name them with their layer-qualified paths.
