@@ -89,6 +89,16 @@ fn a_pack_and_a_skill_install_from_this_clone() {
     );
     let member_count = plan.members.len();
     assert!(member_count > 1, "clankshop has a real roster");
+    assert!(
+        plan.members.iter().all(|(member, _)| !member.is_face),
+        "the root clankshop PACK.md is faceless"
+    );
+    let required_member = plan
+        .members
+        .iter()
+        .find(|(member, _)| member.required)
+        .map(|(member, _)| member.name.clone())
+        .expect("clankshop has a required member");
 
     let jobs = app.on_key(Key::Confirm);
     settle(&mut app, jobs);
@@ -107,13 +117,16 @@ fn a_pack_and_a_skill_install_from_this_clone() {
     );
 
     // Symlinks, not copies — the property the whole install model rests on.
-    let face = target.skills_dir.join("clankshop");
+    let member_link = target.skills_dir.join(&required_member);
     assert!(
-        std::fs::symlink_metadata(&face).unwrap().file_type().is_symlink(),
+        std::fs::symlink_metadata(&member_link)
+            .unwrap()
+            .file_type()
+            .is_symlink(),
         "members must be links into the clone"
     );
     assert!(
-        std::fs::canonicalize(&face)
+        std::fs::canonicalize(&member_link)
             .unwrap()
             .starts_with(std::fs::canonicalize(repo_root()).unwrap()),
         "and they must point back into this repository"
@@ -152,15 +165,15 @@ fn a_pack_and_a_skill_install_from_this_clone() {
         panic!("expected the remove confirm");
     };
     assert!(
-        plan.face_warning.is_some(),
-        "§5: the teardown warning must appear while the face still exists"
+        plan.face_warning.is_none(),
+        "a faceless pack has no installed face whose teardown guidance can be shown"
     );
     let jobs = app.on_key(Key::Confirm);
     settle(&mut app, jobs);
     app.on_key(Key::Back);
 
     assert!(!app.is_installed("clankshop"), "the entry should be gone");
-    assert!(!face.exists(), "and the face unlinked");
+    assert!(!member_link.exists(), "and the member unlinked");
 }
 
 /// The scenario a dogfooder actually runs: real library content installed into
@@ -195,6 +208,15 @@ fn a_pack_installs_into_a_foreign_project_at_project_scope() {
     select(&mut app, "clankshop");
     let jobs = app.on_key(Key::Confirm);
     settle(&mut app, jobs);
+    let Screen::Confirm(plan) = &app.screen else {
+        panic!("expected the confirm screen, real content should preflight");
+    };
+    let required_member = plan
+        .members
+        .iter()
+        .find(|(member, _)| member.required)
+        .map(|(member, _)| member.name.clone())
+        .expect("clankshop has a required member");
     let jobs = app.on_key(Key::Confirm);
     settle(&mut app, jobs);
     app.on_key(Key::Back);
@@ -213,9 +235,9 @@ fn a_pack_installs_into_a_foreign_project_at_project_scope() {
     );
 
     // The links point back into this clone — the live-edit property.
-    let face = target.skills_dir.join("clankshop");
+    let member_link = target.skills_dir.join(&required_member);
     assert!(
-        std::fs::canonicalize(&face)
+        std::fs::canonicalize(&member_link)
             .unwrap()
             .starts_with(std::fs::canonicalize(repo_root()).unwrap()),
         "a project install is still a live view of the library"
@@ -235,7 +257,7 @@ fn a_pack_installs_into_a_foreign_project_at_project_scope() {
     settle(&mut app, jobs);
     app.on_key(Key::Back);
     assert!(!app.is_installed("clankshop"));
-    assert!(!face.exists(), "the project is left as it was found");
+    assert!(!member_link.exists(), "the project is left as it was found");
 }
 
 /// The Phase 1 trap, at app altitude: nothing the user can select may resolve

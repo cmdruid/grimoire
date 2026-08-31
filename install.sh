@@ -169,7 +169,7 @@ lock_path() {
     "$HOME"/.claude/*|"$HOME"/.agents/*|"$HOME"/.codex/*|"$HOME"/.cursor/*)
       printf '%s/.agents/grimoire.lock\n' "$HOME" ;;
     *)
-      parent="$(CDPATH='' cd "$(dirname "$target")" && pwd)"
+      parent="$(dirname "$target")"
       case "$(basename "$parent")" in
         .agents|.claude|.codex|.cursor) project_root="$(dirname "$parent")" ;;
         *)                              project_root="$parent" ;;
