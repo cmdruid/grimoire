@@ -119,7 +119,6 @@ preflight(){
     [ ! -e "$destination_abs" ]&&[ ! -L "$destination_abs" ]||refuse destination-present "$destination"
   else
     [ ! -e "$source_abs/tables" ]&&[ ! -L "$source_abs/tables" ]||refuse mixed-source tables
-    [ ! -e "$source_abs/history.tsv" ]&&[ ! -L "$source_abs/history.tsv" ]||refuse mixed-source history.tsv
   fi
   [ -z "$(find "$source_abs" -type l -print -quit)" ]||refuse symlink-source "$source"
   ignored="$(git -C "$root" ls-files --others --ignored --exclude-standard -- "$(literal "$source")"||true)"

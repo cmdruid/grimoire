@@ -14,6 +14,13 @@ fail_one(){ echo "FAIL: $*" >&2;fail=$((fail+1)); }
 ok(){ if "$@" >"$T/out" 2>"$T/err";then pass_one;else fail_one "rejected: $*";cat "$T/err" >&2;fi; }
 no(){ if "$@" >"$T/out" 2>"$T/err";then fail_one "accepted: $*";else pass_one;fi; }
 has(){ if grep -qF -- "$2" "$1";then pass_one;else fail_one "missing '$2' in $1";fi; }
+exact_paths(){
+  local output="$1" actual="$T/paths.actual" expected="$T/paths.expected";shift
+  sed -n 's/^path=//p' "$output"|sort >"$actual"
+  printf '%s\n' "$@"|sort >"$expected"
+  cmp "$expected" "$actual" >/dev/null&&pass_one||fail_one 'preview path inventory differs'
+  has "$output" "paths=$#"
+}
 
 new_repo(){
   mkdir -p "$1"
@@ -57,6 +64,7 @@ cut -f2- "$R/.trackers/receipts.tsv" >"$T/history-fields.before"
 before="$(git -C "$R" rev-parse HEAD)"
 ok "$MIGRATE" preview --root "$R"
 has "$T/out" 'source=.trackers';has "$T/out" 'destination=.trackers';has "$T/out" 'ready=yes'
+exact_paths "$T/out" .trackers/DEBRIEF.md .trackers/README.md .trackers/receipts.tsv .trackers/tasks.tsv .trackers/trackers.sh
 [ "$before" = "$(git -C "$R" rev-parse HEAD)" ]&&[ -z "$(git -C "$R" status --porcelain)" ]&&pass_one||fail_one 'preview changed Git state'
 no "$MIGRATE" apply --root "$R"
 [ "$before" = "$(git -C "$R" rev-parse HEAD)" ]&&[ -z "$(git -C "$R" status --porcelain)" ]&&pass_one||fail_one 'missing confirmation changed Git state'
@@ -79,6 +87,7 @@ no "$MIGRATE" preview --root "$E"
 has "$T/err" 'reason=source-not-directory'
 ok "$MIGRATE" preview --root "$E" --source legacy/trackers
 has "$T/out" 'source=legacy/trackers';has "$T/out" 'ready=yes'
+exact_paths "$T/out" legacy/trackers/DEBRIEF.md legacy/trackers/README.md legacy/trackers/receipts.tsv legacy/trackers/tasks.tsv legacy/trackers/trackers.sh
 ok "$MIGRATE" apply --root "$E" --source legacy/trackers --confirmed
 [ ! -e "$E/legacy/trackers" ]&&[ -x "$E/.trackers/trackers.sh" ]&&pass_one||fail_one 'external source was not moved'
 [ -z "$(git -C "$E" status --porcelain)" ]&&pass_one||fail_one 'external migration left dirty worktree'
@@ -113,6 +122,9 @@ W="$T/prompt";new_repo "$W";seed_v1 "$W" .trackers;printf 'bad\n' >"$W/.trackers
 no "$MIGRATE" preview --root "$W";has "$T/err" 'reason=malformed-prompt'
 V="$T/readme";new_repo "$V";seed_v1 "$V" .trackers;printf '%s\n' '<!-- backlog:trackers-tool BEGIN -->' >>"$V/.trackers/README.md";git -C "$V" add .trackers/README.md;git -C "$V" commit -qm malformed-readme
 no "$MIGRATE" preview --root "$V";has "$T/err" 'reason=malformed-readme'
+N="$T/nested-git";new_repo "$N";seed_v1 "$N" .trackers;git -C "$N/.trackers" init -q;before="$(git -C "$N" rev-parse HEAD)"
+no "$MIGRATE" preview --root "$N";has "$T/err" 'reason=mixed-source'
+[ "$before" = "$(git -C "$N" rev-parse HEAD)" ]&&[ -z "$(git -C "$N" status --porcelain)" ]&&pass_one||fail_one 'nested Git refusal changed outer repository'
 
 # A post-write failure leaves the exact ordinary Git recovery diff and no migration commit.
 F="$T/post-write";new_repo "$F";seed_v1 "$F" .trackers;before="$(git -C "$F" rev-parse HEAD)"
@@ -131,6 +143,23 @@ git -C "$Z" add .trackers;git -C "$Z" commit -qm empty-population
 ok "$MIGRATE" apply --root "$Z" --confirmed
 [ "$(find "$Z/.trackers/tables" -name '*.tsv'|wc -l|tr -d ' ')" -eq 0 ]&&pass_one||fail_one 'empty population gained queues'
 [ -z "$(git -C "$Z" status --porcelain)" ]&&pass_one||fail_one 'empty migration left dirty worktree'
+
+# `history` was an ordinary tracker@1 queue stem; in-place migration must not confuse it with the
+# tracker@2 lifecycle destination.
+J="$T/history-queue";new_repo "$J";seed_v1 "$J" .trackers
+git -C "$J" mv .trackers/tasks.tsv .trackers/history.tsv
+sed 's/^tasks-/history-/' "$J/.trackers/history.tsv" >"$T/history-queue.tsv";mv "$T/history-queue.tsv" "$J/.trackers/history.tsv"
+sed 's/^## tasks$/## history/' "$J/.trackers/DEBRIEF.md" >"$T/history-prompt.md";mv "$T/history-prompt.md" "$J/.trackers/DEBRIEF.md"
+sed $'s/\ttasks\ttasks-/\thistory\thistory-/' "$J/.trackers/receipts.tsv" >"$T/history-receipts.tsv";mv "$T/history-receipts.tsv" "$J/.trackers/receipts.tsv"
+git -C "$J" add .trackers;git -C "$J" commit -qm history-queue
+cp "$J/.trackers/history.tsv" "$T/history-queue.before"
+ok "$MIGRATE" preview --root "$J"
+exact_paths "$T/out" .trackers/DEBRIEF.md .trackers/README.md .trackers/history.tsv .trackers/receipts.tsv .trackers/trackers.sh
+ok "$MIGRATE" apply --root "$J" --confirmed
+cmp "$T/history-queue.before" "$J/.trackers/tables/history.tsv" >/dev/null&&pass_one||fail_one 'history queue bytes changed'
+"$J/.trackers/trackers.sh" page --tracker history --status consumed --limit 20 >"$T/history-queue.page"
+has "$T/history-queue.page" $'history-1\t';has "$J/.trackers/history.tsv" $'event-2\t'
+[ -z "$(git -C "$J" status --porcelain)" ]&&pass_one||fail_one 'history queue migration left dirty worktree'
 
 echo "migrate-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
