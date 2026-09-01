@@ -4,8 +4,18 @@ use super::{
     Boundary, Digest, Finding, Pack, ReviewedEntry, ReviewedPayload, Skill, SymlinkSafety,
 };
 
+pub(crate) type ContentRecord<'a> = (u8, &'a [u8], &'a [u8], &'a [u8]);
+
 pub(crate) fn sha256(bytes: &[u8]) -> Digest {
     Digest(Sha256::digest(bytes).into())
+}
+
+pub fn compute_inventory_digest(skills: &[Skill], packs: &[Pack], findings: &[Finding]) -> Digest {
+    sha256(&inventory_bytes(skills, packs, findings))
+}
+
+pub fn compute_review_tree_digest(entries: &[ReviewedEntry]) -> Digest {
+    sha256(&review_tree_bytes(entries))
 }
 
 fn field(out: &mut Vec<u8>, bytes: &[u8]) {
@@ -13,7 +23,7 @@ fn field(out: &mut Vec<u8>, bytes: &[u8]) {
     out.extend_from_slice(bytes);
 }
 
-pub(crate) fn skill_content_bytes(entries: &[(u8, &[u8], &[u8], &[u8])]) -> Vec<u8> {
+pub(crate) fn skill_content_bytes(entries: &[ContentRecord<'_>]) -> Vec<u8> {
     let mut out = b"grimoire/skill-content@1\0".to_vec();
     for (kind, path, mode, payload) in entries {
         out.push(*kind);

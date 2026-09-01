@@ -62,7 +62,7 @@ fn red_proof_fixed_limits_reject_what_the_parser_would_accept() {
         "yaml-depth-limit"
     );
 
-    let many = format!("{}", "- x\n".repeat(4_096));
+    let many = "- x\n".repeat(4_096);
     raw_yaml_accepts(&many);
     assert_eq!(
         frontmatter(format!("---\n{many}---\n").as_bytes())

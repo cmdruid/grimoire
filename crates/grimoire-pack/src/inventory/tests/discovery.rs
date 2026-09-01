@@ -94,6 +94,7 @@ fn hostile_raw_paths_and_special_entries_are_lossless_findings() {
             path: SourcePath::from(path),
             kind,
             mode: 0,
+            size: None,
             link_target: None,
             submodule_commit: None,
         });
@@ -131,10 +132,12 @@ fn directory_depth_reports_the_first_rejected_level() {
 
 #[test]
 fn entry_limit_reports_100001_without_partial_identity() {
-    let mut tree = MemoryTree::default();
-    tree.entries = (0..100_001)
-        .map(|index| TreeEntry::directory(format!("d{index:06}").as_str()))
-        .collect();
+    let tree = MemoryTree {
+        entries: (0..100_001)
+            .map(|index| TreeEntry::directory(format!("d{index:06}").as_str()))
+            .collect(),
+        ..MemoryTree::default()
+    };
     let inventory = scan(&tree).unwrap();
     let finding = inventory
         .findings
@@ -155,6 +158,7 @@ fn submodules_are_inert_outside_skills_and_invalid_inside() {
             path: SourcePath::from(path),
             kind: TreeEntryKind::Submodule,
             mode: 0o160000,
+            size: None,
             link_target: None,
             submodule_commit: Some("0123456789abcdef0123456789abcdef01234567".into()),
         });

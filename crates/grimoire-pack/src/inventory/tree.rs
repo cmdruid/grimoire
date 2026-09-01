@@ -20,6 +20,7 @@ pub struct TreeEntry {
     pub path: SourcePath,
     pub kind: TreeEntryKind,
     pub mode: u32,
+    pub size: Option<u64>,
     pub link_target: Option<Vec<u8>>,
     pub submodule_commit: Option<String>,
 }
@@ -30,6 +31,7 @@ impl TreeEntry {
             path: path.into(),
             kind: TreeEntryKind::Directory,
             mode: 0o040755,
+            size: None,
             link_target: None,
             submodule_commit: None,
         }
@@ -40,6 +42,7 @@ impl TreeEntry {
             path: path.into(),
             kind: TreeEntryKind::File,
             mode,
+            size: None,
             link_target: None,
             submodule_commit: None,
         }
@@ -50,6 +53,7 @@ impl TreeEntry {
             path: path.into(),
             kind: TreeEntryKind::Symlink,
             mode: 0o120000,
+            size: None,
             link_target: Some(target.into()),
             submodule_commit: None,
         }

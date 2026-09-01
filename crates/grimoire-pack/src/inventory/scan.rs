@@ -1,6 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
 
+use base64::engine::general_purpose::STANDARD as BASE64;
+use base64::Engine as _;
+
 use super::digest::{inventory_bytes, review_tree_bytes, sha256, skill_content_bytes};
 use super::tree::EntryValidator;
 use super::yaml::{self, Value, YamlFailure};
@@ -26,6 +29,8 @@ const IGNORED_DIRECTORIES: &[&[u8]] = &[
     b"vendor",
     b"fixtures",
 ];
+
+type OwnedContentRecord = (u8, Vec<u8>, Vec<u8>, Vec<u8>);
 
 pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> {
     let mut entries = reader.entries()?;
@@ -110,6 +115,13 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
             });
         }
     }
+    add_review_byte_limit(
+        &entries,
+        &skill_roots,
+        &nested_checkouts,
+        &symlink_paths,
+        &mut findings,
+    );
 
     let mut skills = Vec::new();
     let mut reviewed_entries = Vec::new();
@@ -163,8 +175,6 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
         if entry.kind == TreeEntryKind::Directory
             || reviewed_paths.contains(&entry.path)
             || !outer_visible(entry, &nested_checkouts, &symlink_paths)
-            || !path_is_usable(entry)
-            || directory_depth(entry) > 32
             || matches!(
                 entry.kind,
                 TreeEntryKind::Device | TreeEntryKind::Fifo | TreeEntryKind::Socket
@@ -175,6 +185,7 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
         reviewed_entries.push(reviewed_entry(reader, entry, Boundary::Snapshot)?);
     }
     reviewed_entries.sort_by(|left, right| left.path.cmp(&right.path));
+    add_review_findings(&reviewed_entries, &mut findings);
     add_duplicate_findings(&skills, &packs, &mut findings);
     findings.sort_by(finding_order);
 
@@ -188,6 +199,71 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
         inventory_digest,
         review_tree_digest,
     })
+}
+
+fn add_review_byte_limit(
+    entries: &[TreeEntry],
+    skill_roots: &[(SourcePath, String)],
+    nested_checkouts: &[SourcePath],
+    symlink_paths: &[SourcePath],
+    findings: &mut Vec<Finding>,
+) {
+    let mut total = 0u64;
+    for entry in entries {
+        if entry.kind != TreeEntryKind::File {
+            continue;
+        }
+        let inside_skill = skill_roots
+            .iter()
+            .any(|(root, _)| entry.path.is_descendant_of(root));
+        let below_link = symlink_paths
+            .iter()
+            .any(|link| entry.path != *link && entry.path.is_descendant_of(link));
+        if below_link || (!inside_skill && !outer_visible(entry, nested_checkouts, symlink_paths)) {
+            continue;
+        }
+        total = total.saturating_add(entry.size.unwrap_or(0));
+        if total > 1_073_741_824 {
+            findings.push(limit_finding(
+                "review-byte-limit",
+                Some(entry.path.clone()),
+                1_073_741_824,
+                1_073_741_825,
+            ));
+            break;
+        }
+    }
+}
+
+fn add_review_findings(entries: &[ReviewedEntry], findings: &mut Vec<Finding>) {
+    for entry in entries {
+        let ReviewedPayload::Symlink { target } = &entry.payload else {
+            continue;
+        };
+        match entry.safety {
+            Some(SymlinkSafety::Escaping) => findings.push(Finding {
+                code: "escaping-symlink".into(),
+                path: Some(entry.path.clone()),
+                severity: Severity::Error,
+                details: BTreeMap::from([("target_bytes_base64".into(), BASE64.encode(target))]),
+                message: "symlink target escapes its owning boundary".into(),
+            }),
+            Some(SymlinkSafety::Invalid) => findings.push(Finding {
+                code: "invalid-symlink-target".into(),
+                path: Some(entry.path.clone()),
+                severity: Severity::Error,
+                details: BTreeMap::from([
+                    (
+                        "reason".into(),
+                        entry.reason.clone().expect("invalid link has a reason"),
+                    ),
+                    ("target_bytes_base64".into(), BASE64.encode(target)),
+                ]),
+                message: "invalid symlink target".into(),
+            }),
+            _ => {}
+        }
+    }
 }
 
 fn path_is_usable(entry: &TreeEntry) -> bool {
@@ -529,7 +605,7 @@ fn scan_skill(
     let mut files = Vec::new();
     let mut symlinks = Vec::new();
     let mut submodules = Vec::new();
-    let mut digest_records: Vec<(u8, Vec<u8>, Vec<u8>, Vec<u8>)> = Vec::new();
+    let mut digest_records: Vec<OwnedContentRecord> = Vec::new();
     for entry in entries
         .iter()
         .filter(|entry| entry.path.is_descendant_of(root))
@@ -721,11 +797,21 @@ fn classify_link(
                 .collect()
         })
         .unwrap_or_default();
+    let boundary_depth = if boundary.as_bytes().is_empty() {
+        0
+    } else {
+        boundary.as_bytes().split(|byte| *byte == b'/').count()
+    };
+    let mut escaped = false;
     for component in target.split(|byte| *byte == b'/') {
         match component {
             b"" | b"." => {}
             b".." => {
-                components.pop();
+                if components.len() <= boundary_depth {
+                    escaped = true;
+                } else {
+                    components.pop();
+                }
             }
             value => components.push(value.to_vec()),
         }
@@ -738,9 +824,10 @@ fn classify_link(
         resolved.extend_from_slice(component);
     }
     let resolved = SourcePath::new(resolved);
-    if boundary.as_bytes().is_empty()
-        || resolved == *boundary
-        || resolved.is_descendant_of(boundary)
+    if !escaped
+        && (boundary.as_bytes().is_empty()
+            || resolved == *boundary
+            || resolved.is_descendant_of(boundary))
     {
         (SymlinkSafety::Internal, None)
     } else {

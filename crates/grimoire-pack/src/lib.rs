@@ -7,8 +7,7 @@ use std::path::PathBuf;
 pub mod discovery;
 pub mod frontmatter;
 pub mod hash;
-#[allow(dead_code)]
-mod inventory;
+pub mod inventory;
 pub mod lock;
 pub mod manifest;
 pub mod pack;

@@ -26,6 +26,9 @@ impl SourcePath {
         if self == root {
             return Some(Self::new(Vec::new()));
         }
+        if root.0.is_empty() {
+            return Some(self.clone());
+        }
         let rest = self.0.strip_prefix(root.as_bytes())?.strip_prefix(b"/")?;
         Some(Self::new(rest))
     }
@@ -189,6 +192,15 @@ pub struct SourceInventory {
     pub reviewed_entries: Vec<ReviewedEntry>,
     pub inventory_digest: Digest,
     pub review_tree_digest: Digest,
+}
+
+impl SourceInventory {
+    pub fn is_valid(&self) -> bool {
+        !self
+            .findings
+            .iter()
+            .any(|finding| finding.severity == Severity::Error)
+    }
 }
 
 #[derive(Debug, thiserror::Error)]

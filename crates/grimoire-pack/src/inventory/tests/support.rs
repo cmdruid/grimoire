@@ -12,8 +12,11 @@ pub(crate) struct MemoryTree {
 impl MemoryTree {
     pub fn file(&mut self, path: impl Into<SourcePath>, bytes: impl Into<Vec<u8>>) {
         let path = path.into();
-        self.entries.push(TreeEntry::file(path.clone(), 0o100644));
-        self.files.insert(path, bytes.into());
+        let bytes = bytes.into();
+        let mut entry = TreeEntry::file(path.clone(), 0o100644);
+        entry.size = Some(bytes.len() as u64);
+        self.entries.push(entry);
+        self.files.insert(path, bytes);
     }
 
     pub fn skill(&mut self, root: &str, name: &str) {
@@ -92,7 +95,9 @@ impl FixtureTree {
                 entries.push(TreeEntry::directory(raw));
                 self.walk(&path, entries)?;
             } else if file_type.is_file() {
-                entries.push(TreeEntry::file(raw, metadata.mode()));
+                let mut entry = TreeEntry::file(raw, metadata.mode());
+                entry.size = Some(metadata.len());
+                entries.push(entry);
             } else if file_type.is_symlink() {
                 let target = std::fs::read_link(&path).map_err(|error| InventoryError::Tree {
                     path: raw.clone(),

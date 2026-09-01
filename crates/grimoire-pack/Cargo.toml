@@ -6,6 +6,7 @@ description = "Pack format (format 1) reference library: PACK.md manifests, grim
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+base64 = "0.22"
 semver = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
