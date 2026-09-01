@@ -2,6 +2,7 @@ mod digest;
 mod model;
 mod scan;
 mod tree;
+mod unicode17;
 mod yaml;
 
 pub use model::*;

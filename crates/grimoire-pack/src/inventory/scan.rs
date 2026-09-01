@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
 
 use super::digest::{inventory_bytes, review_tree_bytes, sha256, skill_content_bytes};
+use super::tree::EntryValidator;
 use super::yaml::{self, Value, YamlFailure};
 use super::{
     Boundary, FileFact, Finding, InventoryError, Pack, ReviewedEntry, ReviewedPayload, Severity,
@@ -9,16 +10,73 @@ use super::{
     TreeEntryKind, TreeReader,
 };
 
+const IGNORED_DIRECTORIES: &[&[u8]] = &[
+    b".git",
+    b".hg",
+    b".svn",
+    b".grimoire",
+    b"node_modules",
+    b"target",
+    b".cache",
+    b".tmp",
+    b".worktrees",
+    b".workstreams",
+    b"build",
+    b"dist",
+    b"vendor",
+    b"fixtures",
+];
+
 pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> {
     let mut entries = reader.entries()?;
     entries.sort_by(|left, right| left.path.cmp(&right.path));
 
     let mut findings = Vec::new();
+    if entries.len() > 100_000 {
+        findings.push(limit_finding(
+            "discovery-entry-limit",
+            Some(entries[100_000].path.clone()),
+            100_000,
+            100_001,
+        ));
+    }
+    if let Some(entry) = entries.iter().find(|entry| directory_depth(entry) > 32) {
+        findings.push(limit_finding(
+            "discovery-depth-limit",
+            Some(entry.path.clone()),
+            32,
+            33,
+        ));
+    }
+    let nested_checkouts: Vec<_> = entries
+        .iter()
+        .filter(|entry| entry.path.file_name() == b".git")
+        .filter_map(|entry| entry.path.parent())
+        .filter(|path| !path.as_bytes().is_empty())
+        .collect();
+    let symlink_paths: Vec<_> = entries
+        .iter()
+        .filter(|entry| entry.kind == TreeEntryKind::Symlink)
+        .map(|entry| entry.path.clone())
+        .collect();
+
     let mut skill_roots: Vec<(SourcePath, String)> = Vec::new();
-    for entry in &entries {
-        if entry.kind != TreeEntryKind::File || entry.path.file_name() != b"SKILL.md" {
-            continue;
-        }
+    let mut skill_manifests: Vec<_> = entries
+        .iter()
+        .filter(|entry| {
+            entry.kind == TreeEntryKind::File
+                && entry.path.file_name() == b"SKILL.md"
+                && outer_visible(entry, &nested_checkouts, &symlink_paths)
+                && path_is_usable(entry)
+                && directory_depth(entry) <= 32
+        })
+        .collect();
+    skill_manifests.sort_by(|left, right| {
+        directory_depth(left)
+            .cmp(&directory_depth(right))
+            .then_with(|| left.path.cmp(&right.path))
+    });
+    for entry in skill_manifests {
         let root = entry.path.parent().unwrap_or_else(|| SourcePath::from(""));
         if skill_roots
             .iter()
@@ -34,6 +92,25 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
     }
     skill_roots.sort_by(|left, right| left.0.cmp(&right.0));
 
+    let mut validator = EntryValidator::new();
+    for entry in &entries {
+        let inside_skill = skill_roots
+            .iter()
+            .any(|(root, _)| entry.path == *root || entry.path.is_descendant_of(root));
+        if inside_skill || outer_visible(entry, &nested_checkouts, &symlink_paths) {
+            findings.extend(validator.validate(entry));
+        }
+        if entry.kind == TreeEntryKind::Submodule && inside_skill {
+            findings.push(Finding {
+                code: "unsupported-entry".into(),
+                path: Some(entry.path.clone()),
+                severity: Severity::Error,
+                details: BTreeMap::from([("kind".into(), "submodule".into())]),
+                message: "unsupported entry".into(),
+            });
+        }
+    }
+
     let mut skills = Vec::new();
     let mut reviewed_entries = Vec::new();
     for (root, name) in &skill_roots {
@@ -42,6 +119,7 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
             &entries,
             root,
             name,
+            &symlink_paths,
             &mut reviewed_entries,
         )?);
     }
@@ -50,6 +128,12 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
     let mut packs = Vec::new();
     for entry in &entries {
         if entry.kind != TreeEntryKind::File || entry.path.file_name() != b"PACK.md" {
+            continue;
+        }
+        if !outer_visible(entry, &nested_checkouts, &symlink_paths)
+            || !path_is_usable(entry)
+            || directory_depth(entry) > 32
+        {
             continue;
         }
         if skill_roots
@@ -76,12 +160,22 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
         .map(|entry| entry.path.clone())
         .collect();
     for entry in &entries {
-        if entry.kind == TreeEntryKind::Directory || reviewed_paths.contains(&entry.path) {
+        if entry.kind == TreeEntryKind::Directory
+            || reviewed_paths.contains(&entry.path)
+            || !outer_visible(entry, &nested_checkouts, &symlink_paths)
+            || !path_is_usable(entry)
+            || directory_depth(entry) > 32
+            || matches!(
+                entry.kind,
+                TreeEntryKind::Device | TreeEntryKind::Fifo | TreeEntryKind::Socket
+            )
+        {
             continue;
         }
         reviewed_entries.push(reviewed_entry(reader, entry, Boundary::Snapshot)?);
     }
     reviewed_entries.sort_by(|left, right| left.path.cmp(&right.path));
+    add_duplicate_findings(&skills, &packs, &mut findings);
     findings.sort_by(finding_order);
 
     let inventory_digest = sha256(&inventory_bytes(&skills, &packs, &findings));
@@ -94,6 +188,93 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
         inventory_digest,
         review_tree_digest,
     })
+}
+
+fn path_is_usable(entry: &TreeEntry) -> bool {
+    let bytes = entry.path.as_bytes();
+    !bytes.starts_with(b"/")
+        && !bytes.contains(&0)
+        && std::str::from_utf8(bytes).is_ok()
+        && !bytes
+            .split(|byte| *byte == b'/')
+            .any(|component| component.is_empty() || matches!(component, b"." | b".."))
+        && !matches!(
+            entry.kind,
+            TreeEntryKind::Device | TreeEntryKind::Fifo | TreeEntryKind::Socket
+        )
+}
+
+fn directory_depth(entry: &TreeEntry) -> usize {
+    let count = entry.path.as_bytes().split(|byte| *byte == b'/').count();
+    count.saturating_sub(usize::from(entry.kind != TreeEntryKind::Directory))
+}
+
+fn outer_visible(
+    entry: &TreeEntry,
+    nested_checkouts: &[SourcePath],
+    symlinks: &[SourcePath],
+) -> bool {
+    let components: Vec<_> = entry.path.as_bytes().split(|byte| *byte == b'/').collect();
+    if components
+        .iter()
+        .any(|component| IGNORED_DIRECTORIES.contains(component))
+    {
+        return false;
+    }
+    !nested_checkouts
+        .iter()
+        .chain(symlinks)
+        .any(|boundary| entry.path == *boundary || entry.path.is_descendant_of(boundary))
+}
+
+fn limit_finding(code: &str, path: Option<SourcePath>, limit: usize, observed: usize) -> Finding {
+    Finding {
+        code: code.into(),
+        path,
+        severity: Severity::Error,
+        details: BTreeMap::from([
+            ("limit".into(), limit.to_string()),
+            ("observed".into(), observed.to_string()),
+        ]),
+        message: code.replace('-', " "),
+    }
+}
+
+fn add_duplicate_findings(skills: &[Skill], packs: &[Pack], findings: &mut Vec<Finding>) {
+    let mut skill_names: BTreeMap<&str, &SourcePath> = BTreeMap::new();
+    for skill in skills {
+        if let Some(first) = skill_names.get(skill.name.as_str()) {
+            findings.push(Finding {
+                code: "duplicate-skill".into(),
+                path: Some(skill.path.clone()),
+                severity: Severity::Error,
+                details: BTreeMap::from([
+                    ("name".into(), skill.name.clone()),
+                    ("other_path".into(), first.to_string()),
+                ]),
+                message: "duplicate skill".into(),
+            });
+        } else {
+            skill_names.insert(&skill.name, &skill.path);
+        }
+    }
+    let mut pack_names: BTreeMap<&str, &SourcePath> = BTreeMap::new();
+    for pack in packs {
+        if let Some(first) = pack_names.get(pack.name.as_str()) {
+            findings.push(Finding {
+                code: "duplicate-pack".into(),
+                path: Some(pack.path.clone()),
+                severity: Severity::Error,
+                details: BTreeMap::from([
+                    ("name".into(), pack.name.clone()),
+                    ("other_path".into(), first.to_string()),
+                ]),
+                message: "duplicate pack".into(),
+            });
+        } else {
+            pack_names.insert(&pack.name, &pack.path);
+        }
+    }
 }
 
 fn read_file(reader: &dyn TreeReader, path: &SourcePath) -> Result<Vec<u8>, InventoryError> {
@@ -342,6 +523,7 @@ fn scan_skill(
     entries: &[TreeEntry],
     root: &SourcePath,
     name: &str,
+    symlink_paths: &[SourcePath],
     reviewed: &mut Vec<ReviewedEntry>,
 ) -> Result<Skill, InventoryError> {
     let mut files = Vec::new();
@@ -351,6 +533,11 @@ fn scan_skill(
     for entry in entries
         .iter()
         .filter(|entry| entry.path.is_descendant_of(root))
+        .filter(|entry| {
+            !symlink_paths
+                .iter()
+                .any(|link| entry.path != *link && entry.path.is_descendant_of(link))
+        })
     {
         let relative = entry.path.strip_prefix(root).expect("filtered descendant");
         match entry.kind {

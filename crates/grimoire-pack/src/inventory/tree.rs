@@ -1,6 +1,8 @@
+use std::collections::BTreeMap;
 use std::io::Read;
 
-use super::{InventoryError, SourcePath};
+use super::unicode17::to_nfkc_casefold;
+use super::{Finding, InventoryError, Severity, SourcePath};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum TreeEntryKind {
@@ -60,4 +62,99 @@ pub trait TreeReader {
 
     /// Open a regular file from that snapshot without following a path that changed kind.
     fn open<'a>(&'a self, path: &SourcePath) -> Result<Box<dyn Read + 'a>, InventoryError>;
+}
+
+pub(crate) struct EntryValidator {
+    collision_paths: BTreeMap<Vec<Vec<u8>>, SourcePath>,
+}
+
+impl EntryValidator {
+    pub(crate) fn new() -> Self {
+        Self {
+            collision_paths: BTreeMap::new(),
+        }
+    }
+
+    pub(crate) fn validate(&mut self, entry: &TreeEntry) -> Vec<Finding> {
+        let mut findings = Vec::new();
+        let bytes = entry.path.as_bytes();
+        let unsafe_reason = if bytes.starts_with(b"/") {
+            Some("absolute")
+        } else if bytes.contains(&0) {
+            Some("nul")
+        } else if bytes
+            .split(|byte| *byte == b'/')
+            .any(|component| component.is_empty() || matches!(component, b"." | b".."))
+        {
+            Some("parent")
+        } else {
+            None
+        };
+        if let Some(reason) = unsafe_reason {
+            findings.push(finding(
+                "unsafe-path",
+                entry.path.clone(),
+                [("reason", reason)],
+            ));
+        }
+
+        match std::str::from_utf8(bytes) {
+            Ok(path) if unsafe_reason.is_none() => {
+                let key: Vec<_> = path
+                    .split('/')
+                    .map(|component| to_nfkc_casefold(component).into_bytes())
+                    .collect();
+                if let Some(first) = self.collision_paths.get(&key) {
+                    if first != &entry.path {
+                        let other = first.to_string();
+                        findings.push(finding(
+                            "case-collision",
+                            entry.path.clone(),
+                            [("other_path", other.as_str())],
+                        ));
+                    }
+                } else {
+                    self.collision_paths.insert(key, entry.path.clone());
+                }
+            }
+            Err(_) => findings.push(finding(
+                "invalid-path-utf8",
+                entry.path.clone(),
+                std::iter::empty::<(&str, &str)>(),
+            )),
+            Ok(_) => {}
+        }
+
+        let kind = match entry.kind {
+            TreeEntryKind::Device => Some("device"),
+            TreeEntryKind::Fifo => Some("fifo"),
+            TreeEntryKind::Socket => Some("socket"),
+            _ => None,
+        };
+        if let Some(kind) = kind {
+            findings.push(finding(
+                "unsupported-entry",
+                entry.path.clone(),
+                [("kind", kind)],
+            ));
+        }
+        findings
+    }
+}
+
+fn finding<'a>(
+    code: &str,
+    path: SourcePath,
+    details: impl IntoIterator<Item = (&'a str, &'a str)>,
+) -> Finding {
+    Finding {
+        code: code.into(),
+        path: Some(path),
+        severity: Severity::Error,
+        details: details
+            .into_iter()
+            .map(|(key, value)| (key.into(), value.into()))
+            .collect(),
+        message: code.replace('-', " "),
+    }
 }

@@ -1,5 +1,8 @@
+mod discovery;
 mod finding_contract;
 mod frontmatter;
 mod pack_format;
 mod red_proofs;
+mod support;
 mod tracer;
+mod unicode_collision;
