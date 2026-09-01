@@ -1,6 +1,7 @@
 # ③ TUI v0.1 — Phase 3 implementation plan: TUI skeleton + library screen
 
-**Status:** ARGUED 2026-08-18 — ready to build. Phase 3 of
+**Status:** SUPERSEDED 2026-09-01 — landed only as alpha substrate for the approved hard-cut
+rewrite; the retired UI's interactive dogfood is no longer a product gate. Formerly Phase 3 of
 `docs/design/2026-08-15-tui-v0.1-roadmap.md` (requires Phase 2, shipped `e49acbc`). Predecessor
 plan: `docs/design/2026-08-18-tui-phase2-implementation.md`. The draft's five open questions are
 settled below with their arguments; task detail follows.
@@ -145,7 +146,7 @@ No migration burden: v0.1 has not shipped, and the only lock in the wild is the 
       the estimate that replaced it was still short (greedy word wrap cannot pack a long path
       that tightly) — now pre-wrapped, so height is exact. Also closed: `ui::init` leaving raw
       mode on if it failed *after* enabling it.
-      *Outstanding: the interactive dogfood — a human driving the real TUI.*
+      *Retired by the hard-cut rewrite: the interactive dogfood for this superseded UI.*
 
 ## Tasks
 
