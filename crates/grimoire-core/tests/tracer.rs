@@ -136,10 +136,15 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
     );
     assert_eq!(
         result.facts,
-        vec![PlanFact::ResolvedRoot {
-            root: RequestRoot::Skill("journal".try_into().unwrap()),
-            source: "grimoire".try_into().unwrap(),
-        }]
+        vec![
+            PlanFact::ResolvedRoot {
+                root: RequestRoot::Skill("journal".try_into().unwrap()),
+                source: "grimoire".try_into().unwrap(),
+            },
+            PlanFact::SourceContribution {
+                source: "grimoire".try_into().unwrap(),
+            },
+        ]
     );
     assert!(!result.is_destructive());
     assert!(result.has_changes());

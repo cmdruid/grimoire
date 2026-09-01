@@ -15,5 +15,9 @@ pub use manifest::{
     Manifest, ManifestEdit, ManifestMutation, ManifestPack, ManifestSource, SourceLocation,
 };
 pub use model::*;
-pub use plan::{plan, Action, Blocker, ExitClass, LinkPrecondition, Plan, PlanFact, Preconditions};
+pub use plan::{
+    plan, Action, Blocker, ExitClass, LinkPrecondition, PackMemberState, Plan, PlanFact,
+    Preconditions,
+};
+pub use resolve::{resolve_manifest, Resolution, ResolvedSkill};
 pub use scope::{discover_project, resolve_explicit_project, PathProbe, Paths, ScopePaths};

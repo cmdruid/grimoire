@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::resolve::resolve;
+use crate::resolve::resolve_manifest;
 use crate::{
     ByteHash, InstalledLink, ManifestMutation, PlanningMode, Request, RequestRoot, Result, Scope,
     SkillName, SourceAlias, WorldState,
@@ -107,6 +107,26 @@ pub enum PlanFact {
         root: RequestRoot,
         source: SourceAlias,
     },
+    SourceContribution {
+        source: SourceAlias,
+    },
+    PackMember {
+        pack: crate::PackName,
+        skill: SkillName,
+        state: PackMemberState,
+    },
+    ShadowedGlobal {
+        skill: SkillName,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PackMemberState {
+    Required,
+    Enabled,
+    Excluded,
+    Unavailable,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -181,7 +201,20 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
     let desired_manifest = manifest_edit
         .as_ref()
         .map_or(&world.manifest, |edit| &edit.manifest);
-    let resolution = resolve(desired_manifest, &world.snapshots);
+    let mut resolution = resolve_manifest(desired_manifest, &world.snapshots);
+    if world.scope == Scope::Project {
+        if let Some(global) = &world.inherited_global {
+            for skill in resolution.skills.keys() {
+                if global.skills.contains_key(skill) {
+                    resolution.facts.push(PlanFact::ShadowedGlobal {
+                        skill: skill.clone(),
+                    });
+                }
+            }
+            resolution.facts.sort();
+            resolution.facts.dedup();
+        }
+    }
     let mut actions = Vec::new();
     let mut blockers = resolution.blockers;
 

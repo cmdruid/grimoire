@@ -230,7 +230,7 @@ This task is read-only and produces no commit.
     through the disabled guard and demonstrates why the strict test must fail. Run
     `RUSTC_WRAPPER= cargo check --workspace` in the same shell.
 
-- [ ] **Slice 4: Same-snapshot pack resolution and independent scopes** <requires: 2, 3>
+- [x] **Slice 4: Same-snapshot pack resolution and independent scopes** <requires: 2, 3>
   - Files: create `crates/grimoire-core/tests/resolution.rs` and resolution fixtures under
     `crates/grimoire-core/tests/fixtures/resolution/`; modify
     `crates/grimoire-core/src/model.rs`, `crates/grimoire-core/src/resolve.rs`,
