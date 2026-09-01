@@ -13,7 +13,9 @@ a standalone plan, a section of an ongoing roadmap, an inline brief, or defined 
 iteration. **Two archetypes follow from the source:** a *plan/roadmap* stream has a **linear queue**
 and `ship` advances item->item; a *template/intake* stream (a `kind: workstream-template` source —
 e.g. debug, design) has **no predefined queue** — each unit is independent, so `ship` lands a unit
-and **`recycle`** clears the instance back to a blank unit from the template. The hand-off is the
+and **`recycle`** clears the instance back to a blank unit from the template. A fully landed slot
+may also recycle onto an explicit tracked plan or roadmap, rebinding its queue without throwing
+away the worktree or warm build cache. The hand-off is the
 loop's save-state; a session reset is your version-control operation on context (save then reset =
 checkpoint; reset without save = rollback). The steady state is build-then-land — but **how often it
 lands is the stream's `Ship cadence`** (`flow.md`), because `ship` is expensive; teardown (`close`)
@@ -86,7 +88,7 @@ boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual,
 | `sync` | `verbs/sync.md` | — | pull the trunk's movement into the worktree | worktree |
 | `park` / `unpark` | `verbs/park.md` | — | hand the shared tree back to the trunk / take it back (in-place only) | root (in-place) |
 | `ship` | `verbs/ship.md` | `verbs/sync.md` | land accumulated feature(s), advance the queue | worktree |
-| `recycle [<template>]` | `verbs/recycle.md` | `flow.md`, `verbs/create.md` | fresh unit in the same worktree | worktree |
+| `recycle [<source>]` | `verbs/recycle.md` | `flow.md`, `verbs/create.md` | fresh unit or replacement queue in the same worktree | worktree |
 | `close` | `verbs/close.md` | `verbs/ship.md` (if WIP ships) | tear the stream down | root |
 | `status` | `verbs/status.md` | — | list active workstreams (read-only) | anywhere |
 | `setup [<root>]` | `verbs/setup.md` | — | deploy active templates and empty hook points | root |

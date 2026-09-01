@@ -39,6 +39,8 @@ expect_eq "resource-locking surface is fully removed" "" "$resource_offenders"
 
 expect "workstream lifecycle has explicit manual save seam" 'user manually invoking `save`' "$SKILL/flow.md"
 expect "workstream lifecycle has explicit creation seam" 'every loop entry (`create` / `load` / `recycle`)' "$SKILL/SKILL.md"
+expect "recycle accepts a replacement queue source" '`recycle [<source>]`' "$SKILL/SKILL.md"
+expect "recycle constrains replacement queue sources to tracked docs" 'tracked plan or roadmap' "$SKILL/verbs/recycle.md"
 expect "workstream recovery skips write-back" 'skip write-back' "$SKILL/flow.md"
 if grep -Eq 'checkpoint-token|/checkpoint close|CHECKPOINT — file:' "$SKILL/templates/workstream-handoff.md"; then
   echo "FAIL: root Checkpoint token or Close semantics leaked into Workstream hand-off" >&2
