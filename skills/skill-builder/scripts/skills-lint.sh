@@ -81,16 +81,15 @@
 #      case-sensitive phrases `Requires a stood-up records layer` or
 #      `stop and point at `/journal setup``. Evidence: skill, file, line.
 #      Does not match a prohibition ("journal standup is never a
-#      precondition"). Journal, skill-builder, and pack faces are exempt.
+#      precondition"). Journal and skill-builder are exempt.
 #  13. Project-templates declaration + setup route (FAIL). A skill that has
 #      templates/*.md must have a `## Project templates` heading in SKILL.md.
 #      A nonempty inventory must route `setup`; its setup procedure and test
-#      must name every declared project template. Pack faces are exempt.
+#      must name every declared project template.
 #  14. Doctrine home not fixed (FAIL). A skill declaring a `doctrine` typed
 #      edge must name `.spaces` in live prose. Fenced and indented blocks are
 #      stripped first so a quoted example cannot satisfy the check. Edge-gated,
-#      so check 15 is the unconditional net beside it. skill-builder and pack
-#      faces are exempt.
+#      so check 15 is the unconditional net beside it. skill-builder is exempt.
 #  15. Off-home doctrine literal. Any non-exempt skill's .md naming a
 #      `.handbook/{test,build,design,review}/` path or retired `docs/audit/`
 #      path -- doctrine that should be reached through the resolved home (FAIL).
@@ -113,8 +112,7 @@
 #      catches the BL-32 shape that arm (a) cannot see (no `--title`).
 #      Whitespace-normalized (real invocations wrap mid-span) and
 #      fence-stripped. Prose naming the tool without `--title` and
-#      without a following flag is out of scope. skill-builder and
-#      pack faces are exempt.
+#      without a following flag is out of scope. skill-builder is exempt.
 #  18. Kind-first workspace paths (FAIL). Live skill Markdown and shell must
 #      name workspace content owner-first. Either the symbolic workspace token
 #      or its default followed immediately by a reserved kind is the retired
@@ -127,13 +125,8 @@
 #  21. Package-only copy (FAIL). A bundled template omitted from the declared
 #      project-template list may not be named on a shell copy command.
 #
-# Pack-face exemption: any skill dir that carries a PACK.md
-# is the pack's FACE -- it composes the pack, so naming its members is its job,
-# not a boundary leak. Faces are exempt from the independence checks
-# (7: sibling-in-description, 8: typed-edge blocks, 9: sibling verb-roster);
-# every non-face member -- helper, utility, and skill-builder itself -- keeps
-# the full discipline. (Replaces v1's `core:`-key exemption: v2 packs declare
-# dependency as manifest data, and members are standalone by design.)
+# Every skill follows one independence regime. A colocated PACK.md is a pure
+# distribution bundle and grants no exemption from boundary or edge checks.
 set -euo pipefail
 
 root="${1:-$(pwd)}"
@@ -144,14 +137,6 @@ fail() { echo "FAIL: $*"; fails=$((fails + 1)); }
 warn() { echo "WARN: $*"; warns=$((warns + 1)); }
 
 [ -d "$skills_dir" ] || { echo "FAIL: no skills/ under $root"; exit 1; }
-
-# ---- pack faces (the pack-face exemption; header comment) --------------------
-pack_faces=" "
-for pm in "$root"/skills/*/PACK.md; do
-  [ -f "$pm" ] || continue
-  pack_faces="$pack_faces$(basename "$(dirname "$pm")") "
-done
-is_pack_face() { case "$pack_faces" in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 
 # ---- 1. frontmatter ----------------------------------------------------------
 for sk in "$skills_dir"/*/; do
@@ -236,8 +221,8 @@ rm -f /tmp/skills-lint-refs.$$
 # from a worktree vs warns=8 from the root, a 15-warning delta with an identical
 # tree. That forced every gate instruction to say "gate on fails=0; the warn bar
 # is checkout-specific and will mislead you." A linter whose output depends on
-# where you run it teaches people to ignore its output. `./install.sh` manages
-# wiring; that is not a lint. Post-deletion both checkouts report warns=7.
+# where you run it teaches people to ignore its output. Wiring is a package-manager
+# concern, not a lint. Post-deletion both checkouts report warns=7.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   grep -q "\`$name\`" "$root/README.md" 2>/dev/null || warn "$name: not mentioned in README's skill inventory"
@@ -286,7 +271,6 @@ rm -f /tmp/skills-lint-xref.$$
 # separators/paths (`bug/patch/feature`, `.agents/owner/`) don't false-positive.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
-  is_pack_face "$name" && continue  # pack-face exemption (header comment)
   f="$sk/SKILL.md"
   [ -f "$f" ] || continue
   fm="$(awk '/^---$/{n++; next} n==1{print} n>=2{exit}' "$f")"
@@ -321,7 +305,6 @@ emdash="—"
 edge_types="$(mktemp "${TMPDIR:-/tmp}/skills-lint-edges.XXXXXX")"
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
-  is_pack_face "$name" && continue  # pack-face exemption (header comment)
   f="$sk/SKILL.md"
   [ -f "$f" ] || continue
   # Extract the delimiter names present (open + close). `|| true`: grep exits 1 on
@@ -329,8 +312,8 @@ for sk in "$skills_dir"/*/; do
   opens="$(grep -oE '^<!-- edges:[a-z][a-z-]* -->$' "$f" | sed 's/^<!-- edges://; s/ -->$//' || true)"
   closes="$(grep -oE '^<!-- /edges:[a-z][a-z-]* -->$' "$f" | sed 's|^<!-- /edges:||; s/ -->$//' || true)"
   # Missing block: WARN (BL-17). Doctrine requires a block of every portable
-  # skill; an all-empty block is the stated "none" disposition. Pack faces
-  # are already skipped above. (An `if` guard, not an `&&`-list -- a false
+  # skill; an all-empty block is the stated "none" disposition. (An `if`
+  # guard, not an `&&`-list -- a false
   # `&&`-list at statement level trips set -e.)
   if [ -z "$opens" ] && [ -z "$closes" ]; then
     warn "$name: SKILL.md has no typed-edge block (required of every portable skill; an all-empty block is a stated disposition)"
@@ -418,7 +401,6 @@ rm -f "$edge_types"
 roster="$(mktemp "${TMPDIR:-/tmp}/skills-lint-roster.XXXXXX")"
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
-  is_pack_face "$name" && continue  # pack-face exemption (header comment)
   f="$sk/SKILL.md"
   [ -f "$f" ] || continue
   awk -v self="$name" '
@@ -588,11 +570,10 @@ for sk in "$skills_dir"/*/; do
 done
 
 # ---- 12. journal-floor phrase (FAIL) -----------------------------------------
-# Case-sensitive exact phrases. Exemptions: journal, skill-builder, pack faces.
+# Case-sensitive exact phrases. Exemptions: journal and skill-builder.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   case "$name" in journal|skill-builder) continue ;; esac
-  is_pack_face "$name" && continue
   while IFS= read -r -d '' f; do
     rel="${f#"$sk"}"
     while IFS= read -r line; do
@@ -619,7 +600,6 @@ live_markdown() { # remove examples and hidden prose before route checks
 }
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
-  is_pack_face "$name" && continue
   has_tpl=0
   for t in "$sk"/templates/*.md; do
     [ -f "$t" ] || continue
@@ -698,8 +678,8 @@ done
 # Scope: the doctrine home only. `doctrine` is the one coarse home-typed edge,
 # so it is the only home whose touchers can be identified mechanically; records
 # and templates conformance is already carried by the records-writer checks and,
-# for the semantic half, by skill review. Exemptions: skill-builder (authors this
-# doctrine), pack faces.
+# for the semantic half, by skill review. Exemption: skill-builder (authors this
+# doctrine).
 strip_code() { # strip fenced and indented blocks, then flatten whitespace
   awk '
     /^[[:space:]]*(```|~~~)/ { fence = !fence; next }
@@ -711,7 +691,6 @@ strip_code() { # strip fenced and indented blocks, then flatten whitespace
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   case "$name" in journal|skill-builder) continue ;; esac
-  is_pack_face "$name" && continue
   [ -f "$sk/SKILL.md" ] || continue
   edges="$(sed -n '/<!-- edges:/,/edges:.* -->/p' "$sk/SKILL.md")"
   case "$edges" in
@@ -737,8 +716,7 @@ done
 #
 # There is NO exemption table. One was built as a burn-down while the consumers
 # were flipped, and it emptied -- so it is gone rather than left as dead code.
-# Pack faces are exempt (composition prose may name siblings), as is
-# skill-builder (this doctrine documents the literals it bans elsewhere); that is
+# Skill-builder is exempt because this doctrine documents the literals it bans elsewhere; that is
 # the same name-based exemption check 12 uses, and it is the whole of it.
 #
 # STILL NOT attempted: a check on a home's canonical fixed path. Skill prose is
@@ -759,7 +737,6 @@ done
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   case "$name" in journal|skill-builder) continue ;; esac
-  is_pack_face "$name" && continue
   while IFS= read -r -d '' f; do
     rel="${f#"$sk"}"
     while IFS= read -r line; do
@@ -850,12 +827,10 @@ done < <(
 #
 # Evidence is the offending span, not a line number: flattening loses the line,
 # and the span text is what you grep for anyway. Exemptions are the usual
-# name-based pair -- skill-builder (this comment names the banned shape) and
-# pack faces.
+# name-based exception -- skill-builder (this comment names the banned shape).
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   case "$name" in skill-builder) continue ;; esac
-  is_pack_face "$name" && continue
   while IFS= read -r -d '' f; do
     rel="${f#"$sk"}"
     while IFS= read -r span; do
@@ -916,7 +891,6 @@ for sk in "$skills_dir"/*/; do
   sk="${sk%/}"
   name="$(basename "$sk")"
   case "$name" in journal|skill-builder) continue ;; esac
-  is_pack_face "$name" && continue
   while IFS= read -r -d '' f; do
     rel="${f#"$sk"}"
     while IFS= read -r token; do
@@ -935,7 +909,6 @@ done
 for sk in "$skills_dir"/*/; do
   sk="${sk%/}"
   name="$(basename "$sk")"
-  is_pack_face "$name" && continue
   [ -f "$sk/SKILL.md" ] || continue
   declared="$(awk '
     /^## Project templates/ { section=1; next }

@@ -10,25 +10,14 @@ short pointer, then lists only its **local overrides** underneath — the same p
 private-override shape a personal dotfiles config uses over a shared one. Apply this doc whenever you
 add or revise a skill; `skill-builder calibrate` is what keeps it current as practice evolves.
 
-## Two regimes: pack faces vs. everything else
+## One regime: every skill is independent
 
-This doctrine's **independence rules** — self-scoping descriptions, typed edges, the no-sibling-seam
-discipline — exist so a skill routes and functions **bare**, with no composition deployed. The one
-structural exception is a **pack face**: the skill dir that carries a `PACK.md` manifest (see the
-pack-format spec). Composing the pack is the face's *job* — its manifest declares the members and
-its prose may name them directly; that is dependency as manifest data, not a boundary leak. So the
-split:
-
-- **Every non-face skill** — pack members included, this library's `skill-builder` too — follows the
-  **full portable discipline** below: independence rules, typed edges, the lint gate's boundary
-  checks. A pack member is standalone by design; membership grants no exemption.
-- **Pack faces** are exempt from the lint gate's independence checks (sibling-in-description,
-  typed-edge blocks, sibling verb-roster) — the gate discovers faces by the presence of `PACK.md`;
-  everything else — frontmatter limits, bundled-ref resolution, script syntax — applies to every
-  skill regardless.
-
-Everything below states the **portable** regime; where a rule is independence-flavored, read it as
-scoped to non-face skills.
+This doctrine's **independence rules** — self-scoping descriptions, typed edges, and the
+no-sibling-seam discipline — apply to every skill. A `PACK.md` is a pure distribution bundle, not a
+skill surface. Placing one beside `SKILL.md` grants no exception: the skill must still route and
+function bare, pass every boundary check, and carry its own typed-edge block. Pack membership also
+grants no exception. Composition belongs in the pack manifest and its human-readable body, outside
+the member skills.
 
 ## Design philosophy
 
@@ -118,7 +107,7 @@ scoped to non-face skills.
 
 1. **Typed edges** (`produces`/`consumes`/`handoff`) — the mechanical wiring points. **Required of
    every portable skill** (an all-empty block is a *stated* fact, "I'm a pure mechanism," not an
-   omission; pack faces carry none — § Two regimes).
+   omission; pure bundles are not skills and carry no edge block — § One regime).
 2. **Ideal-use examples** — self-contained *"how to use me"* route/workflow a composer or role skill
    can ingest to understand usage. **Enrichment.**
 3. **Deployable seed** — project-customizable assets (for example,
@@ -297,7 +286,7 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    (`YYYY-MM-DD-<slug>.md`), and the record-link form
    (`→ <store>/<file>.md`) in *its own* package. It does not
    send the agent to another skill's `SKILL.md` for those bytes.
-   Pack composition (the face / runbook) still names journal as
+   Pack composition (the bundle runbook) still names journal as
    the format authority; leaves do not.
 6. **Opportunistic `records.sh`.** If `.records/records.sh` is executable, use it directly before
    `new --schema <owned-schema> [--template <resolved-body>]` / `touch` / `done` / `list`.

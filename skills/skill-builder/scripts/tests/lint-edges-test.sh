@@ -92,16 +92,16 @@ else
   pass=$((pass + 1))
 fi
 
-# --- pack face is exempt -----------------------------------------------------
-printf '# face\n' > "$sk/PACK.md"
+# --- colocated pure bundle grants no exemption -------------------------------
+printf '# pure bundle\n' > "$sk/PACK.md"
 write_skill ''
 run_lint
 if grep -q 'WARN: widget: SKILL.md has no typed-edge block' "$OUT"; then
-  echo "FAIL: pack face was not exempt from missing-block WARN" >&2
-  grep 'typed-edge block' "$OUT" >&2
-  fail=$((fail + 1))
-else
   pass=$((pass + 1))
+else
+  echo "FAIL: colocated PACK.md exempted the skill from missing-block WARN" >&2
+  cat "$OUT" >&2
+  fail=$((fail + 1))
 fi
 
 report "lint-edges-test"

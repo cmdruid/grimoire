@@ -44,7 +44,19 @@ public_workspace_check_ok(){
 
 chiropractor_contract_ok(){
   local pack="$1"
-  grep -Eq '^optional:.*[ ,]chiropractor([, ]|$)' "$pack" &&
+  awk '
+    /^---$/ { fence++; next }
+    fence == 1 && /^optional:[[:space:]]*$/ { optional=1; next }
+    fence == 1 && optional && /^  - [a-z0-9][a-z0-9-]*[[:space:]]*$/ {
+      member=$0
+      sub(/^  - /, "", member)
+      sub(/[[:space:]]*$/, "", member)
+      if (member == "chiropractor") found=1
+      next
+    }
+    fence == 1 && optional && !/^  - / { optional=0 }
+    END { exit !found }
+  ' "$pack" &&
     grep -qF 'Chiropractor audits and confirmation-gates documentation-spine topology' "$pack" &&
     grep -qF 'It owns no setup and never repairs scripts or workflows' "$pack" &&
     ! grep -Eq 'Chiropractor (runs|owns) project setup|Chiropractor repairs (scripts|workflows)' "$pack"
@@ -87,7 +99,7 @@ if chiropractor_contract_ok "$PACK"; then pass=$((pass + 1)); else echo 'FAIL: l
 # Red-proof missing membership in the same disposable PACK copy.
 cp "$PACK" "$fixture"
 cp "$fixture" "$tmp/PACK.member.before"
-sed 's/, chiropractor//' "$fixture" >"$tmp/PACK.member.bad"
+sed '/^  - chiropractor$/d' "$fixture" >"$tmp/PACK.member.bad"
 mv "$tmp/PACK.member.bad" "$fixture"
 if chiropractor_contract_ok "$fixture"; then
   echo 'FAIL: Chiropractor contract accepted missing optional membership' >&2

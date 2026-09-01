@@ -1,16 +1,32 @@
 ---
+schema: grimoire/pack@1
 name: clankshop
-version: 4.1.0
-description: "Independent agent skills with a faceless composition runbook"
-required: journal
-optional: analyst, auditor, backlog, architect, chiropractor, contractor, inspector, debugger, delegate, checkpoint, foreman, mailbox, notepad, scheduler, workspace, workstream
+description: Independent project-development helper and utility skills.
+required:
+  - journal
+optional:
+  - analyst
+  - architect
+  - auditor
+  - backlog
+  - checkpoint
+  - chiropractor
+  - contractor
+  - debugger
+  - delegate
+  - foreman
+  - inspector
+  - mailbox
+  - notepad
+  - scheduler
+  - workspace
+  - workstream
 ---
 
-# clankshop — the faceless skills pack
+# clankshop — the skills pack
 
-The frontmatter is the format-1 pack manifest. `clankshop` is a distribution
-identity, not a skill: there is no same-named skill directory, and installing
-the pack adds no implicit face member.
+The frontmatter is a `grimoire/pack@1` pure-bundle manifest. `clankshop` is a distribution
+identity, not a skill, and there is no same-named skill directory.
 
 The pack installs independent skills. It does not seed doctrine, publish project
 operations or hooks, write a project front door, initialize records or trackers, or
@@ -133,13 +149,8 @@ all approved destinations with the recorded pre-sweep state; setup output is not
 
 If the user requested a commit, make one pathspec-scoped commit over the complete approved diff.
 Otherwise leave the reviewed changes uncommitted. Report exact created, preserved, refused, and
-project-authored paths. Never create a Clankshop skill face, marker, receipt, installed runbook copy,
+project-authored paths. Never create a Clankshop-specific skill, marker, receipt, installed runbook copy,
 or pack-level configuration file.
 
-Install, inspect, or remove the pack with:
-
-```text
-./install.sh --pack clankshop
-./install.sh --check --pack clankshop
-./install.sh --remove --pack clankshop
-```
+Inspect and manage this bundle through Grimoire. The canonical product and format contract is
+`.records/specs/2026-08-31-grimoire-symlink-package-manager.md`.

@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -97,7 +97,7 @@ This task is read-only and produces no commit.
 
 ## Slices
 
-- [ ] **Slice 1: One source tree becomes one canonical inventory** <requires: —>
+- [x] **Slice 1: One source tree becomes one canonical inventory** <requires: —>
   - Files: create `crates/grimoire-pack/src/inventory/mod.rs`,
     `crates/grimoire-pack/src/inventory/model.rs`, `crates/grimoire-pack/src/inventory/tree.rs`,
     `crates/grimoire-pack/src/inventory/yaml.rs`,
@@ -130,7 +130,7 @@ This task is read-only and produces no commit.
     `cargo check --workspace`. Expected: the new path is real end to end while alpha consumers still
     compile unchanged and no adapter connects the two models.
 
-- [ ] **Slice 2: Bounded YAML and the exact pure-pack grammar** <requires: 1>
+- [x] **Slice 2: Bounded YAML and the exact pure-pack grammar** <requires: 1>
   - Files: modify `crates/grimoire-pack/src/inventory/yaml.rs`,
     `crates/grimoire-pack/src/inventory/model.rs`, and
     `crates/grimoire-pack/src/inventory/scan.rs`; create
@@ -158,7 +158,7 @@ This task is read-only and produces no commit.
     first-rejected limit value. Each red-proof test names the disabled guard and demonstrates the
     strict invariant would fail without it; `cargo check --workspace` remains green.
 
-- [ ] **Slice 3: Deterministic discovery over hostile paths** <requires: 2>
+- [x] **Slice 3: Deterministic discovery over hostile paths** <requires: 2>
   - Files: modify `crates/grimoire-pack/src/inventory/tree.rs`,
     `crates/grimoire-pack/src/inventory/scan.rs`,
     `crates/grimoire-pack/src/inventory/model.rs`, and
@@ -218,7 +218,7 @@ This task is read-only and produces no commit.
     and explicit cross-scalar post-normalization cases. Production constants and collision-group
     cardinality are asserted to the spec values; `cargo check --workspace` remains green.
 
-- [ ] **Slice 4: Canonical skill facts and `source-inventory@1` bytes** <requires: 3>
+- [x] **Slice 4: Canonical skill facts and `source-inventory@1` bytes** <requires: 3>
   - Files: modify `crates/grimoire-pack/src/inventory/digest.rs`,
     `crates/grimoire-pack/src/inventory/model.rs`,
     `crates/grimoire-pack/src/inventory/scan.rs`,
@@ -266,7 +266,7 @@ This task is read-only and produces no commit.
     review-tree fact has the same boundary/safety as its inventory capability fact;
     `cargo check --workspace` remains green.
 
-- [ ] **Slice 5: Pack availability, root dogfood, and the alpha cutover** <requires: 4>
+- [x] **Slice 5: Pack availability, root dogfood, and the alpha cutover** <requires: 4>
   - Files: modify `crates/grimoire-pack/src/inventory/model.rs`,
     `crates/grimoire-pack/src/inventory/scan.rs`, `crates/grimoire-pack/src/lib.rs`,
     `crates/grimoire-pack/tests/clankshop.rs`,

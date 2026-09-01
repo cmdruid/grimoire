@@ -13,9 +13,8 @@ of the same class).
 
 ## Does not belong
 
-A host library’s feature specs. Pack-format
-(`docs/spec/pack-format.md` at the host library root — this
-change does not move it). Doctrine essays
+A host library’s feature or product specs. Product pack formats are owned by the host product's
+published contract, not by Skill Builder. Doctrine essays
 (`docs/DOCTRINE.md`). Project-deployed kind templates.
 
 ## Index

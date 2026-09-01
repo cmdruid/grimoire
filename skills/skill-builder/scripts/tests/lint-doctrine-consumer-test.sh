@@ -288,7 +288,7 @@ printf '#!/bin/sh\n# The agent-doctrine home defaults to .records/doctrine\nexit
 lint
 expect "check 16 reads .sh files" "FAIL: skills/widget/scripts/tool.sh: $c16" "$OUT"
 
-# --- check 16: no live skill or pack-face exemption ---------------------------
+# --- check 16: no live skill or colocated-bundle exemption -------------------
 run_lint
 write_skill skill-builder 'note — a captured fact' \
   'This doctrine documents `agent-doctrine` in order to ban it elsewhere.'
@@ -296,11 +296,11 @@ lint
 expect "check 16 gates skill-builder prose" "$c16" "$OUT"
 
 run_lint
-write_skill facade 'note — a captured fact' \
-  'The pack face still names `agent-doctrine` while composing its members.'
-printf '# facade pack\n' > "$lib/skills/facade/PACK.md"
+write_skill bundle-owner 'note — a captured fact' \
+  'This skill still names `agent-doctrine` beside a pure bundle.'
+printf '# pure bundle\n' > "$lib/skills/bundle-owner/PACK.md"
 lint
-expect "check 16 gates pack-face prose" "$c16" "$OUT"
+expect "check 16 gates colocated-bundle prose" "$c16" "$OUT"
 
 # --- check 16: every retired front-door declaration is forbidden --------------
 run_lint

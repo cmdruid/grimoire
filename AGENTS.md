@@ -8,7 +8,7 @@ This file captures the **design philosophy** for the tools, scripts, and skills 
 it whenever you add or revise one. It is distilled from practice; the `workstream` skill (its
 `scripts/workstream-git.sh` + *Helper scripts* section) is the worked reference.
 
-Most of these skills are members of the root, faceless **`clankshop` pack** (`PACK.md`):
+Most of these skills are members of the root, pure-bundle **`clankshop` pack** (`PACK.md`):
 **helpers** (`architect` the specification spine,
 `contractor` the job lead, `inspector` critique and fold, `journal` the
 records format authority and the one required member, `backlog` the follow-up lifecycle,
@@ -19,7 +19,7 @@ documentation-spine steward); **utilities** (`checkpoint`, `mailbox`,
 `developer-writing`, and `skill-builder` stay outside the pack. See `README.md`
 for the full inventory.
 
-The pack is distribution plus a human-readable seam map. It has no skill face and no project
+The pack is distribution plus a human-readable seam map. It is not a skill and has no project
 lifecycle: installation never writes doctrine, hooks, operations, records, trackers, or a project
 front door. Skills with durable project surfaces expose and own their own explicit setup.
 

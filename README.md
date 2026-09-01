@@ -7,28 +7,16 @@ directory, so one skill can serve many packs.
 
 Agents *invoke* skills; a grimoire is the book they're invoked from.
 
-## Install
+## Status
 
-Clone anywhere, then symlink what you want — the clone stays canonical, so `git pull` updates
-every installed skill in place:
-
-```
-git clone https://github.com/cmdruid/grimoire && cd grimoire
-./install.sh --list              # see what's here
-./install.sh debugger            # install one skill (into ~/.claude/skills)
-./install.sh --pack clankshop    # install a whole pack
-./install.sh --check --pack clankshop
-./install.sh --remove --pack clankshop
-./install.sh --remove checkpoint # uninstall
-```
-
-- **Claude Code** loads user-level skills from `~/.claude/skills/` — the default target.
-- **Codex** (and other harnesses that read a skills directory): point it at this clone's
-  `skills/` directly, e.g. `ln -s <clone>/skills ~/.agents/skills` — no per-skill wiring.
+Grimoire is being rebuilt as a symlink package manager for agent skills. The published hard-cut
+contract is `.records/specs/2026-08-31-grimoire-symlink-package-manager.md`; the implementation
+roadmap is `.records/plans/2026-09-01-grimoire-hard-cut-rewrite-roadmap.md`. The current phase owns
+the source inventory and pure-pack format. Installation commands return in a later phase.
 
 ## The skills
 
-The root, faceless `clankshop` pack binds most of them into one installable toolkit:
+The root pure-bundle `clankshop` pack groups most of them into one toolkit:
 **helpers** — `architect` (specification spine), `contractor` (job lead), `inspector` (critique and fold), `journal` (the records format authority —
 the one required member), `backlog` (the follow-up lifecycle), `notepad` (project memory),
 `workstream` (development streams), `auditor` (code-quality audits), `debugger` (root-cause
@@ -66,14 +54,8 @@ scaffold, audit, and calibrate authoring doctrine), `developer-writing`
 | `workspace` | read-only `.spaces` format guard: validate open owner namespaces, closed kinds, and safe owner-first paths |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
-The v2 rebuild (`docs/design/2026-08-12-clankshop-v2.md`) once shaped the pack as a faced
-workshop and renamed `backlog` → `journal`, `feature` → `blueprint`, `handoff` → `checkpoint`
-(adding `scheduler`); the journal/backlog split
-(`docs/design/2026-08-14-journal-backlog-split-design.md`) then re-minted `backlog` as the
-follow-up lifecycle over the records layer and retired the v1 `bug`/`task` capture aliases; the
-former role skills had already merged into the face
-(`docs/design/2026-08-10-clankshop-role-merge.md`); earlier lineage lives in
-`docs/design/2026-07-17-library-refactor.md`.
+Earlier design lineage lives under `docs/design/`; the published product contract above supersedes
+those historical package shapes.
 
 ### Storage convention: what skills may maintain in a project
 
@@ -111,25 +93,25 @@ does not alter ordinary Workstream creation or add callbacks.
 
 ## The packs
 
-A pack is a format-1 `PACK.md` manifest (`docs/spec/pack-format.md`). A manifest may sit beside
-a face skill or, as here, at repository root with no face. `install.sh --pack` installs members
-transactionally and records the install in the sidecar `grimoire.lock` beside the target dir.
+A pack is a pure `grimoire/pack@1` `PACK.md` manifest: distribution metadata plus required and
+optional skill-name sequences. Source repositories need no repository manifest, and a pack never
+acts as a skill. See the published Grimoire product contract above.
 
 - **`clankshop`** (`PACK.md`) — the skills above (minus `agent-council`,
-  `code-humanizer`, `developer-writing`, and `skill-builder`) as a faceless toolkit. The manifest body is the
-  seam map; there is no `clankshop` skill or project assembler.
+  `code-humanizer`, `developer-writing`, and `skill-builder`) as a pure bundle. The manifest body is
+  the seam map; there is no `clankshop` skill or project assembler.
 
 ## Repo layout
 
 Beyond the skills, this repo carries the pack format and its tooling (the umbrella design:
 `docs/design/2026-08-07-grimoire-repurpose-design.md`):
 
-- **`crates/`** — a Cargo workspace (build from the repo root). `grimoire-pack` is the pack
-  format's reference library; `grimoire-core` (operations) and the `grimoire` TUI itself land
-  next (the app crate publishes as `skill-grimoire`; the binary is `grimoire`). Crates never
+- **`crates/`** — a Cargo workspace (build from the repo root). `grimoire-pack` owns canonical
+  source inventory, `grimoire-core` is the package-manager domain shell, and `skill-grimoire`
+  retains reusable terminal infrastructure for the later TUI. Crates never
   read `skills/` at build time — content appears only as test fixtures.
-- **`docs/spec/`** — the pack format spec (`pack-format.md`); `install.sh` stays the
-  zero-dependency shell reference implementation.
+- **`.records/specs/`** — published product contracts, including the canonical pack and inventory
+  format.
 - **`repos/`** — gitignored reading references (e.g. the qntx `skill` clone); real dependencies
   come from crates.io, pinned.
 
@@ -162,8 +144,8 @@ Before submitting a change:
 2. **Description = trigger, not summary** (≤ ~700 chars; quote it if it contains `: `).
 3. **Run the gate:** `skills/skill-builder/scripts/skills-lint.sh` — frontmatter limits,
    bundled-ref resolution, manifest checks, script syntax, cross-skill refs. Fix every FAIL.
-4. **Run the repository integration tests:** `scripts/tests/run.sh` — exercises pack installation
-   and Clankshop project configuration against throwaway projects.
+4. **Run the repository integration tests:** `scripts/tests/run.sh` — exercises Clankshop and
+   project configuration contracts against throwaway projects.
 
 ## License
 

@@ -166,6 +166,7 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
         }
     }
     packs.sort_by(|left, right| (&left.name, &left.path).cmp(&(&right.name, &right.path)));
+    add_pack_availability(&skills, &mut packs, &mut findings);
 
     let reviewed_paths: BTreeSet<_> = reviewed_entries
         .iter()
@@ -199,6 +200,36 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
         inventory_digest,
         review_tree_digest,
     })
+}
+
+fn add_pack_availability(skills: &[Skill], packs: &mut [Pack], findings: &mut Vec<Finding>) {
+    let available: BTreeSet<_> = skills.iter().map(|skill| skill.name.as_str()).collect();
+    for pack in packs {
+        pack.missing_required = pack
+            .required
+            .iter()
+            .filter(|member| !available.contains(member.as_str()))
+            .cloned()
+            .collect();
+        pack.missing_optional = pack
+            .optional
+            .iter()
+            .filter(|member| !available.contains(member.as_str()))
+            .cloned()
+            .collect();
+        for member in &pack.missing_optional {
+            findings.push(Finding {
+                code: "missing-optional-member".into(),
+                path: Some(pack.path.clone()),
+                severity: Severity::Warning,
+                details: BTreeMap::from([
+                    ("member".into(), member.clone()),
+                    ("pack".into(), pack.name.clone()),
+                ]),
+                message: "optional pack member is unavailable in this snapshot".into(),
+            });
+        }
+    }
 }
 
 fn add_review_byte_limit(
@@ -538,8 +569,8 @@ pub(crate) fn parse_pack(bytes: &[u8], path: SourcePath) -> (Option<Pack>, Vec<Y
             details: Vec::new(),
         });
     }
-    let required = sequence("required", &mut failures);
-    let optional = sequence("optional", &mut failures);
+    let mut required = sequence("required", &mut failures);
+    let mut optional = sequence("optional", &mut failures);
     for members in [required.as_ref(), optional.as_ref()].into_iter().flatten() {
         for member in members {
             if !valid_slug(member) {
@@ -579,6 +610,8 @@ pub(crate) fn parse_pack(bytes: &[u8], path: SourcePath) -> (Option<Pack>, Vec<Y
     if !failures.is_empty() {
         return (None, failures);
     }
+    required.as_mut().unwrap().sort();
+    optional.as_mut().unwrap().sort();
     (
         Some(Pack {
             name: name.unwrap(),
