@@ -51,7 +51,15 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──┬──> Phase 5
 - The hard cut has no compatibility reader, migration, force/adopt path, or parallel alpha schema.
   No ADR adds such a branch; a newly discovered product decision returns to the governing spec.
 
-## Phase 1 — Format and inventory foundation   <requires: —>
+## Phase 1 — Format and inventory foundation   <requires: —>   **SHIPPED 2026-09-01**
+
+> Landed by `stream/app` in five slices. The phase gate is green: canonical inventories and
+> receipts, bounded pure-pack parsing, Unicode 17 path handling, capability/review facts, pack
+> availability, root dogfood, and the alpha hard cut are complete. Workspace tests and clippy,
+> Skill Builder lint/tests, repository integrations, Unicode regeneration, and linked/root layout
+> probes passed. The implementation plan remains published at stage `implemented`.
+> **Unblocks Phase 2.**
+
 - **Goal:** Make the format library a complete, deterministic authority for skill identity, pure
   packs, discovery, canonical content, capability facts, and source inventory.
 - **Scope:** in: bounded `SKILL.md` identity parsing, `grimoire/pack@1`, recursive discovery,
