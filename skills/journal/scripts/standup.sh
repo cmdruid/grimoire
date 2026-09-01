@@ -266,51 +266,7 @@ render_readme() {
   block_tmp="$(mktemp "${TMPDIR:-/tmp}/journal-records-block.XXXXXX")"
   readme_candidate="$(mktemp "${TMPDIR:-/tmp}/journal-records-readme.XXXXXX")"
   remember_tmp "$block_tmp"; remember_tmp "$readme_candidate"
-  cat > "$block_tmp" <<EOF
-<!-- journal:records-tool BEGIN -->
-## Use the records tool
-
-The executable \`records.sh\` beside this README is the query and lifecycle engine. A
-record is a Markdown file named \`YYYY-MM-DD-<slug>.md\` with front matter declaring
-\`doctype\`, \`status\`, \`schema\`, and \`tags\`. The filename date is the creation
-authority; Git is the durable modification history.
-
-Record paths are relative to this records root. The tool discovers records by a live crawl at
-any depth; directories belong to their writers, not to a stored roster. \`history.tsv\` is the
-closure ledger and is never a substitute for the live record set.
-
-Run the adjacent tool from the project root. It locates the project from its fixed
-\`.records\` home:
-
-    .records/records.sh list
-
-Start with these read-only commands:
-
-- \`list [filters]\` lists live records (\`draft\` and \`published\`) as TSV.
-- \`grep [filters] <pattern>\` searches record bodies; metadata belongs in filters.
-- \`show <path>\` prints one record; paths may be relative to \`.records\`.
-- \`history [filters]\` reads the closure ledger.
-- \`check\` validates record metadata, links, and ledger coherence.
-
-Lifecycle commands write records:
-
-- \`new <doctype> --schema <writer/artifact@N> --title "..." [--dir <rel>] [--tag t]...\`
-  mints a record with the shared metadata. Use the schema owned by the record writer.
-- \`touch <path> [--status draft|published]\` updates a live record.
-- \`done <path> [--as done|dropped|superseded|consumed] [--note "..."]\` archives a
-  record in place and appends its closure to \`history.tsv\`.
-- \`relocate <source> --to <destination-relative>\` moves a record while updating
-  internal links and ledger paths.
-
-Every command uses the adjacent self-locating provider. Run \`records.sh\` without a command
-to see the complete usage. Never edit \`history.tsv\` by hand; \`records.sh done\` is
-its sole writer.
-
-If the adjacent \`records.sh\` is missing, non-executable, byte-stale, or lacks the current
-usage surface, do not hand-repair it and do not run a bundled Journal copy against project
-records. Run \`/journal repair\`; missing initialization is handled by \`/journal setup\`.
-<!-- journal:records-tool END -->
-EOF
+  cp "$readme_template" "$block_tmp"
   if [ ! -e "$readme" ]; then
     {
       printf '%s\n\n' '# Records' 'Records accumulated during development.'
@@ -473,6 +429,14 @@ if [ -n "$git_root" ]; then
 fi
 source_engine="$SKILL/scripts/records.sh"
 [ -f "$source_engine" ] || die "records.sh missing beside this script: $source_engine"
+readme_template="$SKILL/templates/records-readme-block.md"
+[ -f "$readme_template" ] && [ ! -L "$readme_template" ] ||
+  die "records README template missing or unsafe: $readme_template"
+readme_status="$SKILL/scripts/records-readme-status.sh"
+if [ ! -x "$readme_status" ] ||
+  ! "$readme_status" --validate-template "$readme_template" >/dev/null; then
+  die "records README template is malformed: $readme_template"
+fi
 
 records="$root/$records_rel"; workspace="$root/$workspace_rel"
 provider="$records/records.sh"; ledger="$records/history.tsv"; readme="$records/README.md"

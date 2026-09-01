@@ -48,7 +48,7 @@ scaffold, audit, and calibrate authoring doctrine), `developer-writing`
 | `analyst` | reports and briefings for the developer: catch-ups, status, subsystem and health snapshots, guides — synthesized from the records layer and git, from a customizable template catalog |
 | `architect` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
 | `auditor` | code-quality audit framework: per-dimension rubric and metrics; findings stay in the audit report and promote through the host capture lane; standalone on any repo |
-| `backlog` | first-class living TSV trackers: setup, bounded tracker@1 migration, extensible queue tables, lifecycle history, paging, filing, explicit debriefing, and curation through `tracker@2` |
+| `backlog` | first-class living TSV trackers: setup, bounded tracker@1 migration, extensible queue tables, lifecycle history, paging, filing, explicit debriefing, and curation through `tracker@2`; optional `anchor` points project agents at the standalone `.trackers/README.md` guide |
 | `checkpoint` | living session save-state: `save` / `resume` / `close` + compaction recovery — the persistence disciplines other skills borrow |
 | `chiropractor` | audit documentation-spine discoverability and authority from `AGENTS.md`; trace task routes into docs, workflows, and helper scripts, then confirmation-gate minimal documentation-only repairs |
 | `code-humanizer` | keep durable application, service, library, shipped CLI, and maintained test source fit for human ownership at write time; `mark` / `map` / `walk` on supported existing code; standalone, outside every pack |
@@ -56,7 +56,7 @@ scaffold, audit, and calibrate authoring doctrine), `developer-writing`
 | `debugger` | root-cause a bug/test-failure/build-break before proposing any fix — four-phase investigate discipline, human confirms before landing |
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `developer-writing` | write and edit human-facing developer prose with purpose-aware structure, human editorial judgment, and Google documentation mechanics; agent-executed operational artifacts get wording-only help on explicit request; standalone, outside every pack |
-| `journal` | the records format authority: discriminator, contract, adjacent `records.sh`, and history ledger; durable setup, narrow repair, dedicated-root migration, search, close, and substrate curation |
+| `journal` | the records format authority: discriminator, contract, adjacent `records.sh`, and history ledger; durable setup, narrow repair, dedicated-root migration, search, close, and substrate curation; optional `anchor` points project agents at the standalone `.records/README.md` guide |
 | `inspector` | material review of documents and completed implementations; revise folds supported document findings, refine simplifies specs and plans, and setup deploys Inspector-owned kind doctrine absent-only |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
@@ -92,8 +92,11 @@ staged engine lives at `.records/records.sh`, beside the introductory
 `history.tsv` lifecycle ledger, and adjacent canonical provider `.trackers/trackers.sh`. Backlog owns that
 layer; consumer skills invoke the installed provider directly.
 These canonical homes are constants, not front-door configuration. Each durable-home skill owns
-its files; any front-door route is a separately justified public surface rather than a consequence
-of persistence. The pack installs skills but writes none of these project surfaces.
+its files. Projects can explicitly invoke `/journal anchor` or `/backlog anchor` to add short,
+project-owned `AGENTS.md` pointers to the corresponding local guide; setup, repair, migration, and
+pack installation never add them automatically. The local READMEs and adjacent providers support
+ordinary record and tracker work without the source skills, while maintenance and judgment still
+belong to those skills. The pack installs skills but writes none of these project surfaces.
 
 Session checkpoints stay **gitignored scratch** (one root `CHECKPOINT.md`, steward `checkpoint`) —
 not a `.records/` store.

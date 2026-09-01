@@ -218,6 +218,9 @@ mutation_skill="$TMP/mutation/journal"
 mkdir -p "$mutation_skill/scripts"
 cp "$STANDUP" "$mutation_skill/scripts/standup.sh"
 cp "$SKILL/scripts/records.sh" "$mutation_skill/scripts/records.sh"
+cp "$SKILL/scripts/records-readme-status.sh" \
+  "$mutation_skill/scripts/records-readme-status.sh"
+cp -R "$SKILL/templates" "$mutation_skill/templates"
 needle='  [ -f "$ledger" ] && [ ! -L "$ledger" ] || die "records layer is not initialized; run /journal setup"'
 expect_eq "repair ledger mutation target count" "1" \
   "$(grep -Fxc -- "$needle" "$mutation_skill/scripts/standup.sh")"
@@ -247,6 +250,9 @@ active_mutation_skill="$TMP/active-mutation-skill/journal"
 mkdir -p "$active_mutation_skill/scripts"
 cp "$STANDUP" "$active_mutation_skill/scripts/standup.sh"
 cp "$SKILL/scripts/records.sh" "$active_mutation_skill/scripts/records.sh"
+cp "$SKILL/scripts/records-readme-status.sh" \
+  "$active_mutation_skill/scripts/records-readme-status.sh"
+cp -R "$SKILL/templates" "$active_mutation_skill/templates"
 needle='  [ ! -e "$intent" ] && [ ! -L "$intent" ] || die "active setup intent; run /journal setup"'
 expect_eq "repair active-intent mutation target count" "1" \
   "$(grep -Fxc -- "$needle" "$active_mutation_skill/scripts/standup.sh")"

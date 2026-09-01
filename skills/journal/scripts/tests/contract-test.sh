@@ -26,6 +26,7 @@ runtime_contract() {
   grep -qF '| `/journal repair` | `verbs/repair.md` |' "$contract_skill/SKILL.md" || return 1
   grep -qF '| `/journal migrate [<source-root>]` | `verbs/migrate.md` |' \
     "$contract_skill/SKILL.md" || return 1
+  grep -qF '| `/journal anchor` | `verbs/anchor.md` |' "$contract_skill/SKILL.md" || return 1
   for contract_verb in search "done" curate; do
     grep -qF 'ordered runtime preflight' "$contract_skill/verbs/$contract_verb.md" || return 1
   done
@@ -83,18 +84,26 @@ expect_eq "README begin marker unique" "1" \
 expect_eq "README end marker unique" "1" \
   "$(grep -Fc '<!-- journal:records-tool END -->' "$README")"
 for readme_text in 'YYYY-MM-DD-<slug>.md' '`doctype`, `status`, `schema`, and `tags`' \
-  'live crawl at' 'history.tsv' 'list [filters]' 'grep [filters]' 'show <path>' \
-  'history [filters]' '`check` validates' 'new <doctype>' 'touch <path>' 'done <path>' \
-  'relocate <source>' 'Run `/journal repair`' 'do not run a bundled Journal copy'; do
+  'live crawl at' 'history.tsv' 'list [--type TYPE]' 'grep [filters]' 'show PATH' \
+  'history [' '`check` validates' 'new DOCTYPE' 'touch PATH' 'done PATH' \
+  '--template BODY_PATH' 'relocate SOURCE' 'Run `/journal repair`' 'never substitute' 'Git diff' \
+  "Journal skill isn't available"; do
   expect "README contract: $readme_text" "$readme_text" "$README"
 done
+expect_absent "README does not claim touch performs full validation" \
+  '`touch` validates a live record' "$README"
+tr '\n' ' ' <"$README" | tr -s '[:space:]' ' ' >"$TMP/readme-flat"
+expect "README sends conformance validation through check" \
+  'Run `check` to validate record metadata' "$TMP/readme-flat"
 
 rc=0; (cd "$root" && .records/records.sh list >"$OUT" 2>"$ERR") || rc=$?
 expect_eq "rendered list invocation rc" "0" "$rc"
 
 rs() { "$RS" "$@"; }
 today="$(date +%Y-%m-%d)"
-record="$(rs new notes --schema notepad/note@1 --title 'Contract sample' --tag sample)"
+printf '%s\n' 'template-body-canary' >"$TMP/record-body.md"
+record="$(rs new notes --schema notepad/note@1 --title 'Contract sample' \
+  --template "$TMP/record-body.md" --tag sample)"
 printf '%s\n' 'body-search-canary' >>"$record"
 rs touch "$record" --status published >/dev/null
 rs list --type notes >"$OUT"
@@ -102,7 +111,7 @@ expect "rendered list form" "notes" "$OUT"
 rs grep --type notes body-search-canary >"$OUT"
 expect "rendered grep form" "contract-sample" "$OUT"
 rs show "$record" >"$OUT"
-expect "rendered show form" "# Contract sample" "$OUT"
+expect "rendered template path form" "template-body-canary" "$OUT"
 rs check >"$OUT"
 expect "rendered check form" "records check: OK" "$OUT"
 relocated="notes/$today-contract-renamed.md"

@@ -25,15 +25,40 @@ rc=0; run_default "$proj" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "standup rc" "0" "$rc"
 expect "standup self-check" "records check: OK (0 records)" "$OUT"
 [ -x "$proj/.records/records.sh" ] && pass=$((pass + 1)) || {
-  echo "FAIL: staged engine missing" >&2; fail=$((fail + 1)); }
+    echo "FAIL: staged engine missing" >&2; fail=$((fail + 1)); }
 [ -f "$proj/.records/history.tsv" ] && pass=$((pass + 1)) || {
   echo "FAIL: ledger missing" >&2; fail=$((fail + 1)); }
-expect "README discovers colocated engine" "beside this README is the query and lifecycle engine" "$proj/.records/README.md"
+expect "README discovers colocated engine" "beside this README is the records query and lifecycle engine" "$proj/.records/README.md"
 expect "README shows fixed invocation" ".records/records.sh list" "$proj/.records/README.md"
 expect_absent "README has no root selector" "--records-root" "$proj/.records/README.md"
 expect "README explains check" "check\` validates record metadata" "$proj/.records/README.md"
 expect "README protects ledger" "Never edit \`history.tsv\` by hand" "$proj/.records/README.md"
 expect "README owns refreshable block" "<!-- journal:records-tool BEGIN -->" "$proj/.records/README.md"
+block="$TMP/rendered-records-block"
+sed -n '/<!-- journal:records-tool BEGIN -->/,/<!-- journal:records-tool END -->/p' \
+  "$proj/.records/README.md" >"$block"
+if cmp -s "$SKILL/templates/records-readme-block.md" "$block"; then pass=$((pass + 1)); else
+  echo 'FAIL: standup did not render the package README template byte-for-byte' >&2
+  fail=$((fail + 1))
+fi
+
+# A malformed package template must refuse before setup creates any project
+# surface. Extraction must not make the former fixed heredoc unsafe.
+bad_skill="$TMP/bad-template-journal"; mkdir -p "$bad_skill"
+cp -R "$SKILL/." "$bad_skill/"
+sed '1s/BEGIN/BROKEN/' "$bad_skill/templates/records-readme-block.md" \
+  >"$bad_skill/templates/records-readme-block.tmp"
+mv "$bad_skill/templates/records-readme-block.tmp" \
+  "$bad_skill/templates/records-readme-block.md"
+bad_root="$TMP/bad-template-root"; mkdir -p "$bad_root"
+rc=0
+"$bad_skill/scripts/standup.sh" setup "$bad_root" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "malformed package template refusal rc" "2" "$rc"
+expect "malformed package template refusal" 'records README template is malformed' "$ERR"
+[ ! -e "$bad_root/.records" ] && [ ! -e "$bad_root/.spaces" ] && pass=$((pass + 1)) || {
+  echo 'FAIL: malformed package template created project surfaces' >&2
+  fail=$((fail + 1))
+}
 
 rc=0; run_default "$proj" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "zero-write rerun rc" "0" "$rc"
@@ -229,6 +254,9 @@ mkdir -p "$marker_mutation_skill/scripts"
 cp "$STANDUP" "$TMP/marker-live.before"
 cp "$STANDUP" "$marker_mutation_skill/scripts/standup.sh"
 cp "$SKILL/scripts/records.sh" "$marker_mutation_skill/scripts/records.sh"
+cp "$SKILL/scripts/records-readme-status.sh" \
+  "$marker_mutation_skill/scripts/records-readme-status.sh"
+cp -R "$SKILL/templates" "$marker_mutation_skill/templates"
 marker_needle='validate_markers() {'
 expect_eq "marker parser mutation target count" "1" \
   "$(grep -Fxc -- "$marker_needle" "$marker_mutation_skill/scripts/standup.sh")"

@@ -1,6 +1,6 @@
 ---
 name: journal
-description: "The records-layer format authority — defines what makes a file a record (a dated filename plus front-matter declaring its doctype), the record contract, the template convention, and the staged records.sh tool (search, query, lifecycle, and the history.tsv ledger) in fixed `.records/`. Verbs: `setup` (durably reconcile the tool layer), `repair` (restore an initialized layer's provider and managed README block), `migrate` (move one dedicated brownfield records root), `search`, `done`, and `curate`. Use when the user runs `/journal ...`, initializes, repairs, or migrates the records layer, searches or lists records, closes a record, asks about the record contract, or tidies the records home."
+description: "The records-layer format authority — defines what makes a file a record (a dated filename plus front-matter declaring its doctype), the record contract, the template convention, and the staged records.sh tool (search, query, lifecycle, and the history.tsv ledger) in fixed `.records/`. Verbs: `setup`, `repair`, `migrate`, `anchor` (an explicit project-owned discovery pointer), `search`, `done`, and `curate`. Use when the user runs `/journal ...`, initializes, repairs, migrates, or anchors the records layer, searches or lists records, closes a record, asks about the record contract, or tidies the records home."
 ---
 
 # journal — the records format authority
@@ -89,11 +89,12 @@ coherence), and record-link resolution. Tracker line form is a prose convention 
 | `/journal setup` | `verbs/setup.md` | Tool layer: first visit stands it up; later visit refreshes `records.sh` | "stand up the records", "refresh records.sh" |
 | `/journal repair` | `verbs/repair.md` | Restore only the provider and managed README block on an initialized layer | "repair records.sh", "restore the records tool" |
 | `/journal migrate [<source-root>]` | `verbs/migrate.md` | Preview, confirm, and Git-move one dedicated brownfield records root to `.records` | "migrate the records root", "move records to .records" |
+| `/journal anchor` | `verbs/anchor.md` | Add an explicit project-owned pointer to `.records/README.md` | "make records discoverable", "anchor the records layer" |
 | `/journal search` | `verbs/search.md` | Find records by content or metadata | "find/search/list/query records", "what's in the records about X" |
 | `/journal done <record>` | `verbs/done.md` | **Close** a record in place — disposition + note + the ledger line; write back inbound `→` links | "mark that done", "close out that plan" |
 | `/journal curate` | `verbs/curate.md` | **Substrate hygiene** — `check`, close what quietly finished, repair link rot, merge duplicates, propose prunes | "check the records", "tidy the records home" |
 
-`/journal` with no recognized verb: ask which of **setup / repair / migrate / search / done / curate**. Filing a
+`/journal` with no recognized verb: ask which of **setup / repair / migrate / anchor / search / done / curate**. Filing a
 follow-up is not journal's job (scope boundary, below).
 
 ## Shared discipline (every verb relies on this — stated here once)
@@ -139,6 +140,11 @@ follow-up is not journal's job (scope boundary, below).
 - **Commit policy.** A verb invoked **standalone** makes its own scoped commit, then runs the
   host's cheap doc gate if it has one. A verb invoked **inside a client's sweep** (a debrief)
   only writes — the sweep makes the single atomic multi-file commit.
+- **Front-door boundary.** Only explicitly invoked `/journal anchor` may create or append to the
+  repository-root `AGENTS.md`, and it writes only the fixed project-owned records pointer after a
+  preview and confirmation. Setup, repair, migration, runtime, and curation never install, refresh,
+  require, or remove that pointer. Migration's bounded removal of matching retired root declarations
+  remains its only other front-door mutation and preserves anchor prose and all unrelated bytes.
 
 ## Scope boundary + host conduct
 
@@ -160,7 +166,12 @@ absent — never demand the workshop as a precondition.
 - consumes: — (none; it defines the format)
 <!-- /edges:journal -->
 
+## Project templates
+
+None. Journal's README block and front-door pointer are package-only provider resources; setup
+refreshes only the managed README block, and explicit anchor installs project-owned prose.
+
 ## Done when
 
-- **No recognized verb:** asked which of setup / repair / migrate / search / done / curate; did not file a follow-up.
+- **No recognized verb:** asked which of setup / repair / migrate / anchor / search / done / curate; did not file a follow-up.
 - **A verb ran:** that verb file's Done when.

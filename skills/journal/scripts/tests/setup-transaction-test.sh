@@ -15,7 +15,11 @@ FIXTURE_SKILL="$TMP/journal"
 mkdir -p "$FIXTURE_SKILL/scripts"
 cp "$SKILL/scripts/standup.sh" "$FIXTURE_SKILL/scripts/standup.sh"
 cp "$SKILL/scripts/records.sh" "$FIXTURE_SKILL/scripts/records.sh"
-chmod +x "$FIXTURE_SKILL/scripts/standup.sh" "$FIXTURE_SKILL/scripts/records.sh"
+cp "$SKILL/scripts/records-readme-status.sh" \
+  "$FIXTURE_SKILL/scripts/records-readme-status.sh"
+cp -R "$SKILL/templates" "$FIXTURE_SKILL/templates"
+chmod +x "$FIXTURE_SKILL/scripts/standup.sh" "$FIXTURE_SKILL/scripts/records.sh" \
+  "$FIXTURE_SKILL/scripts/records-readme-status.sh"
 STANDUP="$FIXTURE_SKILL/scripts/standup.sh"
 SCOPED="$SKILL/scripts/scoped-commit.sh"
 
@@ -164,6 +168,9 @@ exercise_commit_point_crash() {
   mkdir -p "$crash_root" "$crash_skill/scripts"
   cp "$STANDUP" "$crash_skill/scripts/standup.sh"
   cp "$FIXTURE_SKILL/scripts/records.sh" "$crash_skill/scripts/records.sh"
+  cp "$FIXTURE_SKILL/scripts/records-readme-status.sh" \
+    "$crash_skill/scripts/records-readme-status.sh"
+  cp -R "$FIXTURE_SKILL/templates" "$crash_skill/templates"
   if [ "$crash_name" = legacy ]; then
     mkdir -p "$crash_root/.spaces/journal/scripts"
     printf '%s\n' 'prior-provider-commit-point-canary' \
@@ -323,6 +330,9 @@ mutate_helper_once() {
   mkdir -p "$mutation_skill/scripts"
   cp "$STANDUP" "$mutation_skill/scripts/standup.sh"
   cp "$FIXTURE_SKILL/scripts/records.sh" "$mutation_skill/scripts/records.sh"
+  cp "$FIXTURE_SKILL/scripts/records-readme-status.sh" \
+    "$mutation_skill/scripts/records-readme-status.sh"
+  cp -R "$FIXTURE_SKILL/templates" "$mutation_skill/templates"
   mutation_count="$(grep -Fxc -- "$mutation_needle" "$mutation_skill/scripts/standup.sh")"
   expect_eq "$mutation_name mutation target count" "1" "$mutation_count"
   awk -v needle="$mutation_needle" -v replacement="$mutation_replacement" '

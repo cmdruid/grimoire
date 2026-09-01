@@ -4,7 +4,7 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 rc=0
-for test_file in install-pack-test.sh configure-clankshop-test.sh clankshop-contract-test.sh backlog-provider-contract-test.sh canonical-provider-parity-test.sh; do
+for test_file in install-pack-test.sh configure-clankshop-test.sh clankshop-contract-test.sh backlog-provider-contract-test.sh project-layer-anchor-contract-test.sh canonical-provider-parity-test.sh; do
   echo "== $test_file"
   bash "$DIR/$test_file" || rc=1
 done

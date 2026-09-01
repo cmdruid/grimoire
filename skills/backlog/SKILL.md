@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: "Manage project-owned living follow-up trackers in a first-class tracker layer. Setup deploys the tracker@2 API, lifecycle history, and default tables; migrate converts one exact tracker@1 installation; tracker add|remove|list manages extensible queues; file and debrief capture follow-ups; query pages them; curate updates or consumes them. Use for `/backlog ...`, filing or grooming follow-ups, and sweeping completed work before substantive context is lost."
+description: "Manage project-owned living follow-up trackers in a first-class tracker layer. Setup deploys the tracker@2 API, lifecycle history, and default tables; migrate converts one exact tracker@1 installation; anchor installs an explicit project-owned discovery pointer; tracker add|remove|list manages extensible queues; file and debrief capture follow-ups; query pages them; curate updates or consumes them. Use for `/backlog ...`, filing or grooming follow-ups, anchoring the tracker layer, and sweeping completed work before substantive context is lost."
 ---
 
 # backlog — living follow-up trackers
@@ -16,6 +16,7 @@ layer is public project state: `README.md`, package-managed `trackers.sh`, `hist
 | `/backlog setup` | `verbs/setup.md` | Initialize or reconcile the tracker layer |
 | `/backlog repair` | `verbs/repair.md` | Restore the provider and managed tracker-root guide |
 | `/backlog migrate [<source-root>]` | `verbs/migrate.md` | Convert one exact tracker@1 TSV installation |
+| `/backlog anchor` | `verbs/anchor.md` | Add an explicit project-owned pointer to `.trackers/README.md` |
 | `/backlog tracker add\|remove\|list` | `verbs/tracker.md` | Manage or inspect queue files |
 | `/backlog file <stem> [text]` | `verbs/file.md` | Create one open item |
 | `/backlog query [<stem>\|--history]` | `verbs/query.md` | Catalog or page tracker and lifecycle state |
@@ -42,8 +43,10 @@ aliases.
   installed API.
 - Migrate runs package-local `scripts/migrate-trackers.sh`; it is the only tracker@1 reader. All
   other Backlog commands remain tracker@2-only.
-- Backlog never creates, reads, edits, removes, or commits a project front door. Tracker state is
-  self-described by `.trackers/README.md`; workflow composition belongs outside this skill.
+- Only explicitly invoked `/backlog anchor` may create or append to repository-root `AGENTS.md`, and
+  it writes only the fixed project-owned tracker pointer after preview and confirmation. Setup,
+  repair, migration, provider use, queue administration, and debrief never install, refresh, require,
+  or remove that prose. No Backlog path reads `CLAUDE.md` or restores route/debrief registration.
 - Standalone setup, repair, tracker, file, and curate calls make one pathspec-scoped commit over unique
   reported `wrote=` / `reconciled=` / `removed=` paths through `scripts/scoped-commit.sh`. Inside debrief or an
   announced configuration sweep, remain write-only and return the paths to the caller. No changed
@@ -75,10 +78,12 @@ mint records, define another skill's domain judgment, or store session/workstrea
 
 ## Project templates
 
-None.
+None. The tracker README block and front-door pointer are package-only provider resources; setup
+refreshes only the managed README block, and explicit anchor installs project-owned prose.
 
 ## Done when
 
 The selected verb's done-when holds; every tracker mutation used the installed API, guarded
 queue-lifecycle helper, or bounded migration helper; the prompt population matches configured
-queues; no front door changed; and standalone changes used one exact pathspec-scoped commit.
+queues; no front door changed except through explicit anchor; and standalone changes used one exact
+pathspec-scoped commit.

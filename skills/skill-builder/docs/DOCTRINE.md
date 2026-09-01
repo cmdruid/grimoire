@@ -170,6 +170,17 @@ the skill's own routing metadata and a self-describing durable home are sufficie
 block would only bloat the front door. Persisting captured items does not by itself confer front-door
 ownership.
 
+**A project-layer pointer is not route registration.** A durable public layer with a fixed local
+guide and adjacent provider may expose an explicitly invoked, absent-only pointer from the project
+front door to that guide when bare discoverability is independently justified. The pointer names
+project state, not a skill route or verb roster. It uses a fixed canonical path, previews exact prose,
+requires confirmation, and becomes project-owned immediately: no package markers, version, refresh,
+replacement, or removal lifecycle. An existing literal guide-path mention satisfies it; a conflicting
+reserved heading refuses. Setup, repair, migration, runtime, and composition never install or require
+the pointer. The layer README remains package-managed because it evolves with the adjacent provider,
+and together they must support ordinary use without the source skill. Maintenance still stops when
+the owning skill is unavailable. A patient-zero library tests the pointer only in throwaway projects.
+
 ## Typed edges & registration — the mechanics
 
 An **edge** is a one-line declaration: `<kind>: <type>[, <type>...] [— <note>]`, in a delimited

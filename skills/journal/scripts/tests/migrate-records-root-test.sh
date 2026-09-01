@@ -58,6 +58,8 @@ expect_refusal() {
 # retired declaration; apply moves the complete root in one clean commit.
 success="$TMP/success"; init_repo "$success"; seed_dedicated "$success"
 printf '%s\n' '# Agent front door' 'agent-records: docs/records' 'Keep this line.' \
+  '## Project records' '' \
+  'Durable project state lives here. Read `.records/README.md` before changing it.' \
   >"$success/AGENTS.md"
 printf 'Claude prefix\nrecords-root: docs/records' >"$success/CLAUDE.md"
 commit_all "$success"
@@ -87,7 +89,9 @@ else echo 'FAIL: record bytes changed' >&2; fail=$((fail + 1)); fi
 if cmp -s "$TMP/ledger.before" "$success/.records/history.tsv"; then
   pass=$((pass + 1))
 else echo 'FAIL: ledger bytes changed' >&2; fail=$((fail + 1)); fi
-printf '%s\n' '# Agent front door' 'Keep this line.' >"$TMP/agents.expected"
+printf '%s\n' '# Agent front door' 'Keep this line.' '## Project records' '' \
+  'Durable project state lives here. Read `.records/README.md` before changing it.' \
+  >"$TMP/agents.expected"
 printf 'Claude prefix\n' >"$TMP/claude.expected"
 if cmp -s "$TMP/agents.expected" "$success/AGENTS.md"; then pass=$((pass + 1));
 else echo 'FAIL: AGENTS surrounding bytes changed' >&2; fail=$((fail + 1)); fi

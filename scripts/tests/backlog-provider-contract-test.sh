@@ -29,8 +29,15 @@ validate(){
     [ ! -e "$root/skills/backlog/$retired" ]||{ fail "retired Backlog route surface remains: $retired";return 1;}
   done
   if rg -n 'AGENTS\.md|CLAUDE\.md|register-route|route-status|debrief-anchor|skill:backlog' \
-    "$root/skills/backlog/scripts" --glob '!**/tests/**' >/dev/null;then
-    fail 'Backlog production scripts retain front-door ownership';return 1
+    "$root/skills/backlog/scripts" --glob '!**/tests/**' --glob '!trackers-anchor.sh' >/dev/null;then
+    fail 'non-anchor Backlog production scripts retain front-door ownership';return 1
+  fi
+  [ "$(rg -l 'AGENTS\.md' "$root/skills/backlog/scripts" --glob '!**/tests/**'|wc -l|tr -d ' ')" -eq 1 ]&&
+    rg -q 'AGENTS\.md' "$root/skills/backlog/scripts/trackers-anchor.sh"||{
+      fail 'explicit anchor is not the singular Backlog front-door writer';return 1;}
+  if rg -n 'CLAUDE\.md|register-route|route-status|debrief-anchor|skill:backlog' \
+    "$root/skills/backlog/scripts/trackers-anchor.sh" >/dev/null;then
+    fail 'explicit anchor restored retired route ownership';return 1
   fi
   grep -qF 'tracker@2' "$root/skills/analyst/SKILL.md"||{ fail 'Analyst does not require tracker@2';return 1;}
   grep -qF 'tracker@2' "$root/skills/foreman/SKILL.md"||{ fail 'Foreman does not require tracker@2';return 1;}

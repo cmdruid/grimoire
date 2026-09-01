@@ -56,7 +56,8 @@ seed_v1(){
 
 # In-place preview is write-free; apply requires confirmation and preserves front-door bytes.
 R="$T/in-place";new_repo "$R";seed_v1 "$R" .trackers
-printf '%s\n' '<!-- skill:backlog BEGIN broken -->' >"$R/AGENTS.md"
+printf '%s\n' '<!-- skill:backlog BEGIN broken -->' '## Project trackers' '' \
+  'Read `.trackers/README.md` before changing tracker state.' >"$R/AGENTS.md"
 git -C "$R" add AGENTS.md;git -C "$R" commit -qm front-door
 cp "$R/AGENTS.md" "$T/agents.before"
 cp "$R/.trackers/tasks.tsv" "$T/tasks.before"

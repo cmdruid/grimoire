@@ -1,7 +1,3 @@
-# Records
-
-Records accumulated during development.
-
 <!-- journal:records-tool BEGIN -->
 ## Use the records tool
 
@@ -54,11 +50,3 @@ initialization or a root migration is required, use the corresponding Journal pr
 Journal skill isn't available, stop and report the maintenance requirement instead of improvising
 tool bytes, ledger entries, schemas, or migration behavior.
 <!-- journal:records-tool END -->
-
-The directory layout under this root belongs to record writers. The engine
-crawls records at any depth and knows no store roster. Project templates live
-at `.spaces/<skill>/templates/` (for example, `.spaces/notepad/templates/`);
-project doctrine lives at `.spaces/<skill>/doctrine/`. Journal setup deploys
-the engine, ledger, and this README only.
-
-Stood up by journal on 2026-08-29.

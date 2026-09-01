@@ -76,10 +76,15 @@ validate "$REPO"
 
 # Red-prove each parity/absence arm in a throwaway fixture, restoring bytes.
 FIX="$T/repo"
-mkdir -p "$FIX/skills/journal/scripts" "$FIX/skills/backlog/scripts" "$FIX/skills/backlog/templates" \
+mkdir -p "$FIX/skills/journal/scripts" "$FIX/skills/journal/templates" \
+  "$FIX/skills/backlog/scripts" "$FIX/skills/backlog/templates" \
   "$FIX/.records" "$FIX/.trackers"
 cp "$REPO/skills/journal/scripts/records.sh" "$FIX/skills/journal/scripts/records.sh"
 cp "$REPO/skills/journal/scripts/standup.sh" "$FIX/skills/journal/scripts/standup.sh"
+cp "$REPO/skills/journal/scripts/records-readme-status.sh" \
+  "$FIX/skills/journal/scripts/records-readme-status.sh"
+cp "$REPO/skills/journal/templates/records-readme-block.md" \
+  "$FIX/skills/journal/templates/records-readme-block.md"
 cp "$REPO/skills/backlog/scripts/trackers.sh" "$FIX/skills/backlog/scripts/trackers.sh"
 cp "$REPO/skills/backlog/templates/trackers-readme-block.md" "$FIX/skills/backlog/templates/trackers-readme-block.md"
 cp "$REPO/.records/records.sh" "$FIX/.records/records.sh"

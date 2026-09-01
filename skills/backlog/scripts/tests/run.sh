@@ -19,6 +19,8 @@ echo "== runtime-recovery-test.sh"
 bash "$DIR/runtime-recovery-test.sh" || rc=1
 echo "== migrate-test.sh"
 bash "$DIR/migrate-test.sh" || rc=1
+echo "== anchor-test.sh"
+bash "$DIR/anchor-test.sh" || rc=1
 echo "== debrief-contract-test.sh"
 bash "$DIR/debrief-contract-test.sh" || rc=1
 echo "== hard-cut-test.sh"
