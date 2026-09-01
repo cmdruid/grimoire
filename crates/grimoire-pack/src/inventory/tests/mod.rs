@@ -1,1 +1,5 @@
+mod finding_contract;
+mod frontmatter;
+mod pack_format;
+mod red_proofs;
 mod tracer;

@@ -35,43 +35,54 @@ impl MarkedEventReceiver for Sink {
 }
 
 pub(crate) fn frontmatter(input: &[u8]) -> Result<Value, YamlFailure> {
-    let text = std::str::from_utf8(input).map_err(|_| YamlFailure::plain("yaml-malformed"))?;
-    let mut lines = text.split_inclusive('\n');
-    let opening = lines
-        .next()
-        .ok_or_else(|| YamlFailure::plain("frontmatter-missing"))?;
-    if opening.trim_end_matches(['\r', '\n']) != "---" {
+    let Some(opening_end) = input
+        .iter()
+        .position(|byte| *byte == b'\n')
+        .map(|index| index + 1)
+    else {
+        return Err(YamlFailure::plain("frontmatter-missing"));
+    };
+    if trim_line(&input[..opening_end]) != b"---" {
         return Err(YamlFailure::plain("frontmatter-missing"));
     }
-    let mut yaml = String::new();
-    let mut consumed = opening.len();
-    let mut closed = false;
-    for line in lines {
-        consumed += line.len();
-        if consumed > 65_536 {
+    let mut cursor = opening_end;
+    let closing_start = loop {
+        if cursor >= input.len() {
+            return Err(YamlFailure::plain("frontmatter-unclosed"));
+        }
+        let line_start = cursor;
+        cursor = input[cursor..]
+            .iter()
+            .position(|byte| *byte == b'\n')
+            .map_or(input.len(), |offset| cursor + offset + 1);
+        if cursor > 65_536 {
             return Err(YamlFailure {
                 code: "frontmatter-too-large",
-                details: vec![
-                    ("limit", "65536".into()),
-                    ("observed", consumed.to_string()),
-                ],
+                details: vec![("limit", "65536".into()), ("observed", "65537".into())],
             });
         }
-        if line.trim_end_matches(['\r', '\n']) == "---" {
-            closed = true;
-            break;
+        if trim_line(&input[line_start..cursor]) == b"---" {
+            break line_start;
         }
-        yaml.push_str(line);
-    }
-    if !closed {
-        return Err(YamlFailure::plain("frontmatter-unclosed"));
-    }
+    };
+    let yaml = std::str::from_utf8(&input[opening_end..closing_start])
+        .map_err(|_| YamlFailure::plain("yaml-malformed"))?;
 
     let mut sink = Sink(Vec::new());
-    Parser::new_from_str(&yaml)
+    Parser::new_from_str(yaml)
         .load(&mut sink, true)
         .map_err(|_| YamlFailure::plain("yaml-malformed"))?;
     parse_events(&sink.0)
+}
+
+fn trim_line(mut line: &[u8]) -> &[u8] {
+    if line.ends_with(b"\n") {
+        line = &line[..line.len() - 1];
+    }
+    if line.ends_with(b"\r") {
+        line = &line[..line.len() - 1];
+    }
+    line
 }
 
 fn parse_events(events: &[Event]) -> Result<Value, YamlFailure> {
@@ -128,7 +139,7 @@ fn parse_value(
         Event::Scalar(value, style, anchor, tag) => {
             add_node(nodes)?;
             check_meta(*anchor, tag.is_some())?;
-            Ok(parse_scalar(value, *style))
+            parse_scalar(value, *style)
         }
         Event::SequenceStart(anchor, tag) => {
             add_node(nodes)?;
@@ -182,16 +193,20 @@ fn parse_value(
     }
 }
 
-fn parse_scalar(value: &str, style: TScalarStyle) -> Value {
+fn parse_scalar(value: &str, style: TScalarStyle) -> Result<Value, YamlFailure> {
     if style != TScalarStyle::Plain {
-        return Value::String(value.to_owned());
+        return Ok(Value::String(value.to_owned()));
     }
-    match value {
+    Ok(match value {
         "" | "null" | "Null" | "NULL" | "~" => Value::Null,
         "true" | "True" | "TRUE" => Value::Boolean,
         "false" | "False" | "FALSE" => Value::Boolean,
+        ".inf" | ".Inf" | ".INF" | "-.inf" | "-.Inf" | "-.INF" | "+.inf" | "+.Inf" | "+.INF"
+        | ".nan" | ".NaN" | ".NAN" => {
+            return Err(YamlFailure::plain("yaml-unsupported-scalar"));
+        }
         value if value.parse::<i64>().is_ok() => Value::Number(value.to_owned()),
         value if value.parse::<f64>().is_ok_and(f64::is_finite) => Value::Number(value.to_owned()),
         value => Value::String(value.to_owned()),
-    }
+    })
 }

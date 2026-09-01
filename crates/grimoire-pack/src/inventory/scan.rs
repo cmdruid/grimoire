@@ -59,9 +59,14 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
             continue;
         }
         let bytes = read_file(reader, &entry.path)?;
-        match parse_pack(&bytes, entry.path.clone()) {
-            Ok(pack) => packs.push(pack),
-            Err(failure) => findings.push(finding(entry.path.clone(), failure)),
+        let (pack, failures) = parse_pack(&bytes, entry.path.clone());
+        findings.extend(
+            failures
+                .into_iter()
+                .map(|failure| finding(entry.path.clone(), failure)),
+        );
+        if let Some(pack) = pack {
+            packs.push(pack);
         }
     }
     packs.sort_by(|left, right| (&left.name, &left.path).cmp(&(&right.name, &right.path)));
@@ -132,7 +137,7 @@ fn finding_order(left: &Finding, right: &Finding) -> std::cmp::Ordering {
         ))
 }
 
-fn parse_skill_name(bytes: &[u8]) -> Result<String, YamlFailure> {
+pub(crate) fn parse_skill_name(bytes: &[u8]) -> Result<String, YamlFailure> {
     let Value::Mapping(fields) = yaml::frontmatter(bytes)? else {
         return Err(YamlFailure {
             code: "frontmatter-root-type",
@@ -160,83 +165,176 @@ fn parse_skill_name(bytes: &[u8]) -> Result<String, YamlFailure> {
     Ok(name.clone())
 }
 
-fn parse_pack(bytes: &[u8], path: SourcePath) -> Result<Pack, YamlFailure> {
-    let Value::Mapping(fields) = yaml::frontmatter(bytes)? else {
-        return Err(YamlFailure {
-            code: "frontmatter-root-type",
-            details: vec![("actual", "non-mapping".into())],
-        });
+pub(crate) fn parse_pack(bytes: &[u8], path: SourcePath) -> (Option<Pack>, Vec<YamlFailure>) {
+    let fields = match yaml::frontmatter(bytes) {
+        Ok(Value::Mapping(fields)) => fields,
+        Ok(value) => {
+            return (
+                None,
+                vec![YamlFailure {
+                    code: "frontmatter-root-type",
+                    details: vec![("actual", value.kind().into())],
+                }],
+            )
+        }
+        Err(failure) => return (None, vec![failure]),
     };
     let map: BTreeMap<_, _> = fields.into_iter().collect();
-    let scalar = |field: &'static str| -> Result<String, YamlFailure> {
-        match map.get(field) {
-            Some(Value::String(value)) => Ok(value.clone()),
-            Some(value) => Err(YamlFailure {
-                code: "pack-field-type",
-                details: vec![
-                    ("field", field.into()),
-                    ("expected", "string".into()),
-                    ("actual", value.kind().into()),
-                ],
-            }),
-            None => Err(YamlFailure {
-                code: "pack-field-missing",
-                details: vec![("field", field.into())],
-            }),
-        }
-    };
-    let sequence = |field: &'static str| -> Result<Vec<String>, YamlFailure> {
-        match map.get(field) {
-            Some(Value::Sequence(values)) => values
-                .iter()
-                .enumerate()
-                .map(|(index, value)| match value {
-                    Value::String(value) => Ok(value.clone()),
-                    value => Err(YamlFailure {
-                        code: "pack-member-type",
-                        details: vec![
-                            ("field", field.into()),
-                            ("index", index.to_string()),
-                            ("actual", value.kind().into()),
-                        ],
-                    }),
-                })
-                .collect(),
-            Some(value) => Err(YamlFailure {
-                code: "pack-field-type",
-                details: vec![
-                    ("field", field.into()),
-                    ("expected", "sequence".into()),
-                    ("actual", value.kind().into()),
-                ],
-            }),
-            None => Err(YamlFailure {
-                code: "pack-field-missing",
-                details: vec![("field", field.into())],
-            }),
-        }
-    };
-    let schema = scalar("schema")?;
-    if schema != "grimoire/pack@1" {
-        return Err(YamlFailure {
-            code: "pack-schema-invalid",
-            details: vec![("value", schema)],
+    let mut failures = Vec::new();
+    for key in map.keys().filter(|key| {
+        !matches!(
+            key.as_str(),
+            "schema" | "name" | "description" | "required" | "optional"
+        )
+    }) {
+        failures.push(YamlFailure {
+            code: "pack-unknown-key",
+            details: vec![("key", key.clone())],
         });
     }
-    let name = scalar("name")?;
-    let description = scalar("description")?;
-    let required = sequence("required")?;
-    let optional = sequence("optional")?;
-    Ok(Pack {
-        name,
-        path,
-        digest: sha256(bytes),
-        description,
-        required,
-        optional,
-        missing_required: Vec::new(),
-        missing_optional: Vec::new(),
-    })
+    let scalar = |field: &'static str, failures: &mut Vec<YamlFailure>| -> Option<String> {
+        match map.get(field) {
+            Some(Value::String(value)) => Some(value.clone()),
+            Some(value) => {
+                failures.push(YamlFailure {
+                    code: "pack-field-type",
+                    details: vec![
+                        ("field", field.into()),
+                        ("expected", "string".into()),
+                        ("actual", value.kind().into()),
+                    ],
+                });
+                None
+            }
+            None => {
+                failures.push(YamlFailure {
+                    code: "pack-field-missing",
+                    details: vec![("field", field.into())],
+                });
+                None
+            }
+        }
+    };
+    let sequence = |field: &'static str, failures: &mut Vec<YamlFailure>| -> Option<Vec<String>> {
+        match map.get(field) {
+            Some(Value::Sequence(values)) => {
+                let mut members = Vec::new();
+                for (index, value) in values.iter().enumerate() {
+                    if let Value::String(value) = value {
+                        members.push(value.clone());
+                    } else {
+                        failures.push(YamlFailure {
+                            code: "pack-member-type",
+                            details: vec![
+                                ("field", field.into()),
+                                ("index", index.to_string()),
+                                ("actual", value.kind().into()),
+                            ],
+                        });
+                    }
+                }
+                Some(members)
+            }
+            Some(value) => {
+                failures.push(YamlFailure {
+                    code: "pack-field-type",
+                    details: vec![
+                        ("field", field.into()),
+                        ("expected", "sequence".into()),
+                        ("actual", value.kind().into()),
+                    ],
+                });
+                None
+            }
+            None => {
+                failures.push(YamlFailure {
+                    code: "pack-field-missing",
+                    details: vec![("field", field.into())],
+                });
+                None
+            }
+        }
+    };
+    let schema = scalar("schema", &mut failures);
+    if schema
+        .as_deref()
+        .is_some_and(|value| value != "grimoire/pack@1")
+    {
+        failures.push(YamlFailure {
+            code: "pack-schema-invalid",
+            details: vec![("value", schema.clone().unwrap())],
+        });
+    }
+    let name = scalar("name", &mut failures);
+    if let Some(name) = &name {
+        if !valid_slug(name) {
+            failures.push(YamlFailure {
+                code: "pack-name-invalid",
+                details: vec![("value", name.clone())],
+            });
+        }
+    }
+    let description = scalar("description", &mut failures);
+    if description.as_deref().is_some_and(str::is_empty) {
+        failures.push(YamlFailure {
+            code: "pack-description-empty",
+            details: Vec::new(),
+        });
+    }
+    let required = sequence("required", &mut failures);
+    let optional = sequence("optional", &mut failures);
+    for members in [required.as_ref(), optional.as_ref()].into_iter().flatten() {
+        for member in members {
+            if !valid_slug(member) {
+                failures.push(YamlFailure {
+                    code: "pack-member-invalid",
+                    details: vec![("value", member.clone())],
+                });
+            }
+        }
+        let mut seen = BTreeSet::new();
+        for member in members {
+            if !seen.insert(member) {
+                failures.push(YamlFailure {
+                    code: "pack-member-duplicate",
+                    details: vec![("member", member.clone())],
+                });
+            }
+        }
+    }
+    if let (Some(required), Some(optional)) = (&required, &optional) {
+        let required_set: BTreeSet<_> = required.iter().collect();
+        for member in optional {
+            if required_set.contains(member) {
+                failures.push(YamlFailure {
+                    code: "pack-member-overlap",
+                    details: vec![("member", member.clone())],
+                });
+            }
+        }
+        if required.is_empty() && optional.is_empty() {
+            failures.push(YamlFailure {
+                code: "pack-empty",
+                details: Vec::new(),
+            });
+        }
+    }
+    if !failures.is_empty() {
+        return (None, failures);
+    }
+    (
+        Some(Pack {
+            name: name.unwrap(),
+            path,
+            digest: sha256(bytes),
+            description: description.unwrap(),
+            required: required.unwrap(),
+            optional: optional.unwrap(),
+            missing_required: Vec::new(),
+            missing_optional: Vec::new(),
+        }),
+        Vec::new(),
+    )
 }
 
 fn scan_skill(
