@@ -200,7 +200,7 @@ This task is read-only and produces no commit.
     changes, every untouched byte remains identical, proposed bytes reparse to the intended typed
     value, and the workspace remains green.
 
-- [ ] **Slice 3: The hard-cut deterministic lock authority** <requires: 1>
+- [x] **Slice 3: The hard-cut deterministic lock authority** <requires: 1>
   - Files: create `crates/grimoire-core/tests/lockfile.rs` and lock fixtures under
     `crates/grimoire-core/tests/fixtures/lock/`; modify
     `crates/grimoire-core/src/error.rs`, `crates/grimoire-core/src/model.rs`,
