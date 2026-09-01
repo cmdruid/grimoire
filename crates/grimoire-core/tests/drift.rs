@@ -138,7 +138,12 @@ fn check_needs_no_source_and_surfaces_library_issues() {
     sb.write_manifest("broken", "1.0.0", "broken", "no-such-member", None);
 
     let report = check::check(&sb.library(), &target).unwrap();
-    assert_eq!(report.library_issues.len(), 1, "{:?}", report.library_issues);
+    assert_eq!(
+        report.library_issues.len(),
+        1,
+        "{:?}",
+        report.library_issues
+    );
     assert!(report.library_issues[0].contains("no-such-member"));
     assert!(
         report

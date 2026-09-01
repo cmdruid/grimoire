@@ -162,8 +162,10 @@ fn failed(e: &CoreError) -> Done {
 /// needs to name it. Kept here so `app` never touches `PathBuf` semantics.
 #[must_use]
 pub fn library_label(root: &std::path::Path) -> String {
-    root.file_name()
-        .map_or_else(|| root.display().to_string(), |n| n.to_string_lossy().into_owned())
+    root.file_name().map_or_else(
+        || root.display().to_string(),
+        |n| n.to_string_lossy().into_owned(),
+    )
 }
 
 /// Where a project-scope install would land, for display before one happens.

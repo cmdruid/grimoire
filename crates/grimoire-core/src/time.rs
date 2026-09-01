@@ -24,7 +24,12 @@ impl Timestamp {
         if b.len() != 20 {
             return Err(bad());
         }
-        if !(b[4] == b'-' && b[7] == b'-' && b[10] == b'T' && b[13] == b':' && b[16] == b':' && b[19] == b'Z')
+        if !(b[4] == b'-'
+            && b[7] == b'-'
+            && b[10] == b'T'
+            && b[13] == b':'
+            && b[16] == b':'
+            && b[19] == b'Z')
         {
             return Err(bad());
         }

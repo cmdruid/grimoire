@@ -28,8 +28,8 @@ pub struct RemovePlan {
 
 /// Compute the removal without performing it.
 pub fn plan_remove(target: &Target, pack: &str) -> Result<RemovePlan> {
-    let lock = read_lock(&target.lock_path)?
-        .ok_or_else(|| CoreError::NotInstalled(pack.to_string()))?;
+    let lock =
+        read_lock(&target.lock_path)?.ok_or_else(|| CoreError::NotInstalled(pack.to_string()))?;
     let entry = lock
         .packs
         .get(pack)
@@ -118,8 +118,8 @@ pub fn remove(target: &Target, plan: &RemovePlan) -> Result<()> {
 /// entry from the lock, remove the skill if unreferenced." The pack stays
 /// installed, and the member may be reinstalled later from the pack's source.
 pub fn remove_optional_member(target: &Target, pack: &str, member: &str) -> Result<()> {
-    let mut lock = read_lock(&target.lock_path)?
-        .ok_or_else(|| CoreError::NotInstalled(pack.to_string()))?;
+    let mut lock =
+        read_lock(&target.lock_path)?.ok_or_else(|| CoreError::NotInstalled(pack.to_string()))?;
     {
         let entry = lock
             .packs

@@ -166,7 +166,10 @@ mod tests {
             by("claude-code").global_skills_dir,
             Path::new("/home/u/.claude/skills")
         );
-        assert_eq!(by("codex").global_skills_dir, Path::new("/home/u/.codex/skills"));
+        assert_eq!(
+            by("codex").global_skills_dir,
+            Path::new("/home/u/.codex/skills")
+        );
         assert_eq!(
             by("cursor").global_skills_dir,
             Path::new("/home/u/.cursor/skills")
@@ -181,7 +184,11 @@ mod tests {
     fn only_claude_is_non_universal_at_project_scope() {
         let env = AgentEnv::rooted("/home/u");
         let t = table(&env);
-        assert!(!t.iter().find(|a| a.id == "claude-code").unwrap().is_universal());
+        assert!(!t
+            .iter()
+            .find(|a| a.id == "claude-code")
+            .unwrap()
+            .is_universal());
         for id in ["codex", "cursor", "universal"] {
             assert!(
                 t.iter().find(|a| a.id == id).unwrap().is_universal(),

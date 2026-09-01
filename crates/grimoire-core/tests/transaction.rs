@@ -27,11 +27,7 @@ fn a_link_through_an_intermediate_symlink_is_not_a_collision() {
     // source, so install.sh calls this "already installed", not a collision.
     let alias = sb.dir.path().join("alias");
     std::os::unix::fs::symlink(sb.library_root(), &alias).unwrap();
-    std::os::unix::fs::symlink(
-        alias.join("skills/beta"),
-        target.skills_dir.join("beta"),
-    )
-    .unwrap();
+    std::os::unix::fs::symlink(alias.join("skills/beta"), target.skills_dir.join("beta")).unwrap();
 
     let plan = install::preflight(&sb.library(), "alpha", &target).unwrap();
     let beta = plan
@@ -168,7 +164,10 @@ fn a_link_failure_aborts_with_no_lock_and_no_partial_links() {
     // TempDir's cleanup can actually remove the directory).
     set_mode(&target.skills_dir, 0o755);
 
-    assert!(result.is_err(), "a read-only skills dir must fail the install");
+    assert!(
+        result.is_err(),
+        "a read-only skills dir must fail the install"
+    );
     for member in ["alpha", "beta", "gamma"] {
         assert!(
             !target.skills_dir.join(member).exists(),
@@ -303,7 +302,10 @@ fn a_shared_member_is_refcounted_at_pack_altitude() {
     assert!(plan.unlink.iter().all(|(m, _)| m != "beta"));
     remove::remove(&target, &plan).unwrap();
 
-    assert!(target.skills_dir.join("beta").exists(), "beta is still delta's");
+    assert!(
+        target.skills_dir.join("beta").exists(),
+        "beta is still delta's"
+    );
     assert!(!target.skills_dir.join("alpha").exists());
     let inv = inventory::inventory(&target).unwrap();
     assert_eq!(inv.packs.len(), 1);
@@ -330,7 +332,11 @@ fn a_foreign_link_is_reported_and_left_alone() {
     std::os::unix::fs::symlink(&elsewhere, &link).unwrap();
 
     let plan = remove::plan_remove(&target, "alpha").unwrap();
-    assert_eq!(plan.foreign.len(), 1, "install.sh: never remove a link outside the clone");
+    assert_eq!(
+        plan.foreign.len(),
+        1,
+        "install.sh: never remove a link outside the clone"
+    );
     assert!(plan.unlink.iter().all(|(m, _)| m != "beta"));
     remove::remove(&target, &plan).unwrap();
     assert!(link.exists(), "a foreign link must survive our removal");
@@ -373,7 +379,11 @@ fn a_second_packs_install_preserves_the_first_entry_and_unknown_keys() {
     let text = std::fs::read_to_string(&target.lock_path).unwrap();
     let mut value: serde_json::Value = serde_json::from_str(&text).unwrap();
     value["futureKey"] = serde_json::json!("keep me");
-    std::fs::write(&target.lock_path, serde_json::to_string_pretty(&value).unwrap()).unwrap();
+    std::fs::write(
+        &target.lock_path,
+        serde_json::to_string_pretty(&value).unwrap(),
+    )
+    .unwrap();
 
     let library = sb.library();
     install::install(install::InstallRequest {
@@ -388,7 +398,13 @@ fn a_second_packs_install_preserves_the_first_entry_and_unknown_keys() {
 
     let after: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&target.lock_path).unwrap()).unwrap();
-    assert_eq!(after["futureKey"], "keep me", "§3: unknown keys are preserved");
-    assert!(after["packs"]["alpha"].is_object(), "the first pack survived");
+    assert_eq!(
+        after["futureKey"], "keep me",
+        "§3: unknown keys are preserved"
+    );
+    assert!(
+        after["packs"]["alpha"].is_object(),
+        "the first pack survived"
+    );
     assert!(after["packs"]["delta"].is_object());
 }

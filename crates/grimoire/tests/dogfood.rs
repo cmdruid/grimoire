@@ -185,7 +185,11 @@ fn a_pack_installs_into_a_foreign_project_at_project_scope() {
     let fake_home = tempfile::tempdir().unwrap();
     let other_project = tempfile::tempdir().unwrap();
     // A project that knows nothing about grimoire: just a directory.
-    std::fs::write(other_project.path().join("README.md"), "someone's project\n").unwrap();
+    std::fs::write(
+        other_project.path().join("README.md"),
+        "someone's project\n",
+    )
+    .unwrap();
 
     let mut app = App::new(
         AppEnv::rooted(fake_home.path()),

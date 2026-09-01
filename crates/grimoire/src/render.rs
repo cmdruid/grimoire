@@ -135,7 +135,9 @@ pub fn draw(frame: &mut Frame, app: &App) {
                 lines.push(Line::from(format!("  unlink  {member}")));
             }
             for (member, holder) in &plan.retained {
-                lines.push(Line::from(format!("  keep    {member} — {holder} still holds it")));
+                lines.push(Line::from(format!(
+                    "  keep    {member} — {holder} still holds it"
+                )));
             }
             for (member, at) in &plan.foreign {
                 lines.push(Line::from(Span::styled(
@@ -184,7 +186,10 @@ fn draw_scope(frame: &mut Frame, area: Rect, app: &App) {
     let agent = app.agent();
     let scope = match app.scope {
         Scope::Global => "global".to_string(),
-        Scope::Project => format!("project {}", crate::job::project_label(app.project_root.as_ref())),
+        Scope::Project => format!(
+            "project {}",
+            crate::job::project_label(app.project_root.as_ref())
+        ),
     };
     let where_to = app.target().map_or_else(
         || "— no destination".to_string(),
@@ -300,7 +305,10 @@ fn members_of(app: &App, row: &Row) -> Option<String> {
     let required = pack.members.iter().filter(|m| m.required).count();
     let optional = pack.members.len() - required;
     Some(if optional > 0 {
-        format!("v{} · {required} required + {optional} optional", pack.version)
+        format!(
+            "v{} · {required} required + {optional} optional",
+            pack.version
+        )
     } else {
         format!("v{} · {required} members", pack.version)
     })
@@ -340,8 +348,11 @@ fn overlay(frame: &mut Frame, title: &str, lines: Vec<Line>) {
     };
     frame.render_widget(Clear, panel);
     frame.render_widget(
-        Paragraph::new(lines)
-            .block(Block::default().borders(Borders::ALL).title(title.to_string())),
+        Paragraph::new(lines).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(title.to_string()),
+        ),
         panel,
     );
 }
@@ -365,7 +376,10 @@ fn wrap_lines(lines: Vec<Line>, inner: usize) -> Vec<Line<'static>> {
             // Oversized token: emit full-width chunks until it fits.
             while word.chars().count() > inner {
                 if !current.is_empty() {
-                    out.push(Line::from(Span::styled(std::mem::take(&mut current), style)));
+                    out.push(Line::from(Span::styled(
+                        std::mem::take(&mut current),
+                        style,
+                    )));
                 }
                 let split = word
                     .char_indices()
@@ -381,7 +395,10 @@ fn wrap_lines(lines: Vec<Line>, inner: usize) -> Vec<Line<'static>> {
                 current.chars().count() + 1 + word.chars().count()
             };
             if needed > inner {
-                out.push(Line::from(Span::styled(std::mem::take(&mut current), style)));
+                out.push(Line::from(Span::styled(
+                    std::mem::take(&mut current),
+                    style,
+                )));
                 current.push_str(word);
             } else {
                 if !current.is_empty() {

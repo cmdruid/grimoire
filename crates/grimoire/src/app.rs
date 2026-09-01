@@ -349,8 +349,8 @@ impl App {
             return Vec::new();
         };
         let Row::Pack(pack) = row else {
-            self.status = "only packs can be forgotten — a loose skill has no lock entry"
-                .to_string();
+            self.status =
+                "only packs can be forgotten — a loose skill has no lock entry".to_string();
             return Vec::new();
         };
         if !self.is_installed(&pack) {
@@ -468,7 +468,10 @@ pub fn describe_finding(finding: &grimoire_core::check::Finding) -> String {
         }
         Finding::OrphanedPack { pack } => format!("{pack}: installed manifest missing (orphaned)"),
         Finding::SharedMemberDisagreement { member, packs } => {
-            format!("{member}: packs disagree on its hash ({})", packs.join(", "))
+            format!(
+                "{member}: packs disagree on its hash ({})",
+                packs.join(", ")
+            )
         }
     }
 }

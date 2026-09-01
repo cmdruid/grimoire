@@ -55,7 +55,11 @@ fn project_and_global_installs_do_not_see_each_other() {
 
     assert!(inventory::inventory(&project).unwrap().packs.is_empty());
     let still = inventory::inventory(&global).unwrap();
-    assert_eq!(still.packs.len(), 1, "the global scope is a different world");
+    assert_eq!(
+        still.packs.len(),
+        1,
+        "the global scope is a different world"
+    );
     for member in ["alpha", "beta", "gamma"] {
         assert!(global.skills_dir.join(member).exists());
         assert!(!project.skills_dir.join(member).exists());

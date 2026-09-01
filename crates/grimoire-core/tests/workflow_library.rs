@@ -18,20 +18,30 @@ fn discover_install_list_check_remove_at_global_scope() {
 
     // ---- discover
     let view = library.enumerate().unwrap();
-    assert!(view.issues.is_empty(), "unexpected issues: {:?}", view.issues);
+    assert!(
+        view.issues.is_empty(),
+        "unexpected issues: {:?}",
+        view.issues
+    );
     assert_eq!(view.packs.len(), 1);
     let pack = &view.packs[0];
     assert_eq!(pack.name, "alpha");
     assert!(pack.faced);
     // face (implicit, §2) + required beta + optional gamma
     assert_eq!(
-        pack.members.iter().map(|m| m.name.as_str()).collect::<Vec<_>>(),
+        pack.members
+            .iter()
+            .map(|m| m.name.as_str())
+            .collect::<Vec<_>>(),
         ["alpha", "beta", "gamma"]
     );
     assert!(pack.members[0].is_face);
     assert!(!pack.members[2].required, "gamma is optional");
     assert_eq!(
-        view.loose.iter().map(|m| m.name.as_str()).collect::<Vec<_>>(),
+        view.loose
+            .iter()
+            .map(|m| m.name.as_str())
+            .collect::<Vec<_>>(),
         ["solo"],
         "a pack's members must not also appear as loose skills"
     );
@@ -53,7 +63,10 @@ fn discover_install_list_check_remove_at_global_scope() {
     // every member is a SYMLINK INTO THE LIBRARY (install.sh parity)
     for member in ["alpha", "beta", "gamma"] {
         let link = target.skills_dir.join(member);
-        assert_eq!(sb.resolve_link(&link), std::fs::canonicalize(sb.skill_dir(member)).unwrap());
+        assert_eq!(
+            sb.resolve_link(&link),
+            std::fs::canonicalize(sb.skill_dir(member)).unwrap()
+        );
     }
 
     // the lock landed in the SHARED global lock (§3), not beside .claude
@@ -69,7 +82,10 @@ fn discover_install_list_check_remove_at_global_scope() {
     assert_eq!(installed.entry.version, "1.0.0");
     assert_eq!(installed.entry.r#ref.as_deref(), Some("abc1234"));
     assert_eq!(installed.entry.installed_at, "2026-08-18T12:00:00Z");
-    assert_eq!(installed.entry.source, sb.library_root().display().to_string());
+    assert_eq!(
+        installed.entry.source,
+        sb.library_root().display().to_string()
+    );
     assert_eq!(installed.entry.skills.len(), 3);
     assert!(installed.entry.skills["beta"].required);
     assert!(!installed.entry.skills["gamma"].required);

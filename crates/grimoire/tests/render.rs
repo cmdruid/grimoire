@@ -58,7 +58,10 @@ fn the_library_screen_lists_packs_loose_skills_and_the_scope() {
     // question the user has to work out.
     assert!(text.contains("global"), "the scope is shown:\n{text}");
     // Themed verbs are the labels.
-    assert!(text.contains("learn"), "themed verbs label the actions:\n{text}");
+    assert!(
+        text.contains("learn"),
+        "themed verbs label the actions:\n{text}"
+    );
 }
 
 /// An empty frame is drawn before the first enumeration returns — the loop
@@ -78,11 +81,7 @@ fn the_confirm_screen_shows_every_member_and_its_disposition() {
     let mut app = world.app();
     let launch = app.launch();
     settle(&mut app, launch);
-    app.cursor = app
-        .rows()
-        .iter()
-        .position(|r| r.name() == "alpha")
-        .unwrap();
+    app.cursor = app.rows().iter().position(|r| r.name() == "alpha").unwrap();
     let jobs = app.on_key(Key::Confirm);
     settle(&mut app, jobs);
 
@@ -91,9 +90,15 @@ fn the_confirm_screen_shows_every_member_and_its_disposition() {
     for member in ["alpha", "beta", "gamma"] {
         assert!(text.contains(member), "{member} is listed:\n{text}");
     }
-    assert!(text.contains("will link"), "dispositions are shown:\n{text}");
+    assert!(
+        text.contains("will link"),
+        "dispositions are shown:\n{text}"
+    );
     assert!(text.contains("face"), "the face is marked:\n{text}");
-    assert!(text.contains("optional"), "classification is shown:\n{text}");
+    assert!(
+        text.contains("optional"),
+        "classification is shown:\n{text}"
+    );
 }
 
 /// D3 at the pixel level: the collision, where it points, and the fact that
@@ -116,7 +121,10 @@ fn a_blocked_confirm_screen_explains_the_collision_and_offers_no_resolution() {
     settle(&mut app, jobs);
 
     let text = screen_text(&app);
-    assert!(text.contains("COLLISION"), "the collision is named:\n{text}");
+    assert!(
+        text.contains("COLLISION"),
+        "the collision is named:\n{text}"
+    );
     assert!(text.contains("blocked"), "and the plan is refused:\n{text}");
     assert!(
         !text.contains("adopt it") && !text.contains("replace it"),

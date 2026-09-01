@@ -128,11 +128,7 @@ fn disposition(member: &Member, target: &Target) -> Result<MemberDisposition> {
     })
 }
 
-fn replace_plan(
-    lib: &Library,
-    target: &Target,
-    pack: &LibraryPack,
-) -> Result<Option<ReplacePlan>> {
+fn replace_plan(lib: &Library, target: &Target, pack: &LibraryPack) -> Result<Option<ReplacePlan>> {
     let Some(existing) = read_lock(&target.lock_path)? else {
         return Ok(None);
     };
@@ -245,7 +241,12 @@ pub fn install(req: InstallRequest<'_>) -> Result<InstallOutcome> {
     let previous = existing
         .as_ref()
         .and_then(|l| l.packs.get(&pack.name))
-        .map(|e| (e.skills.keys().cloned().collect::<Vec<_>>(), e.source.clone()));
+        .map(|e| {
+            (
+                e.skills.keys().cloned().collect::<Vec<_>>(),
+                e.source.clone(),
+            )
+        });
 
     // 4. Commit: one entry for a fully installed pack.
     let mut skills = BTreeMap::new();

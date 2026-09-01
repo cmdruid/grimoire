@@ -133,10 +133,7 @@ mod tests {
         let path = config_path(tmp.path());
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(&path, "library\n").unwrap();
-        assert!(matches!(
-            load(tmp.path()),
-            Err(CoreError::Config { .. })
-        ));
+        assert!(matches!(load(tmp.path()), Err(CoreError::Config { .. })));
     }
 
     #[test]

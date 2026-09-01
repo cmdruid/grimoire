@@ -64,7 +64,10 @@ fn browse_learn_check_forget_at_global_scope() {
     let Screen::Confirm(plan) = &app.screen else {
         panic!("enter on a pack should open the confirm screen");
     };
-    assert!(plan.is_installable(), "a fresh destination has no collisions");
+    assert!(
+        plan.is_installable(),
+        "a fresh destination has no collisions"
+    );
     assert_eq!(plan.members.len(), 3, "face + required + optional");
 
     let jobs = app.on_key(Key::Confirm);
@@ -79,7 +82,10 @@ fn browse_learn_check_forget_at_global_scope() {
     for member in ["alpha", "beta", "gamma"] {
         let link = target.skills_dir.join(member);
         assert!(
-            std::fs::symlink_metadata(&link).unwrap().file_type().is_symlink(),
+            std::fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink(),
             "{member} must be a symlink, never a copy"
         );
     }

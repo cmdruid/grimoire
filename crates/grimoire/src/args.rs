@@ -110,6 +110,9 @@ mod tests {
         assert!(matches!(parse(["--version"]), Parsed::Print(s) if s.starts_with("grimoire ")));
         assert!(matches!(parse(["--help"]), Parsed::Print(s) if s.contains("usage:")));
         // ...even with other arguments after them
-        assert!(matches!(parse(["--version", "--library"]), Parsed::Print(_)));
+        assert!(matches!(
+            parse(["--version", "--library"]),
+            Parsed::Print(_)
+        ));
     }
 }

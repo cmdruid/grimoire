@@ -34,7 +34,12 @@ enum Job {
 }
 
 enum Done {
-    Enumerated { packs: usize, loose: usize, issues: usize, took: Duration },
+    Enumerated {
+        packs: usize,
+        loose: usize,
+        issues: usize,
+        took: Duration,
+    },
     Slept(Duration),
     Failed(String),
 }
@@ -127,7 +132,12 @@ fn event_loop(
                 Ok(Outcome::Done(msg)) => {
                     app.busy = None;
                     match msg {
-                        Done::Enumerated { packs, loose, issues, took } => app.note(format!(
+                        Done::Enumerated {
+                            packs,
+                            loose,
+                            issues,
+                            took,
+                        } => app.note(format!(
                             "enumerate: {packs} packs, {loose} loose, {issues} issues in {}ms",
                             took.as_millis()
                         )),
@@ -195,7 +205,9 @@ fn draw(frame: &mut Frame, app: &App) {
         Some(what) => Line::from(vec![
             Span::styled(
                 format!(" {spin} {what} "),
-                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
             ),
             Span::raw("— still animating while the worker blocks. That is the claim."),
         ]),
