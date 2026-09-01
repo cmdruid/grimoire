@@ -159,7 +159,7 @@ This task is read-only and produces no commit.
     Expected: one request traverses the complete pure kernel, a second identical observation is a
     no-op, and no executor or ambient filesystem access exists.
 
-- [ ] **Slice 2: Scope discovery and the complete comment-preserving manifest** <requires: 1>
+- [x] **Slice 2: Scope discovery and the complete comment-preserving manifest** <requires: 1>
   - Files: create `crates/grimoire-core/src/scope.rs`,
     `crates/grimoire-core/tests/scope.rs`, and
     `crates/grimoire-core/tests/manifest.rs`; modify

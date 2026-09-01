@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::resolve::resolve;
 use crate::{
-    ByteHash, CoreError, InstalledLink, PlanningMode, Request, RequestRoot, Result, Scope,
+    ByteHash, InstalledLink, ManifestMutation, PlanningMode, Request, RequestRoot, Result, Scope,
     SkillName, SourceAlias, WorldState,
 };
 
@@ -140,15 +140,61 @@ impl Plan {
 }
 
 pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<Plan> {
-    if request != Request::Reconcile {
-        return Err(CoreError::Request("unsupported request".into()));
-    }
-    let resolution = resolve(&world.manifest, &world.snapshots);
+    let manifest_edit = match request {
+        Request::Reconcile => None,
+        Request::AddSource { alias, source } => Some(
+            world
+                .manifest
+                .mutate(ManifestMutation::AddSource { alias, source })?,
+        ),
+        Request::RemoveSource { alias } => Some(
+            world
+                .manifest
+                .mutate(ManifestMutation::RemoveSource { alias })?,
+        ),
+        Request::InstallSkill { name, source } => Some(
+            world
+                .manifest
+                .mutate(ManifestMutation::InstallSkill { name, source })?,
+        ),
+        Request::UninstallSkill { name } => Some(
+            world
+                .manifest
+                .mutate(ManifestMutation::UninstallSkill { name })?,
+        ),
+        Request::InstallPack { name, request } => Some(
+            world
+                .manifest
+                .mutate(ManifestMutation::InstallPack { name, request })?,
+        ),
+        Request::UninstallPack { name } => Some(
+            world
+                .manifest
+                .mutate(ManifestMutation::UninstallPack { name })?,
+        ),
+        Request::ReplacePackExclusions { name, exclude } => Some(
+            world
+                .manifest
+                .mutate(ManifestMutation::ReplacePackExclusions { name, exclude })?,
+        ),
+    };
+    let desired_manifest = manifest_edit
+        .as_ref()
+        .map_or(&world.manifest, |edit| &edit.manifest);
+    let resolution = resolve(desired_manifest, &world.snapshots);
     let mut actions = Vec::new();
     let mut blockers = resolution.blockers;
 
-    if mode == PlanningMode::Frozen && world.lock != resolution.lock {
+    if mode == PlanningMode::Frozen && (manifest_edit.is_some() || world.lock != resolution.lock) {
         blockers.push(Blocker::new("frozen-mismatch", []));
+    }
+
+    if let Some(edit) = &manifest_edit {
+        actions.push(Action::ReplaceManifest {
+            scope: world.scope,
+            before: edit.before.clone(),
+            after: edit.after.clone(),
+        });
     }
 
     if blockers.is_empty() && world.lock != resolution.lock {

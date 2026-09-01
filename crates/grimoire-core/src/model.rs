@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use grimoire_pack::inventory::SourceInventory;
@@ -191,10 +191,34 @@ pub enum PlanningMode {
     Frozen,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Request {
     Reconcile,
+    AddSource {
+        alias: SourceAlias,
+        source: crate::ManifestSource,
+    },
+    RemoveSource {
+        alias: SourceAlias,
+    },
+    InstallSkill {
+        name: SkillName,
+        source: SourceAlias,
+    },
+    UninstallSkill {
+        name: SkillName,
+    },
+    InstallPack {
+        name: PackName,
+        request: crate::ManifestPack,
+    },
+    UninstallPack {
+        name: PackName,
+    },
+    ReplacePackExclusions {
+        name: PackName,
+        exclude: BTreeSet<SkillName>,
+    },
 }
 
 #[derive(Debug, Clone)]
