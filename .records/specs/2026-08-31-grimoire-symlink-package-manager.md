@@ -279,11 +279,22 @@ refactor, superseded alpha format documents, fixtures, implementation code paths
 are deleted rather than retained as parallel contracts.
 
 An initialized empty lock contains the schema and empty `sources`, `packs`, and `skills` objects.
-`<source-key>` is the lowercase hexadecimal SHA-256 of the canonical source identity.
-`<snapshot-key>` is the lowercase hexadecimal SHA-256 of the source kind, commit, repository tree,
-and inventory digest separated by NUL bytes. `<review-key>` uses the same encoding with empty
-commit/tree fields when they are null. It equals the snapshot key for pinned sources and remains
-defined for live sources, which have no store snapshot key.
+Keys use one framing rule: a schema ASCII string plus NUL, followed by fields in the stated order.
+Each field is `0x00` for null or `0x01`, an unsigned 64-bit big-endian byte length, and the exact
+bytes. Required fields always use the present form. The resulting SHA-256 is lowercase hexadecimal
+without a `sha256:` prefix.
+
+- `<source-key>` hashes `grimoire/source-key@1`, source kind ASCII, and canonical identity bytes.
+  Remote identity bytes are UTF-8; local identity bytes are the raw Unix bytes of the resolved
+  absolute root. Source kind is exactly `git` or `live`.
+- `<snapshot-key>` hashes `grimoire/snapshot-key@1`, source kind ASCII, commit object ID ASCII,
+  repository tree object ID ASCII, and inventory digest ASCII including its `sha256:` prefix. It
+  exists only for pinned sources, so none of those fields is null.
+- `<review-key>` hashes `grimoire/review-key@1`, source kind ASCII, nullable commit and tree,
+  inventory digest ASCII, and review-tree digest ASCII, both including `sha256:`. It is defined for
+  pinned and live sources.
+
+Byte goldens for all three preimages are part of schema 1.
 
 ### Source identities, fetching, and snapshots
 
@@ -295,29 +306,45 @@ Accepted source locations are:
 - a local path to a Git worktree for pinned mode;
 - any readable local directory for explicit live mode.
 
-GitHub shorthand is canonicalized to `https://github.com/<owner>/<repo>.git`. For other remotes,
-canonical identity lowercases only URI scheme and host and otherwise preserves the URI path
-byte-for-byte, including case, trailing slash, and `.git` suffix. SCP syntax is not converted to an
-SSH URI: its path is relative to the remote user's home, whereas an `ssh://` path beginning with
-`/` is absolute. Its canonical identity is
-`ssh-scp:<user>@<lowercase-host>:<path>`, with username and path preserved byte-for-byte, and Git is
-given the original declared SCP location rather than that identity string. Query strings,
-fragments, embedded passwords, `file://`, `git://`, `ext::`, custom remote helpers, and unknown
-schemes are rejected rather than normalized. SCP, SSH-URI, SSH, and HTTPS identities remain
-distinct; Grimoire does not guess that two transports are the same authority. Local canonical
-identity is the symlink-resolved absolute source root. Trust uses canonical identity; committed
-state does not. The same canonical identity may appear under only one alias in a scope, preventing
-two revisions of one source from entering the same resolution under different names.
+GitHub shorthand is canonicalized to `https://github.com/<owner>/<repo>.git`. Other remote inputs
+must be valid UTF-8 without spaces, ASCII controls, percent escapes, query, fragment, or `.`/`..`
+path components. HTTPS forbids all userinfo. SSH URI permits only an optional username, never a
+password. Hosts are ASCII DNS names or bracketed IPv6 literals; DNS names and the scheme are
+lowercased, bracketed IPv6 is parsed and rendered in RFC 5952 form, and username and nonempty path
+retain case. An explicit decimal port is preserved,
+including a default port, so omission and presence are conservatively distinct identities. SCP
+syntax is exactly `<user>@<host>:<nonempty-path>` with the same character restrictions and is not
+converted to an SSH URI: its path is home-relative, whereas an `ssh://` path is absolute. Its
+canonical identity is `ssh-scp:<user>@<lowercase-host>:<path>`.
 
-Pinned local sources must be Git worktrees with a clean index and worktree. Grimoire resolves the
-declared ref, copies the exact commit into the immutable store, and thereafter links to the stored
-snapshot. Editing or pulling the original checkout cannot alter an installed skill. A dirty pinned
-source is a blocker, not an implicit live source.
+Git receives the original validated location, not the canonical identity string. `file://`,
+`git://`, `ext::`, custom remote helpers, non-ASCII hostnames, malformed userinfo, and unknown
+schemes are rejected before invoking Git. SCP, SSH URI, and HTTPS identities remain distinct;
+Grimoire does not guess that two transports are the same authority. Local canonical identity is
+the raw Unix bytes of the symlink-resolved absolute source root. Trust uses canonical identity;
+committed state does not. The same canonical identity may appear under only one alias in a scope,
+preventing two revisions of one source from entering the same resolution under different names.
+Local JSON state represents that identity as `canonical: null` plus padded
+`canonical_bytes_base64`; valid UTF-8 local and all remote identities use `canonical` and omit the
+fallback.
+
+Pinned local sources must be Git worktrees with a clean index and worktree. Local inspection opens
+the resolved root component-by-component without following symlinks, holds that root handle, and
+performs directory-relative no-follow reads. It rejects a stale observation if a read file or the
+root changes identity, size, or modification time during inspection. Pinned Git inspection resolves
+one commit and tree, reads content from those Git objects, and rechecks the held worktree identity
+and clean state before publication. Grimoire copies that exact commit into the immutable store and
+thereafter links to the stored snapshot. Editing, swapping, or pulling the original checkout cannot
+alter an installed skill or publish a mixed inventory. A dirty or changing pinned source is a
+blocker, not an implicit live source.
 
 Live sources require a readable directory and explicit `live = true`. Their installed links point
 directly into that directory, dirty contents are allowed, and changes take effect immediately.
 They are local-only, require an all-snapshots trust policy, and are refused by `--frozen`. The TUI
-labels them continuously as non-reproducible. A URL can never be live.
+labels them continuously as non-reproducible. Point-in-time inspection still enforces the skill-root
+boundary, but later local mutation becomes active immediately and cannot be continuously contained
+by Grimoire; `source info` and the TUI state that exception beside every live source. A URL can
+never be live.
 
 Grimoire uses the user's `git` executable and existing SSH and HTTPS credential mechanisms. It
 stores no credentials. Git may invoke the user's configured SSH client or HTTPS credential helper;
@@ -336,22 +363,49 @@ new verified temporary directory and the journaled quarantine swap defined under
 recovery. Offline frozen operation fails.
 
 Materialization rejects absolute paths, `..` traversal, NUL names, device/FIFO/socket entries,
-case-folded path collisions, and symlinks whose lexical target escapes the snapshot. Internal
-symlinks may be materialized but discovery never follows them. Submodule entries are reported by
-`source info` and left unmaterialized; a pack member present only in a submodule is missing.
+path collisions under the collision-key rule, and symlinks whose lexical target escapes its owning
+boundary. For an entry beneath a discovered skill, that boundary is the skill root; for every other
+reviewed entry, the boundary is the snapshot root. Empty symlink targets and targets containing NUL
+are invalid before lexical classification. A snapshot-internal symlink that leaves its skill is
+therefore an escaping skill symlink. Grimoire reports the raw target as a review fact, but any such
+error invalidates the complete installable snapshot; materialization never silently omits the bad
+entry. Internal symlinks may be materialized but discovery never follows them.
 
-Inspection uses a distinct content-addressed export under `cache/review`. Its
-`grimoire/review-index@1` `index.json` lists every source entry in raw Git path-byte order. Each
-record contains the raw path as base64, the UTF-8 path when representable, kind, normalized mode,
-and either a regular-file object digest, raw symlink-target bytes and safety classification, or a
-submodule commit. Regular file bytes live under read-only `objects/<sha256>` paths with write and
-execute bits cleared. A best-effort `tree/` view may additionally expose regular files at their
-source-relative paths only when every component is valid UTF-8, representable on the host, free of
-case-fold collisions, and safe to materialize. That view is convenience, never the canonical
-index.
+Submodules outside a discovered skill are inert review facts, not source-wide validation errors,
+and are never materialized or traversed. A submodule entry inside a discovered skill is an
+`unsupported-entry` validation error because the skill cannot be reproduced. A pack member present
+only in a submodule is missing.
+
+Inspection uses a distinct content-addressed export under `cache/review`. Its exact reviewed-entry
+set is every non-directory entry encountered by the outer discovery walk, plus every non-directory
+entry beneath each discovered skill root. Ignored and nested-checkout subtrees are outside that set.
+The installable snapshot contains exactly this set plus its parent directories. The existing
+discovery depth and entry caps apply, and inspection emits `review-byte-limit` and fails rather than
+truncates when reviewed regular-file bytes exceed 1 GiB.
+
+The review-tree digest uses `grimoire/review-tree@1` plus NUL and one record per reviewed entry in
+raw source-path order. Records use the skill-content unsigned 64-bit framing for raw path, kind,
+normalized mode, payload, boundary, safety, and reason. File payload is its ASCII `sha256:` digest,
+symlink payload is the exact target bytes, and submodule payload is the commit ASCII. Boundary is `snapshot`
+or `skill` plus the owning skill's raw source path. Safety is empty for non-links and is `internal`,
+`escaping`, or `invalid` for links; reason is `empty` or `nul` only for an invalid link and empty
+otherwise. The digest is the `sha256:` lowercase hash of those bytes.
+
+`grimoire/review-index@1` `index.json` contains exactly `schema`, `review_tree`, and `entries`.
+Entries use the same order and facts as the review-tree records. Every entry has `path` (UTF-8 or
+null), an accompanying `path_bytes_base64` only when null, `kind`, `mode`, `boundary`,
+`owner_skill` (UTF-8 or null), and conditional `owner_skill_bytes_base64`; both owner fields are
+null/absent for a snapshot boundary and use the owning skill's raw path for a skill boundary. A
+file additionally has `size` and `sha256`; a symlink has `target` (UTF-8 or null), conditional
+`target_bytes_base64`, `safety`, and conditional `reason`; a submodule has `commit`.
+Variant-inapplicable fields are
+absent. Regular file bytes live under read-only `objects/<sha256>` paths with write and execute bits
+cleared. A best-effort `tree/` view may additionally expose regular files at source-relative paths
+only when every component is valid UTF-8, representable on the host, free of collision-key
+conflicts, and safe to materialize. That view is convenience, never the canonical index.
 
 The export never creates symlinks or submodule directories. It can therefore be produced even
-when an escaping symlink, invalid UTF-8 name, case-fold collision, or host-unrepresentable path
+when an escaping symlink, invalid UTF-8 name, collision-key conflict, or host-unrepresentable path
 makes the installable snapshot invalid. `source info` points `review_path` at the export root.
 Grimoire never executes review content and clears its executable mode bits, but the export is not a
 sandbox or safety boundary and trust never turns it into an install target.
@@ -359,10 +413,12 @@ sandbox or safety boundary and trust never turns it into an install target.
 `source fetch` updates the local mirror and one scope-and-alias-specific candidate record only. It
 never changes a manifest request, lock, installed link, trust baseline, or immutable snapshot
 already in use. Candidate records use schema `grimoire/candidate@1` and bind the source declaration
-byte hash, canonical identity, nullable commit and repository tree, and inventory digest. Requested
-ref comes from the matching manifest declaration. Snapshot key, review key, and review-export path
-are derived from their normative formulas and resolved Grimoire home rather than duplicated in the
-record. Candidate records are local state and never enter a project lock or manifest.
+byte hash, canonical identity, nullable commit and repository tree, inventory digest, and
+review-tree digest. Requested ref comes from the matching manifest declaration. Snapshot key,
+review key, and review-export path are derived from their normative formulas and resolved Grimoire
+home rather than duplicated in the record. Candidate records are local state and never enter a
+project lock or manifest. Before presenting or reusing an export, Grimoire verifies its index
+review-tree digest and every referenced object digest.
 
 Fetch and inspection occur in per-source temporary locations without a scope lock. Before
 publishing the result, Grimoire acquires applicable shared-state locks in the global order and then
@@ -392,33 +448,108 @@ a skill directory. It ignores directories named `.git`, `.hg`, `.svn`, `.grimoir
 boundaries rather than source inventory. It does not ignore `skills`, `.agents/skills`,
 `.claude/skills`, `.codex/skills`, `tests`, or `examples`. It also does not enter a nested Git
 checkout (a child directory containing a `.git` file or directory). A source scan is bounded to 32
-directory levels and 100,000 directory entries; crossing either limit is a source validation error,
+directory levels and 100,000 entries; the entry count includes the outer walk and every
+skill-content walk, counting an entry once. Crossing either limit is a source validation error,
 never a partial successful inventory.
 
 All installable relative paths must be valid UTF-8 and use `/` in canonical records. Canonical
-skill content hashing visits every non-directory entry below the skill root in sorted relative-path
-order without following links. For each entry it feeds SHA-256 an unambiguous length-prefixed tuple
-of relative path, kind (`file` or `symlink`), normalized mode (`100644`, `100755`, or `120000`),
-and exact file bytes or symlink-target bytes. Empty directories do not contribute; line endings and
-file bytes are not normalized. The source inventory digest hashes the sorted tuples of discovered
-skill name/path/content digest and pack name/path/exact `PACK.md` SHA-256, plus validation findings.
+skill content hashing visits every non-directory entry below the skill root in sorted raw
+relative-path-byte order without following links. Discovery ignore names do not apply inside an
+already discovered skill: every file or symlink beneath that skill contributes, including entries
+under directories named `vendor`, `fixtures`, or `target`. Empty directories do not contribute;
+line endings and file bytes are not normalized.
+
+The exact skill-content byte grammar is `grimoire/skill-content@1`. SHA-256 first receives that
+ASCII schema string followed by NUL. Each entry then contributes a one-byte kind (`F`, `0x46`, for
+a regular file; `L`, `0x4c`, for a symlink), followed by relative path, normalized mode, and exact
+file bytes or symlink-target bytes. Each field is an unsigned 64-bit big-endian byte length followed
+by that many exact bytes. Modes are the ASCII strings `100644`, `100755`, and `120000`; a filesystem
+regular file normalizes to `100755` when any execute bit in `0o111` is set and to `100644`
+otherwise. A Git-tree adapter uses Git mode `100755` or `100644` directly. Every symlink target
+contributes to this digest even when its separate safety classification is `escaping` and makes the
+skill unmaterializable.
+
+The source inventory digest covers discovered skill name/path/content digest and pack
+name/path/exact `PACK.md` SHA-256 records, plus validation findings and availability warnings.
 
 The enclosing byte grammar is versioned `grimoire/source-inventory@1`. It begins with that ASCII
-schema string followed by NUL, then feeds each sorted record as a one-byte record kind followed by
-each field encoded as an unsigned 64-bit big-endian byte length and exact bytes. Skill records
-contain name, path, and content digest. Pack records contain name, path, and `PACK.md` digest.
-Finding records contain stable code, raw source-relative path bytes (empty when the finding has no
-path), severity, then an unsigned 64-bit big-endian detail count followed by detail pairs sorted by
-key. Detail keys and values are UTF-8 strings, each encoded with the same unsigned 64-bit big-endian
-byte length and exact bytes; schema 1 admits no numeric, boolean, null, list, or object detail
-values. Human JSON may still expose those pairs as an object and uses the nullable-path/base64 rule
-defined under Source info. Human display messages, absolute paths, timestamps, trust, and discovery
-order never contribute.
+schema string followed by NUL. Records are grouped in the fixed order skill, pack, finding. Within
+each group they sort lexically by their complete field tuple as defined below, comparing every field
+as unsigned bytes; this supplies deterministic path and detail tie-breakers even for duplicate
+names. Each record begins with one byte (`S`, `0x53`; `P`, `0x50`; or `F`, `0x46`) and encodes every
+field as an unsigned 64-bit big-endian byte length followed by the exact bytes.
+
+Skill tuples are name UTF-8, raw source-relative path, then ASCII `sha256:` content digest. Pack
+tuples are name UTF-8, raw source-relative path, then ASCII `sha256:` digest of the complete exact
+`PACK.md` bytes, including its Markdown body. Finding tuples are stable code UTF-8, a path field,
+severity UTF-8 (`error` or `warning`), then an unsigned 64-bit big-endian detail count followed by
+detail pairs sorted by key. The path field's bytes begin with `0x00` for no path or `0x01` followed
+by the raw source-relative path; the enclosing length frame remains present, so no path and the
+source-root path are distinct.
+Detail keys and values are UTF-8 strings, each encoded with the same unsigned 64-bit big-endian
+length and exact bytes; schema 1 admits no numeric, boolean, null, list, or object detail values.
+Human JSON may still expose those pairs as an object and uses the nullable-path/base64 rule defined
+under Source info. Human display messages, absolute paths, timestamps, trust, and discovery order
+never contribute.
+
+Path collision keys apply Unicode 17.0.0's complete `toNFKC_Casefold` operation, including its
+post-mapping normalization, independently to each valid UTF-8 path component. The comparison key is
+the ordered sequence of folded UTF-8 component byte strings, not a separator-joined string, so a
+compatibility mapping cannot introduce or erase a path boundary. Schema 1 pins that Unicode data
+version; upgrading the tables requires a new inventory schema. Invalid UTF-8 is already a
+validation error and is preserved as raw-path evidence rather than passed through this operation.
+This portable collision key is only the source validation floor; Phase 3 separately rejects names
+that the host cannot represent safely.
+
+Phase 1 finding codes, severities, and exact detail keys are part of schema 1:
+
+| Code | Severity | Exact detail keys |
+|---|---|---|
+| `frontmatter-missing`, `frontmatter-unclosed`, `yaml-malformed`, `yaml-multiple-documents`, `yaml-alias`, `yaml-anchor`, `yaml-tag`, `yaml-merge-key`, `yaml-non-string-key`, `yaml-unsupported-scalar`, `pack-description-empty`, `pack-empty` | error | none |
+| `frontmatter-too-large`, `yaml-node-limit`, `yaml-depth-limit`, `discovery-depth-limit`, `discovery-entry-limit`, `review-byte-limit` | error | `limit`, `observed` |
+| `yaml-duplicate-key`, `pack-unknown-key` | error | `key` |
+| `skill-name-missing` | error | none |
+| `frontmatter-root-type`, `skill-name-type` | error | `actual` |
+| `pack-field-missing` | error | `field` |
+| `pack-field-type` | error | `field`, `expected`, `actual` |
+| `pack-member-type` | error | `field`, `index`, `actual` |
+| `skill-name-invalid`, `pack-schema-invalid`, `pack-name-invalid`, `pack-member-invalid` | error | `value` |
+| `pack-member-duplicate`, `pack-member-overlap` | error | `member` |
+| `invalid-path-utf8` | error | none |
+| `unsafe-path` | error | `reason` |
+| `unsupported-entry` | error | `kind` |
+| `case-collision` | error | `other_path` |
+| `duplicate-skill`, `duplicate-pack` | error | `name`, `other_path` |
+| `escaping-symlink` | error | `target_bytes_base64` |
+| `invalid-symlink-target` | error | `reason`, `target_bytes_base64` |
+| `missing-optional-member` | warning | `pack`, `member` |
+
+The table is exhaustive for Phase 1 and extra detail keys are forbidden. Values for `limit`,
+`observed`, and `index` are base-10 ASCII strings; a limit finding reports the first rejected value,
+`limit + 1`, rather than continuing a hostile scan. `actual` and `expected` use the fixed values
+`missing`, `null`, `boolean`, `number`, `string`, `sequence`, and `mapping` as applicable.
+Byte-valued details use padded RFC 4648 base64. `unsafe-path.reason` is `absolute`, `parent`, or
+`nul`; `invalid-symlink-target.reason` is `empty` or `nul`; and `kind` is `device`, `fifo`, `socket`,
+or `submodule`, with submodule emitted only inside a discovered skill. Missing required members
+remain a pack availability fact that makes only that pack unresolvable; they are not source-wide
+validation findings. A new finding code, severity, detail key, or enum value requires a new
+inventory schema.
+
+Finding occurrence is canonical. Envelope failures are exclusive and stop parsing that document.
+For YAML event violations, the first violation in byte/event order is emitted and that document
+stops. Once a document is structurally valid, owned-field checks emit one finding per field or
+sequence member in field/index order (`schema`, `name`, `description`, `required`, `optional`),
+followed by duplicate-member, overlap, and empty-pack checks. For a collision or duplicate group,
+raw paths sort first; the first is the
+canonical path and exactly one finding is emitted for each later path, with `path` equal to the
+later path and `other_path` equal to the first. A human renderer may add explanatory text only in
+`message`.
 
 A skill is a real directory containing a regular `SKILL.md`. Its YAML frontmatter must contain a
 valid `name` slug. Directory basename fallback is removed. A `PACK.md` is considered at any scanned
-directory that is not inside an ignored tree or a discovered skill directory. The directory
-holding a pack has no install semantics.
+directory that is not inside an ignored tree or a discovered skill directory; the directory that
+itself qualifies as a skill does not also contribute a pack. The directory holding a pack has no
+install semantics.
 
 Frontmatter is parsed before trust and is therefore bounded data. The opening through closing YAML
 fence may contain at most 64 KiB, 4,096 parsed nodes, and 16 levels of mapping/sequence nesting.
@@ -489,13 +620,14 @@ manifest proves intent to locate it, not local approval to activate it. All pinn
 must satisfy the local trust store before any plan can create or repoint links to their content.
 
 `~/.grimoire/trust.json` is local, never committed, created with user-only permissions, and has
-schema `grimoire/trust@1`. Trust records are keyed by canonical source identity and contain:
+schema `grimoire/trust@1`. Records are keyed by source key and carry the canonical identity using
+the projection above. Trust is logically identity-wide. Each record contains:
 
 - zero or more exact receipts binding full commit, repository tree object ID, and Grimoire source
   inventory digest;
 - an optional `all_snapshots: true` policy;
-- the last snapshot explicitly reviewed or actually accepted by install/update, used as the diff
-  baseline.
+- the last snapshot explicitly reviewed or actually accepted by install/update, including its
+  inventory and review-tree digests, used as the diff baseline.
 
 `grimoire source trust <alias>` approves only the currently fetched candidate snapshot and writes
 an exact receipt. The receipt persists, so the same bits do not require repeated approval, but a
@@ -548,6 +680,7 @@ Removing an installed request remains allowed so a user can deactivate untrusted
     "commit": "0123456789abcdef0123456789abcdef01234567",
     "tree": "89abcdef0123456789abcdef0123456789abcdef",
     "inventory": "sha256:...",
+    "review_tree": "sha256:...",
     "review_path": "/home/user/.grimoire/cache/review/..."
   },
   "trust": {
@@ -555,7 +688,8 @@ Removing an installed request remains allowed so a user can deactivate untrusted
     "baseline": {
       "commit": "0123456789abcdef0123456789abcdef01234567",
       "tree": "89abcdef0123456789abcdef0123456789abcdef",
-      "inventory": "sha256:..."
+      "inventory": "sha256:...",
+      "review_tree": "sha256:..."
     }
   },
   "skills": [
@@ -578,12 +712,13 @@ Removing an installed request remains allowed so a user can deactivate untrusted
           "path": "docs/current.md",
           "kind": "symlink",
           "mode": "120000",
-          "target": "../outside.md",
+          "target": "../../outside.md",
           "safety": "escaping"
         }
       ]
     }
   ],
+  "entries": [],
   "packs": [
     {
       "name": "clankshop",
@@ -601,28 +736,40 @@ Removing an installed request remains allowed so a user can deactivate untrusted
       "code": "escaping-symlink",
       "severity": "error",
       "path": "skills/architect/docs/current.md",
-      "details": { "target": "../outside.md" },
-      "message": "symlink target escapes the source snapshot"
+      "details": { "target_bytes_base64": "Li4vLi4vb3V0c2lkZS5tZA==" },
+      "message": "symlink target escapes its owning skill"
     }
   ]
 }
 ```
 
-All shown top-level and nested fields are required unless this paragraph says otherwise. For live
-sources, `source.kind` is `live`; `source.requested_ref`, `snapshot.commit`, and `snapshot.tree` are
-JSON null. `trust.mode` is `untrusted`, `snapshot`, or `all`; `trust.baseline` is null when none
-exists, otherwise it has the snapshot fields shown with nullable commit/tree for live content.
+All shown top-level and nested fields are required unless this paragraph says otherwise. `entries`
+contains reviewed symlink and submodule facts outside discovered skills; skill-contained facts stay
+in `skills[].files`. For live sources, `source.kind` is `live`; `source.requested_ref`,
+`snapshot.commit`, and `snapshot.tree` are JSON null. A non-UTF-8 local canonical identity uses
+`source.canonical: null` plus `source.canonical_bytes_base64`; otherwise the fallback is absent.
+`trust.mode` is `untrusted`, `snapshot`, or `all`; `trust.baseline` is null when none
+exists, otherwise it has exactly `commit`, `tree`, `inventory`, and `review_tree`, with nullable
+commit/tree for live content.
 `review_path` is an absolute local path to the content-addressed review export root after successful
-inspection. Skill file paths are skill-root-relative; skill, pack, and finding paths are
-source-root-relative. All use `/` separators. File entries are tagged variants: `file` has every
-field shown above. Its `shebang` is null when absent or not valid UTF-8; the latter case additionally
-has `shebang_bytes_base64`. `symlink` has `mode`, `target`, and `safety` (`internal` or `escaping`);
-`target` is null for non-UTF-8 bytes and that case additionally has `target_bytes_base64`.
-`submodule` has `commit`. Variant-inapplicable and unnecessary base64 fallback fields are absent
-rather than null. A finding for a path that is not valid UTF-8 uses `path: null` and includes a
-`path_bytes_base64` string in `details`; this is the only nullable path case. All base64 uses the
-standard RFC 4648 alphabet with padding. Skills, packs, files, member names, findings, and detail
-keys sort lexically by their identifying field or, for a null finding path, by its decoded raw path
+inspection.
+
+Every fact that has a path uses one lossless projection: `path` is a `/`-separated UTF-8 string when
+representable and null otherwise; `path_bytes_base64` is present exactly for the non-UTF-8 case. A
+finding with no path uses `path: null` without the fallback. Skill file paths are
+skill-root-relative; skill, pack, top-level entry, finding, boundary-owner, and review-index paths
+are source-root-relative. File entries are tagged variants: `file` has every field
+shown above. Its `shebang` is null when absent or not valid UTF-8; the latter case additionally has
+`shebang_bytes_base64`. `symlink` has `mode`, `target`, and `safety` (`internal`, `escaping`, or
+`invalid`); `target` is null for non-UTF-8 bytes and that case additionally has
+`target_bytes_base64`; invalid links additionally have `reason` (`empty` or `nul`). `submodule` has
+`commit`. Every symlink uses the same owning boundary recorded in the review index: its skill root
+when beneath a skill, otherwise the snapshot root. Variant-inapplicable and unnecessary fallback
+fields are absent rather than null. All base64 uses the standard RFC 4648 alphabet with padding.
+
+Arrays sort by raw bytes, with display identity as the primary field only where applicable: skills
+and packs by name UTF-8 then raw source path; their files and top-level entries by raw path;
+findings by the complete canonical inventory tuple; members by name UTF-8; and detail keys by UTF-8
 bytes. `message` is display-only; consumers branch on `code`, `severity`, and `details`.
 
 `executable` is true exactly when normalized mode is `100755`. Binary is the factual presence of
@@ -642,7 +789,8 @@ explicitly.
 snapshot or subsequently applied trust-all snapshot for that canonical identity (or an empty
 baseline if none) and reports changed commits, skills,
 packs, files, hashes, size/executable/shebang/binary facts, symlinks, submodules, validation
-findings, and the installed/requested skills that an update would affect.
+findings, and the installed/requested skills that an update would affect. A live baseline is keyed
+by both inventory and review-tree digest, so changing any reviewed entry changes the diff identity.
 
 ### Command surface
 
@@ -727,9 +875,14 @@ operand-free `install` reconciles a hand edit.
 
 ### Plans, confirmation, and frozen mode
 
-Every mutating command first builds and prints a complete plan. A plan lists manifest edits, lock
-edits, candidate and previous source snapshots, snapshot fetch/materialization, links created,
-repointed, retained, or removed, unavailable members, blockers, and trust requirements.
+Every command that mutates desired state, locks, trust, installed links, or store reachability first
+builds and prints a complete plan. A plan lists manifest edits, lock edits, candidate and previous
+source snapshots, snapshot materialization, links created, repointed, retained, or removed,
+unavailable members, blockers, and trust requirements. Standalone `source fetch` and inspection are
+the narrow exception: they use the inert atomic cache-custody workflow defined below, never alter
+active or desired state, and require no apply confirmation. `source add` may prepare source bytes
+through that workflow, but its manifest, candidate, and optional trust publication remain one
+planned apply.
 
 An additive-only, unblocked plan may apply without a second prompt. A plan is destructive when it
 removes or repoints a link, advances a locked source, removes desired state, revokes trust, or
@@ -816,6 +969,10 @@ These names may be split into modules, but the contracts are normative:
   source candidate identity, snapshot existence, and trust-store revision.
 - `apply` accepts only an unblocked plan, reacquires the exclusive scope lock, revalidates all
   preconditions, and returns `StalePlan` instead of replanning invisibly.
+- `fetch_source` and `inspect_source` are atomic cache-custody workflows rather than `Plan` actions.
+  They prepare in per-source temporary storage, verify the complete inventory/review export, then
+  publish only after declaration and identity revalidation under the documented locks. Frontends
+  cannot publish candidate or review bytes directly.
 - Core receives a command runner abstraction for Git and filesystem/time abstractions where needed,
   so tests use inert fakes and temporary roots. Production construction occurs once in the app.
 
@@ -946,25 +1103,37 @@ The hard cut is complete only when the old and new models cannot coexist acciden
 - Pack resolution proves missing-required blocks, missing-optional degrades, exclusions affect only
   optional members, shared requests refcount, and cross-source/nested-pack references fail.
 - Canonical hashing is stable across traversal order and catches content, mode, and internal-link
-  changes.
+  changes. Byte goldens pin `grimoire/skill-content@1` including its domain prefix, record kinds,
+  unsigned 64-bit big-endian fields, execute-bit normalization, escaping-link target bytes, and
+  absolute-root independence. Mixed skill/pack/finding goldens pin group order and duplicate
+  tie-breakers for `grimoire/source-inventory@1`.
+- Collision fixtures cover Unicode 17.0.0 `toNFKC_Casefold`, its post-normalization, component
+  boundaries, and invalid UTF-8. Finding goldens exhaust every schema-1 code, severity, exact detail
+  set, parser precedence, duplicate/collision cardinality, path-presence tag, and enum value.
+  Changing only a human message never changes a receipt.
 
 ### Sources, store, and trust
 
 - Local bare remotes prove fetch alone never changes locks or links, while one source update can
   explicitly change several downstream skills in one plan.
 - Pinned local tests modify the origin after install and prove installed bytes/targets do not move.
-  Dirty pinned sources fail; live sources move immediately, require trust-all, and fail frozen mode.
+  Path-swap, root-swap, and mid-read file-swap tests fail stale without reading an outside canary or
+  publishing a mixed inventory. Dirty pinned sources fail; live sources move immediately, require
+  trust-all, expose the continuous-containment warning, and fail frozen mode.
   Repeated unchanged live inspection reuses its review export; changed content produces a new
   review key without creating an immutable store snapshot.
 - Offline frozen tests pass with a populated store and fail without the exact snapshot without
   attempting network access.
-- Malicious Git-tree fixtures prove traversal, special entries, case collisions, escaping symlinks,
-  filters, hooks, LFS, and submodules cannot execute or escape materialization. Review-export
-  fixtures prove invalid UTF-8 names, case collisions, and host-unrepresentable paths still produce
-  a lossless index and content objects without creating unsafe paths. Transport tests reject
-  `ext::`, `file://`, custom helpers, embedded passwords, and unknown schemes before the Git runner
-  receives a command, and prove SCP home-relative identities remain distinct from absolute SSH-URI
-  identities.
+- Malicious Git-tree fixtures prove traversal, special entries, collision-key conflicts, empty/NUL
+  symlink targets, escaping symlinks (including a snapshot-internal link that leaves its owning
+  skill), filters, hooks, LFS, and submodules cannot execute or escape materialization. Review facts
+  and index records use the same owning boundary. Review-export fixtures prove invalid
+  UTF-8 names, collision-key conflicts, and host-unrepresentable paths still produce
+  a lossless index and content objects without creating unsafe paths. They also pin the exact
+  reviewed-entry set, entry/byte limits, review-tree byte grammar, index schema, and object
+  revalidation; changing any reviewed live entry changes the key. Transport tests exhaust accepted
+  and rejected URL grammar before the Git runner receives a command and prove conservative identity
+  equivalence and distinction, including SCP home-relative versus absolute SSH-URI paths.
 - Trust tests prove registration is not approval; an exact receipt survives reuse of the same
   snapshot but not a changed commit/tree; trust-all admits a future candidate but does not update
   it; URL identity changes lose trust; `--yes` grants none; revoke affects every alias sharing the
@@ -976,12 +1145,14 @@ The hard cut is complete only when the old and new models cannot coexist acciden
   Live trust-all tests prove no exact receipt is written and later content is diffed against the
   explicit approval baseline. Removing the final alias leaves trust listable and revocable by
   source key.
-- `source-info@1` JSON goldens cover executable bits, UTF-8 and raw-byte shebangs and symlink
+- `source-info@1` JSON goldens cover executable bits, UTF-8 and raw-byte paths, shebangs and symlink
   targets, sizes, binaries,
   internal/escaping symlinks, submodules, hashes, packs, missing members, validation, invalid-path
-  base64 details, source-root versus skill-root path bases, review-index locations, and all trust
+  base64 fallbacks, source-root versus skill-root path bases, review-index locations, and all trust
   states without safety verdict language. Inventory goldens include invalid UTF-8 paths and prove
-  their raw bytes contribute deterministically to receipts.
+  their raw bytes contribute deterministically to receipts. Separate byte goldens pin complete
+  `source-key@1`, `snapshot-key@1`, and `review-key@1` preimages, including raw local identities and
+  null markers.
 - Review-export tests prove executable bits are cleared and symlinks/submodules are represented only
   as indexed facts. Store-integrity tests mutate a stored skill and prove both apply and `check`
   reject its digest before linking or reporting a healthy install. Fault injection between each
