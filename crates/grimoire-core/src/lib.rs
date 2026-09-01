@@ -16,8 +16,8 @@ pub use manifest::{
 };
 pub use model::*;
 pub use plan::{
-    plan, Action, Blocker, ExitClass, LinkPrecondition, PackMemberState, Plan, PlanFact,
-    Preconditions,
+    plan, Action, Blocker, ExitClass, LinkPrecondition, LockChange, ManifestChange,
+    PackMemberState, Plan, PlanFact, Preconditions,
 };
 pub use resolve::{resolve_manifest, Resolution, ResolvedSkill};
 pub use scope::{discover_project, resolve_explicit_project, PathProbe, Paths, ScopePaths};

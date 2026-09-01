@@ -2,8 +2,9 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use grimoire_core::{
-    plan, Action, ByteHash, InstalledLink, LinkPrecondition, PlanFact, PlanningMode, Preconditions,
-    Request, RequestRoot, Scope, SnapshotId, SnapshotKind, SourceAlias, SourceSnapshot, WorldState,
+    plan, Action, ByteHash, InstalledLink, LinkPrecondition, LockChange, PlanFact, PlanningMode,
+    Preconditions, Request, RequestRoot, Scope, SnapshotId, SnapshotKind, SourceAlias,
+    SourceSnapshot, WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Pack, Skill, SourceInventory, SourcePath,
@@ -117,6 +118,7 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
                 scope: Scope::Project,
                 before: EMPTY_LOCK.as_bytes().to_vec(),
                 after: expected_lock.as_bytes().to_vec(),
+                change: LockChange::Resolve,
             },
             Action::CreateLink {
                 scope: Scope::Project,

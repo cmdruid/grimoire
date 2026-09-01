@@ -371,6 +371,26 @@ impl Lockfile {
                     "pack `{name}` marks a disabled member unavailable"
                 )));
             }
+            for member in pack.required.iter().chain(
+                pack.enabled
+                    .iter()
+                    .filter(|member| !pack.unavailable.contains(*member)),
+            ) {
+                let Some(skill) = self.skills.get(member) else {
+                    return Err(CoreError::Lock(format!(
+                        "pack `{name}` available member `{member}` has no skill lock"
+                    )));
+                };
+                if skill.source != pack.source
+                    || !skill
+                        .requested_by
+                        .contains(&RequestRoot::Pack(name.clone()))
+                {
+                    return Err(CoreError::Lock(format!(
+                        "pack `{name}` member `{member}` has inconsistent ownership"
+                    )));
+                }
+            }
         }
         for (name, skill) in &self.skills {
             if !self.sources.contains_key(&skill.source) {
@@ -378,6 +398,31 @@ impl Lockfile {
                     "skill `{name}` references unknown source `{}`",
                     skill.source
                 )));
+            }
+            for root in &skill.requested_by {
+                match root {
+                    RequestRoot::Skill(requested) if requested != name => {
+                        return Err(CoreError::Lock(format!(
+                            "skill `{name}` has mismatched direct root `{requested}`"
+                        )))
+                    }
+                    RequestRoot::Skill(_) => {}
+                    RequestRoot::Pack(pack_name) => {
+                        let Some(pack) = self.packs.get(pack_name) else {
+                            return Err(CoreError::Lock(format!(
+                                "skill `{name}` references unknown pack root `{pack_name}`"
+                            )));
+                        };
+                        if pack.source != skill.source
+                            || (!pack.required.contains(name) && !pack.enabled.contains(name))
+                            || pack.unavailable.contains(name)
+                        {
+                            return Err(CoreError::Lock(format!(
+                                "skill `{name}` has inconsistent pack root `{pack_name}`"
+                            )));
+                        }
+                    }
+                }
             }
         }
         for alias in self.sources.keys() {

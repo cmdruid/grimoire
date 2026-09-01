@@ -1,0 +1,11 @@
+{
+  "actions": [],
+  "blockers": [],
+  "preconditions": {
+    "manifest": "a436b80ad822560f0995a96cfd6c732a7a21b33c2e9e5ad694b0b5e79f592dc8",
+    "lock": "897fc1efcff3b556be1825396366f737b5723d3b7990b3ba0c2e16e03697f66e",
+    "links": {}
+  },
+  "facts": [],
+  "exit_class": "success"
+}

@@ -137,7 +137,7 @@ impl RequestRoot {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceSnapshot {
     pub alias: SourceAlias,
     pub id: SnapshotId,
@@ -193,6 +193,7 @@ pub enum PlanningMode {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Request {
+    Initialize,
     Reconcile,
     AddSource {
         alias: SourceAlias,
@@ -219,6 +220,10 @@ pub enum Request {
         name: PackName,
         exclude: BTreeSet<SkillName>,
     },
+    UpdateSource {
+        alias: SourceAlias,
+        snapshot: Box<SourceSnapshot>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -231,6 +236,8 @@ pub struct WorldState {
     pub snapshots: BTreeMap<SourceAlias, SourceSnapshot>,
     pub links: BTreeMap<SkillName, InstalledLink>,
     pub inherited_global: Option<crate::resolve::Resolution>,
+    pub manifest_present: bool,
+    pub lock_present: bool,
 }
 
 impl WorldState {
@@ -261,6 +268,27 @@ impl WorldState {
             snapshots,
             links,
             inherited_global,
+            manifest_present: true,
+            lock_present: true,
         })
+    }
+
+    pub fn absent<'a>(
+        scope: Scope,
+        snapshots: impl IntoIterator<Item = SourceSnapshot>,
+        links: impl IntoIterator<Item = (&'a str, InstalledLink)>,
+        inherited_global: Option<crate::resolve::Resolution>,
+    ) -> Result<Self> {
+        let mut world = Self::from_bytes(
+            scope,
+            b"schema = \"grimoire/manifest@1\"\n".to_vec(),
+            crate::Lockfile::default().to_bytes()?,
+            snapshots,
+            links,
+            inherited_global,
+        )?;
+        world.manifest_present = false;
+        world.lock_present = false;
+        Ok(world)
     }
 }

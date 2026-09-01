@@ -11,8 +11,10 @@ Agents *invoke* skills; a grimoire is the book they're invoked from.
 
 Grimoire is being rebuilt as a symlink package manager for agent skills. The published hard-cut
 contract is `.records/specs/2026-08-31-grimoire-symlink-package-manager.md`; the implementation
-roadmap is `.records/plans/2026-09-01-grimoire-hard-cut-rewrite-roadmap.md`. The current phase owns
-the source inventory and pure-pack format. Installation commands return in a later phase.
+roadmap is `.records/plans/2026-09-01-grimoire-hard-cut-rewrite-roadmap.md`. The source inventory,
+pure-pack format, declarative manifests and locks, same-snapshot resolution, and pure planning
+kernel are complete. Source custody and trust are next. Grimoire doesn't provide an installation
+command yet.
 
 ## The skills
 
@@ -114,8 +116,8 @@ Beyond the skills, this repo carries the pack format and its tooling (the umbrel
 `docs/design/2026-08-07-grimoire-repurpose-design.md`):
 
 - **`crates/`** — a Cargo workspace (build from the repo root). `grimoire-pack` owns canonical
-  source inventory, `grimoire-core` is the package-manager domain shell, and `skill-grimoire`
-  retains reusable terminal infrastructure for the later TUI. Crates never
+  source inventory, `grimoire-core` owns declarative state, resolution, and the pure planner, and
+  `skill-grimoire` retains reusable terminal infrastructure for the later TUI. Crates never
   read `skills/` at build time — content appears only as test fixtures.
 - **`.records/specs/`** — published product contracts, including the canonical pack and inventory
   format.

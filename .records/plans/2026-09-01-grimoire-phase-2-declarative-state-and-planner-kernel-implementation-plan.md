@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -263,7 +263,7 @@ This task is read-only and produces no commit.
     owner-equality guards once and show the forbidden cross-source/adoption outcomes. Run
     `RUSTC_WRAPPER= cargo check --workspace` in the same shell.
 
-- [ ] **Slice 5: Complete Phase 2 planner matrices and hard-cut gate** <requires: 2, 3, 4>
+- [x] **Slice 5: Complete Phase 2 planner matrices and hard-cut gate** <requires: 2, 3, 4>
   - Files: create `crates/grimoire-core/tests/planner.rs`,
     `crates/grimoire-core/tests/boundary.rs`, and planner fixtures under
     `crates/grimoire-core/tests/fixtures/planner/`; modify

@@ -1,0 +1,8 @@
+schema = "grimoire/manifest@1"
+
+[sources.a]
+url = "github:org/a"
+ref = "main"
+
+[skills]
+one = { source = "a" }

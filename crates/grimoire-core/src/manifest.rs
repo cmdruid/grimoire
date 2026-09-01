@@ -403,7 +403,7 @@ impl Manifest {
                     CoreError::Manifest(format!("{table_name} entry `{key}` has no value spans"))
                 })?;
                 let header_start = line_range(&self.original, key_span).start;
-                return Ok(vec![header_start..body_end]);
+                return Ok(std::iter::once(header_start..body_end).collect());
             }
             let mut ranges = Vec::new();
             collect_leaf_ranges(&self.original, item, &mut ranges);
