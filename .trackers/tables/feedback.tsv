@@ -1,1 +1,2 @@
 id	created	text	evidence
+feedback-1	2026-09-01T22:41:51Z	Delegate: preflight authentication for a confirmed external CLI route before minting a mailbox slot; the app stream's Sonnet dispatch failed only after slot setup because the Claude CLI was installed but logged out.	skills/delegate/SKILL.md; observed during Grimoire Phase 2 build
