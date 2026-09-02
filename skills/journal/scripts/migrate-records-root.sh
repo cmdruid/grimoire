@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# migrate-records-root.sh preview|apply --root <root> [--source <repo-relative>] [--confirmed]
+# migrate-records-root.sh preview|apply --root <root> --source <repo-relative> [--confirmed]
 #
 # One narrow brownfield move: a clean, fully tracked, dedicated records root to
 # fixed .records. Git is the recovery surface; this script creates no manifest.
@@ -8,7 +8,7 @@ set -euo pipefail
 die() { echo "migrate-records-root.sh: $*" >&2; exit 2; }
 refuse() { echo "reason=$1${2:+ detail=$2}" >&2; exit 2; }
 usage() {
-  echo "usage: migrate-records-root.sh preview|apply --root <root> [--source <repo-relative>] [--confirmed]" >&2
+  echo "usage: migrate-records-root.sh preview|apply --root <root> --source <repo-relative> [--confirmed]" >&2
   exit 2
 }
 
@@ -45,7 +45,7 @@ while [ "$#" -gt 0 ]; do
     *) usage ;;
   esac
 done
-[ -n "$root" ] || usage
+[ -n "$root" ] && [ -n "$source_arg" ] || usage
 [ "$mode" = apply ] || [ "$confirmed" = no ] || usage
 [ "$mode" = preview ] || [ "$confirmed" = yes ] || refuse confirmation-required
 [ -d "$root" ] || refuse invalid-root "$root"
@@ -75,39 +75,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-declarations=()
-declaration_files=()
-for fd in "$root/AGENTS.md" "$root/CLAUDE.md"; do
-  [ -f "$fd" ] || continue
-  [ ! -L "$fd" ] || refuse symlink-front-door "${fd#"$root"/}"
-  while IFS=$'\t' read -r line_no value; do
-    [ -n "$line_no" ] || continue
-    valid_rel "$value" || refuse invalid-records-declaration "${fd#"$root"/}:$line_no"
-    declarations+=("$value")
-    declaration_files+=("$fd")
-  done < <(awk '
-    /^(agent-records|records-root):[[:space:]]*/ { # lint: allow retired-records-declaration
-      value = $0; sub(/^[^:]+:[[:space:]]*/, "", value); sub(/[[:space:]]*$/, "", value)
-      printf "%d\t%s\n", NR, value
-    }
-  ' "$fd")
-done
-
-declared=""
-for value in ${declarations[@]+"${declarations[@]}"}; do
-  if [ -z "$declared" ]; then declared="$value"
-  elif [ "$declared" != "$value" ]; then refuse conflicting-records-declarations "$declared,$value"
-  fi
-done
-
-if [ -n "$source_arg" ]; then
-  valid_rel "$source_arg" || refuse invalid-source "$source_arg"
-  source="$source_arg"
-  [ -z "$declared" ] || [ "$declared" = "$source" ] || refuse source-declaration-mismatch "$declared"
-else
-  [ -n "$declared" ] || refuse source-required
-  source="$declared"
-fi
+valid_rel "$source_arg" || refuse invalid-source "$source_arg"
+source="$source_arg"
 [ "$source" != .records ] || refuse already-canonical
 
 preflight() {
@@ -178,48 +147,10 @@ preflight
 migration_started=yes
 git -C "$root" mv -- "$source" .records
 
-changed_fronts=()
-seen_fronts=" "
-for fd in ${declaration_files[@]+"${declaration_files[@]}"}; do
-  case "$seen_fronts" in *" $fd "*) continue ;; esac
-  seen_fronts="$seen_fronts$fd "
-  parent="${fd%/*}"
-  candidate="$(mktemp "$parent/.journal-migrate-front.XXXXXX")"
-  tmp_files+=("$candidate")
-  final_nl=no
-  if [ -s "$fd" ] && [ "$(tail -c 1 "$fd" | od -An -tuC | tr -d '[:space:]')" = 10 ]; then
-    final_nl=yes
-  fi
-  awk -v source="$source" -v final_nl="$final_nl" '
-    function emit_current(is_final) {
-      if (!have || drop) return
-      printf "%s", current
-      if (!is_final || final_nl == "yes") printf "\n"
-    }
-    {
-      emit_current(0)
-      current = $0; have = 1; drop = 0
-      if (current ~ /^(agent-records|records-root):[[:space:]]*/) { # lint: allow retired-records-declaration
-        value = current
-        sub(/^[^:]+:[[:space:]]*/, "", value)
-        sub(/[[:space:]]*$/, "", value)
-        if (value == source) drop = 1
-      }
-    }
-    END { emit_current(1) }
-  ' "$fd" >"$candidate"
-  if ! cmp -s "$fd" "$candidate"; then
-    mode_bits="$(stat -f '%Lp' "$fd" 2>/dev/null || stat -c '%a' "$fd")"
-    chmod "$mode_bits" "$candidate"
-    mv "$candidate" "$fd"
-    changed_fronts+=("${fd#"$root"/}")
-  fi
-done
-
 standup_out="$(mktemp "${TMPDIR:-/tmp}/journal-migrate-standup.XXXXXX")"
 standup_err="$(mktemp "${TMPDIR:-/tmp}/journal-migrate-standup-err.XXXXXX")"
 tmp_files+=("$standup_out" "$standup_err")
-if ! "$STANDUP" setup "$root" >"$standup_out" 2>"$standup_err"; then
+if ! "$STANDUP" setup "$root" --write-only >"$standup_out" 2>"$standup_err"; then
   cat "$standup_out"; cat "$standup_err" >&2
   die "Journal standup failed after the Git move"
 fi
@@ -229,7 +160,6 @@ if ! "$root/.records/records.sh" check; then
 fi
 
 pathspecs=("$source" .records)
-for front in ${changed_fronts[@]+"${changed_fronts[@]}"}; do pathspecs+=("$front"); done
 while IFS= read -r wrote; do [ -z "$wrote" ] || pathspecs+=("$wrote"); done \
   < <(sed -n 's/^wrote: //p' "$standup_out")
 # `git mv` stages the rename immediately. Restore only its two endpoint
@@ -240,7 +170,6 @@ for pathspec_index in "${!pathspecs[@]}"; do
   pathspecs[pathspec_index]="$(literal_pathspec "${pathspecs[pathspec_index]}")"
 done
 "$SCOPED" "$root" "Journal: migrate records root to .records" "${pathspecs[@]}"
-if [ -f "$root/.spaces/journal/setup.intent" ]; then "$STANDUP" finalize "$root"; fi
 [ -z "$(git -C "$root" status --porcelain --untracked-files=all)" ] || die "migration commit left a dirty worktree"
 echo "committed=$(git -C "$root" rev-parse HEAD)"
 migration_started=no

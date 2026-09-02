@@ -20,7 +20,6 @@ init_project(){
   if [ "$authored" = yes ];then printf '# Existing instructions\n\nPROJECT_PROSE_CANARY' >"$root/AGENTS.md";fi
   git -C "$root" add .;git -C "$root" commit -qm seed
   "$package/journal/scripts/standup.sh" setup "$root" >/dev/null
-  "$package/journal/scripts/standup.sh" finalize "$root"
   "$package/backlog/scripts/backlog-setup.sh" "$root" --apply >/dev/null
   git -C "$root" add .records .trackers;git -C "$root" commit -qm layers
 }
@@ -78,7 +77,6 @@ printf 'NEUTRAL_FRONT_DOOR_CANARY\n'>"$neutral/AGENTS.md"
 git -C "$neutral" add AGENTS.md;git -C "$neutral" -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm seed
 cp "$neutral/AGENTS.md" "$T/neutral.before"
 "$neutral_package/journal/scripts/standup.sh" setup "$neutral" >/dev/null
-"$neutral_package/journal/scripts/standup.sh" finalize "$neutral"
 "$neutral_package/backlog/scripts/backlog-setup.sh" "$neutral" --apply >/dev/null
 "$neutral_package/journal/scripts/standup.sh" repair "$neutral" >/dev/null
 "$neutral_package/backlog/scripts/backlog-setup.sh" "$neutral" repair >/dev/null

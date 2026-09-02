@@ -13,7 +13,6 @@ proj="$TMP/proj"
 mkdir -p "$proj"
 "$SKILL/scripts/standup.sh" setup "$proj" \
  >/dev/null
-"$SKILL/scripts/standup.sh" finalize "$proj" \
 
 RS="$proj/.records/records.sh"
 rs() { "$RS" "$@"; }

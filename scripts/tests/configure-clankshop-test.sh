@@ -13,12 +13,8 @@ auditor_sentinel="$tmp/auditor-invoked"
 
 run_core_sweep(){
   AUDITOR_SETUP_TEST_INVOKED_SENTINEL="$auditor_sentinel" \
-    "$repo/skills/journal/scripts/standup.sh" setup "$root" \
+    "$repo/skills/journal/scripts/standup.sh" setup "$root" --write-only \
  >"$tmp/journal-setup.out"
-  if [ -f "$root/.spaces/journal/setup.intent" ]; then
-    sed -n 's/^wrote: //p' "$tmp/journal-setup.out" >>"$tmp/journal-write-custody"
-    "$repo/skills/journal/scripts/standup.sh" finalize "$root"
-  fi
   AUDITOR_SETUP_TEST_INVOKED_SENTINEL="$auditor_sentinel" \
     "$repo/skills/backlog/scripts/backlog-setup.sh" "$root" --apply >/dev/null
   AUDITOR_SETUP_TEST_INVOKED_SENTINEL="$auditor_sentinel" \
@@ -37,7 +33,7 @@ before="$(git -C "$root" rev-parse HEAD)";run_core_sweep;apply_delegate_policy
 [ ! -e "$auditor_sentinel" ] || fail "core sweep invoked deferred Auditor"
 [ "$before" = "$(git -C "$root" rev-parse HEAD)" ] || fail "a member setup committed during the sweep"
 [ -x "$root/.records/records.sh" ] || fail "Journal tool missing"
-[ ! -e "$root/.spaces/journal/setup.intent" ] || fail "Journal setup intent was not finalized"
+[ ! -e "$root/.spaces/journal" ] || fail "Journal setup created private workspace state"
 [ ! -d "$root/.records/notes" ] || fail "Journal setup created a writer directory"
 grep -qF 'Run `/journal repair`' "$root/.records/README.md" || fail "Journal repair guidance missing"
 "$root/.records/records.sh" list >/dev/null || fail "Journal README provider is unusable"
@@ -132,7 +128,7 @@ cp "$root/.records/notes/2026-08-28-repair-canary.md" "$tmp/repair-record.before
 cp "$root/.trackers/tables/tasks.tsv" "$tmp/repair-queue.before"
 cp "$root/.trackers/DEBRIEF.md" "$tmp/repair-hook.before"
 cp "$root/AGENTS.md" "$tmp/repair-route.before"
-"$repo/skills/journal/scripts/standup.sh" repair "$root" \
+"$repo/skills/journal/scripts/standup.sh" repair "$root" --write-only \
  >"$tmp/journal-repair.out"
 sed -n 's/^wrote: //p' "$tmp/journal-repair.out" | sort -u >"$tmp/journal-repair.paths"
 printf '%s\n' '.records/README.md' '.records/records.sh' >"$tmp/journal-repair.expected"
@@ -144,7 +140,7 @@ cmp -s "$tmp/repair-record.before" "$root/.records/notes/2026-08-28-repair-canar
 cmp -s "$tmp/repair-queue.before" "$root/.trackers/tables/tasks.tsv" || fail "repair changed queue bytes"
 cmp -s "$tmp/repair-hook.before" "$root/.trackers/DEBRIEF.md" || fail "repair changed hook bytes"
 cmp -s "$tmp/repair-route.before" "$root/AGENTS.md" || fail "repair changed route bytes"
-[ ! -e "$root/.spaces/journal/setup.intent" ] || fail "repair created a setup intent"
+[ ! -e "$root/.spaces/journal" ] || fail "repair created private workspace state"
 git -C "$root" add -- .records/records.sh .records/README.md
 git -C "$root" commit -qm 'Repair Journal managed surfaces'
 
@@ -168,7 +164,6 @@ if AUDITOR_SETUP_TEST_INVOKED_SENTINEL="$auditor_sentinel" "$repo/skills/auditor
 spike_root="$tmp/spike-project";mkdir -p "$spike_root"
 "$repo/skills/journal/scripts/standup.sh" setup "$spike_root" \
  >/dev/null
-"$repo/skills/journal/scripts/standup.sh" finalize "$spike_root"
 spike_body="$tmp/spike-body.md"
 awk '
   NR == 1 { sub(/<title>/, "Filesystem feasibility") }

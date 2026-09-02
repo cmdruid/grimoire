@@ -46,7 +46,6 @@ new_root() {
   git -C "$anchor_root" add .seed
   git -C "$anchor_root" commit -qm seed
   "$STANDUP" setup "$anchor_root" >"$OUT" 2>"$ERR"
-  "$STANDUP" finalize "$anchor_root"
   git -C "$anchor_root" add .records
   git -C "$anchor_root" commit -qm records-layer
 }

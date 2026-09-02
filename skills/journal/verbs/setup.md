@@ -1,65 +1,42 @@
-# `setup` — stand up or refresh the records tool layer
+# `setup` — reconcile the records tool layer
 
-Stage `records.sh` at `.records` and stand up the empty ledger and records README in a
-target project — or refresh `records.sh` on a later visit. Works standalone on any
-repo; this is also the records step a workshop setup delegates (the workshop
-never improvises a records layer of its own). It creates **no writer
-directory and no pre-seeded `templates/`**.
+Stand up or refresh Journal's fixed `.records` tool layer in a generic brownfield project. Setup is
+stateless: it derives work from the public layer and read-only Git evidence on every invocation. It
+never resolves, inspects, migrates, or removes anything under `.spaces` and creates no writer
+directory or project template.
 
-1. **Resolve the project root** (judgment stays here, mechanics are scripted):
-   - `<root>`: `git rev-parse --show-toplevel` of the checkout that should
-     hold the records; else a project directory the conversation
-     references; else ask. Journal uses only `<root>/.records` and
-     `<root>/.spaces/journal/setup.intent`. In a Git checkout, a nested directory
-     is not a second project root and must refuse before any write.
-2. **Run or resume the mechanics**: `scripts/standup.sh setup <root>` —
-   creates `.records` itself if needed, installs or
-   refreshes `records.sh` at `.records/records.sh`, seeds an empty
-   `history.tsv` only if missing, creates the records README if absent, refreshes only Journal's
-   delimited `journal:records-tool` block when present, safely replaces the exact prior generated
-   workspace-tool paragraph, and self-checks. Surrounding project prose is preserved. It is
-   additive (a home that merely exists — a leftover
-   path, or a notepad-created `.records/notes/` with no tool — is fine). It
-   does not `mkdir` writer directories, write `.gitkeep`, or copy templates.
-   Every non-clean invocation atomically creates or resumes
-   `.spaces/journal/setup.intent` before changing the tool layer. It validates the
-   recorded roots and already-complete results, executes only incomplete steps, and reports the
-   complete cross-attempt union as `wrote: <repo-relative-path>` lines. The intent is transient:
-   never report, stage, or commit it. A clean invocation creates no intent and reports no writes.
-   **First visit** (no staged `records.sh`): stands the layer.
-   **Later visit** (script present): refreshes `records.sh` and its README block when the skill
-   copy has drifted (`current` vs `refreshed`); restores the executable bit
-   if needed; removes the obsolete workspace-staged engine; then `check`; never migrates records,
-   truncates the ledger, or overwrites prose outside Journal's block.
-   **Exit 2**: missing or noncanonical target directory, unsafe paths, or missing skill-side `records.sh`
-   → STOP and report.
-   **Exit 1**: usage.
-   If standup wrote the tool and then `check` failed, the tool layer **is
-   up** — report that and point at `/journal curate`. That is not a setup
-   refuse.
-   Converting legacy record content or metadata is a migration the human named, not this verb.
-   Legacy records remain unchanged and are routed to the owning skill's explicit `migrate` verb.
-3. **Take custody, then finalize.** Parse each unique
-   `wrote: <path>` line from standup stdout. Before calling the commit helper, omit a reported path
-   only when it is now absent **and** `git -C <root> ls-files --error-unmatch -- <path>` confirms it
-   was untracked (the obsolete tool may have come from an interrupted, never-committed setup).
-   Standalone →
-   `scripts/scoped-commit.sh <root> "Stand up the records layer" <those
-   paths>`, then `scripts/standup.sh finalize <root>`. Never pass the entire `.records` directory as
-   a pathspec. A ready rerun with
-   no outstanding Git change across its reported union revalidates and finalizes without attempting
-   an empty commit. Inside a client's announced sweep → retain the complete union in the sweep's
-   approved diff custody, then finalize without a nested commit. No intent means the setup was a
-   clean no-op: do not commit or call finalize. Any interruption before finalization → rerun setup;
-   do not delete or hand-edit the intent.
+1. **Resolve `<root>`.** Use the Git top level of the intended checkout; outside Git, use the project
+   directory named by the conversation. A nested directory inside a Git checkout is not a second
+   project root. Setup considers only `.records/records.sh`, `.records/history.tsv`, and
+   `.records/README.md`.
+2. **Run the reconciler.** Standalone or outside Git:
+   `scripts/standup.sh setup <root>`. Inside an announced configuration sweep:
+   `scripts/standup.sh setup <root> --write-only`.
+   - A ledger tracked at the exact `HEAD` path but absent now refuses with
+     `reason=ledger-recovery-required action=git-restore`.
+   - A missing ledger witnessed by the current managed README markers or an archived record refuses
+     with `reason=ledger-recovery-required action=human-review`.
+   - Otherwise setup atomically reconciles provider → absent empty ledger → managed README. A fresh
+     README contains exactly the managed block; an incumbent keeps every byte outside that block.
+   - A content-check failure leaves the current tool layer in place and emits
+     `records check failed — tool layer is current; action=/journal curate`.
+3. **Take bounded custody.** `wrote: <path>` reports a current invocation write; `reconciled: <path>`
+   reports an exact dirty result recovered from an earlier invocation. A nonzero custody refusal
+   means commit nothing and leave the bounded diff for inspection. In a Git-backed standalone run,
+   intersect the unique reported union with the paths still dirty after reconciliation; commit that
+   exact nonempty set with
+   `scripts/scoped-commit.sh <root> "Stand up the records layer" <paths...>`. A clean union makes no
+   commit. Outside Git, the helper reports current `wrote:` paths only and the verb makes no commit.
+   Inside an announced sweep, retain the reported writes in the sweep's approved diff custody and
+   make no nested commit.
+
+An interruption may leave a complete provider, ledger, or README prefix. Rerun the same command;
+there is no private recovery artifact or finalization step.
 
 ## Done when
 
-- First visit: tool layer stood up — staged `records.sh` + empty ledger + README with current
-  managed block; no writer directories created; standalone commit landed on the
-  `wrote:` paths (or write-only inside a sweep); no setup intent remains.
-- Later visit: `records.sh` and the managed README block current or refreshed; obsolete
-  workspace-staged tool absent; ledger and surrounding README prose untouched; standalone commit
-  only if standup printed `wrote:` lines (or write-only inside a sweep); no setup intent remains.
-- `check` failed after a successful write: said the tool layer is up and
-  named `/journal curate`.
+- The canonical executable provider, safe ledger, and current managed README block exist; no writer
+  directories, private setup state, or noncanonical paths were read or changed.
+- A Git-backed standalone run committed only the proven dirty reported union; a non-Git or announced
+  run left commit custody with its caller.
+- A content failure named `/journal curate` without undoing the current tool layer.

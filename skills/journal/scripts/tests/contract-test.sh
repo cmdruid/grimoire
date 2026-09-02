@@ -16,7 +16,6 @@ setup_layer() {
   mkdir -p "$contract_root"
   "$STANDUP" setup "$contract_root" \
     >"$OUT" 2>"$ERR"
-  "$STANDUP" finalize "$contract_root"
 }
 
 runtime_contract() {
@@ -24,11 +23,12 @@ runtime_contract() {
   grep -qF 'reason=setup-required action=/journal setup' "$contract_skill/SKILL.md" || return 1
   grep -qF 'reason=repair-required action=/journal repair' "$contract_skill/SKILL.md" || return 1
   grep -qF '| `/journal repair` | `verbs/repair.md` |' "$contract_skill/SKILL.md" || return 1
-  grep -qF '| `/journal migrate [<source-root>]` | `verbs/migrate.md` |' \
+  grep -qF '| `/journal migrate <source-root>` | `verbs/migrate.md` |' \
     "$contract_skill/SKILL.md" || return 1
   grep -qF '| `/journal anchor` | `verbs/anchor.md` |' "$contract_skill/SKILL.md" || return 1
   for contract_verb in search "done" curate; do
-    grep -qF 'ordered runtime preflight' "$contract_skill/verbs/$contract_verb.md" || return 1
+    grep -qF 'scripts/records-runtime-check.sh --root <root>' \
+      "$contract_skill/verbs/$contract_verb.md" || return 1
   done
   if grep -E 'scripts/records[.]sh' \
     "$contract_skill/verbs/search.md" "$contract_skill/verbs/done.md" \
@@ -71,6 +71,19 @@ if runtime_contract "$dispatch_copy"; then
   echo "FAIL: runtime contract missed absent repair dispatch" >&2; fail=$((fail + 1))
 else
   pass=$((pass + 1))
+fi
+
+# Live package contracts contain no private setup lifecycle. The planted canary proves the guard.
+private_state_count() {
+  grep -ElR 'setup[.]intent|standup[.]sh finalize|setup phase|prior-provider removal' \
+    "$1/SKILL.md" "$1/verbs" "$1/scripts/standup.sh" "$1/scripts/records-anchor.sh" \
+    "$1/scripts/migrate-records-root.sh" 2>/dev/null | wc -l | tr -d '[:space:]'
+}
+expect_eq "private setup lifecycle absent" 0 "$(private_state_count "$SKILL")"
+guard_copy="$TMP/private-state-copy"; cp -R "$SKILL" "$guard_copy"
+printf '%s\n' 'setup.intent' >>"$guard_copy/verbs/setup.md"
+if [ "$(private_state_count "$guard_copy")" -gt 0 ]; then pass=$((pass + 1)); else
+  echo 'FAIL: private-state guard missed planted canary' >&2; fail=$((fail + 1))
 fi
 
 # The rendered README is independently usable and every representative command

@@ -1,46 +1,25 @@
 # `done` — close a record in place
 
-Completion is a **judgment**, then a mechanic. The judgment: is this really finished, and
-under which disposition? The mechanic: `.records/records.sh done` — closure in place (the file never
-moves; moves would dangle every path-based link) plus the one ledger line in `history.tsv`.
+Completion is a judgment followed by the staged provider's lifecycle mechanic. Records never move
+on closure; the provider stamps `archived` and appends the sole ledger row.
 
-1. Resolve the project root, `.spaces`, and `.records` (SKILL.md discipline), then
-   run the ordered runtime preflight. Emit its one exact setup-required or repair-required diagnostic
-   and stop on the first failure; never execute the bundled provider against project records. Then
-   confirm the record (`.records/records.sh list`/`show`).
-2. **Pick the disposition** — the vocabulary is the contract:
-   - `done` — completed as intended;
-   - `dropped` — deliberately won't do / no longer true (say why in the note);
-   - `superseded` — replaced (the note **names the successor record**);
-   - `consumed` — absorbed into the spec/doctrine (the note **names where**).
-   Not sure it's finished? Then it isn't — leave it draft, or `touch --status
-   draft|published`.
-3. **Close it**: `.records/records.sh done <path>
-   [--as <disposition>] --note "<one line>"` — the
-   script stamps `status: archived` and appends the ledger line (its sole writer;
-   it refuses a double-close). Never hand-edit a status to `archived` — `check` flags a
-   closing status with no ledger line.
-4. **Tracker line-items are not records.** Completing a line-item *on
-   request* is the follow-up client's job, not this verb. Closing a
-   *whole tracker* (rare — a retired concern) goes through
-   `.records/records.sh done` like any record.
-5. **Writebacks**: `.records/records.sh list` (no `--type`), then search each
-   body for `→ <rel>` where `<rel>` is the closed record's
-   path relative to `.records`. Rewrite only **unchecked** tracker-item
-   lines under `## Items` that match the contract's live form (SKILL.md
-   *The record contract* → Tracker line form). Leave prose and already
-   completed items. `.records/records.sh touch` each tracker you rewrote. Zero
-   hits: nothing to write back.
-6. **Commit** per the commit policy (SKILL.md): standalone → its own scoped commit
-   (`Journal: done — <slug> (<disposition>)`); inside a client's sweep → write-only (the
-   sweep commits once).
+1. Resolve `<root>` and run `scripts/records-runtime-check.sh --root <root>`. Stop on its exact
+   diagnostic. Use its sole success line as the staged-provider path; never resolve `.spaces` or
+   execute the bundled copy. Confirm the target through staged `list`/`show`.
+2. Pick the disposition: `done` (completed), `dropped` (won't do; explain why), `superseded`
+   (replacement named), or `consumed` (destination named). If completion is uncertain, leave the
+   record live.
+3. Run `<provider> done <path> [--as <disposition>] --note "<one line>"`. Never hand-edit archived
+   status or `history.tsv`.
+4. Search the staged provider's full live list for inbound `→ <rel>` references. Rewrite only
+   matching unchecked tracker-item lines under `## Items`, leaving prose and completed items alone;
+   touch each rewritten tracker through the staged provider.
+5. Commit the exact record, ledger, and writeback paths with Journal's scoped commit policy, or
+   return them to an announced sweep.
 
-Pruning closed records (deleting the file; ledger + git history remain the trace) is
-`curate`'s proposal to make, against the project's own prune threshold — never part of `done`.
+Pruning closed records belongs to curate and always requires separate human confirmation.
 
 ## Done when
 
-- Record closed: `.records/records.sh done` wrote the disposition + ledger line;
-  writebacks rewrote only matching live tracker-item lines; standalone
-  commit landed (or write-only inside a sweep).
-- Not finished: left draft (or `touch --status draft|published`); no close.
+The record was left live when uncertain, or it was closed in place with one ledger row, bounded
+writebacks, and exact commit custody.

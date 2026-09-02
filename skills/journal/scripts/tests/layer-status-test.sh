@@ -16,7 +16,7 @@ install_layer() {
   mkdir -p "$1/.records"
   cp "$SKILL/scripts/records.sh" "$1/.records/records.sh"; chmod 755 "$1/.records/records.sh"
   : >"$1/.records/history.tsv"
-  cp "$SKILL/templates/records-readme-block.md" "$1/.records/README.md"
+  sed -n 'p' "$SKILL/templates/records-readme-block.md" >"$1/.records/README.md"
 }
 
 plain="$TMP/plain"; mkdir -p "$plain"; ln -s "$TMP/missing" "$plain/.spaces"
@@ -34,7 +34,7 @@ expect_eq "managed block is current" current "$(fact_value readme_status)"
 tracked="$TMP/tracked"; init_repo "$tracked"; mkdir -p "$tracked/.records"
 : >"$tracked/.records/history.tsv"; git -C "$tracked" add .records/history.tsv
 git -C "$tracked" commit -qm ledger; rm "$tracked/.records/history.tsv"
-cp "$SKILL/templates/records-readme-block.md" "$tracked/.records/README.md"
+sed -n 'p' "$SKILL/templates/records-readme-block.md" >"$tracked/.records/README.md"
 run_status "$tracked"
 expect_eq "HEAD ledger wins over README witness" git-restore "$(fact_value recovery_state)"
 
@@ -80,7 +80,7 @@ mutant="$TMP/mutant-skill"; mkdir -p "$mutant/scripts" "$mutant/templates"
 cp "$STATUS" "$mutant/scripts/records-layer-status.sh"
 cp "$SKILL/scripts/records.sh" "$mutant/scripts/records.sh"
 cp "$SKILL/scripts/records-readme-status.sh" "$mutant/scripts/records-readme-status.sh"
-cp "$SKILL/templates/records-readme-block.md" "$mutant/templates/records-readme-block.md"
+sed -n 'p' "$SKILL/templates/records-readme-block.md" >"$mutant/templates/records-readme-block.md"
 chmod 755 "$mutant/scripts/"*.sh
 sed -i.bak '/root="$(CDPATH/a\
 [ ! -e "$root/.spaces" ] || die workspace-state' "$mutant/scripts/records-layer-status.sh"

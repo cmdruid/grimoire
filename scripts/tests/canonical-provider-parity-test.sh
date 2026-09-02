@@ -83,6 +83,8 @@ cp "$REPO/skills/journal/scripts/records.sh" "$FIX/skills/journal/scripts/record
 cp "$REPO/skills/journal/scripts/standup.sh" "$FIX/skills/journal/scripts/standup.sh"
 cp "$REPO/skills/journal/scripts/records-readme-status.sh" \
   "$FIX/skills/journal/scripts/records-readme-status.sh"
+cp "$REPO/skills/journal/scripts/records-layer-status.sh" \
+  "$FIX/skills/journal/scripts/records-layer-status.sh"
 cp "$REPO/skills/journal/templates/records-readme-block.md" \
   "$FIX/skills/journal/templates/records-readme-block.md"
 cp "$REPO/skills/backlog/scripts/trackers.sh" "$FIX/skills/backlog/scripts/trackers.sh"

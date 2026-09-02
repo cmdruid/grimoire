@@ -88,7 +88,7 @@ coherence), and record-link resolution. Tracker line form is a prose convention 
 |---|---|---|---|
 | `/journal setup` | `verbs/setup.md` | Tool layer: first visit stands it up; later visit refreshes `records.sh` | "stand up the records", "refresh records.sh" |
 | `/journal repair` | `verbs/repair.md` | Restore only the provider and managed README block on an initialized layer | "repair records.sh", "restore the records tool" |
-| `/journal migrate [<source-root>]` | `verbs/migrate.md` | Preview, confirm, and Git-move one dedicated brownfield records root to `.records` | "migrate the records root", "move records to .records" |
+| `/journal migrate <source-root>` | `verbs/migrate.md` | Preview, confirm, and Git-move one explicitly named dedicated records root to `.records` | "migrate the records root", "move records to .records" |
 | `/journal anchor` | `verbs/anchor.md` | Add an explicit project-owned pointer to `.records/README.md` | "make records discoverable", "anchor the records layer" |
 | `/journal search` | `verbs/search.md` | Find records by content or metadata | "find/search/list/query records", "what's in the records about X" |
 | `/journal done <record>` | `verbs/done.md` | **Close** a record in place — disposition + note + the ledger line; write back inbound `→` links | "mark that done", "close out that plan" |
@@ -99,29 +99,27 @@ follow-up is not journal's job (scope boundary, below).
 
 ## Shared discipline (every verb relies on this — stated here once)
 
-- **Use the fixed homes, run the ordered runtime preflight, then let `records.sh` own the facts.**
-  Records live at `<root>/.records`; Journal's setup intent lives at
-  `<root>/.spaces/journal/setup.intent`. Before search, done, or curate invokes the staged tool,
-  check in this order:
-  1. `.spaces/journal/setup.intent` present or unsafe → stop with exactly
+- **Use the fixed home, run the ordered runtime preflight, then let `records.sh` own the facts.**
+  Records live at `<root>/.records`. Search, done, and curate first run
+  `scripts/records-runtime-check.sh --root <root>` and use its sole success line as the absolute
+  staged-provider path. It derives recovery only from the public layer, in this order:
+  1. `.records/history.tsv` absent, non-regular, or unsafe → stop with exactly
      `reason=setup-required action=/journal setup`.
-  2. `.records/history.tsv` absent, non-regular, or unsafe → the same setup-required
-     diagnostic.
-  3. `.records/records.sh` absent, non-regular, non-executable, byte-different from the
-     bundled provider, or failing the exact current bare-usage surface → stop with exactly
+  2. `.records/records.sh` absent, non-regular, non-executable, byte-different from the bundled
+     provider, unsafe, or failing the exact current bare-usage surface → stop with exactly
      `reason=repair-required action=/journal repair`.
-  Compare bundled bytes when checking drift, but never execute the bundled provider against project
-  records. The staged usage probe must exit 1, begin with the current usage
-  line, and name every current command; search additionally requires the `grep` line. Only after all
-  three checks pass may a runtime verb invoke the staged tool. Every invocation begins
-  `.records/records.sh`. Invoke **the staged tool** for every date, path, and
+  No runtime verb resolves or inspects `.spaces`. The staged usage probe must exit 1, begin with the
+  current usage line, and name every current command. Never execute the bundled provider against
+  project records. Only after both checks pass may a runtime verb invoke the returned staged tool.
+  Invoke **the staged tool** for every date, path, and
   conformance fact (`new --schema <owned-schema> [--template <resolved-body>]` / `touch` / `done` / `list` /
   `grep` / `history` / `prune-candidates` / `check`); never guess a date, never
   hand-stamp front-matter, never write `history.tsv` by hand. `search` / `done` /
   `curate` use this same scan.
 - **Scripts compute facts; the verb prose decides.** Whether a record is really done and under
   which disposition, what merges with what — that judgment lives in the verb files. The scripts
-  (`records.sh`, `scripts/standup.sh`, `scripts/scoped-commit.sh`) do only deterministic
+  (`records.sh`, `scripts/records-layer-status.sh`, `scripts/records-runtime-check.sh`,
+  `scripts/standup.sh`, `scripts/scoped-commit.sh`) do only deterministic
   mechanics; never push a decision into a script.
 - **Resolve the commit tree, then commit there.** `<root>` is `git rev-parse --show-toplevel`
   of the checkout that holds the records you wrote — never a different clone, and never the
@@ -143,8 +141,7 @@ follow-up is not journal's job (scope boundary, below).
 - **Front-door boundary.** Only explicitly invoked `/journal anchor` may create or append to the
   repository-root `AGENTS.md`, and it writes only the fixed project-owned records pointer after a
   preview and confirmation. Setup, repair, migration, runtime, and curation never install, refresh,
-  require, or remove that pointer. Migration's bounded removal of matching retired root declarations
-  remains its only other front-door mutation and preserves anchor prose and all unrelated bytes.
+  require, remove, or inspect that pointer.
 
 ## Scope boundary + host conduct
 

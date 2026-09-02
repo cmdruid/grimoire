@@ -33,29 +33,25 @@ SKILL="$(CDPATH='' cd -P "$(dirname "$0")/.."&&pwd)"
 POINTER="$SKILL/templates/agents-pointer.md"
 README_TEMPLATE="$SKILL/templates/records-readme-block.md"
 README_STATUS="$SKILL/scripts/records-readme-status.sh"
+LAYER_STATUS="$SKILL/scripts/records-layer-status.sh"
 PROVIDER_SOURCE="$SKILL/scripts/records.sh"
 [ -f "$POINTER" ]&&[ ! -L "$POINTER" ]&&[ -f "$README_TEMPLATE" ]&&[ ! -L "$README_TEMPLATE" ]&&
-  [ -x "$README_STATUS" ]&&[ -f "$PROVIDER_SOURCE" ]&&[ ! -L "$PROVIDER_SOURCE" ]||die 'package resources unavailable'
+  [ -x "$README_STATUS" ]&&[ -x "$LAYER_STATUS" ]&&[ -f "$PROVIDER_SOURCE" ]&&
+  [ ! -L "$PROVIDER_SOURCE" ]||die 'package resources unavailable'
 if [ "$(grep -cFx '## Project records' "$POINTER")" -ne 1 ] ||
   [ "$(grep -cF '.records/README.md' "$POINTER")" -ne 1 ] ||
   grep -qF '<!--' "$POINTER";then
   die 'invalid pointer template'
 fi
 
-layer="$root/.records";ledger="$layer/history.tsv";provider="$layer/records.sh"
-readme="$layer/README.md";target="$root/AGENTS.md";intent="$root/.spaces/journal/setup.intent"
+target="$root/AGENTS.md"
 
 readme_fact(){ printf '%s\n' "$1"|sed -n "s/^$2=//p"|head -n1;}
 validate_layer(){
-  [ ! -e "$intent" ]&&[ ! -L "$intent" ]||refuse setup-required
-  [ -d "$layer" ]&&[ ! -L "$layer" ]||refuse setup-required
-  [ -f "$ledger" ]&&[ ! -L "$ledger" ]||refuse setup-required
-  if ! { [ -f "$provider" ]&&[ ! -L "$provider" ]&&[ -x "$provider" ]&&
-    cmp -s "$PROVIDER_SOURCE" "$provider"; };then
-    refuse repair-required
-  fi
-  readme_facts="$($README_STATUS "$README_TEMPLATE" "$readme")"||refuse repair-required
-  [ "$(readme_fact "$readme_facts" readme_status)" = current ]||refuse repair-required
+  layer_facts="$($LAYER_STATUS runtime --root "$root")"||refuse setup-required
+  [ "$(readme_fact "$layer_facts" ledger_status)" = regular ]||refuse setup-required
+  [ "$(readme_fact "$layer_facts" provider_status)" = current ]||refuse repair-required
+  [ "$(readme_fact "$layer_facts" readme_status)" = current ]||refuse repair-required
 }
 
 classify_target(){
