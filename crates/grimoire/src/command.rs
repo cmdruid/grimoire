@@ -3,16 +3,20 @@ use std::io::{self, IsTerminal, Write};
 
 use clap::{error::ErrorKind, Parser};
 use grimoire_core::{
-    apply, load_world, plan, prepare_source_add, source_info, Approval, CoreError, ManifestSource,
-    PlanningMode, Request, SourceAlias, SourceTrustIntent,
+    apply, load_trust_world, load_world, plan, prepare_source_add, refresh_source, source_diff,
+    source_info, source_key_for_alias, source_summaries, trust_catalog, Approval, CoreError,
+    ManifestSource, PlanningMode, Request, SourceAlias, SourceKey, SourceTrustIntent,
 };
 
-use crate::args::{Cli, Command, SourceCommand};
-use crate::env::{resolve_init_paths, resolve_scope_paths, Environment, SystemPathProbe};
+use crate::args::{Cli, Command, SourceCommand, TrustCommand};
+use crate::env::{
+    resolve_global_paths, resolve_init_paths, resolve_scope_paths, Environment, SystemPathProbe,
+};
 use crate::runtime::{SystemGitRunner, SystemRuntime};
 
 pub trait Console {
     fn is_terminal(&self) -> bool;
+    fn read_line(&mut self, line: &mut String) -> io::Result<usize>;
     fn write_stdout(&mut self, bytes: &[u8]) -> io::Result<()>;
     fn write_stderr(&mut self, bytes: &[u8]) -> io::Result<()>;
 }
@@ -23,6 +27,10 @@ pub struct SystemConsole;
 impl Console for SystemConsole {
     fn is_terminal(&self) -> bool {
         io::stdin().is_terminal()
+    }
+
+    fn read_line(&mut self, line: &mut String) -> io::Result<usize> {
+        io::stdin().read_line(line)
     }
 
     fn write_stdout(&mut self, bytes: &[u8]) -> io::Result<()> {
@@ -102,6 +110,7 @@ fn execute(
             Ok(0)
         }
         Command::Source { command } => execute_source(command, environment, console),
+        Command::Trust { command } => execute_trust(command, environment, console),
     }
 }
 
@@ -111,7 +120,13 @@ fn execute_source(
     console: &mut dyn Console,
 ) -> grimoire_core::Result<u8> {
     let scope = match &command {
-        SourceCommand::Add { scope, .. } | SourceCommand::Info { scope, .. } => scope,
+        SourceCommand::Add { scope, .. }
+        | SourceCommand::Info { scope, .. }
+        | SourceCommand::List { scope }
+        | SourceCommand::Remove { scope, .. }
+        | SourceCommand::Fetch { scope, .. }
+        | SourceCommand::Diff { scope, .. }
+        | SourceCommand::Trust { scope, .. } => scope,
     };
     let paths = resolve_scope_paths(environment, scope, &SystemPathProbe)?;
     let runner = SystemGitRunner::default();
@@ -147,6 +162,7 @@ fn execute_source(
                 PlanningMode::Normal,
                 console,
                 &runtime,
+                ApplyOptions::default(),
             )
         }
         SourceCommand::Info { alias, json, .. } => {
@@ -161,7 +177,136 @@ fn execute_source(
             console.write_stdout(&bytes).map_err(output_error)?;
             Ok(u8::from(!info.inventory.findings.is_empty()))
         }
+        SourceCommand::List { .. } => {
+            let sources = source_summaries(&world)?;
+            let mut bytes = Vec::new();
+            crate::render::source_list(&sources, &mut bytes).map_err(output_error)?;
+            console.write_stdout(&bytes).map_err(output_error)?;
+            Ok(u8::from(sources.iter().any(|source| source.has_findings)))
+        }
+        SourceCommand::Fetch { alias, .. } => {
+            let aliases = match alias {
+                Some(alias) => vec![SourceAlias::new(alias)?],
+                None => world.manifest.sources.keys().cloned().collect(),
+            };
+            let mut findings = false;
+            for alias in aliases {
+                let info = refresh_source(paths.clone(), alias, &runner)?;
+                let mut bytes = Vec::new();
+                crate::render::source_info(&info, &mut bytes).map_err(output_error)?;
+                console.write_stdout(&bytes).map_err(output_error)?;
+                findings |= !info.inventory.findings.is_empty();
+            }
+            Ok(u8::from(findings))
+        }
+        SourceCommand::Diff { alias, .. } => {
+            let alias = SourceAlias::new(alias)?;
+            let diff = source_diff(&paths, &world, &alias)?;
+            let mut bytes = Vec::new();
+            crate::render::source_diff(&diff, &mut bytes).map_err(output_error)?;
+            console.write_stdout(&bytes).map_err(output_error)?;
+            Ok(0)
+        }
+        SourceCommand::Remove { alias, yes, .. } => apply_request(
+            &paths,
+            &world,
+            Request::RemoveSource {
+                alias: SourceAlias::new(alias)?,
+            },
+            PlanningMode::Normal,
+            console,
+            &runtime,
+            ApplyOptions {
+                yes,
+                ..ApplyOptions::default()
+            },
+        ),
+        SourceCommand::Trust {
+            alias,
+            all,
+            revoke,
+            yes,
+            ..
+        } => {
+            let alias = SourceAlias::new(alias)?;
+            if revoke {
+                let global_paths = resolve_global_paths(environment)?;
+                let catalog = trust_catalog(&global_paths)?;
+                let mut bytes = Vec::new();
+                crate::render::trust_catalog(&catalog, &mut bytes).map_err(output_error)?;
+                console.write_stdout(&bytes).map_err(output_error)?;
+                apply_request(
+                    &paths,
+                    &world,
+                    Request::RevokeTrust {
+                        source: source_key_for_alias(&world, &alias)?,
+                    },
+                    PlanningMode::Normal,
+                    console,
+                    &runtime,
+                    ApplyOptions {
+                        yes,
+                        ..ApplyOptions::default()
+                    },
+                )
+            } else {
+                apply_request(
+                    &paths,
+                    &world,
+                    Request::TrustSource {
+                        alias,
+                        mode: if all {
+                            SourceTrustIntent::All
+                        } else {
+                            SourceTrustIntent::Exact
+                        },
+                    },
+                    PlanningMode::Normal,
+                    console,
+                    &runtime,
+                    ApplyOptions::default(),
+                )
+            }
+        }
     }
+}
+
+fn execute_trust(
+    command: TrustCommand,
+    environment: &dyn Environment,
+    console: &mut dyn Console,
+) -> grimoire_core::Result<u8> {
+    let paths = resolve_global_paths(environment)?;
+    let catalog = trust_catalog(&paths)?;
+    let mut bytes = Vec::new();
+    crate::render::trust_catalog(&catalog, &mut bytes).map_err(output_error)?;
+    console.write_stdout(&bytes).map_err(output_error)?;
+    match command {
+        TrustCommand::List => Ok(u8::from(!catalog.findings.is_empty())),
+        TrustCommand::Revoke { source_key, yes } => {
+            let world = load_trust_world(&paths)?;
+            apply_request(
+                &paths,
+                &world,
+                Request::RevokeTrust {
+                    source: SourceKey::parse(source_key)?,
+                },
+                PlanningMode::Normal,
+                console,
+                &SystemRuntime,
+                ApplyOptions {
+                    yes,
+                    ..ApplyOptions::default()
+                },
+            )
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct ApplyOptions {
+    dry_run: bool,
+    yes: bool,
 }
 
 fn apply_request(
@@ -171,6 +316,7 @@ fn apply_request(
     mode: PlanningMode,
     console: &mut dyn Console,
     runtime: &SystemRuntime,
+    options: ApplyOptions,
 ) -> grimoire_core::Result<u8> {
     let plan = plan(world, request, mode)?;
     let mut bytes = Vec::new();
@@ -179,7 +325,28 @@ fn apply_request(
     if !plan.blockers.is_empty() {
         return Ok(3);
     }
-    let outcome = apply(paths, &plan, Approval::NotRequired, runtime)?;
+    if options.dry_run {
+        return Ok(0);
+    }
+    let approval = if !plan.is_destructive() {
+        Approval::NotRequired
+    } else if options.yes {
+        Approval::Granted
+    } else if !console.is_terminal() {
+        return Err(CoreError::ApprovalRequired);
+    } else {
+        console
+            .write_stdout(b"Apply? [y/N] ")
+            .map_err(output_error)?;
+        let mut answer = String::new();
+        console.read_line(&mut answer).map_err(output_error)?;
+        if matches!(answer.trim().to_ascii_lowercase().as_str(), "y" | "yes") {
+            Approval::Granted
+        } else {
+            Approval::Declined
+        }
+    };
+    let outcome = apply(paths, &plan, approval, runtime)?;
     let mut bytes = Vec::new();
     crate::render::apply_outcome(&outcome, &mut bytes).map_err(output_error)?;
     console.write_stdout(&bytes).map_err(output_error)?;

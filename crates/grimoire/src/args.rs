@@ -25,13 +25,18 @@ pub enum Command {
         #[command(subcommand)]
         command: SourceCommand,
     },
+    /// Inspect and revoke identity-wide trust.
+    Trust {
+        #[command(subcommand)]
+        command: TrustCommand,
+    },
 }
 
 impl Command {
     pub fn init_scope(&self) -> Option<&InitScope> {
         match self {
             Self::Init { scope } => Some(scope),
-            Self::Source { .. } => None,
+            Self::Source { .. } | Self::Trust { .. } => None,
         }
     }
 }
@@ -60,6 +65,55 @@ pub enum SourceCommand {
         json: bool,
         #[command(flatten)]
         scope: ScopeArgs,
+    },
+    /// List declared sources.
+    List {
+        #[command(flatten)]
+        scope: ScopeArgs,
+    },
+    /// Remove a source alias from this scope.
+    Remove {
+        alias: String,
+        #[arg(long)]
+        yes: bool,
+        #[command(flatten)]
+        scope: ScopeArgs,
+    },
+    /// Refresh one or every source candidate without changing desired state.
+    Fetch {
+        alias: Option<String>,
+        #[command(flatten)]
+        scope: ScopeArgs,
+    },
+    /// Compare the current candidate with its accepted trust baseline.
+    Diff {
+        alias: String,
+        #[command(flatten)]
+        scope: ScopeArgs,
+    },
+    /// Grant or revoke trust for a source alias.
+    Trust {
+        alias: String,
+        #[arg(long, conflicts_with = "revoke")]
+        all: bool,
+        #[arg(long, conflicts_with = "all")]
+        revoke: bool,
+        #[arg(long, requires = "revoke")]
+        yes: bool,
+        #[command(flatten)]
+        scope: ScopeArgs,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Subcommand)]
+pub enum TrustCommand {
+    /// List every identity trust record and known alias use.
+    List,
+    /// Revoke trust by canonical source key.
+    Revoke {
+        source_key: String,
+        #[arg(long)]
+        yes: bool,
     },
 }
 

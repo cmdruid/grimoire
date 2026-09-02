@@ -205,7 +205,7 @@ This task is read-only and produces no commit.
     expected: source add/info cross only the core custody/plan seams, stable JSON is exact, and the
     runner is untouched for rejected locations.
 
-- [ ] **Slice 3: Complete source and identity-wide trust ceremonies** <requires: 2>
+- [x] **Slice 3: Complete source and identity-wide trust ceremonies** <requires: 2>
   - Files: create `crates/grimoire-core/tests/adapter_trust.rs` and
     `crates/grimoire/tests/cli_sources.rs`; modify
     `crates/grimoire-core/src/model.rs`, `crates/grimoire-core/src/plan.rs`,

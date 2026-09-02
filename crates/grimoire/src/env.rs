@@ -84,6 +84,12 @@ pub fn resolve_scope_paths(
     Paths::project(project, grimoire_home)
 }
 
+pub fn resolve_global_paths(environment: &dyn Environment) -> Result<Paths> {
+    let user_home = user_home(environment)?;
+    let grimoire_home = grimoire_home(environment, &user_home)?;
+    Paths::global(user_home, grimoire_home)
+}
+
 fn absolute_current_dir(environment: &dyn Environment) -> Result<PathBuf> {
     let cwd = environment.current_dir().map_err(|error| {
         CoreError::Request(format!("cannot resolve current directory: {error}"))

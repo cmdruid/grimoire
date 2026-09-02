@@ -436,19 +436,21 @@ fn prepare_snapshots(paths: &Paths, plan: &Plan, nonce: &str) -> Result<()> {
     Ok(())
 }
 
-fn validate_preconditions(paths: &Paths, plan: &Plan, include_projects: bool) -> Result<()> {
-    validate_file_hash(
-        &paths.manifest_path(),
-        plan.preconditions.manifest.as_ref(),
-        "manifest",
-    )?;
-    validate_file_hash(&paths.lock_path(), plan.preconditions.lock.as_ref(), "lock")?;
+fn validate_preconditions(paths: &Paths, plan: &Plan, include_scope: bool) -> Result<()> {
+    if include_scope {
+        validate_file_hash(
+            &paths.manifest_path(),
+            plan.preconditions.manifest.as_ref(),
+            "manifest",
+        )?;
+        validate_file_hash(&paths.lock_path(), plan.preconditions.lock.as_ref(), "lock")?;
+    }
     validate_file_hash(
         &paths.trust_path(),
         plan.preconditions.trust.as_ref(),
         "trust",
     )?;
-    if include_projects && matches!(paths.scope, ScopePaths::Project { .. }) {
+    if include_scope && matches!(paths.scope, ScopePaths::Project { .. }) {
         validate_file_hash(
             &paths.projects_path(),
             plan.preconditions.projects.as_ref(),

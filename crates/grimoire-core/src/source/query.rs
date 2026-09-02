@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::path::PathBuf;
 
 use super::{
     fetch_source, inspect_live_source, inspect_pinned_source, CandidateRecord, GitRunner,
@@ -8,6 +9,8 @@ use crate::{
     CoreError, Paths, RequestRoot, Result, SnapshotKind, SourceAlias, SourceLocation, TrustMode,
     TrustReceipt, TrustStore, WorldState,
 };
+
+const QUERY_FILE_LIMIT: u64 = 16 * 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceSummary {
@@ -20,6 +23,28 @@ pub struct SourceSummary {
     pub candidate_current: bool,
     pub trust: TrustMode,
     pub has_findings: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TrustUse {
+    pub scope: String,
+    pub alias: SourceAlias,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrustSummary {
+    pub source_key: super::SourceKey,
+    pub identity: super::CanonicalIdentity,
+    pub receipts: BTreeSet<TrustReceipt>,
+    pub all_snapshots: bool,
+    pub baseline: Option<crate::TrustBaseline>,
+    pub uses: BTreeSet<TrustUse>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct TrustCatalog {
+    pub records: Vec<TrustSummary>,
+    pub findings: Vec<String>,
 }
 
 pub fn refresh_source(
@@ -184,6 +209,93 @@ pub fn source_summaries(world: &WorldState) -> Result<Vec<SourceSummary>> {
         .collect()
 }
 
+pub fn source_key_for_alias(world: &WorldState, alias: &SourceAlias) -> Result<super::SourceKey> {
+    world
+        .candidates
+        .get(alias)
+        .or_else(|| world.locked_states.get(alias))
+        .and_then(|state| state.identity.as_ref())
+        .map(super::SourceKey::derive)
+        .ok_or_else(|| CoreError::Source(format!("source `{alias}` has no observed identity")))
+}
+
+pub fn load_trust_world(paths: &Paths) -> Result<WorldState> {
+    if !matches!(paths.scope, crate::ScopePaths::Global { .. }) {
+        return Err(CoreError::Request(
+            "identity trust requires global resolved paths".into(),
+        ));
+    }
+    let mut world = WorldState::absent(crate::Scope::Global, [], [], None)?;
+    world.trust_bytes = read_optional_bounded(&paths.trust_path())?;
+    if let Some(bytes) = world.trust_bytes.as_deref() {
+        TrustStore::parse(bytes)?;
+    }
+    Ok(world)
+}
+
+pub fn trust_catalog(paths: &Paths) -> Result<TrustCatalog> {
+    let world = load_trust_world(paths)?;
+    let store = world
+        .trust_bytes
+        .as_deref()
+        .map(TrustStore::parse)
+        .transpose()?
+        .unwrap_or_default();
+    let mut records = store
+        .records
+        .iter()
+        .map(|(source_key, record)| TrustSummary {
+            source_key: source_key.clone(),
+            identity: record.identity.clone(),
+            receipts: record.receipts.clone(),
+            all_snapshots: record.all_snapshots,
+            baseline: record.baseline.clone(),
+            uses: BTreeSet::new(),
+        })
+        .collect::<Vec<_>>();
+    let mut findings = Vec::new();
+    let mut scopes = vec![("global".into(), paths.clone())];
+    if let Some(bytes) = read_optional_bounded(&paths.projects_path())? {
+        match crate::ProjectIndex::parse(&bytes) {
+            Ok(index) => {
+                scopes.extend(index.records.values().filter_map(|record| {
+                    Paths::project(record.path.clone(), paths.grimoire_home.clone())
+                        .ok()
+                        .map(|project| (format!("project:{}", record.path.display()), project))
+                }));
+            }
+            Err(error) => findings.push(format!("project-index: {error}")),
+        }
+    }
+    for (scope, scope_paths) in scopes {
+        let Some(bytes) = read_optional_bounded(&scope_paths.manifest_path())? else {
+            continue;
+        };
+        let manifest = match crate::Manifest::parse(bytes) {
+            Ok(manifest) => manifest,
+            Err(error) => {
+                findings.push(format!("{scope}: {error}"));
+                continue;
+            }
+        };
+        for alias in manifest.sources.keys() {
+            match crate::world::declaration_identity(&scope_paths, &manifest, alias) {
+                Ok(identity) => {
+                    let key = super::SourceKey::derive(&identity);
+                    if let Some(summary) = records.iter_mut().find(|item| item.source_key == key) {
+                        summary.uses.insert(TrustUse {
+                            scope: scope.clone(),
+                            alias: alias.clone(),
+                        });
+                    }
+                }
+                Err(error) => findings.push(format!("{scope}/{alias}: {error}")),
+            }
+        }
+    }
+    Ok(TrustCatalog { records, findings })
+}
+
 fn candidate_receipt(candidate: &CandidateRecord) -> Option<TrustReceipt> {
     (candidate.identity.kind() == SourceKind::Git).then(|| TrustReceipt {
         commit: candidate.commit.clone().expect("validated Git candidate"),
@@ -227,4 +339,29 @@ fn affected_roots(world: &WorldState, alias: &SourceAlias) -> BTreeSet<String> {
             .map(|(name, _)| RequestRoot::Pack(name.clone()).lock_value()),
     );
     roots
+}
+
+fn read_optional_bounded(path: &PathBuf) -> Result<Option<Vec<u8>>> {
+    let metadata = match std::fs::symlink_metadata(path) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => {
+            return Err(CoreError::Io {
+                path: path.display().to_string(),
+                message: error.to_string(),
+            })
+        }
+    };
+    if !metadata.file_type().is_file() || metadata.len() > QUERY_FILE_LIMIT {
+        return Err(CoreError::Request(format!(
+            "query state is not a bounded regular file: {}",
+            path.display()
+        )));
+    }
+    std::fs::read(path)
+        .map(Some)
+        .map_err(|error| CoreError::Io {
+            path: path.display().to_string(),
+            message: error.to_string(),
+        })
 }

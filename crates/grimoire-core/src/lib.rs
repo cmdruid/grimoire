@@ -36,9 +36,10 @@ pub use prune::observe_reachability;
 pub use resolve::{resolve_manifest, Resolution, ResolvedSkill};
 pub use scope::{discover_project, resolve_explicit_project, PathProbe, Paths, ScopePaths};
 pub use source::{
-    prepare_source_add, refresh_source, source_diff, source_info, source_summaries,
-    CandidateRecord, CanonicalIdentity, PreparedSource, ReviewKey, SnapshotKey, SourceInfo,
-    SourceKey, SourceKind, SourceSummary,
+    load_trust_world, prepare_source_add, refresh_source, source_diff, source_info,
+    source_key_for_alias, source_summaries, trust_catalog, CandidateRecord, CanonicalIdentity,
+    PreparedSource, ReviewKey, SnapshotKey, SourceDiff, SourceInfo, SourceKey, SourceKind,
+    SourceSummary, TrustCatalog, TrustSummary, TrustUse,
 };
 pub use store::MaterializationIntent;
 pub use trust::{TrustBaseline, TrustMode, TrustMutation, TrustReceipt, TrustRecord, TrustStore};
