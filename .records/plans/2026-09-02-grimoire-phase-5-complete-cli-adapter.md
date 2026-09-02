@@ -164,7 +164,7 @@ This task is read-only and produces no commit.
     `cd /Users/cscott/Repos/grimoire/.workstreams/app && RUSTC_WRAPPER= cargo test -p skill-grimoire --test cli_tracer`;
     expected: the new tracer and help-before-environment red proof pass.
 
-- [ ] **Slice 2: Source add and info use complete core review values** <requires: 1>
+- [x] **Slice 2: Source add and info use complete core review values** <requires: 1>
   - Files: create `crates/grimoire-core/src/source/query.rs`,
     `crates/grimoire-core/tests/adapter_source.rs`, and
     `crates/grimoire/tests/cli_source_tracer.rs`; modify

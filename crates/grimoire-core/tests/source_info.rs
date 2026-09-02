@@ -69,6 +69,7 @@ fn json_matches_the_additive_source_info_contract() {
         source_key: SourceKey::derive(&identity),
         review_key,
         review_tree: candidate.review_tree.clone(),
+        facts: Default::default(),
         entries: vec![grimoire_core::source::ReviewEntry {
             path: SourcePath::from("README.md"),
             mode: "100644".into(),

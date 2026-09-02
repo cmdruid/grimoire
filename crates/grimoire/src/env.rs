@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use grimoire_core::{CoreError, PathProbe, Paths, Result, ScopePaths};
 
-use crate::args::InitScope;
+use crate::args::{InitScope, ScopeArgs};
 
 pub trait Environment {
     fn current_dir(&self) -> std::io::Result<PathBuf>;
@@ -56,6 +56,32 @@ pub fn resolve_init_paths(
         unreachable!("explicit project resolution always returns project scope")
     };
     Paths::project(root, grimoire_home)
+}
+
+pub fn resolve_scope_paths(
+    environment: &dyn Environment,
+    scope: &ScopeArgs,
+    probe: &dyn PathProbe,
+) -> Result<Paths> {
+    let cwd = absolute_current_dir(environment)?;
+    let user_home = user_home(environment)?;
+    let grimoire_home = grimoire_home(environment, &user_home)?;
+    if scope.global {
+        return Paths::global(user_home, grimoire_home);
+    }
+    if let Some(project) = scope.project.as_deref() {
+        let project = absolute_from(&cwd, project);
+        let ScopePaths::Project { root } =
+            grimoire_core::resolve_explicit_project(&project, probe)?
+        else {
+            unreachable!("explicit project resolution always returns project scope")
+        };
+        return Paths::project(root, grimoire_home);
+    }
+    let project = grimoire_core::discover_project(&cwd, probe)?.ok_or_else(|| {
+        CoreError::Request("no project scope found; run `grimoire init` or pass `--global`".into())
+    })?;
+    Paths::project(project, grimoire_home)
 }
 
 fn absolute_current_dir(environment: &dyn Environment) -> Result<PathBuf> {

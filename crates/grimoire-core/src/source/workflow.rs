@@ -396,6 +396,7 @@ pub fn inspect_pinned_source(
 }
 
 fn normalize_absolute(path: &Path) -> Result<PathBuf> {
+    let path = fs::canonicalize(path).map_err(|error| io_error(path, error))?;
     let mut normalized = PathBuf::from("/");
     for component in path.components() {
         match component {

@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -38,6 +39,95 @@ pub struct ReviewExport {
     pub review_key: ReviewKey,
     pub review_tree: String,
     pub entries: Vec<ReviewEntry>,
+    pub facts: ReviewFacts,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct ReviewFacts {
+    pub values: BTreeMap<String, String>,
+}
+
+impl ReviewFacts {
+    pub fn from_inventory(inventory: &SourceInventory) -> Self {
+        let mut values = BTreeMap::new();
+        for skill in &inventory.skills {
+            values.insert(
+                format!("skill/{}", skill.name),
+                format!(
+                    "path={};content={}",
+                    BASE64.encode(skill.path.as_bytes()),
+                    skill.content_digest
+                ),
+            );
+            for file in &skill.files {
+                values.insert(
+                    format!("file/{}", BASE64.encode(file.path.as_bytes())),
+                    format!(
+                        "size={};mode={};sha256={};binary={};executable={};shebang={}",
+                        file.size,
+                        file.mode,
+                        file.digest,
+                        file.binary,
+                        file.executable,
+                        file.shebang
+                            .as_deref()
+                            .map(|bytes| BASE64.encode(bytes))
+                            .unwrap_or_default()
+                    ),
+                );
+            }
+            for link in &skill.symlinks {
+                values.insert(
+                    format!("symlink/{}", BASE64.encode(link.path.as_bytes())),
+                    format!(
+                        "mode={};target={};safety={:?};reason={}",
+                        link.mode,
+                        BASE64.encode(&link.target),
+                        link.safety,
+                        link.reason.as_deref().unwrap_or_default()
+                    ),
+                );
+            }
+            for submodule in &skill.submodules {
+                values.insert(
+                    format!("submodule/{}", BASE64.encode(submodule.path.as_bytes())),
+                    format!("commit={}", submodule.commit),
+                );
+            }
+        }
+        for pack in &inventory.packs {
+            values.insert(
+                format!("pack/{}", pack.name),
+                format!(
+                    "path={};digest={};description={};required={:?};optional={:?};missing_required={:?};missing_optional={:?}",
+                    BASE64.encode(pack.path.as_bytes()),
+                    pack.digest,
+                    pack.description,
+                    pack.required,
+                    pack.optional,
+                    pack.missing_required,
+                    pack.missing_optional
+                ),
+            );
+        }
+        for (index, finding) in inventory.findings.iter().enumerate() {
+            values.insert(
+                format!("finding/{index:08}"),
+                format!(
+                    "code={};severity={:?};path={};details={:?}",
+                    finding.code,
+                    finding.severity,
+                    finding
+                        .path
+                        .as_ref()
+                        .map(|path| BASE64.encode(path.as_bytes()))
+                        .unwrap_or_default(),
+                    finding.details
+                ),
+            );
+        }
+        Self { values }
+    }
 }
 
 impl ReviewExport {
@@ -115,7 +205,11 @@ impl ReviewExport {
             });
         }
         entries.sort_by(|left, right| left.path.cmp(&right.path));
-        let dto = ReviewIndexDto::from_entries(&inventory.review_tree_digest.to_string(), &entries);
+        let dto = ReviewIndexDto::from_entries(
+            &inventory.review_tree_digest.to_string(),
+            &entries,
+            &ReviewFacts::from_inventory(inventory),
+        );
         let mut bytes = serde_json::to_vec_pretty(&dto)?;
         bytes.push(b'\n');
         write_new_file(&temporary.path().join("index.json"), &bytes, 0o444)?;
@@ -164,6 +258,7 @@ impl ReviewExport {
         if dto.schema != "grimoire/review-index@1" || dto.review_tree != expected_review_tree {
             return Err(CoreError::Source("review index identity mismatch".into()));
         }
+        let facts = dto.facts.clone();
         let entries = dto.into_entries()?;
         let reviewed = entries
             .iter()
@@ -195,6 +290,7 @@ impl ReviewExport {
             review_key: review_key.clone(),
             review_tree: expected_review_tree.into(),
             entries,
+            facts,
         })
     }
 
@@ -302,6 +398,8 @@ struct ReviewIndexDto {
     schema: String,
     review_tree: String,
     entries: Vec<ReviewEntryDto>,
+    #[serde(default)]
+    facts: ReviewFacts,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -334,11 +432,12 @@ struct ReviewEntryDto {
 }
 
 impl ReviewIndexDto {
-    fn from_entries(review_tree: &str, entries: &[ReviewEntry]) -> Self {
+    fn from_entries(review_tree: &str, entries: &[ReviewEntry], facts: &ReviewFacts) -> Self {
         Self {
             schema: "grimoire/review-index@1".into(),
             review_tree: review_tree.into(),
             entries: entries.iter().map(ReviewEntryDto::from).collect(),
+            facts: facts.clone(),
         }
     }
 

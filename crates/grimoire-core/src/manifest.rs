@@ -25,6 +25,44 @@ impl ManifestSource {
             SourceLocation::Url(value) | SourceLocation::Path(value) => value,
         }
     }
+
+    pub fn from_cli(
+        location: impl Into<String>,
+        reference: Option<String>,
+        live: bool,
+    ) -> Result<Self> {
+        let location = location.into();
+        let remote_shaped = location.starts_with("github:")
+            || location.contains("://")
+            || location
+                .split_once('@')
+                .and_then(|(_, rest)| rest.split_once(':'))
+                .is_some();
+        if remote_shaped {
+            crate::CanonicalIdentity::remote(&location)?;
+            if live {
+                return Err(CoreError::Source("remote sources cannot be live".into()));
+            }
+            return Ok(Self {
+                location: SourceLocation::Url(location),
+                reference,
+                live: false,
+            });
+        }
+        if live && reference.is_some() {
+            return Err(CoreError::Source(
+                "live sources cannot declare a Git ref".into(),
+            ));
+        }
+        if location.is_empty() {
+            return Err(CoreError::Source("local source path is empty".into()));
+        }
+        Ok(Self {
+            location: SourceLocation::Path(location),
+            reference,
+            live,
+        })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -579,6 +579,7 @@ mod tests {
             source_key: source_key.clone(),
             review_key,
             review_tree,
+            facts: crate::source::ReviewFacts::default(),
             entries: vec![
                 ReviewEntry {
                     path: SourcePath::from("skills/one/SKILL.md"),

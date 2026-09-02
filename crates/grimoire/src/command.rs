@@ -2,10 +2,13 @@ use std::ffi::OsString;
 use std::io::{self, IsTerminal, Write};
 
 use clap::{error::ErrorKind, Parser};
-use grimoire_core::{apply, load_world, plan, Approval, CoreError, PlanningMode, Request};
+use grimoire_core::{
+    apply, load_world, plan, prepare_source_add, source_info, Approval, CoreError, ManifestSource,
+    PlanningMode, Request, SourceAlias, SourceTrustIntent,
+};
 
-use crate::args::{Cli, Command};
-use crate::env::{resolve_init_paths, Environment, SystemPathProbe};
+use crate::args::{Cli, Command, SourceCommand};
+use crate::env::{resolve_init_paths, resolve_scope_paths, Environment, SystemPathProbe};
 use crate::runtime::{SystemGitRunner, SystemRuntime};
 
 pub trait Console {
@@ -98,7 +101,89 @@ fn execute(
             console.write_stdout(&bytes).map_err(output_error)?;
             Ok(0)
         }
+        Command::Source { command } => execute_source(command, environment, console),
     }
+}
+
+fn execute_source(
+    command: SourceCommand,
+    environment: &dyn Environment,
+    console: &mut dyn Console,
+) -> grimoire_core::Result<u8> {
+    let scope = match &command {
+        SourceCommand::Add { scope, .. } | SourceCommand::Info { scope, .. } => scope,
+    };
+    let paths = resolve_scope_paths(environment, scope, &SystemPathProbe)?;
+    let runner = SystemGitRunner::default();
+    let runtime = SystemRuntime;
+    let world = load_world(&paths, &runner, &runtime)?;
+    match command {
+        SourceCommand::Add {
+            alias,
+            location,
+            reference,
+            live,
+            trust,
+            trust_all,
+            ..
+        } => {
+            let alias = SourceAlias::new(alias)?;
+            let source = ManifestSource::from_cli(location, reference, live)?;
+            let prepared = prepare_source_add(paths.clone(), &world, alias, source, &runner)?;
+            let trust = if trust_all {
+                SourceTrustIntent::All
+            } else if trust {
+                SourceTrustIntent::Exact
+            } else {
+                SourceTrustIntent::Untrusted
+            };
+            apply_request(
+                &paths,
+                &world,
+                Request::AddSource {
+                    prepared: Box::new(prepared),
+                    trust,
+                },
+                PlanningMode::Normal,
+                console,
+                &runtime,
+            )
+        }
+        SourceCommand::Info { alias, json, .. } => {
+            let alias = SourceAlias::new(alias)?;
+            let info = source_info(&paths, &world, &alias)?;
+            let mut bytes = Vec::new();
+            if json {
+                bytes = info.to_bytes()?;
+            } else {
+                crate::render::source_info(&info, &mut bytes).map_err(output_error)?;
+            }
+            console.write_stdout(&bytes).map_err(output_error)?;
+            Ok(u8::from(!info.inventory.findings.is_empty()))
+        }
+    }
+}
+
+fn apply_request(
+    paths: &grimoire_core::Paths,
+    world: &grimoire_core::WorldState,
+    request: Request,
+    mode: PlanningMode,
+    console: &mut dyn Console,
+    runtime: &SystemRuntime,
+) -> grimoire_core::Result<u8> {
+    let plan = plan(world, request, mode)?;
+    let mut bytes = Vec::new();
+    crate::render::plan(&plan, &mut bytes).map_err(output_error)?;
+    console.write_stdout(&bytes).map_err(output_error)?;
+    if !plan.blockers.is_empty() {
+        return Ok(3);
+    }
+    let outcome = apply(paths, &plan, Approval::NotRequired, runtime)?;
+    let mut bytes = Vec::new();
+    crate::render::apply_outcome(&outcome, &mut bytes).map_err(output_error)?;
+    console.write_stdout(&bytes).map_err(output_error)?;
+    Ok(0)
 }
 
 fn output_error(error: io::Error) -> CoreError {
@@ -122,6 +207,7 @@ fn exit_for_error(error: &CoreError) -> u8 {
         | CoreError::Source(_)
         | CoreError::Trust(_) => 2,
         CoreError::StalePlan(_) | CoreError::BlockedPlan | CoreError::ApprovalRequired => 3,
+        CoreError::Transport(_) => 4,
         CoreError::Store(_)
         | CoreError::Locking(_)
         | CoreError::Transaction(_)

@@ -24,6 +24,8 @@ pub enum CoreError {
     Request(String),
     #[error("invalid source: {0}")]
     Source(String),
+    #[error("source transport failure: {0}")]
+    Transport(String),
     #[error("invalid trust state: {0}")]
     Trust(String),
     #[error("invalid store state: {0}")]

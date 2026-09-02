@@ -143,7 +143,7 @@ impl SystemGitRunner {
 
         let mut child = command
             .spawn()
-            .map_err(|error| CoreError::Source(format!("cannot start Git: {error}")))?;
+            .map_err(|error| CoreError::Transport(format!("cannot start Git: {error}")))?;
         let pid = child.id() as i32;
         if let Some(bytes) = parts.stdin {
             child
@@ -151,7 +151,9 @@ impl SystemGitRunner {
                 .take()
                 .expect("piped stdin")
                 .write_all(&bytes)
-                .map_err(|error| CoreError::Source(format!("cannot write Git stdin: {error}")))?;
+                .map_err(|error| {
+                    CoreError::Transport(format!("cannot write Git stdin: {error}"))
+                })?;
         }
         let stdout = child.stdout.take().expect("piped stdout");
         let stderr = child.stderr.take().expect("piped stderr");
@@ -185,7 +187,7 @@ impl SystemGitRunner {
                                     kill_group(pid);
                                     let _ = child.wait();
                                     let stderr = stderr_thread.join().map_err(|_| {
-                                        CoreError::Source("Git stderr reader panicked".into())
+                                        CoreError::Transport("Git stderr reader panicked".into())
                                     })??;
                                     return Ok(GitResult {
                                         stdout: Vec::new(),
@@ -203,7 +205,7 @@ impl SystemGitRunner {
                             kill_group(pid);
                             let _ = child.wait();
                             let _ = stderr_thread.join();
-                            return Err(CoreError::Source("Git output limit exceeded".into()));
+                            return Err(CoreError::Transport("Git output limit exceeded".into()));
                         } else {
                             stdout_bytes.extend_from_slice(&buffer[..read]);
                         }
@@ -213,16 +215,16 @@ impl SystemGitRunner {
                         kill_group(pid);
                         let _ = child.wait();
                         let _ = stderr_thread.join();
-                        return Err(CoreError::Source(format!(
+                        return Err(CoreError::Transport(format!(
                             "cannot read Git output: {error}"
                         )));
                     }
                 }
             }
             if status.is_none() {
-                status = child
-                    .try_wait()
-                    .map_err(|error| CoreError::Source(format!("cannot wait for Git: {error}")))?;
+                status = child.try_wait().map_err(|error| {
+                    CoreError::Transport(format!("cannot wait for Git: {error}"))
+                })?;
             }
             if status.is_some() && stdout_eof {
                 break;
@@ -230,12 +232,14 @@ impl SystemGitRunner {
             if Instant::now() >= deadline {
                 kill_group(pid);
                 let _ = child.wait();
-                return Err(CoreError::Source("Git workflow deadline exceeded".into()));
+                return Err(CoreError::Transport(
+                    "Git workflow deadline exceeded".into(),
+                ));
             }
             if exceeded.load(Ordering::Acquire) {
                 kill_group(pid);
                 let _ = child.wait();
-                return Err(CoreError::Source("Git output limit exceeded".into()));
+                return Err(CoreError::Transport("Git output limit exceeded".into()));
             }
             #[cfg(target_os = "macos")]
             match process_group_resident_bytes(pid) {
@@ -243,13 +247,13 @@ impl SystemGitRunner {
                 Ok(_) => {
                     kill_group(pid);
                     let _ = child.wait();
-                    return Err(CoreError::Source(
+                    return Err(CoreError::Transport(
                         "Git process-group resident-memory limit exceeded".into(),
                     ));
                 }
                 Err(error) => {
                     if let Some(exit_status) = child.try_wait().map_err(|wait_error| {
-                        CoreError::Source(format!("cannot wait for Git: {wait_error}"))
+                        CoreError::Transport(format!("cannot wait for Git: {wait_error}"))
                     })? {
                         status = Some(exit_status);
                     } else if process_group_exists(pid) {
@@ -265,10 +269,10 @@ impl SystemGitRunner {
         }
         let stderr = stderr_thread
             .join()
-            .map_err(|_| CoreError::Source("Git stderr reader panicked".into()))??;
+            .map_err(|_| CoreError::Transport("Git stderr reader panicked".into()))??;
         let status = status.expect("process exited before stdout closed");
         if !status.success() {
-            return Err(CoreError::Source(format!(
+            return Err(CoreError::Transport(format!(
                 "Git exited with {status}: {}",
                 String::from_utf8_lossy(&stderr)
             )));
@@ -474,7 +478,7 @@ fn read_capped(mut reader: impl Read, limit: usize, exceeded: Arc<AtomicBool>) -
     loop {
         let read = reader
             .read(&mut buffer)
-            .map_err(|error| CoreError::Source(format!("cannot read Git output: {error}")))?;
+            .map_err(|error| CoreError::Transport(format!("cannot read Git output: {error}")))?;
         if read == 0 {
             return Ok(output);
         }
@@ -492,7 +496,7 @@ fn set_nonblocking(file: &impl std::os::fd::AsRawFd) -> Result<()> {
     let flags = unsafe { libc::fcntl(descriptor, libc::F_GETFL) };
     if flags < 0 || unsafe { libc::fcntl(descriptor, libc::F_SETFL, flags | libc::O_NONBLOCK) } < 0
     {
-        Err(CoreError::Source(format!(
+        Err(CoreError::Transport(format!(
             "cannot make Git payload nonblocking: {}",
             std::io::Error::last_os_error()
         )))
@@ -511,28 +515,29 @@ fn verify_bare_cache(root: &Path) -> Result<()> {
         indexes: &mut usize,
     ) -> Result<()> {
         let mut entries = std::fs::read_dir(directory)
-            .map_err(|error| CoreError::Source(format!("cannot inspect Git cache: {error}")))?
+            .map_err(|error| CoreError::Transport(format!("cannot inspect Git cache: {error}")))?
             .collect::<std::result::Result<Vec<_>, _>>()
-            .map_err(|error| CoreError::Source(format!("cannot inspect Git cache: {error}")))?;
+            .map_err(|error| CoreError::Transport(format!("cannot inspect Git cache: {error}")))?;
         entries.sort_by_key(|entry| entry.file_name());
         for entry in entries {
             let path = entry.path();
-            let metadata = std::fs::symlink_metadata(&path)
-                .map_err(|error| CoreError::Source(format!("cannot inspect Git cache: {error}")))?;
+            let metadata = std::fs::symlink_metadata(&path).map_err(|error| {
+                CoreError::Transport(format!("cannot inspect Git cache: {error}"))
+            })?;
             if metadata.file_type().is_symlink() {
-                return Err(CoreError::Source("Git cache contains a symlink".into()));
+                return Err(CoreError::Transport("Git cache contains a symlink".into()));
             }
             if metadata.is_dir() {
                 walk(root, &path, total, metadata_total, packs, indexes)?;
                 continue;
             }
             if !metadata.is_file() || metadata.len() > CACHE_LIMIT {
-                return Err(CoreError::Source("Git cache file limit exceeded".into()));
+                return Err(CoreError::Transport("Git cache file limit exceeded".into()));
             }
             *total = total.saturating_add(metadata.len());
             let relative = path
                 .strip_prefix(root)
-                .map_err(|_| CoreError::Source("Git cache path escaped root".into()))?;
+                .map_err(|_| CoreError::Transport("Git cache path escaped root".into()))?;
             let extension = path.extension().and_then(OsStr::to_str);
             let in_pack_directory = relative
                 .parent()
@@ -541,7 +546,7 @@ fn verify_bare_cache(root: &Path) -> Result<()> {
                 (true, Some("pack")) => *packs += 1,
                 (true, Some("idx")) => *indexes += 1,
                 (true, Some("rev" | "keep" | "bitmap")) => {
-                    return Err(CoreError::Source(
+                    return Err(CoreError::Transport(
                         "Git cache contains disabled pack metadata".into(),
                     ))
                 }
@@ -564,10 +569,10 @@ fn verify_bare_cache(root: &Path) -> Result<()> {
         &mut indexes,
     )?;
     if total > CACHE_LIMIT || metadata_total > METADATA_LIMIT {
-        return Err(CoreError::Source("Git cache size limit exceeded".into()));
+        return Err(CoreError::Transport("Git cache size limit exceeded".into()));
     }
     if packs != 1 || indexes != 1 {
-        return Err(CoreError::Source(
+        return Err(CoreError::Transport(
             "Git cache must contain exactly one pack and index".into(),
         ));
     }
@@ -587,7 +592,7 @@ fn process_group_resident_bytes(group: i32) -> Result<u64> {
         )
     };
     if bytes <= 0 || bytes as usize >= pids.len() {
-        return Err(CoreError::Source(
+        return Err(CoreError::Transport(
             "cannot enforce Git process-group memory limit".into(),
         ));
     }
@@ -608,7 +613,7 @@ fn process_group_resident_bytes(group: i32) -> Result<u64> {
         resident = resident.saturating_add(info.ri_resident_size.max(info.ri_phys_footprint));
     }
     if sampled == 0 {
-        Err(CoreError::Source(format!(
+        Err(CoreError::Transport(format!(
             "cannot sample Git process-group memory{}",
             last_error.map_or(String::new(), |error| format!(": {error}"))
         )))

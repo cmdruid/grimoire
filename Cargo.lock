@@ -1394,6 +1394,7 @@ dependencies = [
  "grimoire-core",
  "libc",
  "ratatui",
+ "serde_json",
  "tempfile",
 ]
 

@@ -19,6 +19,7 @@ fn export(entries: Vec<ReviewEntry>) -> ReviewExport {
         source_key,
         review_key,
         review_tree,
+        facts: Default::default(),
         entries,
     }
 }
