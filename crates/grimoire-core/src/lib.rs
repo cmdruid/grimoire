@@ -1,6 +1,7 @@
 //! Pure planning kernel for Grimoire's declarative package-manager domain.
 
 mod apply;
+mod check;
 mod error;
 mod lockfile;
 mod locks;
@@ -13,8 +14,10 @@ pub mod source;
 mod store;
 mod transaction;
 mod trust;
+mod world;
 
 pub use apply::{apply, recover};
+pub use check::check;
 pub use error::{CoreError, Result};
 pub use grimoire_pack::inventory;
 pub use lockfile::{LockPack, LockSkill, LockSource, Lockfile};
@@ -34,3 +37,4 @@ pub use source::{
 };
 pub use store::MaterializationIntent;
 pub use trust::{TrustBaseline, TrustMode, TrustMutation, TrustReceipt, TrustRecord, TrustStore};
+pub use world::load_world;

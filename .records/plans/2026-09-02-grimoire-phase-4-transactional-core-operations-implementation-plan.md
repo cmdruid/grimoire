@@ -359,7 +359,7 @@ This task is read-only and produces no commit.
     cannot touch an outside canary. Controlled wrong commit ordering demonstrates the forbidden
     trust/candidate intermediate.
 
-- [ ] **Slice 4: Production world loading, read-only check, and offline frozen restore** <requires: 3>
+- [x] **Slice 4: Production world loading, read-only check, and offline frozen restore** <requires: 3>
   - Files: create `crates/grimoire-core/src/world.rs`, `crates/grimoire-core/src/check.rs`,
     `crates/grimoire-core/tests/world.rs`, `crates/grimoire-core/tests/check.rs`, and loader fixtures
     under `crates/grimoire-core/tests/fixtures/world/`; modify

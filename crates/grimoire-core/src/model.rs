@@ -327,6 +327,31 @@ pub struct RecoveryOutcome {
     pub dispositions: Vec<RecoveryDisposition>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct WorldObservation {
+    pub code: String,
+    pub details: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CheckSeverity {
+    Error,
+    Warning,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct CheckFinding {
+    pub code: String,
+    pub severity: CheckSeverity,
+    pub details: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CheckReport {
+    pub findings: Vec<CheckFinding>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct ByteHash(String);
@@ -413,6 +438,7 @@ pub struct WorldState {
     pub inherited_global: Option<crate::resolve::Resolution>,
     pub manifest_present: bool,
     pub lock_present: bool,
+    pub observations: Vec<WorldObservation>,
 }
 
 impl WorldState {
@@ -453,6 +479,7 @@ impl WorldState {
             inherited_global,
             manifest_present: true,
             lock_present: true,
+            observations: Vec::new(),
         })
     }
 
