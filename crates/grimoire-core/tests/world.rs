@@ -94,6 +94,24 @@ fn absent_scopes_and_malformed_initialized_state_are_explicit() {
 }
 
 #[test]
+fn absent_scope_observes_existing_shared_trust() {
+    let temporary = tempfile::tempdir().unwrap();
+    let paths = project_paths(temporary.path());
+    let trust = TrustStore::default().to_bytes().unwrap();
+    fs::write(paths.trust_path(), &trust).unwrap();
+
+    let world = load_world(&paths, &NoGit::default(), &Runtime).unwrap();
+
+    assert_eq!(world.trust_bytes.as_deref(), Some(trust.as_slice()));
+    let initialized = plan(&world, Request::Initialize, PlanningMode::Normal).unwrap();
+    assert_eq!(
+        initialized.preconditions.trust,
+        Some(grimoire_core::ByteHash::of(&trust))
+    );
+    assert!(apply(&paths, &initialized, Approval::NotRequired, &Runtime).is_ok());
+}
+
+#[test]
 fn live_world_observes_exact_link_without_following_it() {
     let temporary = tempfile::tempdir().unwrap();
     let paths = project_paths(temporary.path());

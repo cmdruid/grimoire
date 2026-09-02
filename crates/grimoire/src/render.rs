@@ -1,6 +1,9 @@
 use std::io::{self, Write};
 
-use grimoire_core::{ApplyOutcome, Plan, SourceDiff, SourceInfo, SourceSummary, TrustCatalog};
+use grimoire_core::{
+    ApplyOutcome, CheckReport, ContextReport, InstalledStatus, Plan, SourceDiff, SourceInfo,
+    SourceSummary, TrustCatalog, WorldObservation,
+};
 
 pub fn plan(plan: &Plan, output: &mut dyn Write) -> io::Result<()> {
     output.write_all(
@@ -105,6 +108,88 @@ pub fn trust_catalog(catalog: &TrustCatalog, output: &mut dyn Write) -> io::Resu
         writeln!(output, "finding\t{finding}")?;
     }
     Ok(())
+}
+
+pub fn context_report(report: &ContextReport, output: &mut dyn Write) -> io::Result<()> {
+    for root in &report.desired_roots {
+        writeln!(
+            output,
+            "desired\t{}\t{}",
+            root.root.lock_value(),
+            root.source
+        )?;
+    }
+    for skill in &report.skills {
+        let requested_by = skill
+            .requested_by
+            .iter()
+            .map(|root| root.lock_value())
+            .collect::<Vec<_>>()
+            .join(",");
+        writeln!(
+            output,
+            "skill\t{}\t{}\tsnapshot={}\tinventory={}\tinstalled={}\trequested_by={}",
+            skill.name,
+            skill.source,
+            skill.snapshot.as_deref().unwrap_or("live"),
+            skill.inventory.as_deref().unwrap_or("-"),
+            installed_status(skill.installed),
+            requested_by
+        )?;
+    }
+    for unavailable in &report.unavailable {
+        writeln!(
+            output,
+            "unavailable\t{}\t{}",
+            unavailable.pack, unavailable.skill
+        )?;
+    }
+    for inherited in &report.inherited {
+        writeln!(
+            output,
+            "inherited\t{}\t{}\tshadowed={}",
+            inherited.name, inherited.source, inherited.shadowed
+        )?;
+    }
+    for blocker in &report.blockers {
+        writeln!(output, "blocker\t{}\t{:?}", blocker.code, blocker.details)?;
+    }
+    render_findings(&report.findings, output)
+}
+
+pub fn check_report(report: &CheckReport, output: &mut dyn Write) -> io::Result<()> {
+    render_findings(&report.findings, output)
+}
+
+pub fn observations(findings: &[WorldObservation], output: &mut dyn Write) -> io::Result<()> {
+    for finding in findings {
+        writeln!(output, "finding\t{}\t{:?}", finding.code, finding.details)?;
+    }
+    Ok(())
+}
+
+fn render_findings(
+    findings: &[grimoire_core::CheckFinding],
+    output: &mut dyn Write,
+) -> io::Result<()> {
+    for finding in findings {
+        writeln!(
+            output,
+            "finding\t{:?}\t{}\t{:?}",
+            finding.severity, finding.code, finding.details
+        )?;
+    }
+    Ok(())
+}
+
+fn installed_status(status: InstalledStatus) -> &'static str {
+    match status {
+        InstalledStatus::Current => "current",
+        InstalledStatus::Missing => "missing",
+        InstalledStatus::Drift => "drift",
+        InstalledStatus::ForeignFile => "foreign-file",
+        InstalledStatus::ForeignDirectory => "foreign-directory",
+    }
 }
 
 pub fn apply_outcome(outcome: &ApplyOutcome, output: &mut dyn Write) -> io::Result<()> {

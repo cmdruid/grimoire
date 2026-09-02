@@ -260,7 +260,7 @@ This task is read-only and produces no commit.
     expected: all mutations share one plan/apply path, all-source update is atomic, and update never
     fetches.
 
-- [ ] **Slice 5: List, check, inherited globals, and prune are direct projections** <requires: 2, 4>
+- [x] **Slice 5: List, check, inherited globals, and prune are direct projections** <requires: 2, 4>
   - Files: create `crates/grimoire-core/tests/adapter_context.rs` and
     `crates/grimoire/tests/cli_reports.rs`; modify
     `crates/grimoire-core/src/lib.rs`, `crates/grimoire-core/src/model.rs`,

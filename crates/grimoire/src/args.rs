@@ -69,6 +69,21 @@ pub enum Command {
         #[command(flatten)]
         scope: ScopeArgs,
     },
+    /// Show desired, resolved, installed, and inherited skills.
+    List {
+        #[command(flatten)]
+        scope: ScopeArgs,
+    },
+    /// Report state, trust, store, and link findings without mutation.
+    Check {
+        #[command(flatten)]
+        scope: ScopeArgs,
+    },
+    /// Manage immutable snapshot storage.
+    Store {
+        #[command(subcommand)]
+        command: StoreCommand,
+    },
 }
 
 impl Command {
@@ -79,9 +94,25 @@ impl Command {
             | Self::Trust { .. }
             | Self::Install { .. }
             | Self::Uninstall { .. }
-            | Self::Update { .. } => None,
+            | Self::Update { .. }
+            | Self::List { .. }
+            | Self::Check { .. }
+            | Self::Store { .. } => None,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Subcommand)]
+pub enum StoreCommand {
+    /// Delete immutable snapshots proven unreachable.
+    Prune {
+        #[arg(long, value_name = "PATH")]
+        project: Vec<PathBuf>,
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long)]
+        yes: bool,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Subcommand)]

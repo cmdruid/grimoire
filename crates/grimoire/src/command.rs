@@ -4,13 +4,14 @@ use std::io::{self, IsTerminal, Write};
 
 use clap::{error::ErrorKind, Parser};
 use grimoire_core::{
-    apply, load_trust_world, load_world, plan, prepare_source_add, refresh_source, source_diff,
-    source_info, source_key_for_alias, source_summaries, trust_catalog, Approval, CoreError,
-    ManifestPack, ManifestSource, PackName, PlanningMode, Request, SkillName, SourceAlias,
-    SourceKey, SourceTrustIntent,
+    apply, attach_inherited_global, check, context_report, load_trust_world, load_world,
+    observe_reachability, plan, prepare_source_add, refresh_source, source_diff, source_info,
+    source_key_for_alias, source_summaries, trust_catalog, Approval, CoreError, ManifestPack,
+    ManifestSource, PackName, PlanningMode, Request, ScopePaths, SkillName, SourceAlias, SourceKey,
+    SourceTrustIntent,
 };
 
-use crate::args::{Cli, Command, SourceCommand, TrustCommand};
+use crate::args::{Cli, Command, SourceCommand, StoreCommand, TrustCommand};
 use crate::env::{
     resolve_global_paths, resolve_init_paths, resolve_scope_paths, Environment, SystemPathProbe,
 };
@@ -194,7 +195,69 @@ fn execute(
             PlanningMode::Normal,
             ApplyOptions { dry_run, yes },
         ),
+        Command::List { scope } => {
+            let world = load_context_world(environment, &scope)?;
+            let report = context_report(&world);
+            let mut bytes = Vec::new();
+            crate::render::context_report(&report, &mut bytes).map_err(output_error)?;
+            console.write_stdout(&bytes).map_err(output_error)?;
+            Ok(u8::from(
+                !report.blockers.is_empty() || !report.findings.is_empty(),
+            ))
+        }
+        Command::Check { scope } => {
+            let world = load_context_world(environment, &scope)?;
+            let report = check(&world);
+            let mut bytes = Vec::new();
+            crate::render::check_report(&report, &mut bytes).map_err(output_error)?;
+            console.write_stdout(&bytes).map_err(output_error)?;
+            Ok(u8::from(!report.findings.is_empty()))
+        }
+        Command::Store { command } => match command {
+            StoreCommand::Prune {
+                project,
+                dry_run,
+                yes,
+            } => {
+                let paths = resolve_global_paths(environment)?;
+                let runtime = SystemRuntime;
+                let observation = observe_reachability(&paths, &project, &runtime)?;
+                let mut bytes = Vec::new();
+                crate::render::observations(&observation.findings, &mut bytes)
+                    .map_err(output_error)?;
+                console.write_stdout(&bytes).map_err(output_error)?;
+                let runner = SystemGitRunner::default();
+                let world =
+                    load_world(&paths, &runner, &runtime)?.with_reachability(observation.clone());
+                let code = apply_request(
+                    &paths,
+                    &world,
+                    Request::Prune,
+                    PlanningMode::Normal,
+                    console,
+                    &runtime,
+                    ApplyOptions { dry_run, yes },
+                )?;
+                Ok(code.max(u8::from(!observation.findings.is_empty())))
+            }
+        },
     }
+}
+
+fn load_context_world(
+    environment: &dyn Environment,
+    scope: &crate::args::ScopeArgs,
+) -> grimoire_core::Result<grimoire_core::WorldState> {
+    let paths = resolve_scope_paths(environment, scope, &SystemPathProbe)?;
+    let runner = SystemGitRunner::default();
+    let runtime = SystemRuntime;
+    let world = load_world(&paths, &runner, &runtime)?;
+    if matches!(paths.scope, ScopePaths::Global { .. }) {
+        return Ok(world);
+    }
+    let global_paths = resolve_global_paths(environment)?;
+    let global = load_world(&global_paths, &runner, &runtime)?;
+    attach_inherited_global(world, &global)
 }
 
 fn execute_scoped_request(

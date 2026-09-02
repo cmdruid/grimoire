@@ -5,9 +5,10 @@ use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
 
 use crate::{
-    resolve_manifest, CheckFinding, CheckReport, CheckSeverity, InstalledLink, LockSource,
-    PackMemberState, PlanFact, SnapshotKind, SnapshotStore, SourceKey, TrustMode, TrustReceipt,
-    TrustStore, WorldState,
+    resolve_manifest, CheckFinding, CheckReport, CheckSeverity, ContextReport, DesiredRootSummary,
+    InheritedSkillSummary, InstalledLink, InstalledStatus, LockSource, PackMemberState, PlanFact,
+    RequestRoot, ResolvedSkillSummary, SnapshotKind, SnapshotStore, SourceKey, TrustMode,
+    TrustReceipt, TrustStore, UnavailableMemberSummary, WorldState,
 };
 
 pub fn check(world: &WorldState) -> CheckReport {
@@ -30,6 +31,112 @@ pub fn check(world: &WorldState) -> CheckReport {
     check_links(world, &mut findings);
     check_context(world, &mut findings);
     report(findings)
+}
+
+pub fn context_report(world: &WorldState) -> ContextReport {
+    let mut desired_roots = world
+        .manifest
+        .skills
+        .iter()
+        .map(|(name, source)| DesiredRootSummary {
+            root: RequestRoot::Skill(name.clone()),
+            source: source.clone(),
+        })
+        .chain(
+            world
+                .manifest
+                .packs
+                .iter()
+                .map(|(name, request)| DesiredRootSummary {
+                    root: RequestRoot::Pack(name.clone()),
+                    source: request.source.clone(),
+                }),
+        )
+        .collect::<Vec<_>>();
+    desired_roots.sort();
+
+    let resolution = resolve_manifest(&world.manifest, &world.snapshots);
+    let mut skills = resolution
+        .skills
+        .iter()
+        .filter_map(|(name, resolved)| {
+            let locked = resolution.lock.skills.get(name)?;
+            let source = resolution.lock.sources.get(&resolved.source);
+            let (snapshot, inventory) = match source {
+                Some(LockSource::Git {
+                    commit, inventory, ..
+                }) => (Some(commit.clone()), Some(inventory.clone())),
+                Some(LockSource::Live { .. }) => (
+                    None,
+                    world
+                        .snapshots
+                        .get(&resolved.source)
+                        .map(|state| state.id.inventory_digest.clone()),
+                ),
+                None => (None, None),
+            };
+            let installed = match world.links.get(name).unwrap_or(&InstalledLink::Absent) {
+                InstalledLink::Absent => InstalledStatus::Missing,
+                InstalledLink::Symlink(target) if target == &resolved.target => {
+                    InstalledStatus::Current
+                }
+                InstalledLink::Symlink(_) => InstalledStatus::Drift,
+                InstalledLink::File => InstalledStatus::ForeignFile,
+                InstalledLink::Directory => InstalledStatus::ForeignDirectory,
+            };
+            Some(ResolvedSkillSummary {
+                name: name.clone(),
+                source: locked.source.clone(),
+                snapshot,
+                inventory,
+                requested_by: locked.requested_by.clone(),
+                installed,
+            })
+        })
+        .collect::<Vec<_>>();
+    skills.sort_by(|left, right| left.name.cmp(&right.name));
+
+    let mut unavailable = resolution
+        .lock
+        .packs
+        .iter()
+        .flat_map(|(pack, locked)| {
+            locked
+                .unavailable
+                .iter()
+                .map(|skill| UnavailableMemberSummary {
+                    pack: pack.clone(),
+                    skill: skill.clone(),
+                })
+        })
+        .collect::<Vec<_>>();
+    unavailable.sort();
+
+    let resolved_names = skills
+        .iter()
+        .map(|skill| skill.name.clone())
+        .collect::<std::collections::BTreeSet<_>>();
+    let mut inherited = world
+        .inherited_global
+        .as_ref()
+        .into_iter()
+        .flat_map(|global| &global.skills)
+        .map(|(name, skill)| InheritedSkillSummary {
+            name: name.clone(),
+            source: skill.source.clone(),
+            shadowed: resolved_names.contains(name),
+        })
+        .collect::<Vec<_>>();
+    inherited.sort();
+
+    ContextReport {
+        desired_roots,
+        skills,
+        unavailable,
+        inherited,
+        blockers: resolution.blockers,
+        findings: check(world).findings,
+    }
 }
 
 fn check_resolution(world: &WorldState, findings: &mut Vec<CheckFinding>) {
@@ -210,13 +317,14 @@ fn check_links(world: &WorldState, findings: &mut Vec<CheckFinding>) {
 }
 
 fn check_context(world: &WorldState, findings: &mut Vec<CheckFinding>) {
+    let project_skills = resolve_manifest(&world.manifest, &world.snapshots).skills;
     for fact in world
         .inherited_global
         .as_ref()
         .into_iter()
         .flat_map(|resolution| &resolution.skills)
     {
-        if world.lock.skills.contains_key(fact.0) {
+        if project_skills.contains_key(fact.0) {
             findings.push(details_finding(
                 "global-skill-shadowed",
                 CheckSeverity::Warning,

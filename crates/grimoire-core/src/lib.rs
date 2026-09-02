@@ -19,7 +19,7 @@ mod trust;
 mod world;
 
 pub use apply::{apply, recover};
-pub use check::check;
+pub use check::{check, context_report};
 pub use error::{CoreError, Result};
 pub use grimoire_pack::inventory;
 pub use lockfile::{LockPack, LockSkill, LockSource, Lockfile};
@@ -43,4 +43,4 @@ pub use source::{
 };
 pub use store::MaterializationIntent;
 pub use trust::{TrustBaseline, TrustMode, TrustMutation, TrustReceipt, TrustRecord, TrustStore};
-pub use world::load_world;
+pub use world::{attach_inherited_global, load_world};

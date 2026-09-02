@@ -1093,6 +1093,7 @@ fn initialize(world: &WorldState, mode: PlanningMode) -> Result<Plan> {
 
 fn initialization_preconditions(world: &WorldState) -> Preconditions {
     Preconditions {
+        trust: world.trust_bytes.as_deref().map(ByteHash::of),
         projects: (world.scope == Scope::Project)
             .then(|| world.project_index_bytes.as_deref().map(ByteHash::of))
             .flatten(),

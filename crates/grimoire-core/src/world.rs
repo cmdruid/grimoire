@@ -42,8 +42,13 @@ pub fn load_world(
     };
     let manifest_bytes = read_optional(&paths.manifest_path())?;
     let lock_bytes = read_optional(&paths.lock_path())?;
+    let trust_bytes = read_optional(&paths.trust_path())?;
+    if let Some(bytes) = trust_bytes.as_deref() {
+        TrustStore::parse(bytes)?;
+    }
     if manifest_bytes.is_none() && lock_bytes.is_none() {
         let mut world = WorldState::absent(scope, [], [], None)?;
+        world.trust_bytes = trust_bytes;
         collect_journal_observations(paths, &mut world.observations)?;
         if matches!(paths.scope, ScopePaths::Project { .. }) {
             world.project_index_bytes = crate::projects::read(paths)?;
@@ -60,11 +65,6 @@ pub fn load_world(
     };
     let manifest = Manifest::parse(manifest_bytes.clone())?;
     let lock = crate::Lockfile::parse(&lock_bytes)?;
-    let trust_bytes = read_optional(&paths.trust_path())?;
-    if let Some(bytes) = trust_bytes.as_deref() {
-        TrustStore::parse(bytes)?;
-    }
-
     let mut observations = Vec::new();
     let mut locked_states = BTreeMap::new();
     for (alias, source) in &lock.sources {
@@ -168,6 +168,16 @@ pub fn load_world(
         )?);
     }
     Ok(world)
+}
+
+pub fn attach_inherited_global(mut project: WorldState, global: &WorldState) -> Result<WorldState> {
+    if project.scope != Scope::Project || global.scope != Scope::Global {
+        return Err(CoreError::Request(
+            "inherited global context requires project and global worlds".into(),
+        ));
+    }
+    project.inherited_global = Some(crate::resolve_manifest(&global.manifest, &global.snapshots));
+    Ok(project)
 }
 
 fn load_locked_source(

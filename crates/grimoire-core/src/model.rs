@@ -352,6 +352,55 @@ pub struct CheckReport {
     pub findings: Vec<CheckFinding>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum InstalledStatus {
+    Current,
+    Missing,
+    Drift,
+    ForeignFile,
+    ForeignDirectory,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct DesiredRootSummary {
+    pub root: RequestRoot,
+    pub source: SourceAlias,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ResolvedSkillSummary {
+    pub name: SkillName,
+    pub source: SourceAlias,
+    pub snapshot: Option<String>,
+    pub inventory: Option<String>,
+    pub requested_by: BTreeSet<RequestRoot>,
+    pub installed: InstalledStatus,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct UnavailableMemberSummary {
+    pub pack: PackName,
+    pub skill: SkillName,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct InheritedSkillSummary {
+    pub name: SkillName,
+    pub source: SourceAlias,
+    pub shadowed: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ContextReport {
+    pub desired_roots: Vec<DesiredRootSummary>,
+    pub skills: Vec<ResolvedSkillSummary>,
+    pub unavailable: Vec<UnavailableMemberSummary>,
+    pub inherited: Vec<InheritedSkillSummary>,
+    pub blockers: Vec<crate::Blocker>,
+    pub findings: Vec<CheckFinding>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct ByteHash(String);

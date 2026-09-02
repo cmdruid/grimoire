@@ -8,3 +8,4 @@
 2026-09-02	consumed	reports/2026-09-02-foreman-and-skilldata-implementation-review-fixes.md	reports	Foreman and skilldata implementation review fixes	Fixes and regression proofs landed; ready for implementation re-review.
 2026-09-02	consumed	reports/2026-09-02-cli-mutation-fixture-uses-symlinked-temporary-home.md	reports	CLI mutation fixture uses symlinked temporary home	Canonical fixture path landed in Phase 5 Slice 4.
 2026-09-02	consumed	reports/2026-09-02-update-planner-confuses-candidate-and-active-snapshots.md	reports	Update planner confuses candidate and active snapshots	Active/candidate snapshot separation landed in Phase 5 Slice 4.
+2026-09-02	consumed	reports/2026-09-02-absent-project-world-omits-shared-trust-precondition.md	reports	Absent project world omits shared trust precondition	Shared trust observation landed in Phase 5 Slice 5.
