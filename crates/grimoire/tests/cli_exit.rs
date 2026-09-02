@@ -13,10 +13,9 @@ fn exit_classes_preserve_usage_findings_policy_transport_and_io() {
     fs::create_dir_all(&home).unwrap();
     fs::create_dir_all(&project).unwrap();
 
-    assert_eq!(
-        support::run(&project, &home, &["--unknown"]).status.code(),
-        Some(2)
-    );
+    let unknown = support::run(&project, &home, &["--unknown"]);
+    assert_eq!(unknown.status.code(), Some(2));
+    assert!(support::stderr(&unknown).contains("unexpected argument"));
     assert_eq!(
         support::run(&project, &home, &["check"]).status.code(),
         Some(2)
@@ -28,10 +27,9 @@ fn exit_classes_preserve_usage_findings_policy_transport_and_io() {
         b"schema = \"grimoire/manifest@1\"\n[sources.repo]\nurl = \"github:org/repo\"\n[skills]\none = { source = \"repo\" }\n",
     )
     .unwrap();
-    assert_eq!(
-        support::run(&project, &home, &["check"]).status.code(),
-        Some(1)
-    );
+    let findings = support::run(&project, &home, &["check"]);
+    assert_eq!(findings.status.code(), Some(1));
+    assert!(support::stdout(&findings).contains("source-snapshot-missing"));
     assert_eq!(
         support::run(&project, &home, &["update"]).status.code(),
         Some(3)

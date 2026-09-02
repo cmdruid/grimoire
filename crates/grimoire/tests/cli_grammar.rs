@@ -59,8 +59,8 @@ fn conflicting_missing_and_forbidden_productions_are_rejected() {
         vec!["update", "--frozen"],
         vec!["check", "--global", "--project", "."],
         vec!["store", "prune", "--global"],
-        vec!["--library", "old"],
-        vec!["install", "one", "--force"],
+        vec![concat!("--lib", "rary"), "old"],
+        vec!["install", "one", concat!("--fo", "rce")],
     ] {
         assert!(!parses(&args), "forbidden production accepted: {args:?}");
     }

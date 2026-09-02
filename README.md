@@ -13,8 +13,8 @@ Grimoire is being rebuilt as a symlink package manager for agent skills. The pub
 contract is `.records/specs/2026-08-31-grimoire-symlink-package-manager.md`; the implementation
 roadmap is `.records/plans/2026-09-01-grimoire-hard-cut-rewrite-roadmap.md`. The source inventory,
 pure-pack format, declarative manifests and locks, same-snapshot resolution, pure planning kernel,
-source custody and trust, and transactional core operations are complete. The CLI and TUI adapters
-are next. Grimoire doesn't provide an installation command yet.
+source custody and trust, transactional core operations, and the complete command-line adapter are
+available. The tree TUI is the next phase; the final hard-cut integration audit follows it.
 
 ## The skills
 

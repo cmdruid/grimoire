@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -307,7 +307,7 @@ This task is read-only and produces no commit.
     expected: every grammar/flag/exit/confirmation production and complete temp-home workflow is
     covered without ambient state or network access.
 
-- [ ] **Slice 7: Enforce the CLI hard cut and close the phase gate** <requires: 6>
+- [x] **Slice 7: Enforce the CLI hard cut and close the phase gate** <requires: 6>
   - Files: modify `README.md`, this plan, and only the production/test files implicated by final
     gate failures; remove obsolete app CLI/TUI-only argument scaffolding if any remains.
   - Change: run a boundary audit proving `skill-grimoire` is the sole parser/environment/TTY owner,

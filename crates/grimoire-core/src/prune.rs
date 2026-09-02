@@ -593,6 +593,8 @@ fn remove_tree_contents(
     if depth > 64 {
         return Err(CoreError::Transaction("prune depth limit exceeded".into()));
     }
+    // Materialized snapshots are immutable. Change mode only through the held,
+    // identity-checked descriptor so path replacement cannot redirect cleanup.
     fchmod(directory, Mode::from_raw_mode(0o700)).map_err(|error| rustix_error(path, error))?;
     let mut entries = Dir::read_from(directory)
         .map_err(|error| rustix_error(path, error))?

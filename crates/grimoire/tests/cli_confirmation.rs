@@ -1,6 +1,5 @@
 mod support;
 
-use std::cell::Cell;
 use std::ffi::OsString;
 use std::fs;
 use std::path::PathBuf;
@@ -27,7 +26,7 @@ impl Environment for TestEnvironment {
 struct TestConsole {
     terminal: bool,
     answer: Option<String>,
-    reads: Cell<usize>,
+    reads: usize,
     stdout: Vec<u8>,
     stderr: Vec<u8>,
 }
@@ -37,7 +36,7 @@ impl TestConsole {
         Self {
             terminal,
             answer: answer.map(str::to_owned),
-            reads: Cell::new(0),
+            reads: 0,
             stdout: Vec::new(),
             stderr: Vec::new(),
         }
@@ -58,7 +57,7 @@ impl Console for TestConsole {
     }
 
     fn read_line(&mut self, line: &mut String) -> std::io::Result<usize> {
-        self.reads.set(self.reads.get() + 1);
+        self.reads += 1;
         match self.answer.take() {
             Some(answer) => {
                 let length = answer.len();
@@ -103,7 +102,13 @@ fn destructive_confirmation_is_tty_owned_and_defaults_to_no() {
         b"---\nname: one\ndescription: fixture\n---\n",
     )
     .unwrap();
-    assert!(support::run(&project, &home, &["init"]).status.success());
+    let initialized = support::run(&project, &home, &["init"]);
+    assert!(
+        initialized.status.success(),
+        "{}",
+        support::stderr(&initialized)
+    );
+    assert!(support::stdout(&initialized).contains("Applied."));
     assert!(support::run(
         &project,
         &home,
@@ -130,7 +135,7 @@ fn destructive_confirmation_is_tty_owned_and_defaults_to_no() {
 
     let mut additive = TestConsole::new(true, Some("should-not-be-read\n"));
     assert_eq!(invoke(&environment, &mut additive, &["install"]), 0);
-    assert_eq!(additive.reads.get(), 0);
+    assert_eq!(additive.reads, 0);
 
     let mut dry_run = TestConsole::new(true, Some("should-not-be-read\n"));
     assert_eq!(
@@ -141,7 +146,7 @@ fn destructive_confirmation_is_tty_owned_and_defaults_to_no() {
         ),
         0
     );
-    assert_eq!(dry_run.reads.get(), 0);
+    assert_eq!(dry_run.reads, 0);
 
     for answer in [Some("n\n"), Some("\n"), None] {
         let mut cancelled = TestConsole::new(true, answer);
@@ -158,7 +163,7 @@ fn destructive_confirmation_is_tty_owned_and_defaults_to_no() {
 
     let mut refused = TestConsole::new(false, Some("yes\n"));
     assert_eq!(invoke(&environment, &mut refused, &["uninstall", "one"]), 3);
-    assert_eq!(refused.reads.get(), 0);
+    assert_eq!(refused.reads, 0);
     assert!(refused.stderr().contains("explicit approval"));
 
     let mut accepted = TestConsole::new(true, Some("yes\n"));
@@ -166,6 +171,6 @@ fn destructive_confirmation_is_tty_owned_and_defaults_to_no() {
         invoke(&environment, &mut accepted, &["uninstall", "one"]),
         0
     );
-    assert_eq!(accepted.reads.get(), 1);
+    assert_eq!(accepted.reads, 1);
     assert!(!project.join(".agents/skills/one").exists());
 }
