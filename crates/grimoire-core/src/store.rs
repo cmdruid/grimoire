@@ -40,7 +40,7 @@ impl MaterializationIntent {
     }
 
     pub(crate) fn from_action(action: &Action, export: ReviewExport) -> Result<Self> {
-        let Action::MaterializeSnapshot {
+        let Action::PrepareSnapshot {
             source_key,
             snapshot_key,
             review_key,
@@ -657,19 +657,20 @@ mod tests {
     #[test]
     fn only_a_key_exact_plan_action_can_create_a_materialization_intent() {
         let (_temporary, intent) = fixture();
-        let action = Action::MaterializeSnapshot {
+        let action = Action::PrepareSnapshot {
             scope: crate::Scope::Project,
             source: crate::SourceAlias::new("repo").unwrap(),
             source_key: intent.source_key.to_string(),
             snapshot_key: intent.snapshot_key.to_string(),
             review_key: intent.export.review_key.to_string(),
+            operation: crate::SnapshotPreparation::Materialize,
         };
         assert_eq!(
             MaterializationIntent::from_action(&action, intent.export.clone()).unwrap(),
             intent
         );
         let mut wrong = action;
-        if let Action::MaterializeSnapshot { review_key, .. } = &mut wrong {
+        if let Action::PrepareSnapshot { review_key, .. } = &mut wrong {
             *review_key = "0".repeat(64);
         }
         assert!(MaterializationIntent::from_action(&wrong, intent.export).is_err());

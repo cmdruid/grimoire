@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use grimoire_pack::inventory::SourceInventory;
 use serde::{Deserialize, Serialize};
@@ -221,6 +221,110 @@ pub enum InstalledLink {
     Symlink(PathBuf),
     File,
     Directory,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum OwnedLinkTarget {
+    Stored {
+        source_key: crate::SourceKey,
+        snapshot_key: crate::SnapshotKey,
+        skill_path: String,
+    },
+    Live {
+        identity: crate::CanonicalIdentity,
+        skill_path: String,
+    },
+}
+
+impl OwnedLinkTarget {
+    pub fn resolve(&self, paths: &crate::Paths) -> Result<PathBuf> {
+        let (root, skill_path) = match self {
+            Self::Stored {
+                source_key,
+                snapshot_key,
+                skill_path,
+            } => (paths.store_path(source_key, snapshot_key), skill_path),
+            Self::Live {
+                identity,
+                skill_path,
+            } => {
+                if identity.kind() != crate::SourceKind::Live {
+                    return Err(CoreError::Request(
+                        "live link target requires a live source identity".into(),
+                    ));
+                }
+                #[cfg(unix)]
+                {
+                    use std::os::unix::ffi::OsStrExt;
+                    (
+                        PathBuf::from(std::ffi::OsStr::from_bytes(identity.canonical_bytes())),
+                        skill_path,
+                    )
+                }
+                #[cfg(not(unix))]
+                unreachable!("Grimoire supports Unix hosts")
+            }
+        };
+        validate_skill_path(skill_path)?;
+        Ok(root.join(skill_path))
+    }
+}
+
+fn validate_skill_path(value: &str) -> Result<()> {
+    let path = Path::new(value);
+    if value.is_empty()
+        || path.is_absolute()
+        || path
+            .components()
+            .any(|component| !matches!(component, std::path::Component::Normal(_)))
+    {
+        return Err(CoreError::Request(format!(
+            "owned skill path is not a normalized relative path: {value}"
+        )));
+    }
+    Ok(())
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Approval {
+    NotRequired,
+    Granted,
+    Declined,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FaultDisposition {
+    Continue,
+    Crash,
+}
+
+pub trait TransactionRuntime {
+    fn transaction_nonce(&self) -> Result<String>;
+    fn unix_time(&self) -> Result<i64>;
+    fn checkpoint(&self, name: &'static str) -> Result<FaultDisposition>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "status", rename_all = "snake_case")]
+pub enum ApplyOutcome {
+    Applied { changed: bool },
+    Cancelled,
+    Interrupted { checkpoint: String },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(tag = "disposition", rename_all = "snake_case")]
+pub enum RecoveryDisposition {
+    RolledBack { scope_key: String },
+    RolledForward { scope_key: String },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RecoveryOutcome {
+    pub dispositions: Vec<RecoveryDisposition>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

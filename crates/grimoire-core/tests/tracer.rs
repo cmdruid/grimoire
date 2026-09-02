@@ -2,9 +2,10 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use grimoire_core::{
-    plan, Action, ByteHash, InstalledLink, LinkPrecondition, LockChange, PlanFact, PlanningMode,
-    Preconditions, Request, RequestRoot, Scope, SnapshotId, SnapshotKind, SnapshotStore,
-    SourceAlias, SourceSnapshot, SourceState, TrustBaseline, TrustReceipt, TrustStore, WorldState,
+    plan, Action, ByteHash, InstalledLink, LinkPrecondition, LockChange, OwnedLinkTarget, PlanFact,
+    PlanningMode, Preconditions, Request, RequestRoot, Scope, SnapshotId, SnapshotKey,
+    SnapshotKind, SnapshotStore, SourceAlias, SourceKey, SourceSnapshot, SourceState,
+    TrustBaseline, TrustReceipt, TrustStore, WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Pack, Skill, SourceInventory, SourcePath,
@@ -132,6 +133,18 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
     );
 
     let (state, trust) = trusted(snapshot.clone());
+    let identity = state.identity.clone().unwrap();
+    let owned_target = OwnedLinkTarget::Stored {
+        source_key: SourceKey::derive(&identity),
+        snapshot_key: SnapshotKey::derive(
+            grimoire_core::SourceKind::Git,
+            snapshot.id.commit.as_deref().unwrap(),
+            snapshot.id.tree.as_deref().unwrap(),
+            &snapshot.id.inventory_digest,
+        )
+        .unwrap(),
+        skill_path: "skills/journal".into(),
+    };
     let world = WorldState::from_bytes(
         Scope::Project,
         MANIFEST.as_bytes().to_vec(),
@@ -156,7 +169,7 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
             Action::CreateLink {
                 scope: Scope::Project,
                 skill: "journal".try_into().unwrap(),
-                target: target.clone(),
+                target: owned_target.clone(),
             },
         ]
     );
@@ -207,7 +220,7 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
         vec![Action::RetainLink {
             scope: Scope::Project,
             skill: "journal".try_into().unwrap(),
-            target,
+            target: owned_target,
         }]
     );
     assert!(!first.has_changes());

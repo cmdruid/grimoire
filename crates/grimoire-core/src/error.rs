@@ -30,6 +30,16 @@ pub enum CoreError {
     Store(String),
     #[error("lock custody failure: {0}")]
     Locking(String),
+    #[error("plan is stale: {0}")]
+    StalePlan(String),
+    #[error("blocked plan cannot be applied")]
+    BlockedPlan,
+    #[error("destructive plan requires explicit approval")]
+    ApprovalRequired,
+    #[error("invalid transaction: {0}")]
+    Transaction(String),
+    #[error("transaction recovery required: {0}")]
+    RecoveryRequired(String),
     #[error("I/O failure at {path}: {message}")]
     Io { path: String, message: String },
 }

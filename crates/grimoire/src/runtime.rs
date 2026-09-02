@@ -3,12 +3,13 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
 use grimoire_core::source::{GitCommand, GitResult, GitRunner};
-use grimoire_core::{CoreError, Result};
+use grimoire_core::{CoreError, FaultDisposition, Result, TransactionRuntime};
 
 const CONTROL_LIMIT: usize = 1024 * 1024;
 const PAYLOAD_LIMIT: usize = 128 * 1024 * 1024 + 1;
@@ -20,6 +21,34 @@ const METADATA_LIMIT: u64 = 1024 * 1024;
 const GROUP_RSS_LIMIT: u64 = 384 * 1024 * 1024;
 
 type PayloadVisitor<'a> = dyn FnMut(&[u8]) -> Result<bool> + 'a;
+
+static TRANSACTION_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+#[derive(Debug, Default, Clone, Copy)]
+pub struct SystemRuntime;
+
+impl TransactionRuntime for SystemRuntime {
+    fn transaction_nonce(&self) -> Result<String> {
+        let sequence = TRANSACTION_SEQUENCE.fetch_add(1, AtomicOrdering::Relaxed);
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|error| CoreError::Transaction(error.to_string()))?
+            .as_nanos();
+        Ok(format!("{}-{nanos}-{sequence}", std::process::id()))
+    }
+
+    fn unix_time(&self) -> Result<i64> {
+        let seconds = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|error| CoreError::Transaction(error.to_string()))?
+            .as_secs();
+        i64::try_from(seconds).map_err(|_| CoreError::Transaction("system time exceeds i64".into()))
+    }
+
+    fn checkpoint(&self, _name: &'static str) -> Result<FaultDisposition> {
+        Ok(FaultDisposition::Continue)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct SystemGitRunner {

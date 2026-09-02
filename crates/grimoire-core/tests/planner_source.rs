@@ -216,7 +216,10 @@ fn update_requires_and_pins_the_cached_candidate() {
         .contains_key(&SourceAlias::new("a").unwrap()));
     assert!(selected.actions.iter().any(|action| matches!(
         action,
-        Action::CreateLink { target, .. } if target == &PathBuf::from("/store/new/skills/one")
+        Action::CreateLink {
+            target: grimoire_core::OwnedLinkTarget::Stored { skill_path, .. },
+            ..
+        } if skill_path == "skills/one"
     )));
 }
 
@@ -255,7 +258,7 @@ fn activation_requires_validation_trust_and_store_integrity() {
         assert!(!planned
             .actions
             .iter()
-            .any(|action| matches!(action, Action::MaterializeSnapshot { .. })));
+            .any(|action| matches!(action, Action::PrepareSnapshot { .. })));
     }
 }
 
@@ -276,7 +279,7 @@ fn a_trusted_absent_snapshot_gets_materialized_before_activation() {
     assert!(planned.blockers.is_empty());
     assert!(matches!(
         planned.actions.first(),
-        Some(Action::MaterializeSnapshot {
+        Some(Action::PrepareSnapshot {
             source,
             source_key,
             snapshot_key,
@@ -427,7 +430,10 @@ fn frozen_uses_only_the_lock_derived_stored_snapshot() {
     assert!(frozen.blockers.is_empty());
     assert!(matches!(
         frozen.actions.as_slice(),
-        [Action::RetainLink { target, .. }] if target == &PathBuf::from("/store/old/skills/one")
+        [Action::RetainLink {
+            target: grimoire_core::OwnedLinkTarget::Stored { skill_path, .. },
+            ..
+        }] if skill_path == "skills/one"
     ));
 }
 

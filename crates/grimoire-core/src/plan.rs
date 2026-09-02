@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::resolve::resolve_manifest;
 use crate::{
-    ByteHash, CoreError, InstalledLink, LockSource, Lockfile, ManifestMutation, PlanningMode,
-    Request, RequestRoot, Result, Scope, SkillName, SnapshotKind, SnapshotStore, SourceAlias,
-    TrustMode, WorldState,
+    ByteHash, CoreError, InstalledLink, LockSource, Lockfile, ManifestMutation, OwnedLinkTarget,
+    PlanningMode, Request, RequestRoot, Result, Scope, SkillName, SnapshotKind, SnapshotStore,
+    SourceAlias, TrustMode, WorldState,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -70,6 +70,13 @@ pub enum TrustChange {
     AdvanceBaseline,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SnapshotPreparation {
+    Materialize,
+    Repair,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Action {
@@ -79,12 +86,13 @@ pub enum Action {
         create_mode: u32,
         change: TrustChange,
     },
-    MaterializeSnapshot {
+    PrepareSnapshot {
         scope: Scope,
         source: SourceAlias,
         source_key: String,
         snapshot_key: String,
         review_key: String,
+        operation: SnapshotPreparation,
     },
     CreateManifest {
         scope: Scope,
@@ -109,23 +117,23 @@ pub enum Action {
     CreateLink {
         scope: Scope,
         skill: SkillName,
-        target: PathBuf,
+        target: OwnedLinkTarget,
     },
     RetainLink {
         scope: Scope,
         skill: SkillName,
-        target: PathBuf,
+        target: OwnedLinkTarget,
     },
     RepointLink {
         scope: Scope,
         skill: SkillName,
-        before: PathBuf,
-        after: PathBuf,
+        before: OwnedLinkTarget,
+        after: OwnedLinkTarget,
     },
     RemoveLink {
         scope: Scope,
         skill: SkillName,
-        target: PathBuf,
+        target: OwnedLinkTarget,
     },
 }
 
@@ -456,25 +464,26 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
             .unwrap_or(InstalledLink::Absent);
         links.insert(name.clone(), LinkPrecondition::from(&observed));
         let old_target = incumbent_target(world, name);
+        let planned_target = owned_target(&resolution.lock, &desired_snapshots, world, name)?;
         match observed {
             InstalledLink::Absent => actions.push(Action::CreateLink {
                 scope: world.scope,
                 skill: name.clone(),
-                target: resolved.target.clone(),
+                target: planned_target,
             }),
             InstalledLink::Symlink(target) if target == resolved.target => {
                 actions.push(Action::RetainLink {
                     scope: world.scope,
                     skill: name.clone(),
-                    target,
+                    target: planned_target,
                 });
             }
             InstalledLink::Symlink(target) if old_target.as_ref() == Some(&target) => {
                 actions.push(Action::RepointLink {
                     scope: world.scope,
                     skill: name.clone(),
-                    before: target,
-                    after: resolved.target.clone(),
+                    before: incumbent_owned_target(world, name)?,
+                    after: planned_target,
                 });
             }
             InstalledLink::Symlink(target) if old_target.is_some() => blockers.push(Blocker::new(
@@ -518,7 +527,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                 actions.push(Action::RemoveLink {
                     scope: world.scope,
                     skill: name.clone(),
-                    target,
+                    target: incumbent_owned_target(world, name)?,
                 });
             }
             InstalledLink::Symlink(target) => blockers.push(Blocker::new(
@@ -668,12 +677,51 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                     &state.snapshot.id.inventory_digest,
                     review_tree,
                 )?;
-                materializations.push(Action::MaterializeSnapshot {
+                materializations.push(Action::PrepareSnapshot {
                     scope: world.scope,
                     source: alias.clone(),
                     source_key: key.to_string(),
                     snapshot_key: snapshot_key.to_string(),
                     review_key: review_key.to_string(),
+                    operation: SnapshotPreparation::Materialize,
+                });
+            }
+            SnapshotStore::Corrupt
+                if activating_sources.contains(alias)
+                    && state.materializable
+                    && mode == PlanningMode::Normal
+                    && effective_trust != TrustMode::Untrusted =>
+            {
+                let review_tree = state.review_tree.as_deref().ok_or_else(|| {
+                    CoreError::Snapshot("repairable snapshot has no review identity".into())
+                })?;
+                let commit = state.snapshot.id.commit.as_deref().ok_or_else(|| {
+                    CoreError::Snapshot("repairable snapshot has no commit".into())
+                })?;
+                let tree =
+                    state.snapshot.id.tree.as_deref().ok_or_else(|| {
+                        CoreError::Snapshot("repairable snapshot has no tree".into())
+                    })?;
+                let snapshot_key = crate::SnapshotKey::derive(
+                    crate::SourceKind::Git,
+                    commit,
+                    tree,
+                    &state.snapshot.id.inventory_digest,
+                )?;
+                let review_key = crate::ReviewKey::derive(
+                    crate::SourceKind::Git,
+                    Some(commit),
+                    Some(tree),
+                    &state.snapshot.id.inventory_digest,
+                    review_tree,
+                )?;
+                materializations.push(Action::PrepareSnapshot {
+                    scope: world.scope,
+                    source: alias.clone(),
+                    source_key: key.to_string(),
+                    snapshot_key: snapshot_key.to_string(),
+                    review_key: review_key.to_string(),
+                    operation: SnapshotPreparation::Repair,
                 });
             }
             SnapshotStore::Absent => blockers.push(Blocker::new(
@@ -834,6 +882,59 @@ fn incumbent_target(world: &WorldState, name: &SkillName) -> Option<PathBuf> {
     let skill = world.lock.skills.get(name)?;
     let snapshot = world.snapshots.get(&skill.source)?;
     Some(snapshot.root.join(&skill.path))
+}
+
+fn owned_target(
+    lock: &Lockfile,
+    snapshots: &BTreeMap<SourceAlias, crate::SourceSnapshot>,
+    world: &WorldState,
+    name: &SkillName,
+) -> Result<OwnedLinkTarget> {
+    let skill = lock
+        .skills
+        .get(name)
+        .ok_or_else(|| CoreError::Request(format!("resolved skill `{name}` has no lock entry")))?;
+    let snapshot = snapshots.get(&skill.source).ok_or_else(|| {
+        CoreError::Request(format!("resolved skill `{name}` has no source snapshot"))
+    })?;
+    let identity = [
+        world.candidates.get(&skill.source),
+        world.source_states.get(&skill.source),
+        world.locked_states.get(&skill.source),
+    ]
+    .into_iter()
+    .flatten()
+    .find_map(|state| state.identity.clone())
+    .ok_or_else(|| {
+        CoreError::Request(format!(
+            "source `{}` has no canonical identity",
+            skill.source
+        ))
+    })?;
+    match snapshot.id.kind {
+        SnapshotKind::Git => Ok(OwnedLinkTarget::Stored {
+            source_key: crate::SourceKey::derive(&identity),
+            snapshot_key: crate::SnapshotKey::derive(
+                crate::SourceKind::Git,
+                snapshot
+                    .id
+                    .commit
+                    .as_deref()
+                    .expect("validated Git snapshot"),
+                snapshot.id.tree.as_deref().expect("validated Git snapshot"),
+                &snapshot.id.inventory_digest,
+            )?,
+            skill_path: skill.path.clone(),
+        }),
+        SnapshotKind::Live => Ok(OwnedLinkTarget::Live {
+            identity,
+            skill_path: skill.path.clone(),
+        }),
+    }
+}
+
+fn incumbent_owned_target(world: &WorldState, name: &SkillName) -> Result<OwnedLinkTarget> {
+    owned_target(&world.lock, &world.snapshots, world, name)
 }
 
 fn source_advanced(before: &Lockfile, after: &Lockfile) -> bool {

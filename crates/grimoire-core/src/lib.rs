@@ -1,8 +1,8 @@
 //! Pure planning kernel for Grimoire's declarative package-manager domain.
 
+mod apply;
 mod error;
 mod lockfile;
-#[allow(dead_code)] // The ordered coordinator is exercised before scope-apply wiring exists.
 mod locks;
 mod manifest;
 mod model;
@@ -10,10 +10,11 @@ mod plan;
 mod resolve;
 mod scope;
 pub mod source;
-#[allow(dead_code)] // Phase 4 will connect these verified executor primitives.
 mod store;
+mod transaction;
 mod trust;
 
+pub use apply::apply;
 pub use error::{CoreError, Result};
 pub use grimoire_pack::inventory;
 pub use lockfile::{LockPack, LockSkill, LockSource, Lockfile};
@@ -23,7 +24,7 @@ pub use manifest::{
 pub use model::*;
 pub use plan::{
     plan, Action, Blocker, ExitClass, LinkPrecondition, LockChange, ManifestChange,
-    PackMemberState, Plan, PlanFact, Preconditions, TrustChange,
+    PackMemberState, Plan, PlanFact, Preconditions, SnapshotPreparation, TrustChange,
 };
 pub use resolve::{resolve_manifest, Resolution, ResolvedSkill};
 pub use scope::{discover_project, resolve_explicit_project, PathProbe, Paths, ScopePaths};

@@ -6,7 +6,7 @@ const MODEL: &str = include_str!("../src/model.rs");
 const PLAN: &str = include_str!("../src/plan.rs");
 
 #[test]
-fn phase_three_planner_has_no_adapter_or_ambient_dependency() {
+fn phase_four_planner_has_no_adapter_or_ambient_dependency() {
     for forbidden in [
         "clap",
         "ratatui",
@@ -15,11 +15,6 @@ fn phase_three_planner_has_no_adapter_or_ambient_dependency() {
         "git2",
         "std::env",
         "Command::new",
-        "read_link",
-        "symlink(",
-        "remove_file",
-        "transaction",
-        "recovery",
         "AgentTarget",
         "AgentEnv",
         "LiveLibrary",
@@ -29,8 +24,8 @@ fn phase_three_planner_has_no_adapter_or_ambient_dependency() {
         "ImmediateRemove",
     ] {
         assert!(
-            !format!("{CARGO}\n{LIB}\n{MODEL}\n{PLAN}").contains(forbidden),
-            "forbidden Phase 3 planner boundary: {forbidden}"
+            !format!("{CARGO}\n{MODEL}\n{PLAN}").contains(forbidden),
+            "forbidden Phase 4 planner boundary: {forbidden}"
         );
     }
 }

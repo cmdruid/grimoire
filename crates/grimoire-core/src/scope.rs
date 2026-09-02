@@ -120,6 +120,18 @@ impl Paths {
             .join("scope.lock")
     }
 
+    pub fn transaction_dir(&self, scope_key: &str) -> PathBuf {
+        self.grimoire_home.join("transactions").join(scope_key)
+    }
+
+    pub fn transaction_journal_path(&self, scope_key: &str) -> PathBuf {
+        self.transaction_dir(scope_key).join("journal.json")
+    }
+
+    pub fn projects_path(&self) -> PathBuf {
+        self.grimoire_home.join("projects.json")
+    }
+
     pub fn store_path(&self, source: &SourceKey, snapshot: &SnapshotKey) -> PathBuf {
         self.grimoire_home
             .join("store/checkouts")

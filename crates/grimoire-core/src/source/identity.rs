@@ -1,11 +1,15 @@
 use std::net::Ipv6Addr;
 use std::path::Path;
 
+use base64::engine::general_purpose::STANDARD as BASE64;
+use base64::Engine as _;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest as _, Sha256};
 
 use crate::{CoreError, Result};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SourceKind {
     Git,
     Live,
@@ -34,6 +38,46 @@ impl PartialEq for CanonicalIdentity {
 }
 
 impl Eq for CanonicalIdentity {}
+
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CanonicalIdentityDto {
+    kind: SourceKind,
+    canonical: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    canonical_bytes_base64: Option<String>,
+}
+
+impl Serialize for CanonicalIdentity {
+    fn serialize<S: Serializer>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error> {
+        let (canonical, canonical_bytes_base64) = match self.canonical_utf8() {
+            Some(value) => (Some(value.to_owned()), None),
+            None => (None, Some(BASE64.encode(self.canonical_bytes()))),
+        };
+        CanonicalIdentityDto {
+            kind: self.kind,
+            canonical,
+            canonical_bytes_base64,
+        }
+        .serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for CanonicalIdentity {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> std::result::Result<Self, D::Error> {
+        let dto = CanonicalIdentityDto::deserialize(deserializer)?;
+        let canonical = match (dto.canonical, dto.canonical_bytes_base64) {
+            (Some(value), None) => value.into_bytes(),
+            (None, Some(value)) => BASE64.decode(value).map_err(serde::de::Error::custom)?,
+            _ => {
+                return Err(serde::de::Error::custom(
+                    "canonical identity requires exactly one byte projection",
+                ))
+            }
+        };
+        Self::from_parts(dto.kind, canonical).map_err(serde::de::Error::custom)
+    }
+}
 
 impl std::hash::Hash for CanonicalIdentity {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
@@ -164,7 +208,8 @@ impl CanonicalIdentity {
 
 macro_rules! key_type {
     ($name:ident) => {
-        #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+        #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+        #[serde(transparent)]
         pub struct $name(String);
 
         impl $name {

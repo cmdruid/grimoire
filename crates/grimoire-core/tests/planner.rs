@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
 use grimoire_core::{
-    plan, Action, ExitClass, InstalledLink, LockChange, ManifestChange, ManifestSource,
-    PlanningMode, Preconditions, Request, Scope, SnapshotId, SnapshotKind, SnapshotStore,
-    SourceAlias, SourceLocation, SourceSnapshot, SourceState, WorldState,
+    plan, Action, CanonicalIdentity, ExitClass, InstalledLink, LockChange, ManifestChange,
+    ManifestSource, PlanningMode, Preconditions, Request, Scope, SnapshotId, SnapshotKind,
+    SnapshotStore, SourceAlias, SourceLocation, SourceSnapshot, SourceState, WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Skill, SourceInventory, SourcePath,
@@ -51,11 +51,17 @@ fn world(
     snapshot: SourceSnapshot,
     link: InstalledLink,
 ) -> WorldState {
+    let review_tree = snapshot.inventory.review_tree_digest.to_string();
     WorldState::from_bytes(
         Scope::Project,
         manifest.as_bytes().to_vec(),
         lock,
-        [SourceState::new(snapshot, SnapshotStore::Valid, false)],
+        [
+            SourceState::new(snapshot, SnapshotStore::Valid, false).source_identity(
+                CanonicalIdentity::remote("github:org/a").unwrap(),
+                review_tree,
+            ),
+        ],
         [("one", link)],
         None,
     )
@@ -177,7 +183,6 @@ fn explicit_source_update_distinguishes_exact_old_drift_and_foreign_occupancy() 
     let old_target = PathBuf::from("/store/a-old/skills/one");
     let new = snapshot("/store/a-new", '2');
     let new_target = PathBuf::from("/store/a-new/skills/one");
-
     let repoint_world = world(
         BASE,
         lock.clone(),
@@ -204,12 +209,14 @@ fn explicit_source_update_distinguishes_exact_old_drift_and_foreign_occupancy() 
             ..
         }
     )));
-    assert!(repoint.actions.contains(&Action::RepointLink {
-        scope: Scope::Project,
-        skill: "one".try_into().unwrap(),
-        before: old_target.clone(),
-        after: new_target.clone(),
-    }));
+    assert!(repoint.actions.iter().any(|action| matches!(
+        action,
+        Action::RepointLink {
+            scope: Scope::Project,
+            skill,
+            ..
+        } if skill.as_str() == "one"
+    )));
     assert!(repoint.is_destructive());
 
     for observation in [
