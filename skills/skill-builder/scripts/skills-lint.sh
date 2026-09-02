@@ -755,9 +755,8 @@ done
 # ---- 16. retired project-home surface (FAIL) ---------------------------------
 # This is the permanent hard-cut proof. Comments count because a textual absence
 # guard cannot distinguish commentary from operative instructions. Tests carry
-# deliberate rejection fixtures. The guard cannot scan itself, and Journal's
-# narrow migration verb is the one live surface authorized to read retired
-# records declarations.
+# deliberate rejection fixtures. The guard cannot scan itself. No live package,
+# including an explicit migration helper, may read retired project-home declarations.
 while IFS= read -r -d '' f; do
   case "$f" in
     */tests/*|*/skills/skill-builder/scripts/skills-lint.sh)
@@ -769,22 +768,6 @@ while IFS= read -r -d '' f; do
   while IFS= read -r hit; do
     [ -n "$hit" ] || continue
     line_no="${hit%%:*}"
-    line_text="${hit#*:}"
-    case "$rel:$line_text" in
-      skills/journal/scripts/migrate-records-root.sh:*'(agent-records|records-root):[[:space:]]*'*'# lint: allow retired-records-declaration'*)
-        remaining="$(printf '%s\n' "$line_text" | sed -e 's/agent-records//g' -e 's/records-root//g')"
-        if ! printf '%s\n' "$remaining" | grep -Eq \
-          -e 'agent[-_](records|workspace|trackers|doctrine|templates)' \
-          -e 'AGENT_(RECORDS|WORKSPACE|TRACKERS|DOCTRINE|TEMPLATES)' \
-          -e 'records-root:' \
-          -e '<agent-(records|workspace|trackers)>' \
-          -e 'records-root-relative|workspace-relative' \
-          -e '--(records-root|workspace-root|trackers-root|workspace)([[:space:]=)]|$)' \
-          -e 'resolve_(agent_)?(records|workspace|trackers)'; then
-          continue
-        fi
-        ;;
-    esac
     if [ -z "$hits" ]; then hits="$line_no"; else hits="$hits,$line_no"; fi
   done < <(grep -nE \
     -e 'agent[-_](records|workspace|trackers|doctrine|templates)' \

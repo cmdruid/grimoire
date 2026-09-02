@@ -55,4 +55,13 @@ unsafe_provider="$TMP/unsafe-provider"; mkdir -p "$unsafe_provider/.records"
   "$unsafe_provider/.records/records.sh"
 expect_refusal "unsafe provider" "$unsafe_provider" 'reason=repair-required action=/journal repair'
 
+unreadable="$TMP/unreadable"; install_provider "$unreadable"
+mkdir -p "$unreadable/.records/locked"
+printf '%s\n' '---' 'doctype: notes' 'status: archived' 'schema: notepad/note@1' \
+  'tags: []' '---' '# Closed' >"$unreadable/.records/locked/2026-09-02-closed.md"
+chmod 000 "$unreadable/.records/locked"
+expect_refusal "runtime skips setup-only witness crawl" "$unreadable" \
+  'reason=setup-required action=/journal setup'
+chmod 700 "$unreadable/.records/locked"
+
 report runtime-recovery-test

@@ -59,4 +59,35 @@ expect_eq "parent swap refuses" 2 "$rc"
 [ -z "$(find "$TMP/race-target" -mindepth 1 -print -quit)" ] && pass=$((pass + 1)) || {
   echo 'FAIL: parent swap escaped records root' >&2; fail=$((fail + 1)); }
 
+readme_race="$TMP/readme-race"; mkdir -p "$readme_race"
+readme_hook="$TMP/create-readme.sh"
+printf '%s\n' '#!/bin/sh' 'mkdir -p "$1/.records"' \
+  'printf "PROJECT_CONCURRENT_CANARY\\n" >"$1/.records/README.md"' >"$readme_hook"
+chmod 755 "$readme_hook"
+rc=0
+JOURNAL_SETUP_TEST_AFTER_PREFLIGHT="$readme_hook" \
+  "$STANDUP" setup "$readme_race" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "concurrent README creation refuses" 2 "$rc"
+expect_eq "concurrent README creation route" \
+  'reason=concurrent-project-edit detail=.records/README.md' "$(cat "$ERR")"
+expect "concurrent README creation survives" PROJECT_CONCURRENT_CANARY \
+  "$readme_race/.records/README.md"
+
+repair_race="$TMP/repair-race"; mkdir -p "$repair_race"
+"$STANDUP" setup "$repair_race" >/dev/null
+sed -i.bak 's/## Use the records tool/## Stale records tool/' \
+  "$repair_race/.records/README.md"; rm "$repair_race/.records/README.md.bak"
+append_hook="$TMP/append-readme.sh"
+printf '%s\n' '#!/bin/sh' \
+  'printf "PROJECT_CONCURRENT_CANARY\\n" >>"$1/.records/README.md"' >"$append_hook"
+chmod 755 "$append_hook"
+rc=0
+JOURNAL_SETUP_TEST_AFTER_PREFLIGHT="$append_hook" \
+  "$STANDUP" repair "$repair_race" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "concurrent README modification refuses" 2 "$rc"
+expect_eq "concurrent README modification route" \
+  'reason=concurrent-project-edit detail=.records/README.md' "$(cat "$ERR")"
+expect "concurrent README modification survives" PROJECT_CONCURRENT_CANARY \
+  "$repair_race/.records/README.md"
+
 report standup-test

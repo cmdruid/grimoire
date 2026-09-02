@@ -121,7 +121,23 @@ render_readme() { # <incumbent-or-empty-path> <status> <output>
 
 readme_candidate="$(mktemp "${TMPDIR:-/tmp}/journal-readme.XXXXXX")"
 remember_tmp "$readme_candidate"
+readme_snapshot="$(mktemp "${TMPDIR:-/tmp}/journal-readme-snapshot.XXXXXX")"
+remember_tmp "$readme_snapshot"
+readme_snapshot_state=absent
+if [ -e "$readme" ]; then
+  cp "$readme" "$readme_snapshot"
+  readme_snapshot_state=present
+fi
 render_readme "$readme" "$readme_status" "$readme_candidate"
+
+readme_unchanged() {
+  safe_records_parent || return 1
+  if [ "$readme_snapshot_state" = absent ]; then
+    [ ! -e "$readme" ] && [ ! -L "$readme" ]
+  else
+    [ -f "$readme" ] && [ ! -L "$readme" ] && cmp -s "$readme_snapshot" "$readme"
+  fi
+}
 
 if [ -n "${JOURNAL_SETUP_TEST_AFTER_PREFLIGHT:-}" ]; then
   [ -x "$JOURNAL_SETUP_TEST_AFTER_PREFLIGHT" ] || die "test preflight hook is not executable"
@@ -202,10 +218,11 @@ provider_valid || die "provider gate failed before README publication"
 if [ ! -f "$readme" ] || ! cmp -s "$readme_candidate" "$readme"; then
   safe_records_parent || die "unsafe records parent during README write"
   safe_regular_or_absent "$readme" || die "unsafe README during write: $readme"
+  readme_unchanged || refuse_detail concurrent-project-edit "$readme_rel"
   readme_tmp="$(mktemp "$records/.README.XXXXXX")"; remember_tmp "$readme_tmp"
   cp "$readme_candidate" "$readme_tmp"; chmod 644 "$readme_tmp"
-  safe_records_parent && safe_regular_or_absent "$readme" ||
-    die "unsafe README during replace: $readme"
+  safe_records_parent && safe_regular_or_absent "$readme" && readme_unchanged ||
+    refuse_detail concurrent-project-edit "$readme_rel"
   mv "$readme_tmp" "$readme"
   record_write "$readme_rel"
 fi

@@ -59,6 +59,9 @@ provider_status=absent
 ledger_status=absent
 readme_status=absent
 archived_witness=absent
+archive_candidates=""
+cleanup() { [ -z "$archive_candidates" ] || rm -f "$archive_candidates"; }
+trap cleanup EXIT
 
 if [ -L "$layer" ] || { [ -e "$layer" ] && [ ! -d "$layer" ]; }; then
   layer_status=unsafe
@@ -107,25 +110,39 @@ elif [ -d "$layer" ]; then
     readme_status=unsafe
   fi
 
-  if [ "$ledger_status" = absent ]; then
-    while IFS= read -r -d '' candidate; do
-      if awk '
+  if [ "$mode" = setup ] && [ "$ledger_status" = absent ]; then
+    archive_candidates="$(mktemp "${TMPDIR:-/tmp}/journal-archive-candidates.XXXXXX")"
+    if ! find "$layer" -type f \
+      -name '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md' \
+      -print0 >"$archive_candidates" 2>/dev/null; then
+      archived_witness=unsafe
+    else
+      while IFS= read -r -d '' candidate; do
+        if [ ! -r "$candidate" ]; then
+          archived_witness=unsafe
+          break
+        fi
+        candidate_rc=0
+        awk '
         NR == 1 { if ($0 != "---") exit 1; in_front = 1; next }
         in_front && $0 == "---" { closed = 1; exit }
         in_front && /^doctype:[[:space:]]*[^[:space:]]/ { doctype = 1 }
         in_front && /^status:[[:space:]]*archived[[:space:]]*$/ { archived = 1 }
         END { exit !(closed && doctype && archived) }
-      ' "$candidate"; then
-        archived_witness=present
-        break
-      fi
-    done < <(find "$layer" -type f \
-      -name '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md' -print0)
+        ' "$candidate" 2>/dev/null || candidate_rc=$?
+        case "$candidate_rc" in
+          0) archived_witness=present; break ;;
+          1) ;;
+          *) archived_witness=unsafe; break ;;
+        esac
+      done <"$archive_candidates"
+    fi
   fi
 fi
 
 recovery_state=uninitialized
 if [ "$layer_status" = unsafe ] || [ "$ledger_status" = unsafe ] ||
+  [ "$archived_witness" = unsafe ] ||
   [ "$readme_status" = unsafe ] || [ "$readme_status" = malformed ]; then
   recovery_state=unsafe
 elif [ "$ledger_status" = regular ]; then

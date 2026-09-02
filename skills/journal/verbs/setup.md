@@ -18,6 +18,8 @@ directory or project template.
      with `reason=ledger-recovery-required action=human-review`.
    - Otherwise setup atomically reconciles provider → absent empty ledger → managed README. A fresh
      README contains exactly the managed block; an incumbent keeps every byte outside that block.
+     If the README appears or changes after preflight, setup preserves it and refuses with
+     `reason=concurrent-project-edit detail=.records/README.md`.
    - A content-check failure leaves the current tool layer in place and emits
      `records check failed — tool layer is current; action=/journal curate`.
 3. **Take bounded custody.** `wrote: <path>` reports a current invocation write; `reconciled: <path>`

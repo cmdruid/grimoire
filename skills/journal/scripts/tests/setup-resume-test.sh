@@ -27,6 +27,20 @@ for stop in provider ledger readme; do
     echo "FAIL: $stop left partial provider" >&2; fail=$((fail + 1)); }
   [ ! -e "$root/.spaces" ] && pass=$((pass + 1)) || {
     echo "FAIL: $stop created private setup state" >&2; fail=$((fail + 1)); }
+  case "$stop" in
+    provider)
+      [ ! -e "$root/.records/history.tsv" ] && [ ! -e "$root/.records/README.md" ] &&
+        pass=$((pass + 1)) || { echo 'FAIL: provider stop crossed the ledger boundary' >&2; fail=$((fail + 1)); }
+      ;;
+    ledger)
+      [ -f "$root/.records/history.tsv" ] && [ ! -e "$root/.records/README.md" ] &&
+        pass=$((pass + 1)) || { echo 'FAIL: ledger stop published README too early' >&2; fail=$((fail + 1)); }
+      ;;
+    readme)
+      [ -f "$root/.records/history.tsv" ] && [ -f "$root/.records/README.md" ] &&
+        pass=$((pass + 1)) || { echo 'FAIL: README stop omitted a prior boundary' >&2; fail=$((fail + 1)); }
+      ;;
+  esac
   "$STANDUP" setup "$root" >"$OUT" 2>"$ERR"
   expect "provider recovered after $stop" 'reconciled: .records/records.sh' "$OUT"
   if [ "$stop" != provider ]; then
@@ -106,5 +120,53 @@ clean="$TMP/clean"; init_repo "$clean"; "$STANDUP" setup "$clean" --write-only >
 commit_layer "$clean"; "$STANDUP" setup "$clean" >"$OUT" 2>"$ERR"
 expect_absent "clean setup reports no write" 'wrote:' "$OUT"
 expect_absent "clean setup reports no recovery" 'reconciled:' "$OUT"
+
+copy_reconciler() {
+  destination="$1"
+  mkdir -p "$destination/scripts" "$destination/templates"
+  cp "$STANDUP" "$destination/scripts/standup.sh"
+  cp "$SKILL/scripts/records.sh" "$destination/scripts/records.sh"
+  cp "$SKILL/scripts/records-layer-status.sh" "$destination/scripts/records-layer-status.sh"
+  cp "$SKILL/scripts/records-readme-status.sh" "$destination/scripts/records-readme-status.sh"
+  sed -n 'p' "$SKILL/templates/records-readme-block.md" \
+    >"$destination/templates/records-readme-block.md"
+  chmod 755 "$destination/scripts/"*.sh
+}
+
+order_mutant="$TMP/order-mutant"; copy_reconciler "$order_mutant"
+order_script="$order_mutant/scripts/standup.sh"
+expect_eq "ledger creation mutation target is unique" 1 \
+  "$(grep -Fc 'if [ "$mode" = setup ] && [ ! -e "$ledger" ]; then' "$order_script")"
+expect_eq "ledger publication gate mutation target is unique" 1 \
+  "$(grep -Fc '[ -f "$ledger" ] && [ ! -L "$ledger" ] || refuse setup-required' "$order_script")"
+sed -i.bak 's/if \[ "$mode" = setup \] && \[ ! -e "$ledger" \]; then/if false; then/' "$order_script"
+rm "$order_script.bak"
+sed -i.bak "s#\[ -f \"\$ledger\" \] && \[ ! -L \"\$ledger\" \] || refuse setup-required '/journal setup'#true#" "$order_script"
+rm "$order_script.bak"
+order_root="$TMP/order-root"; mkdir -p "$order_root"
+"$order_script" setup "$order_root" >"$OUT" 2>"$ERR"
+if [ -e "$order_root/.records/README.md" ] && [ ! -e "$order_root/.records/history.tsv" ]; then
+  pass=$((pass + 1))
+else
+  echo 'FAIL: README-after-ledger mutation did not turn its fixture red' >&2; fail=$((fail + 1))
+fi
+
+ledger_mutant="$TMP/ledger-custody-mutant"; copy_reconciler "$ledger_mutant"
+ledger_script="$ledger_mutant/scripts/standup.sh"
+expect_eq "ledger custody mutation target is unique" 1 \
+  "$(grep -Fc 'if head_has "$ledger_rel" || [ ! -f "$ledger" ] || [ -L "$ledger" ] || [ -s "$ledger" ]; then' "$ledger_script")"
+sed -i.bak 's/if head_has "$ledger_rel" || \[ ! -f "$ledger" \] || \[ -L "$ledger" \] || \[ -s "$ledger" \]; then/if false; then/' "$ledger_script"
+rm "$ledger_script.bak"
+rc=0; "$ledger_script" setup "$dirty_ledger" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "ledger-custody mutation exposes bad acceptance" 0 "$rc"
+
+readme_mutant="$TMP/readme-custody-mutant"; copy_reconciler "$readme_mutant"
+readme_script="$readme_mutant/scripts/standup.sh"
+expect_eq "README custody mutation target is unique" 1 \
+  "$(grep -Fc '"$readme_rel") readme_change_owned ||' "$readme_script")"
+sed -i.bak 's/"$readme_rel") readme_change_owned || { IFS=$old_ifs; refuse_detail commit-custody-required "$candidate"; } ;;/"$readme_rel") true ;;/' "$readme_script"
+rm "$readme_script.bak"
+rc=0; "$readme_script" setup "$dirty" >"$OUT" 2>"$ERR" || rc=$?
+expect_eq "README-custody mutation exposes bad acceptance" 0 "$rc"
 
 report setup-resume-test

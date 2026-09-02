@@ -75,6 +75,16 @@ unsafe="$TMP/unsafe"; mkdir -p "$unsafe/target"; ln -s "$unsafe/target" "$unsafe
 run_status "$unsafe"
 expect_eq "symlinked records root is unsafe" unsafe "$(fact_value recovery_state)"
 
+unreadable="$TMP/unreadable"; mkdir -p "$unreadable/.records/locked"
+printf '%s\n' '---' 'doctype: notes' 'status: archived' 'schema: notepad/note@1' \
+  'tags: []' '---' '# Closed' >"$unreadable/.records/locked/2026-09-02-closed.md"
+chmod 000 "$unreadable/.records/locked"
+run_status "$unreadable"
+chmod 700 "$unreadable/.records/locked"
+expect_eq "unreadable crawl is unsafe" unsafe "$(fact_value recovery_state)"
+expect_eq "unreadable crawl cannot prove witness absence" unsafe "$(fact_value archived_witness)"
+expect_eq "unreadable crawl emits no raw traversal error" '' "$(cat "$ERR")"
+
 # Mutation proof: the fixture catches a helper that starts treating workspace residue as state.
 mutant="$TMP/mutant-skill"; mkdir -p "$mutant/scripts" "$mutant/templates"
 cp "$STATUS" "$mutant/scripts/records-layer-status.sh"
@@ -89,5 +99,47 @@ rc=0; "$mutant/scripts/records-layer-status.sh" setup --root "$healthy" >"$OUT" 
 if [ "$rc" -ne 0 ]; then pass=$((pass + 1)); else
   echo 'FAIL: workspace-dependency mutant survived' >&2; fail=$((fail + 1))
 fi
+
+copy_status_package() {
+  destination="$1"
+  mkdir -p "$destination/scripts" "$destination/templates"
+  cp "$STATUS" "$destination/scripts/records-layer-status.sh"
+  cp "$SKILL/scripts/records.sh" "$destination/scripts/records.sh"
+  cp "$SKILL/scripts/records-readme-status.sh" "$destination/scripts/records-readme-status.sh"
+  sed -n 'p' "$SKILL/templates/records-readme-block.md" \
+    >"$destination/templates/records-readme-block.md"
+  chmod 755 "$destination/scripts/"*.sh
+}
+mutant_state() {
+  "$1/scripts/records-layer-status.sh" setup --root "$2" >"$OUT" 2>"$ERR"
+  fact_value recovery_state
+}
+
+tracked_mutant="$TMP/tracked-mutant"; copy_status_package "$tracked_mutant"
+expect_eq "tracked guard mutation target is unique" 1 \
+  "$(grep -Fc 'elif [ "$ledger_head" = tracked ]; then' \
+    "$tracked_mutant/scripts/records-layer-status.sh")"
+sed -i.bak 's/elif \[ "$ledger_head" = tracked \]; then/elif false; then/' \
+  "$tracked_mutant/scripts/records-layer-status.sh"; rm "$tracked_mutant/scripts/records-layer-status.sh.bak"
+expect_eq "tracked-ledger mutation turns its fixture red" human-review \
+  "$(mutant_state "$tracked_mutant" "$tracked")"
+
+readme_mutant="$TMP/readme-mutant"; copy_status_package "$readme_mutant"
+expect_eq "README witness mutation target is unique" 1 \
+  "$(grep -Fc 'elif [ "$readme_status" = current ] || [ "$readme_status" = drifted ] ||' \
+    "$readme_mutant/scripts/records-layer-status.sh")"
+sed -i.bak 's/elif \[ "$readme_status" = current \] || \[ "$readme_status" = drifted \] ||/elif false ||/' \
+  "$readme_mutant/scripts/records-layer-status.sh"; rm "$readme_mutant/scripts/records-layer-status.sh.bak"
+expect_eq "README-witness mutation turns its fixture red" uninitialized \
+  "$(mutant_state "$readme_mutant" "$managed")"
+
+archive_mutant="$TMP/archive-mutant"; copy_status_package "$archive_mutant"
+expect_eq "archive witness mutation target is unique" 1 \
+  "$(grep -Fc '[ "$archived_witness" = present ]; then' \
+    "$archive_mutant/scripts/records-layer-status.sh")"
+sed -i.bak 's/\[ "$archived_witness" = present \]; then/[ "$archived_witness" = never ]; then/' \
+  "$archive_mutant/scripts/records-layer-status.sh"; rm "$archive_mutant/scripts/records-layer-status.sh.bak"
+expect_eq "archive-witness mutation turns its fixture red" uninitialized \
+  "$(mutant_state "$archive_mutant" "$archived")"
 
 report layer-status-test

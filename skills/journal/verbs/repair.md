@@ -9,7 +9,8 @@ migration, or recognizes an earlier Journal version.
    the final `--write-only`. A missing or unsafe ledger stops with exactly
    `reason=setup-required action=/journal setup`. Unsafe destinations and malformed markers refuse
    before mutation. Provider and managed-block drift are replaced atomically; surrounding README
-   bytes remain unchanged. A later content failure emits
+   bytes remain unchanged. A README change after preflight is preserved and refuses with
+   `reason=concurrent-project-edit detail=.records/README.md`. A later content failure emits
    `records check failed — tool layer is current; action=/journal curate`.
 3. For Git-backed standalone custody, take the unique `wrote:` plus `reconciled:` paths that remain
    dirty and call
