@@ -10,3 +10,4 @@
 2026-09-02	consumed	reports/2026-09-02-update-planner-confuses-candidate-and-active-snapshots.md	reports	Update planner confuses candidate and active snapshots	Active/candidate snapshot separation landed in Phase 5 Slice 4.
 2026-09-02	consumed	reports/2026-09-02-absent-project-world-omits-shared-trust-precondition.md	reports	Absent project world omits shared trust precondition	Shared trust observation landed in Phase 5 Slice 5.
 2026-09-02	consumed	reports/2026-09-02-prune-cannot-remove-immutable-snapshot-directories.md	reports	Prune cannot remove immutable snapshot directories	Descriptor-relative immutable tree removal landed in Phase 5 Slice 6.
+2026-09-02	consumed	reports/2026-09-02-cli-boundary-scanner-confuses-symlink-inspection-with-creation.md	reports	CLI boundary scanner confuses symlink inspection with creation	Qualified the mutation API needle; focused boundary and CLI tests pass.
