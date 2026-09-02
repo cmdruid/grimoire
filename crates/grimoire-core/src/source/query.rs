@@ -183,7 +183,7 @@ pub fn source_summaries(world: &WorldState) -> Result<Vec<SourceSummary>> {
                         .get(alias)
                         .and_then(|state| state.identity.as_ref())
                 });
-            let receipt = candidate.and_then(|state| state_receipt(state));
+            let receipt = candidate.and_then(state_receipt);
             let trust = identity
                 .and_then(|identity| trust_store.records.get(&super::SourceKey::derive(identity)))
                 .map_or(TrustMode::Untrusted, |record| {
