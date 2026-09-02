@@ -364,6 +364,39 @@ impl ByteHash {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+
+    pub fn parse(value: impl Into<String>) -> Result<Self> {
+        let value = value.into();
+        if value.len() == 64
+            && value
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        {
+            Ok(Self(value))
+        } else {
+            Err(CoreError::Request("invalid byte hash".into()))
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct ProjectReference {
+    pub source_key: crate::SourceKey,
+    pub snapshot_key: crate::SnapshotKey,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProjectRecord {
+    pub path: PathBuf,
+    pub scope_key: String,
+    pub lock_hash: ByteHash,
+    pub references: BTreeSet<ProjectReference>,
+    pub last_observed: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct ProjectIndex {
+    pub records: BTreeMap<String, ProjectRecord>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -386,7 +419,7 @@ pub enum Request {
     Initialize,
     Reconcile,
     AddSource {
-        prepared: crate::PreparedSource,
+        prepared: Box<crate::PreparedSource>,
         trust: SourceTrustIntent,
     },
     RemoveSource {
@@ -439,6 +472,7 @@ pub struct WorldState {
     pub manifest_present: bool,
     pub lock_present: bool,
     pub observations: Vec<WorldObservation>,
+    pub project_index_bytes: Option<Vec<u8>>,
 }
 
 impl WorldState {
@@ -480,6 +514,7 @@ impl WorldState {
             manifest_present: true,
             lock_present: true,
             observations: Vec::new(),
+            project_index_bytes: None,
         })
     }
 
@@ -521,6 +556,11 @@ impl WorldState {
 
     pub fn with_trust_bytes(mut self, bytes: Option<Vec<u8>>) -> Self {
         self.trust_bytes = bytes;
+        self
+    }
+
+    pub fn with_project_index_bytes(mut self, bytes: Option<Vec<u8>>) -> Self {
+        self.project_index_bytes = bytes;
         self
     }
 }

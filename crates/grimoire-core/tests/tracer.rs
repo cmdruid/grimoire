@@ -182,6 +182,7 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
             candidates: BTreeMap::new(),
             stores: BTreeMap::from([("grimoire".try_into().unwrap(), SnapshotStore::Valid,)]),
             trust: Some(ByteHash::of(&trust)),
+            projects: None,
             links: BTreeMap::from([("journal".try_into().unwrap(), LinkPrecondition::Absent,)]),
         }
     );

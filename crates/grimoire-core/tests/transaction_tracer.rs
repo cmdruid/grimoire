@@ -41,11 +41,10 @@ impl TransactionRuntime for Runtime {
     }
 
     fn checkpoint(&self, name: &'static str) -> Result<FaultDisposition> {
-        if name == "before-link-ownership"
-            && !self.raced.swap(true, Ordering::SeqCst)
-            && self.race_path.is_some()
-        {
-            fs::write(self.race_path.as_ref().unwrap(), b"foreign\n").unwrap();
+        if name == "before-link-ownership" && !self.raced.swap(true, Ordering::SeqCst) {
+            if let Some(path) = &self.race_path {
+                fs::write(path, b"foreign\n").unwrap();
+            }
         }
         Ok(FaultDisposition::Continue)
     }
@@ -102,6 +101,7 @@ fn fixture() -> (TempDir, Paths, OwnedLinkTarget, Plan) {
             candidates: BTreeMap::new(),
             stores: BTreeMap::new(),
             trust: None,
+            projects: None,
             links: BTreeMap::from([("one".try_into().unwrap(), LinkPrecondition::Absent)]),
         },
         facts: Vec::new(),
@@ -136,6 +136,7 @@ fn one_direct_skill_crosses_the_transaction_boundary() {
             candidates: BTreeMap::new(),
             stores: BTreeMap::new(),
             trust: None,
+            projects: Some(ByteHash::of(&fs::read(paths.projects_path()).unwrap())),
             links: BTreeMap::from([(
                 "one".try_into().unwrap(),
                 LinkPrecondition::Symlink(target.resolve(&paths).unwrap()),

@@ -397,7 +397,7 @@ This task is read-only and produces no commit.
     Red arms follow a foreign link or skip stored-skill verification and read the canary/call the
     wrong target.
 
-- [ ] **Slice 5: Durable project index and cross-scope transaction concurrency** <requires: 4>
+- [x] **Slice 5: Durable project index and cross-scope transaction concurrency** <requires: 4>
   - Files: create `crates/grimoire-core/src/projects.rs`,
     `crates/grimoire-core/tests/project_index.rs`, and
     `crates/grimoire-core/tests/transaction_concurrency.rs`; modify

@@ -8,6 +8,7 @@ mod locks;
 mod manifest;
 mod model;
 mod plan;
+mod projects;
 mod resolve;
 mod scope;
 pub mod source;

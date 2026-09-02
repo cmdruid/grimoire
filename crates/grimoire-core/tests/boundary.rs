@@ -24,7 +24,7 @@ fn phase_four_planner_has_no_adapter_or_ambient_dependency() {
         "ImmediateRemove",
     ] {
         assert!(
-            !format!("{CARGO}\n{MODEL}\n{PLAN}").contains(forbidden),
+            !format!("{CARGO}\n{LIB}\n{MODEL}\n{PLAN}").contains(forbidden),
             "forbidden Phase 4 planner boundary: {forbidden}"
         );
     }

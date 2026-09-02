@@ -78,10 +78,16 @@ pub fn recover(paths: &Paths, runtime: &dyn TransactionRuntime) -> Result<Recove
         LockRank::Scope,
         LockMode::Exclusive,
     )?;
-    if fs::read(&journal_path)
-        .map_err(|error| crate::transaction::io_error(&journal_path, error))?
-        != bytes
-    {
+    let current_journal = match fs::read(&journal_path) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(RecoveryOutcome {
+                dispositions: Vec::new(),
+            })
+        }
+        Err(error) => return Err(crate::transaction::io_error(&journal_path, error)),
+    };
+    if current_journal != bytes {
         return Err(CoreError::RecoveryRequired(
             "transaction journal changed while acquiring recovery custody".into(),
         ));
@@ -117,6 +123,19 @@ pub fn recover(paths: &Paths, runtime: &dyn TransactionRuntime) -> Result<Recove
             scope_key: scope_key.clone(),
         }
     };
+    if roll_forward && matches!(paths.scope, ScopePaths::Project { .. }) {
+        if checkpoint(runtime, "before-project-refresh")? {
+            return Ok(RecoveryOutcome {
+                dispositions: Vec::new(),
+            });
+        }
+        refresh_project_index(paths, runtime, &journal.nonce)?;
+        if checkpoint(runtime, "after-project-refresh")? {
+            return Ok(RecoveryOutcome {
+                dispositions: Vec::new(),
+            });
+        }
+    }
     if checkpoint(runtime, "recovery-state-complete")? {
         return Ok(RecoveryOutcome {
             dispositions: Vec::new(),
@@ -166,10 +185,15 @@ pub fn apply(
     validate_nonce(&nonce)?;
     prepare_snapshots(paths, plan, &nonce)?;
     let scope_key = paths.scope_key();
+    let trust_only = !plan.actions.is_empty()
+        && plan
+            .actions
+            .iter()
+            .all(|action| matches!(action, Action::ReplaceTrust { .. }));
     let mut locks = LockCoordinator::new();
-    if let Some((alias, _)) = candidate_action(plan) {
+    if let Some(alias) = candidate_lock_alias(plan)? {
         locks.acquire(
-            &paths.candidate_lock_path(&scope_key, alias),
+            &paths.candidate_lock_path(&scope_key, &alias),
             LockRank::Candidate,
             LockMode::Exclusive,
         )?;
@@ -188,12 +212,22 @@ pub fn apply(
             LockMode::Shared
         },
     )?;
-    validate_preconditions(paths, plan)?;
-    if plan
-        .actions
-        .iter()
-        .all(|action| matches!(action, Action::ReplaceTrust { .. }))
-    {
+    if !trust_only && matches!(paths.scope, ScopePaths::Project { .. }) {
+        locks.acquire(
+            &paths.projects_lock_path(),
+            LockRank::Projects,
+            LockMode::Exclusive,
+        )?;
+    }
+    if !trust_only {
+        locks.acquire(
+            &paths.scope_lock_path(&scope_key),
+            LockRank::Scope,
+            LockMode::Exclusive,
+        )?;
+    }
+    validate_preconditions(paths, plan, !trust_only)?;
+    if trust_only {
         let mut changed = false;
         for action in &plan.actions {
             if let Action::ReplaceTrust {
@@ -216,19 +250,6 @@ pub fn apply(
         }
         return Ok(ApplyOutcome::Applied { changed });
     }
-    if matches!(paths.scope, ScopePaths::Project { .. }) {
-        locks.acquire(
-            &paths.projects_lock_path(),
-            LockRank::Projects,
-            LockMode::Exclusive,
-        )?;
-    }
-    locks.acquire(
-        &paths.scope_lock_path(&scope_key),
-        LockRank::Scope,
-        LockMode::Exclusive,
-    )?;
-
     let journal_path = paths.transaction_journal_path(&scope_key);
     if journal_path.exists() {
         return Err(CoreError::RecoveryRequired(format!(
@@ -272,6 +293,18 @@ pub fn apply(
                 ))
             })?;
             let journal = Journal::from_bytes(&bytes)?;
+            if journal.committed {
+                return Err(CoreError::RecoveryRequired(format!(
+                    "{error}; committed transaction requires project-index recovery"
+                )));
+            }
+            if matches!(error, CoreError::StalePlan(_)) && journal.completed.is_empty() {
+                remove_file_if_present(&journal_path)?;
+                if let Some(parent) = journal_path.parent() {
+                    sync_directory(parent)?;
+                }
+                return Err(error);
+            }
             rollback(paths, &journal, &nonce).map_err(|rollback| {
                 CoreError::RecoveryRequired(format!("{error}; rollback failed: {rollback}"))
             })?;
@@ -379,7 +412,7 @@ fn prepare_snapshots(paths: &Paths, plan: &Plan, nonce: &str) -> Result<()> {
     Ok(())
 }
 
-fn validate_preconditions(paths: &Paths, plan: &Plan) -> Result<()> {
+fn validate_preconditions(paths: &Paths, plan: &Plan, include_projects: bool) -> Result<()> {
     validate_file_hash(
         &paths.manifest_path(),
         plan.preconditions.manifest.as_ref(),
@@ -391,6 +424,13 @@ fn validate_preconditions(paths: &Paths, plan: &Plan) -> Result<()> {
         plan.preconditions.trust.as_ref(),
         "trust",
     )?;
+    if include_projects && matches!(paths.scope, ScopePaths::Project { .. }) {
+        validate_file_hash(
+            &paths.projects_path(),
+            plan.preconditions.projects.as_ref(),
+            "project index",
+        )?;
+    }
     for (alias, expected) in &plan.preconditions.candidates {
         validate_file_hash(
             &paths.candidate_path(&paths.scope_key(), alias),
@@ -717,6 +757,19 @@ fn execute(
             checkpoint: "committed".into(),
         });
     }
+    if matches!(paths.scope, ScopePaths::Project { .. }) {
+        if checkpoint(runtime, "before-project-refresh")? {
+            return Ok(ApplyOutcome::Interrupted {
+                checkpoint: "before-project-refresh".into(),
+            });
+        }
+        refresh_project_index(paths, runtime, &journal.nonce)?;
+        if checkpoint(runtime, "after-project-refresh")? {
+            return Ok(ApplyOutcome::Interrupted {
+                checkpoint: "after-project-refresh".into(),
+            });
+        }
+    }
     if checkpoint(runtime, "before-cleanup")? {
         return Ok(ApplyOutcome::Interrupted {
             checkpoint: "before-cleanup".into(),
@@ -1002,16 +1055,48 @@ fn state_order(name: StateName) -> u8 {
     }
 }
 
-fn candidate_action(plan: &Plan) -> Option<(&crate::SourceAlias, &crate::SourceKey)> {
-    plan.actions.iter().find_map(|action| match action {
-        Action::ReplaceCandidate {
-            alias, source_key, ..
+fn candidate_lock_alias(plan: &Plan) -> Result<Option<crate::SourceAlias>> {
+    let action_alias = plan.actions.iter().find_map(|action| match action {
+        Action::ReplaceCandidate { alias, .. } | Action::RemoveCandidate { alias, .. } => {
+            Some(alias.clone())
         }
-        | Action::RemoveCandidate {
-            alias, source_key, ..
-        } => Some((alias, source_key)),
         _ => None,
-    })
+    });
+    if plan.preconditions.candidates.len() > 1 {
+        return Err(CoreError::Transaction(
+            "one plan cannot depend on more than one candidate".into(),
+        ));
+    }
+    let precondition_alias = plan.preconditions.candidates.keys().next().cloned();
+    if action_alias.is_some() && precondition_alias.is_some() && action_alias != precondition_alias
+    {
+        return Err(CoreError::Transaction(
+            "candidate action and precondition aliases disagree".into(),
+        ));
+    }
+    Ok(action_alias.or(precondition_alias))
+}
+
+fn refresh_project_index(
+    paths: &Paths,
+    runtime: &dyn TransactionRuntime,
+    nonce: &str,
+) -> Result<()> {
+    let manifest_bytes = fs::read(paths.manifest_path())
+        .map_err(|error| crate::transaction::io_error(&paths.manifest_path(), error))?;
+    let lock_bytes = fs::read(paths.lock_path())
+        .map_err(|error| crate::transaction::io_error(&paths.lock_path(), error))?;
+    let manifest = crate::Manifest::parse(manifest_bytes)?;
+    let lock = crate::Lockfile::parse(&lock_bytes)?;
+    crate::projects::refresh_locked(
+        paths,
+        &manifest,
+        &lock,
+        &lock_bytes,
+        runtime.unix_time()?,
+        nonce,
+    )?;
+    Ok(())
 }
 
 fn path_bytes(path: &Path) -> Vec<u8> {

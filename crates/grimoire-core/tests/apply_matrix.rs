@@ -79,7 +79,7 @@ fn prepared_source_registration_and_removal_cross_only_the_action_interpreter() 
     let add = plan(
         &world,
         Request::AddSource {
-            prepared: prepared.clone(),
+            prepared: Box::new(prepared.clone()),
             trust: SourceTrustIntent::All,
         },
         PlanningMode::Normal,
@@ -150,7 +150,8 @@ fn prepared_source_registration_and_removal_cross_only_the_action_interpreter() 
         .candidate(fs::read(paths.candidate_path(&paths.scope_key(), &alias)).unwrap()),
     )
     .unwrap()
-    .with_trust_bytes(Some(fs::read(paths.trust_path()).unwrap()));
+    .with_trust_bytes(Some(fs::read(paths.trust_path()).unwrap()))
+    .with_project_index_bytes(Some(fs::read(paths.projects_path()).unwrap()));
     let remove = plan(
         &current,
         Request::RemoveSource {

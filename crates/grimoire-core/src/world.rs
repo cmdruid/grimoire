@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 use grimoire_pack::inventory::{compute_review_tree_digest, scan, Digest, SourceInventory};
 
+use crate::locks::{LockCoordinator, LockMode, LockRank};
 use crate::source::{
     inspect_pinned_git, GitRunner, GitSnapshot, GitTreeReader, HeldDirectoryReader, ReviewExport,
 };
@@ -17,8 +18,24 @@ use crate::{
 pub fn load_world(
     paths: &Paths,
     git: &dyn GitRunner,
-    _runtime: &dyn TransactionRuntime,
+    runtime: &dyn TransactionRuntime,
 ) -> Result<WorldState> {
+    let mut locks = LockCoordinator::new();
+    locks.acquire(&paths.store_lock_path(), LockRank::Store, LockMode::Shared)?;
+    locks.acquire(&paths.trust_lock_path(), LockRank::Trust, LockMode::Shared)?;
+    if matches!(paths.scope, ScopePaths::Project { .. }) {
+        locks.acquire(
+            &paths.projects_lock_path(),
+            LockRank::Projects,
+            LockMode::Exclusive,
+        )?;
+    }
+    locks.acquire(
+        &paths.scope_lock_path(&paths.scope_key()),
+        LockRank::Scope,
+        LockMode::Shared,
+    )?;
+
     let scope = match paths.scope {
         ScopePaths::Project { .. } => Scope::Project,
         ScopePaths::Global { .. } => Scope::Global,
@@ -28,6 +45,9 @@ pub fn load_world(
     if manifest_bytes.is_none() && lock_bytes.is_none() {
         let mut world = WorldState::absent(scope, [], [], None)?;
         collect_journal_observations(paths, &mut world.observations)?;
+        if matches!(paths.scope, ScopePaths::Project { .. }) {
+            world.project_index_bytes = crate::projects::read(paths)?;
+        }
         return Ok(world);
     }
     let (manifest_bytes, lock_bytes) = match (manifest_bytes, lock_bytes) {
@@ -112,7 +132,7 @@ pub fn load_world(
         .collect::<Result<_>>()?;
     collect_journal_observations(paths, &mut observations)?;
 
-    Ok(WorldState {
+    let mut world = WorldState {
         scope,
         manifest_bytes,
         manifest,
@@ -128,7 +148,20 @@ pub fn load_world(
         manifest_present: true,
         lock_present: true,
         observations,
-    })
+        project_index_bytes: None,
+    };
+    if matches!(paths.scope, ScopePaths::Project { .. }) {
+        let nonce = runtime.transaction_nonce()?;
+        world.project_index_bytes = Some(crate::projects::refresh_locked(
+            paths,
+            &world.manifest,
+            &world.lock,
+            &world.lock_bytes,
+            runtime.unix_time()?,
+            &nonce,
+        )?);
+    }
+    Ok(world)
 }
 
 fn load_locked_source(
@@ -384,7 +417,7 @@ fn scan_store(root: &Path, expected_inventory: &str) -> Result<(SourceInventory,
     ))
 }
 
-fn declaration_identity(
+pub(crate) fn declaration_identity(
     paths: &Paths,
     manifest: &Manifest,
     alias: &SourceAlias,

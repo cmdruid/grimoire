@@ -200,6 +200,7 @@ pub struct Preconditions {
     pub candidates: BTreeMap<SourceAlias, Option<ByteHash>>,
     pub stores: BTreeMap<SourceAlias, SnapshotStore>,
     pub trust: Option<ByteHash>,
+    pub projects: Option<ByteHash>,
     pub links: BTreeMap<SkillName, LinkPrecondition>,
 }
 
@@ -211,6 +212,7 @@ impl Preconditions {
             candidates: BTreeMap::new(),
             stores: BTreeMap::new(),
             trust: None,
+            projects: None,
             links: BTreeMap::new(),
         }
     }
@@ -854,6 +856,9 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
             },
             stores: store_preconditions,
             trust: world.trust_bytes.as_deref().map(ByteHash::of),
+            projects: (world.scope == Scope::Project)
+                .then(|| world.project_index_bytes.as_deref().map(ByteHash::of))
+                .flatten(),
             links,
         },
         facts: resolution.facts,
@@ -990,7 +995,7 @@ fn initialize(world: &WorldState, mode: PlanningMode) -> Result<Plan> {
         return Ok(Plan {
             actions: Vec::new(),
             blockers: vec![Blocker::new("frozen-mismatch", [])],
-            preconditions: Preconditions::absent(),
+            preconditions: initialization_preconditions(world),
             facts: Vec::new(),
             exit_class: ExitClass::Blocked,
         });
@@ -1007,10 +1012,19 @@ fn initialize(world: &WorldState, mode: PlanningMode) -> Result<Plan> {
             },
         ],
         blockers: Vec::new(),
-        preconditions: Preconditions::absent(),
+        preconditions: initialization_preconditions(world),
         facts: Vec::new(),
         exit_class: ExitClass::Success,
     })
+}
+
+fn initialization_preconditions(world: &WorldState) -> Preconditions {
+    Preconditions {
+        projects: (world.scope == Scope::Project)
+            .then(|| world.project_index_bytes.as_deref().map(ByteHash::of))
+            .flatten(),
+        ..Preconditions::absent()
+    }
 }
 
 fn add_shadowing_facts(

@@ -150,22 +150,27 @@ impl Paths {
         match &self.scope {
             ScopePaths::Global { .. } => "global".into(),
             ScopePaths::Project { root } => {
-                #[cfg(unix)]
-                {
-                    use std::os::unix::ffi::OsStrExt;
-                    crate::source::identity::hash_key(
-                        b"grimoire/scope-key@1",
-                        [
-                            Some(b"project".as_slice()),
-                            Some(root.as_os_str().as_bytes()),
-                        ],
-                    )
-                }
-                #[cfg(not(unix))]
-                unreachable!("Grimoire source custody supports Unix hosts")
+                let canonical = root.canonicalize().unwrap_or_else(|_| root.clone());
+                project_scope_key(&canonical)
             }
         }
     }
+}
+
+pub(crate) fn project_scope_key(root: &Path) -> String {
+    #[cfg(unix)]
+    {
+        use std::os::unix::ffi::OsStrExt;
+        crate::source::identity::hash_key(
+            b"grimoire/scope-key@1",
+            [
+                Some(b"project".as_slice()),
+                Some(root.as_os_str().as_bytes()),
+            ],
+        )
+    }
+    #[cfg(not(unix))]
+    unreachable!("Grimoire source custody supports Unix hosts")
 }
 
 pub fn discover_project(start: &Path, probe: &dyn PathProbe) -> Result<Option<PathBuf>> {
