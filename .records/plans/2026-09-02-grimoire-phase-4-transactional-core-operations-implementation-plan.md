@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -465,7 +465,7 @@ This task is read-only and produces no commit.
     hostile names and symlinks. Red arms omit each reachability source or shared/exclusive store
     lease and demonstrate the otherwise-deleted referenced snapshot.
 
-- [ ] **Slice 7: Complete operation security matrices and the Phase 4 hard-cut gate** <requires: 6>
+- [x] **Slice 7: Complete operation security matrices and the Phase 4 hard-cut gate** <requires: 6>
   - Files: create `crates/grimoire-core/tests/operation_boundary.rs`; modify
     `crates/grimoire-core/tests/boundary.rs`, `crates/grimoire-core/tests/tracer.rs`,
     `crates/grimoire-core/tests/planner.rs`, `crates/grimoire-core/tests/planner_source.rs`,

@@ -105,6 +105,14 @@ impl HeldDirectoryReader {
         }
     }
 
+    pub(crate) fn root_handle(&self) -> Result<File> {
+        self.handles
+            .last()
+            .expect("root handle")
+            .try_clone()
+            .map_err(|error| io_error(&self.root, error))
+    }
+
     fn walk(
         &self,
         directory: &File,

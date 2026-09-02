@@ -489,11 +489,7 @@ fn identity_path(identity: &CanonicalIdentity) -> Result<PathBuf> {
 }
 
 fn read_optional(path: &Path) -> Result<Option<Vec<u8>>> {
-    match fs::read(path) {
-        Ok(bytes) => Ok(Some(bytes)),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(error) => Err(io_error(path, error)),
-    }
+    crate::transaction::read_optional_bounded(path, crate::transaction::STATE_LIMIT)
 }
 
 fn empty_inventory_with(inventory: &str, review: &str) -> Result<SourceInventory> {
@@ -531,8 +527,14 @@ fn collect_store_repair_observations(
     observations: &mut Vec<WorldObservation>,
 ) -> Result<()> {
     let root = paths.grimoire_home.join("transactions/store-repair");
-    if !root.exists() {
-        return Ok(());
+    match fs::symlink_metadata(&root) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(io_error(&root, error)),
+        Ok(metadata) if !metadata.is_dir() || metadata.file_type().is_symlink() => {
+            observations.push(observation("store-repair-invalid", []));
+            return Ok(());
+        }
+        Ok(_) => {}
     }
     for source in fs::read_dir(&root).map_err(|error| io_error(&root, error))? {
         let source = source.map_err(|error| io_error(&root, error))?;

@@ -1,11 +1,13 @@
 use std::fs;
 
-use grimoire_core::source::{GitCommand, GitResult, GitRunner};
+use grimoire_core::inventory::scan;
+use grimoire_core::source::{GitCommand, GitResult, GitRunner, HeldDirectoryReader, ReviewExport};
 use grimoire_core::{
-    apply, plan, prepare_source_add, Action, ApplyOutcome, Approval, FaultDisposition,
-    InstalledLink, Lockfile, ManifestSource, Paths, PlanningMode, Request, Result, Scope,
-    SnapshotId, SnapshotKind, SnapshotStore, SourceAlias, SourceLocation, SourceSnapshot,
-    SourceState, SourceTrustIntent, TransactionRuntime, WorldState,
+    apply, plan, prepare_source_add, Action, ApplyOutcome, Approval, CanonicalIdentity,
+    FaultDisposition, InstalledLink, Lockfile, ManifestSource, Paths, PlanningMode, Request,
+    Result, ReviewKey, Scope, SnapshotId, SnapshotKey, SnapshotKind, SnapshotStore, SourceAlias,
+    SourceKey, SourceLocation, SourceSnapshot, SourceState, SourceTrustIntent, TransactionRuntime,
+    TrustBaseline, TrustReceipt, TrustStore, WorldState,
 };
 
 struct NoGit;
@@ -174,4 +176,173 @@ fn prepared_source_registration_and_removal_cross_only_the_action_interpreter() 
     assert!(!fs::read_to_string(paths.manifest_path())
         .unwrap()
         .contains("[sources.local]"));
+}
+
+#[test]
+fn planned_snapshot_preparation_materializes_and_repairs_before_link_activation() {
+    let temporary = tempfile::tempdir().unwrap();
+    let root = temporary.path().canonicalize().unwrap();
+    let project = root.join("project");
+    let home = root.join("home");
+    let source = root.join("source");
+    fs::create_dir_all(source.join("skills/one")).unwrap();
+    fs::create_dir_all(&project).unwrap();
+    fs::write(
+        source.join("skills/one/SKILL.md"),
+        b"---\nname: one\ndescription: materialize fixture\n---\n",
+    )
+    .unwrap();
+    let paths = Paths::project(project, home).unwrap();
+    let reader = HeldDirectoryReader::open(&source).unwrap();
+    let inventory = scan(&reader).unwrap();
+    let identity = CanonicalIdentity::remote("github:org/a").unwrap();
+    let source_key = SourceKey::derive(&identity);
+    let commit = "1".repeat(40);
+    let tree = "2".repeat(40);
+    let snapshot_key = SnapshotKey::derive(
+        grimoire_core::SourceKind::Git,
+        &commit,
+        &tree,
+        &inventory.inventory_digest.to_string(),
+    )
+    .unwrap();
+    let review_key = ReviewKey::derive(
+        grimoire_core::SourceKind::Git,
+        Some(&commit),
+        Some(&tree),
+        &inventory.inventory_digest.to_string(),
+        &inventory.review_tree_digest.to_string(),
+    )
+    .unwrap();
+    ReviewExport::write(
+        &paths.review_cache_dir(),
+        source_key.clone(),
+        review_key,
+        &inventory,
+        &reader,
+    )
+    .unwrap();
+
+    let manifest = concat!(
+        "schema = \"grimoire/manifest@1\"\n",
+        "[sources.a]\nurl = \"github:org/a\"\n",
+        "[skills]\none = { source = \"a\" }\n"
+    )
+    .as_bytes()
+    .to_vec();
+    let lock = Lockfile::default().to_bytes().unwrap();
+    fs::write(paths.manifest_path(), &manifest).unwrap();
+    fs::write(paths.lock_path(), &lock).unwrap();
+    let snapshot = SourceSnapshot::new(
+        SourceAlias::new("a").unwrap(),
+        SnapshotId::new(
+            SnapshotKind::Git,
+            Some(commit.clone()),
+            Some(tree.clone()),
+            inventory.inventory_digest.to_string(),
+        )
+        .unwrap(),
+        paths.store_path(&source_key, &snapshot_key),
+        inventory.clone(),
+    );
+    let trust = TrustStore::default()
+        .grant_exact(
+            identity.clone(),
+            TrustReceipt {
+                commit: commit.clone(),
+                tree: tree.clone(),
+                inventory: inventory.inventory_digest.to_string(),
+            },
+            TrustBaseline {
+                commit: Some(commit.clone()),
+                tree: Some(tree.clone()),
+                inventory: inventory.inventory_digest.to_string(),
+                review_tree: inventory.review_tree_digest.to_string(),
+            },
+            None,
+        )
+        .unwrap()
+        .after;
+    fs::create_dir_all(paths.trust_path().parent().unwrap()).unwrap();
+    fs::write(paths.trust_path(), &trust).unwrap();
+    let world = WorldState::from_bytes(
+        Scope::Project,
+        manifest,
+        lock,
+        [SourceState::new(snapshot, SnapshotStore::Absent, true)
+            .source_identity(identity.clone(), inventory.review_tree_digest.to_string())],
+        [("one", InstalledLink::Absent)],
+        None,
+    )
+    .unwrap()
+    .with_trust_bytes(Some(trust.clone()));
+    let materialize_plan = plan(&world, Request::Reconcile, PlanningMode::Normal).unwrap();
+    assert!(matches!(
+        materialize_plan.actions.first(),
+        Some(Action::PrepareSnapshot { .. })
+    ));
+
+    assert_eq!(
+        apply(&paths, &materialize_plan, Approval::NotRequired, &Runtime,).unwrap(),
+        ApplyOutcome::Applied { changed: true }
+    );
+    assert!(paths.store_path(&source_key, &snapshot_key).is_dir());
+    assert_eq!(
+        fs::read_link(paths.skills_dir().join("one")).unwrap(),
+        paths
+            .store_path(&source_key, &snapshot_key)
+            .join("skills/one")
+    );
+
+    let stored = paths.store_path(&source_key, &snapshot_key);
+    let stored_skill = stored.join("skills/one/SKILL.md");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&stored_skill, fs::Permissions::from_mode(0o644)).unwrap();
+    }
+    fs::write(&stored_skill, b"corrupt\n").unwrap();
+    fs::remove_file(paths.skills_dir().join("one")).unwrap();
+    let repair_snapshot = SourceSnapshot::new(
+        SourceAlias::new("a").unwrap(),
+        SnapshotId::new(
+            SnapshotKind::Git,
+            Some(commit),
+            Some(tree),
+            inventory.inventory_digest.to_string(),
+        )
+        .unwrap(),
+        stored,
+        inventory.clone(),
+    );
+    let repair_world = WorldState::from_bytes(
+        Scope::Project,
+        fs::read(paths.manifest_path()).unwrap(),
+        fs::read(paths.lock_path()).unwrap(),
+        [
+            SourceState::new(repair_snapshot, SnapshotStore::Corrupt, true)
+                .source_identity(identity, inventory.review_tree_digest.to_string()),
+        ],
+        [("one", InstalledLink::Absent)],
+        None,
+    )
+    .unwrap()
+    .with_trust_bytes(Some(trust))
+    .with_project_index_bytes(Some(fs::read(paths.projects_path()).unwrap()));
+    let repair_plan = plan(&repair_world, Request::Reconcile, PlanningMode::Normal).unwrap();
+    assert!(matches!(
+        repair_plan.actions.first(),
+        Some(Action::PrepareSnapshot {
+            operation: grimoire_core::SnapshotPreparation::Repair,
+            ..
+        })
+    ));
+    assert_eq!(
+        apply(&paths, &repair_plan, Approval::NotRequired, &Runtime,).unwrap(),
+        ApplyOutcome::Applied { changed: true }
+    );
+    assert_eq!(
+        fs::read(stored_skill).unwrap(),
+        b"---\nname: one\ndescription: materialize fixture\n---\n"
+    );
 }

@@ -309,3 +309,27 @@ fn frozen_restore_uses_only_the_locked_store_snapshot() {
         .iter()
         .any(|finding| finding.code == "store-corrupt"));
 }
+
+#[test]
+fn world_loader_rejects_symlinked_state_files_without_reading_through_them() {
+    let temporary = tempfile::tempdir().unwrap();
+    let paths = project_paths(temporary.path());
+    let outside = temporary.path().join("outside");
+    fs::create_dir_all(&outside).unwrap();
+    let manifest = outside.join("manifest");
+    let lock = outside.join("lock");
+    fs::write(&manifest, b"schema = \"grimoire/manifest@1\"\n").unwrap();
+    fs::write(&lock, Lockfile::default().to_bytes().unwrap()).unwrap();
+    std::os::unix::fs::symlink(&manifest, paths.manifest_path()).unwrap();
+    std::os::unix::fs::symlink(&lock, paths.lock_path()).unwrap();
+
+    assert!(load_world(&paths, &NoGit::default(), &Runtime).is_err());
+    assert_eq!(
+        fs::read(&manifest).unwrap(),
+        b"schema = \"grimoire/manifest@1\"\n"
+    );
+    assert_eq!(
+        fs::read(&lock).unwrap(),
+        Lockfile::default().to_bytes().unwrap()
+    );
+}

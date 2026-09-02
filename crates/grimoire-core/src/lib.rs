@@ -29,7 +29,8 @@ pub use manifest::{
 pub use model::*;
 pub use plan::{
     plan, Action, Blocker, ExitClass, LinkPrecondition, LockChange, ManifestChange,
-    PackMemberState, Plan, PlanFact, Preconditions, SnapshotPreparation, TrustChange,
+    PackMemberState, Plan, PlanFact, Preconditions, SnapshotPreparation, StorePrecondition,
+    TrustChange,
 };
 pub use prune::observe_reachability;
 pub use resolve::{resolve_manifest, Resolution, ResolvedSkill};

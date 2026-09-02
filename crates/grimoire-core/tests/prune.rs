@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use grimoire_core::inventory::scan;
 use grimoire_core::source::HeldDirectoryReader;
@@ -45,6 +46,30 @@ impl TransactionRuntime for CrashJournal {
         } else {
             FaultDisposition::Continue
         })
+    }
+}
+
+struct SwapAtPrune {
+    target: std::path::PathBuf,
+    canary: std::path::PathBuf,
+    swapped: AtomicBool,
+}
+
+impl TransactionRuntime for SwapAtPrune {
+    fn transaction_nonce(&self) -> Result<String> {
+        Ok("prune-swap".into())
+    }
+
+    fn unix_time(&self) -> Result<i64> {
+        Ok(1_700_000_000)
+    }
+
+    fn checkpoint(&self, name: &'static str) -> Result<FaultDisposition> {
+        if name == "before-prune-snapshot" && !self.swapped.swap(true, Ordering::SeqCst) {
+            fs::rename(&self.target, self.target.with_extension("parked")).unwrap();
+            std::os::unix::fs::symlink(&self.canary, &self.target).unwrap();
+        }
+        Ok(FaultDisposition::Continue)
     }
 }
 
@@ -461,4 +486,36 @@ fn malformed_or_symlinked_store_names_retain_everything_and_preserve_canaries() 
         .iter()
         .any(|blocker| blocker.code == "prune-reachability-uncertain"));
     assert_eq!(fs::read(canary).unwrap(), b"safe\n");
+}
+
+#[test]
+fn racing_snapshot_swap_cannot_redirect_directory_relative_prune() {
+    let fixture = fixture();
+    let plan = prune_plan(&fixture);
+    let target = fixture
+        .paths
+        .store_path(&fixture.isolated.source_key, &fixture.isolated.snapshot_key);
+    let canary = fixture
+        .paths
+        .grimoire_home
+        .parent()
+        .unwrap()
+        .join("outside-directory");
+    fs::create_dir_all(&canary).unwrap();
+    fs::write(canary.join("canary"), b"safe\n").unwrap();
+
+    assert!(matches!(
+        apply(
+            &fixture.paths,
+            &plan,
+            Approval::Granted,
+            &SwapAtPrune {
+                target,
+                canary: canary.clone(),
+                swapped: AtomicBool::new(false),
+            },
+        ),
+        Err(grimoire_core::CoreError::StalePlan(_))
+    ));
+    assert_eq!(fs::read(canary.join("canary")).unwrap(), b"safe\n");
 }

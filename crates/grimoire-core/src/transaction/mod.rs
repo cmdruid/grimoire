@@ -1,10 +1,12 @@
 pub(crate) mod journal;
 
 use std::fs::{self, File, OpenOptions};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::Path;
 
 use crate::{CoreError, FaultDisposition, Result, TransactionRuntime};
+
+pub(crate) const STATE_LIMIT: u64 = 16 * 1024 * 1024;
 
 pub(crate) fn checkpoint(runtime: &dyn TransactionRuntime, name: &'static str) -> Result<bool> {
     Ok(matches!(runtime.checkpoint(name)?, FaultDisposition::Crash))
@@ -50,6 +52,49 @@ pub(crate) fn remove_file_if_present(path: &Path) -> Result<()> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(error) => Err(io_error(path, error)),
     }
+}
+
+pub(crate) fn read_optional_bounded(path: &Path, limit: u64) -> Result<Option<Vec<u8>>> {
+    let descriptor = match rustix::fs::open(
+        path,
+        rustix::fs::OFlags::RDONLY | rustix::fs::OFlags::CLOEXEC | rustix::fs::OFlags::NOFOLLOW,
+        rustix::fs::Mode::empty(),
+    ) {
+        Ok(descriptor) => descriptor,
+        Err(rustix::io::Errno::NOENT) => return Ok(None),
+        Err(error) => {
+            return Err(CoreError::Io {
+                path: path.display().to_string(),
+                message: error.to_string(),
+            })
+        }
+    };
+    let file = File::from(descriptor);
+    let metadata = file.metadata().map_err(|error| io_error(path, error))?;
+    if !metadata.is_file() || metadata.len() > limit {
+        return Err(CoreError::Io {
+            path: path.display().to_string(),
+            message: "state is not a bounded regular file".into(),
+        });
+    }
+    let mut bytes = Vec::with_capacity(metadata.len() as usize);
+    file.take(limit + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|error| io_error(path, error))?;
+    if bytes.len() as u64 > limit {
+        return Err(CoreError::Io {
+            path: path.display().to_string(),
+            message: "state file grew beyond its limit while reading".into(),
+        });
+    }
+    Ok(Some(bytes))
+}
+
+pub(crate) fn read_required_bounded(path: &Path, limit: u64) -> Result<Vec<u8>> {
+    read_optional_bounded(path, limit)?.ok_or_else(|| CoreError::Io {
+        path: path.display().to_string(),
+        message: "not found".into(),
+    })
 }
 
 pub(crate) fn sync_directory(path: &Path) -> Result<()> {

@@ -7,7 +7,10 @@ use crate::locks::{LockCoordinator, LockMode, LockRank};
 use crate::transaction::journal::{
     Journal, LinkTransition, StateName, StateTransition, JOURNAL_SCHEMA,
 };
-use crate::transaction::{checkpoint, remove_file_if_present, replace, sync_directory, write_new};
+use crate::transaction::{
+    checkpoint, read_optional_bounded, read_required_bounded, remove_file_if_present, replace,
+    sync_directory, write_new, STATE_LIMIT,
+};
 use crate::{
     Action, ApplyOutcome, Approval, ByteHash, CoreError, LinkPrecondition, Paths, Plan,
     RecoveryDisposition, RecoveryOutcome, Result, Scope, ScopePaths, TransactionRuntime,
@@ -16,14 +19,13 @@ use crate::{
 pub fn recover(paths: &Paths, runtime: &dyn TransactionRuntime) -> Result<RecoveryOutcome> {
     let scope_key = paths.scope_key();
     let journal_path = paths.transaction_journal_path(&scope_key);
-    let bytes = match fs::read(&journal_path) {
-        Ok(bytes) => bytes,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+    let bytes = match read_optional_bounded(&journal_path, STATE_LIMIT)? {
+        Some(bytes) => bytes,
+        None => {
             return Ok(RecoveryOutcome {
                 dispositions: Vec::new(),
             })
         }
-        Err(error) => return Err(crate::transaction::io_error(&journal_path, error)),
     };
     let journal = Journal::from_bytes(&bytes)?;
     validate_journal(paths, &journal)?;
@@ -78,14 +80,13 @@ pub fn recover(paths: &Paths, runtime: &dyn TransactionRuntime) -> Result<Recove
         LockRank::Scope,
         LockMode::Exclusive,
     )?;
-    let current_journal = match fs::read(&journal_path) {
-        Ok(bytes) => bytes,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+    let current_journal = match read_optional_bounded(&journal_path, STATE_LIMIT)? {
+        Some(bytes) => bytes,
+        None => {
             return Ok(RecoveryOutcome {
                 dispositions: Vec::new(),
             })
         }
-        Err(error) => return Err(crate::transaction::io_error(&journal_path, error)),
     };
     if current_journal != bytes {
         return Err(CoreError::RecoveryRequired(
@@ -236,6 +237,7 @@ pub fn apply(
         )?;
     }
     validate_preconditions(paths, plan, !trust_only)?;
+    validate_store_preconditions(paths, plan)?;
     if trust_only {
         let mut changed = false;
         for action in &plan.actions {
@@ -296,7 +298,7 @@ pub fn apply(
     ) {
         Ok(outcome) => Ok(outcome),
         Err(error) => {
-            let bytes = fs::read(&journal_path).map_err(|rollback| {
+            let bytes = read_required_bounded(&journal_path, STATE_LIMIT).map_err(|rollback| {
                 CoreError::RecoveryRequired(format!(
                     "{error}; cannot read rollback journal: {rollback}"
                 ))
@@ -407,7 +409,12 @@ fn prepare_snapshots(paths: &Paths, plan: &Plan, nonce: &str) -> Result<()> {
             crate::store::StoreObservation::Valid => crate::SnapshotStore::Valid,
             crate::store::StoreObservation::Corrupt => crate::SnapshotStore::Corrupt,
         };
-        if &observed != expected {
+        if source_key != expected.source_key || snapshot_key != expected.snapshot_key {
+            return Err(CoreError::Transaction(format!(
+                "snapshot preparation for `{source}` disagrees with its store precondition"
+            )));
+        }
+        if observed != expected.state {
             return Err(CoreError::StalePlan(format!(
                 "store snapshot for `{source}` changed"
             )));
@@ -460,6 +467,45 @@ fn validate_preconditions(paths: &Paths, plan: &Plan, include_projects: bool) ->
         if &actual != expected {
             return Err(CoreError::StalePlan(format!(
                 "installed link `{skill}` changed"
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn validate_store_preconditions(paths: &Paths, plan: &Plan) -> Result<()> {
+    for (alias, expected) in &plan.preconditions.stores {
+        let prepared = plan.actions.iter().any(
+            |action| matches!(action, Action::PrepareSnapshot { source, .. } if source == alias),
+        );
+        let root = paths.store_path(&expected.source_key, &expected.snapshot_key);
+        let observed = match fs::symlink_metadata(&root) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                crate::SnapshotStore::Absent
+            }
+            Err(error) => return Err(crate::transaction::io_error(&root, error)),
+            Ok(metadata) if !metadata.is_dir() || metadata.file_type().is_symlink() => {
+                crate::SnapshotStore::Corrupt
+            }
+            Ok(_) => match crate::source::HeldDirectoryReader::open(&root).and_then(|reader| {
+                crate::inventory::scan(&reader).map_err(|error| {
+                    CoreError::Store(format!("cannot scan store snapshot: {error}"))
+                })
+            }) {
+                Ok(inventory) if inventory.inventory_digest.to_string() == expected.inventory => {
+                    crate::SnapshotStore::Valid
+                }
+                Ok(_) | Err(_) => crate::SnapshotStore::Corrupt,
+            },
+        };
+        let required = if prepared {
+            crate::SnapshotStore::Valid
+        } else {
+            expected.state
+        };
+        if observed != required {
+            return Err(CoreError::StalePlan(format!(
+                "store snapshot for `{alias}` changed"
             )));
         }
     }
@@ -611,7 +657,7 @@ fn build_journal(paths: &Paths, plan: &Plan, scope_key: &str, nonce: &str) -> Re
                 before: Some(before.clone()),
                 after: None,
             }),
-            Action::PrepareSnapshot { .. } => unreachable!("preflight"),
+            Action::PrepareSnapshot { .. } => {}
             Action::PruneSnapshot { .. } => unreachable!("separate prune transaction"),
         }
     }
@@ -881,11 +927,7 @@ fn restore_before(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
 
 fn current_state(paths: &Paths, state: &StateTransition) -> Result<Option<Vec<u8>>> {
     let path = state_path(paths, state)?;
-    match fs::read(&path) {
-        Ok(bytes) => Ok(Some(bytes)),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(error) => Err(crate::transaction::io_error(&path, error)),
-    }
+    read_optional_bounded(&path, STATE_LIMIT)
 }
 
 fn current_link(paths: &Paths, link: &LinkTransition) -> Result<Option<Vec<u8>>> {
@@ -993,15 +1035,12 @@ fn validate_journal(paths: &Paths, journal: &Journal) -> Result<()> {
 }
 
 fn validate_file_hash(path: &Path, expected: Option<&ByteHash>, name: &str) -> Result<()> {
-    match (fs::read(path), expected) {
-        (Ok(bytes), Some(expected)) if &ByteHash::of(&bytes) == expected => Ok(()),
-        (Err(error), None) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        (Ok(_), None) => Err(CoreError::StalePlan(format!("{name} appeared"))),
-        (Err(error), Some(_)) if error.kind() == std::io::ErrorKind::NotFound => {
-            Err(CoreError::StalePlan(format!("{name} disappeared")))
-        }
-        (Ok(_), Some(_)) => Err(CoreError::StalePlan(format!("{name} bytes changed"))),
-        (Err(error), _) => Err(crate::transaction::io_error(path, error)),
+    match (read_optional_bounded(path, STATE_LIMIT)?, expected) {
+        (Some(bytes), Some(expected)) if &ByteHash::of(&bytes) == expected => Ok(()),
+        (None, None) => Ok(()),
+        (Some(_), None) => Err(CoreError::StalePlan(format!("{name} appeared"))),
+        (None, Some(_)) => Err(CoreError::StalePlan(format!("{name} disappeared"))),
+        (Some(_), Some(_)) => Err(CoreError::StalePlan(format!("{name} bytes changed"))),
     }
 }
 
@@ -1116,10 +1155,8 @@ fn refresh_project_index(
     runtime: &dyn TransactionRuntime,
     nonce: &str,
 ) -> Result<()> {
-    let manifest_bytes = fs::read(paths.manifest_path())
-        .map_err(|error| crate::transaction::io_error(&paths.manifest_path(), error))?;
-    let lock_bytes = fs::read(paths.lock_path())
-        .map_err(|error| crate::transaction::io_error(&paths.lock_path(), error))?;
+    let manifest_bytes = read_required_bounded(&paths.manifest_path(), STATE_LIMIT)?;
+    let lock_bytes = read_required_bounded(&paths.lock_path(), STATE_LIMIT)?;
     let manifest = crate::Manifest::parse(manifest_bytes)?;
     let lock = crate::Lockfile::parse(&lock_bytes)?;
     crate::projects::refresh_locked(

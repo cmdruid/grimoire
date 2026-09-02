@@ -319,3 +319,264 @@ fn tampered_journal_identity_cannot_nominate_an_outside_path() {
     assert!(recover(&paths, &Continue).is_err());
     assert_eq!(fs::read(outside).unwrap(), b"canary\n");
 }
+
+#[test]
+fn repoint_and_remove_faults_restore_the_exact_owned_link() {
+    for operation in ["repoint", "remove"] {
+        for checkpoint in ["after-link-mutation", "action-marked"] {
+            let temporary = tempfile::tempdir().unwrap();
+            let root = temporary.path().canonicalize().unwrap();
+            let project = root.join("project");
+            fs::create_dir_all(&project).unwrap();
+            let paths = Paths::project(project, root.join("home")).unwrap();
+            let old = OwnedLinkTarget::Stored {
+                source_key: SourceKey::parse("1".repeat(64)).unwrap(),
+                snapshot_key: SnapshotKey::parse("2".repeat(64)).unwrap(),
+                skill_path: "skills/one".into(),
+            };
+            let new = OwnedLinkTarget::Stored {
+                source_key: SourceKey::parse("3".repeat(64)).unwrap(),
+                snapshot_key: SnapshotKey::parse("4".repeat(64)).unwrap(),
+                skill_path: "skills/one".into(),
+            };
+            for target in [&old, &new] {
+                fs::create_dir_all(target.resolve(&paths).unwrap()).unwrap();
+            }
+            fs::create_dir_all(paths.skills_dir()).unwrap();
+            std::os::unix::fs::symlink(
+                old.resolve(&paths).unwrap(),
+                paths.skills_dir().join("one"),
+            )
+            .unwrap();
+            let manifest = b"schema = \"grimoire/manifest@1\"\n".to_vec();
+            let lock = Lockfile::default().to_bytes().unwrap();
+            fs::write(paths.manifest_path(), &manifest).unwrap();
+            fs::write(paths.lock_path(), &lock).unwrap();
+            let action = match operation {
+                "repoint" => Action::RepointLink {
+                    scope: Scope::Project,
+                    skill: "one".try_into().unwrap(),
+                    before: old.clone(),
+                    after: new,
+                },
+                "remove" => Action::RemoveLink {
+                    scope: Scope::Project,
+                    skill: "one".try_into().unwrap(),
+                    target: old.clone(),
+                },
+                _ => unreachable!(),
+            };
+            let plan = Plan {
+                actions: vec![action],
+                blockers: Vec::new(),
+                preconditions: Preconditions {
+                    manifest: Some(ByteHash::of(&manifest)),
+                    lock: Some(ByteHash::of(&lock)),
+                    candidates: BTreeMap::new(),
+                    stores: BTreeMap::new(),
+                    trust: None,
+                    projects: None,
+                    reachability: None,
+                    links: BTreeMap::from([(
+                        "one".try_into().unwrap(),
+                        LinkPrecondition::Symlink(old.resolve(&paths).unwrap()),
+                    )]),
+                },
+                facts: Vec::new(),
+                exit_class: grimoire_core::ExitClass::Success,
+            };
+            assert!(matches!(
+                apply(
+                    &paths,
+                    &plan,
+                    Approval::Granted,
+                    &CrashAt::new(checkpoint, 1),
+                )
+                .unwrap(),
+                ApplyOutcome::Interrupted { .. }
+            ));
+            assert_eq!(
+                recover(&paths, &Continue).unwrap().dispositions,
+                vec![RecoveryDisposition::RolledBack {
+                    scope_key: paths.scope_key(),
+                }],
+                "{operation}/{checkpoint}"
+            );
+            assert_eq!(
+                fs::read_link(paths.skills_dir().join("one")).unwrap(),
+                old.resolve(&paths).unwrap(),
+                "{operation}/{checkpoint}"
+            );
+        }
+    }
+}
+
+#[test]
+fn candidate_removal_faults_recover_exact_before_or_complete_after() {
+    for (checkpoint, occurrence, forward) in [
+        ("after-state-mutation", 1, false),
+        ("action-marked", 1, false),
+        ("after-state-mutation", 2, true),
+        ("action-marked", 2, true),
+        ("before-commit-marker", 1, true),
+        ("committed", 1, true),
+    ] {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().canonicalize().unwrap();
+        let project = root.join("project");
+        fs::create_dir_all(&project).unwrap();
+        let paths = Paths::project(project, root.join("home")).unwrap();
+        let alias = SourceAlias::new("a").unwrap();
+        let before_manifest = concat!(
+            "schema = \"grimoire/manifest@1\"\n",
+            "[sources.a]\nurl = \"github:org/a\"\n"
+        )
+        .as_bytes()
+        .to_vec();
+        let after_manifest = b"schema = \"grimoire/manifest@1\"\n".to_vec();
+        let lock = Lockfile::default().to_bytes().unwrap();
+        fs::write(paths.manifest_path(), &before_manifest).unwrap();
+        fs::write(paths.lock_path(), &lock).unwrap();
+        let identity = CanonicalIdentity::remote("github:org/a").unwrap();
+        let source_key = SourceKey::derive(&identity);
+        let candidate = CandidateRecord::new(
+            grimoire_core::Manifest::parse(before_manifest.clone())
+                .unwrap()
+                .source_declaration_hash(&alias)
+                .unwrap(),
+            identity,
+            Some("1".repeat(40)),
+            Some("2".repeat(40)),
+            format!("sha256:{}", "3".repeat(64)),
+            format!("sha256:{}", "4".repeat(64)),
+        )
+        .unwrap()
+        .to_bytes()
+        .unwrap();
+        let candidate_path = paths.candidate_path(&paths.scope_key(), &alias);
+        fs::create_dir_all(candidate_path.parent().unwrap()).unwrap();
+        fs::write(&candidate_path, &candidate).unwrap();
+        let plan = Plan {
+            actions: vec![
+                Action::ReplaceManifest {
+                    scope: Scope::Project,
+                    before: before_manifest.clone(),
+                    after: after_manifest.clone(),
+                    change: ManifestChange::RemoveSource,
+                },
+                Action::RemoveCandidate {
+                    scope: Scope::Project,
+                    alias: alias.clone(),
+                    source_key,
+                    before: candidate.clone(),
+                },
+            ],
+            blockers: Vec::new(),
+            preconditions: Preconditions {
+                manifest: Some(ByteHash::of(&before_manifest)),
+                lock: Some(ByteHash::of(&lock)),
+                candidates: BTreeMap::from([(alias, Some(ByteHash::of(&candidate)))]),
+                stores: BTreeMap::new(),
+                trust: None,
+                projects: None,
+                reachability: None,
+                links: BTreeMap::new(),
+            },
+            facts: Vec::new(),
+            exit_class: grimoire_core::ExitClass::Success,
+        };
+        assert!(matches!(
+            apply(
+                &paths,
+                &plan,
+                Approval::Granted,
+                &CrashAt::new(checkpoint, occurrence),
+            )
+            .unwrap(),
+            ApplyOutcome::Interrupted { .. }
+        ));
+        let recovered = recover(&paths, &Continue).unwrap();
+        assert_eq!(
+            matches!(
+                recovered.dispositions.as_slice(),
+                [RecoveryDisposition::RolledForward { .. }]
+            ),
+            forward,
+            "{checkpoint}/{occurrence}"
+        );
+        assert_eq!(
+            fs::read(paths.manifest_path()).unwrap(),
+            if forward {
+                after_manifest
+            } else {
+                before_manifest
+            }
+        );
+        assert_eq!(candidate_path.exists(), !forward);
+        if !forward {
+            assert_eq!(fs::read(candidate_path).unwrap(), candidate);
+        }
+    }
+}
+
+#[test]
+fn standalone_trust_faults_are_atomic_and_need_no_scope_recovery() {
+    let identity = CanonicalIdentity::remote("github:org/trust").unwrap();
+    let trust = TrustStore::default()
+        .grant_all(
+            identity,
+            Some(TrustReceipt {
+                commit: "1".repeat(40),
+                tree: "2".repeat(40),
+                inventory: format!("sha256:{}", "3".repeat(64)),
+            }),
+            TrustBaseline {
+                commit: Some("1".repeat(40)),
+                tree: Some("2".repeat(40)),
+                inventory: format!("sha256:{}", "3".repeat(64)),
+                review_tree: format!("sha256:{}", "4".repeat(64)),
+            },
+            None,
+        )
+        .unwrap()
+        .after;
+
+    for (checkpoint, written) in [
+        ("before-standalone-trust", false),
+        ("after-standalone-trust", true),
+    ] {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().canonicalize().unwrap();
+        let user = root.join("user");
+        fs::create_dir_all(&user).unwrap();
+        let paths = Paths::global(user, root.join("home")).unwrap();
+        let plan = Plan {
+            actions: vec![Action::ReplaceTrust {
+                before: None,
+                after: trust.clone(),
+                create_mode: 0o600,
+                change: grimoire_core::TrustChange::GrantAll,
+            }],
+            blockers: Vec::new(),
+            preconditions: Preconditions::absent(),
+            facts: Vec::new(),
+            exit_class: grimoire_core::ExitClass::Success,
+        };
+        assert!(matches!(
+            apply(
+                &paths,
+                &plan,
+                Approval::NotRequired,
+                &CrashAt::new(checkpoint, 1),
+            )
+            .unwrap(),
+            ApplyOutcome::Interrupted { .. }
+        ));
+        assert_eq!(paths.trust_path().exists(), written);
+        if written {
+            assert_eq!(fs::read(paths.trust_path()).unwrap(), trust);
+        }
+        assert!(recover(&paths, &Continue).unwrap().dispositions.is_empty());
+        assert!(!paths.transaction_journal_path(&paths.scope_key()).exists());
+    }
+}

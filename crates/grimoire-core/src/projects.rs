@@ -100,23 +100,11 @@ impl crate::ProjectIndex {
 
 pub(crate) fn read(paths: &Paths) -> Result<Option<Vec<u8>>> {
     let path = paths.projects_path();
-    let metadata = match std::fs::symlink_metadata(&path) {
-        Ok(metadata) => metadata,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(error) => return Err(crate::transaction::io_error(&path, error)),
-    };
-    if !metadata.is_file() || metadata.file_type().is_symlink() || metadata.len() > PROJECTS_LIMIT {
-        return Err(CoreError::Request(
-            "project index is not a bounded regular file".into(),
-        ));
+    let bytes = crate::transaction::read_optional_bounded(&path, PROJECTS_LIMIT)?;
+    if let Some(bytes) = &bytes {
+        crate::ProjectIndex::parse(bytes)?;
     }
-    match std::fs::read(&path) {
-        Ok(bytes) => {
-            crate::ProjectIndex::parse(&bytes)?;
-            Ok(Some(bytes))
-        }
-        Err(error) => Err(crate::transaction::io_error(&path, error)),
-    }
+    Ok(bytes)
 }
 
 pub(crate) fn refresh_locked(

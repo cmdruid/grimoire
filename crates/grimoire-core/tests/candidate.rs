@@ -13,6 +13,28 @@ fn strict_candidate_round_trips_and_cross_checks_its_source_key() {
     )
     .unwrap();
     let bytes = candidate.to_bytes().unwrap();
+    let expected = format!(
+        concat!(
+            "{{\n",
+            "  \"schema\": \"grimoire/candidate@1\",\n",
+            "  \"declaration_hash\": \"{}\",\n",
+            "  \"source_key\": \"{}\",\n",
+            "  \"kind\": \"git\",\n",
+            "  \"canonical\": \"https://github.com/cmdruid/grimoire.git\",\n",
+            "  \"commit\": \"{}\",\n",
+            "  \"tree\": \"{}\",\n",
+            "  \"inventory\": \"sha256:{}\",\n",
+            "  \"review_tree\": \"sha256:{}\"\n",
+            "}}\n"
+        ),
+        "a".repeat(64),
+        candidate.source_key(),
+        "b".repeat(40),
+        "c".repeat(40),
+        "d".repeat(64),
+        "e".repeat(64),
+    );
+    assert_eq!(bytes, expected.as_bytes());
     assert_eq!(
         CandidateRecord::parse(&bytes, Some(&candidate.source_key())).unwrap(),
         candidate

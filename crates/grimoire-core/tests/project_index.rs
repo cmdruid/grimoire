@@ -276,3 +276,18 @@ fn project_index_domain_rejects_record_map_key_disagreement() {
         b"{\n  \"schema\": \"grimoire/projects@1\",\n  \"projects\": {}\n}\n"
     );
 }
+
+#[test]
+fn project_index_refresh_rejects_a_symlinked_index_without_touching_its_target() {
+    let temporary = tempfile::tempdir().unwrap();
+    let root = temporary.path().canonicalize().unwrap();
+    let paths = initialized_project(&root, std::ffi::OsStr::new("project"));
+    let outside = root.join("outside-projects.json");
+    let bytes = ProjectIndex::default().to_bytes().unwrap();
+    fs::write(&outside, &bytes).unwrap();
+    fs::create_dir_all(paths.projects_path().parent().unwrap()).unwrap();
+    std::os::unix::fs::symlink(&outside, paths.projects_path()).unwrap();
+
+    assert!(load_world(&paths, &NoGit, &Runtime::at(50)).is_err());
+    assert_eq!(fs::read(outside).unwrap(), bytes);
+}

@@ -87,3 +87,74 @@ impl Journal {
         Ok(journal)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn transaction_journal_bytes_are_exact_and_deterministic() {
+        let journal = Journal {
+            schema: JOURNAL_SCHEMA.into(),
+            scope_key: "global".into(),
+            nonce: "journal-golden".into(),
+            plan_digest: "1".repeat(64),
+            committed: false,
+            state: vec![StateTransition {
+                name: StateName::Manifest,
+                alias: None,
+                source_key: None,
+                before: None,
+                after: Some(b"new".to_vec()),
+            }],
+            links: vec![LinkTransition {
+                skill: "one".into(),
+                before: Some(b"old".to_vec()),
+                after: None,
+            }],
+            completed: vec!["manifest".into()],
+        };
+        assert_eq!(
+            journal.to_bytes().unwrap(),
+            br#"{
+  "schema": "grimoire/transaction@1",
+  "scope_key": "global",
+  "nonce": "journal-golden",
+  "plan_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+  "committed": false,
+  "state": [
+    {
+      "name": "manifest",
+      "alias": null,
+      "source_key": null,
+      "before": null,
+      "after": [
+        110,
+        101,
+        119
+      ]
+    }
+  ],
+  "links": [
+    {
+      "skill": "one",
+      "before": [
+        111,
+        108,
+        100
+      ],
+      "after": null
+    }
+  ],
+  "completed": [
+    "manifest"
+  ]
+}
+"#
+        );
+        assert_eq!(
+            Journal::from_bytes(&journal.to_bytes().unwrap()).unwrap(),
+            journal
+        );
+    }
+}

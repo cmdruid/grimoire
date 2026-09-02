@@ -294,8 +294,9 @@ fn a_trusted_absent_snapshot_gets_materialized_before_activation() {
         planned
             .preconditions
             .stores
-            .get(&SourceAlias::new("a").unwrap()),
-        Some(&SnapshotStore::Absent)
+            .get(&SourceAlias::new("a").unwrap())
+            .map(|precondition| precondition.state),
+        Some(SnapshotStore::Absent)
     );
 }
 

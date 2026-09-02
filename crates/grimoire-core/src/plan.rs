@@ -203,11 +203,19 @@ pub struct Preconditions {
     pub manifest: Option<ByteHash>,
     pub lock: Option<ByteHash>,
     pub candidates: BTreeMap<SourceAlias, Option<ByteHash>>,
-    pub stores: BTreeMap<SourceAlias, SnapshotStore>,
+    pub stores: BTreeMap<SourceAlias, StorePrecondition>,
     pub trust: Option<ByteHash>,
     pub projects: Option<ByteHash>,
     pub reachability: Option<ByteHash>,
     pub links: BTreeMap<SkillName, LinkPrecondition>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StorePrecondition {
+    pub source_key: crate::SourceKey,
+    pub snapshot_key: crate::SnapshotKey,
+    pub inventory: String,
+    pub state: SnapshotStore,
 }
 
 impl Preconditions {
@@ -700,7 +708,31 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
             }
             continue;
         }
-        store_preconditions.insert(alias.clone(), state.store);
+        let snapshot_key = crate::SnapshotKey::derive(
+            crate::SourceKind::Git,
+            state
+                .snapshot
+                .id
+                .commit
+                .as_deref()
+                .expect("validated Git snapshot"),
+            state
+                .snapshot
+                .id
+                .tree
+                .as_deref()
+                .expect("validated Git snapshot"),
+            &state.snapshot.id.inventory_digest,
+        )?;
+        store_preconditions.insert(
+            alias.clone(),
+            StorePrecondition {
+                source_key: key.clone(),
+                snapshot_key,
+                inventory: state.snapshot.id.inventory_digest.clone(),
+                state: state.store,
+            },
+        );
         if activating_sources.contains(alias) && effective_trust == TrustMode::Untrusted {
             blockers.push(Blocker::new(
                 "source-untrusted",

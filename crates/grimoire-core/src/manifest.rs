@@ -36,7 +36,6 @@ pub struct ManifestPack {
 #[derive(Debug, Clone)]
 pub struct Manifest {
     original: Vec<u8>,
-    #[allow(dead_code)]
     document: Document<String>,
     pub sources: BTreeMap<SourceAlias, ManifestSource>,
     pub skills: BTreeMap<SkillName, SourceAlias>,

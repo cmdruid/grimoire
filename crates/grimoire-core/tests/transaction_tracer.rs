@@ -3,10 +3,12 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use grimoire_core::inventory::scan;
+use grimoire_core::source::HeldDirectoryReader;
 use grimoire_core::{
     apply, Action, ApplyOutcome, Approval, ByteHash, FaultDisposition, LinkPrecondition, Lockfile,
     OwnedLinkTarget, Paths, Plan, Preconditions, Result, Scope, SnapshotKey, SourceKey,
-    TransactionRuntime,
+    StorePrecondition, TransactionRuntime,
 };
 use tempfile::TempDir;
 
@@ -52,8 +54,9 @@ impl TransactionRuntime for Runtime {
 
 fn fixture() -> (TempDir, Paths, OwnedLinkTarget, Plan) {
     let temporary = tempfile::tempdir().unwrap();
-    let project = temporary.path().join("project");
-    let home = temporary.path().join("home");
+    let root = temporary.path().canonicalize().unwrap();
+    let project = root.join("project");
+    let home = root.join("home");
     fs::create_dir_all(&project).unwrap();
     let paths = Paths::project(project, home).unwrap();
     let source_key = SourceKey::parse("1".repeat(64)).unwrap();
@@ -76,6 +79,9 @@ fn fixture() -> (TempDir, Paths, OwnedLinkTarget, Plan) {
         b"---\nname: one\ndescription: one\n---\n",
     )
     .unwrap();
+    let inventory =
+        scan(&HeldDirectoryReader::open(&paths.store_path(&source_key, &snapshot_key)).unwrap())
+            .unwrap();
     let manifest = b"schema = \"grimoire/manifest@1\"\n".to_vec();
     let lock = Lockfile::default().to_bytes().unwrap();
     let plan = Plan {
@@ -98,8 +104,16 @@ fn fixture() -> (TempDir, Paths, OwnedLinkTarget, Plan) {
         preconditions: Preconditions {
             manifest: None,
             lock: None,
-            candidates: BTreeMap::new(),
-            stores: BTreeMap::new(),
+            candidates: BTreeMap::from([("source".try_into().unwrap(), None)]),
+            stores: BTreeMap::from([(
+                "source".try_into().unwrap(),
+                StorePrecondition {
+                    source_key,
+                    snapshot_key,
+                    inventory: inventory.inventory_digest.to_string(),
+                    state: grimoire_core::SnapshotStore::Valid,
+                },
+            )]),
             trust: None,
             projects: None,
             reachability: None,
@@ -134,8 +148,8 @@ fn one_direct_skill_crosses_the_transaction_boundary() {
         preconditions: Preconditions {
             manifest: Some(ByteHash::of(&fs::read(paths.manifest_path()).unwrap())),
             lock: Some(ByteHash::of(&fs::read(paths.lock_path()).unwrap())),
-            candidates: BTreeMap::new(),
-            stores: BTreeMap::new(),
+            candidates: plan.preconditions.candidates.clone(),
+            stores: plan.preconditions.stores.clone(),
             trust: None,
             projects: Some(ByteHash::of(&fs::read(paths.projects_path()).unwrap())),
             reachability: None,
@@ -155,13 +169,68 @@ fn one_direct_skill_crosses_the_transaction_boundary() {
 
 #[test]
 fn stale_and_foreign_state_are_inert() {
-    let (_temporary, paths, _target, plan) = fixture();
-    fs::write(paths.manifest_path(), b"foreign\n").unwrap();
-    assert!(matches!(
-        apply(&paths, &plan, Approval::NotRequired, &Runtime::plain()),
-        Err(grimoire_core::CoreError::StalePlan(_))
-    ));
-    assert!(!paths.skills_dir().join("one").exists());
+    for changed in [
+        "manifest",
+        "lock",
+        "trust",
+        "project-index",
+        "candidate",
+        "link",
+        "store",
+    ] {
+        let (_temporary, paths, target, plan) = fixture();
+        match changed {
+            "manifest" => fs::write(paths.manifest_path(), b"foreign\n").unwrap(),
+            "lock" => fs::write(paths.lock_path(), b"foreign\n").unwrap(),
+            "trust" => {
+                fs::create_dir_all(paths.trust_path().parent().unwrap()).unwrap();
+                fs::write(paths.trust_path(), b"foreign\n").unwrap();
+            }
+            "project-index" => {
+                fs::create_dir_all(paths.projects_path().parent().unwrap()).unwrap();
+                fs::write(paths.projects_path(), b"foreign\n").unwrap();
+            }
+            "candidate" => {
+                let alias = "source".try_into().unwrap();
+                let candidate = paths.candidate_path(&paths.scope_key(), &alias);
+                fs::create_dir_all(candidate.parent().unwrap()).unwrap();
+                fs::write(candidate, b"foreign\n").unwrap();
+            }
+            "link" => {
+                fs::create_dir_all(paths.skills_dir()).unwrap();
+                fs::write(paths.skills_dir().join("one"), b"foreign\n").unwrap();
+            }
+            "store" => {
+                let OwnedLinkTarget::Stored {
+                    source_key,
+                    snapshot_key,
+                    skill_path,
+                } = target
+                else {
+                    unreachable!()
+                };
+                fs::write(
+                    paths
+                        .store_path(&source_key, &snapshot_key)
+                        .join(skill_path)
+                        .join("SKILL.md"),
+                    b"changed\n",
+                )
+                .unwrap();
+            }
+            _ => unreachable!(),
+        }
+        assert!(
+            matches!(
+                apply(&paths, &plan, Approval::NotRequired, &Runtime::plain()),
+                Err(grimoire_core::CoreError::StalePlan(_))
+            ),
+            "changed precondition: {changed}"
+        );
+        if changed != "link" {
+            assert!(!paths.skills_dir().join("one").exists());
+        }
+    }
 }
 
 #[test]

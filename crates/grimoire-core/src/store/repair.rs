@@ -1,4 +1,3 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
@@ -84,16 +83,4 @@ fn contained(home: &Path, relative: &str) -> Result<PathBuf> {
         return Err(CoreError::Store("repair path escapes home".into()));
     }
     Ok(home.join(path))
-}
-
-#[allow(dead_code)]
-fn _remove_file_if_present(path: &Path) -> Result<()> {
-    match fs::remove_file(path) {
-        Ok(()) => Ok(()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(error) => Err(CoreError::Io {
-            path: path.display().to_string(),
-            message: error.to_string(),
-        }),
-    }
 }

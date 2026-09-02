@@ -1,5 +1,5 @@
 use std::fs::{self, File, OpenOptions};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use rustix::fs::{flock, FlockOperation};
 
@@ -26,8 +26,6 @@ pub(crate) struct LockCoordinator {
 }
 
 struct HeldLock {
-    #[allow(dead_code)]
-    path: PathBuf,
     file: File,
     rank: LockRank,
 }
@@ -68,11 +66,7 @@ impl LockCoordinator {
             },
         )
         .map_err(|error| CoreError::Locking(error.to_string()))?;
-        self.held.push(HeldLock {
-            path: path.to_path_buf(),
-            file,
-            rank,
-        });
+        self.held.push(HeldLock { file, rank });
         Ok(())
     }
 

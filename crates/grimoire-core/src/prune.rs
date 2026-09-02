@@ -1,8 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::ffi::CString;
 use std::fs;
+use std::fs::File;
 use std::path::{Path, PathBuf};
 
+#[cfg(unix)]
+use std::os::unix::ffi::OsStrExt;
+
 use grimoire_pack::inventory::scan as scan_inventory;
+use rustix::fs::{openat, statat, unlinkat, AtFlags, Dir, Mode, OFlags, Stat};
 
 use crate::locks::{LockCoordinator, LockMode, LockRank};
 use crate::source::HeldDirectoryReader;
@@ -14,7 +20,6 @@ use crate::{
 };
 
 const ENTRY_LIMIT: usize = 100_000;
-const STATE_LIMIT: u64 = 16 * 1024 * 1024;
 
 pub fn observe_reachability(
     paths: &Paths,
@@ -100,18 +105,37 @@ pub(crate) fn plan_prune(world: &WorldState) -> Result<Plan> {
 
 pub(crate) fn remove_snapshot(paths: &Paths, reference: &ProjectReference) -> Result<()> {
     let root = paths.store_path(&reference.source_key, &reference.snapshot_key);
-    let metadata =
-        fs::symlink_metadata(&root).map_err(|error| crate::transaction::io_error(&root, error))?;
-    if !metadata.is_dir() || metadata.file_type().is_symlink() {
+    let parent_path = root
+        .parent()
+        .ok_or_else(|| CoreError::Transaction("snapshot has no source directory".into()))?;
+    let held_parent = HeldDirectoryReader::open(parent_path)?;
+    let parent = held_parent.root_handle()?;
+    let name = CString::new(reference.snapshot_key.as_str())
+        .map_err(|_| CoreError::Transaction("snapshot key contains NUL".into()))?;
+    let before = statat(&parent, &name, AtFlags::SYMLINK_NOFOLLOW)
+        .map_err(|error| rustix_error(&root, error))?;
+    if mode_kind(before.st_mode as u32) != 0o040000 {
         return Err(CoreError::StalePlan(
             "prune target is not a canonical snapshot directory".into(),
         ));
     }
+    let directory: File = openat(&parent, &name, directory_flags(), Mode::empty())
+        .map_err(|error| rustix_error(&root, error))?
+        .into();
+    require_open_identity(&directory, &before, &root)?;
     let mut budget = ENTRY_LIMIT;
-    remove_tree(&root, 0, &mut budget)?;
-    if let Some(parent) = root.parent() {
-        crate::transaction::sync_directory(parent)?;
+    remove_tree_contents(&directory, &root, 0, &mut budget)?;
+    let after = statat(&parent, &name, AtFlags::SYMLINK_NOFOLLOW)
+        .map_err(|error| rustix_error(&root, error))?;
+    if stat_identity(&after) != stat_identity(&before) {
+        return Err(CoreError::StalePlan(
+            "prune target changed before removal".into(),
+        ));
     }
+    unlinkat(&parent, &name, AtFlags::REMOVEDIR).map_err(|error| rustix_error(&root, error))?;
+    parent
+        .sync_all()
+        .map_err(|error| crate::transaction::io_error(parent_path, error))?;
     Ok(())
 }
 
@@ -560,54 +584,111 @@ fn reference_from_store_path(paths: &Paths, raw: &[u8]) -> Option<ProjectReferen
     })
 }
 
-fn remove_tree(path: &Path, depth: usize, budget: &mut usize) -> Result<()> {
+fn remove_tree_contents(
+    directory: &File,
+    path: &Path,
+    depth: usize,
+    budget: &mut usize,
+) -> Result<()> {
     if depth > 64 {
         return Err(CoreError::Transaction("prune depth limit exceeded".into()));
     }
-    let mut entries = fs::read_dir(path)
-        .map_err(|error| crate::transaction::io_error(path, error))?
+    let mut entries = Dir::read_from(directory)
+        .map_err(|error| rustix_error(path, error))?
         .collect::<std::result::Result<Vec<_>, _>>()
-        .map_err(|error| crate::transaction::io_error(path, error))?;
-    entries.sort_by_key(|entry| entry.file_name());
+        .map_err(|error| rustix_error(path, error))?;
+    entries.retain(|entry| !matches!(entry.file_name().to_bytes(), b"." | b".."));
+    entries.sort_by(|left, right| {
+        left.file_name()
+            .to_bytes()
+            .cmp(right.file_name().to_bytes())
+    });
     for entry in entries {
         if *budget == 0 {
             return Err(CoreError::Transaction("prune entry limit exceeded".into()));
         }
         *budget -= 1;
-        let child = entry.path();
-        let metadata = fs::symlink_metadata(&child)
-            .map_err(|error| crate::transaction::io_error(&child, error))?;
-        if metadata.is_dir() && !metadata.file_type().is_symlink() {
-            remove_tree(&child, depth + 1, budget)?;
+        let name = entry.file_name();
+        let child_path = path.join(std::ffi::OsStr::from_bytes(name.to_bytes()));
+        let before = statat(directory, name, AtFlags::SYMLINK_NOFOLLOW)
+            .map_err(|error| rustix_error(&child_path, error))?;
+        if mode_kind(before.st_mode as u32) == 0o040000 {
+            let child: File = openat(directory, name, directory_flags(), Mode::empty())
+                .map_err(|error| rustix_error(&child_path, error))?
+                .into();
+            require_open_identity(&child, &before, &child_path)?;
+            remove_tree_contents(&child, &child_path, depth + 1, budget)?;
+            let after = statat(directory, name, AtFlags::SYMLINK_NOFOLLOW)
+                .map_err(|error| rustix_error(&child_path, error))?;
+            if stat_identity(&after) != stat_identity(&before) {
+                return Err(CoreError::StalePlan(
+                    "prune directory changed before removal".into(),
+                ));
+            }
+            unlinkat(directory, name, AtFlags::REMOVEDIR)
+                .map_err(|error| rustix_error(&child_path, error))?;
         } else {
-            fs::remove_file(&child).map_err(|error| crate::transaction::io_error(&child, error))?;
+            let after = statat(directory, name, AtFlags::SYMLINK_NOFOLLOW)
+                .map_err(|error| rustix_error(&child_path, error))?;
+            if stat_identity(&after) != stat_identity(&before) {
+                return Err(CoreError::StalePlan(
+                    "prune entry changed before removal".into(),
+                ));
+            }
+            unlinkat(directory, name, AtFlags::empty())
+                .map_err(|error| rustix_error(&child_path, error))?;
         }
     }
-    fs::remove_dir(path).map_err(|error| crate::transaction::io_error(path, error))
-}
-
-fn read_optional_bounded(path: &Path) -> Result<Option<Vec<u8>>> {
-    let metadata = match fs::symlink_metadata(path) {
-        Ok(metadata) => metadata,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(error) => return Err(crate::transaction::io_error(path, error)),
-    };
-    if !metadata.is_file() || metadata.file_type().is_symlink() || metadata.len() > STATE_LIMIT {
-        return Err(CoreError::Request(format!(
-            "state is not a bounded regular file: {}",
-            path.display()
-        )));
-    }
-    fs::read(path)
-        .map(Some)
+    directory
+        .sync_all()
         .map_err(|error| crate::transaction::io_error(path, error))
 }
 
-fn read_required_bounded(path: &Path) -> Result<Vec<u8>> {
-    read_optional_bounded(path)?.ok_or_else(|| CoreError::Io {
+#[cfg(unix)]
+fn require_open_identity(file: &File, expected: &Stat, path: &Path) -> Result<()> {
+    use std::os::unix::fs::MetadataExt;
+
+    let opened = file
+        .metadata()
+        .map_err(|error| crate::transaction::io_error(path, error))?;
+    if (opened.dev(), opened.ino(), mode_kind(opened.mode())) == stat_identity(expected) {
+        Ok(())
+    } else {
+        Err(CoreError::StalePlan(
+            "prune directory changed before open".into(),
+        ))
+    }
+}
+
+fn stat_identity(stat: &Stat) -> (u64, u64, u32) {
+    (
+        stat.st_dev as u64,
+        stat.st_ino,
+        mode_kind(stat.st_mode as u32),
+    )
+}
+
+fn mode_kind(mode: u32) -> u32 {
+    mode & 0o170000
+}
+
+fn directory_flags() -> OFlags {
+    OFlags::RDONLY | OFlags::DIRECTORY | OFlags::CLOEXEC | OFlags::NOFOLLOW
+}
+
+fn rustix_error(path: &Path, error: rustix::io::Errno) -> CoreError {
+    CoreError::Io {
         path: path.display().to_string(),
-        message: "not found".into(),
-    })
+        message: error.to_string(),
+    }
+}
+
+fn read_optional_bounded(path: &Path) -> Result<Option<Vec<u8>>> {
+    crate::transaction::read_optional_bounded(path, crate::transaction::STATE_LIMIT)
+}
+
+fn read_required_bounded(path: &Path) -> Result<Vec<u8>> {
+    crate::transaction::read_required_bounded(path, crate::transaction::STATE_LIMIT)
 }
 
 fn read_dir_optional(path: &Path) -> Result<Vec<fs::DirEntry>> {

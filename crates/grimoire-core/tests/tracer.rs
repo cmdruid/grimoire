@@ -5,7 +5,7 @@ use grimoire_core::{
     plan, Action, ByteHash, InstalledLink, LinkPrecondition, LockChange, OwnedLinkTarget, PlanFact,
     PlanningMode, Preconditions, Request, RequestRoot, Scope, SnapshotId, SnapshotKey,
     SnapshotKind, SnapshotStore, SourceAlias, SourceKey, SourceSnapshot, SourceState,
-    TrustBaseline, TrustReceipt, TrustStore, WorldState,
+    StorePrecondition, TrustBaseline, TrustReceipt, TrustStore, WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Pack, Skill, SourceInventory, SourcePath,
@@ -134,15 +134,17 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
 
     let (state, trust) = trusted(snapshot.clone());
     let identity = state.identity.clone().unwrap();
+    let source_key = SourceKey::derive(&identity);
+    let snapshot_key = SnapshotKey::derive(
+        grimoire_core::SourceKind::Git,
+        snapshot.id.commit.as_deref().unwrap(),
+        snapshot.id.tree.as_deref().unwrap(),
+        &snapshot.id.inventory_digest,
+    )
+    .unwrap();
     let owned_target = OwnedLinkTarget::Stored {
-        source_key: SourceKey::derive(&identity),
-        snapshot_key: SnapshotKey::derive(
-            grimoire_core::SourceKind::Git,
-            snapshot.id.commit.as_deref().unwrap(),
-            snapshot.id.tree.as_deref().unwrap(),
-            &snapshot.id.inventory_digest,
-        )
-        .unwrap(),
+        source_key: source_key.clone(),
+        snapshot_key: snapshot_key.clone(),
         skill_path: "skills/journal".into(),
     };
     let world = WorldState::from_bytes(
@@ -180,7 +182,15 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
             manifest: Some(ByteHash::of(MANIFEST.as_bytes())),
             lock: Some(ByteHash::of(EMPTY_LOCK.as_bytes())),
             candidates: BTreeMap::new(),
-            stores: BTreeMap::from([("grimoire".try_into().unwrap(), SnapshotStore::Valid,)]),
+            stores: BTreeMap::from([(
+                "grimoire".try_into().unwrap(),
+                StorePrecondition {
+                    source_key,
+                    snapshot_key,
+                    inventory: snapshot.id.inventory_digest.clone(),
+                    state: SnapshotStore::Valid,
+                },
+            )]),
             trust: Some(ByteHash::of(&trust)),
             projects: None,
             reachability: None,
