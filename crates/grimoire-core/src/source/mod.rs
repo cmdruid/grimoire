@@ -19,4 +19,7 @@ pub use identity::{
 pub use info::SourceInfo;
 pub use local::{inspect_pinned_git, HeldDirectoryReader};
 pub use review::{ReviewEntry, ReviewExport, ReviewPayload};
-pub use workflow::{fetch_source, inspect_live_source, inspect_pinned_source, CandidateWorkflow};
+pub use workflow::{
+    fetch_source, inspect_live_source, inspect_pinned_source, prepare_source_add,
+    CandidateWorkflow, PreparedSource,
+};

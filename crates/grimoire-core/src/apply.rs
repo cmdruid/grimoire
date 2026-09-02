@@ -20,6 +20,7 @@ pub fn apply(
     runtime: &dyn TransactionRuntime,
 ) -> Result<ApplyOutcome> {
     preflight(paths, plan)?;
+    validate_action_shapes(plan)?;
     if !plan.blockers.is_empty() {
         return Err(CoreError::BlockedPlan);
     }
@@ -35,10 +36,48 @@ pub fn apply(
 
     let nonce = runtime.transaction_nonce()?;
     validate_nonce(&nonce)?;
+    prepare_snapshots(paths, plan, &nonce)?;
     let scope_key = paths.scope_key();
     let mut locks = LockCoordinator::new();
+    if let Some((alias, _)) = candidate_action(plan) {
+        locks.acquire(
+            &paths.candidate_lock_path(&scope_key, alias),
+            LockRank::Candidate,
+            LockMode::Exclusive,
+        )?;
+    }
     locks.acquire(&paths.store_lock_path(), LockRank::Store, LockMode::Shared)?;
-    locks.acquire(&paths.trust_lock_path(), LockRank::Trust, LockMode::Shared)?;
+    locks.acquire(
+        &paths.trust_lock_path(),
+        LockRank::Trust,
+        if plan
+            .actions
+            .iter()
+            .any(|action| matches!(action, Action::ReplaceTrust { .. }))
+        {
+            LockMode::Exclusive
+        } else {
+            LockMode::Shared
+        },
+    )?;
+    validate_preconditions(paths, plan)?;
+    if plan
+        .actions
+        .iter()
+        .all(|action| matches!(action, Action::ReplaceTrust { .. }))
+    {
+        let mut changed = false;
+        for action in &plan.actions {
+            if let Action::ReplaceTrust {
+                after, create_mode, ..
+            } = action
+            {
+                replace(&paths.trust_path(), after, &nonce, Some(*create_mode))?;
+                changed = true;
+            }
+        }
+        return Ok(ApplyOutcome::Applied { changed });
+    }
     if matches!(paths.scope, ScopePaths::Project { .. }) {
         locks.acquire(
             &paths.projects_lock_path(),
@@ -59,7 +98,6 @@ pub fn apply(
             journal_path.display()
         )));
     }
-    validate_preconditions(paths, plan)?;
     let journal = build_journal(paths, plan, &scope_key, &nonce)?;
     write_new(&journal_path, &journal.to_bytes()?, Some(0o600))?;
     if checkpoint(runtime, "journal-created")? {
@@ -68,14 +106,25 @@ pub fn apply(
         });
     }
 
-    let parent_identity = DirectoryIdentity::capture_or_create(&paths.skills_dir())?;
+    let parent_identity = plan.actions.iter().any(|action| {
+        matches!(
+            action,
+            Action::CreateLink { .. }
+                | Action::RetainLink { .. }
+                | Action::RepointLink { .. }
+                | Action::RemoveLink { .. }
+        )
+    });
+    let parent_identity = parent_identity
+        .then(|| DirectoryIdentity::capture_or_create(&paths.skills_dir()))
+        .transpose()?;
     match execute(
         paths,
         plan,
         runtime,
         &journal_path,
         journal,
-        &parent_identity,
+        parent_identity.as_ref(),
     ) {
         Ok(outcome) => Ok(outcome),
         Err(error) => {
@@ -105,6 +154,8 @@ fn preflight(paths: &Paths, plan: &Plan) -> Result<()> {
     for action in &plan.actions {
         let scope = match action {
             Action::PrepareSnapshot { scope, .. }
+            | Action::ReplaceCandidate { scope, .. }
+            | Action::RemoveCandidate { scope, .. }
             | Action::CreateManifest { scope, .. }
             | Action::ReplaceManifest { scope, .. }
             | Action::CreateLock { scope, .. }
@@ -120,15 +171,6 @@ fn preflight(paths: &Paths, plan: &Plan) -> Result<()> {
                 "plan action belongs to a different scope".into(),
             ));
         }
-        if matches!(
-            action,
-            Action::PrepareSnapshot { .. } | Action::ReplaceTrust { .. }
-        ) {
-            return Err(CoreError::Transaction(
-                "snapshot preparation and trust mutation require the complete action interpreter"
-                    .into(),
-            ));
-        }
         if let Action::CreateLink { target, .. }
         | Action::RetainLink { target, .. }
         | Action::RemoveLink { target, .. } = action
@@ -138,6 +180,62 @@ fn preflight(paths: &Paths, plan: &Plan) -> Result<()> {
         if let Action::RepointLink { before, after, .. } = action {
             before.resolve(paths)?;
             after.resolve(paths)?;
+        }
+    }
+    Ok(())
+}
+
+fn prepare_snapshots(paths: &Paths, plan: &Plan, nonce: &str) -> Result<()> {
+    for action in &plan.actions {
+        let Action::PrepareSnapshot {
+            source,
+            source_key,
+            snapshot_key,
+            review_key,
+            operation,
+            ..
+        } = action
+        else {
+            continue;
+        };
+        let source_key = crate::SourceKey::parse(source_key.clone())?;
+        let snapshot_key = crate::SnapshotKey::parse(snapshot_key.clone())?;
+        let review_key = crate::ReviewKey::parse(review_key.clone())?;
+        let export = crate::source::ReviewExport::load_for_keys(
+            &paths.review_cache_dir(),
+            &source_key,
+            &review_key,
+        )?;
+        let intent = crate::store::MaterializationIntent::from_action(action, export.clone())?;
+        let destination = paths.store_path(&source_key, &snapshot_key);
+        let observed = crate::store::observe(&destination, &export);
+        let expected = plan.preconditions.stores.get(source).ok_or_else(|| {
+            CoreError::Transaction(format!(
+                "snapshot preparation for `{source}` has no store precondition"
+            ))
+        })?;
+        let observed = match observed {
+            crate::store::StoreObservation::Absent => crate::SnapshotStore::Absent,
+            crate::store::StoreObservation::Valid => crate::SnapshotStore::Valid,
+            crate::store::StoreObservation::Corrupt => crate::SnapshotStore::Corrupt,
+        };
+        if &observed != expected {
+            return Err(CoreError::StalePlan(format!(
+                "store snapshot for `{source}` changed"
+            )));
+        }
+        match operation {
+            crate::SnapshotPreparation::Materialize => {
+                crate::store::materialize(&paths.grimoire_home.join("store/checkouts"), &intent)?;
+            }
+            crate::SnapshotPreparation::Repair => {
+                crate::store::repair(&paths.grimoire_home, &intent, nonce)?;
+            }
+        }
+        if crate::store::observe(&destination, &export) != crate::store::StoreObservation::Valid {
+            return Err(CoreError::Store(
+                "snapshot preparation did not produce a valid immutable store entry".into(),
+            ));
         }
     }
     Ok(())
@@ -158,7 +256,7 @@ fn validate_preconditions(paths: &Paths, plan: &Plan) -> Result<()> {
     for (alias, expected) in &plan.preconditions.candidates {
         validate_file_hash(
             &paths.candidate_path(&paths.scope_key(), alias),
-            Some(expected),
+            expected.as_ref(),
             "candidate",
         )?;
     }
@@ -170,6 +268,25 @@ fn validate_preconditions(paths: &Paths, plan: &Plan) -> Result<()> {
             )));
         }
     }
+    Ok(())
+}
+
+fn validate_action_shapes(plan: &Plan) -> Result<()> {
+    let candidate_actions = plan
+        .actions
+        .iter()
+        .filter(|action| {
+            matches!(
+                action,
+                Action::ReplaceCandidate { .. } | Action::RemoveCandidate { .. }
+            )
+        })
+        .count();
+    if candidate_actions > 1 {
+        return Err(CoreError::Transaction(
+            "one plan cannot mutate more than one candidate".into(),
+        ));
+    }
     for action in &plan.actions {
         match action {
             Action::CreateManifest { after, .. } | Action::ReplaceManifest { after, .. } => {
@@ -177,6 +294,19 @@ fn validate_preconditions(paths: &Paths, plan: &Plan) -> Result<()> {
             }
             Action::CreateLock { after, .. } | Action::ReplaceLock { after, .. } => {
                 crate::Lockfile::parse(after)?;
+            }
+            Action::ReplaceTrust { after, .. } => {
+                crate::TrustStore::parse(after)?;
+            }
+            Action::ReplaceCandidate {
+                source_key, after, ..
+            } => {
+                crate::CandidateRecord::parse(after, Some(source_key))?;
+            }
+            Action::RemoveCandidate {
+                source_key, before, ..
+            } => {
+                crate::CandidateRecord::parse(before, Some(source_key))?;
             }
             _ => {}
         }
@@ -191,21 +321,29 @@ fn build_journal(paths: &Paths, plan: &Plan, scope_key: &str, nonce: &str) -> Re
         match action {
             Action::CreateManifest { after, .. } => state.push(StateTransition {
                 name: StateName::Manifest,
+                alias: None,
+                source_key: None,
                 before: None,
                 after: Some(after.clone()),
             }),
             Action::ReplaceManifest { before, after, .. } => state.push(StateTransition {
                 name: StateName::Manifest,
+                alias: None,
+                source_key: None,
                 before: Some(before.clone()),
                 after: Some(after.clone()),
             }),
             Action::CreateLock { after, .. } => state.push(StateTransition {
                 name: StateName::Lock,
+                alias: None,
+                source_key: None,
                 before: None,
                 after: Some(after.clone()),
             }),
             Action::ReplaceLock { before, after, .. } => state.push(StateTransition {
                 name: StateName::Lock,
+                alias: None,
+                source_key: None,
                 before: Some(before.clone()),
                 after: Some(after.clone()),
             }),
@@ -230,12 +368,42 @@ fn build_journal(paths: &Paths, plan: &Plan, scope_key: &str, nonce: &str) -> Re
                 before: Some(path_bytes(&target.resolve(paths)?)),
                 after: None,
             }),
-            Action::PrepareSnapshot { .. } | Action::ReplaceTrust { .. } => {
-                unreachable!("preflight")
-            }
+            Action::ReplaceTrust { before, after, .. } => state.push(StateTransition {
+                name: StateName::Trust,
+                alias: None,
+                source_key: None,
+                before: before.clone(),
+                after: Some(after.clone()),
+            }),
+            Action::ReplaceCandidate {
+                alias,
+                source_key,
+                before,
+                after,
+                ..
+            } => state.push(StateTransition {
+                name: StateName::Candidate,
+                alias: Some(alias.to_string()),
+                source_key: Some(source_key.to_string()),
+                before: before.clone(),
+                after: Some(after.clone()),
+            }),
+            Action::RemoveCandidate {
+                alias,
+                source_key,
+                before,
+                ..
+            } => state.push(StateTransition {
+                name: StateName::Candidate,
+                alias: Some(alias.to_string()),
+                source_key: Some(source_key.to_string()),
+                before: Some(before.clone()),
+                after: None,
+            }),
+            Action::PrepareSnapshot { .. } => unreachable!("preflight"),
         }
     }
-    state.sort_by_key(|transition| transition.name);
+    state.sort_by_key(|transition| state_order(transition.name));
     links.sort_by(|left, right| left.skill.cmp(&right.skill));
     let plan_digest = format!("{:x}", Sha256::digest(plan.to_bytes()?));
     Ok(Journal {
@@ -256,7 +424,7 @@ fn execute(
     runtime: &dyn TransactionRuntime,
     journal_path: &Path,
     mut journal: Journal,
-    parent_identity: &DirectoryIdentity,
+    parent_identity: Option<&DirectoryIdentity>,
 ) -> Result<ApplyOutcome> {
     let mut changed = false;
     for action in &plan.actions {
@@ -267,6 +435,7 @@ fn execute(
             }
             Action::CreateLink { skill, target, .. } => {
                 let destination = paths.skills_dir().join(skill.as_str());
+                let parent_identity = parent_identity.expect("link action has parent identity");
                 parent_identity.revalidate(&paths.skills_dir())?;
                 if checkpoint(runtime, "before-link-ownership")? {
                     return Ok(ApplyOutcome::Interrupted {
@@ -296,6 +465,7 @@ fn execute(
                 ..
             } => {
                 let destination = paths.skills_dir().join(skill.as_str());
+                let parent_identity = parent_identity.expect("link action has parent identity");
                 parent_identity.revalidate(&paths.skills_dir())?;
                 require_link(&destination, Some(&before.resolve(paths)?))?;
                 replace_symlink(&destination, &after.resolve(paths)?, &journal.nonce)?;
@@ -313,6 +483,7 @@ fn execute(
             }
             Action::RemoveLink { skill, target, .. } => {
                 let destination = paths.skills_dir().join(skill.as_str());
+                let parent_identity = parent_identity.expect("link action has parent identity");
                 parent_identity.revalidate(&paths.skills_dir())?;
                 require_link(&destination, Some(&target.resolve(paths)?))?;
                 fs::remove_file(&destination)
@@ -334,9 +505,14 @@ fn execute(
         }
     }
     for state in journal.state.clone() {
-        let path = state_path(paths, state.name)?;
+        let path = state_path(paths, &state)?;
         match &state.after {
-            Some(bytes) => replace(&path, bytes, &journal.nonce, None)?,
+            Some(bytes) => replace(
+                &path,
+                bytes,
+                &journal.nonce,
+                matches!(state.name, StateName::Trust | StateName::Candidate).then_some(0o600),
+            )?,
             None => remove_file_if_present(&path)?,
         }
         if mark(runtime, journal_path, &mut journal, state_name(state.name))? {
@@ -404,7 +580,7 @@ fn rollback(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
         {
             continue;
         }
-        let path = state_path(paths, state.name)?;
+        let path = state_path(paths, state)?;
         match &state.before {
             Some(bytes) => replace(&path, bytes, nonce, None)?,
             None => remove_file_if_present(&path)?,
@@ -477,14 +653,18 @@ fn replace_symlink(destination: &Path, target: &Path, nonce: &str) -> Result<()>
     sync_directory(parent)
 }
 
-fn state_path(paths: &Paths, name: StateName) -> Result<PathBuf> {
-    match name {
+fn state_path(paths: &Paths, state: &StateTransition) -> Result<PathBuf> {
+    match state.name {
         StateName::Manifest => Ok(paths.manifest_path()),
         StateName::Lock => Ok(paths.lock_path()),
         StateName::Trust => Ok(paths.trust_path()),
-        StateName::Candidate => Err(CoreError::Transaction(
-            "candidate journal entry lacks an alias".into(),
-        )),
+        StateName::Candidate => {
+            let alias = state
+                .alias
+                .as_deref()
+                .ok_or_else(|| CoreError::Transaction("candidate journal lacks alias".into()))?;
+            Ok(paths.candidate_path(&paths.scope_key(), &crate::SourceAlias::new(alias)?))
+        }
     }
 }
 
@@ -495,6 +675,27 @@ fn state_name(name: StateName) -> &'static str {
         StateName::Trust => "trust",
         StateName::Candidate => "candidate",
     }
+}
+
+fn state_order(name: StateName) -> u8 {
+    match name {
+        StateName::Manifest => 0,
+        StateName::Candidate => 1,
+        StateName::Trust => 2,
+        StateName::Lock => 3,
+    }
+}
+
+fn candidate_action(plan: &Plan) -> Option<(&crate::SourceAlias, &crate::SourceKey)> {
+    plan.actions.iter().find_map(|action| match action {
+        Action::ReplaceCandidate {
+            alias, source_key, ..
+        }
+        | Action::RemoveCandidate {
+            alias, source_key, ..
+        } => Some((alias, source_key)),
+        _ => None,
+    })
 }
 
 fn path_bytes(path: &Path) -> Vec<u8> {

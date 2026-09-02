@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use grimoire_core::{
     plan, Action, CanonicalIdentity, ExitClass, InstalledLink, LockChange, ManifestChange,
-    ManifestSource, PlanningMode, Preconditions, Request, Scope, SnapshotId, SnapshotKind,
-    SnapshotStore, SourceAlias, SourceLocation, SourceSnapshot, SourceState, WorldState,
+    PlanningMode, Preconditions, Request, Scope, SnapshotId, SnapshotKind, SnapshotStore,
+    SourceAlias, SourceSnapshot, SourceState, WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Skill, SourceInventory, SourcePath,
@@ -104,37 +104,6 @@ fn absent_scope_initializes_exact_files_without_observation_preconditions() {
 
 #[test]
 fn request_matrix_carries_typed_manifest_and_lock_changes() {
-    let minimal = "schema = \"grimoire/manifest@1\"\n";
-    let no_snapshot = WorldState::from_bytes(
-        Scope::Project,
-        minimal.as_bytes().to_vec(),
-        EMPTY_LOCK.to_vec(),
-        [],
-        [],
-        None,
-    )
-    .unwrap();
-    let add = plan(
-        &no_snapshot,
-        Request::AddSource {
-            alias: "a".try_into().unwrap(),
-            source: ManifestSource {
-                location: SourceLocation::Url("github:org/a".into()),
-                reference: Some("main".into()),
-                live: false,
-            },
-        },
-        PlanningMode::Normal,
-    )
-    .unwrap();
-    assert!(add.actions.iter().any(|action| matches!(
-        action,
-        Action::ReplaceManifest {
-            change: ManifestChange::AddSource,
-            ..
-        }
-    )));
-
     let install = plan(
         &world(
             BASE.split("[skills]").next().unwrap(),

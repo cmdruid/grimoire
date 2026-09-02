@@ -1,6 +1,10 @@
 use grimoire_core::{
-    plan, Action, CanonicalIdentity, PlanningMode, Request, Scope, SourceKey, SourceKind,
-    SourceState, TrustBaseline, TrustChange, TrustMode, TrustReceipt, TrustStore, WorldState,
+    plan, Action, CandidateRecord, CanonicalIdentity, PlanningMode, Request, Scope, SnapshotId,
+    SnapshotKind, SnapshotStore, SourceAlias, SourceKey, SourceKind, SourceSnapshot, SourceState,
+    SourceTrustIntent, TrustBaseline, TrustChange, TrustMode, TrustReceipt, TrustStore, WorldState,
+};
+use grimoire_pack::inventory::{
+    compute_inventory_digest, compute_review_tree_digest, SourceInventory,
 };
 
 fn receipt(seed: char) -> TrustReceipt {
@@ -85,19 +89,55 @@ fn live_trust_requires_all_and_never_writes_an_exact_receipt() {
 fn planner_proposes_trust_bytes_without_inferring_activation_or_uninstall() {
     let identity = CanonicalIdentity::remote("github:cmdruid/grimoire").unwrap();
     let key = SourceKey::derive(&identity);
+    let inventory = SourceInventory {
+        inventory_digest: compute_inventory_digest(&[], &[], &[]),
+        review_tree_digest: compute_review_tree_digest(&[]),
+        skills: Vec::new(),
+        packs: Vec::new(),
+        findings: Vec::new(),
+        reviewed_entries: Vec::new(),
+    };
+    let alias = SourceAlias::new("grimoire").unwrap();
+    let snapshot = SourceSnapshot::new(
+        alias.clone(),
+        SnapshotId::new(
+            SnapshotKind::Git,
+            Some("1".repeat(40)),
+            Some("2".repeat(40)),
+            inventory.inventory_digest.to_string(),
+        )
+        .unwrap(),
+        "/unused".into(),
+        inventory,
+    );
+    let candidate = CandidateRecord::new(
+        "0".repeat(64),
+        identity.clone(),
+        snapshot.id.commit.clone(),
+        snapshot.id.tree.clone(),
+        snapshot.id.inventory_digest.clone(),
+        format!("sha256:{}", "4".repeat(64)),
+    )
+    .unwrap();
+    let candidate_bytes = candidate.to_bytes().unwrap();
     let world = WorldState::absent(
         Scope::Global,
         std::iter::empty::<SourceState>(),
         std::iter::empty::<(&str, grimoire_core::InstalledLink)>(),
         None,
     )
+    .unwrap()
+    .with_candidate(
+        SourceState::new(snapshot, SnapshotStore::Absent, false)
+            .source_identity(identity, format!("sha256:{}", "4".repeat(64)))
+            .candidate(candidate_bytes),
+    )
     .unwrap();
     let granted = plan(
         &world,
-        Request::TrustExact {
-            identity,
-            receipt: receipt('1'),
-            baseline: baseline(),
+        Request::TrustSource {
+            alias,
+            mode: SourceTrustIntent::Exact,
         },
         PlanningMode::Normal,
     )

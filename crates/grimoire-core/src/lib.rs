@@ -29,7 +29,8 @@ pub use plan::{
 pub use resolve::{resolve_manifest, Resolution, ResolvedSkill};
 pub use scope::{discover_project, resolve_explicit_project, PathProbe, Paths, ScopePaths};
 pub use source::{
-    CandidateRecord, CanonicalIdentity, ReviewKey, SnapshotKey, SourceInfo, SourceKey, SourceKind,
+    prepare_source_add, CandidateRecord, CanonicalIdentity, PreparedSource, ReviewKey, SnapshotKey,
+    SourceInfo, SourceKey, SourceKind,
 };
 pub use store::MaterializationIntent;
 pub use trust::{TrustBaseline, TrustMode, TrustMutation, TrustReceipt, TrustRecord, TrustStore};

@@ -41,6 +41,25 @@ pub struct ReviewExport {
 }
 
 impl ReviewExport {
+    pub fn load_for_keys(
+        cache_review: &Path,
+        source_key: &SourceKey,
+        review_key: &ReviewKey,
+    ) -> Result<Self> {
+        let root = cache_review
+            .join(source_key.as_str())
+            .join(review_key.as_str());
+        let index_path = root.join("index.json");
+        let bytes = fs::read(&index_path).map_err(|error| io_error(&index_path, error))?;
+        let value: serde_json::Value = serde_json::from_slice(&bytes)?;
+        let review_tree = value
+            .as_object()
+            .and_then(|object| object.get("review_tree"))
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| CoreError::Source("review index lacks review-tree identity".into()))?;
+        Self::load(&root, source_key, review_key, review_tree)
+    }
+
     pub fn write(
         cache_review: &Path,
         source_key: SourceKey,

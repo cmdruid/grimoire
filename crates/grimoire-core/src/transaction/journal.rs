@@ -21,6 +21,8 @@ pub(crate) struct Journal {
 #[serde(deny_unknown_fields)]
 pub(crate) struct StateTransition {
     pub name: StateName,
+    pub alias: Option<String>,
+    pub source_key: Option<String>,
     pub before: Option<Vec<u8>>,
     pub after: Option<Vec<u8>>,
 }
@@ -66,7 +68,7 @@ impl Journal {
         if journal
             .state
             .iter()
-            .any(|state| !state_names.insert(state.name))
+            .any(|state| !state_names.insert((state.name, state.alias.as_deref())))
         {
             return Err(CoreError::Transaction(
                 "journal contains duplicate state transitions".into(),

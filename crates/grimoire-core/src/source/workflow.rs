@@ -9,7 +9,203 @@ use super::{
     HeldDirectoryReader, ReviewExport, SourceInfo, SourceKey, SourceKind,
 };
 use crate::locks::{LockCoordinator, LockMode, LockRank};
-use crate::{CoreError, Manifest, Paths, Result, SourceAlias, SourceLocation, TrustMode};
+use crate::{
+    CoreError, Manifest, ManifestMutation, ManifestSource, Paths, Result, SourceAlias,
+    SourceLocation, TrustMode, WorldState,
+};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PreparedSource {
+    alias: SourceAlias,
+    source: ManifestSource,
+    manifest_before: Vec<u8>,
+    manifest_after: Vec<u8>,
+    declaration_hash: String,
+    info: SourceInfo,
+}
+
+impl PreparedSource {
+    pub fn alias(&self) -> &SourceAlias {
+        &self.alias
+    }
+
+    pub fn source(&self) -> &ManifestSource {
+        &self.source
+    }
+
+    pub fn manifest_before(&self) -> &[u8] {
+        &self.manifest_before
+    }
+
+    pub fn manifest_after(&self) -> &[u8] {
+        &self.manifest_after
+    }
+
+    pub fn declaration_hash(&self) -> &str {
+        &self.declaration_hash
+    }
+
+    pub fn info(&self) -> &SourceInfo {
+        &self.info
+    }
+}
+
+pub fn prepare_source_add(
+    paths: Paths,
+    world: &WorldState,
+    alias: SourceAlias,
+    source: ManifestSource,
+    runner: &dyn GitRunner,
+) -> Result<PreparedSource> {
+    if world.manifest_present && world.manifest.sources.contains_key(&alias) {
+        return Err(CoreError::Source(format!(
+            "source `{alias}` is already registered"
+        )));
+    }
+    let edit = world.manifest.mutate(ManifestMutation::AddSource {
+        alias: alias.clone(),
+        source: source.clone(),
+    })?;
+    if edit.before != world.manifest_bytes {
+        return Err(CoreError::Source(
+            "world manifest bytes do not match the parsed manifest".into(),
+        ));
+    }
+    let declaration_hash = edit.manifest.source_declaration_hash(&alias)?;
+    let mut workflow = CandidateWorkflow::begin(paths.clone(), alias.clone())?;
+    let info = inspect_prepared(
+        &paths,
+        &edit.manifest,
+        &alias,
+        &source,
+        &declaration_hash,
+        runner,
+        &mut workflow,
+    )?;
+    Ok(PreparedSource {
+        alias,
+        source,
+        manifest_before: edit.before,
+        manifest_after: edit.after,
+        declaration_hash,
+        info,
+    })
+}
+
+fn inspect_prepared(
+    paths: &Paths,
+    manifest: &Manifest,
+    alias: &SourceAlias,
+    source: &ManifestSource,
+    declaration_hash: &str,
+    runner: &dyn GitRunner,
+    workflow: &mut CandidateWorkflow,
+) -> Result<SourceInfo> {
+    match &source.location {
+        SourceLocation::Url(declared) => {
+            let identity = CanonicalIdentity::remote(declared)?;
+            let source_key = SourceKey::derive(&identity);
+            let mut snapshot = workflow.replace_cache(&source_key, runner, |replacement| {
+                fetch_remote(runner, declared, source.reference.as_deref(), replacement)
+            })?;
+            snapshot.bare_repository = paths.git_cache_path(&source_key);
+            let reader = GitTreeReader::new(runner, &snapshot);
+            prepared_info(
+                paths,
+                alias,
+                declared,
+                source.reference.clone(),
+                declaration_hash,
+                identity,
+                Some(snapshot.commit),
+                Some(snapshot.tree),
+                &reader,
+            )
+        }
+        SourceLocation::Path(declared) => {
+            let manifest_path = paths.manifest_path();
+            let manifest_dir = manifest_path
+                .parent()
+                .ok_or_else(|| CoreError::Source("manifest path has no parent".into()))?;
+            let root = normalize_absolute(
+                &manifest
+                    .resolve_declared_path(alias, manifest_dir)
+                    .ok_or_else(|| CoreError::Source("local declaration has no root".into()))?,
+            )?;
+            if source.live {
+                let reader = HeldDirectoryReader::open(&root)?;
+                let identity = CanonicalIdentity::local(SourceKind::Live, &root)?;
+                let info = prepared_info(
+                    paths,
+                    alias,
+                    declared,
+                    None,
+                    declaration_hash,
+                    identity,
+                    None,
+                    None,
+                    &reader,
+                )?;
+                reader.revalidate()?;
+                Ok(info)
+            } else {
+                let snapshot = inspect_pinned_git(runner, &root, source.reference.as_deref())?;
+                let reader = GitTreeReader::new(runner, &snapshot);
+                prepared_info(
+                    paths,
+                    alias,
+                    declared,
+                    source.reference.clone(),
+                    declaration_hash,
+                    snapshot.identity,
+                    Some(snapshot.commit),
+                    Some(snapshot.tree),
+                    &reader,
+                )
+            }
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn prepared_info(
+    paths: &Paths,
+    alias: &SourceAlias,
+    declared: &str,
+    requested_ref: Option<String>,
+    declaration_hash: &str,
+    identity: CanonicalIdentity,
+    commit: Option<String>,
+    tree: Option<String>,
+    reader: &dyn grimoire_pack::inventory::TreeReader,
+) -> Result<SourceInfo> {
+    let inventory = scan(reader).map_err(|error| CoreError::Source(error.to_string()))?;
+    let candidate = CandidateRecord::new(
+        declaration_hash.into(),
+        identity.clone(),
+        commit,
+        tree,
+        inventory.inventory_digest.to_string(),
+        inventory.review_tree_digest.to_string(),
+    )?;
+    let export = ReviewExport::write(
+        &paths.review_cache_dir(),
+        SourceKey::derive(&identity),
+        candidate.review_key()?,
+        &inventory,
+        reader,
+    )?;
+    Ok(SourceInfo::from_candidate(
+        alias.clone(),
+        declared.into(),
+        requested_ref,
+        candidate,
+        inventory,
+        export,
+        TrustMode::Untrusted,
+        None,
+    ))
+}
 
 pub struct CandidateWorkflow {
     paths: Paths,

@@ -348,13 +348,21 @@ pub enum PlanningMode {
     Frozen,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SourceTrustIntent {
+    Untrusted,
+    Exact,
+    All,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Request {
     Initialize,
     Reconcile,
     AddSource {
-        alias: SourceAlias,
-        source: crate::ManifestSource,
+        prepared: crate::PreparedSource,
+        trust: SourceTrustIntent,
     },
     RemoveSource {
         alias: SourceAlias,
@@ -380,15 +388,9 @@ pub enum Request {
     UpdateSource {
         alias: SourceAlias,
     },
-    TrustExact {
-        identity: crate::CanonicalIdentity,
-        receipt: crate::TrustReceipt,
-        baseline: crate::TrustBaseline,
-    },
-    TrustAll {
-        identity: crate::CanonicalIdentity,
-        receipt: Option<crate::TrustReceipt>,
-        baseline: crate::TrustBaseline,
+    TrustSource {
+        alias: SourceAlias,
+        mode: SourceTrustIntent,
     },
     RevokeTrust {
         source: crate::SourceKey,

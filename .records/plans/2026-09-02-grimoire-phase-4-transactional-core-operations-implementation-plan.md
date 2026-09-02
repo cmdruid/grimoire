@@ -262,7 +262,7 @@ This task is read-only and produces no commit.
     byte-identical. Its red arms bypass one precondition, final ownership revalidation, or
     target-derivation comparison in the fixture and reach the outside/wrong-target canary.
 
-- [ ] **Slice 2: Execute the complete request, candidate, trust, and link action matrix** <requires: 1>
+- [x] **Slice 2: Execute the complete request, candidate, trust, and link action matrix** <requires: 1>
   - Files: create `crates/grimoire-core/tests/apply_matrix.rs` and source/apply fixtures under
     `crates/grimoire-core/tests/fixtures/transaction/`; modify
     `crates/grimoire-core/src/apply.rs`, `crates/grimoire-core/src/model.rs`,

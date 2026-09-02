@@ -7,7 +7,7 @@ use crate::resolve::resolve_manifest;
 use crate::{
     ByteHash, CoreError, InstalledLink, LockSource, Lockfile, ManifestMutation, OwnedLinkTarget,
     PlanningMode, Request, RequestRoot, Result, Scope, SkillName, SnapshotKind, SnapshotStore,
-    SourceAlias, TrustMode, WorldState,
+    SourceAlias, SourceTrustIntent, TrustMode, WorldState,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -85,6 +85,19 @@ pub enum Action {
         after: Vec<u8>,
         create_mode: u32,
         change: TrustChange,
+    },
+    ReplaceCandidate {
+        scope: Scope,
+        alias: SourceAlias,
+        source_key: crate::SourceKey,
+        before: Option<Vec<u8>>,
+        after: Vec<u8>,
+    },
+    RemoveCandidate {
+        scope: Scope,
+        alias: SourceAlias,
+        source_key: crate::SourceKey,
+        before: Vec<u8>,
     },
     PrepareSnapshot {
         scope: Scope,
@@ -184,7 +197,7 @@ impl From<&InstalledLink> for LinkPrecondition {
 pub struct Preconditions {
     pub manifest: Option<ByteHash>,
     pub lock: Option<ByteHash>,
-    pub candidates: BTreeMap<SourceAlias, ByteHash>,
+    pub candidates: BTreeMap<SourceAlias, Option<ByteHash>>,
     pub stores: BTreeMap<SourceAlias, SnapshotStore>,
     pub trust: Option<ByteHash>,
     pub links: BTreeMap<SkillName, LinkPrecondition>,
@@ -270,23 +283,8 @@ impl Plan {
 
 pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<Plan> {
     match &request {
-        Request::TrustExact {
-            identity,
-            receipt,
-            baseline,
-        } => {
-            return plan_trust_mutation(world, TrustChange::GrantExact, |store, before| {
-                store.grant_exact(identity.clone(), receipt.clone(), baseline.clone(), before)
-            });
-        }
-        Request::TrustAll {
-            identity,
-            receipt,
-            baseline,
-        } => {
-            return plan_trust_mutation(world, TrustChange::GrantAll, |store, before| {
-                store.grant_all(identity.clone(), receipt.clone(), baseline.clone(), before)
-            });
+        Request::TrustSource { alias, mode } => {
+            return plan_trust_source(world, alias, *mode);
         }
         Request::RevokeTrust { source } => {
             return plan_trust_mutation(world, TrustChange::Revoke, |store, before| {
@@ -311,21 +309,78 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
         }
     }
     let mut selected_candidates = BTreeMap::new();
+    let mut candidate_preconditions = BTreeMap::new();
     let mut request_blockers = Vec::new();
     let mut manifest_change = None;
+    let mut requested_candidate_action = None;
+    let mut requested_trust_action = None;
     let manifest_edit = match request {
         Request::Initialize => unreachable!(),
         Request::Reconcile => None,
-        Request::AddSource { alias, source } => {
+        Request::AddSource { prepared, trust } => {
+            let alias = prepared.alias().clone();
+            let source = prepared.source().clone();
             manifest_change = Some(ManifestChange::AddSource);
-            Some(
-                world
-                    .manifest
-                    .mutate(ManifestMutation::AddSource { alias, source })?,
-            )
+            let edit = world.manifest.mutate(ManifestMutation::AddSource {
+                alias: alias.clone(),
+                source,
+            })?;
+            if prepared.manifest_before() != world.manifest_bytes
+                || prepared.manifest_after() != edit.after
+                || prepared.declaration_hash() != edit.manifest.source_declaration_hash(&alias)?
+                || prepared.info().alias != alias
+                || prepared.info().candidate.declaration_hash != prepared.declaration_hash()
+            {
+                return Err(CoreError::Request(
+                    "prepared source no longer matches the immutable world".into(),
+                ));
+            }
+            if world
+                .source_states
+                .values()
+                .any(|state| state.identity.as_ref() == Some(&prepared.info().candidate.identity))
+            {
+                return Err(CoreError::Request(
+                    "source canonical identity is already registered in this scope".into(),
+                ));
+            }
+            let candidate_bytes = prepared.info().candidate.to_bytes()?;
+            requested_candidate_action = Some(Action::ReplaceCandidate {
+                scope: world.scope,
+                alias: alias.clone(),
+                source_key: prepared.info().candidate.source_key(),
+                before: None,
+                after: candidate_bytes,
+            });
+            candidate_preconditions.insert(alias, None);
+            if trust != SourceTrustIntent::Untrusted {
+                requested_trust_action = Some(trust_action_from_candidate(
+                    world,
+                    &prepared.info().candidate,
+                    trust,
+                )?);
+            }
+            Some(edit)
         }
         Request::RemoveSource { alias } => {
             manifest_change = Some(ManifestChange::RemoveSource);
+            if let Some(candidate) = world.candidates.get(&alias) {
+                let before = candidate.candidate_bytes.clone().ok_or_else(|| {
+                    CoreError::Request("candidate observation lacks exact bytes".into())
+                })?;
+                let identity = candidate.identity.clone().ok_or_else(|| {
+                    CoreError::Request("candidate observation lacks identity".into())
+                })?;
+                requested_candidate_action = Some(Action::RemoveCandidate {
+                    scope: world.scope,
+                    alias: alias.clone(),
+                    source_key: crate::SourceKey::derive(&identity),
+                    before: before.clone(),
+                });
+                candidate_preconditions.insert(alias.clone(), Some(ByteHash::of(&before)));
+            } else {
+                candidate_preconditions.insert(alias.clone(), None);
+            }
             Some(
                 world
                     .manifest
@@ -406,7 +461,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
             }
             None
         }
-        Request::TrustExact { .. } | Request::TrustAll { .. } | Request::RevokeTrust { .. } => {
+        Request::TrustSource { .. } | Request::RevokeTrust { .. } => {
             unreachable!("handled before scope planning")
         }
     };
@@ -440,6 +495,12 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
             after: edit.after.clone(),
             change,
         });
+    }
+    if let Some(action) = requested_candidate_action {
+        actions.push(action);
+    }
+    if let Some(action) = requested_trust_action {
+        actions.push(action);
     }
 
     if world.lock != resolution.lock {
@@ -781,14 +842,16 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
         preconditions: Preconditions {
             manifest: Some(ByteHash::of(&world.manifest_bytes)),
             lock: Some(ByteHash::of(&world.lock_bytes)),
-            candidates: selected_candidates
-                .into_iter()
-                .filter_map(|(alias, state)| {
-                    state
-                        .candidate_bytes
-                        .map(|bytes| (alias, ByteHash::of(&bytes)))
-                })
-                .collect(),
+            candidates: {
+                candidate_preconditions.extend(selected_candidates.into_iter().filter_map(
+                    |(alias, state)| {
+                        state
+                            .candidate_bytes
+                            .map(|bytes| (alias, Some(ByteHash::of(&bytes))))
+                    },
+                ));
+                candidate_preconditions
+            },
             stores: store_preconditions,
             trust: world.trust_bytes.as_deref().map(ByteHash::of),
             links,
@@ -823,6 +886,99 @@ fn plan_trust_mutation(
         },
         facts: Vec::new(),
         exit_class: ExitClass::Success,
+    })
+}
+
+fn plan_trust_source(
+    world: &WorldState,
+    alias: &SourceAlias,
+    intent: SourceTrustIntent,
+) -> Result<Plan> {
+    let candidate = world
+        .candidates
+        .get(alias)
+        .filter(|candidate| candidate.candidate_current)
+        .ok_or_else(|| CoreError::Request(format!("source `{alias}` has no current candidate")))?;
+    let bytes = candidate
+        .candidate_bytes
+        .as_deref()
+        .ok_or_else(|| CoreError::Request("candidate observation lacks exact bytes".into()))?;
+    let record = crate::CandidateRecord::parse(bytes, None)?;
+    if candidate.identity.as_ref() != Some(&record.identity)
+        || candidate.snapshot.id.commit != record.commit
+        || candidate.snapshot.id.tree != record.tree
+        || candidate.snapshot.id.inventory_digest != record.inventory
+    {
+        return Err(CoreError::Request(
+            "candidate bytes and observed candidate disagree".into(),
+        ));
+    }
+    let action = trust_action_from_candidate(world, &record, intent)?;
+    Ok(Plan {
+        actions: vec![action],
+        blockers: Vec::new(),
+        preconditions: Preconditions {
+            candidates: BTreeMap::from([(alias.clone(), Some(ByteHash::of(bytes)))]),
+            trust: world.trust_bytes.as_deref().map(ByteHash::of),
+            ..Preconditions::absent()
+        },
+        facts: Vec::new(),
+        exit_class: ExitClass::Success,
+    })
+}
+
+fn trust_action_from_candidate(
+    world: &WorldState,
+    candidate: &crate::CandidateRecord,
+    intent: SourceTrustIntent,
+) -> Result<Action> {
+    let before = world.trust_bytes.clone();
+    let store = before
+        .as_deref()
+        .map(crate::TrustStore::parse)
+        .transpose()?
+        .unwrap_or_default();
+    let receipt = match candidate.identity.kind() {
+        crate::SourceKind::Git => Some(crate::TrustReceipt {
+            commit: candidate.commit.clone().expect("validated Git candidate"),
+            tree: candidate.tree.clone().expect("validated Git candidate"),
+            inventory: candidate.inventory.clone(),
+        }),
+        crate::SourceKind::Live => None,
+    };
+    let baseline = crate::TrustBaseline {
+        commit: candidate.commit.clone(),
+        tree: candidate.tree.clone(),
+        inventory: candidate.inventory.clone(),
+        review_tree: candidate.review_tree.clone(),
+    };
+    let (change, mutation) = match intent {
+        SourceTrustIntent::Exact => (
+            TrustChange::GrantExact,
+            store.grant_exact(
+                candidate.identity.clone(),
+                receipt.ok_or_else(|| {
+                    CoreError::Trust("live sources cannot receive exact trust".into())
+                })?,
+                baseline,
+                before,
+            )?,
+        ),
+        SourceTrustIntent::All => (
+            TrustChange::GrantAll,
+            store.grant_all(candidate.identity.clone(), receipt, baseline, before)?,
+        ),
+        SourceTrustIntent::Untrusted => {
+            return Err(CoreError::Request(
+                "untrusted is not a trust mutation".into(),
+            ))
+        }
+    };
+    Ok(Action::ReplaceTrust {
+        before: mutation.before,
+        after: mutation.after,
+        create_mode: mutation.create_mode,
+        change,
     })
 }
 
