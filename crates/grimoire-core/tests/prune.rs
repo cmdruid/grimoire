@@ -250,6 +250,22 @@ fn fixture() -> Fixture {
             .join("skills/one/link"),
     )
     .unwrap();
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let snapshot = paths.store_path(&isolated.source_key, &isolated.snapshot_key);
+        fs::set_permissions(
+            snapshot.join("skills/one/payload"),
+            fs::Permissions::from_mode(0o444),
+        )
+        .unwrap();
+        for directory in [
+            snapshot.join("skills/one"),
+            snapshot.join("skills"),
+            snapshot,
+        ] {
+            fs::set_permissions(directory, fs::Permissions::from_mode(0o555)).unwrap();
+        }
+    }
 
     Fixture {
         _temporary: temporary,

@@ -286,7 +286,7 @@ This task is read-only and produces no commit.
     expected: reports are stable core projections and prune cannot delete an uncertain or
     unconfirmed snapshot.
 
-- [ ] **Slice 6: Exhaust the grammar, confirmation, exit, and temp-home workflows** <requires: 1, 3, 4, 5>
+- [x] **Slice 6: Exhaust the grammar, confirmation, exit, and temp-home workflows** <requires: 1, 3, 4, 5>
   - Files: create `crates/grimoire/tests/cli_grammar.rs`,
     `crates/grimoire/tests/cli_confirmation.rs`,
     `crates/grimoire/tests/cli_exit.rs`, and `crates/grimoire/tests/cli_workflows.rs`; modify

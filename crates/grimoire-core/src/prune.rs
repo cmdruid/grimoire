@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::os::unix::ffi::OsStrExt;
 
 use grimoire_pack::inventory::scan as scan_inventory;
-use rustix::fs::{openat, statat, unlinkat, AtFlags, Dir, Mode, OFlags, Stat};
+use rustix::fs::{fchmod, openat, statat, unlinkat, AtFlags, Dir, Mode, OFlags, Stat};
 
 use crate::locks::{LockCoordinator, LockMode, LockRank};
 use crate::source::HeldDirectoryReader;
@@ -593,6 +593,7 @@ fn remove_tree_contents(
     if depth > 64 {
         return Err(CoreError::Transaction("prune depth limit exceeded".into()));
     }
+    fchmod(directory, Mode::from_raw_mode(0o700)).map_err(|error| rustix_error(path, error))?;
     let mut entries = Dir::read_from(directory)
         .map_err(|error| rustix_error(path, error))?
         .collect::<std::result::Result<Vec<_>, _>>()

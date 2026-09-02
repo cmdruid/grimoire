@@ -1,0 +1,82 @@
+mod support;
+
+use std::fs;
+
+use tempfile::tempdir;
+
+#[test]
+fn exit_classes_preserve_usage_findings_policy_transport_and_io() {
+    let temporary = tempdir().unwrap();
+    let root = temporary.path().canonicalize().unwrap();
+    let home = root.join("home");
+    let project = root.join("project");
+    fs::create_dir_all(&home).unwrap();
+    fs::create_dir_all(&project).unwrap();
+
+    assert_eq!(
+        support::run(&project, &home, &["--unknown"]).status.code(),
+        Some(2)
+    );
+    assert_eq!(
+        support::run(&project, &home, &["check"]).status.code(),
+        Some(2)
+    );
+
+    assert!(support::run(&project, &home, &["init"]).status.success());
+    fs::write(
+        project.join("grimoire.toml"),
+        b"schema = \"grimoire/manifest@1\"\n[sources.repo]\nurl = \"github:org/repo\"\n[skills]\none = { source = \"repo\" }\n",
+    )
+    .unwrap();
+    assert_eq!(
+        support::run(&project, &home, &["check"]).status.code(),
+        Some(1)
+    );
+    assert_eq!(
+        support::run(&project, &home, &["update"]).status.code(),
+        Some(3)
+    );
+
+    let non_repository = root.join("not-git");
+    fs::create_dir_all(&non_repository).unwrap();
+    assert_eq!(
+        support::run(
+            &project,
+            &home,
+            &["source", "add", "local", non_repository.to_str().unwrap(),],
+        )
+        .status
+        .code(),
+        Some(4)
+    );
+
+    let file_home = root.join("file-home");
+    fs::write(&file_home, b"not a directory\n").unwrap();
+    assert_eq!(
+        support::run(&project, &file_home, &["init", "--global"])
+            .status
+            .code(),
+        Some(5)
+    );
+}
+
+#[test]
+fn malformed_initialized_state_is_usage_class() {
+    let temporary = tempdir().unwrap();
+    let root = temporary.path().canonicalize().unwrap();
+    let home = root.join("home");
+    let project = root.join("project");
+    fs::create_dir_all(&home).unwrap();
+    fs::create_dir_all(&project).unwrap();
+    fs::write(project.join("grimoire.toml"), b"not toml = [\n").unwrap();
+    fs::write(
+        project.join("grimoire.lock"),
+        b"{\"schema\":\"grimoire/lock@1\",\"sources\":{},\"packs\":{},\"skills\":{}}\n",
+    )
+    .unwrap();
+
+    assert_eq!(
+        support::run(&project, &home, &["check"]).status.code(),
+        Some(2)
+    );
+}
