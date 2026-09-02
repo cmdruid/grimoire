@@ -148,6 +148,10 @@ pub enum Action {
         skill: SkillName,
         target: OwnedLinkTarget,
     },
+    PruneSnapshot {
+        source_key: crate::SourceKey,
+        snapshot_key: crate::SnapshotKey,
+    },
 }
 
 impl Action {
@@ -167,7 +171,8 @@ impl Action {
                 ..
             }
             | Self::RepointLink { .. }
-            | Self::RemoveLink { .. } => true,
+            | Self::RemoveLink { .. }
+            | Self::PruneSnapshot { .. } => true,
             _ => false,
         }
     }
@@ -201,6 +206,7 @@ pub struct Preconditions {
     pub stores: BTreeMap<SourceAlias, SnapshotStore>,
     pub trust: Option<ByteHash>,
     pub projects: Option<ByteHash>,
+    pub reachability: Option<ByteHash>,
     pub links: BTreeMap<SkillName, LinkPrecondition>,
 }
 
@@ -213,6 +219,7 @@ impl Preconditions {
             stores: BTreeMap::new(),
             trust: None,
             projects: None,
+            reachability: None,
             links: BTreeMap::new(),
         }
     }
@@ -284,6 +291,9 @@ impl Plan {
 }
 
 pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<Plan> {
+    if request == Request::Prune {
+        return crate::prune::plan_prune(world);
+    }
     match &request {
         Request::TrustSource { alias, mode } => {
             return plan_trust_source(world, alias, *mode);
@@ -463,7 +473,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
             }
             None
         }
-        Request::TrustSource { .. } | Request::RevokeTrust { .. } => {
+        Request::TrustSource { .. } | Request::RevokeTrust { .. } | Request::Prune => {
             unreachable!("handled before scope planning")
         }
     };
@@ -859,6 +869,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
             projects: (world.scope == Scope::Project)
                 .then(|| world.project_index_bytes.as_deref().map(ByteHash::of))
                 .flatten(),
+            reachability: None,
             links,
         },
         facts: resolution.facts,

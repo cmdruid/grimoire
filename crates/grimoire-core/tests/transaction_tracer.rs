@@ -102,6 +102,7 @@ fn fixture() -> (TempDir, Paths, OwnedLinkTarget, Plan) {
             stores: BTreeMap::new(),
             trust: None,
             projects: None,
+            reachability: None,
             links: BTreeMap::from([("one".try_into().unwrap(), LinkPrecondition::Absent)]),
         },
         facts: Vec::new(),
@@ -137,6 +138,7 @@ fn one_direct_skill_crosses_the_transaction_boundary() {
             stores: BTreeMap::new(),
             trust: None,
             projects: Some(ByteHash::of(&fs::read(paths.projects_path()).unwrap())),
+            reachability: None,
             links: BTreeMap::from([(
                 "one".try_into().unwrap(),
                 LinkPrecondition::Symlink(target.resolve(&paths).unwrap()),

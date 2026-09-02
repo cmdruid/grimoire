@@ -132,12 +132,33 @@ pub(crate) fn refresh_locked(
             "project observation time is negative".into(),
         ));
     }
+    validate_nonce(nonce)?;
+    let mut index = match read(paths)? {
+        Some(bytes) => crate::ProjectIndex::parse(&bytes)?,
+        None => crate::ProjectIndex::default(),
+    };
+    let record = build_record(paths, manifest, lock, lock_bytes, unix_time)?;
+    index.records.insert(record.scope_key.clone(), record);
+    write_locked(paths, &index, nonce)
+}
+
+pub(crate) fn build_record(
+    paths: &Paths,
+    manifest: &Manifest,
+    lock: &Lockfile,
+    lock_bytes: &[u8],
+    unix_time: i64,
+) -> Result<ProjectRecord> {
     let ScopePaths::Project { root } = &paths.scope else {
         return Err(CoreError::Transaction(
-            "global scope cannot refresh the project index".into(),
+            "global scope cannot create a project record".into(),
         ));
     };
-    validate_nonce(nonce)?;
+    if unix_time < 0 {
+        return Err(CoreError::Transaction(
+            "project observation time is negative".into(),
+        ));
+    }
     let canonical = root
         .canonicalize()
         .map_err(|error| crate::transaction::io_error(root, error))?;
@@ -147,27 +168,27 @@ pub(crate) fn refresh_locked(
             "resolved project path is not canonical".into(),
         ));
     }
-    let mut index = match read(paths)? {
-        Some(bytes) => crate::ProjectIndex::parse(&bytes)?,
-        None => crate::ProjectIndex::default(),
-    };
-    let references = references(paths, manifest, lock)?;
-    index.records.insert(
-        scope_key.clone(),
-        ProjectRecord {
-            path: canonical,
-            scope_key,
-            lock_hash: ByteHash::of(lock_bytes),
-            references,
-            last_observed: unix_time,
-        },
-    );
+    Ok(ProjectRecord {
+        path: canonical,
+        scope_key,
+        lock_hash: ByteHash::of(lock_bytes),
+        references: references(paths, manifest, lock)?,
+        last_observed: unix_time,
+    })
+}
+
+pub(crate) fn write_locked(
+    paths: &Paths,
+    index: &crate::ProjectIndex,
+    nonce: &str,
+) -> Result<Vec<u8>> {
+    validate_nonce(nonce)?;
     let bytes = index.to_bytes()?;
     replace(&paths.projects_path(), &bytes, nonce, Some(0o600))?;
     Ok(bytes)
 }
 
-fn references(
+pub(crate) fn references(
     paths: &Paths,
     manifest: &Manifest,
     lock: &Lockfile,

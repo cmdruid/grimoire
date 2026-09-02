@@ -429,7 +429,7 @@ This task is read-only and produces no commit.
     serialize, and no paused later-rank holder waits for an earlier lock. Disabling projects custody
     loses an indexed reference in the red arm.
 
-- [ ] **Slice 6: Conservative reachability planning and destructive prune** <requires: 5>
+- [x] **Slice 6: Conservative reachability planning and destructive prune** <requires: 5>
   - Files: create `crates/grimoire-core/src/prune.rs`,
     `crates/grimoire-core/tests/prune.rs`, and prune fixtures under
     `crates/grimoire-core/tests/fixtures/prune/`; modify

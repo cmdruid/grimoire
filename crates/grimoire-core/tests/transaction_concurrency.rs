@@ -5,8 +5,9 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use grimoire_core::{
-    apply, Action, Approval, FaultDisposition, Lockfile, Paths, Plan, Preconditions, Result, Scope,
-    TransactionRuntime, TrustChange, TrustStore,
+    apply, observe_reachability, plan, Action, Approval, FaultDisposition, Lockfile, Paths, Plan,
+    PlanningMode, Preconditions, ProjectReference, Request, Result, Scope, SnapshotKey, SourceKey,
+    TransactionRuntime, TrustChange, TrustStore, WorldState,
 };
 
 struct PausingRuntime {
@@ -49,6 +50,29 @@ impl TransactionRuntime for Runtime {
     }
 }
 
+struct PausingPruneRuntime {
+    arrived: Sender<()>,
+    release: Mutex<Receiver<()>>,
+}
+
+impl TransactionRuntime for PausingPruneRuntime {
+    fn transaction_nonce(&self) -> Result<String> {
+        Ok("prune-concurrency".into())
+    }
+
+    fn unix_time(&self) -> Result<i64> {
+        Ok(1_700_000_000)
+    }
+
+    fn checkpoint(&self, name: &'static str) -> Result<FaultDisposition> {
+        if name == "before-prune-snapshot" {
+            self.arrived.send(()).unwrap();
+            self.release.lock().unwrap().recv().unwrap();
+        }
+        Ok(FaultDisposition::Continue)
+    }
+}
+
 fn initialize(scope: Scope) -> Plan {
     Plan {
         actions: vec![
@@ -69,6 +93,7 @@ fn initialize(scope: Scope) -> Plan {
             stores: BTreeMap::new(),
             trust: None,
             projects: None,
+            reachability: None,
             links: BTreeMap::new(),
         },
         facts: Vec::new(),
@@ -226,4 +251,69 @@ fn trust_writes_wait_for_an_apply_shared_lease() {
     release_tx.send(()).unwrap();
     project.join().unwrap().unwrap();
     trust.join().unwrap().unwrap();
+}
+
+#[test]
+fn apply_waits_while_prune_holds_exclusive_store_custody() {
+    let temporary = tempfile::tempdir().unwrap();
+    let root = temporary.path().canonicalize().unwrap();
+    let home = root.join("home");
+    let user = root.join("user");
+    fs::create_dir_all(&home).unwrap();
+    fs::create_dir_all(&user).unwrap();
+    let paths = Paths::global(user, home).unwrap();
+    let reference = ProjectReference {
+        source_key: SourceKey::parse("a".repeat(64)).unwrap(),
+        snapshot_key: SnapshotKey::parse("b".repeat(64)).unwrap(),
+    };
+    let snapshot = paths.store_path(&reference.source_key, &reference.snapshot_key);
+    fs::create_dir_all(snapshot.join("skill")).unwrap();
+    fs::write(
+        snapshot.join("skill/SKILL.md"),
+        b"---\nname: held\ndescription: held\n---\n",
+    )
+    .unwrap();
+    let observation = observe_reachability(&paths, &[], &Runtime("observe-prune")).unwrap();
+    let prune_plan = plan(
+        &WorldState::absent(
+            Scope::Global,
+            [],
+            std::iter::empty::<(&str, grimoire_core::InstalledLink)>(),
+            None,
+        )
+        .unwrap()
+        .with_reachability(observation),
+        Request::Prune,
+        PlanningMode::Normal,
+    )
+    .unwrap();
+    let prune_paths = paths.clone();
+    let apply_paths = paths.clone();
+    let (arrived_tx, arrived_rx) = mpsc::channel();
+    let (release_tx, release_rx) = mpsc::channel();
+    let prune = std::thread::spawn(move || {
+        apply(
+            &prune_paths,
+            &prune_plan,
+            Approval::Granted,
+            &PausingPruneRuntime {
+                arrived: arrived_tx,
+                release: Mutex::new(release_rx),
+            },
+        )
+    });
+    arrived_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+    let scope_apply = std::thread::spawn(move || {
+        apply(
+            &apply_paths,
+            &initialize(Scope::Global),
+            Approval::NotRequired,
+            &Runtime("apply-after-prune"),
+        )
+    });
+    std::thread::sleep(Duration::from_millis(100));
+    assert!(!scope_apply.is_finished());
+    release_tx.send(()).unwrap();
+    prune.join().unwrap().unwrap();
+    scope_apply.join().unwrap().unwrap();
 }

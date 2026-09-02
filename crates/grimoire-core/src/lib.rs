@@ -9,6 +9,7 @@ mod manifest;
 mod model;
 mod plan;
 mod projects;
+mod prune;
 mod resolve;
 mod scope;
 pub mod source;
@@ -30,6 +31,7 @@ pub use plan::{
     plan, Action, Blocker, ExitClass, LinkPrecondition, LockChange, ManifestChange,
     PackMemberState, Plan, PlanFact, Preconditions, SnapshotPreparation, TrustChange,
 };
+pub use prune::observe_reachability;
 pub use resolve::{resolve_manifest, Resolution, ResolvedSkill};
 pub use scope::{discover_project, resolve_explicit_project, PathProbe, Paths, ScopePaths};
 pub use source::{

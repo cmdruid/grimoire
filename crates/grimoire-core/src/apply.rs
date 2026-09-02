@@ -171,6 +171,15 @@ pub fn apply(
         return Ok(ApplyOutcome::Cancelled);
     }
 
+    if plan.preconditions.reachability.is_some()
+        || plan
+            .actions
+            .iter()
+            .any(|action| matches!(action, Action::PruneSnapshot { .. }))
+    {
+        return apply_prune(paths, plan, runtime);
+    }
+
     let pending_journal = paths.transaction_journal_path(&paths.scope_key());
     if pending_journal.exists() {
         recover(paths, runtime)?;
@@ -335,6 +344,14 @@ fn preflight(paths: &Paths, plan: &Plan) -> Result<()> {
             | Action::RetainLink { scope, .. }
             | Action::RepointLink { scope, .. }
             | Action::RemoveLink { scope, .. } => *scope,
+            Action::PruneSnapshot { .. } => {
+                if !matches!(paths.scope, ScopePaths::Global { .. }) {
+                    return Err(CoreError::Transaction(
+                        "prune action requires global resolved paths".into(),
+                    ));
+                }
+                continue;
+            }
             Action::ReplaceTrust { .. } => continue,
         };
         if scope != expected_scope {
@@ -450,6 +467,22 @@ fn validate_preconditions(paths: &Paths, plan: &Plan, include_projects: bool) ->
 }
 
 fn validate_action_shapes(plan: &Plan) -> Result<()> {
+    let has_prune = plan.preconditions.reachability.is_some()
+        || plan
+            .actions
+            .iter()
+            .any(|action| matches!(action, Action::PruneSnapshot { .. }));
+    if has_prune
+        && (plan.preconditions.reachability.is_none()
+            || plan
+                .actions
+                .iter()
+                .any(|action| !matches!(action, Action::PruneSnapshot { .. })))
+    {
+        return Err(CoreError::Transaction(
+            "prune actions cannot be mixed with scope transaction actions".into(),
+        ));
+    }
     let candidate_actions = plan
         .actions
         .iter()
@@ -579,6 +612,7 @@ fn build_journal(paths: &Paths, plan: &Plan, scope_key: &str, nonce: &str) -> Re
                 after: None,
             }),
             Action::PrepareSnapshot { .. } => unreachable!("preflight"),
+            Action::PruneSnapshot { .. } => unreachable!("separate prune transaction"),
         }
     }
     state.sort_by_key(|transition| state_order(transition.name));
@@ -1097,6 +1131,78 @@ fn refresh_project_index(
         nonce,
     )?;
     Ok(())
+}
+
+fn apply_prune(
+    paths: &Paths,
+    plan: &Plan,
+    runtime: &dyn TransactionRuntime,
+) -> Result<ApplyOutcome> {
+    if !matches!(paths.scope, ScopePaths::Global { .. }) {
+        return Err(CoreError::Transaction(
+            "store prune requires global resolved paths".into(),
+        ));
+    }
+    let expected =
+        plan.preconditions.reachability.as_ref().ok_or_else(|| {
+            CoreError::Transaction("prune plan lacks reachability generation".into())
+        })?;
+    let mut locks = LockCoordinator::new();
+    locks.acquire(
+        &paths.store_lock_path(),
+        LockRank::Store,
+        LockMode::Exclusive,
+    )?;
+    locks.acquire(
+        &paths.projects_lock_path(),
+        LockRank::Projects,
+        LockMode::Exclusive,
+    )?;
+    let observed = crate::prune::reobserve_locked(paths)?;
+    if &observed.generation != expected {
+        return Err(CoreError::StalePlan(
+            "prune reachability generation changed".into(),
+        ));
+    }
+    if observed.retain_all {
+        return Err(CoreError::StalePlan(
+            "prune reachability is uncertain".into(),
+        ));
+    }
+    let mut changed = false;
+    for action in &plan.actions {
+        let Action::PruneSnapshot {
+            source_key,
+            snapshot_key,
+        } = action
+        else {
+            return Err(CoreError::Transaction(
+                "non-prune action reached prune executor".into(),
+            ));
+        };
+        let reference = crate::ProjectReference {
+            source_key: source_key.clone(),
+            snapshot_key: snapshot_key.clone(),
+        };
+        if !observed.snapshots.contains(&reference) || observed.reachable.contains(&reference) {
+            return Err(CoreError::StalePlan(
+                "planned snapshot is no longer proven unreachable".into(),
+            ));
+        }
+        if checkpoint(runtime, "before-prune-snapshot")? {
+            return Ok(ApplyOutcome::Interrupted {
+                checkpoint: "before-prune-snapshot".into(),
+            });
+        }
+        crate::prune::remove_snapshot(paths, &reference)?;
+        changed = true;
+        if checkpoint(runtime, "after-prune-snapshot")? {
+            return Ok(ApplyOutcome::Interrupted {
+                checkpoint: "after-prune-snapshot".into(),
+            });
+        }
+    }
+    Ok(ApplyOutcome::Applied { changed })
 }
 
 fn path_bytes(path: &Path) -> Vec<u8> {

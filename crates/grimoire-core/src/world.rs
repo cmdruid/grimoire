@@ -149,6 +149,7 @@ pub fn load_world(
         lock_present: true,
         observations,
         project_index_bytes: None,
+        reachability: None,
     };
     if matches!(paths.scope, ScopePaths::Project { .. }) {
         let nonce = runtime.transaction_nonce()?;

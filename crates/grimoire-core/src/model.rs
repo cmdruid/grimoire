@@ -399,6 +399,15 @@ pub struct ProjectIndex {
     pub records: BTreeMap<String, ProjectRecord>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReachabilityObservation {
+    pub generation: ByteHash,
+    pub snapshots: BTreeSet<ProjectReference>,
+    pub reachable: BTreeSet<ProjectReference>,
+    pub findings: Vec<WorldObservation>,
+    pub retain_all: bool,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PlanningMode {
@@ -453,6 +462,7 @@ pub enum Request {
     RevokeTrust {
         source: crate::SourceKey,
     },
+    Prune,
 }
 
 #[derive(Debug, Clone)]
@@ -473,6 +483,7 @@ pub struct WorldState {
     pub lock_present: bool,
     pub observations: Vec<WorldObservation>,
     pub project_index_bytes: Option<Vec<u8>>,
+    pub reachability: Option<ReachabilityObservation>,
 }
 
 impl WorldState {
@@ -515,6 +526,7 @@ impl WorldState {
             lock_present: true,
             observations: Vec::new(),
             project_index_bytes: None,
+            reachability: None,
         })
     }
 
@@ -561,6 +573,11 @@ impl WorldState {
 
     pub fn with_project_index_bytes(mut self, bytes: Option<Vec<u8>>) -> Self {
         self.project_index_bytes = bytes;
+        self
+    }
+
+    pub fn with_reachability(mut self, observation: ReachabilityObservation) -> Self {
+        self.reachability = Some(observation);
         self
     }
 }
