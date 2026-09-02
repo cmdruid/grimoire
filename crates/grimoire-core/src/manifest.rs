@@ -223,6 +223,37 @@ impl Manifest {
         &self.original
     }
 
+    pub fn source_declaration_hash(&self, alias: &SourceAlias) -> Result<String> {
+        let sources = self
+            .document
+            .as_table()
+            .get("sources")
+            .and_then(Item::as_table_like)
+            .ok_or_else(|| CoreError::Manifest("manifest has no sources table".into()))?;
+        let source = sources
+            .get(alias.as_str())
+            .and_then(Item::as_table_like)
+            .ok_or_else(|| CoreError::Manifest(format!("source `{alias}` is not declared")))?;
+        let mut fields = vec![Some(alias.as_str().as_bytes())];
+        for name in ["live", "path", "ref", "url"] {
+            let Some((key, value)) = source.get_key_value(name) else {
+                continue;
+            };
+            let key_span = key
+                .span()
+                .ok_or_else(|| CoreError::Manifest("source key has no input span".into()))?;
+            let value_span = value
+                .span()
+                .ok_or_else(|| CoreError::Manifest("source value has no input span".into()))?;
+            fields.push(Some(&self.original[key_span]));
+            fields.push(Some(&self.original[value_span]));
+        }
+        Ok(crate::source::identity::hash_key(
+            b"grimoire/source-declaration@1",
+            fields,
+        ))
+    }
+
     pub fn resolve_declared_path(
         &self,
         alias: &SourceAlias,

@@ -14,6 +14,7 @@ pub enum LockSource {
         reference: Option<String>,
         commit: String,
         tree: String,
+        inventory: String,
     },
     Live {
         declared: String,
@@ -119,6 +120,8 @@ struct SourceDto {
     commit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     tree: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    inventory: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -166,11 +169,20 @@ impl TryFrom<LockDto> for Lockfile {
                             })?,
                             &format!("source `{alias}` tree"),
                         )?,
+                        inventory: checked_digest(
+                            source.inventory.ok_or_else(|| {
+                                CoreError::Lock(format!(
+                                    "Git source `{alias}` is missing inventory"
+                                ))
+                            })?,
+                            &format!("source `{alias}` inventory"),
+                        )?,
                     },
                     "live"
                         if source.r#ref.is_none()
                             && source.commit.is_none()
-                            && source.tree.is_none() =>
+                            && source.tree.is_none()
+                            && source.inventory.is_none() =>
                     {
                         LockSource::Live {
                             declared: source.declared,
@@ -258,12 +270,14 @@ impl From<&Lockfile> for LockDto {
                         reference,
                         commit,
                         tree,
+                        inventory,
                     } => SourceDto {
                         declared: declared.clone(),
                         kind: "git".into(),
                         r#ref: reference.clone(),
                         commit: Some(commit.clone()),
                         tree: Some(tree.clone()),
+                        inventory: Some(inventory.clone()),
                     },
                     LockSource::Live { declared } => SourceDto {
                         declared: declared.clone(),
@@ -271,6 +285,7 @@ impl From<&Lockfile> for LockDto {
                         r#ref: None,
                         commit: None,
                         tree: None,
+                        inventory: None,
                     },
                 };
                 (alias.to_string(), dto)
@@ -459,6 +474,11 @@ fn checked_object_id(value: String, field: &str) -> Result<String> {
             "{field} must be a full lowercase hexadecimal object ID"
         )))
     }
+}
+
+fn checked_digest(value: String, field: &str) -> Result<String> {
+    validate_digest(&value, field)?;
+    Ok(value)
 }
 
 fn validate_digest(value: &str, skill: &str) -> Result<()> {

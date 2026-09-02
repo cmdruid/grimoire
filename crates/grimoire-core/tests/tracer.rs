@@ -3,8 +3,8 @@ use std::path::PathBuf;
 
 use grimoire_core::{
     plan, Action, ByteHash, InstalledLink, LinkPrecondition, LockChange, PlanFact, PlanningMode,
-    Preconditions, Request, RequestRoot, Scope, SnapshotId, SnapshotKind, SourceAlias,
-    SourceSnapshot, WorldState,
+    Preconditions, Request, RequestRoot, Scope, SnapshotId, SnapshotKind, SnapshotStore,
+    SourceAlias, SourceSnapshot, SourceState, TrustBaseline, TrustReceipt, TrustStore, WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Pack, Skill, SourceInventory, SourcePath,
@@ -65,6 +65,35 @@ fn fixture() -> (SourceSnapshot, String) {
     (snapshot, content.to_string())
 }
 
+fn trusted(snapshot: SourceSnapshot) -> (SourceState, Vec<u8>) {
+    let identity = grimoire_core::CanonicalIdentity::remote("github:cmdruid/grimoire").unwrap();
+    let review_tree = snapshot.inventory.review_tree_digest.to_string();
+    let receipt = TrustReceipt {
+        commit: snapshot.id.commit.clone().unwrap(),
+        tree: snapshot.id.tree.clone().unwrap(),
+        inventory: snapshot.id.inventory_digest.clone(),
+    };
+    let trust = TrustStore::default()
+        .grant_all(
+            identity.clone(),
+            Some(receipt),
+            TrustBaseline {
+                commit: snapshot.id.commit.clone(),
+                tree: snapshot.id.tree.clone(),
+                inventory: snapshot.id.inventory_digest.clone(),
+                review_tree: review_tree.clone(),
+            },
+            None,
+        )
+        .unwrap()
+        .after;
+    (
+        SourceState::new(snapshot, SnapshotStore::Valid, false)
+            .source_identity(identity, review_tree),
+        trust,
+    )
+}
+
 #[test]
 fn one_direct_skill_traces_the_complete_pure_kernel() {
     let (snapshot, content) = fixture();
@@ -79,7 +108,8 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
             "      \"kind\": \"git\",\n",
             "      \"ref\": \"main\",\n",
             "      \"commit\": \"{}\",\n",
-            "      \"tree\": \"{}\"\n",
+            "      \"tree\": \"{}\",\n",
+            "      \"inventory\": \"{}\"\n",
             "    }}\n",
             "  }},\n",
             "  \"packs\": {{}},\n",
@@ -97,18 +127,21 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
         ),
         "1".repeat(40),
         "2".repeat(40),
+        snapshot.id.inventory_digest,
         content
     );
 
+    let (state, trust) = trusted(snapshot.clone());
     let world = WorldState::from_bytes(
         Scope::Project,
         MANIFEST.as_bytes().to_vec(),
         EMPTY_LOCK.as_bytes().to_vec(),
-        [snapshot.clone()],
+        [state],
         [("journal", InstalledLink::Absent)],
         None,
     )
-    .unwrap();
+    .unwrap()
+    .with_trust_bytes(Some(trust.clone()));
     let result = plan(&world, Request::Reconcile, PlanningMode::Normal).unwrap();
 
     assert_eq!(
@@ -133,6 +166,9 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
         Preconditions {
             manifest: Some(ByteHash::of(MANIFEST.as_bytes())),
             lock: Some(ByteHash::of(EMPTY_LOCK.as_bytes())),
+            candidates: BTreeMap::new(),
+            stores: BTreeMap::from([("grimoire".try_into().unwrap(), SnapshotStore::Valid,)]),
+            trust: Some(ByteHash::of(&trust)),
             links: BTreeMap::from([("journal".try_into().unwrap(), LinkPrecondition::Absent,)]),
         }
     );
@@ -151,15 +187,17 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
     assert!(!result.is_destructive());
     assert!(result.has_changes());
 
+    let (state, trust) = trusted(snapshot);
     let settled = WorldState::from_bytes(
         Scope::Project,
         MANIFEST.as_bytes().to_vec(),
         expected_lock.as_bytes().to_vec(),
-        [snapshot],
+        [state],
         [("journal", InstalledLink::Symlink(target.clone()))],
         None,
     )
-    .unwrap();
+    .unwrap()
+    .with_trust_bytes(Some(trust));
     let first = plan(&settled, Request::Reconcile, PlanningMode::Normal).unwrap();
     let second = plan(&settled, Request::Reconcile, PlanningMode::Normal).unwrap();
 

@@ -6,12 +6,18 @@ use super::super::{scan, InventoryError, SourcePath, TreeEntry, TreeReader};
 struct Files(BTreeMap<SourcePath, Vec<u8>>);
 
 impl TreeReader for Files {
-    fn entries(&self) -> Result<Vec<TreeEntry>, InventoryError> {
-        Ok(self
-            .0
-            .keys()
-            .map(|path| TreeEntry::file(path.clone(), 0o100644))
-            .collect())
+    fn visit_entries(
+        &self,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+    ) -> Result<(), InventoryError> {
+        for path in self.0.keys() {
+            let mut entry = TreeEntry::file(path.clone(), 0o100644);
+            entry.size = Some(self.0[path].len() as u64);
+            if !visitor(entry)? {
+                break;
+            }
+        }
+        Ok(())
     }
 
     fn open<'a>(&'a self, path: &SourcePath) -> Result<Box<dyn Read + 'a>, InventoryError> {

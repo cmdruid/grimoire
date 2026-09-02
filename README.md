@@ -12,9 +12,9 @@ Agents *invoke* skills; a grimoire is the book they're invoked from.
 Grimoire is being rebuilt as a symlink package manager for agent skills. The published hard-cut
 contract is `.records/specs/2026-08-31-grimoire-symlink-package-manager.md`; the implementation
 roadmap is `.records/plans/2026-09-01-grimoire-hard-cut-rewrite-roadmap.md`. The source inventory,
-pure-pack format, declarative manifests and locks, same-snapshot resolution, and pure planning
-kernel are complete. Source custody and trust are next. Grimoire doesn't provide an installation
-command yet.
+pure-pack format, declarative manifests and locks, same-snapshot resolution, pure planning kernel,
+and source-custody and trust foundations are complete. Transactional core operations are next.
+Grimoire doesn't provide an installation command yet.
 
 ## The skills
 

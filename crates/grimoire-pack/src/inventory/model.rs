@@ -67,6 +67,10 @@ impl fmt::Display for SourcePath {
 pub struct Digest(pub(crate) [u8; 32]);
 
 impl Digest {
+    pub fn from_bytes(bytes: [u8; 32]) -> Self {
+        Self(bytes)
+    }
+
     pub fn as_bytes(&self) -> &[u8; 32] {
         &self.0
     }

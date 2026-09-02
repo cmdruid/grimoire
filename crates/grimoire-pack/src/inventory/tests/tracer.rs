@@ -46,10 +46,21 @@ impl MemoryTree {
 }
 
 impl TreeReader for MemoryTree {
-    fn entries(&self) -> Result<Vec<TreeEntry>, InventoryError> {
+    fn visit_entries(
+        &self,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+    ) -> Result<(), InventoryError> {
         let mut entries = self.entries.clone();
         entries.reverse();
-        Ok(entries)
+        for mut entry in entries {
+            if entry.kind == super::super::TreeEntryKind::File && entry.size.is_none() {
+                entry.size = self.files.get(&entry.path).map(|bytes| bytes.len() as u64);
+            }
+            if !visitor(entry)? {
+                break;
+            }
+        }
+        Ok(())
     }
 
     fn open<'a>(&'a self, path: &SourcePath) -> Result<Box<dyn Read + 'a>, InventoryError> {

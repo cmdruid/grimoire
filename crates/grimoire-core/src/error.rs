@@ -22,4 +22,14 @@ pub enum CoreError {
     Snapshot(String),
     #[error("planning request is not available for this world: {0}")]
     Request(String),
+    #[error("invalid source: {0}")]
+    Source(String),
+    #[error("invalid trust state: {0}")]
+    Trust(String),
+    #[error("invalid store state: {0}")]
+    Store(String),
+    #[error("lock custody failure: {0}")]
+    Locking(String),
+    #[error("I/O failure at {path}: {message}")]
+    Io { path: String, message: String },
 }

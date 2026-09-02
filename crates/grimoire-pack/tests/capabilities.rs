@@ -29,13 +29,13 @@ fn file_capabilities_are_bounded_byte_facts() {
 fn review_byte_limit_uses_the_first_rejected_byte() {
     let mut tree = TestTree::default();
     tree.file("large", 0o100644, Vec::new());
-    tree.entries[0].size = Some(1_073_741_825);
+    tree.entries[0].size = Some(134_217_729);
     let inventory = scan(&tree).unwrap();
     let finding = inventory
         .findings
         .iter()
         .find(|finding| finding.code == "review-byte-limit")
         .unwrap();
-    assert_eq!(finding.details["limit"], "1073741824");
-    assert_eq!(finding.details["observed"], "1073741825");
+    assert_eq!(finding.details["limit"], "134217728");
+    assert_eq!(finding.details["observed"], "134217729");
 }

@@ -71,3 +71,16 @@ fn explicit_and_global_paths_are_resolved_without_ambient_environment() {
         PathBuf::from("/users/example/.agents/skills")
     );
 }
+
+#[test]
+fn scope_keys_are_stable_and_global_is_literal() {
+    let project = Paths::project(PathBuf::from("/work/project"), PathBuf::from("/home/g")).unwrap();
+    let same =
+        Paths::project(PathBuf::from("/work/project"), PathBuf::from("/other/home")).unwrap();
+    let other = Paths::project(PathBuf::from("/work/other"), PathBuf::from("/home/g")).unwrap();
+    let global = Paths::global(PathBuf::from("/home/u"), PathBuf::from("/home/g")).unwrap();
+    assert_eq!(project.scope_key(), same.scope_key());
+    assert_ne!(project.scope_key(), other.scope_key());
+    assert_eq!(project.scope_key().len(), 64);
+    assert_eq!(global.scope_key(), "global");
+}

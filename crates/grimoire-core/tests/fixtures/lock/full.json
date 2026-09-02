@@ -10,7 +10,8 @@
       "kind": "git",
       "ref": "main",
       "commit": "1111111111111111111111111111111111111111",
-      "tree": "2222222222222222222222222222222222222222"
+      "tree": "2222222222222222222222222222222222222222",
+      "inventory": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
     }
   },
   "packs": {

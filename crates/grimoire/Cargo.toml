@@ -7,6 +7,8 @@ license = "MIT OR Apache-2.0"
 autobins = false
 
 [dependencies]
+grimoire-core = { path = "../grimoire-core" }
+libc = "0.2"
 ratatui = "0.30.2"
 
 [dev-dependencies]

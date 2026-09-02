@@ -128,11 +128,13 @@ The complete user-local layout is:
   cache/review/<source-key>/<review-key>/
   cache/tmp/
   candidates/<scope-key>/<alias>.json
+  locks/candidates/<scope-key>/<alias>.lock
+  locks/cache/<source-key>.lock
   locks/store.lock
   locks/trust.lock
   locks/projects.lock
   transactions/<scope-key>/
-  transactions/store-repair/<snapshot-key>.json
+  transactions/store-repair/<source-key>/<snapshot-key>.json
 ```
 
 Project discovery walks from the resolved current directory toward the filesystem root and selects
@@ -189,6 +191,17 @@ Normative rules:
 - A source contains exactly one of `url` or `path`. `ref` is optional and defaults to the remote
   default branch for URLs or `HEAD` for pinned local Git. `live` defaults false, is valid only for
   `path`, and cannot be combined with `ref`.
+- A declared Git ref is a branch name, `refs/heads/...`, `refs/tags/...`, or a full object ID. A
+  short name means only `refs/heads/<name>`; Grimoire does not apply Git's ambiguous revision
+  search. Refs must pass Git's ref-name grammar and additionally cannot begin with `-` or contain
+  NUL, LF, or ASCII control bytes. Fetch receives the validated repository as its sole positional
+  operand and exactly one forced refspec
+  `+<validated-fully-qualified-ref-or-object-ID>:refs/grimoire/candidate` plus LF through bounded
+  `git fetch --stdin`; no refspec reaches fetch argv. When `ref` is absent, sanitized and bounded
+  `git ls-remote --symref --exit-code <validated-repository>` first selects exactly one well-formed
+  symref and OID whose reported ref is exactly `HEAD`, ignoring other well-formed advertised refs
+  including names ending in `/HEAD`; it then fetches that fully qualified ref once and records the
+  fetched private ref's full commit in the candidate. Update never resolves it again.
 - Relative source paths resolve against the directory containing the manifest. They remain
   relative in the committed lock; absolute materialization paths never enter it.
 - Every `[skills]` or `[packs]` entry names an existing source alias. A pack's `exclude` list is
@@ -219,7 +232,8 @@ every object level, and ends with one newline. A representative lock is:
       "kind": "git",
       "ref": "main",
       "commit": "0123456789abcdef0123456789abcdef01234567",
-      "tree": "89abcdef0123456789abcdef0123456789abcdef"
+      "tree": "89abcdef0123456789abcdef0123456789abcdef",
+      "inventory": "sha256:..."
     }
   },
   "packs": {
@@ -250,7 +264,9 @@ every object level, and ends with one newline. A representative lock is:
 
 Source, pack, and skill object keys sort lexically. Member lists and `requested_by` sort lexically.
 For Git snapshots, `commit` and `tree` are the full Git object IDs returned by that repository's
-object format. Each skill `content` is Grimoire's canonical `sha256:` content digest, so drift and
+object format, and `inventory` is the canonical `sha256:` source-inventory digest needed to derive
+the immutable snapshot key without candidate, cache, or trust state. Each skill `content` is
+Grimoire's canonical `sha256:` content digest, so drift and
 review do not depend on Git's hash algorithm. `declared` preserves the portable manifest value;
 canonical absolute local paths, cache paths, store paths, timestamps, trust, and last-fetch state
 are forbidden from the lock.
@@ -296,6 +312,13 @@ without a `sha256:` prefix.
 
 Byte goldens for all three preimages are part of schema 1.
 
+`<scope-key>` is the literal `global` for global scope. For project scope it is the lowercase
+SHA-256 of `grimoire/scope-key@1`, project kind ASCII, and the raw bytes of the canonical project
+root using the same null/present field framing. A source declaration hash is the lowercase SHA-256
+of `grimoire/source-declaration@1`, the alias bytes, then each exact TOML source-field key and raw
+value-token byte span in lexical key order, each as a required framed field. Comments and
+whitespace outside those owned spans do not participate. Both grammars have byte goldens.
+
 ### Source identities, fetching, and snapshots
 
 Accepted source locations are:
@@ -306,18 +329,29 @@ Accepted source locations are:
 - a local path to a Git worktree for pinned mode;
 - any readable local directory for explicit live mode.
 
-GitHub shorthand is canonicalized to `https://github.com/<owner>/<repo>.git`. Other remote inputs
-must be valid UTF-8 without spaces, ASCII controls, percent escapes, query, fragment, or `.`/`..`
-path components. HTTPS forbids all userinfo. SSH URI permits only an optional username, never a
-password. Hosts are ASCII DNS names or bracketed IPv6 literals; DNS names and the scheme are
-lowercased, bracketed IPv6 is parsed and rendered in RFC 5952 form, and username and nonempty path
-retain case. An explicit decimal port is preserved,
+GitHub shorthand accepts an owner of 1–39 ASCII alphanumeric/hyphen bytes, beginning and ending
+alphanumeric, and a repository of 1–100 ASCII alphanumeric/dot/underscore/hyphen bytes, beginning
+and ending alphanumeric. The shorthand repository must not include a `.git` suffix; canonical form
+adds exactly one and is `https://github.com/<owner>/<repo>.git`. Other remote inputs must be valid
+UTF-8 without spaces, ASCII controls, percent escapes, query, fragment, `.`/`..` path components,
+empty/repeated path components, or a trailing slash. DNS hosts contain 1–63 byte ASCII
+alphanumeric/hyphen labels that begin and end alphanumeric, with no empty label or trailing dot.
+HTTPS forbids all userinfo. SSH URI permits only an optional username of ASCII alphanumeric, dot,
+underscore, or hyphen bytes, never a password. Hosts are those ASCII DNS names or bracketed IPv6
+literals; DNS names and the scheme are lowercased, bracketed IPv6 is parsed and rendered in RFC
+5952 form, and username and nonempty path retain case. An explicit decimal port is preserved,
 including a default port, so omission and presence are conservatively distinct identities. SCP
-syntax is exactly `<user>@<host>:<nonempty-path>` with the same character restrictions and is not
-converted to an SSH URI: its path is home-relative, whereas an `ssh://` path is absolute. Its
-canonical identity is `ssh-scp:<user>@<lowercase-host>:<path>`.
+syntax is exactly `<user>@<dns-host>:<nonempty-path>` with the same username/host/path restrictions,
+and its username must begin with ASCII alphanumeric. Its path cannot begin with `/` and is therefore
+home-relative, and its first byte cannot be `-`. Bracketed IPv6 is accepted only in URI form. SCP
+is not converted to an SSH URI: an `ssh://` path is absolute. Its canonical identity is
+`ssh-scp:<user>@<lowercase-host>:<path>`. Every submitted remote repository operand must not begin
+with `-`. A remote spelling not admitted by these rules is rejected rather than normalized
+speculatively.
 
-Git receives the original validated location, not the canonical identity string. `file://`,
+GitHub shorthand submits its expanded HTTPS URL to Git; raw `github:` syntax never reaches the
+runner. Every other remote input submits its original validated location, not the canonical
+identity string. `file://`,
 `git://`, `ext::`, custom remote helpers, non-ASCII hostnames, malformed userinfo, and unknown
 schemes are rejected before invoking Git. SCP, SSH URI, and HTTPS identities remain distinct;
 Grimoire does not guess that two transports are the same authority. Local canonical identity is
@@ -328,15 +362,31 @@ Local JSON state represents that identity as `canonical: null` plus padded
 `canonical_bytes_base64`; valid UTF-8 local and all remote identities use `canonical` and omit the
 fallback.
 
+Every Git subprocess uses a sanitized command boundary: ambient repository/object/worktree/index
+variables and ambient system/global/repository configuration cannot redirect the validated URL,
+replace objects, select another protocol, or install hooks. Only HTTPS and SSH are enabled. Fetch
+passes no refspec in argv: `git fetch --stdin` reads exactly one forced refspec with a validated
+source and the fixed `refs/grimoire/candidate` destination from bounded stdin after the validated
+repository operand. Other Git commands use
+`--end-of-options` only where that command's supported interface provides it. Object/ref results
+are verified against the requested repository.
+The app supplies credentials as structured runner inputs: an optional validated SSH-agent socket
+and/or an app-owned askpass callback that may consult the user's credential manager outside the Git
+object operation. The sanitized Git subprocess receives no ambient system/global/repository config
+and no arbitrary helper command. Source-controlled configuration and executables never participate.
+
 Pinned local sources must be Git worktrees with a clean index and worktree. Local inspection opens
-the resolved root component-by-component without following symlinks, holds that root handle, and
-performs directory-relative no-follow reads. It rejects a stale observation if a read file or the
-root changes identity, size, or modification time during inspection. Pinned Git inspection resolves
-one commit and tree, reads content from those Git objects, and rechecks the held worktree identity
-and clean state before publication. Grimoire copies that exact commit into the immutable store and
-thereafter links to the stored snapshot. Editing, swapping, or pulling the original checkout cannot
-alter an installed skill or publish a mixed inventory. A dirty or changing pinned source is a
-blocker, not an implicit live source.
+the resolved root component-by-component without following symlinks, holds directory handles, and
+performs directory-relative no-follow reads. Every traversed directory and entry is revalidated by
+device, inode, type, size where applicable, modification time, and change time before publication.
+Pinned Git inspection binds the worktree, Git directory/commondir, resolved commit, and tree to the
+same held custody, reads content from those Git objects, and rechecks identity and clean state
+before publication. Frozen reuse of a pinned local source requires the original held root still to
+exist and revalidate to the same canonical identity; Grimoire keeps no second identity-binding
+database. Grimoire copies the exact commit into the immutable store and thereafter links to the
+stored snapshot. Editing, swapping, or pulling the original checkout cannot alter an installed
+skill or publish a mixed inventory. A dirty or changing pinned source is a blocker, not an implicit
+live source.
 
 Live sources require a readable directory and explicit `live = true`. Their installed links point
 directly into that directory, dirty contents are allowed, and changes take effect immediately.
@@ -346,12 +396,47 @@ boundary, but later local mutation becomes active immediately and cannot be cont
 by Grimoire; `source info` and the TUI state that exception beside every live source. A URL can
 never be live.
 
-Grimoire uses the user's `git` executable and existing SSH and HTTPS credential mechanisms. It
-stores no credentials. Git may invoke the user's configured SSH client or HTTPS credential helper;
-that user-owned transport behavior is not source content. Grimoire never invokes a remote helper
-selected by an unrecognized URL scheme. Fetch uses a bare mirror under `cache/git`, disables hooks
-and recursive submodules, and materializes from Git objects without running filters, LFS smudge
-processes, checkout hooks, build scripts, or any file from the source.
+Grimoire uses the user's `git` executable and the structured SSH/HTTPS credential boundary. It
+stores no credentials. Grimoire never invokes a remote helper selected by an unrecognized URL
+scheme. Fetch uses
+`git fetch --keep --depth=1 --no-tags --no-recurse-submodules --no-write-fetch-head --no-write-commit-graph --no-auto-maintenance --no-progress --stdin <validated-repository>`
+and writes exactly one forced refspec
+`+<validated-fully-qualified-ref-or-object-ID>:refs/grimoire/candidate` plus LF to bounded stdin.
+The fixed private ref is cache-local evidence and never enters candidate, lock, snapshot, review,
+or trust identity. Omitted-ref discovery uses the bounded `ls-remote --symref` command above under
+the same runner controls; a missing, conflicting, or malformed exact-`HEAD` pair is fatal, and the
+whole advertisement remains subject to the 1-MiB control-output cap. The two commands share one
+600-second monotonic workflow deadline and force received objects into one pack
+in a temporary bare repository. Reverse indexes, tag following, recursive submodules, fetch-head
+and commit-graph writes, progress, and automatic maintenance are disabled. App-owned configuration
+fixes `pack.writeReverseIndex=false`, `pack.threads=1`, `core.deltaBaseCacheLimit=16m`, and
+`core.bigFileThreshold=16m`.
+
+Every local Git command runs in a dedicated process group with a 256-MiB (268,435,456-byte) OS
+file-size ceiling. On Linux every member also inherits a hard 512-MiB (536,870,912-byte) virtual
+memory ceiling. On macOS a parent-owned supervisor samples and sums the resident footprint of every
+process-group member at least every 5 ms and terminates the whole group at 384 MiB (402,653,184
+bytes), retaining 128 MiB of headroom below the Linux boundary; this is a supervised threshold, not
+a kernel-hard macOS ceiling. Failure to install the Linux limit, read the macOS process-group
+footprint, or retain supervision fails closed. At most one received pack and one generated index
+may exist, and all other repository metadata in aggregate is capped at 1 MiB, bounding staging
+below 513 MiB. The complete temporary repository and retained selected-ref-only cache must each
+total no more than 256 MiB before publication. Crossing a time, memory, file, shape, metadata, or
+final-cache budget terminates the whole process group, discards the temporary repository, and
+publishes no cache, review export, or candidate.
+
+The command runner buffers at most 1 MiB (1,048,576 bytes) each of control/diagnostic stdout and
+stderr. Git tree listings and blob bytes use a separate payload-stream interface: they are never
+captured in those buffers and flow directly into the 100,000-entry and 128-MiB inventory guards.
+Fetch and object reads disable hooks, recursive submodules, filters, LFS smudge processes, checkout
+hooks, build scripts, and every executable from the source.
+
+After the temporary repository and selected commit/tree verify, the source-key cache mutex guards
+publication of that complete selected-ref-only repository. The verified temporary directory is
+renamed into the fixed cache path; any incumbent is first renamed to a unique sibling and removed
+only after the new fixed path verifies and its parent is fsynced. On interruption, the next holder
+keeps one verified complete fixed generation, restores a verified incumbent when needed, or drops
+both and refetches. The bare cache is replaceable evidence, never activation or trust authority.
 
 An installable snapshot is written into a new temporary directory, verified against its canonical
 inventory, and renamed once to its immutable store key. Directories and non-executable files become
@@ -379,15 +464,19 @@ only in a submodule is missing.
 Inspection uses a distinct content-addressed export under `cache/review`. Its exact reviewed-entry
 set is every non-directory entry encountered by the outer discovery walk, plus every non-directory
 entry beneath each discovered skill root. Ignored and nested-checkout subtrees are outside that set.
-The installable snapshot contains exactly this set plus its parent directories. The existing
-discovery depth and entry caps apply, and inspection emits `review-byte-limit` and fails rather than
-truncates when reviewed regular-file bytes exceed 1 GiB.
+The installable snapshot contains the materializable members of this set plus their parent
+directories; submodule entries remain index-only facts. Discovery depth, entry count, the 64-KiB
+frontmatter cap, and a 128-MiB (134,217,728-byte) cumulative reviewed-regular-file-byte cap are hard stops:
+enumeration and reads use bounded/streaming interfaces and cease before exceeding a limit. There is
+no separate regular-file limit. Inspection emits the applicable finding and fails rather than
+retaining an oversized in-memory tree or truncating input.
 
 The review-tree digest uses `grimoire/review-tree@1` plus NUL and one record per reviewed entry in
-raw source-path order. Records use the skill-content unsigned 64-bit framing for raw path, kind,
-normalized mode, payload, boundary, safety, and reason. File payload is its ASCII `sha256:` digest,
-symlink payload is the exact target bytes, and submodule payload is the commit ASCII. Boundary is `snapshot`
-or `skill` plus the owning skill's raw source path. Safety is empty for non-links and is `internal`,
+raw source-path order. Each record has seven separately framed fields in this order: raw path,
+kind, normalized mode, payload, boundary, safety, and reason. File payload is its ASCII `sha256:`
+digest, symlink payload is the exact target bytes, and submodule payload is the commit ASCII. The
+single boundary field is exactly `snapshot`, or `skill`, NUL, and the owning skill's raw source
+path. Safety is empty for non-links and is `internal`,
 `escaping`, or `invalid` for links; reason is `empty` or `nul` only for an invalid link and empty
 otherwise. The digest is the `sha256:` lowercase hash of those bytes.
 
@@ -410,23 +499,32 @@ makes the installable snapshot invalid. `source info` points `review_path` at th
 Grimoire never executes review content and clears its executable mode bits, but the export is not a
 sandbox or safety boundary and trust never turns it into an install target.
 
-`source fetch` updates the local mirror and one scope-and-alias-specific candidate record only. It
-never changes a manifest request, lock, installed link, trust baseline, or immutable snapshot
-already in use. Candidate records use schema `grimoire/candidate@1` and bind the source declaration
-byte hash, canonical identity, nullable commit and repository tree, inventory digest, and
-review-tree digest. Requested ref comes from the matching manifest declaration. Snapshot key,
-review key, and review-export path are derived from their normative formulas and resolved Grimoire
-home rather than duplicated in the record. Candidate records are local state and never enter a
-project lock or manifest. Before presenting or reusing an export, Grimoire verifies its index
-review-tree digest and every referenced object digest.
+`source fetch` updates only the local mirror, verified review export, and one
+scope-and-alias-specific candidate record. It never changes a manifest request, lock, installed
+link, trust baseline, or immutable store entry. Candidate records use strict schema
+`grimoire/candidate@1` and contain exactly `schema`, `declaration_hash`, `source_key`, `kind`, the
+canonical identity projection, nullable `commit` and `tree`, `inventory`, and `review_tree`.
+Unknown or duplicate fields are rejected. On load, Grimoire rederives the source key from kind and
+canonical identity and cross-checks every outer path/key and variant invariant. Requested ref comes
+from the matching manifest declaration and is reported as null when omitted; the candidate's full
+commit is the offline authority. Snapshot key, review key, and review-export path are derived from
+their normative formulas and resolved Grimoire home rather than duplicated in the record.
+Candidate records are local state and never enter a project lock or manifest. Before presenting or
+reusing an export, Grimoire verifies its index review-tree digest and every referenced object
+digest.
 
-Fetch and inspection occur in per-source temporary locations without a scope lock. Before
-publishing the result, Grimoire acquires applicable shared-state locks in the global order and then
-the scope lock, revalidates the manifest declaration byte hash and canonical identity, and
-atomically replaces `candidates/<scope-key>/<alias>.json`. A changed or removed declaration makes
-the result stale and leaves the prior candidate intact. Consequently, scopes and aliases may track
-different refs for the same canonical source without rebinding one another. A successful offline
-frozen install requires every locked snapshot to exist in the store and performs no network
+Fetch and inspection take the scope-and-alias candidate mutex before reading the declaration and
+hold it through preparation and publication; that mutex is never acquired while another Grimoire
+lock is held. Preparation then occurs in per-source temporary locations without a scope lock. A
+source-key cache mutex, acquired after the candidate mutex, serializes verification and every
+mutation/publication of the fixed bare cache across scopes and aliases; it is released before
+shared-state locks are acquired. Before publishing the candidate, Grimoire acquires shared
+`store.lock` and then the scope lock, revalidates the manifest declaration byte hash and canonical identity, and
+atomically replaces `candidates/<scope-key>/<alias>.json`. Serialization prevents an older fetch of
+the same unchanged declaration from overwriting a newer result. A changed or removed declaration
+makes the result stale and leaves the prior candidate intact. Consequently, scopes and aliases may
+track different refs for the same canonical source without rebinding one another. A successful
+offline frozen install requires every locked snapshot to exist in the store and performs no network
 operation.
 
 Store entries have no automatic eviction. `store prune` removes only snapshots that are not
@@ -620,12 +718,18 @@ manifest proves intent to locate it, not local approval to activate it. All pinn
 must satisfy the local trust store before any plan can create or repoint links to their content.
 
 `~/.grimoire/trust.json` is local, never committed, created with user-only permissions, and has
-schema `grimoire/trust@1`. Records are keyed by source key and carry the canonical identity using
-the projection above. Trust is logically identity-wide. Each record contains:
+schema `grimoire/trust@1`. Its root contains exactly `schema` and `records`. Records are keyed by
+source key and contain exactly source `kind`, the canonical identity projection, sorted `receipts`,
+boolean `all_snapshots`, and nullable `baseline`; unknown or duplicate fields are rejected. Each exact
+receipt contains exactly `commit`, `tree`, and `inventory`. A baseline contains exactly nullable
+`commit` and `tree`, `inventory`, and `review_tree`. On every load, Grimoire rederives each outer
+source key from kind and canonical identity and rejects a mismatch. Output is deterministic and a
+new file is created with user-only permissions. Trust is logically identity-wide. Each record
+contains:
 
 - zero or more exact receipts binding full commit, repository tree object ID, and Grimoire source
   inventory digest;
-- an optional `all_snapshots: true` policy;
+- a required `all_snapshots` boolean, where `true` grants the policy and `false` does not;
 - the last snapshot explicitly reviewed or actually accepted by install/update, including its
   inventory and review-tree digests, used as the diff baseline.
 
@@ -635,7 +739,8 @@ different commit or tree is untrusted. `grimoire source trust <alias> --all` rec
 revocable all-snapshots policy. For a pinned candidate it also records an exact receipt; for a live
 source it records the current inventory as the review baseline but no exact receipt.
 `grimoire source trust <alias> --revoke` removes exact receipts and the all-snapshots policy for
-that canonical identity. Because trust is identity-wide, the command previews every known scope
+that canonical identity but retains the last baseline and identity record for audit and future
+diffs. Because trust is identity-wide, the command previews every known scope
 that uses it. Removing a source alias does not silently revoke identity trust; revocation remains
 an explicit trust operation. Scope-independent `grimoire trust list` shows every canonical identity,
 its source key, policy, receipts, baseline, and known aliases. `grimoire trust revoke <source-key>`
@@ -644,8 +749,9 @@ provides the same preview and revocation when no alias remains.
 Exact receipts apply only to pinned snapshots. `source trust` without `--all` refuses a live
 source, because no stable snapshot exists to approve; live sources require the all-snapshots
 ceremony. Granting exact trust makes that candidate the reviewed diff baseline. Fetch alone never
-advances the baseline. Under trust-all, a future pinned snapshot becomes the baseline only when an
-update actually applies it. Live content changes immediately by definition, so its baseline remains
+advances the baseline. Under trust-all, a future pinned snapshot becomes the baseline whenever a
+successful install, reconcile, or update creates or repoints links to it. Live content changes
+immediately by definition, so its baseline remains
 the inventory observed at the most recent explicit `--all` approval and `source diff` reports later
 changes against it.
 
@@ -657,7 +763,8 @@ can never grant or broaden trust.
 An all-snapshots policy means future candidate snapshots pass the trust gate; it does not install
 them, update the lock, or repoint links. `source fetch` remains inert. `update` still shows the full
 source and downstream diff and follows destructive confirmation rules. When an all-trusted
-snapshot is actually applied, it becomes the new accepted diff baseline.
+snapshot is successfully activated by link creation or repointing, it becomes the new accepted
+diff baseline in the same transaction.
 
 Revoking trust does not silently uninstall already active content. `check` reports those installed
 sources as untrusted; operations that create or repoint their links block until trust is restored.
@@ -745,8 +852,8 @@ Removing an installed request remains allowed so a user can deactivate untrusted
 
 All shown top-level and nested fields are required unless this paragraph says otherwise. `entries`
 contains reviewed symlink and submodule facts outside discovered skills; skill-contained facts stay
-in `skills[].files`. For live sources, `source.kind` is `live`; `source.requested_ref`,
-`snapshot.commit`, and `snapshot.tree` are JSON null. A non-UTF-8 local canonical identity uses
+in `skills[].files`. `source.requested_ref` is the declared ref or JSON null when it was omitted;
+for live sources it is always null, as are `snapshot.commit` and `snapshot.tree`. A non-UTF-8 local canonical identity uses
 `source.canonical: null` plus `source.canonical_bytes_base64`; otherwise the fallback is absent.
 `trust.mode` is `untrusted`, `snapshot`, or `all`; `trust.baseline` is null when none
 exists, otherwise it has exactly `commit`, `tree`, `inventory`, and `review_tree`, with nullable
@@ -897,7 +1004,9 @@ foreign occupancy, or ownership checks.
 `--frozen` compares the manifest schema, source declarations, direct skill/pack request roots, and
 pack exclusions to the resolution recorded in the existing lock. It does not resolve a declared
 branch or ask whether its remote head still equals the locked commit; the lock is authoritative for
-that moving-ref question. Frozen mode requires every exact pinned snapshot in the store, performs
+that moving-ref question. The lock's commit, tree, and inventory derive the exact snapshot key;
+frozen mode never consults candidate, cache, or identity-wide baseline state to locate it. Frozen
+mode requires every exact pinned snapshot in the store, performs
 no fetch, accepts no live source, and does not rewrite manifest or lock bytes. It may repair missing
 owned links after verifying store content. Any declaration/request mismatch, corrupt or absent
 snapshot, or trust failure is a blocker.
@@ -983,8 +1092,9 @@ dependency or capability models.
 ### Transactions and recovery
 
 Only one mutating operation may hold a scope at a time. The lock and crash journal live under
-`<grimoire-home>/transactions/<scope-key>/`; the project scope key is a hash of its canonical root,
-and global has a fixed key. Three user-home locks protect state shared across scopes:
+`<grimoire-home>/transactions/<scope-key>/`; scope keys use the normative grammar above. Candidate
+and source-cache mutexes coordinate their named workflows; three global user-home locks protect
+state shared across scopes:
 
 - `store.lock` is shared while an apply relies on snapshots and exclusive for prune or the final
   rename of a newly materialized snapshot;
@@ -995,22 +1105,27 @@ When several are needed, acquisition order is `store`, `trust`, `projects`, then
 never waits for an earlier lock while holding a later one. Non-trust project and global applies may
 run concurrently because they take shared store/trust locks and distinct scope locks; a project
 apply also takes the project-index lock before its scope lock. Trust mutations take the exclusive
-trust lock. Fetches may run concurrently through per-source temporary directories, taking the
-exclusive store lock only for store/index changes and immutable final rename, then their scope lock
-for candidate publication. Prune holds exclusive store and project locks through precondition
-revalidation and deletion, so it cannot race a new lock or candidate reference.
+trust lock. Fetches for different identities or scope/alias pairs may prepare concurrently; a pair
+is serialized by its candidate mutex and fixed-mirror mutation is serialized by its source-cache
+mutex. Fetch never materializes a store entry. Candidate publication takes shared `store.lock` and
+then the scope lock, holding both through rename and parent fsync. Prune holds
+exclusive store and project locks through precondition revalidation and deletion, so it cannot
+race a new lock or candidate reference.
 
-Corrupt snapshot replacement uses a separate journal at
-`transactions/store-repair/<snapshot-key>.json`. Grimoire first materializes and verifies a complete
-replacement in a temporary directory. Under the exclusive store lock it re-verifies that the fixed
-store path is corrupt, writes and fsyncs a journal naming the fixed, quarantine, and replacement
-paths, renames the corrupt directory to a transaction-private quarantine path, and renames the
-replacement to the fixed snapshot key. If the second rename fails normally, it restores the
-quarantine immediately. After a crash, recovery keeps the fixed path when it verifies as the
-expected snapshot and removes the quarantine; otherwise it restores the quarantined directory and
-discards the incomplete replacement. Recovery is idempotent and fsyncs the store parent before
-removing the journal. Links may be briefly unavailable across the two renames, but they never
-resolve to mixed old and new content.
+Corrupt snapshot replacement uses a create-new journal at
+`transactions/store-repair/<source-key>/<snapshot-key>.json`. Grimoire first materializes and
+verifies a complete replacement in a temporary directory. Under the exclusive store lock it
+recovers any existing journal for that source/snapshot pair, re-verifies that the fixed store path
+is corrupt, and writes and fsyncs a journal naming only derived relative fixed, quarantine, and
+replacement locations. Before every open or rename, recovery rederives those locations from the
+validated source/snapshot keys and proves containment beneath the store or transaction root;
+journal text can never nominate an arbitrary path. It renames the corrupt directory to a
+transaction-private quarantine path, then the replacement to the fixed snapshot key. If the second
+rename fails normally, it restores the quarantine immediately. After a crash, recovery keeps the
+fixed path when it verifies as the expected source/snapshot and removes the quarantine; otherwise
+it restores the quarantined directory and discards the incomplete replacement. Recovery is
+idempotent and fsyncs the store parent before removing the journal. Links may be briefly unavailable
+across the two renames, but they never resolve to mixed old and new content.
 
 Apply proceeds as follows:
 
@@ -1117,13 +1232,15 @@ The hard cut is complete only when the old and new models cannot coexist acciden
 - Local bare remotes prove fetch alone never changes locks or links, while one source update can
   explicitly change several downstream skills in one plan.
 - Pinned local tests modify the origin after install and prove installed bytes/targets do not move.
-  Path-swap, root-swap, and mid-read file-swap tests fail stale without reading an outside canary or
-  publishing a mixed inventory. Dirty pinned sources fail; live sources move immediately, require
+  Path-component, nested-directory, root, Git-directory, and mid-read entry swaps fail stale without
+  reading an outside canary or publishing a mixed inventory. Frozen pinned-local reuse fails when
+  its original root is absent or resolves to a different identity. Dirty pinned sources fail; live sources move immediately, require
   trust-all, expose the continuous-containment warning, and fail frozen mode.
   Repeated unchanged live inspection reuses its review export; changed content produces a new
   review key without creating an immutable store snapshot.
 - Offline frozen tests pass with a populated store and fail without the exact snapshot without
-  attempting network access.
+  attempting network access. A candidate/cache-free fixture with multiple stored snapshots and an
+  identity-wide baseline pointing elsewhere selects only the lock's commit/tree/inventory key.
 - Malicious Git-tree fixtures prove traversal, special entries, collision-key conflicts, empty/NUL
   symlink targets, escaping symlinks (including a snapshot-internal link that leaves its owning
   skill), filters, hooks, LFS, and submodules cannot execute or escape materialization. Review facts
@@ -1131,9 +1248,29 @@ The hard cut is complete only when the old and new models cannot coexist acciden
   UTF-8 names, collision-key conflicts, and host-unrepresentable paths still produce
   a lossless index and content objects without creating unsafe paths. They also pin the exact
   reviewed-entry set, entry/byte limits, review-tree byte grammar, index schema, and object
-  revalidation; changing any reviewed live entry changes the key. Transport tests exhaust accepted
+  revalidation; changing any reviewed live entry changes the key. Limit tests use counting readers
+  and prove enumeration, frontmatter reads, and 128-MiB cumulative review bytes stop at their
+  bounds; disabling each guard makes its canary exceed the bound. Transport tests exhaust accepted
   and rejected URL grammar before the Git runner receives a command and prove conservative identity
-  equivalence and distinction, including SCP home-relative versus absolute SSH-URI paths.
+  equivalence and distinction, including SCP home-relative versus absolute SSH-URI paths and
+  option-shaped SCP usernames/paths rejected without invoking Git. Ref tests cover short-branch
+  qualification, tags, object IDs, omitted-default resolution, leading-option injection, and
+  ambiguous names; exact argv proves shorthand submits expanded HTTPS and never raw `github:`.
+  Git-runner canaries prove ambient URL rewrites, protocols,
+  replace/object paths, hooks, and repository configuration cannot change the validated operation.
+  Production-command tests prove named refs and full OIDs use the exact `git fetch --stdin`
+  argv/private-ref shape, HTTPS dispatch reaches the host Git HTTPS transport, omitted HEAD accepts
+  only one exact `ls-remote --symref` pair despite distracting `*/HEAD` refs, and default-branch
+  races either fail or publish only the commit actually fetched. Separate runner tests cross the
+  shared deadline, Linux virtual-memory or macOS 384-MiB supervised threshold, per-file,
+  repository-shape/metadata, final-cache, and 1-MiB control-output budgets, proving process-group
+  termination and zero publication; missing platform enforcement fails closed. Safe reduced-
+  threshold fixtures use compact packs with exaggerated object counts and delta-result
+  declarations; disabling the guard lets their bounded canary allocation complete, proving the red
+  arm without risking host exhaustion. Credential tests
+  succeed through only the structured SSH-agent/askpass inputs. A blob and a tree listing each
+  larger than 1 MiB but within the inventory limits succeed through payload streaming, while
+  disabled payload byte/entry guards reach their red canaries.
 - Trust tests prove registration is not approval; an exact receipt survives reuse of the same
   snapshot but not a changed commit/tree; trust-all admits a future candidate but does not update
   it; URL identity changes lose trust; `--yes` grants none; revoke affects every alias sharing the
@@ -1141,9 +1278,15 @@ The hard cut is complete only when the old and new models cannot coexist acciden
   cached candidate without fetching; a concurrent explicit fetch instead makes the plan stale.
   Separate scope/alias candidate fixtures track different refs for one identity, reject declaration
   hash mismatches, derive snapshot/review keys and review paths from the minimal record, and prove
-  stale fetch publication cannot overwrite a newer declaration.
+  stale fetch publication cannot overwrite a newer declaration. A paused older fetch and a newer
+  fetch of the same unchanged declaration prove the per-alias mutex prevents the older result from
+  overwriting the newer candidate. Cross-scope fetches of different refs for one identity prove the
+  source-cache mutex protects the shared mirror. A paused prune proves candidate publication holds
+  shared store custody through rename/fsync; disabling either mutex/lease exposes its red arm.
   Live trust-all tests prove no exact receipt is written and later content is diffed against the
-  explicit approval baseline. Removing the final alias leaves trust listable and revocable by
+  explicit approval baseline. Required-boolean goldens cover exact-only, all-trusted, and revoked
+  records; trust-all followed by fetch and first install advances the baseline only when links
+  activate. Removing the final alias leaves trust listable and revocable by
   source key.
 - `source-info@1` JSON goldens cover executable bits, UTF-8 and raw-byte paths, shebangs and symlink
   targets, sizes, binaries,
@@ -1157,7 +1300,8 @@ The hard cut is complete only when the old and new models cannot coexist acciden
   as indexed facts. Store-integrity tests mutate a stored skill and prove both apply and `check`
   reject its digest before linking or reporting a healthy install. Fault injection between each
   quarantine-swap step proves corrupt replacement restores or completes without exposing mixed
-  content.
+  content. Two canonical identities with the same snapshot key use distinct repair journals, and a
+  tampered journal cannot open or rename anything outside the derived store/transaction roots.
 
 ### State, plans, and transactions
 

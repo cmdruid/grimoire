@@ -4,6 +4,7 @@ use super::{
     Boundary, Digest, Finding, Pack, ReviewedEntry, ReviewedPayload, Skill, SymlinkSafety,
 };
 
+#[cfg(test)]
 pub(crate) type ContentRecord<'a> = (u8, &'a [u8], &'a [u8], &'a [u8]);
 
 pub(crate) fn sha256(bytes: &[u8]) -> Digest {
@@ -23,6 +24,7 @@ fn field(out: &mut Vec<u8>, bytes: &[u8]) {
     out.extend_from_slice(bytes);
 }
 
+#[cfg(test)]
 pub(crate) fn skill_content_bytes(entries: &[ContentRecord<'_>]) -> Vec<u8> {
     let mut out = b"grimoire/skill-content@1\0".to_vec();
     for (kind, path, mode, payload) in entries {

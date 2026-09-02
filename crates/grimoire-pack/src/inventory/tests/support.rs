@@ -39,8 +39,20 @@ impl MemoryTree {
 }
 
 impl TreeReader for MemoryTree {
-    fn entries(&self) -> Result<Vec<TreeEntry>, InventoryError> {
-        Ok(self.entries.clone())
+    fn visit_entries(
+        &self,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+    ) -> Result<(), InventoryError> {
+        for entry in &self.entries {
+            let mut entry = entry.clone();
+            if entry.kind == super::super::TreeEntryKind::File && entry.size.is_none() {
+                entry.size = self.files.get(&entry.path).map(|bytes| bytes.len() as u64);
+            }
+            if !visitor(entry)? {
+                break;
+            }
+        }
+        Ok(())
     }
 
     fn open<'a>(&'a self, path: &SourcePath) -> Result<Box<dyn Read + 'a>, InventoryError> {
@@ -115,10 +127,19 @@ impl FixtureTree {
 
 #[cfg(unix)]
 impl TreeReader for FixtureTree {
-    fn entries(&self) -> Result<Vec<TreeEntry>, InventoryError> {
+    fn visit_entries(
+        &self,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+    ) -> Result<(), InventoryError> {
         let mut entries = Vec::new();
         self.walk(&self.root, &mut entries)?;
-        Ok(entries)
+        entries.sort_by(|left, right| left.path.cmp(&right.path));
+        for entry in entries {
+            if !visitor(entry)? {
+                break;
+            }
+        }
+        Ok(())
     }
 
     fn open<'a>(&'a self, path: &SourcePath) -> Result<Box<dyn Read + 'a>, InventoryError> {

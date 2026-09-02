@@ -161,6 +161,59 @@ impl SourceSnapshot {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SnapshotStore {
+    Absent,
+    Valid,
+    Corrupt,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceState {
+    pub snapshot: SourceSnapshot,
+    pub store: SnapshotStore,
+    pub materializable: bool,
+    pub candidate_bytes: Option<Vec<u8>>,
+    pub candidate_current: bool,
+    pub identity: Option<crate::CanonicalIdentity>,
+    pub review_tree: Option<String>,
+}
+
+impl SourceState {
+    pub fn new(snapshot: SourceSnapshot, store: SnapshotStore, materializable: bool) -> Self {
+        Self {
+            snapshot,
+            store,
+            materializable,
+            candidate_bytes: None,
+            candidate_current: true,
+            identity: None,
+            review_tree: None,
+        }
+    }
+
+    pub fn candidate(mut self, bytes: Vec<u8>) -> Self {
+        self.candidate_bytes = Some(bytes);
+        self
+    }
+
+    pub fn stale_candidate(mut self) -> Self {
+        self.candidate_current = false;
+        self
+    }
+
+    pub fn source_identity(
+        mut self,
+        identity: crate::CanonicalIdentity,
+        review_tree: String,
+    ) -> Self {
+        self.identity = Some(identity);
+        self.review_tree = Some(review_tree);
+        self
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "target", rename_all = "snake_case")]
 pub enum InstalledLink {
@@ -222,7 +275,19 @@ pub enum Request {
     },
     UpdateSource {
         alias: SourceAlias,
-        snapshot: Box<SourceSnapshot>,
+    },
+    TrustExact {
+        identity: crate::CanonicalIdentity,
+        receipt: crate::TrustReceipt,
+        baseline: crate::TrustBaseline,
+    },
+    TrustAll {
+        identity: crate::CanonicalIdentity,
+        receipt: Option<crate::TrustReceipt>,
+        baseline: crate::TrustBaseline,
+    },
+    RevokeTrust {
+        source: crate::SourceKey,
     },
 }
 
@@ -234,6 +299,10 @@ pub struct WorldState {
     pub lock_bytes: Vec<u8>,
     pub lock: crate::Lockfile,
     pub snapshots: BTreeMap<SourceAlias, SourceSnapshot>,
+    pub source_states: BTreeMap<SourceAlias, SourceState>,
+    pub locked_states: BTreeMap<SourceAlias, SourceState>,
+    pub candidates: BTreeMap<SourceAlias, SourceState>,
+    pub trust_bytes: Option<Vec<u8>>,
     pub links: BTreeMap<SkillName, InstalledLink>,
     pub inherited_global: Option<crate::resolve::Resolution>,
     pub manifest_present: bool,
@@ -245,15 +314,19 @@ impl WorldState {
         scope: Scope,
         manifest_bytes: Vec<u8>,
         lock_bytes: Vec<u8>,
-        snapshots: impl IntoIterator<Item = SourceSnapshot>,
+        sources: impl IntoIterator<Item = SourceState>,
         links: impl IntoIterator<Item = (&'a str, InstalledLink)>,
         inherited_global: Option<crate::resolve::Resolution>,
     ) -> Result<Self> {
         let manifest = crate::Manifest::parse(manifest_bytes.clone())?;
         let lock = crate::Lockfile::parse(&lock_bytes)?;
-        let snapshots = snapshots
+        let source_states: BTreeMap<_, _> = sources
             .into_iter()
-            .map(|snapshot| (snapshot.alias.clone(), snapshot))
+            .map(|state| (state.snapshot.alias.clone(), state))
+            .collect();
+        let snapshots = source_states
+            .iter()
+            .map(|(alias, state)| (alias.clone(), state.snapshot.clone()))
             .collect();
         let links = links
             .into_iter()
@@ -266,6 +339,10 @@ impl WorldState {
             lock_bytes,
             lock,
             snapshots,
+            source_states,
+            locked_states: BTreeMap::new(),
+            candidates: BTreeMap::new(),
+            trust_bytes: None,
             links,
             inherited_global,
             manifest_present: true,
@@ -275,7 +352,7 @@ impl WorldState {
 
     pub fn absent<'a>(
         scope: Scope,
-        snapshots: impl IntoIterator<Item = SourceSnapshot>,
+        sources: impl IntoIterator<Item = SourceState>,
         links: impl IntoIterator<Item = (&'a str, InstalledLink)>,
         inherited_global: Option<crate::resolve::Resolution>,
     ) -> Result<Self> {
@@ -283,12 +360,34 @@ impl WorldState {
             scope,
             b"schema = \"grimoire/manifest@1\"\n".to_vec(),
             crate::Lockfile::default().to_bytes()?,
-            snapshots,
+            sources,
             links,
             inherited_global,
         )?;
         world.manifest_present = false;
         world.lock_present = false;
         Ok(world)
+    }
+
+    pub fn with_candidate(mut self, candidate: SourceState) -> Result<Self> {
+        if candidate.candidate_bytes.is_none() {
+            return Err(CoreError::Request(
+                "candidate observation requires exact candidate bytes".into(),
+            ));
+        }
+        self.candidates
+            .insert(candidate.snapshot.alias.clone(), candidate);
+        Ok(self)
+    }
+
+    pub fn with_locked_snapshot(mut self, state: SourceState) -> Self {
+        self.locked_states
+            .insert(state.snapshot.alias.clone(), state);
+        self
+    }
+
+    pub fn with_trust_bytes(mut self, bytes: Option<Vec<u8>>) -> Self {
+        self.trust_bytes = bytes;
+        self
     }
 }

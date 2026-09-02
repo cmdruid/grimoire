@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use crate::{CoreError, Result};
+use crate::{SnapshotKey, SourceAlias, SourceKey};
 
 pub trait PathProbe {
     fn is_dir(&self, path: &Path) -> bool;
@@ -59,6 +60,98 @@ impl Paths {
         match &self.scope {
             ScopePaths::Project { root } => root.join(".agents/skills"),
             ScopePaths::Global { user_home } => user_home.join(".agents/skills"),
+        }
+    }
+
+    pub fn trust_path(&self) -> PathBuf {
+        self.grimoire_home.join("trust.json")
+    }
+
+    pub fn git_cache_path(&self, source: &SourceKey) -> PathBuf {
+        self.grimoire_home
+            .join("cache/git")
+            .join(format!("{source}.git"))
+    }
+
+    pub fn review_cache_dir(&self) -> PathBuf {
+        self.grimoire_home.join("cache/review")
+    }
+
+    pub fn cache_tmp_dir(&self) -> PathBuf {
+        self.grimoire_home.join("cache/tmp")
+    }
+
+    pub fn candidate_path(&self, scope_key: &str, alias: &SourceAlias) -> PathBuf {
+        self.grimoire_home
+            .join("candidates")
+            .join(scope_key)
+            .join(format!("{alias}.json"))
+    }
+
+    pub fn candidate_lock_path(&self, scope_key: &str, alias: &SourceAlias) -> PathBuf {
+        self.grimoire_home
+            .join("locks/candidates")
+            .join(scope_key)
+            .join(format!("{alias}.lock"))
+    }
+
+    pub fn cache_lock_path(&self, source: &SourceKey) -> PathBuf {
+        self.grimoire_home
+            .join("locks/cache")
+            .join(format!("{source}.lock"))
+    }
+
+    pub fn store_lock_path(&self) -> PathBuf {
+        self.grimoire_home.join("locks/store.lock")
+    }
+
+    pub fn trust_lock_path(&self) -> PathBuf {
+        self.grimoire_home.join("locks/trust.lock")
+    }
+
+    pub fn projects_lock_path(&self) -> PathBuf {
+        self.grimoire_home.join("locks/projects.lock")
+    }
+
+    pub fn scope_lock_path(&self, scope_key: &str) -> PathBuf {
+        self.grimoire_home
+            .join("transactions")
+            .join(scope_key)
+            .join("scope.lock")
+    }
+
+    pub fn store_path(&self, source: &SourceKey, snapshot: &SnapshotKey) -> PathBuf {
+        self.grimoire_home
+            .join("store/checkouts")
+            .join(source.as_str())
+            .join(snapshot.as_str())
+    }
+
+    pub fn store_repair_path(&self, source: &SourceKey, snapshot: &SnapshotKey) -> PathBuf {
+        self.grimoire_home
+            .join("transactions/store-repair")
+            .join(source.as_str())
+            .join(format!("{snapshot}.json"))
+    }
+
+    pub fn scope_key(&self) -> String {
+        match &self.scope {
+            ScopePaths::Global { .. } => "global".into(),
+            ScopePaths::Project { root } => {
+                #[cfg(unix)]
+                {
+                    use std::os::unix::ffi::OsStrExt;
+                    crate::source::identity::hash_key(
+                        b"grimoire/scope-key@1",
+                        [
+                            Some(b"project".as_slice()),
+                            Some(root.as_os_str().as_bytes()),
+                        ],
+                    )
+                }
+                #[cfg(not(unix))]
+                unreachable!("Grimoire source custody supports Unix hosts")
+            }
         }
     }
 }

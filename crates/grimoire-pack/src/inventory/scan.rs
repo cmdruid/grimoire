@@ -1,10 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::io::Read;
 
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
+use sha2::{Digest as _, Sha256};
 
-use super::digest::{inventory_bytes, review_tree_bytes, sha256, skill_content_bytes};
+use super::digest::{inventory_bytes, review_tree_bytes, sha256};
 use super::tree::EntryValidator;
 use super::yaml::{self, Value, YamlFailure};
 use super::{
@@ -29,11 +29,15 @@ const IGNORED_DIRECTORIES: &[&[u8]] = &[
     b"vendor",
     b"fixtures",
 ];
-
-type OwnedContentRecord = (u8, Vec<u8>, Vec<u8>, Vec<u8>);
+const FRONTMATTER_BYTE_LIMIT: usize = 65_536;
+const REVIEW_BYTE_LIMIT: u64 = 128 * 1024 * 1024;
 
 pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> {
-    let mut entries = reader.entries()?;
+    let mut entries = Vec::with_capacity(100_001);
+    reader.visit_entries(&mut |entry| {
+        entries.push(entry);
+        Ok(entries.len() <= 100_000)
+    })?;
     entries.sort_by(|left, right| left.path.cmp(&right.path));
 
     let mut findings = Vec::new();
@@ -44,6 +48,7 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
             100_000,
             100_001,
         ));
+        entries.truncate(100_000);
     }
     if let Some(entry) = entries.iter().find(|entry| directory_depth(entry) > 32) {
         findings.push(limit_finding(
@@ -89,7 +94,7 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
         {
             continue;
         }
-        let bytes = read_file(reader, &entry.path)?;
+        let bytes = read_frontmatter(reader, &entry.path)?;
         match parse_skill_name(&bytes) {
             Ok(name) => skill_roots.push((root, name)),
             Err(failure) => findings.push(finding(entry.path.clone(), failure)),
@@ -115,25 +120,19 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
             });
         }
     }
-    add_review_byte_limit(
-        &entries,
-        &skill_roots,
-        &nested_checkouts,
-        &symlink_paths,
-        &mut findings,
-    );
-
     let mut skills = Vec::new();
     let mut reviewed_entries = Vec::new();
+    let mut review_budget = ReviewBudget::new();
     for (root, name) in &skill_roots {
-        skills.push(scan_skill(
+        let mut scan = SkillScan {
             reader,
-            &entries,
-            root,
-            name,
-            &symlink_paths,
-            &mut reviewed_entries,
-        )?);
+            entries: &entries,
+            symlink_paths: &symlink_paths,
+            reviewed: &mut reviewed_entries,
+            budget: &mut review_budget,
+            findings: &mut findings,
+        };
+        skills.push(scan_skill(&mut scan, root, name)?);
     }
     skills.sort_by(|left, right| (&left.name, &left.path).cmp(&(&right.name, &right.path)));
 
@@ -154,7 +153,7 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
         {
             continue;
         }
-        let bytes = read_file(reader, &entry.path)?;
+        let bytes = read_frontmatter(reader, &entry.path)?;
         let (pack, failures) = parse_pack(&bytes, entry.path.clone());
         findings.extend(
             failures
@@ -183,7 +182,15 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
         {
             continue;
         }
-        reviewed_entries.push(reviewed_entry(reader, entry, Boundary::Snapshot)?);
+        if let Some(reviewed) = reviewed_entry(
+            reader,
+            entry,
+            Boundary::Snapshot,
+            &mut review_budget,
+            &mut findings,
+        )? {
+            reviewed_entries.push(reviewed);
+        }
     }
     reviewed_entries.sort_by(|left, right| left.path.cmp(&right.path));
     add_review_findings(&reviewed_entries, &mut findings);
@@ -228,40 +235,6 @@ fn add_pack_availability(skills: &[Skill], packs: &mut [Pack], findings: &mut Ve
                 ]),
                 message: "optional pack member is unavailable in this snapshot".into(),
             });
-        }
-    }
-}
-
-fn add_review_byte_limit(
-    entries: &[TreeEntry],
-    skill_roots: &[(SourcePath, String)],
-    nested_checkouts: &[SourcePath],
-    symlink_paths: &[SourcePath],
-    findings: &mut Vec<Finding>,
-) {
-    let mut total = 0u64;
-    for entry in entries {
-        if entry.kind != TreeEntryKind::File {
-            continue;
-        }
-        let inside_skill = skill_roots
-            .iter()
-            .any(|(root, _)| entry.path.is_descendant_of(root));
-        let below_link = symlink_paths
-            .iter()
-            .any(|link| entry.path != *link && entry.path.is_descendant_of(link));
-        if below_link || (!inside_skill && !outer_visible(entry, nested_checkouts, symlink_paths)) {
-            continue;
-        }
-        total = total.saturating_add(entry.size.unwrap_or(0));
-        if total > 1_073_741_824 {
-            findings.push(limit_finding(
-                "review-byte-limit",
-                Some(entry.path.clone()),
-                1_073_741_824,
-                1_073_741_825,
-            ));
-            break;
         }
     }
 }
@@ -384,16 +357,135 @@ fn add_duplicate_findings(skills: &[Skill], packs: &[Pack], findings: &mut Vec<F
     }
 }
 
-fn read_file(reader: &dyn TreeReader, path: &SourcePath) -> Result<Vec<u8>, InventoryError> {
+fn read_frontmatter(reader: &dyn TreeReader, path: &SourcePath) -> Result<Vec<u8>, InventoryError> {
     let mut bytes = Vec::new();
-    reader
-        .open(path)?
-        .read_to_end(&mut bytes)
-        .map_err(|error| InventoryError::Tree {
-            path: path.clone(),
-            message: error.to_string(),
-        })?;
+    reader.read_chunks(path, 1, &mut |chunk| {
+        bytes.push(chunk[0]);
+        Ok(bytes.len() <= FRONTMATTER_BYTE_LIMIT
+            && !(bytes.len() > 4 && bytes.ends_with(b"\n---\n")))
+    })?;
     Ok(bytes)
+}
+
+struct ReviewBudget {
+    consumed: u64,
+    exhausted: bool,
+}
+
+struct FileInspection {
+    size: u64,
+    digest: super::Digest,
+    binary: bool,
+    shebang: Option<Vec<u8>>,
+}
+
+impl ReviewBudget {
+    fn new() -> Self {
+        Self {
+            consumed: 0,
+            exhausted: false,
+        }
+    }
+
+    fn inspect(
+        &mut self,
+        reader: &dyn TreeReader,
+        path: &SourcePath,
+        expected_size: Option<u64>,
+        content_record: Option<(&mut Sha256, u8, &[u8], &[u8])>,
+        findings: &mut Vec<Finding>,
+    ) -> Result<Option<FileInspection>, InventoryError> {
+        if self.exhausted {
+            return Ok(None);
+        }
+        let remaining = REVIEW_BYTE_LIMIT.saturating_sub(self.consumed);
+        let expected_size = expected_size.ok_or_else(|| InventoryError::Tree {
+            path: path.clone(),
+            message: "regular file size is unavailable".into(),
+        })?;
+        if expected_size > remaining {
+            self.exhausted = true;
+            findings.push(limit_finding(
+                "review-byte-limit",
+                Some(path.clone()),
+                REVIEW_BYTE_LIMIT as usize,
+                REVIEW_BYTE_LIMIT as usize + 1,
+            ));
+            return Ok(None);
+        }
+        let mut digest = Sha256::new();
+        let mut content = content_record.map(|(hasher, kind, record_path, mode)| {
+            let mut next = hasher.clone();
+            next.update([kind]);
+            update_field_prefix(&mut next, record_path.len() as u64);
+            next.update(record_path);
+            update_field_prefix(&mut next, mode.len() as u64);
+            next.update(mode);
+            update_field_prefix(&mut next, expected_size);
+            (hasher, next)
+        });
+        let mut prefix = Vec::with_capacity(8 * 1024);
+        let mut size = 0u64;
+        reader.read_chunks(path, 64 * 1024, &mut |chunk| {
+            size = size.saturating_add(chunk.len() as u64);
+            if size > expected_size || size > remaining {
+                self.exhausted = size > remaining;
+                if self.exhausted {
+                    findings.push(limit_finding(
+                        "review-byte-limit",
+                        Some(path.clone()),
+                        REVIEW_BYTE_LIMIT as usize,
+                        REVIEW_BYTE_LIMIT as usize + 1,
+                    ));
+                    return Ok(false);
+                }
+                return Err(InventoryError::Tree {
+                    path: path.clone(),
+                    message: "regular file grew during inspection".into(),
+                });
+            }
+            digest.update(chunk);
+            if let Some((_, hasher)) = &mut content {
+                hasher.update(chunk);
+            }
+            let wanted = (8 * 1024usize)
+                .saturating_sub(prefix.len())
+                .min(chunk.len());
+            prefix.extend_from_slice(&chunk[..wanted]);
+            Ok(true)
+        })?;
+        if self.exhausted {
+            return Ok(None);
+        }
+        if size != expected_size {
+            return Err(InventoryError::Tree {
+                path: path.clone(),
+                message: "regular file size changed during inspection".into(),
+            });
+        }
+        if let Some((target, next)) = content {
+            *target = next;
+        }
+        self.consumed += size;
+        let shebang = prefix.starts_with(b"#!").then(|| {
+            prefix[..prefix
+                .iter()
+                .position(|byte| *byte == b'\n')
+                .unwrap_or(prefix.len())
+                .min(512)]
+                .to_vec()
+        });
+        Ok(Some(FileInspection {
+            size,
+            digest: super::Digest::from_bytes(digest.finalize().into()),
+            binary: prefix.contains(&0),
+            shebang,
+        }))
+    }
+}
+
+fn update_field_prefix(hasher: &mut Sha256, size: u64) {
+    hasher.update(size.to_be_bytes());
 }
 
 fn finding(path: SourcePath, failure: YamlFailure) -> Finding {
@@ -627,23 +719,32 @@ pub(crate) fn parse_pack(bytes: &[u8], path: SourcePath) -> (Option<Pack>, Vec<Y
     )
 }
 
+struct SkillScan<'a> {
+    reader: &'a dyn TreeReader,
+    entries: &'a [TreeEntry],
+    symlink_paths: &'a [SourcePath],
+    reviewed: &'a mut Vec<ReviewedEntry>,
+    budget: &'a mut ReviewBudget,
+    findings: &'a mut Vec<Finding>,
+}
+
 fn scan_skill(
-    reader: &dyn TreeReader,
-    entries: &[TreeEntry],
+    scan: &mut SkillScan<'_>,
     root: &SourcePath,
     name: &str,
-    symlink_paths: &[SourcePath],
-    reviewed: &mut Vec<ReviewedEntry>,
 ) -> Result<Skill, InventoryError> {
     let mut files = Vec::new();
     let mut symlinks = Vec::new();
     let mut submodules = Vec::new();
-    let mut digest_records: Vec<OwnedContentRecord> = Vec::new();
-    for entry in entries
+    let mut content_digest = Sha256::new();
+    content_digest.update(b"grimoire/skill-content@1\0");
+    for entry in scan
+        .entries
         .iter()
         .filter(|entry| entry.path.is_descendant_of(root))
         .filter(|entry| {
-            !symlink_paths
+            !scan
+                .symlink_paths
                 .iter()
                 .any(|link| entry.path != *link && entry.path.is_descendant_of(link))
         })
@@ -652,38 +753,37 @@ fn scan_skill(
         match entry.kind {
             TreeEntryKind::Directory => {}
             TreeEntryKind::File => {
-                let bytes = read_file(reader, &entry.path)?;
                 let mode = normalized_file_mode(entry.mode).to_owned();
-                let digest = sha256(&bytes);
-                digest_records.push((
-                    b'F',
-                    relative.as_bytes().to_vec(),
-                    mode.as_bytes().to_vec(),
-                    bytes.clone(),
-                ));
-                let shebang = bytes.starts_with(b"#!").then(|| {
-                    bytes[..bytes
-                        .iter()
-                        .position(|byte| *byte == b'\n')
-                        .unwrap_or(bytes.len())
-                        .min(512)]
-                        .to_vec()
-                });
+                let Some(inspection) = scan.budget.inspect(
+                    scan.reader,
+                    &entry.path,
+                    entry.size,
+                    Some((
+                        &mut content_digest,
+                        b'F',
+                        relative.as_bytes(),
+                        mode.as_bytes(),
+                    )),
+                    scan.findings,
+                )?
+                else {
+                    continue;
+                };
                 files.push(FileFact {
                     path: relative,
-                    size: bytes.len() as u64,
+                    size: inspection.size,
                     mode: mode.clone(),
-                    digest,
-                    binary: bytes.iter().take(8 * 1024).any(|byte| *byte == 0),
+                    digest: inspection.digest,
+                    binary: inspection.binary,
                     executable: mode == "100755",
-                    shebang,
+                    shebang: inspection.shebang,
                 });
-                reviewed.push(ReviewedEntry {
+                scan.reviewed.push(ReviewedEntry {
                     path: entry.path.clone(),
                     mode,
                     payload: ReviewedPayload::File {
-                        size: bytes.len() as u64,
-                        digest,
+                        size: inspection.size,
+                        digest: inspection.digest,
                     },
                     boundary: Boundary::Skill(root.clone()),
                     safety: None,
@@ -693,12 +793,13 @@ fn scan_skill(
             TreeEntryKind::Symlink => {
                 let target = entry.link_target.clone().unwrap_or_default();
                 let (safety, reason) = classify_link(root, &entry.path, &target);
-                digest_records.push((
-                    b'L',
-                    relative.as_bytes().to_vec(),
-                    b"120000".to_vec(),
-                    target.clone(),
-                ));
+                content_digest.update([b'L']);
+                update_field_prefix(&mut content_digest, relative.as_bytes().len() as u64);
+                content_digest.update(relative.as_bytes());
+                update_field_prefix(&mut content_digest, 6);
+                content_digest.update(b"120000");
+                update_field_prefix(&mut content_digest, target.len() as u64);
+                content_digest.update(&target);
                 symlinks.push(SymlinkFact {
                     path: relative,
                     target: target.clone(),
@@ -706,7 +807,7 @@ fn scan_skill(
                     safety,
                     reason: reason.clone(),
                 });
-                reviewed.push(ReviewedEntry {
+                scan.reviewed.push(ReviewedEntry {
                     path: entry.path.clone(),
                     mode: "120000".into(),
                     payload: ReviewedPayload::Symlink { target },
@@ -721,7 +822,7 @@ fn scan_skill(
                     path: relative,
                     commit: commit.clone(),
                 });
-                reviewed.push(ReviewedEntry {
+                scan.reviewed.push(ReviewedEntry {
                     path: entry.path.clone(),
                     mode: "160000".into(),
                     payload: ReviewedPayload::Submodule { commit },
@@ -733,20 +834,13 @@ fn scan_skill(
             TreeEntryKind::Device | TreeEntryKind::Fifo | TreeEntryKind::Socket => {}
         }
     }
-    digest_records.sort_by(|left, right| left.1.cmp(&right.1));
-    let refs: Vec<_> = digest_records
-        .iter()
-        .map(|(kind, path, mode, payload)| {
-            (*kind, path.as_slice(), mode.as_slice(), payload.as_slice())
-        })
-        .collect();
     files.sort_by(|left, right| left.path.cmp(&right.path));
     symlinks.sort_by(|left, right| left.path.cmp(&right.path));
     submodules.sort_by(|left, right| left.path.cmp(&right.path));
     Ok(Skill {
         name: name.into(),
         path: root.clone(),
-        content_digest: sha256(&skill_content_bytes(&refs)),
+        content_digest: super::Digest::from_bytes(content_digest.finalize().into()),
         files,
         symlinks,
         submodules,
@@ -757,35 +851,41 @@ fn reviewed_entry(
     reader: &dyn TreeReader,
     entry: &TreeEntry,
     boundary: Boundary,
-) -> Result<ReviewedEntry, InventoryError> {
+    budget: &mut ReviewBudget,
+    findings: &mut Vec<Finding>,
+) -> Result<Option<ReviewedEntry>, InventoryError> {
     match entry.kind {
         TreeEntryKind::File => {
-            let bytes = read_file(reader, &entry.path)?;
-            Ok(ReviewedEntry {
+            let Some(inspection) =
+                budget.inspect(reader, &entry.path, entry.size, None, findings)?
+            else {
+                return Ok(None);
+            };
+            Ok(Some(ReviewedEntry {
                 path: entry.path.clone(),
                 mode: normalized_file_mode(entry.mode).into(),
                 payload: ReviewedPayload::File {
-                    size: bytes.len() as u64,
-                    digest: sha256(&bytes),
+                    size: inspection.size,
+                    digest: inspection.digest,
                 },
                 boundary,
                 safety: None,
                 reason: None,
-            })
+            }))
         }
         TreeEntryKind::Symlink => {
             let target = entry.link_target.clone().unwrap_or_default();
             let (safety, reason) = classify_link(&SourcePath::from(""), &entry.path, &target);
-            Ok(ReviewedEntry {
+            Ok(Some(ReviewedEntry {
                 path: entry.path.clone(),
                 mode: "120000".into(),
                 payload: ReviewedPayload::Symlink { target },
                 boundary,
                 safety: Some(safety),
                 reason,
-            })
+            }))
         }
-        TreeEntryKind::Submodule => Ok(ReviewedEntry {
+        TreeEntryKind::Submodule => Ok(Some(ReviewedEntry {
             path: entry.path.clone(),
             mode: "160000".into(),
             payload: ReviewedPayload::Submodule {
@@ -794,7 +894,7 @@ fn reviewed_entry(
             boundary,
             safety: None,
             reason: None,
-        }),
+        })),
         _ => unreachable!("only non-directories with review payload reach this helper"),
     }
 }

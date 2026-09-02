@@ -46,12 +46,20 @@ impl TestTree {
 }
 
 impl TreeReader for TestTree {
-    fn entries(&self) -> Result<Vec<TreeEntry>, InventoryError> {
+    fn visit_entries(
+        &self,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+    ) -> Result<(), InventoryError> {
         let mut entries = self.entries.clone();
         if self.reverse {
             entries.reverse();
         }
-        Ok(entries)
+        for entry in entries {
+            if !visitor(entry)? {
+                break;
+            }
+        }
+        Ok(())
     }
 
     fn open<'a>(&'a self, path: &SourcePath) -> Result<Box<dyn Read + 'a>, InventoryError> {
@@ -150,10 +158,18 @@ impl FsTree {
 
 #[cfg(unix)]
 impl TreeReader for FsTree {
-    fn entries(&self) -> Result<Vec<TreeEntry>, InventoryError> {
+    fn visit_entries(
+        &self,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+    ) -> Result<(), InventoryError> {
         let mut entries = Vec::new();
         self.walk(&self.root, b"", &mut entries)?;
-        Ok(entries)
+        for entry in entries {
+            if !visitor(entry)? {
+                break;
+            }
+        }
+        Ok(())
     }
 
     fn open<'a>(&'a self, path: &SourcePath) -> Result<Box<dyn Read + 'a>, InventoryError> {

@@ -3,8 +3,9 @@ use std::path::PathBuf;
 
 use grimoire_core::{
     plan, resolve_manifest, Action, InstalledLink, Lockfile, PackMemberState, Plan, PlanFact,
-    PlanningMode, Request, RequestRoot, Scope, SnapshotId, SnapshotKind, SourceAlias,
-    SourceSnapshot, WorldState,
+    PlanningMode, Request, RequestRoot, Scope, SnapshotId, SnapshotKind, SnapshotStore,
+    SourceAlias, SourceSnapshot, SourceState, TrustBaseline, TrustReceipt, TrustRecord, TrustStore,
+    WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Pack, Skill, SourceInventory, SourcePath,
@@ -70,15 +71,52 @@ fn world(
     links: &[(&str, InstalledLink)],
     inherited: Option<grimoire_core::Resolution>,
 ) -> WorldState {
+    let mut trust = TrustStore::default();
+    let states = snapshots.into_iter().map(|snapshot| {
+        let identity = match snapshot.id.kind {
+            SnapshotKind::Git => {
+                grimoire_core::CanonicalIdentity::remote(&format!("github:org/{}", snapshot.alias))
+                    .unwrap()
+            }
+            SnapshotKind::Live => grimoire_core::CanonicalIdentity::local(
+                grimoire_core::SourceKind::Live,
+                &snapshot.root,
+            )
+            .unwrap(),
+        };
+        let review_tree = snapshot.inventory.review_tree_digest.to_string();
+        let receipt = (snapshot.id.kind == SnapshotKind::Git).then(|| TrustReceipt {
+            commit: snapshot.id.commit.clone().unwrap(),
+            tree: snapshot.id.tree.clone().unwrap(),
+            inventory: snapshot.id.inventory_digest.clone(),
+        });
+        trust.records.insert(
+            grimoire_core::SourceKey::derive(&identity),
+            TrustRecord {
+                identity: identity.clone(),
+                receipts: receipt.into_iter().collect(),
+                all_snapshots: true,
+                baseline: Some(TrustBaseline {
+                    commit: snapshot.id.commit.clone(),
+                    tree: snapshot.id.tree.clone(),
+                    inventory: snapshot.id.inventory_digest.clone(),
+                    review_tree: review_tree.clone(),
+                }),
+            },
+        );
+        SourceState::new(snapshot, SnapshotStore::Valid, false)
+            .source_identity(identity, review_tree)
+    });
     WorldState::from_bytes(
         scope,
         manifest.as_bytes().to_vec(),
         EMPTY_LOCK.to_vec(),
-        snapshots,
+        states,
         links.iter().cloned(),
         inherited,
     )
     .unwrap()
+    .with_trust_bytes(Some(trust.to_bytes().unwrap()))
 }
 
 fn planned_lock(plan: &Plan) -> Lockfile {

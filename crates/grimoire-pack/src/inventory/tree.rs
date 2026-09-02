@@ -61,11 +61,38 @@ impl TreeEntry {
 }
 
 pub trait TreeReader {
-    /// Return a stable snapshot as raw source-relative paths. Adapters must not follow symlinks.
-    fn entries(&self) -> Result<Vec<TreeEntry>, InventoryError>;
+    /// Visit a stable snapshot as raw source-relative paths. Adapters must stop when the visitor
+    /// returns `false` and must not follow symlinks.
+    fn visit_entries(
+        &self,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+    ) -> Result<(), InventoryError>;
 
     /// Open a regular file from that snapshot without following a path that changed kind.
     fn open<'a>(&'a self, path: &SourcePath) -> Result<Box<dyn Read + 'a>, InventoryError>;
+
+    /// Stream a regular file in caller-bounded chunks. Adapters that can stop an external
+    /// producer should override this method so a `false` return stops production immediately.
+    fn read_chunks(
+        &self,
+        path: &SourcePath,
+        maximum_chunk: usize,
+        visitor: &mut dyn FnMut(&[u8]) -> Result<bool, InventoryError>,
+    ) -> Result<(), InventoryError> {
+        let mut input = self.open(path)?;
+        let mut buffer = vec![0u8; maximum_chunk.max(1)];
+        loop {
+            let read = input
+                .read(&mut buffer)
+                .map_err(|error| InventoryError::Tree {
+                    path: path.clone(),
+                    message: error.to_string(),
+                })?;
+            if read == 0 || !visitor(&buffer[..read])? {
+                return Ok(());
+            }
+        }
+    }
 }
 
 pub(crate) struct EntryValidator {

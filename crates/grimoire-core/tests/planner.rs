@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use grimoire_core::{
     plan, Action, ExitClass, InstalledLink, LockChange, ManifestChange, ManifestSource,
-    PlanningMode, Preconditions, Request, Scope, SnapshotId, SnapshotKind, SourceAlias,
-    SourceLocation, SourceSnapshot, WorldState,
+    PlanningMode, Preconditions, Request, Scope, SnapshotId, SnapshotKind, SnapshotStore,
+    SourceAlias, SourceLocation, SourceSnapshot, SourceState, WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Skill, SourceInventory, SourcePath,
@@ -55,7 +55,7 @@ fn world(
         Scope::Project,
         manifest.as_bytes().to_vec(),
         lock,
-        [snapshot],
+        [SourceState::new(snapshot, SnapshotStore::Valid, false)],
         [("one", link)],
         None,
     )
@@ -178,16 +178,21 @@ fn explicit_source_update_distinguishes_exact_old_drift_and_foreign_occupancy() 
     let new = snapshot("/store/a-new", '2');
     let new_target = PathBuf::from("/store/a-new/skills/one");
 
+    let repoint_world = world(
+        BASE,
+        lock.clone(),
+        old.clone(),
+        InstalledLink::Symlink(old_target.clone()),
+    )
+    .with_candidate(
+        SourceState::new(new.clone(), SnapshotStore::Valid, false)
+            .candidate(b"candidate-new".to_vec()),
+    )
+    .unwrap();
     let repoint = plan(
-        &world(
-            BASE,
-            lock.clone(),
-            old.clone(),
-            InstalledLink::Symlink(old_target.clone()),
-        ),
+        &repoint_world,
         Request::UpdateSource {
             alias: "a".try_into().unwrap(),
-            snapshot: Box::new(new.clone()),
         },
         PlanningMode::Normal,
     )
@@ -212,11 +217,16 @@ fn explicit_source_update_distinguishes_exact_old_drift_and_foreign_occupancy() 
         InstalledLink::File,
         InstalledLink::Directory,
     ] {
+        let blocked_world = world(BASE, lock.clone(), old.clone(), observation)
+            .with_candidate(
+                SourceState::new(new.clone(), SnapshotStore::Valid, false)
+                    .candidate(b"candidate-new".to_vec()),
+            )
+            .unwrap();
         let blocked = plan(
-            &world(BASE, lock.clone(), old.clone(), observation),
+            &blocked_world,
             Request::UpdateSource {
                 alias: "a".try_into().unwrap(),
-                snapshot: Box::new(new.clone()),
             },
             PlanningMode::Normal,
         )
@@ -231,11 +241,15 @@ fn explicit_source_update_distinguishes_exact_old_drift_and_foreign_occupancy() 
             .any(|action| matches!(action, Action::RepointLink { .. })));
     }
 
+    let retained_world = world(BASE, lock, old, InstalledLink::Symlink(new_target))
+        .with_candidate(
+            SourceState::new(new, SnapshotStore::Valid, false).candidate(b"candidate-new".to_vec()),
+        )
+        .unwrap();
     let retained = plan(
-        &world(BASE, lock, old, InstalledLink::Symlink(new_target)),
+        &retained_world,
         Request::UpdateSource {
             alias: "a".try_into().unwrap(),
-            snapshot: Box::new(new),
         },
         PlanningMode::Normal,
     )

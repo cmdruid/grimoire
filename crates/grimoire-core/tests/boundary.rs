@@ -6,7 +6,7 @@ const MODEL: &str = include_str!("../src/model.rs");
 const PLAN: &str = include_str!("../src/plan.rs");
 
 #[test]
-fn phase_two_core_has_no_adapter_executor_or_ambient_dependency() {
+fn phase_three_planner_has_no_adapter_or_ambient_dependency() {
     for forbidden in [
         "clap",
         "ratatui",
@@ -30,7 +30,7 @@ fn phase_two_core_has_no_adapter_executor_or_ambient_dependency() {
     ] {
         assert!(
             !format!("{CARGO}\n{LIB}\n{MODEL}\n{PLAN}").contains(forbidden),
-            "forbidden Phase 2 boundary: {forbidden}"
+            "forbidden Phase 3 planner boundary: {forbidden}"
         );
     }
 }

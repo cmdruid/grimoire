@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 use crate::resolve::resolve_manifest;
 use crate::{
     ByteHash, CoreError, InstalledLink, LockSource, Lockfile, ManifestMutation, PlanningMode,
-    Request, RequestRoot, Result, Scope, SkillName, SourceAlias, WorldState,
+    Request, RequestRoot, Result, Scope, SkillName, SnapshotKind, SnapshotStore, SourceAlias,
+    TrustMode, WorldState,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -60,9 +61,31 @@ pub enum LockChange {
     SourceAdvance,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TrustChange {
+    GrantExact,
+    GrantAll,
+    Revoke,
+    AdvanceBaseline,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Action {
+    ReplaceTrust {
+        before: Option<Vec<u8>>,
+        after: Vec<u8>,
+        create_mode: u32,
+        change: TrustChange,
+    },
+    MaterializeSnapshot {
+        scope: Scope,
+        source: SourceAlias,
+        source_key: String,
+        snapshot_key: String,
+        review_key: String,
+    },
     CreateManifest {
         scope: Scope,
         after: Vec<u8>,
@@ -114,6 +137,10 @@ impl Action {
     fn is_destructive(&self) -> bool {
         match self {
             Self::ReplaceManifest { change, .. } => change.is_destructive(),
+            Self::ReplaceTrust {
+                change: TrustChange::Revoke,
+                ..
+            } => true,
             Self::ReplaceLock {
                 change: LockChange::SourceAdvance,
                 ..
@@ -149,6 +176,9 @@ impl From<&InstalledLink> for LinkPrecondition {
 pub struct Preconditions {
     pub manifest: Option<ByteHash>,
     pub lock: Option<ByteHash>,
+    pub candidates: BTreeMap<SourceAlias, ByteHash>,
+    pub stores: BTreeMap<SourceAlias, SnapshotStore>,
+    pub trust: Option<ByteHash>,
     pub links: BTreeMap<SkillName, LinkPrecondition>,
 }
 
@@ -157,6 +187,9 @@ impl Preconditions {
         Self {
             manifest: None,
             lock: None,
+            candidates: BTreeMap::new(),
+            stores: BTreeMap::new(),
+            trust: None,
             links: BTreeMap::new(),
         }
     }
@@ -228,6 +261,32 @@ impl Plan {
 }
 
 pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<Plan> {
+    match &request {
+        Request::TrustExact {
+            identity,
+            receipt,
+            baseline,
+        } => {
+            return plan_trust_mutation(world, TrustChange::GrantExact, |store, before| {
+                store.grant_exact(identity.clone(), receipt.clone(), baseline.clone(), before)
+            });
+        }
+        Request::TrustAll {
+            identity,
+            receipt,
+            baseline,
+        } => {
+            return plan_trust_mutation(world, TrustChange::GrantAll, |store, before| {
+                store.grant_all(identity.clone(), receipt.clone(), baseline.clone(), before)
+            });
+        }
+        Request::RevokeTrust { source } => {
+            return plan_trust_mutation(world, TrustChange::Revoke, |store, before| {
+                store.revoke(source, before)
+            });
+        }
+        _ => {}
+    }
     if request == Request::Initialize {
         return initialize(world, mode);
     }
@@ -238,6 +297,13 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
     }
 
     let mut desired_snapshots = world.snapshots.clone();
+    if mode == PlanningMode::Frozen {
+        for (alias, state) in &world.locked_states {
+            desired_snapshots.insert(alias.clone(), state.snapshot.clone());
+        }
+    }
+    let mut selected_candidates = BTreeMap::new();
+    let mut request_blockers = Vec::new();
     let mut manifest_change = None;
     let manifest_edit = match request {
         Request::Initialize => unreachable!(),
@@ -306,20 +372,34 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                     .mutate(ManifestMutation::ReplacePackExclusions { name, exclude })?,
             )
         }
-        Request::UpdateSource { alias, snapshot } => {
+        Request::UpdateSource { alias } => {
             if !world.manifest.sources.contains_key(&alias) {
                 return Err(CoreError::Request(format!(
                     "source `{alias}` is not declared"
                 )));
             }
-            if snapshot.alias != alias {
-                return Err(CoreError::Request(format!(
-                    "proposed snapshot alias `{}` does not match `{alias}`",
-                    snapshot.alias
-                )));
+            if let Some(candidate) = world
+                .candidates
+                .get(&alias)
+                .filter(|candidate| candidate.candidate_current)
+            {
+                desired_snapshots.insert(alias.clone(), candidate.snapshot.clone());
+                selected_candidates.insert(alias, candidate.clone());
+            } else if world.candidates.contains_key(&alias) {
+                request_blockers.push(Blocker::new(
+                    "source-candidate-stale",
+                    [("source", alias.to_string())],
+                ));
+            } else {
+                request_blockers.push(Blocker::new(
+                    "source-candidate-missing",
+                    [("source", alias.to_string())],
+                ));
             }
-            desired_snapshots.insert(alias, *snapshot);
             None
+        }
+        Request::TrustExact { .. } | Request::TrustAll { .. } | Request::RevokeTrust { .. } => {
+            unreachable!("handled before scope planning")
         }
     };
     let desired_manifest = manifest_edit
@@ -330,6 +410,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
 
     let mut actions = Vec::new();
     let mut blockers = resolution.blockers;
+    blockers.append(&mut request_blockers);
     if mode == PlanningMode::Frozen
         && (manifest_edit.is_some()
             || world.lock != resolution.lock
@@ -341,6 +422,8 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
     {
         blockers.push(Blocker::new("frozen-mismatch", []));
     }
+
+    let mut store_preconditions = BTreeMap::new();
 
     if let (Some(edit), Some(change)) = (&manifest_edit, manifest_change) {
         actions.push(Action::ReplaceManifest {
@@ -455,6 +538,188 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
         }
     }
 
+    let activating_sources = actions
+        .iter()
+        .filter_map(|action| match action {
+            Action::CreateLink { skill, .. } | Action::RepointLink { skill, .. } => resolution
+                .skills
+                .get(skill)
+                .map(|resolved| resolved.source.clone()),
+            _ => None,
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    let trust_store = world
+        .trust_bytes
+        .as_deref()
+        .map(crate::TrustStore::parse)
+        .transpose()?;
+    let mut materializations = Vec::new();
+    let mut baseline_updates = Vec::new();
+    for alias in resolution.lock.sources.keys() {
+        let state = if mode == PlanningMode::Frozen {
+            world.locked_states.get(alias)
+        } else {
+            selected_candidates
+                .get(alias)
+                .or_else(|| world.source_states.get(alias))
+        };
+        let Some(state) = state else {
+            blockers.push(Blocker::new(
+                "source-observation-missing",
+                [("source", alias.to_string())],
+            ));
+            continue;
+        };
+        if !state.snapshot.inventory.is_valid() {
+            blockers.push(Blocker::new(
+                "source-validation-invalid",
+                [("source", alias.to_string())],
+            ));
+            continue;
+        }
+        let Some(identity) = state.identity.as_ref() else {
+            blockers.push(Blocker::new(
+                "source-identity-missing",
+                [("source", alias.to_string())],
+            ));
+            continue;
+        };
+        let key = crate::SourceKey::derive(identity);
+        let receipt = match state.snapshot.id.kind {
+            SnapshotKind::Git => Some(crate::TrustReceipt {
+                commit: state
+                    .snapshot
+                    .id
+                    .commit
+                    .clone()
+                    .expect("validated Git snapshot"),
+                tree: state
+                    .snapshot
+                    .id
+                    .tree
+                    .clone()
+                    .expect("validated Git snapshot"),
+                inventory: state.snapshot.id.inventory_digest.clone(),
+            }),
+            SnapshotKind::Live => None,
+        };
+        let effective_trust = trust_store
+            .as_ref()
+            .and_then(|store| store.records.get(&key))
+            .map_or(TrustMode::Untrusted, |record| {
+                record.mode_for(receipt.as_ref())
+            });
+        if state.snapshot.id.kind == SnapshotKind::Live {
+            if activating_sources.contains(alias) && effective_trust != TrustMode::All {
+                blockers.push(Blocker::new(
+                    "live-source-requires-all-trust",
+                    [("source", alias.to_string())],
+                ));
+            }
+            continue;
+        }
+        store_preconditions.insert(alias.clone(), state.store);
+        if activating_sources.contains(alias) && effective_trust == TrustMode::Untrusted {
+            blockers.push(Blocker::new(
+                "source-untrusted",
+                [("source", alias.to_string())],
+            ));
+        }
+        if activating_sources.contains(alias) && effective_trust == TrustMode::All {
+            if let (Some(identity), Some(review_tree)) = (&state.identity, &state.review_tree) {
+                baseline_updates.push((
+                    crate::SourceKey::derive(identity),
+                    crate::TrustBaseline {
+                        commit: state.snapshot.id.commit.clone(),
+                        tree: state.snapshot.id.tree.clone(),
+                        inventory: state.snapshot.id.inventory_digest.clone(),
+                        review_tree: review_tree.clone(),
+                    },
+                ));
+            }
+        }
+        match state.store {
+            SnapshotStore::Valid => {}
+            SnapshotStore::Absent
+                if activating_sources.contains(alias)
+                    && state.materializable
+                    && mode == PlanningMode::Normal
+                    && effective_trust != TrustMode::Untrusted =>
+            {
+                let review_tree = state.review_tree.as_deref().ok_or_else(|| {
+                    CoreError::Snapshot("materializable snapshot has no review identity".into())
+                })?;
+                let commit = state.snapshot.id.commit.as_deref().ok_or_else(|| {
+                    CoreError::Snapshot("materializable snapshot has no commit".into())
+                })?;
+                let tree = state.snapshot.id.tree.as_deref().ok_or_else(|| {
+                    CoreError::Snapshot("materializable snapshot has no tree".into())
+                })?;
+                let snapshot_key = crate::SnapshotKey::derive(
+                    crate::SourceKind::Git,
+                    commit,
+                    tree,
+                    &state.snapshot.id.inventory_digest,
+                )?;
+                let review_key = crate::ReviewKey::derive(
+                    crate::SourceKind::Git,
+                    Some(commit),
+                    Some(tree),
+                    &state.snapshot.id.inventory_digest,
+                    review_tree,
+                )?;
+                materializations.push(Action::MaterializeSnapshot {
+                    scope: world.scope,
+                    source: alias.clone(),
+                    source_key: key.to_string(),
+                    snapshot_key: snapshot_key.to_string(),
+                    review_key: review_key.to_string(),
+                });
+            }
+            SnapshotStore::Absent => blockers.push(Blocker::new(
+                "snapshot-store-absent",
+                [("source", alias.to_string())],
+            )),
+            SnapshotStore::Corrupt => blockers.push(Blocker::new(
+                "snapshot-store-corrupt",
+                [("source", alias.to_string())],
+            )),
+        }
+    }
+    if !baseline_updates.is_empty() {
+        match world.trust_bytes.as_deref() {
+            None => blockers.push(Blocker::new("trust-observation-missing", [])),
+            Some(bytes) => {
+                let mut store = crate::TrustStore::parse(bytes)?;
+                let mut after = None;
+                for (source, baseline) in baseline_updates {
+                    let record = store.records.get(&source).ok_or_else(|| {
+                        CoreError::Trust("all-trusted source has no trust record".into())
+                    })?;
+                    if record.baseline.as_ref() == Some(&baseline) {
+                        continue;
+                    }
+                    let mutation = store.advance_baseline(
+                        &source,
+                        baseline,
+                        Some(after.clone().unwrap_or_else(|| bytes.to_vec())),
+                    )?;
+                    store = crate::TrustStore::parse(&mutation.after)?;
+                    after = Some(mutation.after);
+                }
+                if let Some(after) = after {
+                    materializations.push(Action::ReplaceTrust {
+                        before: Some(bytes.to_vec()),
+                        after,
+                        create_mode: 0o600,
+                        change: TrustChange::AdvanceBaseline,
+                    });
+                }
+            }
+        }
+    }
+    actions.splice(0..0, materializations);
+
     blockers.sort();
     blockers.dedup();
     let exit_class = if blockers.is_empty() {
@@ -468,10 +733,48 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
         preconditions: Preconditions {
             manifest: Some(ByteHash::of(&world.manifest_bytes)),
             lock: Some(ByteHash::of(&world.lock_bytes)),
+            candidates: selected_candidates
+                .into_iter()
+                .filter_map(|(alias, state)| {
+                    state
+                        .candidate_bytes
+                        .map(|bytes| (alias, ByteHash::of(&bytes)))
+                })
+                .collect(),
+            stores: store_preconditions,
+            trust: world.trust_bytes.as_deref().map(ByteHash::of),
             links,
         },
         facts: resolution.facts,
         exit_class,
+    })
+}
+
+fn plan_trust_mutation(
+    world: &WorldState,
+    change: TrustChange,
+    mutate: impl FnOnce(&crate::TrustStore, Option<Vec<u8>>) -> Result<crate::TrustMutation>,
+) -> Result<Plan> {
+    let before = world.trust_bytes.clone();
+    let store = match before.as_deref() {
+        Some(bytes) => crate::TrustStore::parse(bytes)?,
+        None => crate::TrustStore::default(),
+    };
+    let mutation = mutate(&store, before.clone())?;
+    Ok(Plan {
+        actions: vec![Action::ReplaceTrust {
+            before: mutation.before,
+            after: mutation.after,
+            create_mode: mutation.create_mode,
+            change,
+        }],
+        blockers: Vec::new(),
+        preconditions: Preconditions {
+            trust: before.as_deref().map(ByteHash::of),
+            ..Preconditions::absent()
+        },
+        facts: Vec::new(),
+        exit_class: ExitClass::Success,
     })
 }
 
@@ -543,14 +846,16 @@ fn source_advanced(before: &Lockfile, after: &Lockfile) -> bool {
                 LockSource::Git {
                     commit: old_commit,
                     tree: old_tree,
+                    inventory: old_inventory,
                     ..
                 },
                 LockSource::Git {
                     commit: new_commit,
                     tree: new_tree,
+                    inventory: new_inventory,
                     ..
                 },
-            ) => old_commit != new_commit || old_tree != new_tree,
+            ) => old_commit != new_commit || old_tree != new_tree || old_inventory != new_inventory,
             _ => false,
         }
     })

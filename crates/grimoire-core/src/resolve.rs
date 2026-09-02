@@ -402,6 +402,7 @@ fn lock_source(source: &crate::ManifestSource, snapshot: &SourceSnapshot) -> Opt
             reference: source.reference.clone(),
             commit: snapshot.id.commit.clone()?,
             tree: snapshot.id.tree.clone()?,
+            inventory: snapshot.id.inventory_digest.clone(),
         }),
         (SourceLocation::Path(declared), SnapshotKind::Live) if source.live => {
             Some(LockSource::Live {
