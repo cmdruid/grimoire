@@ -141,7 +141,7 @@ This task is read-only and produces no commit.
 
 ## Slices
 
-- [ ] **Slice 1: `grimoire init` crosses the real CLI boundary** <requires: —>
+- [x] **Slice 1: `grimoire init` crosses the real CLI boundary** <requires: —>
   - Files: modify `Cargo.lock`, `crates/grimoire/Cargo.toml`, and
     `crates/grimoire/src/lib.rs`; create `crates/grimoire/src/main.rs`,
     `crates/grimoire/src/args.rs`, `crates/grimoire/src/env.rs`,

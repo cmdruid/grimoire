@@ -7,9 +7,14 @@ license = "MIT OR Apache-2.0"
 autobins = false
 
 [dependencies]
+clap = { version = "4", features = ["derive"] }
 grimoire-core = { path = "../grimoire-core" }
 libc = "0.2"
 ratatui = "0.30.2"
+
+[[bin]]
+name = "grimoire"
+path = "src/main.rs"
 
 [dev-dependencies]
 tempfile = "3.27.0"
