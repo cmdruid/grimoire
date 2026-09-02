@@ -14,7 +14,7 @@ mod store;
 mod transaction;
 mod trust;
 
-pub use apply::apply;
+pub use apply::{apply, recover};
 pub use error::{CoreError, Result};
 pub use grimoire_pack::inventory;
 pub use lockfile::{LockPack, LockSkill, LockSource, Lockfile};

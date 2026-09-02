@@ -9,9 +9,127 @@ use crate::transaction::journal::{
 };
 use crate::transaction::{checkpoint, remove_file_if_present, replace, sync_directory, write_new};
 use crate::{
-    Action, ApplyOutcome, Approval, ByteHash, CoreError, LinkPrecondition, Paths, Plan, Result,
-    Scope, ScopePaths, TransactionRuntime,
+    Action, ApplyOutcome, Approval, ByteHash, CoreError, LinkPrecondition, Paths, Plan,
+    RecoveryDisposition, RecoveryOutcome, Result, Scope, ScopePaths, TransactionRuntime,
 };
+
+pub fn recover(paths: &Paths, runtime: &dyn TransactionRuntime) -> Result<RecoveryOutcome> {
+    let scope_key = paths.scope_key();
+    let journal_path = paths.transaction_journal_path(&scope_key);
+    let bytes = match fs::read(&journal_path) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(RecoveryOutcome {
+                dispositions: Vec::new(),
+            })
+        }
+        Err(error) => return Err(crate::transaction::io_error(&journal_path, error)),
+    };
+    let journal = Journal::from_bytes(&bytes)?;
+    validate_journal(paths, &journal)?;
+
+    let mut locks = LockCoordinator::new();
+    let candidates = journal
+        .state
+        .iter()
+        .filter(|state| state.name == StateName::Candidate)
+        .collect::<Vec<_>>();
+    if candidates.len() > 1 {
+        return Err(CoreError::Transaction(
+            "journal contains more than one candidate mutation".into(),
+        ));
+    }
+    if let Some(candidate) = candidates.first() {
+        let alias = crate::SourceAlias::new(
+            candidate
+                .alias
+                .as_deref()
+                .ok_or_else(|| CoreError::Transaction("candidate journal lacks alias".into()))?,
+        )?;
+        locks.acquire(
+            &paths.candidate_lock_path(&scope_key, &alias),
+            LockRank::Candidate,
+            LockMode::Exclusive,
+        )?;
+    }
+    locks.acquire(&paths.store_lock_path(), LockRank::Store, LockMode::Shared)?;
+    locks.acquire(
+        &paths.trust_lock_path(),
+        LockRank::Trust,
+        if journal
+            .state
+            .iter()
+            .any(|state| state.name == StateName::Trust)
+        {
+            LockMode::Exclusive
+        } else {
+            LockMode::Shared
+        },
+    )?;
+    if matches!(paths.scope, ScopePaths::Project { .. }) {
+        locks.acquire(
+            &paths.projects_lock_path(),
+            LockRank::Projects,
+            LockMode::Exclusive,
+        )?;
+    }
+    locks.acquire(
+        &paths.scope_lock_path(&scope_key),
+        LockRank::Scope,
+        LockMode::Exclusive,
+    )?;
+    if fs::read(&journal_path)
+        .map_err(|error| crate::transaction::io_error(&journal_path, error))?
+        != bytes
+    {
+        return Err(CoreError::RecoveryRequired(
+            "transaction journal changed while acquiring recovery custody".into(),
+        ));
+    }
+
+    if checkpoint(runtime, "recovery-start")? {
+        return Ok(RecoveryOutcome {
+            dispositions: Vec::new(),
+        });
+    }
+    let state_after = journal
+        .state
+        .iter()
+        .all(|state| current_state(paths, state).ok() == Some(state.after.clone()));
+    let links_after = journal
+        .links
+        .iter()
+        .all(|link| current_link(paths, link).ok() == Some(link.after.clone()));
+    let roll_forward =
+        journal.committed || (!journal.state.is_empty() && state_after && links_after);
+    let disposition = if roll_forward {
+        if !state_after || !links_after {
+            return Err(CoreError::RecoveryRequired(
+                "committed transaction does not match its recorded after state".into(),
+            ));
+        }
+        RecoveryDisposition::RolledForward {
+            scope_key: scope_key.clone(),
+        }
+    } else {
+        restore_before(paths, &journal, &journal.nonce)?;
+        RecoveryDisposition::RolledBack {
+            scope_key: scope_key.clone(),
+        }
+    };
+    if checkpoint(runtime, "recovery-state-complete")? {
+        return Ok(RecoveryOutcome {
+            dispositions: Vec::new(),
+        });
+    }
+    remove_file_if_present(&journal_path)?;
+    if let Some(parent) = journal_path.parent() {
+        sync_directory(parent)?;
+    }
+    Ok(RecoveryOutcome {
+        dispositions: vec![disposition],
+    })
+}
 
 pub fn apply(
     paths: &Paths,
@@ -32,6 +150,16 @@ pub fn apply(
         }
     } else if approval == Approval::Declined {
         return Ok(ApplyOutcome::Cancelled);
+    }
+
+    let pending_journal = paths.transaction_journal_path(&paths.scope_key());
+    if pending_journal.exists() {
+        recover(paths, runtime)?;
+        if pending_journal.exists() {
+            return Err(CoreError::RecoveryRequired(
+                "transaction recovery was interrupted".into(),
+            ));
+        }
     }
 
     let nonce = runtime.transaction_nonce()?;
@@ -72,7 +200,17 @@ pub fn apply(
                 after, create_mode, ..
             } = action
             {
+                if checkpoint(runtime, "before-standalone-trust")? {
+                    return Ok(ApplyOutcome::Interrupted {
+                        checkpoint: "before-standalone-trust".into(),
+                    });
+                }
                 replace(&paths.trust_path(), after, &nonce, Some(*create_mode))?;
+                if checkpoint(runtime, "after-standalone-trust")? {
+                    return Ok(ApplyOutcome::Interrupted {
+                        checkpoint: "after-standalone-trust".into(),
+                    });
+                }
                 changed = true;
             }
         }
@@ -444,8 +582,18 @@ fn execute(
                 }
                 parent_identity.revalidate(&paths.skills_dir())?;
                 require_link(&destination, None)?;
+                if checkpoint(runtime, "before-link-mutation")? {
+                    return Ok(ApplyOutcome::Interrupted {
+                        checkpoint: "before-link-mutation".into(),
+                    });
+                }
                 create_symlink(&target.resolve(paths)?, &destination)?;
                 sync_directory(&paths.skills_dir())?;
+                if checkpoint(runtime, "after-link-mutation")? {
+                    return Ok(ApplyOutcome::Interrupted {
+                        checkpoint: "after-link-mutation".into(),
+                    });
+                }
                 if mark(
                     runtime,
                     journal_path,
@@ -468,7 +616,17 @@ fn execute(
                 let parent_identity = parent_identity.expect("link action has parent identity");
                 parent_identity.revalidate(&paths.skills_dir())?;
                 require_link(&destination, Some(&before.resolve(paths)?))?;
+                if checkpoint(runtime, "before-link-mutation")? {
+                    return Ok(ApplyOutcome::Interrupted {
+                        checkpoint: "before-link-mutation".into(),
+                    });
+                }
                 replace_symlink(&destination, &after.resolve(paths)?, &journal.nonce)?;
+                if checkpoint(runtime, "after-link-mutation")? {
+                    return Ok(ApplyOutcome::Interrupted {
+                        checkpoint: "after-link-mutation".into(),
+                    });
+                }
                 if mark(
                     runtime,
                     journal_path,
@@ -486,9 +644,19 @@ fn execute(
                 let parent_identity = parent_identity.expect("link action has parent identity");
                 parent_identity.revalidate(&paths.skills_dir())?;
                 require_link(&destination, Some(&target.resolve(paths)?))?;
+                if checkpoint(runtime, "before-link-mutation")? {
+                    return Ok(ApplyOutcome::Interrupted {
+                        checkpoint: "before-link-mutation".into(),
+                    });
+                }
                 fs::remove_file(&destination)
                     .map_err(|error| crate::transaction::io_error(&destination, error))?;
                 sync_directory(&paths.skills_dir())?;
+                if checkpoint(runtime, "after-link-mutation")? {
+                    return Ok(ApplyOutcome::Interrupted {
+                        checkpoint: "after-link-mutation".into(),
+                    });
+                }
                 if mark(
                     runtime,
                     journal_path,
@@ -506,6 +674,11 @@ fn execute(
     }
     for state in journal.state.clone() {
         let path = state_path(paths, &state)?;
+        if checkpoint(runtime, "before-state-mutation")? {
+            return Ok(ApplyOutcome::Interrupted {
+                checkpoint: "before-state-mutation".into(),
+            });
+        }
         match &state.after {
             Some(bytes) => replace(
                 &path,
@@ -515,12 +688,22 @@ fn execute(
             )?,
             None => remove_file_if_present(&path)?,
         }
+        if checkpoint(runtime, "after-state-mutation")? {
+            return Ok(ApplyOutcome::Interrupted {
+                checkpoint: "after-state-mutation".into(),
+            });
+        }
         if mark(runtime, journal_path, &mut journal, state_name(state.name))? {
             return Ok(ApplyOutcome::Interrupted {
                 checkpoint: "action-marked".into(),
             });
         }
         changed = true;
+    }
+    if checkpoint(runtime, "before-commit-marker")? {
+        return Ok(ApplyOutcome::Interrupted {
+            checkpoint: "before-commit-marker".into(),
+        });
     }
     journal.committed = true;
     replace(
@@ -532,6 +715,11 @@ fn execute(
     if checkpoint(runtime, "committed")? {
         return Ok(ApplyOutcome::Interrupted {
             checkpoint: "committed".into(),
+        });
+    }
+    if checkpoint(runtime, "before-cleanup")? {
+        return Ok(ApplyOutcome::Interrupted {
+            checkpoint: "before-cleanup".into(),
         });
     }
     remove_file_if_present(journal_path)?;
@@ -558,13 +746,20 @@ fn mark(
 }
 
 fn rollback(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
+    restore_before(paths, journal, nonce)
+}
+
+fn restore_before(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
     for link in journal.links.iter().rev() {
-        if !journal
-            .completed
-            .iter()
-            .any(|completed| completed == &format!("link:{}", link.skill))
-        {
+        let actual = current_link(paths, link)?;
+        if actual == link.before {
             continue;
+        }
+        if actual != link.after {
+            return Err(CoreError::RecoveryRequired(format!(
+                "link `{}` is neither recorded before nor after state",
+                link.skill
+            )));
         }
         let destination = paths.skills_dir().join(&link.skill);
         match &link.before {
@@ -573,17 +768,138 @@ fn rollback(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
         }
     }
     for state in journal.state.iter().rev() {
-        if !journal
-            .completed
-            .iter()
-            .any(|completed| completed == state_name(state.name))
-        {
+        let actual = current_state(paths, state)?;
+        if actual == state.before {
             continue;
+        }
+        if actual != state.after {
+            return Err(CoreError::RecoveryRequired(format!(
+                "{} is neither recorded before nor after state",
+                state_name(state.name)
+            )));
         }
         let path = state_path(paths, state)?;
         match &state.before {
-            Some(bytes) => replace(&path, bytes, nonce, None)?,
+            Some(bytes) => replace(
+                &path,
+                bytes,
+                nonce,
+                matches!(state.name, StateName::Trust | StateName::Candidate).then_some(0o600),
+            )?,
             None => remove_file_if_present(&path)?,
+        }
+    }
+    Ok(())
+}
+
+fn current_state(paths: &Paths, state: &StateTransition) -> Result<Option<Vec<u8>>> {
+    let path = state_path(paths, state)?;
+    match fs::read(&path) {
+        Ok(bytes) => Ok(Some(bytes)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(crate::transaction::io_error(&path, error)),
+    }
+}
+
+fn current_link(paths: &Paths, link: &LinkTransition) -> Result<Option<Vec<u8>>> {
+    let path = paths.skills_dir().join(&link.skill);
+    match observe_link(&path)? {
+        LinkPrecondition::Absent => Ok(None),
+        LinkPrecondition::Symlink(target) => Ok(Some(path_bytes(&target))),
+        LinkPrecondition::File | LinkPrecondition::Directory => Err(CoreError::RecoveryRequired(
+            format!("foreign entry occupies transaction link `{}`", link.skill),
+        )),
+    }
+}
+
+fn validate_journal(paths: &Paths, journal: &Journal) -> Result<()> {
+    if journal.scope_key != paths.scope_key() {
+        return Err(CoreError::Transaction(
+            "journal scope does not match resolved paths".into(),
+        ));
+    }
+    validate_nonce(&journal.nonce)?;
+    if journal.plan_digest.len() != 64
+        || !journal
+            .plan_digest
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(CoreError::Transaction("invalid journal plan digest".into()));
+    }
+    for state in &journal.state {
+        match state.name {
+            StateName::Manifest => {
+                if state.alias.is_some() || state.source_key.is_some() {
+                    return Err(CoreError::Transaction(
+                        "manifest journal entry carries candidate identity".into(),
+                    ));
+                }
+                if let Some(bytes) = &state.before {
+                    crate::Manifest::parse(bytes.clone())?;
+                }
+                if let Some(bytes) = &state.after {
+                    crate::Manifest::parse(bytes.clone())?;
+                }
+            }
+            StateName::Lock => {
+                if state.alias.is_some() || state.source_key.is_some() {
+                    return Err(CoreError::Transaction(
+                        "lock journal entry carries candidate identity".into(),
+                    ));
+                }
+                if let Some(bytes) = &state.before {
+                    crate::Lockfile::parse(bytes)?;
+                }
+                if let Some(bytes) = &state.after {
+                    crate::Lockfile::parse(bytes)?;
+                }
+            }
+            StateName::Trust => {
+                if state.alias.is_some() || state.source_key.is_some() {
+                    return Err(CoreError::Transaction(
+                        "trust journal entry carries candidate identity".into(),
+                    ));
+                }
+                if let Some(bytes) = &state.before {
+                    crate::TrustStore::parse(bytes)?;
+                }
+                if let Some(bytes) = &state.after {
+                    crate::TrustStore::parse(bytes)?;
+                }
+            }
+            StateName::Candidate => {
+                let alias = state.alias.as_deref().ok_or_else(|| {
+                    CoreError::Transaction("candidate journal lacks alias".into())
+                })?;
+                crate::SourceAlias::new(alias)?;
+                let source_key =
+                    crate::SourceKey::parse(state.source_key.clone().ok_or_else(|| {
+                        CoreError::Transaction("candidate journal lacks source key".into())
+                    })?)?;
+                if let Some(bytes) = &state.before {
+                    crate::CandidateRecord::parse(bytes, Some(&source_key))?;
+                }
+                if let Some(bytes) = &state.after {
+                    crate::CandidateRecord::parse(bytes, Some(&source_key))?;
+                }
+            }
+        }
+    }
+    for link in &journal.links {
+        crate::SkillName::new(&link.skill)?;
+        if link.before.is_none() && link.after.is_none() {
+            return Err(CoreError::Transaction(
+                "journal link transition has no state".into(),
+            ));
+        }
+        for raw in [&link.before, &link.after].into_iter().flatten() {
+            let path = bytes_path(raw);
+            if !path.is_absolute() {
+                return Err(CoreError::Transaction(
+                    "journal link target is not absolute".into(),
+                ));
+            }
         }
     }
     Ok(())

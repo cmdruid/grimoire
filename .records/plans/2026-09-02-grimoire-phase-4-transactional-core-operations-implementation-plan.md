@@ -320,7 +320,7 @@ This task is read-only and produces no commit.
     tests prove cache/review may change while manifest/candidate/trust/store/links do not; disabling
     the plan-gated candidate or materialization constructor exposes its mutation canary.
 
-- [ ] **Slice 3: Crash-safe rollback, roll-forward, and candidate/trust ordering** <requires: 2>
+- [x] **Slice 3: Crash-safe rollback, roll-forward, and candidate/trust ordering** <requires: 2>
   - Files: create `crates/grimoire-core/tests/transaction_recovery.rs` and transaction goldens under
     `crates/grimoire-core/tests/fixtures/transaction/`; modify
     `crates/grimoire-core/src/apply.rs`, `crates/grimoire-core/src/transaction/mod.rs`,
