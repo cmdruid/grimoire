@@ -455,6 +455,7 @@ pub enum Request {
     UpdateSource {
         alias: SourceAlias,
     },
+    UpdateAll,
     TrustSource {
         alias: SourceAlias,
         mode: SourceTrustIntent,

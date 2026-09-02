@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::ffi::OsString;
 use std::io::{self, IsTerminal, Write};
 
@@ -5,7 +6,8 @@ use clap::{error::ErrorKind, Parser};
 use grimoire_core::{
     apply, load_trust_world, load_world, plan, prepare_source_add, refresh_source, source_diff,
     source_info, source_key_for_alias, source_summaries, trust_catalog, Approval, CoreError,
-    ManifestSource, PlanningMode, Request, SourceAlias, SourceKey, SourceTrustIntent,
+    ManifestPack, ManifestSource, PackName, PlanningMode, Request, SkillName, SourceAlias,
+    SourceKey, SourceTrustIntent,
 };
 
 use crate::args::{Cli, Command, SourceCommand, TrustCommand};
@@ -111,7 +113,103 @@ fn execute(
         }
         Command::Source { command } => execute_source(command, environment, console),
         Command::Trust { command } => execute_trust(command, environment, console),
+        Command::Install {
+            name,
+            pack,
+            source,
+            dry_run,
+            frozen,
+            yes,
+            scope,
+        } => {
+            let request = match (name, source, pack) {
+                (None, None, false) => Request::Reconcile,
+                (Some(name), Some(source), false) => Request::InstallSkill {
+                    name: SkillName::new(name)?,
+                    source: SourceAlias::new(source)?,
+                },
+                (Some(name), Some(source), true) => Request::InstallPack {
+                    name: PackName::new(name)?,
+                    request: ManifestPack {
+                        source: SourceAlias::new(source)?,
+                        exclude: BTreeSet::new(),
+                    },
+                },
+                _ => {
+                    return Err(CoreError::Request(
+                        "operand installs require `--source <alias>`".into(),
+                    ))
+                }
+            };
+            execute_scoped_request(
+                environment,
+                console,
+                &scope,
+                request,
+                if frozen {
+                    PlanningMode::Frozen
+                } else {
+                    PlanningMode::Normal
+                },
+                ApplyOptions { dry_run, yes },
+            )
+        }
+        Command::Uninstall {
+            name,
+            pack,
+            dry_run,
+            yes,
+            scope,
+        } => execute_scoped_request(
+            environment,
+            console,
+            &scope,
+            if pack {
+                Request::UninstallPack {
+                    name: PackName::new(name)?,
+                }
+            } else {
+                Request::UninstallSkill {
+                    name: SkillName::new(name)?,
+                }
+            },
+            PlanningMode::Normal,
+            ApplyOptions { dry_run, yes },
+        ),
+        Command::Update {
+            source,
+            dry_run,
+            yes,
+            scope,
+        } => execute_scoped_request(
+            environment,
+            console,
+            &scope,
+            match source {
+                Some(alias) => Request::UpdateSource {
+                    alias: SourceAlias::new(alias)?,
+                },
+                None => Request::UpdateAll,
+            },
+            PlanningMode::Normal,
+            ApplyOptions { dry_run, yes },
+        ),
     }
+}
+
+fn execute_scoped_request(
+    environment: &dyn Environment,
+    console: &mut dyn Console,
+    scope: &crate::args::ScopeArgs,
+    request: Request,
+    mode: PlanningMode,
+    options: ApplyOptions,
+) -> grimoire_core::Result<u8> {
+    let paths = resolve_scope_paths(environment, scope, &SystemPathProbe)?;
+    let runner = SystemGitRunner::default();
+    let runtime = SystemRuntime;
+    let world = load_world(&paths, &runner, &runtime)?;
+    apply_request(&paths, &world, request, mode, console, &runtime, options)
 }
 
 fn execute_source(

@@ -30,13 +30,56 @@ pub enum Command {
         #[command(subcommand)]
         command: TrustCommand,
     },
+    /// Reconcile desired state or add one direct request.
+    Install {
+        name: Option<String>,
+        #[arg(long, requires = "name")]
+        pack: bool,
+        #[arg(long, value_name = "ALIAS", requires = "name")]
+        source: Option<String>,
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long, conflicts_with_all = ["name", "pack", "source"])]
+        frozen: bool,
+        #[arg(long)]
+        yes: bool,
+        #[command(flatten)]
+        scope: ScopeArgs,
+    },
+    /// Remove one direct skill or pack request.
+    #[command(visible_alias = "remove")]
+    Uninstall {
+        name: String,
+        #[arg(long)]
+        pack: bool,
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long)]
+        yes: bool,
+        #[command(flatten)]
+        scope: ScopeArgs,
+    },
+    /// Advance one source or every non-live source from cached candidates.
+    Update {
+        source: Option<String>,
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long)]
+        yes: bool,
+        #[command(flatten)]
+        scope: ScopeArgs,
+    },
 }
 
 impl Command {
     pub fn init_scope(&self) -> Option<&InitScope> {
         match self {
             Self::Init { scope } => Some(scope),
-            Self::Source { .. } | Self::Trust { .. } => None,
+            Self::Source { .. }
+            | Self::Trust { .. }
+            | Self::Install { .. }
+            | Self::Uninstall { .. }
+            | Self::Update { .. } => None,
         }
     }
 }

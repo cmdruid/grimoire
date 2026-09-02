@@ -116,10 +116,15 @@ pub fn load_world(
             source_states.insert(alias.clone(), locked.clone());
         }
     }
-    let snapshots = source_states
+    let mut snapshots = locked_states
         .iter()
         .map(|(alias, state)| (alias.clone(), state.snapshot.clone()))
-        .collect();
+        .collect::<BTreeMap<_, _>>();
+    for (alias, state) in &candidates {
+        snapshots
+            .entry(alias.clone())
+            .or_insert_with(|| state.snapshot.clone());
+    }
     let links = lock
         .skills
         .keys()

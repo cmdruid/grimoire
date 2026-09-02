@@ -201,7 +201,7 @@ pub fn apply(
             .iter()
             .all(|action| matches!(action, Action::ReplaceTrust { .. }));
     let mut locks = LockCoordinator::new();
-    if let Some(alias) = candidate_lock_alias(plan)? {
+    for alias in candidate_lock_aliases(plan)? {
         locks.acquire(
             &paths.candidate_lock_path(&scope_key, &alias),
             LockRank::Candidate,
@@ -1130,26 +1130,38 @@ fn state_order(name: StateName) -> u8 {
     }
 }
 
-fn candidate_lock_alias(plan: &Plan) -> Result<Option<crate::SourceAlias>> {
-    let action_alias = plan.actions.iter().find_map(|action| match action {
-        Action::ReplaceCandidate { alias, .. } | Action::RemoveCandidate { alias, .. } => {
-            Some(alias.clone())
-        }
-        _ => None,
-    });
-    if plan.preconditions.candidates.len() > 1 {
+fn candidate_lock_aliases(plan: &Plan) -> Result<Vec<crate::SourceAlias>> {
+    let action_aliases = plan
+        .actions
+        .iter()
+        .filter_map(|action| match action {
+            Action::ReplaceCandidate { alias, .. } | Action::RemoveCandidate { alias, .. } => {
+                Some(alias.clone())
+            }
+            _ => None,
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    if action_aliases.len() > 1 {
         return Err(CoreError::Transaction(
-            "one plan cannot depend on more than one candidate".into(),
+            "one plan cannot mutate more than one candidate".into(),
         ));
     }
-    let precondition_alias = plan.preconditions.candidates.keys().next().cloned();
-    if action_alias.is_some() && precondition_alias.is_some() && action_alias != precondition_alias
+    if !action_aliases
+        .iter()
+        .all(|alias| plan.preconditions.candidates.contains_key(alias))
     {
         return Err(CoreError::Transaction(
-            "candidate action and precondition aliases disagree".into(),
+            "candidate action lacks its matching precondition".into(),
         ));
     }
-    Ok(action_alias.or(precondition_alias))
+    let mut aliases = plan
+        .preconditions
+        .candidates
+        .keys()
+        .cloned()
+        .collect::<std::collections::BTreeSet<_>>();
+    aliases.extend(action_aliases);
+    Ok(aliases.into_iter().collect())
 }
 
 fn refresh_project_index(

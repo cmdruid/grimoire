@@ -234,7 +234,7 @@ This task is read-only and produces no commit.
     expected: all source/trust commands use typed core facts and mutation plans, and inert fetch is
     the only managed-cache exception.
 
-- [ ] **Slice 4: Desired-state commands share one plan/apply harness** <requires: 2, 3>
+- [x] **Slice 4: Desired-state commands share one plan/apply harness** <requires: 2, 3>
   - Files: create `crates/grimoire-core/tests/update_all.rs` and
     `crates/grimoire/tests/cli_mutations.rs`; modify
     `crates/grimoire-core/src/model.rs`, `crates/grimoire-core/src/plan.rs`,

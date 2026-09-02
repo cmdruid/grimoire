@@ -6,3 +6,5 @@
 2026-09-02	superseded	plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and-stream-history-implementation-plan.md	plans	Workstream control surface, lifecycle hooks, and stream history — Implementation Plan	Replaced by plans/2026-09-02-workstream-composed-control-surface-and-lean-runtime-implementation-plan.md
 2026-09-02	consumed	reports/2026-09-02-skill-feedback-implementation-review-fixes.md	reports	Skill feedback implementation review fixes	Fixes implemented and verified before re-review
 2026-09-02	consumed	reports/2026-09-02-foreman-and-skilldata-implementation-review-fixes.md	reports	Foreman and skilldata implementation review fixes	Fixes and regression proofs landed; ready for implementation re-review.
+2026-09-02	consumed	reports/2026-09-02-cli-mutation-fixture-uses-symlinked-temporary-home.md	reports	CLI mutation fixture uses symlinked temporary home	Canonical fixture path landed in Phase 5 Slice 4.
+2026-09-02	consumed	reports/2026-09-02-update-planner-confuses-candidate-and-active-snapshots.md	reports	Update planner confuses candidate and active snapshots	Active/candidate snapshot separation landed in Phase 5 Slice 4.
