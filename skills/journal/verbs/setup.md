@@ -2,7 +2,7 @@
 
 Stand up or refresh Journal's fixed `.records` tool layer in a generic brownfield project. Setup is
 stateless: it derives work from the public layer and read-only Git evidence on every invocation. It
-never resolves, inspects, migrates, or removes anything under `.spaces` and creates no writer
+never resolves, inspects, migrates, or removes anything under `.agents/skilldata` and creates no writer
 directory or project template.
 
 1. **Resolve `<root>`.** Use the Git top level of the intended checkout; outside Git, use the project

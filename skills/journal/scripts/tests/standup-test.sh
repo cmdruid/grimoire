@@ -14,7 +14,7 @@ expect "README reported" 'wrote: .records/README.md' "$OUT"
 cmp -s "$SKILL/scripts/records.sh" "$fresh/.records/records.sh" && pass=$((pass + 1)) || fail=$((fail + 1))
 cmp -s "$SKILL/templates/records-readme-block.md" "$fresh/.records/README.md" && pass=$((pass + 1)) || fail=$((fail + 1))
 [ ! -d "$fresh/.records/notes" ] && pass=$((pass + 1)) || fail=$((fail + 1))
-[ ! -e "$fresh/.spaces" ] && pass=$((pass + 1)) || fail=$((fail + 1))
+[ ! -e "$fresh/.agents/skilldata" ] && pass=$((pass + 1)) || fail=$((fail + 1))
 
 incumbent="$TMP/incumbent"; mkdir -p "$incumbent/.records"
 printf '# Project records prose without final newline' >"$incumbent/.records/README.md"

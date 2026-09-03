@@ -3,7 +3,7 @@ set -u
 HERE="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)"; CHECK="$HERE/../operation-check.sh"
 . "$HERE/lib.sh"
 T="$(mktemp -d "${TMPDIR:-/tmp}/foreman-check-test.XXXXXX")"; trap 'rm -rf "$T"' EXIT
-R="$T/root"; O="$R/.spaces/foreman/operations"; mkdir -p "$O"; OUT="$T/out"
+R="$T/root"; O="$R/.agents/skilldata/foreman/operations"; mkdir -p "$O"; OUT="$T/out"
 
 procedure() { # path, title, body
   file="$1"; title="$2"; body="$3"
@@ -122,5 +122,12 @@ procedure "$O/bad.md" Bad 'fail shape.'
 sed -i.bak 's/shape: procedure/shape: workflow/' "$O/bad.md"; rm "$O/bad.md.bak"
 if "$CHECK" --root "$R" --operation foreman/bad >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi
 has "malformed shape" 'workflow-shape-mismatch' "$OUT"
+
+UNSAFE="$T/unsafe"; mkdir -p "$UNSAFE/.agents" "$T/outside/foreman/operations"
+procedure "$T/outside/foreman/operations/secret.md" Secret 'must never be read.'
+ln -s "$T/outside" "$UNSAFE/.agents/skilldata"
+if "$CHECK" --root "$UNSAFE" --operation foreman/secret >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi
+has "symlinked operation parent refuses" 'unsafe-operation-parent' "$OUT"
+lacks "unsafe operation body is not read" 'Secret' "$OUT"
 
 report operation-check-test

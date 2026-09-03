@@ -19,7 +19,6 @@ optional:
   - mailbox
   - notepad
   - scheduler
-  - workspace
   - workstream
 ---
 
@@ -42,10 +41,10 @@ All other members are optional and default-installed:
   implementations, publishes only accepted passing documents, and owns its project kind setup.
 - Project knowledge and follow-up: `journal`, `backlog`, `notepad`, `analyst`, and `chiropractor`.
 - Development operations: `workstream`, `auditor`, `debugger`, and `foreman`.
-- Utilities: `delegate`, `mailbox`, `checkpoint`, `scheduler`, and `workspace`.
+- Utilities: `delegate`, `mailbox`, `checkpoint`, and `scheduler`.
 
-Four skills are intentionally outside the pack: `skill-builder` maintains skills libraries,
-`agent-council` is a standalone cross-vendor panel, `developer-writing` is a standalone
+Standalone library skills outside this pack include `skill-builder`, which maintains skills
+libraries; `agent-council` is a standalone cross-vendor panel, `developer-writing` is a standalone
 developer-writing guide, and `code-humanizer` keeps durable product source fit for human ownership
 at write time while preserving explicit `mark` / `map` / `walk`. None is part of the project's
 `clankshop` toolkit.
@@ -86,11 +85,10 @@ at write time while preserving explicit `mark` / `map` / `walk`. None is part of
   main session remains the sole writer of its held target. Delegate and Mailbox are optional: if
   either needed capability is absent, the unit runs inline. Delegate may expose its own optional
   `delegate/hooks/byproducts.md` policy through explicit setup; the pack never fills it.
-- Workspace validates the owner-first layout without creating or repairing it. Foreman curates the
-  cross-owner operation catalog and writes only its own operations, doctrine, route, and goal
-  records; each publisher remains able to follow its own operations directly. Scheduler owns only
-  local recurring-run state.
-- Records, tracker data, workspace files, hooks, doctrine, and review kinds remain owned by
+- Foreman curates the cross-owner operation catalog and writes only its own operations, doctrine,
+  route, and goal records; each publisher remains able to follow its own operations directly.
+  Scheduler owns only local recurring-run state.
+- Records, tracker data, skilldata files, hooks, doctrine, and review kinds remain owned by
   the skill that defines them. Coarse owner-local edge types do not compose across owners merely
   because their names match. Pack installation never projects those files into a project.
 
@@ -102,7 +100,7 @@ Clankshop for `<project-root>`.” Installation does not cache or execute this s
 
 ### 1. Inspect and propose
 
-Read the target project's instructions, inspect the fixed `.spaces`, `.records`, and `.trackers`
+Read the target project's instructions, inspect the fixed `.agents/skilldata`, `.records`, and `.trackers`
 homes, and inspect installed members plus Git state. Do not write yet.
 
 Propose one bounded profile that names every selected setup and every destination it may change:
@@ -130,7 +128,7 @@ refusal, and rerun.
 Backlog setup configures only `.trackers`; it does not author a project front door or Workstream
 hooks. Workstream's hook points remain independently owned and unchanged by this profile.
 When Delegate is selected, the project may place this policy in
-`.spaces/delegate/hooks/byproducts.md`:
+`.agents/skilldata/delegate/hooks/byproducts.md`:
 
 ```markdown
 Return each actionable project-owned byproduct with a proposed class (`task`, `issue`, or `feedback`),
@@ -145,7 +143,7 @@ and the Architect → Inspector → Contractor flow remains invocation-only rath
 ### 4. Validate and optionally commit
 
 Rerun every selected setup in write-only mode and require zero writes. Invoke each advertised public
-owner check, then `/workspace check` against the resolved roots. Compare the complete Git diff over
+owner check. Compare the complete Git diff over
 all approved destinations with the recorded pre-sweep state; setup output is not the final path set.
 
 If the user requested a commit, make one pathspec-scoped commit over the complete approved diff.

@@ -86,7 +86,7 @@ the member skills.
 - **Glue is content vs. mechanism.** A runbook may describe the seam, while the
   owning skill implements the reader and a project owns any local overlay body.
   **Project hook files** live at
-  `.spaces/<skill>/hooks/<seam>.md`; there is no composer skill or
+  `.agents/skilldata/<skill>/hooks/<seam>.md`; there is no composer skill or
   pack-level writer. The same ownership rule applies to `operations/`, `hooks/`, and
   `templates/`: a publisher writes only beneath its own skill namespace.
 
@@ -111,7 +111,7 @@ the member skills.
 2. **Ideal-use examples** — self-contained *"how to use me"* route/workflow a composer or role skill
    can ingest to understand usage. **Enrichment.**
 3. **Deployable seed** — project-customizable assets (for example,
-   `.spaces/<skill>/templates/`) plus an authoring verb. **Enrichment.**
+   `.agents/skilldata/<skill>/templates/`) plus an authoring verb. **Enrichment.**
 
 Edges are the minimum; layers 2–3 are optional. **Examples stay self-contained** — a cross-skill
 workflow is a seam the composer *generates* from edges, never a hardcoded sibling reference. A
@@ -195,7 +195,7 @@ Three kinds, by control-flow strength:
 The composer's matching rule: `handoff: T` on A + `consumes: T` on B identifies a candidate
 **seam** (control may flow A→B). `produces: T` on A + `consumes: T` on B identifies a candidate
 **dependency** (B may read A's output, with no implied control). Equality is necessary, not
-sufficient: the composer still checks the notes and ownership. Owner-local workspace kinds such
+sufficient: the composer still checks the notes and ownership. Owner-local skilldata kinds such
 as `doctrine`, `hooks`, and `templates` do not cross owner namespaces merely because their coarse
 type strings match. Unmatched edges are legal — a producer with no consumer is a leaf output; a
 consumer with no producer takes its input from outside the skill set. **A and B never name each
@@ -226,10 +226,12 @@ mechanism is not thereby a self-registering deployment of it.
 
 ## Fixed project homes
 
-Project-owned skill state uses three canonical roots beneath the project root:
+Project-owned skill state uses three canonical roots beneath the project root. Project-local
+installed package bytes, when present, live separately under `.agents/skills/` and are never a
+mutable skill-data destination:
 
 - `.records/` holds dated typed records, Journal's adjacent `records.sh`, and `history.tsv`.
-- `.spaces/` holds owner-first skill support at `.spaces/<skill>/<kind>/...`; owner names are open
+- `.agents/skilldata/` holds owner-first skill support at `.agents/skilldata/<skill>/<kind>/...`; owner names are open
   `[a-z0-9-]+`, while kinds are the closed set `doctrine`, `drafts`, `hooks`, `operations`,
   `scripts`, and `templates`.
 - `.trackers/` holds public tracker tables under `tables/`, lifecycle events in `history.tsv`,
@@ -241,10 +243,10 @@ project root and the relevant canonical literal. Adjacent first-class providers 
 require their canonical parent; callers invoke the installed provider rather than bundled bytes.
 
 The three layers remain semantically distinct even though their locations are fixed. Typed work
-products belong in `.records`; owner-local support belongs in `.spaces`; public queues and their
+products belong in `.records`; owner-local support belongs in `.agents/skilldata`; public queues and their
 routing surface belong in `.trackers`. A skill materializes only the paths it owns. Skill prose
 names canonical paths literally—for example `.records/plans/`,
-`.spaces/auditor/doctrine/test/workflows/audit/`, and `.trackers/tables/tasks.tsv`—rather than inventing a
+`.agents/skilldata/auditor/doctrine/test/workflows/audit/`, and `.trackers/tables/tasks.tsv`—rather than inventing a
 root placeholder or resolver.
 
 Brownfield layout is a migration concern, not a runtime configuration feature. A skill may expose a
@@ -254,6 +256,44 @@ instructions and implementations may name them only in a bounded rejection or mi
 
 The hard-cut rule is intentionally easy to audit: fixed construction is visible at each reader and
 writer, while the library lint rejects retired declarations, selectors, and symbolic-home tokens.
+
+The former `.spaces/` project root is retired by a hard cut: live skills do not read, write, probe,
+migrate, alias, warn about, or remove it. Historical records may retain it as evidence, and a
+same-line annotated negative fixture may name it only to prove rejection; existing trees are inert
+and remain the project owner's responsibility.
+
+## Global skilldata
+
+User-owned data that genuinely spans projects lives beneath the fixed global owner root
+`~/.agents/skilldata/<skill>/...`. This scope is opt-in and independent of project durability. The
+owner defines its internal layout, artifact schema, permissions, initialization, retention, and
+sensitive-data behavior; there is no global kind vocabulary, registry, provider, or sibling
+validator. A skill creates or inspects only its own child and never follows installed-package
+symlinks as data destinations. Installed packages remain under `~/.agents/skills/` and must not
+contain mutable runtime data.
+
+Global data is user-private input, not project authority. A package that sees both scopes states its
+lookup order, invalid-entry behavior, and reviewed transfer or materialization boundary. Project
+content normally wins for the same declared input. A global authoring artifact may seed a complete
+project preview, but it is never directly executed, imported as a project identity, or written back
+during project work.
+
+Every package that reads or writes this scope carries this machine-detectable declaration in
+`SKILL.md`, with exactly one nonempty bullet for each required field:
+
+```markdown
+## Global skilldata
+
+- Scope: user-global, <artifact boundary>.
+- Path: `~/.agents/skilldata/<skill>/<owned-tail>/`.
+- Access: read-only | read-write; <initialization behavior>.
+- Safety: <unsafe-state, permissions, and sensitive-data behavior>.
+- Justification: <why project and installed-package storage are unsuitable>.
+```
+
+A global-only package also states that it writes no project data. A package using project and global
+data states precedence and materialization explicitly. Merely owning a durable project home never
+grants global storage.
 
 ## Record-writing skills
 
@@ -268,13 +308,13 @@ this pack. `skill-builder new` scaffolds them; `check` and `review` enforce them
    optional, body-only authoring scaffold the skill actually resolves while working; it cannot
    declare or select a schema. A `## Project templates` list in `SKILL.md` names every bundled
    file that the owning skill's explicit `setup` may deploy absent-only to
-   `.spaces/<skill>/templates/`. Every listed file has a live read site and setup
+   `.agents/skilldata/<skill>/templates/`. Every listed file has a live read site and setup
    coverage. Files not on the list are package-only and are never deployed. Retired generic record
    shells do not remain as unused project lock-ins.
 3. **Own-store standup.** On first write, `mkdir` that skill's store (and `.records`
    if needed). Do not create a deployed `records.sh`, `history.tsv`, other
    stores, the records README, or the *flat* `.records/templates/<doctype>.md`.
-   Ordinary writing never creates `.spaces`; only the owning skill's explicit setup may
+   Ordinary writing never creates `.agents/skilldata`; only the owning skill's explicit setup may
    deploy its project template.
 4. **No floor.** Missing `records.sh` is not an error. Journal standup is never a
    precondition. A description must not say the skill requires a stood-up records layer.
@@ -308,7 +348,7 @@ The **project-templates** resolution, per declared project template `<file>` (th
 resolves the records home and the templates home and passes them in; the mint script
 never opens the front door):
 
-1. `.spaces/<skill>/templates/<file>` present → validate and use it (incumbent; never overwrite).
+1. `.agents/skilldata/<skill>/templates/<file>` present → validate and use it (incumbent; never overwrite).
 2. Else, if a recognized legacy template exists at
    `.records/templates/<skill>/<file>` or an explicitly registered flat legacy path,
    refuse ordinary minting and name `/<skill> migrate <legacy-path>`. Reading never copies,
@@ -317,7 +357,7 @@ never opens the front door):
    never enters this ladder.
 
 Deployment is intentional: only `/<skill> setup` copies a declared project template to its
-canonical workspace path. Setup inventories the complete owned write set before creating anything,
+canonical skilldata path. Setup inventories the complete owned write set before creating anything,
 then rechecks every existing parent immediately before each write. Unsafe or incompatible entries
 refuse that write. If a later recheck fails after earlier safe writes, setup reports both the
 completed paths and the refusal; a rerun preserves those incumbents and finishes the remainder.
@@ -349,23 +389,23 @@ doctrine path is exactly as wrong as a writer that does.
 
    > **Records** are dated, typed, closeable instances → `.records`.
    > **Templates** are project-editable authoring scaffolds actively read by their owner →
-   > `.spaces/<skill>/templates/`.
+   > `.agents/skilldata/<skill>/templates/`.
    > **Doctrine** is living, normative, undated, and never closes →
-   > `.spaces/<skill>/doctrine/`.
+   > `.agents/skilldata/<skill>/doctrine/`.
    > **Drafts** are living, opt-in incubation files, not records →
-   > `.spaces/<skill>/drafts/`.
+   > `.agents/skilldata/<skill>/drafts/`.
    > **Hooks** are seam overlays on a skill's own loop →
-   > `.spaces/<skill>/hooks/<seam>.md`.
+   > `.agents/skilldata/<skill>/hooks/<seam>.md`.
    > **Trackers** are public durable queues and their shared provider → `.trackers`.
    > **Inspector kinds** are undated judgment templates
    > (not mint shells, not records, not the audit rubric)
-   > → `.spaces/inspector/doctrine/<kind>.md`.
+   > → `.agents/skilldata/inspector/doctrine/<kind>.md`.
 
    Doctrine: an audit rubric, a station chapter. Not
    doctrine: a spec (a dated `specs/` record), a captured project fact, an audit *report*,
-   a host operation under `.spaces/<skill>/operations/`. The auditor rubric at
+   a host operation under `.agents/skilldata/<skill>/operations/`. The auditor rubric at
    `auditor/doctrine/test/workflows/audit/` remains doctrine (a parked nested tree). Host
-   procedures are workspace-resident files copied by their owner skill — not an eighth
+   procedures are skilldata-resident files copied by their owner skill — not an eighth
    landing class.
 
    **The test classifies where a thing LANDS, not where it ships from.** A skill's own
@@ -379,8 +419,8 @@ doctrine path is exactly as wrong as a writer that does.
 
 3. **Standup — explicit, narrow, and incumbent wins.** Normal reads never
    create directories. An explicit setup/deploy verb may create its declared
-   workspace when absent, then only
-   `.spaces/<its-own-name>/<owned-kind>/`. It must not create,
+   owner-local skilldata tree when absent, then only
+   `.agents/skilldata/<its-own-name>/<owned-kind>/`. It must not create,
    inspect as configuration, or interpret another owner namespace. Before each
    creation, recheck every existing parent: a symlink or non-directory parent
    is unsafe. Preflight the complete write set before creating anything; if a later immediate
@@ -389,14 +429,14 @@ doctrine path is exactly as wrong as a writer that does.
 
    **Records-layer owner exception.** A records-format steward may create a
    declared records home because standing up that distinct layer is its explicit
-   job. No skill assembles the whole agent workspace; there is no pack-level
+   job. No skill assembles or validates the whole skilldata tree; there is no pack-level
    exception.
 
    **Tracker-layer owner exception.** Backlog may create the declared trackers home because
    standing up that distinct public data layer and its provider is its explicit job. Other skills
    consume the provider; they do not seed or reinterpret the layer.
 
-   **Independent seeding.** A skill copies only the workspace files it owns
+   **Independent seeding.** A skill copies only the skilldata files it owns
    (`operations/` / `hooks/` / `templates/` beneath its namespace, as applicable), including the
    complete schema on any operation it copies; incumbent wins. A cross-owner finder over
    `operations/` is not a seeder of pack or sibling payload. Minting a
@@ -419,13 +459,13 @@ doctrine path is exactly as wrong as a writer that does.
    not refuse and send the operator away to stand one up.
 
 5. **Name the fixed home.** A doctrine producer or consumer names its literal owner-local path,
-   `.spaces/<skill>/doctrine/`, in operative prose. The mechanical gate checks for `.spaces`; skill
+   `.agents/skilldata/<skill>/doctrine/`, in operative prose. The mechanical gate checks for `.agents/skilldata`; skill
    review confirms that the procedure uses the correct owner namespace and does not accept a
    caller-selected home.
 
 6. **Declare the edge.** `produces: doctrine` / `consumes: doctrine` in the `## Edges` block,
    per the typed-edge mechanics above. **The edge type stays `doctrine` — it does not become
-   `workspace`.** An edge names the *kind of thing* carried, not the home it happens to
+   `skilldata`.** An edge names the *kind of thing* carried, not the home it happens to
    resolve through.
 
 **What the mechanical gate can and cannot prove.** The lint checks omission (an edge declared
@@ -439,7 +479,7 @@ missing sentence lives.
 ## Project hooks
 
 **Hooks** are seam overlays on a skill's own loop at
-`.spaces/<skill>/hooks/<seam>.md`. The `<skill>` stem matches that skill's
+`.agents/skilldata/<skill>/hooks/<seam>.md`. The `<skill>` stem matches that skill's
 frontmatter `name:`; `<seam>` is a safe Markdown filename known by that owner.
 Neither is a front-door variable.
 

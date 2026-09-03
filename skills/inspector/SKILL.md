@@ -18,18 +18,18 @@ When a verb is selected, **read its file and follow it**.
 This skill is **self-contained** and depends on no other skill.
 
 There is no `init`. Explicit `/inspector setup [<root>]` deploys Inspector's bundled kinds
-for project customization. Missing `.spaces/inspector/doctrine/`
+for project customization. Missing `.agents/skilldata/inspector/doctrine/`
 is not a refuse — use the bundled `kinds/<kind>.md`.
 
-**Kind doctrine** lands at the fixed `.spaces/inspector/doctrine/<kind>.md` path.
+**Kind doctrine** lands at the fixed `.agents/skilldata/inspector/doctrine/<kind>.md` path.
 There is no front-door variable.
 Incumbent wins; upgrade is a judgment-assisted diff. Load the complete
-workspace copy when it is a readable regular file, else the bundled
+project skilldata copy when it is a readable regular file, else the bundled
 `kinds/<kind>.md` when absent. A symlink, directory, other incompatible
 entry, or unreadable file is an error — never a fallback and never a merge.
 
 Review, revise, and refine are not setup operations: they never create this
-namespace. An absent workspace or kind file uses the bundle.
+namespace. An absent skilldata root or kind file uses the bundle.
 
 This package does **not** mint records.
 
@@ -75,7 +75,7 @@ Kind-detect is the **only** target gate. Unknown kind → ask or refuse;
 do not invent a rubric. The seven bundled kinds are in-scope. Hosts
 add document-kind files; they do not invent a rubric at runtime.
 
-1. Resolve the optional `.spaces/inspector/doctrine/` directory. Never create
+1. Resolve the optional `.agents/skilldata/inspector/doctrine/` directory. Never create
    it here. For each bundled stem, a readable regular project file is
    the complete effective policy; absence uses bundled `kinds/<kind>.md`.
    Symlinks, directories, other incompatible entries, and unreadable
@@ -89,7 +89,7 @@ add document-kind files; they do not invent a rubric at runtime.
    worktree, or commit may match the effective `implementation` policy.
    Resolve its governing design when named or discoverable from the
    change context. A document never falls through to implementation.
-4. No matching discriminator among workspace files and bundled kinds →
+4. No matching discriminator among project kind files and bundled kinds →
    ask or refuse. Do not invent a rubric.
 5. Axes, groundedness extras, revision legal locations, and the review-continuation selector come
    **from the kind file**. Kind doctrine selects a continuation mode; verb files own its meaning
@@ -108,9 +108,9 @@ selector is one exact declaration:
 revision-after-review: automatic-proposal | offered | unavailable
 ```
 
-The effective workspace kind file is a complete replacement, so its declaration wins when
+The effective project kind file is a complete replacement, so its declaration wins when
 present. A missing declaration uses the detected-kind default regardless of whether the effective
-file came from the bundle or workspace: `spec` and `plan` → `automatic-proposal`; every other
+file came from the bundle or project skilldata: `spec` and `plan` → `automatic-proposal`; every other
 document kind, including a host-added kind → `offered`; `implementation` → `unavailable`. An
 explicit recognized declaration overrides a document default. An absent declaration remains
 valid and uses the default above. The retired `refinement-after-review:` declaration is invalid,
@@ -140,7 +140,7 @@ does not open with it. Verdict words stay conversation-only.
 - **Scripts from this package.** `scripts/ground-check.sh` is this
   skill's copy — resolve it from this skill's own base directory,
   never a host path.
-- **Kind file from this package** (or the workspace incumbent).
+- **Kind file from this package** (or the project incumbent).
   Resolve `kinds/` from this skill's own base directory.
 - Do not mint a record. Do not write `published` in the
   `review` verdict turn.

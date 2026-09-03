@@ -47,7 +47,7 @@ trap 'rm -rf "$TMP"' EXIT
 # --- slice 1: no records.sh ---
 ROOT="$TMP/bare"
 RR="$ROOT/.records"
-AT="$ROOT/.spaces/notepad/templates"
+AT="$ROOT/.agents/skilldata/notepad/templates"
 mkdir -p "$RR"
 
 OUT="$(/bin/bash "$MINT" mint "$ROOT" "Alpha fact")"
@@ -96,7 +96,7 @@ expect_absent "stamp created no history.tsv" "$RR/history.tsv"
 if [ -f "$JOURNAL_RS" ]; then
   ROOT2="$TMP/with-rs"
   RR2="$ROOT2/.records"
-  AT2="$ROOT2/.spaces/notepad/templates"
+  AT2="$ROOT2/.agents/skilldata/notepad/templates"
   mkdir -p "$RR2"
   cp "$JOURNAL_RS" "$RR2/records.sh"
   chmod +x "$RR2/records.sh"
@@ -117,7 +117,7 @@ if [ -f "$JOURNAL_RS" ]; then
 
   ROOT3="$TMP/rs-no-tpl"
   RR3="$ROOT3/.records"
-  AT3="$ROOT3/.spaces/notepad/templates"
+  AT3="$ROOT3/.agents/skilldata/notepad/templates"
   mkdir -p "$RR3"
   cp "$JOURNAL_RS" "$RR3/records.sh"
   chmod +x "$RR3/records.sh"
@@ -151,10 +151,10 @@ printf '# Customized legacy note\n' > "$RRLEG/templates/notepad/notes.md"
 rc=0
 /bin/bash "$MINT" mint "$ROOTLEG" "Must migrate" >/dev/null 2>&1 || rc=$?
 expect_eq "legacy template blocks ordinary mint" "2" "$rc"
-expect_absent "legacy template was not adopted" "$ROOTLEG/.spaces/notepad/templates/notes.md"
+expect_absent "legacy template was not adopted" "$ROOTLEG/.agents/skilldata/notepad/templates/notes.md"
 
 # Project templates cannot take over the package-owned schema.
-ROOTSC="$TMP/schema-template"; RRSC="$ROOTSC/.records"; ATSC="$ROOTSC/.spaces/notepad/templates"
+ROOTSC="$TMP/schema-template"; RRSC="$ROOTSC/.records"; ATSC="$ROOTSC/.agents/skilldata/notepad/templates"
 mkdir -p "$RRSC" "$ATSC"
 printf '%s\n' '---' 'schema: hostile/note@1' '---' '# Body' > "$ATSC/notes.md"
 rc=0

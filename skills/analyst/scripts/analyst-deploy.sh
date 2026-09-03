@@ -2,7 +2,7 @@
 # analyst-deploy.sh <root> — explicitly deploy the bundled template catalog.
 #
 # Copies any actively used bundled template absent from
-# .spaces/analyst/templates/. A previous-home copy requires explicit migration.
+# .agents/skilldata/analyst/templates/. A previous-home copy requires explicit migration.
 # Never overwrites: a deployed template is the project's, customized or not, and
 # silently replacing it would discard the customization this deploy exists to
 # enable. An upgrade of a customized template is a judgment-assisted diff a human
@@ -11,7 +11,7 @@
 # Idempotent: re-running deploys nothing new and reports what it found.
 # Explicit deploy may create only Analyst's owner namespace. It refuses
 # symlinked or non-directory parents before writing. The destination is a
-# workspace subpath, so a records directory is not a deploy gate.
+# skilldata subpath, so a records directory is not a deploy gate.
 set -euo pipefail
 
 valid_rel() {
@@ -23,7 +23,7 @@ valid_rel() {
 
 check_tree() {
   local base="$1" rel="$2" current="$1" segment old_ifs
-  valid_rel "$rel" || { echo "analyst-deploy.sh: unsafe workspace path: $rel" >&2; exit 2; }
+  valid_rel "$rel" || { echo "analyst-deploy.sh: unsafe skilldata path: $rel" >&2; exit 2; }
   old_ifs="$IFS"; IFS=/
   for segment in $rel; do
     [ -n "$segment" ] || continue
@@ -62,16 +62,16 @@ ROOT="${1:-}"
 ROOT="$(cd "$ROOT" && pwd)"
 
 RR_REL=.records
-WS_REL=.spaces
+SKILLDATA_REL=.agents/skilldata
 valid_rel "$RR_REL" || { echo "analyst-deploy.sh: unsafe records path: $RR_REL" >&2; exit 2; }
-valid_rel "$WS_REL" || { echo "analyst-deploy.sh: unsafe workspace path: $WS_REL" >&2; exit 2; }
+valid_rel "$SKILLDATA_REL" || { echo "analyst-deploy.sh: unsafe skilldata path: $SKILLDATA_REL" >&2; exit 2; }
 RR="$ROOT/$RR_REL"
-WS="$ROOT/$WS_REL"
+SKILLDATA="$ROOT/$SKILLDATA_REL"
 BUNDLED="$(cd "$(dirname "$0")/../templates" && pwd)"
-DEST="$WS/analyst/templates"
+DEST="$SKILLDATA/analyst/templates"
 PREV="$RR/templates/analyst"
 
-check_tree "$ROOT" "$WS_REL/analyst/templates"
+check_tree "$ROOT" "$SKILLDATA_REL/analyst/templates"
 if [ -d "$PREV" ] && [ "$PREV" != "$DEST" ]; then
   for f in "$PREV"/*.md; do
     [ -f "$f" ] || continue
@@ -98,9 +98,9 @@ done
 
 if [ -n "${ANALYST_SETUP_TEST_AFTER_PREFLIGHT:-}" ]; then
   [ -x "$ANALYST_SETUP_TEST_AFTER_PREFLIGHT" ] || { echo "analyst-deploy.sh: test hook is not executable" >&2; exit 2; }
-  "$ANALYST_SETUP_TEST_AFTER_PREFLIGHT" "$ROOT" "$WS_REL"
+  "$ANALYST_SETUP_TEST_AFTER_PREFLIGHT" "$ROOT" "$SKILLDATA_REL"
 fi
-ensure_tree "$ROOT" "$WS_REL/analyst/templates"
+ensure_tree "$ROOT" "$SKILLDATA_REL/analyst/templates"
 
 deployed=0 kept=0
 for f in "$BUNDLED"/*.md; do
@@ -114,7 +114,7 @@ for f in "$BUNDLED"/*.md; do
     kept=$((kept + 1))
     echo "kept=$base"        # already the project's -- untouched
   else
-    check_tree "$ROOT" "$WS_REL/analyst/templates"
+    check_tree "$ROOT" "$SKILLDATA_REL/analyst/templates"
     [ ! -L "$DEST/$base" ] && [ ! -e "$DEST/$base" ] || {
       echo "analyst-deploy.sh: destination changed after preflight: $DEST/$base" >&2
       exit 2
@@ -126,12 +126,12 @@ for f in "$BUNDLED"/*.md; do
       [ -x "$ANALYST_SETUP_TEST_AFTER_WRITE" ] || {
         echo "analyst-deploy.sh: test post-write hook is not executable" >&2; exit 2;
       }
-      "$ANALYST_SETUP_TEST_AFTER_WRITE" "$ROOT" "$WS_REL" "$base" "$deployed"
+      "$ANALYST_SETUP_TEST_AFTER_WRITE" "$ROOT" "$SKILLDATA_REL" "$base" "$deployed"
     fi
   fi
 done
 
-echo "workspace=present"
+echo "skilldata=present"
 echo "dest=${DEST#"$ROOT"/}"
 echo "deployed_count=$deployed"
 echo "kept_count=$kept"

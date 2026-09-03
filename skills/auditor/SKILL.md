@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, and drain actionable findings. The rubric resolves under Auditor's fixed `.spaces` doctrine home. Pass reports land in fixed `.records`; defects stay in the report and promote via the host's bug-filing lane. Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
+description: "Drive a rubric-based code-quality audit on any repo: calibrate against the host's audit rubric (GUIDE.md + per-dimension rules/ + metrics.sh), scope by risk-weight, score with evidence, and drain actionable findings. The rubric resolves under Auditor's fixed `.agents/skilldata` doctrine home. Pass reports land in fixed `.records`; defects stay in the report and promote via the host's bug-filing lane. Use when the user runs `/auditor`, asks to score project code against that rubric, or to stand up the rubric. `setup` stands up the rubric; `metrics` runs metrics.sh; `check` runs the invariant gate. Audits PROJECT CODE against a rubric."
 ---
 
 # auditor — the code-quality audit driver
@@ -18,12 +18,12 @@ the system up anywhere, but core project configuration never waits for it.
 ## One environment probe (at entry)
 
 The rubric is Auditor-owned doctrine, so its fixed home is
-`.spaces/auditor/doctrine/`. Locating the home is not finding the rubric — locate it, **then**
+`.agents/skilldata/auditor/doctrine/`. Locating the home is not finding the rubric — locate it, **then**
 detect `GUIDE.md`. No pack lifecycle is a prerequisite; rubric setup is this
 skill's explicit operation.
 
 Detect `GUIDE.md` only at
-`.spaces/auditor/doctrine/test/workflows/audit/`. The rubric is project doctrine
+`.agents/skilldata/auditor/doctrine/test/workflows/audit/`. The rubric is project doctrine
 (`GUIDE.md`, `rules/`, `metrics.sh`) and is loaded directly for each pass. If it is absent,
 ask once; do not scan the repo.
 
@@ -69,7 +69,7 @@ layer (or the dated report file) is the memory.
 **Every host**, per pass:
 
 - **The pass report** — one record under `.records/reports/`, tagged
-  `audit`. Resolve `reports.md` at `.spaces/auditor/templates/` when present; otherwise
+  `audit`. Resolve `reports.md` at `.agents/skilldata/auditor/templates/` when present; otherwise
   read bundled `templates/reports.md` without a project write. Only `/auditor setup` deploys a
   project copy. A recognized legacy location requires `/auditor migrate <path>` rather than silent adoption.
   `.records/records.sh new reports --schema auditor/audit@1 --template <resolved> --title "Audit: <scope>" --tag audit` when

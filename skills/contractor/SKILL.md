@@ -20,7 +20,7 @@ and collides with none.
 **Destination is not stamped.** `roadmap` / `plan` / `runbook` land in fixed
 `.records/plans/` on every host, with
 `tags:` exactly one writer kind among `plan`, `roadmap`, or `runbook`. Resolve active body scaffolds
-at `.spaces/contractor/templates/` when present; otherwise read the bundled scaffold
+at `.agents/skilldata/contractor/templates/` when present; otherwise read the bundled scaffold
 without a project write. Only `/contractor setup` deploys fresh project copies. A recognized legacy
 template requires `/contractor migrate <path>`. Mint with `.records/records.sh new plans --schema contractor/<kind>@1 --template <resolved>` for plans and
 roadmaps (omit `--template` for a compiled runbook); else synthesize the same four-key profile, naming the

@@ -67,7 +67,7 @@ ok "${RUN[@]}" catalog
 lacks "$OUT" $'routines-1\t'; has "$OUT" $'routines-2\t'
 
 no "${RUN[@]}" consume --consumer foreman/tune --tracker routines --ids routines-1
-"${RUN[@]}" consume --consumer foreman/tune --tracker routines --ids routines-1 routines-99 --resolution 'Covered by release operation' --result .spaces/foreman/operations/release.md > "$OUT"
+"${RUN[@]}" consume --consumer foreman/tune --tracker routines --ids routines-1 routines-99 --resolution 'Covered by release operation' --result .agents/skilldata/foreman/operations/release.md > "$OUT"
 has "$OUT" 'event=event-2'; has "$OUT" 'missing=routines-99'
 "${RUN[@]}" consume --consumer other/tool --tracker routines --ids routines-1 --resolution duplicate > "$OUT"; has "$OUT" 'already-consumed=routines-1'
 no "${RUN[@]}" update --tracker routines --id routines-1 --text changed

@@ -18,7 +18,7 @@ artifact was created. Duration, importance, and unresolved questions do not chan
 ### Branch B: save, resume, and promote
 
 The user says `brainstorm save report-json`. Architect writes one current synthesis to
-`.spaces/architect/drafts/report-json.md`. A later agent resumes that explicit path,
+`.agents/skilldata/architect/drafts/report-json.md`. A later agent resumes that explicit path,
 updates the same file, and may run a confirmed bounded spike only if cheap investigation cannot
 settle a material feasibility question. Completed spike evidence is linked from the draft.
 

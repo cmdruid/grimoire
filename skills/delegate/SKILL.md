@@ -87,7 +87,7 @@ Judgment-heavy, ambiguous, or architectural work fails the third test -- do it i
 ## Dispatch-scoped project policy
 
 Before constructing **every** delegate prompt, resolve the project root. Read exactly
-`.spaces/delegate/hooks/byproducts.md` once:
+`.agents/skilldata/delegate/hooks/byproducts.md` once:
 
 - missing or zero-byte regular file → no overlay;
 - non-empty regular file → retain its exact bytes as this dispatch's snapshot;

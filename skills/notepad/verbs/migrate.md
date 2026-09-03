@@ -7,7 +7,7 @@ schemas and ambiguous notes refuse.
 Require a registered legacy record's `created` to equal its filename date, preserve lifecycle,
 tags, legal extra metadata, and authored fact bytes, add the schema, and remove all retired generic
 history keys. Move recognized previous-home/flat templates to
-`.spaces/notepad/templates/notes.md`, stripping legacy record-shell front matter; schema
+`.agents/skilldata/notepad/templates/notes.md`, stripping legacy record-shell front matter; schema
 in a project template refuses.
 
 Use the forward migration transaction: reject symlinks/out-of-project paths, inventory stably,

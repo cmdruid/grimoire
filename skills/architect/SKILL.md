@@ -31,12 +31,12 @@ not the machinery. "Here are two approaches; I recommend A because…" /
 `founding-shaped` and `status: draft` stay in the files.
 
 **Project homes.** Resolve the project root first. Project support and records live only under its
-fixed `.spaces` and `.records` directories; package scripts derive both from the project root.
+fixed `.agents/skilldata` and `.records` directories; package scripts derive both from the project root.
 
 **Destination is not stamped.** Feature `spec` / ADR artifacts
 land in `.records/specs/` and `.records/adr/` on every host
 using *Project homes*. Resolve `specs.md` / `adr.md` only from
-`.spaces/architect/templates/`; when absent, read the bundled body scaffold without a
+`.agents/skilldata/architect/templates/`; when absent, read the bundled body scaffold without a
 project write. Only `/architect setup` deploys a fresh project copy. Recognized legacy locations
 require `/architect migrate <path>`.
 Mint specs with `.records/records.sh new specs --schema architect/spec@1 --template <resolved>`
@@ -52,7 +52,7 @@ file-mode stamp. Founding-shaped `grill` / `spec` stay on the named file
 
 **Drafts and spikes.** Brainstorm writes nothing by default. Only an explicit
 `brainstorm save [name]`, an explicit draft-resume request, or a confirmed spike writes
-`.spaces/architect/drafts/<slug>.md` through
+`.agents/skilldata/architect/drafts/<slug>.md` through
 `scripts/architect-artifacts.sh draft-save`. Drafts are living Markdown files, not records; use
 the package-only `templates/draft.md` outline. A completed spike uses the package-only
 `templates/spikes.md` outline and the helper's `spike-publish` command to create a new
@@ -165,7 +165,7 @@ is a gap. No italic / `TBD` / `<>` special cases.
 
 There is no separate architect state file. Conversation is transient. When the user explicitly
 saves or resumes an idea, its living file under
-`.spaces/architect/drafts/` carries the state; a spec may consume that file by path.
+`.agents/skilldata/architect/drafts/` carries the state; a spec may consume that file by path.
 Records carry their own lifecycle status. `grill` writes no new file.
 
 ## Composition (the orchestrator owns building, landing, capture)

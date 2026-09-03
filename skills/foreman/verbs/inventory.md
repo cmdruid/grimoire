@@ -1,6 +1,6 @@
 # `inventory [query]` — discover operations
 
-Resolve `<root>` and `.spaces`, then run package-local
+Resolve `<root>` and `.agents/skilldata`, then run package-local
 `scripts/operations-index.sh list --root <root>` or use `search` with
 `--query <query>`. Add `--include-deprecated` only when the user explicitly asks for retired entries.
 

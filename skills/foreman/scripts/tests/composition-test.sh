@@ -3,7 +3,7 @@ set -u
 HERE="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)"; BASE="$(CDPATH='' cd -P "$HERE/../.." && pwd)"; CHECK="$HERE/../operation-check.sh"; GOAL="$HERE/../goal-compile.sh"
 . "$HERE/lib.sh"
 T="$(mktemp -d "${TMPDIR:-/tmp}/foreman-composition-test.XXXXXX")"; trap 'rm -rf "$T"' EXIT
-R="$T/root"; O="$R/.spaces/foreman/operations"; mkdir -p "$O"; OUT="$T/out"
+R="$T/root"; O="$R/.agents/skilldata/foreman/operations"; mkdir -p "$O"; OUT="$T/out"
 make_proc() { cat >"$1" <<EOF
 ---
 schema: foreman/operation@1
@@ -63,6 +63,19 @@ activate foreman/sequence
 second_line="$(grep -n '### `foreman/second`' "$T/goal.md"|head -n1|cut -d: -f1)"; first_line="$(grep -n '### `foreman/first`' "$T/goal.md"|head -n1|cut -d: -f1)"
 ok test "$second_line" -lt "$first_line"
 eq "nested closure count" 3 "$(fact operations "$OUT")"
+
+# First-use compilation permits only the new workflow root to remain provisional.
+sed 's/status: active/status: draft/;/^verified-against:/d' "$O/sequence.md" >"$T/sequence-candidate.md"
+"$GOAL" render-provisional --root "$R" --operation foreman/provisional-sequence \
+  --candidate "$T/sequence-candidate.md" --objective 'Exercise provisional composition' \
+  --record-path goals/2026-09-02-provisional-composition.md --output "$T/provisional-goal.md" >"$OUT"
+eq "provisional closure count" 3 "$(fact operations "$OUT")"; has "provisional workflow marker" 'Provisional root: `foreman/provisional-sequence@' "$T/provisional-goal.md"
+sed -i.bak -e 's/status: active/status: draft/' -e '/^verified-against:/d' "$O/first.md"; rm "$O/first.md.bak"
+if "$GOAL" render-provisional --root "$R" --operation foreman/provisional-sequence \
+  --candidate "$T/sequence-candidate.md" --objective 'Reject draft child' \
+  --record-path goals/2026-09-02-reject-draft-child.md --output "$T/rejected-goal.md" >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi
+has "provisional child must be eligible" 'reason=ineligible-operation' "$OUT"
+activate foreman/first
 
 sed -i.bak 's/foreman\/first/foreman\/missing/' "$O/sequence.md"; rm "$O/sequence.md.bak"
 if "$CHECK" --root "$R" --operation foreman/sequence >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi

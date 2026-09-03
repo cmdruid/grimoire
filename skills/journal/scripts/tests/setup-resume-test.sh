@@ -25,7 +25,7 @@ for stop in provider ledger readme; do
   expect_file "$stop publishes provider" "$root/.records/records.sh"
   cmp -s "$SKILL/scripts/records.sh" "$root/.records/records.sh" && pass=$((pass + 1)) || {
     echo "FAIL: $stop left partial provider" >&2; fail=$((fail + 1)); }
-  [ ! -e "$root/.spaces" ] && pass=$((pass + 1)) || {
+  [ ! -e "$root/.agents/skilldata" ] && pass=$((pass + 1)) || {
     echo "FAIL: $stop created private setup state" >&2; fail=$((fail + 1)); }
   case "$stop" in
     provider)
@@ -77,7 +77,8 @@ expect_eq "archived witness route" 'reason=ledger-recovery-required action=human
 brownfield="$TMP/brownfield"; mkdir -p "$brownfield/.records/notes"
 printf '%s\n' '---' 'doctype: notes' 'status: published' 'schema: notepad/note@1' 'tags: []' \
   '---' '# Live' >"$brownfield/.records/notes/2026-09-02-live.md"
-ln -s "$TMP/nowhere" "$brownfield/.spaces"
+mkdir -p "$brownfield/.agents"
+ln -s "$TMP/nowhere" "$brownfield/.agents/skilldata"
 "$STANDUP" setup "$brownfield" >"$OUT" 2>"$ERR"
 expect_file "generic brownfield gets ledger" "$brownfield/.records/history.tsv"
 expect "generic brownfield reports ledger" 'wrote: .records/history.tsv' "$OUT"

@@ -49,7 +49,7 @@ setup() {
   [ -d "$ROOT" ] || err "no such directory: $ROOT"
   ROOT="$(cd "$ROOT" && pwd)"
   RR_REL=.records
-  WS_REL=.spaces
+  SKILLDATA_REL=.agents/skilldata
   TR_REL=.trackers
   RR="$ROOT/$RR_REL"
   TR="$ROOT/$TR_REL"
@@ -58,7 +58,7 @@ setup() {
   if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then GIT=present; else GIT=absent; fi
   echo "root=$ROOT"
   echo "records_root=$RR_REL"
-  echo "workspace=$WS_REL"
+  echo "skilldata=$SKILLDATA_REL"
   echo "trackers_root=$TR_REL"
   echo "records_layer=$RECORDS_LAYER"
   echo "ledger=$([ -f "$LEDGER" ] && echo present || echo absent)"
@@ -353,7 +353,7 @@ EOF
 cmd_catalog() {
   setup "$@"
   local deployed bundled
-  deployed="$ROOT/.spaces/analyst/templates"
+  deployed="$ROOT/.agents/skilldata/analyst/templates"
   bundled="$(cd "$(dirname "$0")/../templates" && pwd)"
   echo "bundled_dir=$bundled"
   echo "deployed_dir=$deployed"

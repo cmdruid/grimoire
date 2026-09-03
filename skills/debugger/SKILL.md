@@ -38,7 +38,7 @@ enumerates doctype `bugs`** looking for work (a doctype is not a queue).
 ## Project-context probe (at entry)
 
 **Where is the diagnostics operation?** Consult
-`.spaces/debugger/operations/diagnostics.md` **when that file exists** (symptom → first
+`.agents/skilldata/debugger/operations/diagnostics.md` **when that file exists** (symptom → first
 moves; a miss is an operation gap). Absent → investigate
 without it. The operation is publisher-owned, directly readable, and not doctrine. A project with no operation is
 investigated the same way, just without the shortcut.
@@ -69,7 +69,7 @@ flat `.records/templates/<doctype>.md`.
 ## Shared discipline (`file` and the report mint)
 
 - **Use fixed homes.** `<root>` is the project root. Reports live under `.records/reports/`, bugs
-  under `.records/bugs/`, and templates under `.spaces/debugger/templates/`. Pass only `<root>` and
+  under `.records/bugs/`, and templates under `.agents/skilldata/debugger/templates/`. Pass only `<root>` and
   the operation's subject into `scripts/bug-mint.sh`; it never scans the front door.
 - **`bug-mint.sh` is the one minter for `file`.** Always call it (from this
   skill's own `scripts/`). Signature: `mint <root> <title>`. It uses staged
@@ -210,9 +210,9 @@ when one exists.
 - `investigation.md`
 - `bugs.md`
 
-Ordinary work uses a valid `.spaces/debugger/templates/<file>` incumbent, refuses a
+Ordinary work uses a valid `.agents/skilldata/debugger/templates/<file>` incumbent, refuses a
 recognized legacy copy with `/debugger migrate <source-path>`, or reads the bundled template without
-creating `.spaces`. Only `setup` deploys these templates and the active
+creating `.agents/skilldata`. Only `setup` deploys these templates and the active
 `operations/diagnostics.md`.
 
 ## Edges

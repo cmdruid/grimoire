@@ -4,9 +4,9 @@ Produce the **argued specification** — concrete enough that a gap between
 design and code is detectable, and measurable once found. Start from a
 `brainstorm` draft, an existing doc, or the conversation itself.
 
-If `[doc]` is named, classify it **before** the steps below. Resolve `.spaces` through
+If `[doc]` is named, classify it **before** the steps below. Resolve `.agents/skilldata` through
 SKILL.md *Project homes*. A regular non-symlink Markdown file beneath the canonical
-`.spaces/architect/drafts/` home whose body follows
+`.agents/skilldata/architect/drafts/` home whose body follows
 `templates/draft.md` is a workspace draft. Otherwise apply SKILL.md *Founding-shaped* exactly:
 founding-shaped → synthesize into the six map H2s on that same file; run `grill` on those sections;
 do not write Problem / Goal / Approach as H2s; skip the records mint, `templates/specs.md` rewrite,

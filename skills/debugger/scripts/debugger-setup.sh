@@ -30,7 +30,7 @@ ensure_chain() {
 }
 schema_free() { ! awk 'NR==1&&$0=="---"{fm=1;next} fm&&$0=="---"{exit} fm&&/^schema:/{x=1} END{exit !x}' "$1"; }
 
-ws=.spaces; rr=.records
+skilldata=.agents/skilldata; rr=.records
 assets="templates/bugs.md
 templates/investigation.md
 operations/diagnostics.md"
@@ -44,8 +44,8 @@ while IFS= read -r rel; do
   case "$rel" in templates/bugs.md|templates/investigation.md|operations/diagnostics.md) ;; *) err "asset is not declared for project deployment: $rel" ;; esac
   src="$skill_dir/$rel"; [ -f "$src" ] && [ ! -L "$src" ] || err "bundled asset is not a regular file: $src"
   case "$rel" in templates/*) schema_free "$src" || err "bundled project template selects a schema: $src" ;; esac
-  dest_rel="$ws/debugger/$rel"; [ -z "${DEBUGGER_SETUP_TEST_DEST_REL:-}" ] || dest_rel="$DEBUGGER_SETUP_TEST_DEST_REL"
-  case "$dest_rel" in "$ws/debugger/$rel") ;; *) err "destination escapes debugger ownership: $dest_rel" ;; esac
+  dest_rel="$skilldata/debugger/$rel"; [ -z "${DEBUGGER_SETUP_TEST_DEST_REL:-}" ] || dest_rel="$DEBUGGER_SETUP_TEST_DEST_REL"
+  case "$dest_rel" in "$skilldata/debugger/$rel") ;; *) err "destination escapes debugger ownership: $dest_rel" ;; esac
   check_chain "${dest_rel%/*}"; dest="$root/$dest_rel"
   [ ! -L "$dest" ] || err "destination is a symlink: $dest"
   [ ! -e "$dest" ] || [ -f "$dest" ] || err "destination is not a regular file: $dest"
@@ -66,16 +66,16 @@ if [ "$write_only" = no ]; then
   gr="$(git -C "$root" rev-parse --show-toplevel 2>/dev/null || true)"
   [ -n "$gr" ] && [ "$(cd "$gr" && pwd -P)" = "$root" ] || err "standalone setup root must be a Git top level"
 fi
-[ -z "${DEBUGGER_SETUP_TEST_AFTER_PREFLIGHT:-}" ] || "$DEBUGGER_SETUP_TEST_AFTER_PREFLIGHT" "$root" "$ws"
+[ -z "${DEBUGGER_SETUP_TEST_AFTER_PREFLIGHT:-}" ] || "$DEBUGGER_SETUP_TEST_AFTER_PREFLIGHT" "$root" "$skilldata"
 
 while IFS= read -r rel; do
-  [ -n "$rel" ] || continue; src="$skill_dir/$rel"; dest_rel="$ws/debugger/$rel"; dest="$root/$dest_rel"
+  [ -n "$rel" ] || continue; src="$skill_dir/$rel"; dest_rel="$skilldata/debugger/$rel"; dest="$root/$dest_rel"
   if [ -f "$dest" ] && [ ! -L "$dest" ]; then printf 'preserved=%s\n' "$dest_rel"; continue; fi
   ensure_chain "${dest_rel%/*}"; check_chain "${dest_rel%/*}"
   [ ! -L "$dest" ] && [ ! -e "$dest" ] || err "destination changed after preflight: $dest"
   cp "$src" "$dest"; created+=("$dest_rel"); write_count=$((write_count + 1)); printf 'created=%s\n' "$dest_rel"
   if [ -n "${DEBUGGER_SETUP_TEST_AFTER_WRITE:-}" ]; then
-    "$DEBUGGER_SETUP_TEST_AFTER_WRITE" "$root" "$ws" "$dest_rel" "$write_count"
+    "$DEBUGGER_SETUP_TEST_AFTER_WRITE" "$root" "$skilldata" "$dest_rel" "$write_count"
   fi
 done <<EOF
 $assets

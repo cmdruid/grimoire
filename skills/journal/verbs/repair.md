@@ -1,7 +1,7 @@
 # `repair` — restore an initialized records tool layer
 
 Restore only `.records/records.sh` and Journal's delimited block in `.records/README.md`. Bare repair
-never initializes the layer, changes `history.tsv`, touches records, consults `.spaces`, performs a
+never initializes the layer, changes `history.tsv`, touches records, consults `.agents/skilldata`, performs a
 migration, or recognizes an earlier Journal version.
 
 1. Resolve `<root>` exactly as setup does.
@@ -24,6 +24,6 @@ repair.
 ## Done when
 
 - The initialized layer has the current executable provider and managed README block.
-- Ledger, records, unowned README prose, `.spaces`, and writer-owned surfaces are byte-identical.
+- Ledger, records, unowned README prose, `.agents/skilldata`, and writer-owned surfaces are byte-identical.
 - Standalone custody committed only a nonempty proven provider/README diff, or the caller retained
   custody outside that mode.

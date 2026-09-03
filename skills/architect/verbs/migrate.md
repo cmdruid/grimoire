@@ -2,11 +2,11 @@
 
 Migrate only the explicitly selected file or directory tree. The argument is the source; canonical
 destinations remain `.records/specs/`, `.records/adr/`, and
-`.spaces/architect/templates/`. Current spike records remain in
-`.records/spikes/`. Workspace drafts are never migration sources or destinations. In-place
+`.agents/skilldata/architect/templates/`. Current spike records remain in
+`.records/spikes/`. Architect project drafts are never migration sources or destinations. In-place
 selection normalizes formatting.
 
-1. Resolve the project root, records home, and workspace. Reject paths outside the project and any
+1. Resolve the project root, records home, and Architect skilldata paths. Reject paths outside the project and any
    symlinked source/parent/destination. Before requiring the source, look for
    `.architect-migrate-manifest` beside a selected file or inside a selected directory and resume
    it forward.
@@ -22,7 +22,7 @@ selection normalizes formatting.
    `created`, `updated`, `created_at`, `updated_at`, and `revision`. Founding files have no filename
    comparison. There is no schema-less spike upgrade. For templates at
    `.records/templates/architect/<file>` or an exact registered
-   flat legacy path, strip the old record-shell front matter and target the canonical workspace
+   flat legacy path, strip the old record-shell front matter and target the canonical skilldata
    file. `founding.md` is package-only and is never deployed.
 4. Preview source, kind, old/current schema, destination, metadata/body changes, and skips. Stop on
    an unknown shape or a different destination collision; identical template bytes may remove the

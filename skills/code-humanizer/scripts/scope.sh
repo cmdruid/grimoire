@@ -52,7 +52,7 @@ valid_rel() {
 is_excluded_path() {
   case "/$1/" in
     */node_modules/*|*/vendor/*|*/target/*|*/dist/*|*/build/*|*/.git/*|\
-    */.spaces/*|*/.records/*|*/.trackers/*|*/__pycache__/*|*/.venv/*|*/venv/*)
+    */.agents/skilldata/*|*/.records/*|*/.trackers/*|*/__pycache__/*|*/.venv/*|*/venv/*)
       return 0 ;;
   esac
   return 1

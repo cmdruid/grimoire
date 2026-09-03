@@ -47,7 +47,7 @@ trap 'rm -rf "$TMP"' EXIT
 # --- no records.sh: file-mode mint -------------------------------------------
 ROOT="$TMP/bare"
 RR="$ROOT/.records"
-AT="$ROOT/.spaces/debugger/templates"
+AT="$ROOT/.agents/skilldata/debugger/templates"
 mkdir -p "$RR"
 
 OUT="$(/bin/bash "$MINT" mint "$ROOT" "Alpha crash")"
@@ -92,7 +92,7 @@ expect_absent "stamp opened no trackers/" "$RR/trackers"
 if [ -f "$JOURNAL_RS" ]; then
   ROOT2="$TMP/with-rs"
   RR2="$ROOT2/.records"
-  AT2="$ROOT2/.spaces/debugger/templates"
+  AT2="$ROOT2/.agents/skilldata/debugger/templates"
   mkdir -p "$RR2"
   cp "$JOURNAL_RS" "$RR2/records.sh"
   chmod +x "$RR2/records.sh"

@@ -26,7 +26,7 @@ kind is dropping in a file.
 
 ## Catalog
 
-The live catalog is `.spaces/analyst/templates/` when deployed, else this skill's bundled
+The live catalog is `.agents/skilldata/analyst/templates/` when deployed, else this skill's bundled
 `templates/`. **Deployed wins** — a project customizes its reports by editing the deployed copy,
 and host-added templates join the catalog the same way.
 The active bundled files are `briefing.md`, `status.md`, `subsystem.md`, `diagnostics.md`, and
@@ -45,7 +45,7 @@ If a previous-home template exists while the canonical file is absent, setup ref
 `/analyst migrate <path>`; it never silently adopts a customization. A deployed template carrying
 front-matter `schema:` is invalid because schemas stay in this package.
 Standalone setup collects each `deployed=<file>` result and makes one pathspec-scoped commit over
-the corresponding `.spaces/analyst/templates/<file>` paths; no deployed results means no
+the corresponding `.agents/skilldata/analyst/templates/<file>` paths; no deployed results means no
 commit. Inside an announced configuration sweep, setup is write-only and the caller owns the one
 aggregate commit.
 

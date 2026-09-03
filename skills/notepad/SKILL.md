@@ -41,13 +41,13 @@ session scratch that must not persist.
 ## Shared discipline (every verb relies on this — stated here once)
 
 - **Use fixed homes.** `<root>` is the project root. Notes live under `.records/notes/` and project
-  templates under `.spaces/notepad/templates/`. Pass only `<root>` and the operation's subject to
+  templates under `.agents/skilldata/notepad/templates/`. Pass only `<root>` and the operation's subject to
   `scripts/note-mint.sh`; it never scans the front door.
 - **One fact per note** (the path is the ID).
 - **Template resolution is read-only.** A valid
-  `.spaces/notepad/templates/notes.md` incumbent wins; a recognized legacy copy refuses
+  `.agents/skilldata/notepad/templates/notes.md` incumbent wins; a recognized legacy copy refuses
   and names `/notepad migrate <source-path>`; otherwise ordinary work reads bundled
-  `templates/notes.md` without creating `.spaces`. Only `setup` deploys it.
+  `templates/notes.md` without creating `.agents/skilldata`. Only `setup` deploys it.
 - **`note-mint.sh` is the one minter.** Always call it (from this
   skill's own `scripts/`, never a host path). Signature:
   `mint <root> <title>`. It uses staged

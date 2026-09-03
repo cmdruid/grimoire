@@ -26,7 +26,7 @@ eq "provider points to canonical contract" "1" "$(grep -c 'canonical three-part 
 if capability_contract_ok "$SKILL"; then pass=$((pass+1)); else echo 'FAIL capability contract' >&2; fail=$((fail+1)); fi
 
 # Dispatch snapshot is retained even if the project file changes in flight.
-ROOT="$(mktemp -d)"; trap 'rm -rf "$ROOT"' EXIT; mkdir -p "$ROOT/.spaces/delegate/hooks"; POLICY="$ROOT/.spaces/delegate/hooks/byproducts.md"
+ROOT="$(mktemp -d)"; trap 'rm -rf "$ROOT"' EXIT; mkdir -p "$ROOT/.agents/skilldata/delegate/hooks"; POLICY="$ROOT/.agents/skilldata/delegate/hooks/byproducts.md"
 printf 'route alpha exactly\n' > "$POLICY"; snapshot="$(cat "$POLICY")"; printf 'route beta instead\n' > "$POLICY"
 prompt="$(printf '%s\n' "$expected" 'Project byproducts policy (applies to this dispatch):' '---' "$snapshot" '---')"
 eq "snapshot retained" "1" "$(printf '%s\n' "$prompt" | grep -c 'route alpha exactly')"

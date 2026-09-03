@@ -29,10 +29,10 @@ expect_eq "missing ledger repair rc" 2 "$rc"
 expect_eq "missing ledger repair route" 'reason=setup-required action=/journal setup' "$(cat "$ERR")"
 
 spaces="$TMP/spaces"; mkdir -p "$spaces"; "$STANDUP" setup "$spaces" >/dev/null
-mkdir -p "$spaces/.spaces/journal"; printf 'residue\n' >"$spaces/.spaces/journal/setup.intent"
-cp "$spaces/.spaces/journal/setup.intent" "$TMP/residue.before"
+mkdir -p "$spaces/.agents/skilldata/journal"; printf 'residue\n' >"$spaces/.agents/skilldata/journal/setup.intent"
+cp "$spaces/.agents/skilldata/journal/setup.intent" "$TMP/residue.before"
 "$STANDUP" repair "$spaces" >"$OUT" 2>"$ERR"
-cmp -s "$TMP/residue.before" "$spaces/.spaces/journal/setup.intent" && pass=$((pass + 1)) || {
+cmp -s "$TMP/residue.before" "$spaces/.agents/skilldata/journal/setup.intent" && pass=$((pass + 1)) || {
   echo 'FAIL: repair inspected or changed workspace residue' >&2; fail=$((fail + 1)); }
 
 report repair-test

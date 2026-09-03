@@ -102,13 +102,13 @@ install or project scaffold is a precondition, and no verb ever refuses or stall
 of one.
 
 - At `create`/`recycle`, read the two canonical files beneath `$HOOKS_DIR`
-  (absolute `<root>/.spaces/workstream/hooks/`) when present;
+  (absolute `<root>/.agents/skilldata/workstream/hooks/`) when present;
   empty or absent → no extra glue command. Unrelated files are ignored.
 - Do not create a doctrine home or invoke any pack lifecycle as a side effect.
 - **Records (every host).** Workstream-owned execution manifests and debriefs land only in
   `.records/streams/`; Contractor-style queue-source plans remain in `plans/` and are never
   claimed merely because Workstream consumes them. Resolve active `manifest.md` / `debrief.md` at
-  `.spaces/workstream/templates/` when present; otherwise read the bundled active template
+  `.agents/skilldata/workstream/templates/` when present; otherwise read the bundled active template
   without a project write. Only `/workstream setup` deploys a fresh copy. Recognized legacy
   locations require `/workstream migrate <path>`. Mint `doctype: streams` with
   `schema: workstream/plan@1`, tag `plan`, or

@@ -207,7 +207,7 @@ repo_relative() {
 mode="${1:-}"
 [ -n "$mode" ] || usage
 shift
-root=""; workspace=.spaces; records_root=.records; slug=""; title=""; body=""
+root=""; skilldata=.agents/skilldata; records_root=.records; slug=""; title=""; body=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || usage; root="$2"; shift 2 ;;
@@ -229,7 +229,7 @@ case "$mode" in
     [ -n "$slug" ] || usage
     printf '%s\n' "$slug" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+)*$' || die "unsafe draft slug: $slug"
     validate_draft_body
-    draft_dir="$workspace/architect/drafts"
+    draft_dir="$skilldata/architect/drafts"
     check_parents "$draft_dir"
     ensure_dir "$draft_dir"
     destination="$root/$draft_dir/$slug.md"

@@ -54,7 +54,7 @@ O="$T/noncanonical";newroot "$O";mkdir -p "$O/project-trackers";printf 'CUSTOM_C
 ok "$SETUP" "$O" --apply;has "$O/project-trackers/README.md" 'CUSTOM_CANARY';[ -x "$O/.trackers/trackers.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
 for selector in --trackers-root --records-root --workspace --workspace-root;do
   U="$T/reject-${selector#--}";newroot "$U";no "$SETUP" "$U" "$selector" custom --apply
-  [ ! -e "$U/.trackers" ]&&[ ! -e "$U/.spaces" ]&&pass=$((pass+1))||fail=$((fail+1))
+  [ ! -e "$U/.trackers" ]&&[ ! -e "$U/.agents/skilldata" ]&&pass=$((pass+1))||fail=$((fail+1))
 done
 
 # A nested directory inside a Git checkout is not a second project root.
@@ -65,10 +65,10 @@ no "$SETUP" "$N/child" --apply
 # The explicit brownfield prompt move preserves project customizations; setup has no old-path probe.
 U="$T/upgrade";newroot "$U";ok "$SETUP" "$U" --apply
 printf '\nPROJECT_CUSTOMIZATION\n'>>"$U/.trackers/DEBRIEF.md";git -C "$U" add .;git -C "$U" -c user.name=test -c user.email=test@example.invalid commit -qm pre-cut
-mkdir -p "$U/.spaces/backlog/hooks";git -C "$U" mv .trackers/DEBRIEF.md .spaces/backlog/hooks/debrief.md;git -C "$U" -c user.name=test -c user.email=test@example.invalid commit -qam pre-cut-location
-git -C "$U" mv .spaces/backlog/hooks/debrief.md .trackers/DEBRIEF.md;cp "$U/.trackers/DEBRIEF.md" "$T/upgrade.before";ok "$SETUP" "$U" --apply
+mkdir -p "$U/.agents/skilldata/backlog/hooks";git -C "$U" mv .trackers/DEBRIEF.md .agents/skilldata/backlog/hooks/debrief.md;git -C "$U" -c user.name=test -c user.email=test@example.invalid commit -qam pre-cut-location
+git -C "$U" mv .agents/skilldata/backlog/hooks/debrief.md .trackers/DEBRIEF.md;cp "$U/.trackers/DEBRIEF.md" "$T/upgrade.before";ok "$SETUP" "$U" --apply
 cmp "$T/upgrade.before" "$U/.trackers/DEBRIEF.md" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
-[ ! -e "$U/.spaces/backlog/hooks/debrief.md" ]&&pass=$((pass+1))||fail=$((fail+1))
+[ ! -e "$U/.agents/skilldata/backlog/hooks/debrief.md" ]&&pass=$((pass+1))||fail=$((fail+1))
 
 # Front-door state is outside Backlog ownership, including malformed old markers.
 M="$T/malformed";newroot "$M";printf '%s\n' '<!-- skill:backlog BEGIN broken -->'>"$M/AGENTS.md";cp "$M/AGENTS.md" "$T/malformed-agents.before"

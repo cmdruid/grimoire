@@ -1,7 +1,7 @@
 # `migrate <source-path>` — upgrade Analyst artifacts
 
 Select one file or directory tree. Canonical report records remain in `.records/reports/`;
-active catalog templates live in `.spaces/analyst/templates/`.
+active catalog templates live in `.agents/skilldata/analyst/templates/`.
 
 Resolve the effective catalog with deployed-wins semantics, then inventory stably. Analyst owns
 only `doctype: reports` records tagged `analyst` plus exactly one safe token present in that catalog.
@@ -12,7 +12,7 @@ schemas. Own only the five declared catalog templates, never the retired `report
 For registered schema-less reports, require legacy `created` to match the filename date, preserve
 status/tags/legal extra keys and authored body, add the schema, and remove every retired generic
 history key. A different declared schema refuses. Move recognized previous-home templates to the
-canonical workspace path without changing catalog metadata or authored guidance. A project
+canonical skilldata path without changing catalog metadata or authored guidance. A project
 template containing `schema:` refuses. Stock retired `reports.md` may be removed after preview;
 customized retired content requires an explicit mapping.
 

@@ -12,6 +12,6 @@ expect_match "current spike selection is a no-op" 'selected valid current spike 
 expect_match "unknown schemas refuse" 'any other declared schema refuses' "$text"
 expect_match "schema-less spikes refuse" 'schema-less would-be spike refuses' "$text"
 expect_match "no legacy spike upgrade exists" 'There is no schema-less spike upgrade' "$text"
-expect_match "workspace drafts never migrate" 'Workspace drafts are never migration sources or destinations' "$text"
+expect_match "project drafts never migrate" 'Architect project drafts are never migration sources or destinations' "$text"
 
 finish

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# layer-status-test.sh — public-state classification without workspace state.
+# layer-status-test.sh — public-state classification without private skilldata state.
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"; source "$DIR/lib.sh"
 SKILL="$(cd "$DIR/../.." && pwd)"; STATUS="$SKILL/scripts/records-layer-status.sh"
@@ -19,13 +19,13 @@ install_layer() {
   sed -n 'p' "$SKILL/templates/records-readme-block.md" >"$1/.records/README.md"
 }
 
-plain="$TMP/plain"; mkdir -p "$plain"; ln -s "$TMP/missing" "$plain/.spaces"
+plain="$TMP/plain"; mkdir -p "$plain/.agents"; ln -s "$TMP/missing" "$plain/.agents/skilldata"
 run_status "$plain"
 expect_eq "unwitnessed root can initialize" uninitialized "$(fact_value recovery_state)"
 expect_eq "workspace symlink is ignored" absent "$(fact_value layer_status)"
 
 healthy="$TMP/healthy"; mkdir -p "$healthy"; install_layer "$healthy"
-mkdir -p "$healthy/.spaces/journal"; printf 'old-looking\n' >"$healthy/.spaces/journal/setup.intent"
+mkdir -p "$healthy/.agents/skilldata/journal"; printf 'old-looking\n' >"$healthy/.agents/skilldata/journal/setup.intent"
 run_status "$healthy"
 expect_eq "healthy ledger initializes layer" initialized "$(fact_value recovery_state)"
 expect_eq "canonical provider is current" current "$(fact_value provider_status)"
@@ -93,7 +93,7 @@ cp "$SKILL/scripts/records-readme-status.sh" "$mutant/scripts/records-readme-sta
 sed -n 'p' "$SKILL/templates/records-readme-block.md" >"$mutant/templates/records-readme-block.md"
 chmod 755 "$mutant/scripts/"*.sh
 sed -i.bak '/root="$(CDPATH/a\
-[ ! -e "$root/.spaces" ] || die workspace-state' "$mutant/scripts/records-layer-status.sh"
+[ ! -e "$root/.agents/skilldata" ] || die workspace-state' "$mutant/scripts/records-layer-status.sh"
 rm "$mutant/scripts/records-layer-status.sh.bak"
 rc=0; "$mutant/scripts/records-layer-status.sh" setup --root "$healthy" >"$OUT" 2>"$ERR" || rc=$?
 if [ "$rc" -ne 0 ]; then pass=$((pass + 1)); else

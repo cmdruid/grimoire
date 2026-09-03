@@ -3,7 +3,7 @@ set -u
 HERE="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)"; WRITE="$HERE/../operation-write.sh"; CHECK="$HERE/../operation-check.sh"; FIX="$HERE/fixtures/migration/clean-operation.md"
 . "$HERE/lib.sh"
 T="$(mktemp -d "${TMPDIR:-/tmp}/foreman-lifecycle-test.XXXXXX")"; trap 'rm -rf "$T"' EXIT
-R="$T/root"; mkdir -p "$R/.spaces/foreman/operations"; F="$R/.spaces/foreman/operations/release.md"; cp "$FIX" "$F"; OUT="$T/out"
+R="$T/root"; mkdir -p "$R/.agents/skilldata/foreman/operations"; F="$R/.agents/skilldata/foreman/operations/release.md"; cp "$FIX" "$F"; OUT="$T/out"
 "$CHECK" --root "$R" --operation foreman/release >"$OUT"; digest="$(fact digest "$OUT")"
 sed -i.bak "/^tags:/a\\
 verified-against: $digest" "$F"; rm "$F.bak"
@@ -21,5 +21,9 @@ has "stale activation refused" 'reason=stale-verification' "$OUT"; has "stays de
 
 if "$WRITE" lifecycle --root "$R" --identity debugger/diagnostics --status active --expected-digest "$digest" >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi
 has "foreign proposal" 'status=proposed' "$OUT"; has "foreign identity" 'identity=debugger/diagnostics' "$OUT"; has "foreign no write" 'write=false' "$OUT"
+
+for needle in 'already-active root receives no promotion offer' 'direct repeated promotion' 'one atomic'; do
+  has "goal lifecycle route $needle" "$needle" "$HERE/../../verbs/goal.md"
+done
 
 report lifecycle-test

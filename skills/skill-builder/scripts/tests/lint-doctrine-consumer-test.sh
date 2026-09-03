@@ -5,9 +5,9 @@
 #
 #   * ANCHORING — a skill must not satisfy check 14 by merely quoting the
 #     literal inside a fenced or indented example.
-#   * NORMALIZATION — a conforming skill whose phrase literal happens to wrap
-#     across a line must still PASS. This is the false-positive that a naive
-#     line-based grep produces, and it is live in the real tree today.
+#   * NORMALIZATION — a conforming skill whose prose wraps around the canonical
+#     literal must still PASS. A line-based matcher must not make wrapping
+#     adjacent prose significant.
 #   * UNCONDITIONAL — check 15 must fire on a skill that declares no edge at
 #     all, since that is exactly the hole check 14's edge-gating leaves open.
 #
@@ -77,7 +77,7 @@ fi
 # --- check 14: green — angle-bracket member -----------------------------------
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'The playbook lives at `.spaces/widget/doctrine/core/POLICY.md`.'
+  'The playbook lives at `.agents/skilldata/widget/doctrine/core/POLICY.md`.'
 lint
 if grep -q "$c14" "$OUT"; then
   echo "FAIL: angle-bracket literal still matched check 14 (must stay green)" >&2
@@ -87,13 +87,11 @@ else
   pass=$((pass + 1))
 fi
 
-# --- check 14: green — phrase member WRAPPED across a line (normalization) ----
-# This is the live false-positive shape: "the" ends one line, the rest begins
-# the next. A line-based matcher fails a conforming skill here.
+# --- check 14: green — canonical member in WRAPPED prose (normalization) ------
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'The report is written under `.spaces/widget/
-doctrine`, the fixed owner-local path.'
+  'The report is written under
+`.agents/skilldata/widget/doctrine`, the fixed owner-local path.'
 lint
 if grep -q "$c14" "$OUT"; then
   echo "FAIL: wrapped phrase literal matched check 14 (normalization is broken)" >&2
@@ -109,7 +107,7 @@ write_skill widget 'doctrine — the diagnostics playbook' \
   'Other skills resolve it like so:
 
 ```
-the agent-workspace home
+.agents/skilldata/widget/doctrine
 ```
 
 but this skill just reads a fixed path.'
@@ -127,7 +125,7 @@ run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
   'Example only:
 
-    .spaces/widget/doctrine/core/POLICY.md
+    .agents/skilldata/widget/doctrine/core/POLICY.md
 
 but this skill just reads a fixed path.'
 lint
@@ -192,11 +190,11 @@ else
 fi
 
 # --- check 15: the CANONICAL default path is still conforming usage -----------
-# Unchanged rule, owner-first default. The widget doctrine kind defaults under `.spaces/widget/`,
+# Unchanged rule, owner-first default. The widget doctrine kind defaults under `.agents/skilldata/widget/`,
 # and prose is required to name defaults literally -- so this must never fire.
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'Doctrine lives under `.spaces/widget/doctrine`, by default `.spaces/widget/doctrine/`.'
+  'Doctrine lives under `.agents/skilldata/widget/doctrine`, by default `.agents/skilldata/widget/doctrine/`.'
 lint
 if grep -q "$c15" "$OUT"; then
   echo "FAIL: canonical default path matched check 15 (must stay green)" >&2
@@ -208,7 +206,7 @@ fi
 
 # --- check 15: FAIL — `.records/doctrine/` is newly decidable ------------------
 # This literal used to be excluded as "a home's canonical default". Once doctrine
-# resolves through .spaces/widget/doctrine it is nobody's default, so it
+# resolves through .agents/skilldata/widget/doctrine it is nobody's default, so it
 # becomes decidable -- the strongest guard the retirement buys. It shipped WARN
 # while the consumers were being flipped and is now FAIL.
 # RED-PROOF: the fixture carrying it must FAIL.
@@ -222,16 +220,16 @@ expect "check 15 names the stale default" "$c15b" "$OUT"
 # green control: remove the literal -> silent.
 run_lint
 write_skill widget 'note — a captured fact' \
-  'The rubric sits at `.spaces/widget/doctrine/test/workflows/audit/GUIDE.md`.'
+  'The rubric sits at `.agents/skilldata/widget/doctrine/test/workflows/audit/GUIDE.md`.'
 lint
 expect_absent "check 15 is silent once the stale default is gone" "$c15b" "$OUT"
 
 # --- check 14: green — the NEW literal family satisfies it ---------------------
 run_lint
 write_skill widget 'doctrine — the diagnostics playbook' \
-  'The playbook lives at `.spaces/widget/doctrine/core/POLICY.md`.'
+  'The playbook lives at `.agents/skilldata/widget/doctrine/core/POLICY.md`.'
 lint
-expect_absent "check 14 accepts the agent-workspace angle-bracket member" "$c14" "$OUT"
+expect_absent "check 14 accepts the owner-local skilldata member" "$c14" "$OUT"
 
 # --- check 14: NARROWED — the retired family no longer satisfies it -----------
 # RED-PROOF for the narrowing. This exact fixture PASSED check 14 transitionally,
@@ -260,7 +258,7 @@ expect "check 16 FAILs on the retired literal in a .md" \
 # green control: no retired literal -> silent.
 run_lint
 write_skill widget 'note — a captured fact' \
-  'Resolve `.spaces/widget/doctrine` before reading the playbook.'
+  'Resolve `.agents/skilldata/widget/doctrine` before reading the playbook.'
 lint
 expect_absent "check 16 is silent on a fixed-path skill" "$c16" "$OUT"
 
@@ -272,7 +270,7 @@ expect "check 16 FAILs on the retired templates literal" "$c16" "$OUT"
 
 run_lint
 write_skill widget 'note — a captured fact' \
-  'Resolve `.spaces/widget/templates` before copying a lock-in.'
+  'Resolve `.agents/skilldata/widget/templates` before copying a lock-in.'
 lint
 expect_absent "check 16 is silent on a fixed templates path" "$c16" "$OUT"
 
@@ -326,7 +324,7 @@ expect "check 16 rejects a dot-prefixed workspace declaration" "$c16" "$OUT"
 # The former default restatement is also invalid configuration.
 run_lint
 write_skill widget 'note — a captured fact' 'Nothing doctrinal here.'
-write_front_door 'agent-workspace: .spaces'
+write_front_door 'agent-workspace: .agents/skilldata'
 lint
 expect "check 16 fails a default-valued declaration" "FAIL: AGENTS.md: $c16" "$OUT"
 

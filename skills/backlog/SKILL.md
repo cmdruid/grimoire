@@ -29,8 +29,8 @@ aliases.
 ## Shared discipline
 
 - Resolve `<root>` as the project checkout. Records, owner-local support, and trackers live only at
-  `<root>/.records`, `<root>/.spaces`, and `<root>/.trackers`.
-- Backlog owns tracker-layer validation; never ask Workspace to validate it.
+  `<root>/.records`, `<root>/.agents/skilldata`, and `<root>/.trackers`.
+- Backlog owns tracker-layer validation; do not delegate it to a whole-tree support-path validator.
 - Before a Backlog verb invokes the provider, run package-local
   `scripts/tracker-runtime-check.sh --root <root>`. On success, invoke only the exact installed
   `provider=` path it returns. On failure, pass through its recovery diagnostic and stop. Runtime

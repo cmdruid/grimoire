@@ -10,7 +10,7 @@ never install or require it.
    `AGENTS.md` is already an approved destination.
 2. Run `scripts/records-anchor.sh preview --root <root>`. It derives readiness only from the public
    layer: safe ledger, exact executable provider, and current managed README block. It never
-   inspects `.spaces`. Show the complete proposed `## Project records` section and obtain explicit
+   inspects `.agents/skilldata`. Show the complete proposed `## Project records` section and obtain explicit
    confirmation. A literal `.records/README.md` mention is already satisfied; a conflicting heading
    or unsafe target refuses.
 3. Run `scripts/records-anchor.sh apply --root <root> --confirmed`. Apply repeats preflight and

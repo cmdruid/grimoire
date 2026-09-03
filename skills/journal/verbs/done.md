@@ -4,7 +4,7 @@ Completion is a judgment followed by the staged provider's lifecycle mechanic. R
 on closure; the provider stamps `archived` and appends the sole ledger row.
 
 1. Resolve `<root>` and run `scripts/records-runtime-check.sh --root <root>`. Stop on its exact
-   diagnostic. Use its sole success line as the staged-provider path; never resolve `.spaces` or
+   diagnostic. Use its sole success line as the staged-provider path; never resolve `.agents/skilldata` or
    execute the bundled copy. Confirm the target through staged `list`/`show`.
 2. Pick the disposition: `done` (completed), `dropped` (won't do; explain why), `superseded`
    (replacement named), or `consumed` (destination named). If completion is uncertain, leave the

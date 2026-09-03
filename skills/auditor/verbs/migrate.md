@@ -7,7 +7,7 @@ declared `reports.md` template; other reports are stable skips. Current records 
 For an exact registered schema-less audit record, require legacy `created` to equal the filename
 date, preserve lifecycle/tags/legal extra keys and authored report bytes, add the schema, and remove
 all retired generic history keys. Move recognized previous-home or registered flat active templates
-to `.spaces/auditor/templates/reports.md`, stripping only their legacy record-shell front
+to `.agents/skilldata/auditor/templates/reports.md`, stripping only their legacy record-shell front
 matter. A project template may not declare `schema:`.
 
 Reject symlinks/out-of-project paths; inventory stably; preview source, kind, schema, destination,

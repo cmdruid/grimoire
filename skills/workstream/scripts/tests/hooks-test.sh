@@ -34,7 +34,7 @@ expect_eq "missing second seam empty" "empty" "$(fact hook_after_eventful_ship "
   echo "FAIL: parse created a missing directory" >&2; fail=$((fail + 1)); }
 
 # Parser reads only its canonical population and hashes it deterministically.
-hooks="$TMP/project/.spaces/workstream/hooks"
+hooks="$TMP/project/.agents/skilldata/workstream/hooks"
 mkdir -p "$hooks"
 printf '%s\n' '# Feature completion' '' '/project verify-release-notes' > "$hooks/feature-completion.md"
 printf '%s\n' '# After eventful ship' '' > "$hooks/after-eventful-ship.md"
@@ -63,7 +63,7 @@ expect_eq "compile rc" "0" "$rc"
 "$HOOKS_SH" compiled-get --handoff "$handoff" >"$OUT"
 expect "compile body" "/project verify-release-notes" "$OUT"
 expect "compile empty seam" "after-eventful-ship:" "$OUT"
-expect "compile owner-first source" ".spaces/workstream/hooks @" "$OUT"
+expect "compile owner-first source" ".agents/skilldata/workstream/hooks @" "$OUT"
 expect_absent "compile ignores unrelated" "ignore me" "$OUT"
 if grep -qiE 'tracker (candidate|buffer)|debrief cursor|occurrence count|routing metadata' "$HANDOFF_TPL"; then
   echo "FAIL: handoff template contains tracker/debrief accumulation state" >&2
@@ -74,7 +74,7 @@ fi
 
 # Relative destinations fail before reads.
 rc=0
-"$HOOKS_SH" parse --dir .spaces/workstream/hooks "${KNOWN[@]}" >"$OUT" 2>"$ERR" || rc=$?
+"$HOOKS_SH" parse --dir .agents/skilldata/workstream/hooks "${KNOWN[@]}" >"$OUT" 2>"$ERR" || rc=$?
 expect_eq "relative dir rejected" "2" "$rc"
 
 # Compiled span survives a handoff template rewrite.

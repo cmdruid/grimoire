@@ -33,9 +33,9 @@ verb's job).
    example of a records-path client.
    - **Yes** → scaffold, in `SKILL.md` (see `docs/DOCTRINE.md` § Record-writing skills):
      - direct construction beneath fixed `.records/` and the
-       fixed templates home `.spaces/<name>/templates/`; and, for a skill that reads or writes
-       doctrine, direct construction beneath fixed `.spaces` — its doctrine home is
-       `.spaces/<name>/doctrine/`;
+       fixed templates home `.agents/skilldata/<name>/templates/`; and, for a skill that reads or writes
+       doctrine, direct construction beneath fixed `.agents/skilldata` — its doctrine home is
+       `.agents/skilldata/<name>/doctrine/`;
      - the four-key in-package contract — do not send the agent to another
        skill for those bytes. State: the four keys (`doctype`, `status`,
        `schema`, `tags`) and every package-owned schema identifier; `status`: `draft` | `published` live,
@@ -51,17 +51,40 @@ verb's job).
        "none"). A nonempty inventory also gets a routed `setup` procedure that names every listed
        file, deploys it absent-only, and preserves schemas, validators, and migrations in-package.
        Ordinary work resolves canonical incumbent → recognized-legacy refusal → bundled read-only
-       fallback and never creates `.spaces`.
+       fallback and never creates `.agents/skilldata`.
    - **No** → do not add those sections.
 
 3b. **Project hooks?** — ask, orthogonal to the tier and to record-writer: *does
     this skill have a named-seam loop a project might extend?*
     - **Yes** → document each known seam at
-      `.spaces/<name>/hooks/<seam>.md`. The owner may bundle an
+      `.agents/skilldata/<name>/hooks/<seam>.md`. The owner may bundle an
       absent-only skeleton and routes explicit `setup` when the hook is meaningful to predeploy;
       do not scaffold one generic hooks file and do not add a lint check that requires project files
       to exist.
-    - **No** → nothing.
+   - **No** → nothing.
+
+3c. **User-global skilldata?** — ask independently of project durability: *does this skill need
+    user-owned data that must span projects, and what concrete need rules out both project storage
+    and installed package bytes?* Default to **No**. A durable-home answer does not imply global
+    storage.
+    - **Yes** → name a fixed owner-local path beneath
+      `~/.agents/skilldata/<new-skill>/...`, define the internal artifact contract, initialization
+      mode, permissions and sensitive-data behavior, and scaffold this exact section in `SKILL.md`:
+
+      ```markdown
+      ## Global skilldata
+
+      - Scope: user-global, <artifact boundary>.
+      - Path: `~/.agents/skilldata/<new-skill>/<owned-tail>/`.
+      - Access: read-only | read-write; <initialization behavior>.
+      - Safety: <unsafe-state, permissions, and sensitive-data behavior>.
+      - Justification: <why project and package storage are unsuitable>.
+      ```
+
+      A global-only package states that it writes no project data. A package owning both scopes also
+      states project/global precedence and the reviewed transfer or materialization boundary. Add no
+      project setup unless steps 2, 3, or 3b independently require one.
+    - **No** → add no `## Global skilldata` declaration and no global path.
 
 4. **Write `SKILL.md`:**
    - Frontmatter: `name`, and a `description:` that **routes on its own** — states only this skill's
@@ -84,7 +107,7 @@ verb's job).
 
 5. **Durable-home tier only — scaffold `setup`:**
    - Draft the new skill's own `<new-skill>/verbs/setup.md`: an idempotent home-scaffold
-     beneath `.spaces/<name>/<owned-kind>/` (create-if-absent for each store the skill
+     beneath `.agents/skilldata/<name>/<owned-kind>/` (create-if-absent for each store the skill
      owns; never touch existing content or another owner namespace). Durable state does not imply a
      front-door route.
    - Setup may create its declared workspace when absent. Before
@@ -116,7 +139,8 @@ verb's job).
    check 4 flags a missing README mention.
 
 8. **Gate.** Run `scripts/skills-lint.sh` → `fails=0`. A fresh skill commonly WARNs on nothing if the
-   description and edges are well-formed; treat any FAIL as a scaffolding bug, not a thing to suppress.
+   description, edges, and any global-skilldata declaration are well-formed; treat any FAIL as a
+   scaffolding bug, not a thing to suppress.
 
 ## Done when
 

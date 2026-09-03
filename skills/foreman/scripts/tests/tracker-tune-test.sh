@@ -14,7 +14,7 @@ API=("$R/.trackers/trackers.sh")
 OUT="$T/out"
 "${API[@]}" page --tracker routines --status open --limit 10 --consumer foreman/tune --unobserved > "$OUT"
 has 'bounded page sees first' $'routines-1\t' "$OUT";has 'bounded page sees third' $'routines-3\t' "$OUT"
-"${API[@]}" consume --consumer foreman/tune --tracker routines --ids routines-1 routines-2 --resolution 'Accepted release operation' --result .spaces/foreman/operations/release.md >/dev/null
+"${API[@]}" consume --consumer foreman/tune --tracker routines --ids routines-1 routines-2 --resolution 'Accepted release operation' --result .agents/skilldata/foreman/operations/release.md >/dev/null
 "${API[@]}" observe --consumer foreman/tune --tracker routines --ids routines-3 >/dev/null
 "${API[@]}" page --tracker routines --status open --limit 10 --consumer foreman/tune --unobserved > "$OUT"
 lacks 'resolved rows absent' $'routines-1\t' "$OUT";lacks 'deferred row observed' $'routines-3\t' "$OUT"

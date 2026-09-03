@@ -37,9 +37,9 @@ ${6:-Fixture body.}
 EOF
 }
 
-legacy_workspace_tracker="$FIX/.spaces/backlog/""trackers"
+legacy_owner_tracker="$FIX/.agents/skilldata/backlog/""trackers"
 mkdir -p "$FIX/.records/scripts" "$FIX/.records/templates" "$FIX/.records/trackers" \
-  "$legacy_workspace_tracker" "$FIX/.trackers"
+  "$legacy_owner_tracker" "$FIX/.trackers"
 
 # Two closures in span, one long before it.
 mk_record plans   2026-08-10-planted-feature "archived"      2026-08-10
@@ -70,7 +70,7 @@ tags: []
 - planted tracker line one
 - planted tracker line two
 EOF
-printf '%s\n' 'legacy owner-local canary' > "$legacy_workspace_tracker/tasks.tsv"
+printf '%s\n' 'legacy owner-local canary' > "$legacy_owner_tracker/tasks.tsv"
 mkdir -p "$FIX/.trackers/tables"
 touch "$FIX/.trackers/tables/.gitkeep"
 cp "$HERE/../../../backlog/scripts/trackers.sh" "$FIX/.trackers/trackers.sh"
@@ -230,9 +230,9 @@ expect "catalog: reports nothing deployed yet" "deployed=false" "$OUT"
 expect "catalog: lists briefing as bundled"    "briefing	bundled" "$OUT"
 expect_absent "catalog: lock-in reports.md is not a kind" "reports	bundled" "$OUT"
 
-mkdir -p "$FIX/.spaces/analyst/templates"
-cp "$HERE/../../templates/briefing.md" "$FIX/.spaces/analyst/templates/briefing.md"
-cat > "$FIX/.spaces/analyst/templates/house-style.md" <<'EOF'
+mkdir -p "$FIX/.agents/skilldata/analyst/templates"
+cp "$HERE/../../templates/briefing.md" "$FIX/.agents/skilldata/analyst/templates/briefing.md"
+cat > "$FIX/.agents/skilldata/analyst/templates/house-style.md" <<'EOF'
 ---
 template: house-style
 use-when: "A project-local report kind."

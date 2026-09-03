@@ -6,7 +6,7 @@ set -euo pipefail
 die() { echo "kinds-deploy.sh: $1${2:+: $2}" >&2; exit 2; }
 
 ROOT=""
-WORKSPACE=.spaces
+WORKSPACE=.agents/skilldata
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || die usage; ROOT="$2"; shift 2 ;;

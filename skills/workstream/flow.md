@@ -53,7 +53,7 @@ whole feature, exactly as above.
 
 **The stream builds the plan itself, per the host's build lane.** Execute the plan's tasks/slices
 red-first to gate-green, following the host's feature lane where one is documented
-(`.spaces/workstream/operations/feature.md` when that file exists — its walk's build step), else the plan
+(`.agents/skilldata/workstream/operations/feature.md` when that file exists — its walk's build step), else the plan
 template's own structure. The execution discipline is the loop's own: the main session is the
 **sole writer** of the tree. In `delegate` mode, submit each suitable bounded work-unit to
 `/delegate`, then validate its returned result, apply or merge any accepted artifact as the main

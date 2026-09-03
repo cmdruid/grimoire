@@ -39,7 +39,7 @@ memory.
   the routing-probe acceptance gate, the mechanical backstop it relies on).
 - **`scripts/skills-lint.sh`** — the mechanical gate: frontmatter limits, bundled-ref resolution,
   script syntax, cross-skill ref checks, edge-block well-formedness, journal-floor phrase,
-  project-templates heading. Takes a
+  project-templates heading, and declared global-skilldata custody. Takes a
   `<library-root>` argument (default: the current directory) so it checks whatever
   library it's pointed at. Red-proofs for the records-writer checks live in
   `scripts/tests/lint-records-writer-test.sh`; a nonempty project-template inventory must route
@@ -51,6 +51,8 @@ memory.
   steward: a repo-layer maintainer, not a project-artifact owner.)
 - **Front-door registration:** optional, not implemented — the payoff (surfacing captured items to a
   bare reader) doesn't apply to a skill with no durable store.
+- **Global skilldata:** none — teaching and linting the declaration convention does not grant this
+  package a user-global data home.
 
 ## Edges
 

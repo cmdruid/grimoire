@@ -2,7 +2,7 @@
 
 The source is one file or directory tree. Current Workstream records live only in
 `.records/streams/`; active templates are
-`.spaces/workstream/templates/manifest.md` and `debrief.md`.
+`.agents/skilldata/workstream/templates/manifest.md` and `debrief.md`.
 
 Inventory stably. Own current `doctype: streams` records with `workstream/plan@1` plus tag `plan`
 or `workstream/debrief@1` plus tag `debrief`. A schema-less legacy `reports` record tagged

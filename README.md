@@ -23,7 +23,7 @@ the one required member), `backlog` (the follow-up lifecycle), `notepad` (projec
 diagnostics), `analyst` (reports and briefings read back out of the records), `foreman`
 (project operations, brownfield curation, and goal runbooks), `chiropractor` (documentation-spine
 discoverability and confirmed route repair); **utilities** —
-`checkpoint`, `mailbox`, `delegate`, `scheduler`, `workspace` (the owner-first workspace guard).
+`checkpoint`, `mailbox`, `delegate`, and `scheduler`.
 Five skills sit outside the pack on
 purpose: `agent-council` (cross-vendor review panel), `skill-builder` (the **toolmaker** —
 scaffold, audit, and calibrate authoring doctrine), `developer-writing`
@@ -53,15 +53,15 @@ global capture and guided tuning of reusable-skill observations). See *The packs
 | `foreman` | curate project operations: inventory and run publisher-owned procedures, capture or ingest brownfield know-how, verify and compose operations, and compile immutable goal runbooks |
 | `skill-feedback` | capture concrete reusable-skill observations into a private global TSV and guide later bounded review; standalone, outside every pack |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
-| `workspace` | read-only `.spaces` format guard: validate open owner namespaces, closed kinds, and safe owner-first paths |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
 Earlier design lineage lives under `docs/design/`; the published product contract above supersedes
 those historical package shapes.
 
-### Storage convention: what skills may maintain in a project
+### Storage convention: packages and skill-owned data
 
-A project has three fixed, independent roots. **`.spaces`**
+A project has four distinct fixed surfaces. **`.agents/skills/`** contains project-local installed
+skill packages and is never mutable skill data. **`.agents/skilldata/`**
 holds skill-owned working files beneath `<skill>/<kind>/`; owners are open and the kinds are
 `doctrine`, `drafts`, `hooks`, `operations`, `scripts`, and `templates`. Operations are flat
 Markdown under the publishing owner's namespace and remain directly usable without a curator.
@@ -81,6 +81,11 @@ project-owned `AGENTS.md` pointers to the corresponding local guide; setup, repa
 pack installation never add them automatically. The local READMEs and adjacent providers support
 ordinary record and tracker work without the source skills, while maintenance and judgment still
 belong to those skills. The pack installs skills but writes none of these project surfaces.
+
+User-global installed packages remain under **`~/.agents/skills/`**. A skill with a separately
+justified cross-project data contract may use its own child beneath
+**`~/.agents/skilldata/<skill>/...`**; global data is opt-in, owner-defined, and never a transparent
+fallback or executable project authority.
 
 Session checkpoints stay **gitignored scratch** (one root `CHECKPOINT.md`, steward `checkpoint`) —
 not a `.records/` store.

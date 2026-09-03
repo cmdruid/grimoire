@@ -49,9 +49,9 @@ Scope guard ("don't spawn a NEW worktree from inside a stream; DO recycle the cu
    write. Inherit of create step 6 is **not** a transclude. After the path check (cwd is
    the worktree, line 1):
    1. `<root>` = Coordinates `root checkout:` (not `pwd`).
-   2. Resolve `.spaces` the same way as create (first line-start
-      fixed `<root>/.spaces`).
-   3. Set `HOOKS_DIR=<root>/.spaces/workstream/hooks` (absolute).
+   2. Resolve `.agents/skilldata` the same way as create (first line-start
+      fixed `<root>/.agents/skilldata`).
+   3. Set `HOOKS_DIR=<root>/.agents/skilldata/workstream/hooks` (absolute).
       Never a relative directory.
    4. Run this skill's `hooks.sh parse --dir "$HOOKS_DIR"` with
       `--known feature-completion --known after-eventful-ship`. `status=fail` → STOP.

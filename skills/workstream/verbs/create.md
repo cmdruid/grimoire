@@ -98,7 +98,7 @@ _Read `flow.md` alongside this verb — `create` ends by entering the loop it go
    re-embedded by `recycle`), and only its **name or path** is recorded in Coordinates `source:`.
 6. **Hand-off instantiation** *(the template-mode part is re-applied in place by `recycle.md` — keep
    these labels)*: write the hand-off into the worktree, then exclude it locally:
-   - **Project hooks.** Set `HOOKS_DIR=<root>/.spaces/workstream/hooks` (absolute). Never a
+   - **Project hooks.** Set `HOOKS_DIR=<root>/.agents/skilldata/workstream/hooks` (absolute). Never a
      relative directory or a worktree-local twin. Resolve this skill's bundled
      `scripts/hooks.sh` from its own base directory, then run
      `hooks.sh parse --dir "$HOOKS_DIR" --known feature-completion --known

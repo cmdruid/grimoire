@@ -4,7 +4,7 @@ Read-only. Do not mint, commit, or refresh provider bytes.
 
 1. Resolve `<root>` and run `scripts/records-runtime-check.sh --root <root>`. Emit its one exact
    setup-required or repair-required diagnostic and stop on failure. On success, use its sole output
-   line as the absolute staged-provider path. Do not resolve `.spaces`, file-mode search, or execute
+   line as the absolute staged-provider path. Do not resolve `.agents/skilldata`, file-mode search, or execute
    the bundled provider against project records.
 2. Parse the query into optional `list` filters (`--type`, `--status`, `--tag`, `--since`, `--until`,
    `--stage`) and an optional body pattern. Metadata belongs in filters; `grep` skips front matter.

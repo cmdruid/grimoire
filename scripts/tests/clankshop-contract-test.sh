@@ -20,7 +20,6 @@ require "$PACK" 'Delegate may use Mailbox'
 require "$PACK" "Workstream's"
 require "$PACK" 'main session remains the sole writer'
 require "$PACK" 'the unit runs inline'
-require "$PACK" '/workspace check'
 require "$ROOT/README.md" 'findings stay in the audit report and promote through the host capture lane'
 require "$ROOT/docs/boundary-audit.md" 'fails=0 warns=4'
 require "$ROOT/docs/boundary-audit.md" "Workstream's \`resource-claim\` is legal repository-local leaf state"
@@ -54,10 +53,10 @@ skill_feedback_boundary_ok(){
     ! grep -qF '<!-- skill:skill-feedback BEGIN' "$agents"
 }
 
-public_workspace_check_ok(){
+workspace_absent(){
   local pack="$1"
-  grep -qF '/workspace check' "$pack" &&
-    ! grep -qF 'scripts/workspace-check.sh' "$pack"
+  ! grep -Eq '^  - workspace$|`workspace`|/workspace([[:space:]]|`|$)|skills/workspace|workspace-check' "$pack" &&
+    [ ! -e "$ROOT/skills/workspace" ]
 }
 
 chiropractor_contract_ok(){
@@ -80,37 +79,39 @@ chiropractor_contract_ok(){
     ! grep -Eq 'Chiropractor (runs|owns) project setup|Chiropractor repairs (scripts|workflows)' "$pack"
 }
 
-if public_workspace_check_ok "$PACK"; then
+if workspace_absent "$PACK"; then
   pass=$((pass + 1))
 else
-  echo 'FAIL: pack bypasses the public Workspace procedure' >&2
+  echo 'FAIL: retired Workspace remains in the pack surface' >&2
   fail=$((fail + 1))
 fi
 
-# Red-proof the direct-script absence guard in a disposable PACK copy.
+# Red-proof the Workspace absence guard in a disposable PACK copy.
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/clankshop-contract.XXXXXX")"
 trap 'rm -rf "$tmp"' EXIT
 fixture="$tmp/PACK.md"
 cp "$PACK" "$fixture"
 cp "$fixture" "$tmp/PACK.before"
-plant="Run each advertised owner check, then Workspace's package-local \`scripts/workspace-check.sh\` against the resolved roots."
-printf '\n%s\n' "$plant" >> "$fixture"
+plant='  - workspace'
+sed '/^  - workstream$/i\
+  - workspace' "$fixture" >"$tmp/PACK.workspace.bad"
+mv "$tmp/PACK.workspace.bad" "$fixture"
 count="$(grep -cFx -- "$plant" "$fixture")"
 if [ "$count" = 1 ]; then
   pass=$((pass + 1))
 else
-  echo "FAIL: direct Workspace script plant count was $count" >&2
+  echo "FAIL: Workspace membership plant count was $count" >&2
   fail=$((fail + 1))
 fi
-if public_workspace_check_ok "$fixture"; then
-  echo 'FAIL: direct Workspace script guard stayed green' >&2
+if workspace_absent "$fixture"; then
+  echo 'FAIL: Workspace absence guard stayed green' >&2
   fail=$((fail + 1))
 else
   pass=$((pass + 1))
 fi
 cp "$tmp/PACK.before" "$fixture"
 if cmp -s "$tmp/PACK.before" "$fixture"; then pass=$((pass + 1)); else echo 'FAIL: PACK fixture restore drifted' >&2; fail=$((fail + 1)); fi
-if public_workspace_check_ok "$fixture"; then pass=$((pass + 1)); else echo 'FAIL: restored PACK contract stayed red' >&2; fail=$((fail + 1)); fi
+if workspace_absent "$fixture"; then pass=$((pass + 1)); else echo 'FAIL: restored PACK contract stayed red' >&2; fail=$((fail + 1)); fi
 
 if chiropractor_contract_ok "$PACK"; then pass=$((pass + 1)); else echo 'FAIL: live Chiropractor pack contract invalid' >&2; fail=$((fail + 1)); fi
 if skill_feedback_boundary_ok "$PACK" "$ROOT/README.md" "$ROOT/AGENTS.md";then pass=$((pass+1));else echo 'FAIL: skill-feedback pack boundary invalid' >&2;fail=$((fail+1));fi

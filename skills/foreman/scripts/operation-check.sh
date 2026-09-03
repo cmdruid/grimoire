@@ -7,7 +7,7 @@ usage() {
   exit 2
 }
 
-root=""; workspace=.spaces; requested=""; candidate_specs=""
+root=""; skilldata=.agents/skilldata; requested=""; candidate_specs=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || usage; root="$2"; shift 2 ;;
@@ -40,8 +40,10 @@ cache_key() { printf '%s\n' "$1" | tr '/' '_'; }
 while IFS= read -r spec; do
   [ -n "$spec" ] || continue
   candidate_identity="${spec%%=*}"; candidate_file="${spec#*=}"
-  [ "$candidate_identity" != "$spec" ] && valid_identity "$candidate_identity" \
-    || { echo "error=bad-candidate-identity"; exit 2; }
+  if [ "$candidate_identity" = "$spec" ] || ! valid_identity "$candidate_identity"; then
+    echo "error=bad-candidate-identity"
+    exit 2
+  fi
   [ -f "$candidate_file" ] && [ ! -L "$candidate_file" ] \
     || { echo "error=bad-candidate-file"; exit 2; }
   printf '%s\n' "$candidate_file" >"$tmp/candidate_$(cache_key "$candidate_identity")"
@@ -61,9 +63,22 @@ operation_path() {
   local candidate
   candidate="$tmp/candidate_$(cache_key "$1")"
   if [ -f "$candidate" ]; then cat "$candidate"; return; fi
-  printf '%s/%s/%s/operations/%s.md\n' "$root" "$workspace" "$owner" "$stem"
+  printf '%s/%s/%s/operations/%s.md\n' "$root" "$skilldata" "$owner" "$stem"
 }
 record_error() { printf '%s:%s\n' "$1" "$2" >>"$errors"; }
+
+safe_operation_parent() {
+  local identity="$1" owner="${1%%/*}" path
+  for path in \
+    "$root/.agents" \
+    "$root/$skilldata" \
+    "$root/$skilldata/$owner" \
+    "$root/$skilldata/$owner/operations"
+  do
+    [ ! -L "$path" ] || return 1
+    [ ! -e "$path" ] || [ -d "$path" ] || return 1
+  done
+}
 
 fm_get() {
   local file="$1" key="$2"
@@ -113,9 +128,13 @@ check_one() {
   if [ -f "$tmp/$key.done" ]; then return 0; fi
   case "$stack" in *"|$identity|"*) record_error "$identity" cycle; return 1 ;; esac
   file="$(operation_path "$identity")"
+  if [ ! -f "$tmp/candidate_$key" ] && ! safe_operation_parent "$identity"; then
+    record_error "$identity" unsafe-operation-parent
+    return 1
+  fi
   if [ -L "$file" ] || [ ! -f "$file" ]; then record_error "$identity" missing-operation; return 1; fi
   if [ ! -f "$tmp/candidate_$key" ]; then
-    case "$file" in "$root/$workspace/"*) ;; *) record_error "$identity" escaped-operation; return 1 ;; esac
+    case "$file" in "$root/$skilldata/"*) ;; *) record_error "$identity" escaped-operation; return 1 ;; esac
   fi
 
   if [ "$(sed -n '1p' "$file")" != "---" ]; then record_error "$identity" missing-front-matter; return 1; fi

@@ -78,7 +78,7 @@ coherence), and record-link resolution. Tracker line form is a prose convention 
   `[--template <resolved-body>] [--dir <rel>] [--tag t]...` synthesizes the four shared keys.
   `--template` is optional and supplies body-only authoring scaffolding; literal `<title>` and
   `<date>` slots are filled, while `<schema>` or `<tags>` slots refuse. The minting skill resolves
-  declared active templates only at `.spaces/<skill>/templates/`; recognized legacy
+  declared active templates only at `.agents/skilldata/<skill>/templates/`; recognized legacy
   locations require its explicit `migrate` verb. Schema identifiers, validators, and migration
   chains stay in the skill package and are never project-customizable. Setup copies nothing.
 
@@ -108,7 +108,7 @@ follow-up is not journal's job (scope boundary, below).
   2. `.records/records.sh` absent, non-regular, non-executable, byte-different from the bundled
      provider, unsafe, or failing the exact current bare-usage surface → stop with exactly
      `reason=repair-required action=/journal repair`.
-  No runtime verb resolves or inspects `.spaces`. The staged usage probe must exit 1, begin with the
+  No runtime verb resolves or inspects `.agents/skilldata`. The staged usage probe must exit 1, begin with the
   current usage line, and name every current command. Never execute the bundled provider against
   project records. Only after both checks pass may a runtime verb invoke the returned staged tool.
   Invoke **the staged tool** for every date, path, and

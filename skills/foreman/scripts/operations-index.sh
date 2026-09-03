@@ -9,7 +9,7 @@ usage() {
 
 mode="${1:-}"; [ -n "$mode" ] || usage; shift
 case "$mode" in list|search) ;; *) usage ;; esac
-root=""; workspace=.spaces; query=""; include_deprecated=false
+root=""; skilldata=.agents/skilldata; query=""; include_deprecated=false
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || usage; root="$2"; shift 2 ;;
@@ -23,28 +23,68 @@ done
 root="$(CDPATH='' cd -P "$root" && pwd)"
 
 checker="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)/operation-check.sh"
-workspace_dir="$root/$workspace"
+skilldata_dir="$root/$skilldata"
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/foreman-index.XXXXXX")"
 trap 'rm -rf "$tmp"' EXIT HUP INT TERM
 files="$tmp/files"; : >"$files"
 
-echo "workspace=$workspace"
-echo "operations_dir=$workspace_dir/*/operations"
-if [ ! -d "$workspace_dir" ]; then
+echo "skilldata=$skilldata"
+echo "operations_dir=$skilldata_dir/*/operations"
+if [ -L "$root/.agents" ] || [ -L "$skilldata_dir" ]; then
+  echo "state=unsafe"; echo "reason=symlink-skilldata-root"
+  exit 1
+fi
+if [ -e "$root/.agents" ] && [ ! -d "$root/.agents" ]; then
+  echo "state=unsafe"; echo "reason=non-directory-agents-root"
+  exit 1
+fi
+if [ -e "$skilldata_dir" ] && [ ! -d "$skilldata_dir" ]; then
+  echo "state=unsafe"; echo "reason=non-directory-skilldata-root"
+  exit 1
+fi
+if [ ! -d "$skilldata_dir" ]; then
+  echo "state=absent"
   echo "matches=0"; echo "malformed=0"; echo "stale=0"; echo "native_candidates=0"
   exit 0
 fi
+echo "state=present"
 
-# Workspace names are validated elsewhere and operation identities forbid whitespace/newlines.
-find "$workspace_dir" -mindepth 3 -maxdepth 3 \( -type f -o -type l \) -name '*.md' \
-  -path '*/operations/*.md' -print | LC_ALL=C sort >"$files"
+# Validate only the owner/operations paths this reader consumes. Unrelated sibling
+# kinds are deliberately inert; there is no whole-tree skilldata validator.
+for owner_dir in "$skilldata_dir"/*; do
+  [ -e "$owner_dir" ] || [ -L "$owner_dir" ] || continue
+  owner="${owner_dir##*/}"
+  printf '%s\n' "$owner" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+)*$' || continue
+  if [ -L "$owner_dir" ]; then
+    printf '%s\n' "$owner|symlink-owner" >>"$tmp/unsafe-dirs"
+    continue
+  fi
+  [ -d "$owner_dir" ] || continue
+  operations="$owner_dir/operations"
+  [ -e "$operations" ] || [ -L "$operations" ] || continue
+  if [ -L "$operations" ]; then
+    printf '%s\n' "$owner|symlink-operations-dir" >>"$tmp/unsafe-dirs"
+    continue
+  fi
+  if [ ! -d "$operations" ]; then
+    printf '%s\n' "$owner|non-directory-operations" >>"$tmp/unsafe-dirs"
+    continue
+  fi
+  find "$operations" -mindepth 1 -maxdepth 1 \( -type f -o -type l \) -name '*.md' -print >>"$files"
+done
+LC_ALL=C sort "$files" -o "$files"
 
 matches=0; malformed=0; stale=0; natives=0
+if [ -f "$tmp/unsafe-dirs" ]; then
+  while IFS='|' read -r owner reason; do
+    malformed=$((malformed + 1))
+    echo "malformed_operations_dir=$owner|reason=$reason"
+  done <"$tmp/unsafe-dirs"
+fi
 while IFS= read -r file; do
   [ -n "$file" ] || continue
-  rel="${file#"$workspace_dir"/}"; owner="${rel%%/*}"; base="${file##*/}"; stem="${base%.md}"
+  rel="${file#"$skilldata_dir"/}"; owner="${rel%%/*}"; base="${file##*/}"; stem="${base%.md}"
   identity="$owner/$stem"
-  case "$owner" in doctrine|drafts|hooks|operations|scripts|templates) continue ;; esac
   printf '%s\n' "$identity" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*$' || {
     malformed=$((malformed + 1)); echo "malformed_operation=$identity|reason=bad-identity"; continue;
   }

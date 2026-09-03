@@ -10,7 +10,7 @@ newroot(){ mkdir -p "$1";git -C "$1" init -q;}
 
 U="$T/uninitialized";newroot "$U";no "$SETUP" "$U" repair
 grep -qF 'reason=setup-required action=/backlog setup' "$T/out"&&pass=$((pass+1))||fail=$((fail+1))
-[ ! -e "$U/.trackers" ]&&[ ! -e "$U/.spaces" ]&&pass=$((pass+1))||fail=$((fail+1))
+[ ! -e "$U/.trackers" ]&&[ ! -e "$U/.agents/skilldata" ]&&pass=$((pass+1))||fail=$((fail+1))
 
 R="$T/root";newroot "$R";"$SETUP" "$R" --apply >/dev/null
 printf 'DOOR_CANARY\n'>>"$R/AGENTS.md";printf 'PROMPT_CANARY\n'>>"$R/.trackers/DEBRIEF.md"

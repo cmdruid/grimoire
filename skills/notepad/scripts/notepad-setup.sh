@@ -56,13 +56,13 @@ ensure_chain() {
   IFS="$old_ifs"
 }
 
-ws_rel=.spaces
-rr_rel=.records
+skilldata_rel=.agents/skilldata
+records_rel=.records
 
 asset="${NOTEPAD_SETUP_TEST_ASSET:-notes.md}"
 [ "$asset" = notes.md ] || err "asset is not declared for project deployment: $asset"
-dest_rel="${NOTEPAD_SETUP_TEST_DEST_REL:-$ws_rel/notepad/templates/notes.md}"
-case "$dest_rel" in "$ws_rel/notepad/templates/notes.md") ;; *) err "destination escapes notepad ownership: $dest_rel" ;; esac
+dest_rel="${NOTEPAD_SETUP_TEST_DEST_REL:-$skilldata_rel/notepad/templates/notes.md}"
+case "$dest_rel" in "$skilldata_rel/notepad/templates/notes.md") ;; *) err "destination escapes notepad ownership: $dest_rel" ;; esac
 
 skill_dir="$(cd "$(dirname "$0")/.." && pwd)"
 bundled="$skill_dir/templates/$asset"
@@ -73,8 +73,8 @@ fi
 
 parent_rel="${dest_rel%/*}"
 dest="$root/$dest_rel"
-legacy_owner="$root/$rr_rel/templates/notepad/notes.md"
-legacy_flat="$root/$rr_rel/templates/notes.md"
+legacy_owner="$root/$records_rel/templates/notepad/notes.md"
+legacy_flat="$root/$records_rel/templates/notes.md"
 
 # Whole-set preflight. No directory is created above this line.
 check_chain "$parent_rel"
@@ -93,7 +93,7 @@ fi
 # prove the immediate recheck catches it. Ordinary runs never set this.
 if [ -n "${NOTEPAD_SETUP_TEST_AFTER_PREFLIGHT:-}" ]; then
   [ -x "$NOTEPAD_SETUP_TEST_AFTER_PREFLIGHT" ] || err "test preflight hook is not executable"
-  "$NOTEPAD_SETUP_TEST_AFTER_PREFLIGHT" "$root" "$ws_rel"
+  "$NOTEPAD_SETUP_TEST_AFTER_PREFLIGHT" "$root" "$skilldata_rel"
 fi
 
 if [ -f "$dest" ] && [ ! -L "$dest" ]; then

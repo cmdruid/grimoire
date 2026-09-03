@@ -11,7 +11,7 @@ usage() {
 }
 
 mode="${1:-}"; [ -n "$mode" ] || usage; shift
-root=""; workspace=.spaces; allow_create=false
+root=""; skilldata=.agents/skilldata; allow_create=false
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || usage; root="$2"; shift 2 ;;
@@ -23,7 +23,7 @@ done
 [ -d "$root" ] || usage
 root="$(CDPATH='' cd -P "$root" && pwd)"
 door="$root/AGENTS.md"
-route="Route project operations through \`/foreman inventory\`; identities are \`<owner>/<stem>\` under \`$workspace/<owner>/operations/<stem>.md\`."
+route="Route project operations through \`/foreman inventory\`; identities are \`<owner>/<stem>\` under \`$skilldata/<owner>/operations/<stem>.md\`."
 
 door_class=absent
 [ -f "$root/CLAUDE.md" ] && door_class=claude-only
@@ -46,7 +46,7 @@ if [ "$block" = ok ]; then
   body="$(awk -v b="$begin_line" -v e="$end_line" 'NR>b && NR<e {print}' "$door")"
   [ "$body" = "$route" ] && drift=false
 fi
-echo "workspace=$workspace"; echo "door=$door"; echo "door_class=$door_class"
+echo "skilldata=$skilldata"; echo "door=$door"; echo "door_class=$door_class"
 echo "block=$block"; echo "drift=$drift"
 
 if [ "$mode" = check ]; then

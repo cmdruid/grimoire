@@ -11,13 +11,13 @@ ok test ! -e "$R/AGENTS.md"
 "$DOOR" apply --root "$R" --allow-create >"$OUT"
 has "minimal route" '<!-- skill:foreman BEGIN -->' "$R/AGENTS.md"
 has "identity rule" '<owner>/<stem>' "$R/AGENTS.md"
-ok test ! -e "$R/.spaces"
+ok test ! -e "$R/.agents/skilldata"
 sum="$(cksum "$R/AGENTS.md")"; "$DOOR" apply --root "$R" >"$OUT"
 eq "idempotent route" "$sum" "$(cksum "$R/AGENTS.md")"
 
 R2="$T/existing"; mkdir -p "$R2"; printf '%s\n' '# Host' '<!-- skill:other BEGIN -->' 'KEEP' '<!-- skill:other END -->' >"$R2/AGENTS.md"
 before="$(cksum "$R2/AGENTS.md")"; "$DOOR" apply --root "$R2" >"$OUT"
-has "foreign bytes kept" KEEP "$R2/AGENTS.md"; has "fixed workspace" '.spaces/<owner>/operations' "$R2/AGENTS.md"
+has "foreign bytes kept" KEEP "$R2/AGENTS.md"; has "fixed skilldata" '.agents/skilldata/<owner>/operations' "$R2/AGENTS.md"
 ok test "$before" != "$(cksum "$R2/AGENTS.md")"
 
 R4="$T/retired-selector"; mkdir -p "$R4"; printf '# Host\n'>"$R4/AGENTS.md"; sum="$(cksum "$R4/AGENTS.md")"; if "$DOOR" apply --root "$R4" --workspace dev >"$OUT" 2>&1; then fail=$((fail+1)); else pass=$((pass+1)); fi

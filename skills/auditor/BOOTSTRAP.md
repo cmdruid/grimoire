@@ -8,7 +8,7 @@ project's *own code* for quality and invariant-conformance, surfaces findings wi
 is re-runnable each cycle. Drop this file into any project and an agent can **reconstruct the
 whole system**, or **borrow a piece**.
 
-The rubric home is `.spaces/auditor/doctrine/test/workflows/audit/`
+The rubric home is `.agents/skilldata/auditor/doctrine/test/workflows/audit/`
 (project doctrine, loaded on demand). `<home>` below means that directory.
 
 It is a sibling to any companion dev-system blueprint (one that blueprints the surrounding deployed doc-system, if the host has one). This
@@ -98,7 +98,7 @@ One authored home (the rubric); deliverables drain per §3:
 
 ```
 <home>/               -- the rubric (hand-curated, source of truth)
-                         resolved: .spaces/auditor/doctrine/test/workflows/audit/
+                         resolved: .agents/skilldata/auditor/doctrine/test/workflows/audit/
   GUIDE.md            -- the hub: framing, risk-weighted scope, the rubric index, scoring
                          rules, process, the finding-entry shape, severity, drains
   rules/              -- one file per dimension, all in the uniform shape (§6)
@@ -275,7 +275,7 @@ Answer these in order; the answers fill the *Slots* and shape the rubric:
 
 **Full setup** (leaves before hub; the setup verb owns one final scoped commit):
 1. Fill the *Slots* (§2) via the *Decision walk* (§9); resolve `<home>` per the skill's entry
-   probe: `.spaces/auditor/doctrine/test/workflows/audit/`.
+   probe: `.agents/skilldata/auditor/doctrine/test/workflows/audit/`.
 2. Copy the bundled generic `rules/` into `<home>/rules/`. Fill the `<language>` greps
    and *How to quantify* recipes. Write only `<native dimensions>` from the *Rule-file
    shape* (§6). (They reference `../GUIDE.md` in backticks, since it does not exist yet.)

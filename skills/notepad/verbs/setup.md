@@ -1,10 +1,10 @@
 # `setup [<root>]` — deploy the active notes template
 
 1. Resolve `<root>` from the argument, else the current Git top level. Templates live only at
-   `.spaces/notepad/templates/`; `.records` is consulted only for recognized legacy templates.
+   `.agents/skilldata/notepad/templates/`; `.records` is consulted only for recognized legacy templates.
 2. For a standalone invocation, run package-local `scripts/notepad-setup.sh <root>`. It preflights
    the complete owned write set, immediately rechecks parents, deploys only
-   `.spaces/notepad/templates/notes.md` when absent, and makes one pathspec-scoped commit
+   `.agents/skilldata/notepad/templates/notes.md` when absent, and makes one pathspec-scoped commit
    over exactly that reported write. A valid incumbent is preserved byte-for-byte; a no-op rerun
    makes no commit.
 3. When the caller has announced a larger configuration sweep, run

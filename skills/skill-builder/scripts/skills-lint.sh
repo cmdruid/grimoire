@@ -87,7 +87,7 @@
 #      A nonempty inventory must route `setup`; its setup procedure and test
 #      must name every declared project template.
 #  14. Doctrine home not fixed (FAIL). A skill declaring a `doctrine` typed
-#      edge must name `.spaces` in live prose. Fenced and indented blocks are
+#      edge must name its own `.agents/skilldata/<skill>/doctrine` path in live prose. Fenced and indented blocks are
 #      stripped first so a quoted example cannot satisfy the check. Edge-gated,
 #      so check 15 is the unconditional net beside it. skill-builder is exempt.
 #  15. Off-home doctrine literal. Any non-exempt skill's .md naming a
@@ -96,13 +96,13 @@
 #      Unconditional: this is what
 #      catches a skill that hardcodes and never declares an edge. No per-skill
 #      exemption table. `.records/doctrine/` is also matched (FAIL): it stopped
-#      being a canonical home when doctrine moved under `.spaces`,
+#      being a canonical home when doctrine moved under `.agents/skilldata`,
 #      which is what made it decidable.
 #  16. Retired project-home surface (FAIL). Live Markdown and shell may not
 #      carry retired home declarations, symbolic tokens, resolver names, or
-#      home-selection flags. Tests, this guard's own implementation, and
-#      Journal's two marked records-declaration parser lines are excluded
-#      deliberately; the rest of that migration surface remains gated.
+#      home-selection flags. The retired skilldata root is allowed only in one
+#      doctrine paragraph, this guard's rejecting token, and a negative-test
+#      line carrying the exact same-line annotation documented below.
 #  17. Invalid `records.sh new` mint (FAIL). Two arms: (a) a backticked
 #      invocation carrying `records.sh new` and `--title` but no
 #      `--schema`; (b) `records.sh new` immediately followed by a
@@ -113,10 +113,11 @@
 #      Whitespace-normalized (real invocations wrap mid-span) and
 #      fence-stripped. Prose naming the tool without `--title` and
 #      without a following flag is out of scope. skill-builder is exempt.
-#  18. Kind-first workspace paths (FAIL). Live skill Markdown and shell must
-#      name workspace content owner-first. Either the symbolic workspace token
-#      or its default followed immediately by a reserved kind is the retired
-#      grammar. No skill roster is encoded; owners remain open.
+#  18. Invalid project skilldata paths (FAIL). Live skill Markdown and shell
+#      must use `.agents/skilldata/<owner>/<kind>` with a kebab-case owner and
+#      one of the six closed project kinds. Kind-first and owner-local tracker
+#      paths fail. Obvious shell writes to another owner or beneath
+#      `.agents/skills` fail; no whole-tree runtime validator is implied.
 #  19. Schema writer prefix (FAIL). A literal value passed to `--schema` by a
 #      skill must use that skill's prefix and the shared schema grammar.
 #  20. Template role conformance (FAIL). Every bundled Markdown template must
@@ -124,6 +125,11 @@
 #      may not carry a front-matter schema key.
 #  21. Package-only copy (FAIL). A bundled template omitted from the declared
 #      project-template list may not be named on a shell copy command.
+#  22. Global skilldata declaration (FAIL). A package using an obvious
+#      user-global skilldata path must declare exactly one `## Global skilldata`
+#      section in SKILL.md with nonempty Scope, Path, Access, Safety, and
+#      Justification bullets. The declared path and every live global use must
+#      name that package's own owner; Access is read-only or read-write.
 #
 # Every skill follows one independence regime. A colocated PACK.md is a pure
 # distribution bundle and grants no exemption from boundary or edge checks.
@@ -698,8 +704,9 @@ for sk in "$skills_dir"/*/; do
     *) continue ;;
   esac
   found=0
+  doctrine_path=".agents/skilldata/$name/doctrine"
   while IFS= read -r -d '' f; do
-    if strip_code "$f" | grep -qF '.spaces'; then
+    if strip_code "$f" | grep -qF "$doctrine_path"; then
       found=1
       break
     fi
@@ -729,7 +736,7 @@ done
 # skill review.
 #
 # `.records/doctrine/` USED to be excluded by exactly that argument, and no
-# longer is: once doctrine lives at `.spaces/<skill>/doctrine`, that
+# longer is: once doctrine lives at `.agents/skilldata/<skill>/doctrine`, that
 # path stops being canonical, so it becomes decidable and is the
 # strongest guard this retirement buys. It shipped WARN while the five consumer
 # skills still carried it in their resolution prose, and is now FAIL -- they are
@@ -741,13 +748,13 @@ for sk in "$skills_dir"/*/; do
     rel="${f#"$sk"}"
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      fail "$name: $rel:$line: off-home doctrine literal (resolve .spaces/<skill>/doctrine instead)"
+      fail "$name: $rel:$line: off-home doctrine literal (resolve .agents/skilldata/<skill>/doctrine instead)"
     done < <(grep -nF -e '`.handbook/test/' -e '`.handbook/build/' \
                      -e '`.handbook/design/' -e '`.handbook/review/' \
                      -e '`docs/audit/' "$f" || true)
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      fail "$name: $rel:$line: retired doctrine path \`.records/doctrine/\` (use .spaces/<skill>/doctrine instead)"
+      fail "$name: $rel:$line: retired doctrine path \`.records/doctrine/\` (use .agents/skilldata/<skill>/doctrine instead)"
     done < <(grep -nF -e '`.records/doctrine/' "$f" || true)
   done < <(find "$sk" -name '*.md' -print0)
 done
@@ -779,7 +786,39 @@ while IFS= read -r -d '' f; do
     -e 'resolve_(agent_)?(records|workspace|trackers)' \
     "$f" || true)
   [ -n "$hits" ] || continue
-  fail "$rel: retired project-home surface (line(s) $hits) -- use fixed .records, .spaces, and .trackers"
+  fail "$rel: retired project-home surface (line(s) $hits) -- use fixed .records, .agents/skilldata, and .trackers"
+done < <(
+  for f in "$root/README.md" "$root/PACK.md" "$root/AGENTS.md" "$root/CLAUDE.md"; do
+    [ -f "$f" ] && printf '%s\0' "$f"
+  done
+  [ ! -d "$root/scripts" ] || find "$root/scripts" \( -name '*.md' -o -name '*.sh' \) -print0
+  find "$skills_dir" \( -name '*.md' -o -name '*.sh' \) -print0
+)
+
+# The project skilldata spelling is a hard cut. Unlike the older declaration
+# patterns above, tests are not broadly exempt: a rejection fixture must carry
+# this exact annotation on the same physical line as the retired token.
+retired_skilldata_root='.spaces'
+retired_annotation='# lint: allow retired-skilldata-rejection'
+retirement_doctrine="former \`$retired_skilldata_root/\` project root is retired by a hard cut"
+retired_guard_line="retired_skilldata_root='$retired_skilldata_root'"
+while IFS= read -r -d '' f; do
+  rel="${f#"$root"/}"
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    line_no="${hit%%:*}"
+    body="${hit#*:}"
+    if [ "$f" = "$skills_dir/skill-builder/docs/DOCTRINE.md" ] &&
+       printf '%s\n' "$body" | grep -qF "$retirement_doctrine"; then
+      continue
+    fi
+    if [ "$f" = "$skills_dir/skill-builder/scripts/skills-lint.sh" ] &&
+       [ "$body" = "$retired_guard_line" ]; then
+      continue
+    fi
+    case "$body" in *"$retired_annotation"*) continue ;; esac
+    fail "$rel:$line_no: retired project skilldata root -- use .agents/skilldata/<owner>/<kind>"
+  done < <(grep -nF "$retired_skilldata_root" "$f" || true)
 done < <(
   for f in "$root/README.md" "$root/PACK.md" "$root/AGENTS.md" "$root/CLAUDE.md"; do
     [ -f "$f" ] && printf '%s\0' "$f"
@@ -839,25 +878,76 @@ for sk in "$skills_dir"/*/; do
   done < <(find "$sk" -name '*.md' -print0)
 done
 
-# ---- 18. kind-first workspace paths (FAIL) ----------------------------------
-# Owners are open, so the only deterministic authoring error is a reserved kind
-# immediately beneath the workspace root. Keep the two prefixes and the kind
-# vocabulary separate in this source: the test assembles broken fixtures, and a
-# literal absence sweep can therefore cover this package too.
-workspace_prefix='(.spaces|\.spaces)'
-workspace_kinds='(doctrine|drafts|hooks|operations|scripts|templates)'
+# ---- 18. invalid project skilldata paths (FAIL) -----------------------------
+skilldata_kinds='doctrine|drafts|hooks|operations|scripts|templates'
+global_skilldata_prefix='(~|\$HOME|\$\{HOME\}|\$home|\$\{home\})/\.agents/skilldata/'
 for sk in "$skills_dir"/*/; do
+  sk="${sk%/}"
   name="$(basename "$sk")"
+  global_only=no
+  if awk '
+    /^## Global skilldata/ { section=1; next }
+    section && /^## / { exit }
+    section && /^- Scope:.*writes no project data/ { found=1 }
+    END { exit !found }
+  ' "$sk/SKILL.md" 2>/dev/null; then
+    global_only=yes
+  fi
   while IFS= read -r -d '' f; do
     rel="${f#"$sk"}"
-    while IFS= read -r line; do
-      [ -n "$line" ] || continue
-      fail "$name: $rel:$line: kind-first workspace path -- use .spaces/<skill>/<kind>/..."
-    done < <(grep -nE "$workspace_prefix/$workspace_kinds(/|[^a-z0-9-]|$)" "$f" || true)
-  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
+    while IFS= read -r hit; do
+      [ -n "$hit" ] || continue
+      line_no="${hit%%:*}"
+      token="${hit#*:}"
+      tail="${token#.agents/skilldata/}"
+      owner="${tail%%/*}"
+      kind="${tail#*/}"
+      kind="${kind%%/*}"
+      source_line="$(sed -n "${line_no}p" "$f")"
+      if [ "$global_only" = yes ] && [ "$owner" = "$name" ] &&
+         printf '%s\n' "$source_line" | grep -Eq "['\"]store=\.agents/skilldata/$name/"; then
+        continue
+      fi
+      case "$owner" in '<'*'>') continue ;; esac
+      if ! printf '%s\n' "$owner" | grep -Eq '^[a-z0-9][a-z0-9-]*$'; then
+        fail "$name: $rel:$line_no: invalid skilldata owner \`$owner\`"
+        continue
+      fi
+      if printf '%s\n' "$owner" | grep -Eq "^($skilldata_kinds)$"; then
+        fail "$name: $rel:$line_no: kind-first skilldata path -- use .agents/skilldata/<owner>/<kind>/..."
+        continue
+      fi
+      if ! printf '%s\n' "$kind" | grep -Eq "^($skilldata_kinds)$"; then
+        fail "$name: $rel:$line_no: unknown project skilldata kind \`$kind\`"
+        continue
+      fi
+      if [ "$name" != skill-builder ] && [ "$owner" != "$name" ]; then
+        case "$f" in
+          *.sh)
+            if printf '%s\n' "$source_line" | grep -Eq '(mkdir|cp|mv|install|touch|tee|dest|write|printf)'; then
+              fail "$name: $rel:$line_no: obvious write beneath foreign skilldata owner \`$owner\`"
+            fi
+            ;;
+        esac
+      fi
+    done < <(
+      sed -E "s#${global_skilldata_prefix}[A-Za-z0-9._<>-]+/[A-Za-z0-9._<>-]+#GLOBAL_SKILLDATA#g" "$f" |
+        grep -nEo '\.agents/skilldata/[A-Za-z0-9._<>-]+/[A-Za-z0-9._<>-]+' || true
+    )
+
+    if [ "$name" != skill-builder ] && [ "${f##*.}" = sh ]; then
+      while IFS= read -r line; do
+        [ -n "$line" ] || continue
+        source_line="$(sed -n "${line%%:*}p" "$f")"
+        if printf '%s\n' "$source_line" | grep -Eq '(mkdir|cp|mv|install|touch|tee|dest|write|printf)'; then
+          fail "$name: $rel:${line%%:*}: mutable write beneath installed package path .agents/skills"
+        fi
+      done < <(grep -nF '.agents/skills/' "$f" || true)
+    fi
+  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) ! -path '*/scripts/tests/*' -print0)
 done
 
-# Trackers are a first-class public layer, never an owner-local workspace kind.
+# Trackers are a first-class public layer, never an owner-local skilldata kind.
 for sk in "$skills_dir"/*/; do
   name="$(basename "$sk")"
   while IFS= read -r -d '' f; do
@@ -865,8 +955,8 @@ for sk in "$skills_dir"/*/; do
     while IFS= read -r line; do
       [ -n "$line" ] || continue
       fail "$name: $rel:$line: owner-local tracker path -- use .trackers/..."
-    done < <(grep -nE "$workspace_prefix/[a-z0-9][a-z0-9-]*/trackers(/|[^a-z0-9-]|$)" "$f" || true)
-  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
+    done < <(grep -nE '\.agents/skilldata/[a-z0-9][a-z0-9-]*/trackers(/|[^a-z0-9-]|$)' "$f" || true)
+  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) ! -path '*/scripts/tests/*' -print0)
 done
 
 # ---- 19. package-owned schema prefix (FAIL) ---------------------------------
@@ -936,6 +1026,57 @@ for sk in "$skills_dir"/*/; do
     [ -n "$file" ] || continue
     [ -f "$sk/templates/$file" ] || fail "$name: declared project template is missing: templates/$file"
   done <<< "$declared"
+done
+
+# ---- 22. global skilldata declarations (FAIL) -------------------------------
+# Recognizable global construction uses the current user's home, never a
+# caller-selected root. Project construction is deliberately outside this
+# check: it starts at a resolved project root rather than one of these prefixes.
+# Skill-builder's named doctrine/scaffold surfaces teach the convention and are
+# excluded precisely; its other live files remain gated. Tests and this linter
+# carry rejection fixtures rather than package behavior.
+for sk in "$skills_dir"/*/; do
+  sk="${sk%/}"
+  name="$(basename "$sk")"
+  uses="$(mktemp "${TMPDIR:-/tmp}/skills-lint-global-uses.XXXXXX")"
+  : >"$uses"
+  while IFS= read -r -d '' f; do
+    case "$f" in */scripts/tests/*) continue ;; esac
+    grep -oE "${global_skilldata_prefix}[a-z0-9][a-z0-9-]*" "$f" 2>/dev/null \
+      | sed -E 's#^.*/\.agents/skilldata/##' >>"$uses" || true
+  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
+  sort -u "$uses" -o "$uses"
+  [ -s "$uses" ] || { rm -f "$uses"; continue; }
+
+  section_count="$(grep -c '^## Global skilldata$' "$sk/SKILL.md" 2>/dev/null || true)"
+  if [ "$section_count" -ne 1 ]; then
+    fail "$name: global skilldata use requires exactly one \`## Global skilldata\` declaration (found $section_count)"
+    rm -f "$uses"
+    continue
+  fi
+  section_body="$(awk '
+    /^## Global skilldata$/ { section=1; next }
+    section && /^## / { exit }
+    section { print }
+  ' "$sk/SKILL.md")"
+  for field in Scope Path Access Safety Justification; do
+    field_count="$(printf '%s\n' "$section_body" | grep -cE "^- $field:[[:space:]]*[^[:space:]]" || true)"
+    [ "$field_count" -eq 1 ] || \
+      fail "$name: Global skilldata declaration needs exactly one nonempty \`- $field:\` bullet (found $field_count)"
+  done
+  printf '%s\n' "$section_body" | grep -Eq '^- Scope:[[:space:]]*user-global([,.;[:space:]]|$)' || \
+    fail "$name: Global skilldata Scope must be user-global"
+  printf '%s\n' "$section_body" | grep -Eq '^- Access:[[:space:]]*(read-only|read-write)([;,.[:space:]]|$)' || \
+    fail "$name: Global skilldata Access must begin with read-only or read-write"
+  expected_global_path='~'"/.agents/skilldata/$name/"
+  printf '%s\n' "$section_body" | grep -qF "$expected_global_path" || \
+    fail "$name: Global skilldata Path must name its own fixed global owner"
+  while IFS= read -r owner; do
+    [ -n "$owner" ] || continue
+    [ "$owner" = "$name" ] || \
+      fail "$name: global skilldata use names owner \`$owner\` (only \`$name\` is owned)"
+  done <"$uses"
+  rm -f "$uses"
 done
 
 # ---- summary -----------------------------------------------------------------

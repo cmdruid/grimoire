@@ -23,8 +23,12 @@ substitute state.
 
 ## Resume: `goal resume <goal-record>`
 
-Validate the published schema and recompute the closure source digest. Drift pauses for attended
-review. Run `scripts/runtime-context.sh`: for a Checkpoint owner, pass `--checkpoint` with the exact
+Before reading any runtime state, run package-local `scripts/goal-compile.sh check --root <root>
+--input <goal-record>`. It validates the published schema, exact closure digest, and any single
+provisional-root marker. A marked root remains valid only while its accepted digest is still a
+source-current draft or a digest-stably promoted active operation; every child stays goal-eligible.
+Any refusal or drift pauses for attended review. Then run `scripts/runtime-context.sh`: for a
+Checkpoint owner, pass `--checkpoint` with the exact
 absolute root file from the current session's already-admitted stable handle; omit it rather than
 using file presence as admission. The probe's dual Checkpoint/Workstream custody refuses before
 action; otherwise read the one current owner's state. Continue from its recorded step until a
@@ -37,11 +41,19 @@ verification waiver, or permission expansion. Runbook instruction never changes 
 
 ## Inspect and close
 
-- `goal status <goal-record>` is read-only: report the immutable contract, source drift, and the
-  current state owner's latest progress.
+- `goal status <goal-record>` is read-only: first run `scripts/goal-compile.sh check --root <root>
+  --input <goal-record>`, then and only then report the immutable contract and the current state
+  owner's latest progress. A refused check reports drift without reading runtime state.
 - `goal close <goal-record>` requires a reached stop condition. Ask the current owner to perform its
   ordinary cleanup. When the records tool is available, archive only through its normal `done`
   command; otherwise leave the published record as history. Never add archival or runtime state.
+
+For a provisional root that is still draft, close may offer one separate promotion preview after
+verification evidence is reviewed. Show the exact evidence, canonical digest, raw operation and
+evidence hashes, and `draft` to `active` transition; after explicit acceptance call
+`operation-write.sh promote`. Verification, evidence, and activation land in one atomic
+replacement. An already-active root receives no promotion offer, and direct repeated promotion
+refuses without mutation.
 
 ## Optional Workstream launch
 

@@ -81,6 +81,11 @@ procedure actually resolves. A clean Pass 1 is therefore not evidence of
 home conformance — that judgment is Pass 2's, on the brief's axis. Never
 report lint-green as "resolves its homes correctly."
 
+The same floor applies to global skilldata: lint can match a declaration to an obvious global owner,
+but review must verify that cross-project storage is necessary, access and initialization are
+bounded, sensitive data is handled explicitly, and global bytes cannot silently become executable
+project authority.
+
 ## Pass 2 — same-session judgment
 
 Read the resolved brief in full. Judge only on the axes it

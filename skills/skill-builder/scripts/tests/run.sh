@@ -16,8 +16,11 @@ bash "$DIR/lint-bundle-ref-test.sh" || rc=1
 echo "== lint-doctrine-consumer-test.sh"
 bash "$DIR/lint-doctrine-consumer-test.sh" || rc=1
 
-echo "== lint-workspace-path-test.sh"
-bash "$DIR/lint-workspace-path-test.sh" || rc=1
+echo "== lint-skilldata-path-test.sh"
+bash "$DIR/lint-skilldata-path-test.sh" || rc=1
+
+echo "== lint-global-skilldata-test.sh"
+bash "$DIR/lint-global-skilldata-test.sh" || rc=1
 
 if [ "$rc" -eq 0 ]; then
   echo "skill-builder tests: ALL GREEN"

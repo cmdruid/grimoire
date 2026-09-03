@@ -4,7 +4,7 @@ Keep the records home conformant: contract checks, quiet closures, link rot, dup
 proposals. Tracker line-item grooming belongs to its owning workflow.
 
 1. Resolve `<root>` and run `scripts/records-runtime-check.sh --root <root>`. Stop on its exact
-   diagnostic. Use only the returned staged provider, never `.spaces` or the bundled copy. Run
+   diagnostic. Use only the returned staged provider, never `.agents/skilldata` or the bundled copy. Run
    `check` first and fix contract violations before cosmetic work.
 2. Run staged `list` once, scoped only when the human requested filters. Inspect each warning;
    repair files meant to be records and leave legitimate dated non-records alone. Close records that

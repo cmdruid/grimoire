@@ -28,7 +28,8 @@ expect_refusal "missing provider" "$provider_missing" 'reason=repair-required ac
 
 healthy="$TMP/healthy"; mkdir -p "$healthy"; healthy="$(cd -P "$healthy" && pwd)"; install_provider "$healthy"
 : >"$healthy/.records/history.tsv"
-ln -s "$TMP/nowhere" "$healthy/.spaces"
+mkdir -p "$healthy/.agents"
+ln -s "$TMP/nowhere" "$healthy/.agents/skilldata"
 run_runtime "$healthy"
 expect_eq "healthy runtime succeeds" 0 "$?"
 expect_eq "runtime returns staged provider" "$healthy/.records/records.sh" "$(cat "$OUT")"

@@ -105,7 +105,7 @@ check_existing_tree() {
 }
 
 init_paths() {
-  root="$1"; create="${2:-no}"; rr_rel=.records; ws_rel=.spaces
+  root="$1"; create="${2:-no}"; rr_rel=.records; ws_rel=.agents/skilldata
   case "$root" in /*) ;; *) err "root must be absolute: $root" ;; esac
   [ -d "$root" ] || err "root is not a directory: $root"
   root="$(abs_dir "$root")"

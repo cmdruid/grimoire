@@ -45,17 +45,17 @@ draft_body "$INPUT/draft.md" 'Cache design'
 run_writer draft-save --root "$ROOT" --slug cache-design \
   --title 'Cache design' --body "$INPUT/draft.md"
 expect_eq "draft save succeeds" 0 "$rc"
-expect_eq "draft path is owner-first" 'path=.spaces/architect/drafts/cache-design.md' "$(cat "$OUT")"
-expect_match "draft keeps title" '^# Cache design$' "$(cat "$ROOT/.spaces/architect/drafts/cache-design.md")"
+expect_eq "draft path is owner-first" 'path=.agents/skilldata/architect/drafts/cache-design.md' "$(cat "$OUT")"
+expect_match "draft keeps title" '^# Cache design$' "$(cat "$ROOT/.agents/skilldata/architect/drafts/cache-design.md")"
 
 printf '\nSaved detail.\n' >>"$INPUT/draft.md"
 run_writer draft-save --root "$ROOT" --slug cache-design \
   --title 'Cache design' --body "$INPUT/draft.md"
 expect_eq "same-title draft updates" 0 "$rc"
-expect_match "draft update is visible" 'Saved detail\.' "$(cat "$ROOT/.spaces/architect/drafts/cache-design.md")"
+expect_match "draft update is visible" 'Saved detail\.' "$(cat "$ROOT/.agents/skilldata/architect/drafts/cache-design.md")"
 
 sentinel="$T/temp-sentinel"; printf 'unchanged\n' >"$sentinel"
-planted="$ROOT/.spaces/architect/drafts/.cache-design.md.tmp.planted"
+planted="$ROOT/.agents/skilldata/architect/drafts/.cache-design.md.tmp.planted"
 ln -s "$sentinel" "$planted"
 run_writer draft-save --root "$ROOT" --slug cache-design \
   --title 'Cache design' --body "$INPUT/draft.md"
@@ -74,7 +74,7 @@ run_writer draft-save --root "$ROOT" --slug ../escape \
   --title 'Cache design' --body "$INPUT/draft.md"
 expect_eq "unsafe draft slug refuses" 2 "$rc"
 
-symlink_root="$T/symlink-root"; mkdir -p "$symlink_root/outside"; ln -s "$symlink_root/outside" "$symlink_root/.spaces"
+symlink_root="$T/symlink-root"; mkdir -p "$symlink_root/outside" "$symlink_root/.agents"; ln -s "$symlink_root/outside" "$symlink_root/.agents/skilldata"
 run_writer draft-save --root "$symlink_root" --slug cache-design \
   --title 'Cache design' --body "$INPUT/draft.md"
 expect_eq "symlinked workspace refuses" 2 "$rc"
@@ -131,7 +131,7 @@ printf '\n→ %s\n' "${successor#.records/}" >>"$INPUT/draft.md"
 run_writer draft-save --root "$ROOT" --slug cache-design \
   --title 'Cache design' --body "$INPUT/draft.md"
 expect_eq "draft accepts spike link" 0 "$rc"
-expect_match "draft links completed spike" "→ ${successor#.records/}" "$(cat "$ROOT/.spaces/architect/drafts/cache-design.md")"
+expect_match "draft links completed spike" "→ ${successor#.records/}" "$(cat "$ROOT/.agents/skilldata/architect/drafts/cache-design.md")"
 
 cp "$INPUT/spike.md" "$INPUT/bad-spike.md"
 sed -i.bak '/^## Conclusion, limitations, and remaining uncertainty$/d' "$INPUT/bad-spike.md"
@@ -180,7 +180,7 @@ for selector in --workspace --records-root --workspace-root --records-tool; do
   run_writer draft-save --root "$rejected" "$selector" custom --slug rejected --title Rejected --body "$INPUT/draft.md"
   expect_eq "$selector refuses" 2 "$rc"
   expect_eq "$selector preserves canary" CANARY "$(cat "$rejected/custom/keep")"
-  expect_eq "$selector creates no fixed roots" no "$([ -e "$rejected/.spaces" ] || [ -e "$rejected/.records" ] && printf yes || printf no)"
+  expect_eq "$selector creates no fixed roots" no "$([ -e "$rejected/.agents/skilldata" ] || [ -e "$rejected/.records" ] && printf yes || printf no)"
 done
 
 PROMO_ROOT="$T/promo-root"; mkdir -p "$PROMO_ROOT"
@@ -189,7 +189,7 @@ run_writer draft-save --root "$PROMO_ROOT" --slug promotable-idea \
   --title 'Promotable idea' --body "$INPUT/promo.md"
 expect_eq "promotion source begins active" 0 "$rc"
 expect_match "source is active before spec exists" '^Disposition: active$' \
-  "$(cat "$PROMO_ROOT/.spaces/architect/drafts/promotable-idea.md")"
+  "$(cat "$PROMO_ROOT/.agents/skilldata/architect/drafts/promotable-idea.md")"
 mkdir -p "$PROMO_ROOT/.records/specs"
 printf '%s\n' '---' 'doctype: specs' 'status: draft' 'schema: architect/spec@1' \
   'tags: [spec]' '---' '' '# Promotable idea — Spec' \
@@ -199,13 +199,13 @@ printf '\n→ specs/2099-01-01-promotable-idea.md\n' >>"$INPUT/promoted.md"
 run_writer draft-save --root "$PROMO_ROOT" --slug promotable-idea \
   --title 'Promotable idea' --body "$INPUT/promoted.md"
 expect_eq "draft promotes after spec creation" 0 "$rc"
-promo_text="$(cat "$PROMO_ROOT/.spaces/architect/drafts/promotable-idea.md")"
+promo_text="$(cat "$PROMO_ROOT/.agents/skilldata/architect/drafts/promotable-idea.md")"
 expect_match "promoted disposition persists" '^Disposition: promoted$' "$promo_text"
 expect_match "promoted draft cites existing spec" '→ specs/2099-01-01-promotable-idea\.md' "$promo_text"
 
 leaks() {
   find "$ROOT" -type f \
-    ! -path "$ROOT/.spaces/architect/drafts/*.md" \
+    ! -path "$ROOT/.agents/skilldata/architect/drafts/*.md" \
     ! -path "$ROOT/.records/spikes/*.md" | wc -l | tr -d ' '
 }
 experiment="$T/disposable-experiment"

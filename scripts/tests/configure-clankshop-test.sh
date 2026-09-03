@@ -27,14 +27,14 @@ apply_delegate_policy(){
   printf '%s\n' 'Return each actionable project-owned byproduct with a proposed class (`task`, `issue`, or `feedback`), an evidence' \
     "path or other concrete evidence, and why it matters. If an observation's remedy belongs in a reusable installed skill," \
     "return it separately with the affected skill tag for the caller's home feedback channel. Do not file either directly;" \
-    'the calling workflow owns routing.' > "$root/.spaces/delegate/hooks/byproducts.md"
+    'the calling workflow owns routing.' > "$root/.agents/skilldata/delegate/hooks/byproducts.md"
 }
 
 before="$(git -C "$root" rev-parse HEAD)";run_core_sweep;apply_delegate_policy
 [ ! -e "$auditor_sentinel" ] || fail "core sweep invoked deferred Auditor"
 [ "$before" = "$(git -C "$root" rev-parse HEAD)" ] || fail "a member setup committed during the sweep"
 [ -x "$root/.records/records.sh" ] || fail "Journal tool missing"
-[ ! -e "$root/.spaces/journal" ] || fail "Journal setup created private workspace state"
+[ ! -e "$root/.agents/skilldata/journal" ] || fail "Journal setup created private skilldata state"
 [ ! -d "$root/.records/notes" ] || fail "Journal setup created a writer directory"
 grep -qF 'Run `/journal repair`' "$root/.records/README.md" || fail "Journal repair guidance missing"
 "$root/.records/records.sh" list >/dev/null || fail "Journal README provider is unusable"
@@ -53,22 +53,20 @@ grep -qxF 'readme_status=current' <(printf '%s\n' "$readme_facts")||fail "Backlo
 grep -q '^## tasks$' "$root/.trackers/DEBRIEF.md"||fail "Backlog cookbook missing tasks"
 grep -q '^## routines$' "$root/.trackers/DEBRIEF.md"||fail "Backlog cookbook missing routines"
 cmp -s "$tmp/agents.before" "$root/AGENTS.md" || fail "core setup changed the project front door"
-hooks="$tmp/hooks.out";"$repo/skills/workstream/scripts/hooks.sh" parse --dir "$root/.spaces/workstream/hooks" --known feature-completion --known after-eventful-ship >"$hooks"
+hooks="$tmp/hooks.out";"$repo/skills/workstream/scripts/hooks.sh" parse --dir "$root/.agents/skilldata/workstream/hooks" --known feature-completion --known after-eventful-ship >"$hooks"
 grep -q 'hook_feature_completion=empty' "$hooks"||fail "feature hook is not independent and empty"
 grep -q 'hook_after_eventful_ship=empty' "$hooks"||fail "ship hook is not independent and empty"
-grep -q 'proposed class' "$root/.spaces/delegate/hooks/byproducts.md"||fail "Delegate policy not readable"
-grep -q 'actionable project-owned byproduct' "$root/.spaces/delegate/hooks/byproducts.md"||fail "Delegate policy does not qualify project feedback"
-grep -q 'affected skill tag' "$root/.spaces/delegate/hooks/byproducts.md"||fail "Delegate policy loses reusable-skill byproducts"
-if grep -qF 'skill-feedback' "$root/.spaces/delegate/hooks/byproducts.md";then fail "Delegate policy names a global feedback writer";fi
-"$repo/skills/workspace/scripts/workspace-check.sh" --root "$root" >"$tmp/workspace.out"
-grep -q 'fails=0' "$tmp/workspace.out"||fail "Workspace check failed"
-[ -z "$(find "$root/.spaces" -type d -name schemas -print -quit)" ]||fail "project schemas were deployed"
+grep -q 'proposed class' "$root/.agents/skilldata/delegate/hooks/byproducts.md"||fail "Delegate policy not readable"
+grep -q 'actionable project-owned byproduct' "$root/.agents/skilldata/delegate/hooks/byproducts.md"||fail "Delegate policy does not qualify project feedback"
+grep -q 'affected skill tag' "$root/.agents/skilldata/delegate/hooks/byproducts.md"||fail "Delegate policy loses reusable-skill byproducts"
+if grep -qF 'skill-feedback' "$root/.agents/skilldata/delegate/hooks/byproducts.md";then fail "Delegate policy names a global feedback writer";fi
+[ -z "$(find "$root/.agents/skilldata" -type d -name schemas -print -quit)" ]||fail "project schemas were deployed"
 if grep -qE '^(agent-workspace|agent-records|agent-trackers|records-root):' "$root/AGENTS.md";then fail "default roots were declared";fi
 
 # Derive the aggregate set from Git over approved destinations, not setup output.
-git -C "$root" add -N -- .records .trackers .spaces/workstream .spaces/delegate
+git -C "$root" add -N -- .records .trackers .agents/skilldata/workstream .agents/skilldata/delegate
 paths=();while IFS= read -r path;do [ -n "$path" ]&&paths+=("$path");done \
-  < <(git -C "$root" diff --name-only -- .records .trackers .spaces/journal .spaces/workstream .spaces/delegate)
+  < <(git -C "$root" diff --name-only -- .records .trackers .agents/skilldata/journal .agents/skilldata/workstream .agents/skilldata/delegate)
 [ "${#paths[@]}" -gt 0 ]||fail "aggregate path set is empty"
 git -C "$root" add -- "${paths[@]}";git -C "$root" commit -qm 'Configure Clankshop delivery loop' -- "${paths[@]}"
 [ "$(git -C "$root" rev-list --count HEAD)" -eq 2 ]||fail "configuration did not make exactly one aggregate commit"
@@ -144,7 +142,7 @@ cmp -s "$tmp/repair-record.before" "$root/.records/notes/2026-08-28-repair-canar
 cmp -s "$tmp/repair-queue.before" "$root/.trackers/tables/tasks.tsv" || fail "repair changed queue bytes"
 cmp -s "$tmp/repair-hook.before" "$root/.trackers/DEBRIEF.md" || fail "repair changed hook bytes"
 cmp -s "$tmp/repair-route.before" "$root/AGENTS.md" || fail "repair changed route bytes"
-[ ! -e "$root/.spaces/journal" ] || fail "repair created private workspace state"
+[ ! -e "$root/.agents/skilldata/journal" ] || fail "repair created private skilldata state"
 git -C "$root" add -- .records/records.sh .records/README.md
 git -C "$root" commit -qm 'Repair Journal managed surfaces'
 
@@ -188,6 +186,6 @@ for field in 'doctype: spikes' 'status: published' 'schema: architect/spike@1' '
   grep -qxF "$field" "$spike_file"||fail "published spike metadata missing: $field"
 done
 [ "$(grep -Ec '^##[[:space:]]+[^[:space:]]' "$spike_file")" -eq 5 ]||fail "published spike body does not have five sections"
-[ ! -e "$spike_root/.spaces/architect" ]||fail "spike publication deployed Architect workspace configuration"
+[ ! -e "$spike_root/.agents/skilldata/architect" ]||fail "spike publication deployed Architect skilldata configuration"
 [ ! -e "$spike_root/AGENTS.md" ]||fail "spike publication created a front door"
 echo "configure-clankshop-test: ok"

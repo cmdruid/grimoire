@@ -24,6 +24,11 @@ FAIL. It never fixes anything — read every FAIL as a defect to fix before comm
 judge each against `docs/BOUNDARY-AUDIT.md`'s rubric (check 7's sibling-ref WARNs) or accept as a known
 exception (an orphan edge-type WARN during a rollout, a shellcheck style note).
 
+For global skilldata, Pass 1 proves only that a package using a recognizable user-global path has
+the exact declaration fields and matching owner. Confirm the necessity, initialization behavior,
+permissions, sensitive-data handling, and any project/global precedence or materialization boundary
+in the judgment pass.
+
 ## Pass 2 — the boundary audit (judgment)
 
 Walk `docs/BOUNDARY-AUDIT.md`'s 8-step workflow: inventory → scan descriptions/bodies against the

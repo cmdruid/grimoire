@@ -18,7 +18,7 @@ sha256_file() {
   else sha256sum "$1" | awk '{print $1}'
   fi
 }
-root=""; workspace=.spaces; source_arg=""
+root=""; skilldata=.agents/skilldata; source_arg=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --root) [ "$#" -ge 2 ] || usage; root="$2"; shift 2 ;;
@@ -76,8 +76,8 @@ while IFS= read -r file; do
   fi
   if [ -s "$file" ] && ! LC_ALL=C grep -Iq . "$file"; then echo "skipped=$rel|reason=binary"; skipped=$((skipped+1)); continue; fi
   digest="sha256:$(sha256_file "$file")"
-  case "$rel" in "$workspace"/*/operations/*.md)
-    tail="${rel#"$workspace"/}"; owner="${tail%%/*}"; stem="${tail##*/}"; stem="${stem%.md}"; identity="$owner/$stem"
+  case "$rel" in "$skilldata"/*/operations/*.md)
+    tail="${rel#"$skilldata"/}"; owner="${tail%%/*}"; stem="${tail##*/}"; stem="${stem%.md}"; identity="$owner/$stem"
     facts="$("$checker" --root "$root" --operation "$identity" 2>/dev/null || true)"
     if printf '%s\n' "$facts" | grep -q '^valid=true$'; then
       status="$(printf '%s\n' "$facts" | sed -n 's/^status=//p')"

@@ -15,7 +15,7 @@ records format authority and the one required member, `backlog` the follow-up li
 `notepad` project memory, `analyst` reports and briefings, `workstream` the stream driver,
 `auditor`, `debugger`, `foreman` project operations and goal runbooks, `chiropractor` the
 documentation-spine steward); **utilities** (`checkpoint`, `mailbox`,
-`delegate`, `scheduler`, `workspace`). `agent-council`, `code-humanizer`,
+`delegate`, `scheduler`). `agent-council`, `code-humanizer`,
 `developer-writing`, and `skill-builder` stay outside the pack. See `README.md`
 for the full inventory.
 

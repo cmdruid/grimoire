@@ -19,6 +19,7 @@ Read only the selected verb file, then follow it.
 | `/foreman tune <tracker>` | `verbs/tune.md` | Curate one bounded tracker batch into operation proposals. |
 | `/foreman run <owner/stem>` | `verbs/run.md` | Follow one named operation in the current attended context. |
 | `/foreman setup [<root>]` | `verbs/setup.md` | Register Foreman's bounded project route. |
+| `/foreman start [--as <stem>] <objective>` | `verbs/start.md` | Publish a first-use operation and provisional goal with one acceptance. |
 | `/foreman create [procedure\|workflow]` | `verbs/create.md` | Curate one new Foreman-owned draft. |
 | `/foreman import <source>` | `verbs/import.md` | Adopt a native source by reference. |
 | `/foreman migrate <file-or-directory>` | `verbs/migrate.md` | Preview and accept brownfield operation candidates. |
@@ -34,21 +35,40 @@ Natural-language requests may route directly when the intended outcome is clear.
 
 ## Shared contract
 
-- Resolve the project root; workspace content lives only under its fixed `.spaces` directory.
+- Resolve the project root; project support lives only under its fixed `.agents/skilldata` directory.
 - Operations are direct files at
-  `.spaces/<owner>/operations/<stem>.md`; identity is `<owner>/<stem>`.
+  `.agents/skilldata/<owner>/operations/<stem>.md`; identity is `<owner>/<stem>`.
 - Foreman may read every owner's conforming operations. It writes operations and doctrine only under
-  `.spaces/foreman/` and owns only its `skill:foreman` front-door span.
+  `.agents/skilldata/foreman/`; its doctrine resolves beneath
+  `.agents/skilldata/foreman/doctrine/`. Foreman owns only its `skill:foreman` front-door span.
 - Run package scripts from this skill's own `scripts/` directory. Scripts compute facts; the agent
   chooses candidates, interprets evidence, and asks for acceptance.
-- Missing workspace content is an empty catalog, not an installation failure. Setup creates no empty
+- Missing skilldata content is an empty catalog, not an installation failure. Setup creates no empty
   store; an accepted write creates only the needed Foreman-owned kind.
 - The bundled `templates/operation.md` is package-only. Never deploy it as a project template.
+- Before authoring a replacement, prefer an existing same-purpose project operation. Otherwise
+  inspect the optional global template catalog through `scripts/operation-template-index.sh`;
+  catalog output is metadata-only and semantic fit remains agent judgment.
 - Goal records use `foreman/goal@1` under `.records/goals/`. Missing `records.sh` is not an
   error and records standup is never a precondition.
+- A first-use start binds one resolved draft operation and its exact provisional goal record to a
+  digest-backed publication acceptance. It starts no runtime until both durable artifacts exist.
 - A tracker consumer uses the fixed `.trackers` layer and its advertised `tracker@2` API. Missing
   provider state degrades to rows supplied directly
   by the caller; it is not a setup requirement.
+
+## Global skilldata
+
+- Scope: user-global, optional authoring input only.
+- Path: `~/.agents/skilldata/foreman/templates/operations/`.
+- Access: read-only; Foreman has no global setup, write, synchronization, or migration command.
+- Safety: unsafe roots disable suggestions, malformed entries are excluded without exposing their
+  bodies, and an explicitly selected invalid template refuses without fallback.
+- Justification: generic operation shapes need to survive package replacement and be available
+  across projects, so neither project storage nor installed package bytes are suitable.
+- Precedence and materialization: an existing same-purpose project operation wins. A global body is
+  read only after explicit selection, treated as inert input, and curated into a complete previewed
+  project operation; its path is never persisted or reread by execution.
 
 ## Project templates
 

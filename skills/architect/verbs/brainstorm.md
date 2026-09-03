@@ -12,7 +12,7 @@ names a contained Architect draft to resume.
   or updating one living draft from the current synthesis. An unambiguous natural-language request
   to save the current idea is equivalent.
 - A named path resumes a draft only when it resolves beneath the canonical
-  `.spaces/architect/drafts/` home, is a regular non-symlink Markdown file, and follows the
+  `.agents/skilldata/architect/drafts/` home, is a regular non-symlink Markdown file, and follows the
   package `templates/draft.md` shape. An explicit valid path authorizes updating that same draft.
 - No heuristic grants save permission: not duration, importance, open questions, multiple agents,
   or Architect's judgment that the idea may matter.
@@ -30,7 +30,7 @@ names a contained Architect draft to resume.
    Unresolved branches are legitimate.
 5. **Stop or persist.** For an ordinary brainstorm, recap the current synthesis in conversation and
    offer either `spec` or an explicit save; do not write. For `save` or a valid resumed path, resolve
-   `.spaces` through SKILL.md *Project homes*, fill the package-only `templates/draft.md` outline as one current synthesis
+   `.agents/skilldata` through SKILL.md *Project homes*, fill the package-only `templates/draft.md` outline as one current synthesis
    rather than an event log, and call package-local `scripts/architect-artifacts.sh draft-save`.
    Use a lowercase kebab slug. Same-title replacement is allowed; a different title at that slug
    refuses and asks for another name or explicit path.
