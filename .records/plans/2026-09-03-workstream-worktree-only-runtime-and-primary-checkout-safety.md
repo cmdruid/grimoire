@@ -145,7 +145,6 @@ Implemented base: → `plans/2026-09-02-workstream-composed-control-surface-and-
     bash skills/checkpoint/scripts/tests/run.sh
     bash scripts/tests/workstream-hard-cut-contract-test.sh
     shellcheck skills/workstream/scripts/*.sh skills/workstream/scripts/tests/*.sh \
-      skills/checkpoint/scripts/*.sh skills/checkpoint/scripts/tests/*.sh \
       scripts/tests/workstream-hard-cut-contract-test.sh
     git diff --check
     ```
@@ -277,6 +276,8 @@ Implemented base: → `plans/2026-09-02-workstream-composed-control-surface-and-
     bash skills/workstream/scripts/tests/run.sh
     bash skills/checkpoint/scripts/tests/run.sh
     bash scripts/tests/workstream-hard-cut-contract-test.sh
+    shellcheck skills/checkpoint/scripts/save-guard.sh \
+      skills/checkpoint/scripts/tests/save-guard-test.sh
     ```
 
     Expected: current/named reads match; absent or foreign top-level runbooks never cause a sibling
@@ -415,7 +416,8 @@ Implemented base: → `plans/2026-09-02-workstream-composed-control-surface-and-
     GRIMOIRE_LIVE_ROOT=/Users/cscott/Repos/grimoire \
       cargo test -p grimoire-pack --test live_root_layout
     shellcheck skills/workstream/scripts/*.sh skills/workstream/scripts/tests/*.sh \
-      skills/checkpoint/scripts/*.sh skills/checkpoint/scripts/tests/*.sh
+      skills/checkpoint/scripts/save-guard.sh \
+      skills/checkpoint/scripts/tests/save-guard-test.sh
     git diff --check
     ```
 
