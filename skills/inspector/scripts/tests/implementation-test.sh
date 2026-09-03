@@ -19,9 +19,12 @@ for needle in 'named diff, range, worktree, or commit' 'behavior matches the gov
 done
 has "$REVIEW" 'Implementation target: inspect the full diff' "implementation review walk missing"
 has "$REVIEW" '## Implementation textual action close' "implementation action tracer missing"
+# shellcheck disable=SC2016 # Markdown code spans are literal.
 for needle in 'HEAD, staged diff, unstaged diff' 'reviewed untracked paths and contents' \
   'invent a snapshot or copy protocol' 'Render a fresh inline-only surface' \
-  'same-pattern observations' 'full accumulated change'; do
+  'same-pattern observations' 'full accumulated change' \
+  'Offer `A` only when an isolated executor exists' \
+  'state the specific failed eligibility reason'; do
   has "$REVIEW" "$needle" "implementation action doctrine missing: $needle"
 done
 for needle in 'control-flow complexity' 'changed authored functions' \
@@ -47,14 +50,16 @@ review_fixture() {
 verdict() { case "$1" in *must-fix*) echo needs-rework ;; *recommended*) echo approve-with-changes ;; *) echo approve ;; esac; }
 
 full_review_fixture() {
-  local repository="$1" base="$2" after="$3" range_file="$ROOT/full-review.range" current_file="$ROOT/full-review.current"
+  local repository="$1" base="$2" after="$3" path
+  local range_file="$ROOT/full-review.range" current_file="$ROOT/full-review.current"
   [ "$(git_head "$repository")" = "$after" ] || { echo endpoint-mismatch; return; }
-  git -C "$repository" diff "$base" > "$range_file"
+  git -C "$repository" diff "$base..$after" > "$range_file"
   grep -q '^+ORIGINAL_CHANGE$' "$range_file" || { echo baseline-too-narrow; return; }
-  {
-    cat "$repository/change.txt"
-    cat "$repository/outside.txt"
-  } > "$current_file"
+  : > "$current_file"
+  git -C "$repository" diff --name-only "$base..$after" | while IFS= read -r path; do
+    printf 'path:%s\n' "$path"
+    git -C "$repository" show "$after:$path" 2>/dev/null || printf 'deleted:%s\n' "$path"
+  done > "$current_file"
   review_fixture "$current_file"
 }
 path_limited_review_fixture() {
@@ -95,11 +100,34 @@ start_isolated() {
   [ ! -e "$isolated" ] || return 1
   git -C "$destination" worktree add -q "$isolated" -b fixture/isolated-fix "$expected_head"
 }
+verify_selected_package() {
+  local repository="$1" captured_head="$2" returned_commit="$3" manifest="$4"
+  local operation path marker expected="$ROOT/expected-paths.$$" actual="$ROOT/actual-paths.$$"
+  : > "$expected"
+  while IFS='|' read -r operation path marker; do
+    [ -n "$operation" ] && [ -n "$path" ] && [ -n "$marker" ] || return 1
+    printf '%s\n' "$path" >> "$expected"
+    case "$operation" in
+      remove)
+        if git -C "$repository" show "$returned_commit:$path" 2>/dev/null | grep -qF "$marker"; then
+          return 1
+        fi
+        ;;
+      require)
+        git -C "$repository" show "$returned_commit:$path" 2>/dev/null | grep -qF "$marker" \
+          || return 1
+        ;;
+      *) return 1 ;;
+    esac
+  done < "$manifest"
+  git -C "$repository" diff --name-only "$captured_head..$returned_commit" | sort -u > "$actual"
+  sort -u "$expected" -o "$expected"
+  cmp -s "$expected" "$actual"
+}
 integrate_returned() {
-  local destination="$1" captured_head="$2" returned_commit="$3"
+  local destination="$1" captured_head="$2" returned_commit="$3" manifest="$4"
   git -C "$destination" diff --check "$captured_head..$returned_commit" >/dev/null || return 1
-  git -C "$destination" show "$returned_commit:change.txt" | grep -qF ORIGINAL_CHANGE || return 1
-  git -C "$destination" show "$returned_commit:change.txt" | grep -qF DESIGN_MISMATCH && return 1
+  verify_selected_package "$destination" "$captured_head" "$returned_commit" "$manifest" || return 1
   destination_clean_at "$destination" "$captured_head" || return 1
   git -C "$destination" merge --ff-only "$returned_commit" >/dev/null
 }
@@ -111,20 +139,85 @@ normalize_trace_code() {
   [ "$compact" = 1AR ] || return 1
   printf '%s\n' '1-A-R'
 }
+owns_endpoint() {
+  local destination="$1" endpoint="$2" branch
+  git -C "$destination" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
+  git -C "$destination" cat-file -e "$endpoint^{commit}" 2>/dev/null || return 1
+  branch="$(git -C "$destination" branch --show-current)"
+  [ -n "$branch" ] || return 1
+  [ "$(git_head "$destination")" = "$endpoint" ] || return 1
+  git -C "$destination" merge-base --is-ancestor "$endpoint" "$branch"
+}
+resolve_destination() {
+  local endpoint="$1" candidate resolved='' count=0
+  shift
+  for candidate in "$@"; do
+    if owns_endpoint "$candidate" "$endpoint"; then
+      resolved="$candidate"
+      count=$((count + 1))
+    fi
+  done
+  [ "$count" -eq 1 ] || return 1
+  printf '%s\n' "$resolved"
+}
 route_from_repository() {
-  local destination="$1" endpoint="$2" isolated="$3"
-  if command -v git >/dev/null 2>&1 && destination_clean_at "$destination" "$endpoint" \
-    && [ ! -e "$isolated" ]; then
-    echo isolated
-  else
-    echo inline
+  local destination="$1" endpoint="$2" isolated="$3" executor="$4"
+  command -v "$executor" >/dev/null 2>&1 || { echo inline:executor-unavailable; return; }
+  git -C "$destination" cat-file -e "$endpoint^{commit}" 2>/dev/null \
+    || { echo inline:endpoint-not-committed; return; }
+  destination_clean_at "$destination" "$endpoint" \
+    || { echo inline:destination-not-clean-at-endpoint; return; }
+  [ ! -e "$isolated" ] || { echo inline:checkout-unavailable; return; }
+  if ! git -C "$destination" worktree add --detach -q "$isolated" "$endpoint" 2>/dev/null; then
+    echo inline:checkout-unavailable
+    return
   fi
+  git -C "$destination" worktree remove "$isolated"
+  echo isolated
 }
 destination_route() {
-  local destination="$1" endpoint="$2" isolated="$3"
-  git -C "$destination" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
-    || { echo reduced-surface; return; }
-  route_from_repository "$destination" "$endpoint" "$isolated"
+  local endpoint="$1" isolated="$2" executor="$3" destination
+  shift 3
+  destination="$(resolve_destination "$endpoint" "$@")" \
+    || { echo reduced-surface:destination-unresolved; return; }
+  route_from_repository "$destination" "$endpoint" "$isolated" "$executor"
+}
+reduced_state_transition() {
+  local answer="$1" verdict="$2" recommendations="$3" scope
+  case "$answer" in
+    yes)
+      [ "$verdict" = approve-with-changes ] && { echo unchanged:1; return; }
+      scope=1
+      ;;
+    'fix must-fix findings') scope=1 ;;
+    'fix all findings') scope=2 ;;
+    'fix recommended changes') [ "$verdict" = needs-rework ] && scope=3 || scope=2 ;;
+    'make no changes') scope=4 ;;
+    'return as-is') scope=1 ;;
+    1|2|3|4) scope="$answer" ;;
+    *) echo ask:no-write; return ;;
+  esac
+  case "$verdict:$recommendations:$scope" in
+    needs-rework:yes:1|needs-rework:yes:2|needs-rework:yes:3|needs-rework:yes:4|needs-rework:no:1|needs-rework:no:4|approve-with-changes:*:1|approve-with-changes:*:2) ;;
+    *) echo ask:no-write; return ;;
+  esac
+  case "$verdict:$scope" in
+    needs-rework:4|approve-with-changes:1) printf 'unchanged:%s\n' "$scope" ;;
+    *) printf 'pending-scope:%s\n' "$scope" ;;
+  esac
+}
+assert_reduced_no_write() {
+  local label="$1" destination="$2" expected="$3" answer="$4" verdict="$5" recommendations="$6"
+  local before="$ROOT/reduced-$label.before" after="$ROOT/reduced-$label.after" actual
+  capture_identity "$destination" "$before"
+  actual="$(reduced_state_transition "$answer" "$verdict" "$recommendations")"
+  eq "reduced $label transition" "$expected" "$actual"
+  if same_identity "$destination" "$before" "$after"; then
+    pass=$((pass + 1))
+  else
+    echo "FAIL reduced $label changed repository identity" >&2
+    fail=$((fail + 1))
+  fi
 }
 replace_isolated_with_inline() {
   printf '%s\n' "$1" | sed 's/-A-/-I-/'
@@ -194,6 +287,9 @@ eq "clean implementation verdict" approve "$(verdict "$(review_fixture "$ROOT/cl
 DESTINATION="$ROOT/destination"
 ISOLATED="$ROOT/isolated"
 TRACE="$ROOT/trace"
+EXECUTOR="$ROOT/isolated-executor"
+printf '%s\n' '#!/usr/bin/env bash' 'exit 0' > "$EXECUTOR"
+chmod +x "$EXECUTOR"
 mkdir "$DESTINATION"
 git -C "$DESTINATION" init -q
 git -C "$DESTINATION" config user.name fixture
@@ -211,15 +307,83 @@ reviewed_after="$(git_head "$DESTINATION")"
 destination_before="$(shasum "$DESTINATION/change.txt" | awk '{print $1}')"
 capture_identity "$DESTINATION" "$ROOT/reviewed.identity"
 eq "real destination resolves eligible isolation" isolated \
-  "$(destination_route "$DESTINATION" "$reviewed_after" "$ISOLATED")"
-eq "missing destination renders reduced surface" reduced-surface \
-  "$(destination_route "$ROOT/not-a-repository" "$reviewed_after" "$ISOLATED")"
+  "$(destination_route "$reviewed_after" "$ISOLATED" "$EXECUTOR" "$DESTINATION")"
+eq "missing destination renders reduced surface" reduced-surface:destination-unresolved \
+  "$(destination_route "$reviewed_after" "$ISOLATED" "$EXECUTOR" "$ROOT/not-a-repository")"
+
+SECOND_OWNER="$ROOT/second-owner"
+git clone -q "$DESTINATION" "$SECOND_OWNER"
+eq "ambiguous destination ownership renders reduced surface" reduced-surface:destination-unresolved \
+  "$(destination_route "$reviewed_after" "$ISOLATED" "$EXECUTOR" "$DESTINATION" "$SECOND_OWNER")"
+DETACHED_OWNER="$ROOT/detached-owner"
+git clone -q "$DESTINATION" "$DETACHED_OWNER"
+git -C "$DETACHED_OWNER" checkout --detach -q "$reviewed_after"
+eq "detached endpoint does not establish ownership" reduced-surface:destination-unresolved \
+  "$(destination_route "$reviewed_after" "$ISOLATED" "$EXECUTOR" "$DETACHED_OWNER")"
+UNOWNED="$ROOT/unowned"
+git clone -q "$DESTINATION" "$UNOWNED"
+git -C "$UNOWNED" checkout -q -B fixture/unowned "$base_endpoint"
+eq "branch at another endpoint does not establish ownership" reduced-surface:destination-unresolved \
+  "$(destination_route "$reviewed_after" "$ISOLATED" "$EXECUTOR" "$UNOWNED")"
+
+assert_reduced_no_write needs-yes "$DESTINATION" pending-scope:1 yes needs-rework yes
+assert_reduced_no_write needs-one "$DESTINATION" pending-scope:1 1 needs-rework yes
+assert_reduced_no_write needs-all "$DESTINATION" pending-scope:2 2 needs-rework yes
+assert_reduced_no_write needs-recommended "$DESTINATION" pending-scope:3 \
+  'fix recommended changes' needs-rework yes
+assert_reduced_no_write needs-exit "$DESTINATION" unchanged:4 4 needs-rework yes
+assert_reduced_no_write recommended-yes "$DESTINATION" unchanged:1 yes approve-with-changes yes
+assert_reduced_no_write recommended-fix "$DESTINATION" pending-scope:2 2 approve-with-changes yes
+assert_reduced_no_write unavailable-scope "$DESTINATION" ask:no-write 2 needs-rework no
+assert_reduced_no_write route-prose "$DESTINATION" ask:no-write \
+  'fix must-fix inline' needs-rework yes
+
+eq "missing executor states inline-only reason" inline:executor-unavailable \
+  "$(route_from_repository "$DESTINATION" "$reviewed_after" "$ROOT/missing-executor-probe" fixture-command-that-does-not-exist)"
+eq "uncommitted endpoint states inline-only reason" inline:endpoint-not-committed \
+  "$(route_from_repository "$DESTINATION" WORKTREE "$ROOT/uncommitted-probe" "$EXECUTOR")"
 
 DIRTY_ROUTE="$ROOT/dirty-route"
 git clone -q "$DESTINATION" "$DIRTY_ROUTE"
 printf '%s\n' DIRTY_ROUTE >> "$DIRTY_ROUTE/change.txt"
-eq "dirty destination derives inline-only route" inline \
-  "$(destination_route "$DIRTY_ROUTE" "$reviewed_after" "$ROOT/dirty-route-isolated")"
+eq "dirty destination states inline-only reason" inline:destination-not-clean-at-endpoint \
+  "$(route_from_repository "$DIRTY_ROUTE" "$reviewed_after" "$ROOT/dirty-route-isolated" "$EXECUTOR")"
+CHECKOUT_ROUTE_BLOCKED="$ROOT/checkout-route-blocked"
+mkdir "$CHECKOUT_ROUTE_BLOCKED"
+eq "blocked checkout states inline-only reason" inline:checkout-unavailable \
+  "$(route_from_repository "$DESTINATION" "$reviewed_after" "$CHECKOUT_ROUTE_BLOCKED" "$EXECUTOR")"
+
+eligibility_matrix() {
+  printf '%s\n' \
+    "eligible:$(route_from_repository "$DESTINATION" "$reviewed_after" "$ROOT/matrix-eligible" "$EXECUTOR")" \
+    "executor:$(route_from_repository "$DESTINATION" "$reviewed_after" "$ROOT/matrix-executor" fixture-command-that-does-not-exist)" \
+    "endpoint:$(route_from_repository "$DESTINATION" WORKTREE "$ROOT/matrix-endpoint" "$EXECUTOR")" \
+    "clean:$(route_from_repository "$DIRTY_ROUTE" "$reviewed_after" "$ROOT/matrix-dirty" "$EXECUTOR")" \
+    "checkout:$(route_from_repository "$DESTINATION" "$reviewed_after" "$CHECKOUT_ROUTE_BLOCKED" "$EXECUTOR")" \
+    "ambiguous:$(destination_route "$reviewed_after" "$ROOT/matrix-ambiguous" "$EXECUTOR" "$DESTINATION" "$SECOND_OWNER")" \
+    "detached:$(destination_route "$reviewed_after" "$ROOT/matrix-detached" "$EXECUTOR" "$DETACHED_OWNER")" \
+    "unowned:$(destination_route "$reviewed_after" "$ROOT/matrix-unowned" "$EXECUTOR" "$UNOWNED")"
+}
+eligibility_matrix_contract() { [ "$(cat "$1")" = "$(eligibility_matrix)" ]; }
+eligibility_matrix > "$ROOT/eligibility.original"
+cp "$ROOT/eligibility.original" "$ROOT/eligibility.saved"
+for mutation in \
+  'eligible:isolated|eligible:inline:checkout-unavailable' \
+  'executor:inline:executor-unavailable|executor:isolated' \
+  'endpoint:inline:endpoint-not-committed|endpoint:isolated' \
+  'clean:inline:destination-not-clean-at-endpoint|clean:isolated' \
+  'checkout:inline:checkout-unavailable|checkout:isolated' \
+  'ambiguous:reduced-surface:destination-unresolved|ambiguous:isolated' \
+  'detached:reduced-surface:destination-unresolved|detached:isolated' \
+  'unowned:reduced-surface:destination-unresolved|unowned:isolated'; do
+  before_row="${mutation%%|*}" after_row="${mutation#*|}"
+  sed "s/^$before_row$/$after_row/" "$ROOT/eligibility.original" > "$ROOT/eligibility.broken"
+  eq "eligibility red-proof plants one invalid route" 1 \
+    "$(grep -cF "$after_row" "$ROOT/eligibility.broken")"
+  rejects eligibility_matrix_contract "$ROOT/eligibility.broken"
+done
+cmp -s "$ROOT/eligibility.original" "$ROOT/eligibility.saved" \
+  && pass=$((pass + 1)) || fail=$((fail + 1))
 
 assert_isolation_start_drift() {
   local kind="$1" drift_repo="$ROOT/drift-$1" drift_isolated="$ROOT/drift-$1-isolated"
@@ -308,7 +472,7 @@ fi
 raw_reply='1-A-R'
 normalized_selection="$(normalize_trace_code "$raw_reply")"
 eq "raw reply normalizes before remediation" 1-A-R "$normalized_selection"
-selected_route="$(route_from_repository "$DESTINATION" "$reviewed_after" "$ISOLATED")"
+selected_route="$(route_from_repository "$DESTINATION" "$reviewed_after" "$ISOLATED" "$EXECUTOR")"
 eq "real repository selects isolated route" isolated "$selected_route"
 case "$normalized_selection:$selected_route" in
   1-A-R:isolated) ;;
@@ -355,6 +519,9 @@ mv "$ROOT/next" "$ISOLATED/change.txt"
 git -C "$ISOLATED" add change.txt
 git -C "$ISOLATED" commit -qm fix
 returned_commit="$(git_head "$ISOLATED")"
+SELECTED_FINDINGS="$ROOT/selected-findings.tsv"
+printf '%s\n' 'remove|change.txt|DESIGN_MISMATCH' \
+  'require|change.txt|ORIGINAL_CHANGE' > "$SELECTED_FINDINGS"
 grep -qF RECOMMENDED "$ISOLATED/outside.txt" && ! grep -qF DESIGN_MISMATCH "$ISOLATED/change.txt" \
   && writer_verified=yes || writer_verified=no
 eq "isolated writer verification" yes "$writer_verified"
@@ -410,7 +577,7 @@ assert_integration_drift() {
         "$(git -C "$drift_repo" ls-files --others --exclude-standard | grep -c '^untracked.txt$')"
       ;;
   esac
-  rejects integrate_returned "$drift_repo" "$reviewed_after" "$returned_commit"
+  rejects integrate_returned "$drift_repo" "$reviewed_after" "$returned_commit" "$SELECTED_FINDINGS"
   if git -C "$drift_repo" merge-base --is-ancestor "$returned_commit" HEAD; then
     echo "FAIL $kind integration drift applied returned commit" >&2
     fail=$((fail + 1))
@@ -422,8 +589,32 @@ for drift_kind in head staged unstaged untracked; do
   assert_integration_drift "$drift_kind"
 done
 
+ALL_FINDINGS="$ROOT/all-findings.tsv"
+printf '%s\n' 'remove|change.txt|DESIGN_MISMATCH' \
+  'remove|outside.txt|RECOMMENDED' > "$ALL_FINDINGS"
+OMITTED_DESTINATION="$ROOT/omitted-finding-destination"
+git clone -q "$DESTINATION" "$OMITTED_DESTINATION"
+rejects integrate_returned "$OMITTED_DESTINATION" "$reviewed_after" "$returned_commit" "$ALL_FINDINGS"
+eq "omitted selected finding leaves return unapplied" "$reviewed_after" \
+  "$(git_head "$OMITTED_DESTINATION")"
+
+UNEXPECTED_RETURN="$ROOT/unexpected-return"
+git -C "$DESTINATION" worktree add -q "$UNEXPECTED_RETURN" -b fixture/unexpected-return "$returned_commit"
+printf '%s\n' UNEXPECTED_MATERIAL_MUTATION > "$UNEXPECTED_RETURN/surprise.txt"
+git -C "$UNEXPECTED_RETURN" add surprise.txt
+git -C "$UNEXPECTED_RETURN" commit -qm unexpected-return
+unexpected_commit="$(git_head "$UNEXPECTED_RETURN")"
+eq "unexpected return contains a third-path mutation" 2 \
+  "$(git -C "$DESTINATION" diff --name-only "$reviewed_after..$unexpected_commit" | wc -l | tr -d ' ')"
+UNEXPECTED_DESTINATION="$ROOT/unexpected-destination"
+git clone -q "$DESTINATION" "$UNEXPECTED_DESTINATION"
+rejects integrate_returned "$UNEXPECTED_DESTINATION" "$reviewed_after" "$unexpected_commit" "$SELECTED_FINDINGS"
+eq "unexpected path leaves returned package unapplied" "$reviewed_after" \
+  "$(git_head "$UNEXPECTED_DESTINATION")"
+git -C "$DESTINATION" worktree remove "$UNEXPECTED_RETURN"
+
 printf '%s\n' "pre-integration:$reviewed_after:clean" >> "$TRACE"
-integrate_returned "$DESTINATION" "$reviewed_after" "$returned_commit"
+integrate_returned "$DESTINATION" "$reviewed_after" "$returned_commit" "$SELECTED_FINDINGS"
 printf '%s\n' "integrated:$returned_commit" \
   "re-review-base:$base_endpoint" \
   "re-review-after:$returned_commit" \
@@ -437,10 +628,21 @@ eq "path-limited mutant misses outside recommendation" approve \
 eq "fix-delta baseline is rejected as too narrow" baseline-too-narrow \
   "$(full_review_fixture "$DESTINATION" "$reviewed_after" "$returned_commit")"
 rejects full_review_contract "$DESTINATION" "$reviewed_after" "$returned_commit"
-printf '%s\n' OUTSIDE_FIX_MUTATION DESIGN_MISMATCH >> "$DESTINATION/outside.txt"
-eq "full re-review sees mutation outside fix delta" needs-rework \
-  "$(verdict "$(full_review_fixture "$DESTINATION" "$base_endpoint" "$returned_commit")")"
-git -C "$DESTINATION" restore outside.txt
+eq "full review population derives both changed paths" \
+  "$(printf '%s\n' change.txt outside.txt)" \
+  "$(git -C "$DESTINATION" diff --name-only "$base_endpoint..$returned_commit")"
+THIRD_PATH_REVIEW="$ROOT/third-path-review"
+git clone -q "$DESTINATION" "$THIRD_PATH_REVIEW"
+git -C "$THIRD_PATH_REVIEW" config user.name fixture
+git -C "$THIRD_PATH_REVIEW" config user.email fixture@example.invalid
+printf '%s\n' DESIGN_MISMATCH > "$THIRD_PATH_REVIEW/third.txt"
+git -C "$THIRD_PATH_REVIEW" add third.txt
+git -C "$THIRD_PATH_REVIEW" commit -qm third-path-mutation
+third_path_commit="$(git_head "$THIRD_PATH_REVIEW")"
+eq "full review population expands to every changed path" 3 \
+  "$(git -C "$THIRD_PATH_REVIEW" diff --name-only "$base_endpoint..$third_path_commit" | wc -l | tr -d ' ')"
+eq "full re-review sees committed third-path mutation" needs-rework \
+  "$(verdict "$(full_review_fixture "$THIRD_PATH_REVIEW" "$base_endpoint" "$third_path_commit")")"
 printf '%s\n' "fresh-verdict:$fresh_verdict" "fresh-action-close:$fresh_verdict" >> "$TRACE"
 if trace_contract "$TRACE" "$base_endpoint" "$reviewed_after" "$returned_commit" "$fresh_verdict"; then
   pass=$((pass + 1))
@@ -471,6 +673,7 @@ git -C "$DESTINATION" worktree remove "$ISOLATED"
 
 PARTIAL="$ROOT/partial-package"
 git clone -q "$DESTINATION" "$PARTIAL"
+partial_head_before="$(git_head "$PARTIAL")"
 printf '%s\n' started > "$PARTIAL/.writer-started"
 if apply_two_finding_package "$PARTIAL"; then
   partial_result=complete
@@ -481,12 +684,15 @@ eq "second-finding failure stops partial package" stop:partial:unreviewed "$part
 eq "partial package applied first finding" 1 "$(grep -c '^FINDING_ONE$' "$PARTIAL/change.txt")"
 eq "partial package did not apply second finding" 0 \
   "$(grep -c '^FINDING_TWO$' "$PARTIAL/change.txt" || true)"
+eq "partial package produces no returned commit" "$partial_head_before" "$(git_head "$PARTIAL")"
+eq "partial package produces no integration evidence" 0 \
+  "$(find "$PARTIAL" -name '.integrated' -o -name '.returned-package' | wc -l | tr -d ' ')"
 eq "partial package never starts re-review" 0 \
   "$(find "$PARTIAL" -name '.re-review-started' | wc -l | tr -d ' ')"
 
 assert_bad_return() {
   local kind="$1" bad_worktree="$ROOT/bad-$1-return" bad_destination="$ROOT/bad-$1-destination"
-  local bad_commit result
+  local bad_commit result bad_manifest="$ROOT/bad-$kind-findings.tsv"
   git -C "$DESTINATION" worktree add -q "$bad_worktree" -b "fixture/bad-$kind" "$returned_commit"
   case "$kind" in
     inspection) printf 'TRAILING_SPACE \n' >> "$bad_worktree/change.txt" ;;
@@ -498,8 +704,9 @@ assert_bad_return() {
   git -C "$bad_worktree" add change.txt
   git -C "$bad_worktree" commit -qm "bad-$kind"
   bad_commit="$(git_head "$bad_worktree")"
+  printf '%s\n' 'require|change.txt|ORIGINAL_CHANGE' > "$bad_manifest"
   git clone -q "$DESTINATION" "$bad_destination"
-  if integrate_returned "$bad_destination" "$returned_commit" "$bad_commit"; then
+  if integrate_returned "$bad_destination" "$returned_commit" "$bad_commit" "$bad_manifest"; then
     result=integrated
   else
     result="stop:$kind:unreviewed"

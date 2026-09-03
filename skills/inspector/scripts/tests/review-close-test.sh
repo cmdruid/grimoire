@@ -27,7 +27,7 @@ has "$REVIEW" 'Fix scope — choose one:' "textual fix scope missing"
 has "$REVIEW" 'Reply with a combination such as `1-A-R`, `2-I-R`, or `4`.' "text reply contract missing"
 has "$REVIEW" 'one unambiguous writable destination' "implementation destination resolver missing"
 has "$REVIEW" 'label `I` as the only route' "inline route disclosure missing"
-has "$REVIEW" 'modifiers are inert for a non-mutating scope' "inert modifier rule missing"
+has "$REVIEW" 'Only an available route or' "availability-first inert modifier rule missing"
 has "$REVIEW" 'writer-started partial or blocked work' "partial-package stop missing"
 has "$REVIEW" 'has not passed Inspector review' "unreviewed-result disclosure missing"
 has "$REVIEW" 'If you accept, this session will publish' "passing publish offer missing"
@@ -195,7 +195,7 @@ eq "implementation approval offers direct return" direct-return \
   "$(close_review implementation approve unavailable)"
 
 render_surface() {
-  local verdict="$1" recommendations="$2" isolation="$3"
+  local verdict="$1" recommendations="$2" isolation="$3" default example
   case "$verdict" in
     approve)
       printf '%s\n' 'approve — Implementation ready' '' '1. Return to the calling workflow'
@@ -235,6 +235,20 @@ render_surface() {
   else
     printf '\n%s\n' 'Afterward — choose one:' \
       'R. Re-review the complete implementation (default)' 'N. Stop without re-review'
+  fi
+  if [ "$isolation" = yes ]; then
+    default=A
+  else
+    default=I
+  fi
+  if [ "$verdict" = needs-rework ]; then
+    example="1-$default-R"
+    [ "$recommendations" = yes ] && example="$example, 2-I-R"
+    printf '\nReply with a combination such as `%s`, or `4`.\n' "$example"
+    printf 'Reply `yes` to accept the defaults: `1-%s-R`.\n' "$default"
+  else
+    printf '\nReply with `1` to return as-is, or a fixing combination such as `2-%s-R`.\n' "$default"
+    printf 'Reply `yes` to accept the default: `1`.\n'
   fi
 }
 
@@ -283,13 +297,17 @@ normalize_code() {
   case "$rest" in A*|I*) route="$(printf '%s' "$rest" | cut -c1)"; rest="$(printf '%s' "$rest" | cut -c2-)" ;; esac
   case "$rest" in R*|N*) after="$(printf '%s' "$rest" | cut -c1)"; rest="$(printf '%s' "$rest" | cut -c2-)" ;; esac
   [ -z "$rest" ] || return 1
+  if [ "$verdict" = approve ]; then
+    [ -z "$route$after" ] || return 1
+  else
+    [ "$route" != A ] || [ "$isolation" = yes ] || return 1
+  fi
   if [ "$verdict:$scope" = needs-rework:4 ] || [ "$verdict:$scope" = approve-with-changes:1 ] \
     || [ "$verdict" = approve ]; then
     printf '%s\n' "$scope"
     return
   fi
   [ -n "$route" ] || { [ "$isolation" = yes ] && route=A || route=I; }
-  [ "$route" != A ] || [ "$isolation" = yes ] || return 1
   [ -n "$after" ] || after=R
   printf '%s-%s-%s\n' "$scope" "$route" "$after"
 }
@@ -319,14 +337,15 @@ natural_adjustment() {
 
 action_reply() {
   local answer="$1" verdict="$2" recommendations="$3" isolation="$4" default="$5"
-  local pending="${6:-}" normalized
+  local pending="${6:-}" normalized translated
   case "$answer" in
     yes|proceed|go|'do it'|ok) printf 'confirmed:%s\n' "${pending:-$default}" ;;
     stop|'not yet'|cancel|dismiss) echo no-write:cleared ;;
     *)
       if normalized="$(normalize_code "$answer" "$verdict" "$recommendations" "$isolation")"; then
         printf 'confirmed:%s\n' "$normalized"
-      elif normalized="$(natural_adjustment "$verdict" "$answer")"; then
+      elif translated="$(natural_adjustment "$verdict" "$answer")" \
+        && normalized="$(normalize_code "$translated" "$verdict" "$recommendations" "$isolation")"; then
         printf 'reflect:%s\n' "$normalized"
       else
         printf 'ask:%s\n' "${pending:-none}"
@@ -387,8 +406,40 @@ if ! printf '%s\n' "$without_recommendations" | grep -qE '^[23]\.'; then pass=$(
 inline_surface="$(render_surface needs-rework yes no)"
 has <(printf '%s\n' "$inline_surface") 'I. Work inline (only route; default)' "inline-only default missing"
 if ! printf '%s\n' "$inline_surface" | grep -qF 'A. Use an isolated'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+has <(printf '%s\n' "$inline_surface") 'Reply `yes` to accept the defaults: `1-I-R`.' "inline-only footer default missing"
+if ! printf '%s\n' "$inline_surface" | grep -qF '1-A-R'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+has <(printf '%s\n' "$without_recommendations") 'Reply with a combination such as `1-A-R`, or `4`.' "scope-sensitive footer missing"
+if ! printf '%s\n' "$without_recommendations" | grep -qE '`[23]-'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+has <(printf '%s\n' "$recommended_surface") 'Reply with `1` to return as-is, or a fixing combination such as `2-A-R`.' "approve-with-changes footer missing"
 if ! printf '%s\n' "$approve_surface" | grep -qF 'Execution —'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 if ! printf '%s\n' "$approve_surface" | grep -qF 'Afterward —'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+
+surface_matrix() {
+  printf '%s\n' \
+    "eligible-default:$(printf '%s\n' "$needs_surface" | grep -cF 'defaults: `1-A-R`')" \
+    "inline-default:$(printf '%s\n' "$inline_surface" | grep -cF 'defaults: `1-I-R`')" \
+    "inline-a-code:$(printf '%s\n' "$inline_surface" | grep -cF '1-A-R' || true)" \
+    "absent-scope:$(printf '%s\n' "$without_recommendations" | grep -cE '`[23]-' || true)" \
+    "recommended-fix-example:$(printf '%s\n' "$recommended_surface" | grep -cF 'fixing combination such as `2-A-R`')" \
+    "approve-modifiers:$(printf '%s\n' "$approve_surface" | grep -cF 'Execution —' || true)"
+}
+surface_matrix_contract() { [ "$(cat "$1")" = "$(surface_matrix)" ]; }
+surface_matrix > "$ROOT/surface.original"
+cp "$ROOT/surface.original" "$ROOT/surface.saved"
+for mutation in \
+  'eligible-default:1|eligible-default:0' \
+  'inline-default:1|inline-default:0' \
+  'inline-a-code:0|inline-a-code:1' \
+  'absent-scope:0|absent-scope:1' \
+  'recommended-fix-example:1|recommended-fix-example:0' \
+  'approve-modifiers:0|approve-modifiers:1'; do
+  before_row="${mutation%%|*}" after_row="${mutation#*|}"
+  sed "s/^$before_row$/$after_row/" "$ROOT/surface.original" > "$ROOT/surface.broken"
+  eq "surface red-proof plants one unavailable code" 1 \
+    "$(grep -cF "$after_row" "$ROOT/surface.broken")"
+  rejects surface_matrix_contract "$ROOT/surface.broken"
+done
+cmp -s "$ROOT/surface.original" "$ROOT/surface.saved" && pass=$((pass + 1)) || fail=$((fail + 1))
 
 for spelling in yes 1 1AR 1-A-R '1 A R' '1,A,R' '1-A R'; do
   if [ "$spelling" = yes ]; then
@@ -418,6 +469,10 @@ eq "inline-only number acquires displayed defaults" 1-I-R \
   "$(normalize_code 1 needs-rework no no)"
 eq "approve-with-changes no-change modifiers are inert" 1 \
   "$(normalize_code 1-A-N approve-with-changes yes yes)"
+eq "inline-only available no-change modifiers are inert" 1 \
+  "$(normalize_code 1-I-N approve-with-changes yes no)"
+rejects normalize_code 1-A-N approve-with-changes yes no
+rejects normalize_code 1-A-N approve no yes
 for invalid in '' A-R '1--A' '1,,A' '1-,A' '1-A-' '1-X-R' '1-A-I' '1-R-A' \
   '1-R-N' '1-2-A' '9-A-R'; do
   rejects normalize_code "$invalid" needs-rework yes yes
@@ -426,6 +481,8 @@ rejects normalize_code 2-A-R needs-rework no yes
 rejects normalize_code 1-A-R needs-rework yes no
 eq "natural adjustment reflects exact pending code" reflect:3-I-N \
   "$(action_reply 'fix recommendations inline and stop' needs-rework yes yes 1-A-R)"
+eq "natural adjustment rejects an absent recommendation scope" ask:none \
+  "$(action_reply 'fix recommendations inline and stop' needs-rework no yes 1-A-R)"
 eq "acceptance confirms pending adjustment, not old default" confirmed:3-I-N \
   "$(action_reply yes needs-rework yes yes 1-A-R 3-I-N)"
 eq "direct code replaces and confirms pending adjustment" confirmed:2-I-R \
@@ -492,6 +549,10 @@ grammar_matrix() {
     "default:$(normalize_code 1 needs-rework yes yes)" \
     "inline:$(normalize_code 1 needs-rework no no)" \
     "no-change:$(normalize_code 4-A-N needs-rework yes yes)" \
+    "inline-no-change:$(normalize_code 1-I-N approve-with-changes yes no)" \
+    "inline-unavailable:$(normalize_code 1-A-N approve-with-changes yes no 2>/dev/null || echo reject)" \
+    "approve-unavailable:$(normalize_code 1-A-N approve no yes 2>/dev/null || echo reject)" \
+    "natural-absent:$(action_reply 'fix recommendations inline and stop' needs-rework no yes 1-A-R)" \
     "pending:$(action_reply yes needs-rework yes yes 1-A-R 3-I-N)" \
     "invalid:$(action_reply '1--A' needs-rework yes yes 1-A-R 3-I-N)"
 }
@@ -502,6 +563,10 @@ for mutation in \
   'default:1-A-R|default:1-I-R' \
   'inline:1-I-R|inline:1-A-R' \
   'no-change:4|no-change:4-A-N' \
+  'inline-no-change:1|inline-no-change:1-I-N' \
+  'inline-unavailable:reject|inline-unavailable:1' \
+  'approve-unavailable:reject|approve-unavailable:1' \
+  'natural-absent:ask:none|natural-absent:reflect:3-I-N' \
   'pending:confirmed:3-I-N|pending:confirmed:1-A-R' \
   'invalid:ask:3-I-N|invalid:confirmed:1-A-R'; do
   before_row="${mutation%%|*}" after_row="${mutation#*|}"
@@ -521,6 +586,8 @@ review_action_contract() {
     'A direct valid code on a complete surface is explicit confirmation' \
     'repeated punctuation, or trailing punctuation' \
     'pending normalized selection' 'preserve any existing pending value' \
+    'every rendered reply footer must' 'same current-surface scope and route availability validation' \
+    'Offer `A` only when an isolated executor exists' 'state the specific failed eligibility reason' \
     'stores only a pending scope' 'require a fresh confirmation' \
     'Render a fresh inline-only surface' 'changing only `A` to `I`' \
     'writer-started partial or blocked work' \
@@ -533,7 +600,9 @@ cp "$REVIEW" "$ROOT/review-action.original"
 for needle in 'needs-rework — Next actions' '1. Return as-is (default)' \
   'A direct valid code on a complete surface is explicit confirmation' \
   'repeated punctuation, or trailing punctuation' 'pending normalized selection' \
-  'stores only a pending scope' 'Render a fresh inline-only surface'; do
+  'stores only a pending scope' 'Render a fresh inline-only surface' \
+  'every rendered reply footer must' 'same current-surface scope and route availability validation' \
+  'Offer `A` only when an isolated executor exists'; do
   awk -v needle="$needle" 'index($0, needle) == 0 { print }' \
     "$ROOT/review-action.original" > "$ROOT/review-action.broken"
   eq "review contract red-proof removes one clause" 0 \

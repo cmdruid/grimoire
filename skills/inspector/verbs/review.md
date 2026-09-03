@@ -143,7 +143,10 @@ Reply `yes` to accept the defaults: `1-A-R`.
 ```
 
 When no recommendations exist, omit scopes `2` and `3`; `1` remains the default. When isolation is
-ineligible, omit `A`, label `I` as the only route, and display `1-I-R` as the default. For
+ineligible, omit `A`, label `I` as the only route, and display `1-I-R` as the default. Treat the
+fenced surface above as the fully eligible, all-findings example: every rendered reply footer must
+be regenerated from the scopes and routes actually displayed. Its examples must contain no omitted
+scope or unavailable route, and its `yes` line must name that surface's exact default. For
 `approve-with-changes`, render `1. Return as-is (default)` and `2. Fix recommended changes`, followed
 by **Execution — if fixing, choose one** and **Afterward — if fixing, choose one**. Label their
 defaults **default if fixing**. `yes` or `1` returns unchanged; `2` enters the selected remediation.
@@ -164,12 +167,18 @@ may proceed without a second turn.
 Reject the entire response if it contains no scope number, two scope numbers, both route letters,
 both afterward letters, an unavailable code, an unknown token, out-of-order groups,
 repeated punctuation, or trailing punctuation. State the conflict and ask once; write nothing and
-preserve any existing pending value. Route and afterward modifiers are inert for a non-mutating scope, which
-normalizes to its scope number alone.
+preserve any existing pending value. Validate every explicit modifier against the groups and choices
+on the current surface before applying non-mutating-scope semantics. Only an available route or
+afterward modifier is inert for a non-mutating scope and normalizes away; a modifier from an omitted
+group or an unavailable choice is invalid rather than inert. Thus `1-A-N` is invalid on `approve`,
+and `1-A-N` is invalid on an inline-only `approve-with-changes` surface even though scope `1` returns
+unchanged.
 
 With no pending value on a complete surface, clear acceptance such as `yes`, `proceed`, `go`, `do it`,
 or `ok` confirms the displayed default. An unambiguous natural-language adjustment becomes an exact
-pending normalized selection: reflect that code and meaning once, then require confirmation. Clear
+candidate code, which must pass the same current-surface scope and route availability validation as a
+direct code before it becomes a pending normalized selection. Reflect a valid code and meaning once,
+then require confirmation. Clear
 acceptance confirms that pending code, never an earlier default; a direct valid code replaces and
 confirms it. `stop`, `not yet`, rejection, cancellation, or dismissal writes nothing, clears pending
 state, and discards queued re-review intent. An unclear answer asks once.
@@ -206,8 +215,12 @@ stop without mutation and require a fresh implementation review. This check dete
 reconstructs dirty state elsewhere.
 
 For inline execution, the primary session applies the selected package in the resolved destination.
-For isolated execution, repeat the identity check and require the clean destination HEAD to equal the
-reviewed after endpoint before creating the isolated checkout from that exact commit. Give the writer
+Offer `A` only when an isolated executor exists, the reviewed after endpoint is a committed object,
+the destination is clean with HEAD at that exact endpoint, and an isolated checkout can actually be
+created from it. Derive all four facts from the current repository and executor state. Otherwise omit
+`A`, expose only `I`, and state the specific failed eligibility reason. For isolated execution, repeat
+the identity check and require the clean destination HEAD to equal the reviewed after endpoint before
+creating the isolated checkout from that exact commit. Give the writer
 the target, governing design, baseline, and selected findings with their evidence and remedies. Confine
 writes to the isolated checkout and require a reviewable commit or diff plus verification evidence;
 same-pattern observations outside the package return as observations instead of widening scope.
