@@ -9,7 +9,10 @@ for needle in 'since the previous' 'Pure Q&A' 'child/delegate' 'Zero sections or
   'do not create a durable cursor' 'API `create` or `update`' \
   'Before consulting the editable project prompt' 'non-overridable remedy-owner cut' \
   'reusable installed skill' 'do not write it to `.trackers`' 'skill-tagged byproduct' \
-  'remedy belongs in this repository';do has "$D" "$needle";done
+  'remedy belongs in this repository' 'serialized custodial continuation' \
+  'completed-unit identity' 'commit evidence' 'prior successful debrief receipt' \
+  'explicit first-receipt sentinel' 'one scoped commit' 'owner-neutral' \
+  'does not import another skill';do has "$D" "$needle";done
 
 subject_cut_ok(){
   local file="$1" cut prompt
@@ -32,6 +35,16 @@ printf '%s\n' \
 [ "$(awk -F '\t' 'NR > 1 && $2 == "project" { n++ } END { print n+0 }' "$T/debrief-cases.tsv")" -eq 4 ]&&pass=$((pass+1))||fail=$((fail+1))
 [ "$(awk -F '\t' 'NR > 1 && $2 == "skill" && $3 == "byproduct" { n++ } END { print n+0 }' "$T/debrief-cases.tsv")" -eq 1 ]&&pass=$((pass+1))||fail=$((fail+1))
 
+printf '%s\n' \
+  $'context\tunit\tcommits\treceipt\taction' \
+  $'ordinary-child\tunit-1\tsha-a\treceipt-1\treturn-byproduct' \
+  $'custodial-continuation\tunit-1\tsha-a\treceipt-1\tfile-once' \
+  $'custodial-continuation\t-\tsha-a\treceipt-1\trefuse' \
+  $'custodial-continuation\tunit-1\t-\treceipt-1\trefuse' \
+  $'custodial-continuation\tunit-1\tsha-a\t-\trefuse' >"$T/custody-cases.tsv"
+[ "$(awk -F '\t' 'NR>1&&$5=="file-once"{n++}END{print n+0}' "$T/custody-cases.tsv")" -eq 1 ]&&pass=$((pass+1))||fail=$((fail+1))
+[ "$(awk -F '\t' 'NR>1&&$5=="refuse"{n++}END{print n+0}' "$T/custody-cases.tsv")" -eq 3 ]&&pass=$((pass+1))||fail=$((fail+1))
+
 # Red-proof the routine-criteria assertion: require one real replacement and a failed copied check.
 cp "$D" "$T/debrief.md";before="$(grep -cF 'trigger, repeated response/decision, cost/risk/confusion' "$T/debrief.md")";[ "$before" -eq 1 ]||{ echo 'FAIL mutation target count' >&2;exit 1;}
 sed 's/trigger, repeated response\/decision, cost\/risk\/confusion/trigger and response/' "$T/debrief.md" > "$T/broken.md"
@@ -42,4 +55,5 @@ cmp "$D" "$T/debrief.md" >/dev/null||{ echo 'FAIL source changed' >&2;fail=$((fa
 # Red-proof the hard subject cut independently of the routine criteria.
 sed '/Before consulting the editable project prompt/,/remedy belongs in this repository/d' "$D" >"$T/no-subject-cut.md"
 if subject_cut_ok "$T/no-subject-cut.md";then echo 'FAIL missing remedy-owner cut passed' >&2;fail=$((fail+1));else pass=$((pass+1));fi
+if grep -qE '/workstream|skills/workstream|callback registry|debrief cadence' "$D";then echo 'FAIL custody exception imports a workflow owner or callback' >&2;fail=$((fail+1));else pass=$((pass+1));fi
 echo "debrief-contract-test: $pass passed, $fail failed";[ "$fail" -eq 0 ]

@@ -5,8 +5,13 @@
    `.trackers/DEBRIEF.md`. Gather only the completed work since the previous
    successful debrief in this context: visible conversation, bounded repository changes, tests, and
    unresolved decisions. Do not treat the current objective, resume instructions, or ordinary
-   in-flight work as leftovers. Pure Q&A, routine status, and child/delegate contexts do not file;
-   the custodial caller routes returned byproducts.
+   in-flight work as leftovers. Pure Q&A and routine status do not file. Ordinary child/delegate
+   contexts return byproducts for the custodial caller to route.
+   A serialized custodial continuation is the sole child-context exception: it may continue only
+   when its invocation supplies a completed-unit identity, the unit's commit evidence, and the
+   prior successful debrief receipt for that custody chain (or an explicit first-receipt sentinel).
+   Refuse missing, mismatched, or replayed custody evidence. This distinction is owner-neutral and
+   does not import another skill, lifecycle cadence, or callback protocol.
 2. Before consulting the editable project prompt, apply this non-overridable remedy-owner cut. If
    the remedy belongs in a reusable installed skill, do not write it to `.trackers`; return it to
    the custodial caller as a skill-tagged byproduct for that skill's home feedback channel. If the
@@ -22,8 +27,10 @@
    verification boundary. Use `update` for a matching open candidate; otherwise `create`. Evidence
    names the strongest basis and explicitly labels inferred recurrence.
 5. Invoke only API `create` or `update`. Commit all changed queue paths once with
-   `Backlog: debrief`; nested operations never commit separately. Remember this successful boundary
-   within the current context; do not create a durable cursor or alternate save-state buffer.
+   `Backlog: debrief`; nested operations never commit separately. A serialized custodial
+   continuation may make this same one scoped commit, then must return its successful receipt to
+   its parent before custody ends. Remember the boundary within the current custody chain; do not create a durable cursor or
+   alternate save-state buffer.
 
 Done when every concrete leftover was routed once or explicitly left unrouted and the sweep made at
 most one scoped commit.
