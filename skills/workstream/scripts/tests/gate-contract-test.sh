@@ -31,11 +31,13 @@ expect 'remediated direct gate passes' 'status=passed' "$OUT"
 expect 'gate recovery is friction' $'friction\t1/gate-recovery\tpresent\tyes' "$ROOT/.streams/direct/workstream.tsv"
 expect 'disabled friction hook permits readiness' $'phase\tready-to-land' "$ROOT/.streams/direct/workstream.tsv"
 printf 'contention\n' >"$ROOT/contention"; git -C "$ROOT" add contention; git -C "$ROOT" commit -qm contention
+cp "$ROOT/.streams/direct/workstream.tsv" "$TMP/stale-ready.tsv"
 if "$HELPER" "$ROOT" land-advance direct --authority confirmed >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
-expect 'stale readiness records target rejection' $'friction\t1/target-reject\tpresent\tyes' "$ROOT/.streams/direct/workstream.tsv"
+expect 'stale readiness refuses before delivery mutation' 'primary target moved after preparation' "$ERR"
+if cmp -s "$TMP/stale-ready.tsv" "$ROOT/.streams/direct/workstream.tsv"; then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: stale readiness changed receipts' >&2; fi
 "$HELPER" "$ROOT" ship-prepare direct >"$OUT"
-expect 'target rejection resumes original shipment' 'shipment=1' "$OUT"
-expect 'target rejection invalidates gate evidence' 'status=gate-required' "$OUT"
+expect 'target movement resumes original shipment' 'shipment=1' "$OUT"
+expect 'target movement invalidates gate evidence' 'status=gate-required' "$OUT"
 
 cat >"$TMP/direct-env.sh" <<'EOF'
 #!/usr/bin/env bash

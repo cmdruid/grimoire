@@ -13,10 +13,12 @@ printf 'one\n' >>"$ROOT/.streams/batch/file"; git -C "$ROOT/.streams/batch" add 
 "$HELPER" "$ROOT" unit-complete batch >"$OUT"
 printf 'incoming\n' >"$ROOT/incoming"; git -C "$ROOT" add incoming; git -C "$ROOT" commit -qm incoming
 target_before="$(git -C "$ROOT" rev-parse main)"; commits_before="$(git -C "$ROOT/.streams/batch" rev-list --count main..HEAD)"
+printf 'primary wip\n' >"$ROOT/primary-wip"
 "$HELPER" "$ROOT" ship-prepare batch >"$OUT"
 expect 'prepare reaches gate' 'status=gate-required' "$OUT"
 if git -C "$ROOT/.streams/batch" merge-base --is-ancestor main HEAD; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 expect_eq 'prepare does not advance target' "$target_before" "$(git -C "$ROOT" rev-parse main)"
+expect_eq 'prepare preserves unrelated primary dirt' 'primary wip' "$(cat "$ROOT/primary-wip")"
 expect_eq 'metadata makes one commit' "$((commits_before + 1))" "$(git -C "$ROOT/.streams/batch" rev-list --count main..HEAD)"
 expect_eq 'metadata commit names shipment' 'workstream: prepare shipment 1' "$(git -C "$ROOT/.streams/batch" log -1 --format=%s)"
 TRACKER="$ROOT/.streams/batch/workstream.tsv"
@@ -29,6 +31,7 @@ expect 'prepare resumes same shipment' 'shipment=1' "$OUT"
 expect_eq 'retry preserves candidate' "$tip" "$(git -C "$ROOT/.streams/batch" rev-parse HEAD)"
 expect_eq 'retry preserves history' "$history_hash" "$(shasum -a 256 "$ROOT/.streams/batch/.streams/history.tsv" | awk '{print $1}')"
 expect_eq 'one history row' 2 "$(wc -l <"$ROOT/.streams/batch/.streams/history.tsv" | tr -d ' ')"
+rm "$ROOT/primary-wip"
 printf 'later incoming\n' >"$ROOT/later"; git -C "$ROOT" add later; git -C "$ROOT" commit -qm 'later target movement'
 new_target="$(git -C "$ROOT" rev-parse main)"
 "$HELPER" "$ROOT" ship-prepare batch >"$OUT"

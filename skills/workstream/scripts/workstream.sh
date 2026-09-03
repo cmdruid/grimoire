@@ -624,7 +624,7 @@ validate_tracker() {
         if(sp=="sync" && !((so=="active"&&na=="prepare-ship")||(so=="blocked"&&na=="blocked"))) bad=1
         if(sp=="metadata" && (so!="active" || na!="prepare-ship")) bad=1
         if(sp=="ready-to-land" && (so!="active" || na!="land")) bad=1
-        if(sp=="postflight" && (so!="landed" || na!="postflight")) bad=1
+        if(sp=="postflight" && (so!~/^(active|landed)$/ || na!="postflight")) bad=1
         if(sp=="advance" && !((so=="active"&&na=="land")||(so=="uncertain"&&na=="blocked")||(so=="awaiting-merge"&&na=="await-merge"))) bad=1
         if(sp=="gate" && !((so=="active"&&(na=="prepare-ship"||na=="blocked"))||(so=="blocked"&&na=="blocked"))) bad=1
         if(sp=="gitlinks" && (so!="blocked" || na!="blocked")) bad=1
@@ -1317,7 +1317,7 @@ prepare_history_metadata() { # stream shipment unit-ids target
 }
 
 prepare_gitlink_rows() { # shipment target-tip landing output
-  local shipment="$1" target_tip="$2" landing="$3" output="$4" path object path_id availability published origin_url missing=no
+  local shipment="$1" target_tip="$2" landing="$3" output="$4" path object path_id availability published missing=no
   while IFS= read -r -d '' path; do
     object="$(git -C "$WT" ls-tree HEAD -- "$path" | awk '$1=="160000"{print $3}')"
     [ -n "$object" ] || continue
@@ -1327,19 +1327,6 @@ prepare_gitlink_rows() { # shipment target-tip landing output
     if [ -d "$WT/$path" ] && git -C "$WT/$path" cat-file -e "$object^{commit}" 2>/dev/null; then availability=ready; fi
     if [ "$landing" = local ]; then
       published=not-required
-      if [ "$availability" = ready ]; then
-        if ! git -C "$ROOT/$path" rev-parse --git-dir >/dev/null 2>&1; then
-          mkdir -p "$(dirname "$ROOT/$path")"
-          origin_url="$(git -C "$WT/$path" remote get-url origin 2>/dev/null || true)"
-          if [ -n "$origin_url" ]; then git -c protocol.file.allow=always clone -q --no-checkout "$origin_url" "$ROOT/$path" 2>/dev/null || true; fi
-        fi
-        if git -C "$ROOT/$path" rev-parse --git-dir >/dev/null 2>&1; then
-          if ! git -C "$ROOT/$path" cat-file -e "$object^{commit}" 2>/dev/null; then
-            git -C "$ROOT/$path" fetch -q "$WT/$path" "$object" 2>/dev/null || true
-          fi
-          if git -C "$ROOT/$path" cat-file -e "$object^{commit}" 2>/dev/null; then availability=transferred; fi
-        fi
-      fi
     else
       published=no
       if [ "$availability" = ready ] && git -C "$WT/$path" fetch -q origin 2>/dev/null && \
@@ -1705,7 +1692,10 @@ record_delivery() { # shipment id candidate expected observed state phase outcom
   awk -F '\t' -v s="$shipment" -v d="$delivery" 'NR>1 && !(($1=="delivery"&&$2==d)||($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
   printf 'delivery\t%s\tcandidate-tip\t%s\ndelivery\t%s\texpected-tip\t%s\ndelivery\t%s\tstate\t%s\n' \
     "$delivery" "$candidate" "$delivery" "$expected" "$delivery" "$state" >>"$raw"
-  case "$state" in advanced|rejected) printf 'delivery\t%s\tobserved-tip\t%s\n' "$delivery" "$observed" >>"$raw" ;; esac
+  case "$state" in
+    advanced|rejected) printf 'delivery\t%s\tobserved-tip\t%s\n' "$delivery" "$observed" >>"$raw" ;;
+    uncertain) [ -z "$observed" ] || printf 'delivery\t%s\tobserved-tip\t%s\n' "$delivery" "$observed" >>"$raw" ;;
+  esac
   [ -z "$friction" ] || grep -qF $'friction\t'"$shipment/$friction"$'\tpresent\tyes' "$raw" || printf 'friction\t%s/%s\tpresent\tyes\n' "$shipment" "$friction" >>"$raw"
   printf 'shipment\t%s\tphase\t%s\nshipment\t%s\toutcome\t%s\nphase\t-\tnext-action\t%s\n' "$shipment" "$phase" "$shipment" "$outcome" "$next" >>"$raw"
   rewrite_tracker "$raw"; rm -f "$raw"
@@ -1713,8 +1703,93 @@ record_delivery() { # shipment id candidate expected observed state phase outcom
 
 remote_target_tip() {
   local target="$1" output
-  output="$(git -C "$ROOT" ls-remote --heads origin "refs/heads/$target")" || return 1
+  output="$(git -C "$WT" ls-remote --heads origin "refs/heads/$target")" || return 1
   printf '%s\n' "$output" | awk 'NF==2{print $1; found++} END{if(found!=1)exit 2}'
+}
+
+primary_git_path() { # administration path
+  local path
+  path="$(git -C "$ROOT" rev-parse --git-path "$1")" || die "cannot resolve primary Git administration path: $1"
+  case "$path" in /*) ;; *) path="$ROOT/$path" ;; esac
+  printf '%s\n' "$path"
+}
+
+primary_checkout_admit() { # target expected-tip [recovery-tip]
+  local target="$1" expected="$2" recovery="${3:-}" branch porcelain entry label path actual head
+  branch="$(git -C "$ROOT" branch --show-current)"
+  [ "$branch" = "$target" ] || die "primary checkout is not on the target branch (expected $target, found ${branch:-(detached)})"
+  for entry in 'merge:MERGE_HEAD' 'rebase:rebase-merge' 'rebase:rebase-apply' \
+               'cherry-pick:CHERRY_PICK_HEAD' 'revert:REVERT_HEAD' \
+               'sequencer:sequencer' 'bisect:BISECT_START'; do
+    label="${entry%%:*}"; path="$(primary_git_path "${entry#*:}")"
+    [ ! -e "$path" ] && [ ! -L "$path" ] || die "primary checkout has interrupted $label administration"
+  done
+  porcelain="$(git -C "$ROOT" status --porcelain --untracked-files=all)"
+  [ -z "$porcelain" ] || die "primary checkout is not completely clean"
+  actual="$(git -C "$ROOT" rev-parse "$target^{commit}")" || die "primary target does not resolve"
+  head="$(git -C "$ROOT" rev-parse HEAD)" || die "primary HEAD does not resolve"
+  [ "$head" = "$actual" ] || die "primary target ref and checkout HEAD disagree"
+  [ "$actual" = "$expected" ] || { [ -n "$recovery" ] && [ "$actual" = "$recovery" ]; } || die "primary target moved after preparation"
+  printf '%s\n' "$actual"
+}
+
+primary_checkout_verify() { # target expected-tip
+  local target="$1" expected="$2" actual
+  primary_checkout_admit "$target" "$expected" >/dev/null
+  actual="$(git -C "$ROOT" rev-parse "$target^{commit}")"
+  [ "$actual" = "$expected" ] || die "primary target postcondition failed"
+  git -C "$ROOT" diff --quiet -- || die "primary worktree differs from the landed target"
+  git -C "$ROOT" diff --cached --quiet -- || die "primary index differs from the landed target"
+}
+
+validate_landing_gitlinks() { # shipment candidate landing
+  local shipment="$1" candidate="$2" landing="$3" id path object availability published actual
+  while IFS= read -r id; do
+    [ -n "$id" ] || continue
+    path="$(tracker_get gitlink "$id" path)"; object="$(tracker_get gitlink "$id" object)"
+    availability="$(tracker_get gitlink "$id" availability)"; published="$(tracker_get gitlink "$id" published)"
+    actual="$(git -C "$WT" ls-tree "$candidate" -- "$path" | awk '$1=="160000"{print $3}')"
+    [ "$actual" = "$object" ] || die "gitlink receipt no longer matches the candidate: $path"
+    if [ ! -d "$WT/$path" ] || ! git -C "$WT/$path" cat-file -e "$object^{commit}" 2>/dev/null; then
+      die "gitlink object is no longer available: $path"
+    fi
+    case "$landing:$availability:$published" in
+      local:ready:not-required|local:transferred:not-required|push:ready:yes|push:transferred:yes|pr:ready:yes|pr:transferred:yes) ;;
+      *) die "gitlink receipt is not ready for landing: $path" ;;
+    esac
+  done < <(awk -F '\t' -v p="$shipment/" '$1=="gitlink"&&index($2,p)==1&&$3=="path"{print $2}' "$TRACKER")
+}
+
+transfer_primary_gitlinks() { # old-target-tip new-target-tip
+  local old="$1" new="$2" path mode object source destination destination_top origin_url
+  while IFS= read -r -d '' path; do
+    mode="$(git -C "$WT" ls-tree "$new" -- "$path" | awk 'NR==1{print $1}')"
+    [ "$mode" = 160000 ] || continue
+    case "$path" in ''|/*|.|..|../*|*/../*|*/..|*'//'*) die "unsafe gitlink path in landed target" ;; esac
+    object="$(git -C "$WT" ls-tree "$new" -- "$path" | awk '$1=="160000"{print $3}')"
+    source="$WT/$path"; destination="$ROOT/$path"
+    [ -d "$source" ] || die "landed gitlink checkout is unavailable: $path"
+    if ! git -C "$source" cat-file -e "$object^{commit}" 2>/dev/null; then
+      git -C "$source" fetch -q origin || die "landed gitlink object is unavailable: $path"
+      git -C "$source" cat-file -e "$object^{commit}" 2>/dev/null || die "landed gitlink object is unavailable: $path"
+    fi
+    destination_top="$(git -C "$destination" rev-parse --show-toplevel 2>/dev/null || true)"
+    if [ "$destination_top" != "$destination" ]; then
+      if [ -e "$destination" ] || [ -L "$destination" ]; then
+        [ -d "$destination" ] && [ ! -L "$destination" ] && \
+          [ -z "$(find "$destination" -mindepth 1 -maxdepth 1 -print -quit)" ] || die "primary gitlink path is unsafe: $path"
+      fi
+      mkdir -p "$(dirname "$destination")"
+      git -c protocol.file.allow=always clone -q --no-checkout "$source" "$destination" || die "cannot initialize primary gitlink: $path"
+      origin_url="$(git -C "$source" remote get-url origin 2>/dev/null || true)"
+      [ -z "$origin_url" ] || git -C "$destination" remote set-url origin "$origin_url"
+    fi
+    [ "$(git -C "$destination" rev-parse --show-toplevel 2>/dev/null)" = "$destination" ] || die "primary gitlink checkout is not self-contained: $path"
+    if ! git -C "$destination" cat-file -e "$object^{commit}" 2>/dev/null; then
+      git -c protocol.file.allow=always -C "$destination" fetch -q "$source" "$object" || die "cannot transfer primary gitlink object: $path"
+    fi
+    git -C "$destination" checkout -q --detach "$object" || die "cannot align primary gitlink checkout: $path"
+  done < <(git -C "$WT" diff --name-only -z --diff-filter=AM "$old..$new")
 }
 
 landing_lock_path() {
@@ -1740,7 +1815,7 @@ validate_landing_marker() { # marker
 
 cmd_land_advance() {
   [ "$#" -eq 3 ] && [ "$2" = --authority ] && [ "$3" = confirmed ] || die "landing requires --authority confirmed"
-  local stream="$1" lock marker marker_dir rc=0
+  local stream="$1" lock marker marker_dir rc=0 busy_next=land
   [ -n "$LANDING_LOCK_BACKEND" ] || die "landing lock primitive was not selected"
   lock="$(landing_lock_path)"
   marker_dir="$(canonical_dir "${TMPDIR:-/tmp}")" || die "temporary directory is unsafe"
@@ -1759,7 +1834,9 @@ cmd_land_advance() {
   if [ ! -s "$marker" ]; then
     rm -f "$marker"
     case "$LANDING_LOCK_BACKEND:$rc" in lockf:75|flock:1)
-      printf 'status=landing-busy\nnext_action=land\n'
+      busy_next="$( (admit_stream "$stream"; tracker_get phase - next-action) 2>/dev/null || true)"
+      [ "$busy_next" = postflight ] || busy_next=land
+      printf 'status=landing-busy\nnext_action=%s\n' "$busy_next"
       return 1
       ;;
     esac
@@ -1772,7 +1849,8 @@ cmd_land_advance() {
 cmd_land_advance_transaction() {
   [ "${WORKSTREAM_LANDING_CHILD:-}" = yes ] || die "private landing transaction cannot be invoked directly"
   [ "$#" -eq 4 ] && [ "$3" = --authority ] && [ "$4" = confirmed ] || die "invalid private landing transaction"
-  local marker="$1" stream="$2" shipment shipment_phase candidate expected target observed delivery state rc landing remote_expected local_expected raw
+  local marker="$1" stream="$2" shipment shipment_phase shipment_outcome candidate expected target observed delivery state rc landing
+  local remote_delivery remote_state remote_expected remote_observed remote_actual local_expected primary_actual desired raw local_phase local_outcome local_next recovery_tip
   validate_landing_marker "$marker"
   printf 'acquired\n' >"$marker"
   if [ -n "${WORKSTREAM_TEST_AFTER_LANDING_ACQUIRED:-}" ]; then
@@ -1784,108 +1862,185 @@ cmd_land_advance_transaction() {
   shipment_phase="$(tracker_get shipment "$shipment" phase)"
   case "$shipment_phase" in ready-to-land|advance|postflight) ;; *) die "shipment is not ready to land" ;; esac
   [ "$(tracker_get gate "$shipment" outcome)" = passed ] || die "shipment gate has not passed"
-  if [ "$shipment_phase" = postflight ] && \
-    [ "$(tracker_get shipment "$shipment" outcome)" = landed ]; then
-    candidate="$(tracker_get shipment "$shipment" branch-tip)"
-    target="$(runbook_field "$RUNBOOK" target)"
-    git -C "$ROOT" merge-base --is-ancestor "$candidate" "$target" || die "recorded landing is not on target"
-    if [ "$(runbook_field "$RUNBOOK" landing)" = push ]; then
-      [ "$(remote_target_tip "$target")" = "$candidate" ] || die "recorded landing is not on remote target"
-    fi
-    printf 'status=already-landed\nshipment=%s\ncandidate=%s\nnext_action=postflight\n' "$shipment" "$candidate"
-    return
-  fi
   candidate="$(tracker_get shipment "$shipment" branch-tip)"
   expected="$(tracker_get shipment "$shipment" target-tip)"
   target="$(runbook_field "$RUNBOOK" target)"
   landing="$(runbook_field "$RUNBOOK" landing)"
-  case "$landing" in local|push) ;; pr) die "PR landing requires pr-await" ;; *) die "unsupported landing mode" ;; esac
   [ "$(git -C "$WT" rev-parse HEAD)" = "$candidate" ] || die "candidate changed"
+  git -C "$WT" merge-base --is-ancestor "$expected" "$candidate" || die "candidate no longer contains the expected target"
+  validate_landing_gitlinks "$shipment" "$candidate" "$landing"
+
   delivery="$shipment/local-target"
   state="$(awk -F '\t' -v i="$delivery" '$1=="delivery"&&$2==i&&$3=="state"{print $4}' "$TRACKER")"
-  if [ "$landing" = push ] && [ -z "$state" ]; then
-    remote_expected="$(remote_target_tip "$target")" || die "cannot verify remote target before delivery"
-    local_expected="$(git -C "$ROOT" rev-parse "$target")"
+  shipment_outcome="$(tracker_get shipment "$shipment" outcome)"
+
+  if [ "$shipment_phase" = postflight ] && [ "$shipment_outcome" = landed ]; then
+    [ "$state" = advanced ] || die "landed shipment has no advanced local-target receipt"
+    desired="$(tracker_get delivery "$delivery" observed-tip)"
+    [ "$(tracker_get delivery "$delivery" candidate-tip)" = "$desired" ] || die "local-target receipt does not prove exact synchronization"
+    primary_checkout_verify "$target" "$desired"
+    if [ "$landing" = push ] || [ "$landing" = pr ]; then
+      remote_delivery="$shipment/remote-target"
+      [ "$(tracker_get delivery "$remote_delivery" state)" = advanced ] || die "recorded remote landing is incomplete"
+      remote_observed="$(tracker_get delivery "$remote_delivery" observed-tip)"
+      remote_actual="$(remote_target_tip "$target")" || die "cannot verify recorded remote landing"
+      git -C "$WT" fetch -q origin "refs/heads/$target" || die "cannot fetch recorded remote landing"
+      [ "$(git -C "$WT" rev-parse FETCH_HEAD)" = "$remote_actual" ] || die "fetched remote target differs"
+      git -C "$WT" merge-base --is-ancestor "$candidate" FETCH_HEAD || die "recorded landing is not on remote target"
+      [ "$landing" != pr ] || [ "$remote_observed" = "$desired" ] || die "PR destination receipts disagree"
+    fi
+    printf 'status=already-landed\nshipment=%s\ncandidate=%s\nnext_action=postflight\n' "$shipment" "$candidate"
+    return
+  fi
+
+  case "$landing" in
+    local|push)
+      case "$shipment_phase:$shipment_outcome" in ready-to-land:active|advance:active|advance:uncertain) ;; *) die "shipment is not ready for direct landing" ;; esac
+      desired="$candidate"; local_phase=advance; local_outcome=active; local_next=land
+      ;;
+    pr)
+      [ "$shipment_phase:$shipment_outcome" = postflight:active ] || die "PR landing requires an observed merge in postflight"
+      remote_delivery="$shipment/remote-target"
+      [ "$(tracker_get delivery "$remote_delivery" state)" = advanced ] || die "PR remote-target receipt is not advanced"
+      [ "$(tracker_get delivery "$remote_delivery" candidate-tip)" = "$candidate" ] || die "PR remote-target candidate changed"
+      [ "$(tracker_get delivery "$remote_delivery" expected-tip)" = "$expected" ] || die "PR remote-target expectation changed"
+      desired="$(tracker_get delivery "$remote_delivery" observed-tip)"
+      remote_actual="$(remote_target_tip "$target")" || die "cannot revalidate the observed PR target"
+      [ "$remote_actual" = "$desired" ] || die "remote target moved after PR observation"
+      git -C "$WT" fetch -q origin "refs/heads/$target" || die "cannot fetch observed PR target"
+      [ "$(git -C "$WT" rev-parse FETCH_HEAD)" = "$desired" ] || die "fetched PR target differs from its receipt"
+      git -C "$WT" merge-base --is-ancestor "$candidate" FETCH_HEAD || die "observed PR target no longer contains the candidate"
+      local_phase=postflight; local_outcome=active; local_next=postflight
+      ;;
+    *) die "unsupported landing mode" ;;
+  esac
+
+  if [ -n "$state" ]; then
+    [ "$(tracker_get delivery "$delivery" candidate-tip)" = "$desired" ] || die "local-target receipt candidate changed"
+    local_expected="$(tracker_get delivery "$delivery" expected-tip)"
+    case "$state" in ready|running|advanced|rejected|uncertain) ;; *) die "local-target receipt requires recovery" ;; esac
+  else
+    if [ "$landing" = local ]; then local_expected="$expected"; else local_expected="$(git -C "$ROOT" rev-parse "$target^{commit}")"; fi
+  fi
+  git -C "$WT" merge-base --is-ancestor "$local_expected" "$desired" || die "primary target cannot fast-forward to the landing destination"
+  recovery_tip=""; case "$state" in running|advanced|uncertain) recovery_tip="$desired" ;; esac
+  primary_actual="$(primary_checkout_admit "$target" "$local_expected" "$recovery_tip")"
+
+  if [ "$landing" = push ]; then
+    remote_delivery="$shipment/remote-target"
+    remote_state="$(awk -F '\t' -v i="$remote_delivery" '$1=="delivery"&&$2==i&&$3=="state"{print $4}' "$TRACKER")"
+    if [ -n "$remote_state" ]; then
+      [ "$(tracker_get delivery "$remote_delivery" candidate-tip)" = "$candidate" ] || die "remote-target receipt candidate changed"
+      remote_expected="$(tracker_get delivery "$remote_delivery" expected-tip)"
+      [ "$remote_expected" = "$expected" ] || die "remote-target receipt expectation changed"
+      case "$remote_state" in ready|running|advanced|rejected|uncertain) ;; *) die "remote-target receipt requires recovery" ;; esac
+    else
+      remote_expected="$expected"
+    fi
+    remote_actual="$(remote_target_tip "$target")" || die "cannot verify remote target before delivery"
+    if [ -z "$remote_state" ]; then
+      [ "$remote_actual" = "$remote_expected" ] || die "remote target moved after preparation"
+    elif [ "$remote_actual" != "$remote_expected" ] && [ "$remote_actual" != "$candidate" ]; then
+      git -C "$WT" fetch -q origin "refs/heads/$target" || die "cannot inspect moved remote target"
+      [ "$(git -C "$WT" rev-parse FETCH_HEAD)" = "$remote_actual" ] || die "fetched remote target differs"
+      git -C "$WT" merge-base --is-ancestor "$candidate" FETCH_HEAD || {
+        [ "$state" = advanced ] || die "remote target moved before local delivery"
+      }
+    fi
+  fi
+
+  if [ -n "${WORKSTREAM_TEST_AFTER_PRIMARY_ADMISSION:-}" ]; then
+    "$WORKSTREAM_TEST_AFTER_PRIMARY_ADMISSION" "$ROOT" "$target"
+  fi
+  primary_actual="$(primary_checkout_admit "$target" "$local_expected" "$recovery_tip")"
+
+  if [ "$landing" = push ] && [ -z "$state" ] && [ -z "$remote_state" ]; then
+    remote_actual="$(remote_target_tip "$target")" || die "cannot recheck remote target before delivery"
+    [ "$remote_actual" = "$remote_expected" ] || die "remote target moved after admission"
     raw="$(mktemp "${TMPDIR:-/tmp}/workstream-delivery-ready.XXXXXX")"
     awk -F '\t' -v s="$shipment" 'NR>1 && !($1=="delivery"&&index($2,s "/")==1)' "$TRACKER" >"$raw"
     printf 'delivery\t%s/local-target\tcandidate-tip\t%s\ndelivery\t%s/local-target\texpected-tip\t%s\ndelivery\t%s/local-target\tstate\tready\n' \
-      "$shipment" "$candidate" "$shipment" "$local_expected" "$shipment" >>"$raw"
+      "$shipment" "$desired" "$shipment" "$local_expected" "$shipment" >>"$raw"
     printf 'delivery\t%s/remote-target\tcandidate-tip\t%s\ndelivery\t%s/remote-target\texpected-tip\t%s\ndelivery\t%s/remote-target\tstate\tready\n' \
       "$shipment" "$candidate" "$shipment" "$remote_expected" "$shipment" >>"$raw"
-    rewrite_tracker "$raw"; rm -f "$raw"; state=ready
+    rewrite_tracker "$raw"; rm -f "$raw"; state=ready; remote_state=ready
   fi
+
   if [ -z "$state" ] || [ "$state" = ready ] || [ "$state" = rejected ]; then
-    if [ -n "$state" ]; then expected="$(tracker_get delivery "$delivery" expected-tip)"; fi
-    record_delivery "$shipment" "$delivery" "$candidate" "$expected" '' running advance active land
+    record_delivery "$shipment" "$delivery" "$desired" "$local_expected" '' running "$local_phase" "$local_outcome" "$local_next"
     state=running
     if [ -n "${WORKSTREAM_TEST_AFTER_DELIVERY_RUNNING:-}" ]; then
       "$WORKSTREAM_TEST_AFTER_DELIVERY_RUNNING" "$TRACKER"
       die "delivery interrupted after recording running"
     fi
   fi
-  [ "$state" = running ] || [ "$state" = advanced ] || die "delivery receipt requires recovery"
-  observed="$(git -C "$ROOT" rev-parse "$target")"
-  if [ "$state" != advanced ] && [ "$observed" != "$candidate" ]; then
-    if [ "$observed" = "$expected" ]; then
-      [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ] || die "primary checkout has tracked dirt"
-      rc=0
-      [ "$(git -C "$ROOT" branch --show-current)" = "$target" ] || die "primary checkout is not on the target"
-      git -C "$ROOT" merge --ff-only -q "$(runbook_field "$RUNBOOK" branch)" || rc=$?
-      observed="$(git -C "$ROOT" rev-parse "$target")"
-      [ "$rc" -eq 0 ] || state=rejected
-    else
-      state=rejected
+  [ "$state" = running ] || [ "$state" = advanced ] || [ "$state" = uncertain ] || die "delivery receipt requires recovery"
+  primary_actual="$(primary_checkout_admit "$target" "$local_expected" "$desired")"
+  if [ "$state" != advanced ] && [ "$primary_actual" != "$desired" ]; then
+    rc=0; git -C "$ROOT" merge --ff-only -q "$desired" || rc=$?
+    observed="$(git -C "$ROOT" rev-parse "$target^{commit}" 2>/dev/null || true)"
+    if [ "$rc" -ne 0 ]; then
+      record_delivery "$shipment" "$delivery" "$desired" "$local_expected" "$observed" uncertain "$local_phase" uncertain blocked
+      printf 'status=uncertain\nshipment=%s\nnext_action=blocked\n' "$shipment"
+      return 1
     fi
   fi
-  if [ "$observed" = "$candidate" ] || git -C "$ROOT" merge-base --is-ancestor "$candidate" "$observed" 2>/dev/null; then
-    state=advanced
-    if [ "$landing" = local ]; then
-      record_delivery "$shipment" "$delivery" "$candidate" "$expected" "$observed" advanced postflight landed postflight
-      printf 'status=landed\nshipment=%s\ncandidate=%s\nnext_action=postflight\n' "$shipment" "$candidate"
-      return
-    fi
-    record_delivery "$shipment" "$delivery" "$candidate" "$expected" "$observed" advanced advance active land
-  else
-    state=rejected
-    record_delivery "$shipment" "$delivery" "$candidate" "$expected" "$observed" rejected friction blocked prepare-ship target-reject
-    printf 'status=rejected\nshipment=%s\nobserved=%s\nnext_action=prepare-ship\n' "$shipment" "$observed"
+  if ! (transfer_primary_gitlinks "$local_expected" "$desired"); then
+    observed="$(git -C "$ROOT" rev-parse "$target^{commit}" 2>/dev/null || true)"
+    record_delivery "$shipment" "$delivery" "$desired" "$local_expected" "$observed" uncertain "$local_phase" uncertain blocked
+    printf 'status=uncertain\nshipment=%s\nnext_action=blocked\n' "$shipment"
     return 1
   fi
+  if ! (primary_checkout_verify "$target" "$desired"); then
+    observed="$(git -C "$ROOT" rev-parse "$target^{commit}" 2>/dev/null || true)"
+    record_delivery "$shipment" "$delivery" "$desired" "$local_expected" "$observed" uncertain "$local_phase" uncertain blocked
+    printf 'status=uncertain\nshipment=%s\nnext_action=blocked\n' "$shipment"
+    return 1
+  fi
+  observed="$desired"; state=advanced
+  if [ "$landing" = local ] || [ "$landing" = pr ]; then
+    record_delivery "$shipment" "$delivery" "$desired" "$local_expected" "$observed" advanced postflight landed postflight
+    printf 'status=landed\nshipment=%s\ncandidate=%s\nnext_action=postflight\n' "$shipment" "$candidate"
+    return
+  fi
+  record_delivery "$shipment" "$delivery" "$desired" "$local_expected" "$observed" advanced advance active land
 
-  delivery="$shipment/remote-target"
-  state="$(awk -F '\t' -v i="$delivery" '$1=="delivery"&&$2==i&&$3=="state"{print $4}' "$TRACKER")"
-  [ -n "$state" ] || die "remote delivery receipt is missing"
-  remote_expected="$(tracker_get delivery "$delivery" expected-tip)"
-  if [ "$state" = ready ] || [ "$state" = rejected ]; then
-    record_delivery "$shipment" "$delivery" "$candidate" "$remote_expected" '' running advance active land
-    state=running
+  [ -n "$remote_state" ] || die "remote delivery receipt is missing"
+  if [ "$remote_state" = ready ] || [ "$remote_state" = rejected ] || [ "$remote_state" = uncertain ]; then
+    record_delivery "$shipment" "$remote_delivery" "$candidate" "$remote_expected" '' running advance active land
+    remote_state=running
     if [ -n "${WORKSTREAM_TEST_AFTER_REMOTE_RUNNING:-}" ]; then "$WORKSTREAM_TEST_AFTER_REMOTE_RUNNING" "$TRACKER"; die "remote delivery interrupted after recording running"; fi
   fi
-  [ "$state" = running ] || [ "$state" = advanced ] || die "remote delivery receipt requires recovery"
+  [ "$remote_state" = running ] || [ "$remote_state" = advanced ] || die "remote delivery receipt requires recovery"
   observed="$(remote_target_tip "$target")" || {
-    record_delivery "$shipment" "$delivery" "$candidate" "$remote_expected" '' uncertain advance uncertain blocked
+    record_delivery "$shipment" "$remote_delivery" "$candidate" "$remote_expected" '' uncertain advance uncertain blocked
     printf 'status=uncertain\nshipment=%s\nnext_action=blocked\n' "$shipment"
     return 1
   }
-  if [ "$state" != advanced ] && [ "$observed" != "$candidate" ]; then
+  if [ "$remote_state" != advanced ] && [ "$observed" != "$candidate" ]; then
     if [ "$observed" = "$remote_expected" ]; then
-      rc=0; git -C "$ROOT" push -q origin "$candidate:refs/heads/$target" || rc=$?
+      rc=0; git -C "$WT" push -q origin "$candidate:refs/heads/$target" || rc=$?
       observed="$(remote_target_tip "$target")" || {
-        record_delivery "$shipment" "$delivery" "$candidate" "$remote_expected" '' uncertain advance uncertain blocked
+        record_delivery "$shipment" "$remote_delivery" "$candidate" "$remote_expected" '' uncertain advance uncertain blocked
         printf 'status=uncertain\nshipment=%s\nnext_action=blocked\n' "$shipment"
         return 1
       }
-      [ "$rc" -eq 0 ] || state=rejected
+      [ "$rc" -eq 0 ] || remote_state=rejected
     else
-      state=rejected
+      remote_state=rejected
     fi
   fi
-  git -C "$ROOT" fetch -q origin "refs/heads/$target" >/dev/null 2>&1 || true
-  if [ "$observed" = "$candidate" ] || git -C "$ROOT" merge-base --is-ancestor "$candidate" "${observed}^{commit}" 2>/dev/null; then
-    record_delivery "$shipment" "$delivery" "$candidate" "$remote_expected" "$observed" advanced postflight landed postflight
+  git -C "$WT" fetch -q origin "refs/heads/$target" >/dev/null 2>&1 || true
+  if [ "$observed" = "$candidate" ] || git -C "$WT" merge-base --is-ancestor "$candidate" FETCH_HEAD 2>/dev/null; then
+    if ! (primary_checkout_verify "$target" "$desired"); then
+      record_delivery "$shipment" "$remote_delivery" "$candidate" "$remote_expected" "$observed" uncertain advance uncertain blocked
+      printf 'status=uncertain\nshipment=%s\nnext_action=blocked\n' "$shipment"
+      return 1
+    fi
+    record_delivery "$shipment" "$remote_delivery" "$candidate" "$remote_expected" "$observed" advanced postflight landed postflight
     printf 'status=landed\nshipment=%s\ncandidate=%s\nnext_action=postflight\n' "$shipment" "$candidate"
   else
-    record_delivery "$shipment" "$delivery" "$candidate" "$remote_expected" "$observed" rejected friction blocked prepare-ship remote-reject
+    record_delivery "$shipment" "$remote_delivery" "$candidate" "$remote_expected" "$observed" rejected friction blocked prepare-ship remote-reject
     printf 'status=rejected\nshipment=%s\nobserved=%s\nnext_action=prepare-ship\n' "$shipment" "$observed"
     return 1
   fi
@@ -1975,7 +2130,7 @@ cmd_list() {
 
 cmd_ship_finalize() {
   [ "$#" -eq 1 ] || { [ "$#" -eq 3 ] && [ "$2" = --note ]; } || die "usage: ship-finalize <stream> [--note <note>]"
-  local stream="$1" shipment candidate target raw note="" landing remote
+  local stream="$1" shipment candidate target raw note="" landing remote local_delivery local_candidate local_observed remote_delivery
   admit_stream "$stream"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
   if [ -z "$shipment" ]; then
@@ -1989,18 +2144,27 @@ cmd_ship_finalize() {
   candidate="$(tracker_get shipment "$shipment" branch-tip)"
   target="$(runbook_field "$RUNBOOK" target)"
   landing="$(runbook_field "$RUNBOOK" landing)"
+  local_delivery="$shipment/local-target"
+  [ "$(tracker_get delivery "$local_delivery" state)" = advanced ] || die "shipment has no advanced local-target receipt"
+  local_candidate="$(tracker_get delivery "$local_delivery" candidate-tip)"
+  local_observed="$(tracker_get delivery "$local_delivery" observed-tip)"
+  [ "$local_candidate" = "$local_observed" ] || die "local-target receipt does not prove exact synchronization"
+  [ "$(git -C "$ROOT" rev-parse "$target^{commit}")" = "$local_observed" ] || die "primary target differs from its delivery receipt"
   if [ "$landing" = pr ]; then
+    remote_delivery="$shipment/remote-target"
+    [ "$(tracker_get delivery "$remote_delivery" state)" = advanced ] || die "shipment has no advanced remote-target receipt"
+    [ "$(tracker_get delivery "$remote_delivery" observed-tip)" = "$local_observed" ] || die "PR destination receipts disagree"
     remote="$(remote_target_tip "$target")" || die "cannot verify merged PR target"
-    git -C "$ROOT" fetch -q origin "refs/heads/$target" || die "cannot fetch merged PR target"
-    [ "$(git -C "$ROOT" rev-parse FETCH_HEAD)" = "$remote" ] || die "fetched PR target differs"
-    git -C "$ROOT" merge-base --is-ancestor "$candidate" FETCH_HEAD || die "landed candidate is not on remote target"
+    git -C "$WT" fetch -q origin "refs/heads/$target" || die "cannot fetch merged PR target"
+    [ "$(git -C "$WT" rev-parse FETCH_HEAD)" = "$remote" ] || die "fetched PR target differs"
+    git -C "$WT" merge-base --is-ancestor "$candidate" FETCH_HEAD || die "landed candidate is not on remote target"
   else
-    git -C "$ROOT" merge-base --is-ancestor "$candidate" "$target" || die "landed candidate is not on target"
+    [ "$local_candidate" = "$candidate" ] || die "local-target receipt candidate differs from shipment"
     if [ "$landing" = push ]; then
       remote="$(remote_target_tip "$target")" || die "cannot verify pushed target"
-      git -C "$ROOT" fetch -q origin "refs/heads/$target" || die "cannot fetch pushed target"
-      [ "$(git -C "$ROOT" rev-parse FETCH_HEAD)" = "$remote" ] || die "fetched pushed target differs"
-      git -C "$ROOT" merge-base --is-ancestor "$candidate" FETCH_HEAD || die "remote target no longer contains the landed candidate"
+      git -C "$WT" fetch -q origin "refs/heads/$target" || die "cannot fetch pushed target"
+      [ "$(git -C "$WT" rev-parse FETCH_HEAD)" = "$remote" ] || die "fetched pushed target differs"
+      git -C "$WT" merge-base --is-ancestor "$candidate" FETCH_HEAD || die "remote target no longer contains the landed candidate"
     fi
   fi
   if [ "$#" -eq 3 ]; then note="$3"; cmd_operator_note "$stream" "$note" >/dev/null; fi
@@ -2080,7 +2244,7 @@ cmd_pr_await() {
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2;exit}' "$TRACKER")"; [ -n "$shipment" ] || die "no active shipment"
   [ "$(tracker_get shipment "$shipment" phase)" = ready-to-land ] || die "shipment is not ready for PR delivery"
   branch="$(runbook_field "$RUNBOOK" branch)"; candidate="$(tracker_get shipment "$shipment" branch-tip)"
-  published="$(git -C "$ROOT" ls-remote --heads origin "refs/heads/$branch" | awk 'NF==2{print $1;found++}END{if(found!=1)exit 2}')" || die "cannot verify published PR branch"
+  published="$(git -C "$WT" ls-remote --heads origin "refs/heads/$branch" | awk 'NF==2{print $1;found++}END{if(found!=1)exit 2}')" || die "cannot verify published PR branch"
   [ "$published" = "$candidate" ] || die "published PR branch does not match the shipment"
   raw="$(mktemp "${TMPDIR:-/tmp}/workstream-pr.XXXXXX")"
   awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
@@ -2091,20 +2255,17 @@ cmd_pr_await() {
 
 cmd_pr_verify() {
   [ "$#" -eq 1 ] || die "usage: pr-verify <stream>"
-  local stream="$1" shipment candidate target raw remote
+  local stream="$1" shipment candidate expected target remote
   admit_stream "$stream"
   [ "$(runbook_field "$RUNBOOK" landing)" = pr ] || die "stream is not configured for PR landing"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2;exit}' "$TRACKER")"; [ -n "$shipment" ] || die "no active shipment"
   [ "$(tracker_get shipment "$shipment" outcome)" = awaiting-merge ] || die "shipment is not awaiting merge"
-  candidate="$(tracker_get shipment "$shipment" branch-tip)"; target="$(runbook_field "$RUNBOOK" target)"
+  candidate="$(tracker_get shipment "$shipment" branch-tip)"; expected="$(tracker_get shipment "$shipment" target-tip)"; target="$(runbook_field "$RUNBOOK" target)"
   remote="$(remote_target_tip "$target")" || die "cannot verify PR target"
-  git -C "$ROOT" fetch -q origin "refs/heads/$target" || die "cannot fetch PR target"
-  [ "$(git -C "$ROOT" rev-parse FETCH_HEAD)" = "$remote" ] || die "fetched PR target differs"
-  git -C "$ROOT" merge-base --is-ancestor "$candidate" FETCH_HEAD || { printf 'status=awaiting-merge\nnext_action=await-merge\n'; return 1; }
-  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-pr-merged.XXXXXX")"
-  awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
-  printf 'shipment\t%s\tphase\tpostflight\nshipment\t%s\toutcome\tlanded\nphase\t-\tnext-action\tpostflight\n' "$shipment" "$shipment" >>"$raw"
-  rewrite_tracker "$raw"; rm -f "$raw"
+  git -C "$WT" fetch -q origin "refs/heads/$target" || die "cannot fetch PR target"
+  [ "$(git -C "$WT" rev-parse FETCH_HEAD)" = "$remote" ] || die "fetched PR target differs"
+  git -C "$WT" merge-base --is-ancestor "$candidate" FETCH_HEAD || { printf 'status=awaiting-merge\nnext_action=await-merge\n'; return 1; }
+  record_delivery "$shipment" "$shipment/remote-target" "$candidate" "$expected" "$remote" advanced postflight active postflight
   printf 'status=merged\nshipment=%s\nnext_action=postflight\n' "$shipment"
 }
 

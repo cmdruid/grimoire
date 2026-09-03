@@ -9,8 +9,7 @@ ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"; trap 'rm -rf "$TMP"' EXIT
 REMOTE="$TMP/remote.git"; UPSTREAM="$TMP/upstream"; git init -q --bare "$REMOTE"
 init_repo "$ROOT"
 printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial; git -C "$ROOT" remote add origin "$REMOTE"; git -C "$ROOT" push -qu origin main
-mkdir -p "$ROOT/.streams"; sed 's/landing: local/landing: push/' "$DIR/../../templates/streams-config.md" >"$ROOT/.streams/CONFIG.md"
-"$HELPER" "$ROOT" runtime-init partial main partial >"$OUT"; "$HELPER" "$ROOT" unit-begin partial unit unit >"$OUT"
+"$HELPER" "$ROOT" runtime-init partial main partial --landing push >"$OUT"; "$HELPER" "$ROOT" unit-begin partial unit unit >"$OUT"
 printf 'unit\n' >>"$ROOT/.streams/partial/file"; git -C "$ROOT/.streams/partial" add file; git -C "$ROOT/.streams/partial" commit -qm unit
 "$HELPER" "$ROOT" unit-complete partial >"$OUT"; "$HELPER" "$ROOT" ship-prepare partial >"$OUT"; "$HELPER" "$ROOT" gate-run partial --class full --label gate -- true >"$OUT"
 candidate="$(git -C "$ROOT/.streams/partial" rev-parse HEAD)"

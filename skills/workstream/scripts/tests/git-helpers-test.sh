@@ -61,6 +61,17 @@ expect_eq "incoming code is not docs-only" "false" "$(fact incoming_docs_only "$
 "$FACTS" land-readiness "$ROOT" "$WT" stream/demo main > "$OUT"
 expect_eq "moved target is not ff-safe" "false" "$(fact ff_safe "$OUT")"
 expect_eq "root remains on target" "true" "$(fact root_on_target "$OUT")"
+expect_eq "clean root is reported clean" "false" "$(fact root_dirty "$OUT")"
+expect_eq "ordinary root has no interrupted administration" "false" "$(fact root_interrupted "$OUT")"
+printf 'untracked\n' >"$ROOT/untracked"
+"$FACTS" land-readiness "$ROOT" "$WT" stream/demo main > "$OUT"
+expect_eq "complete dirt includes untracked files" "true" "$(fact root_dirty "$OUT")"
+rm "$ROOT/untracked"
+merge_head="$(git -C "$ROOT" rev-parse --git-path MERGE_HEAD)"; case "$merge_head" in /*) ;; *) merge_head="$ROOT/$merge_head" ;; esac
+printf '%s\n' "$(git -C "$ROOT" rev-parse HEAD)" >"$merge_head"
+"$FACTS" land-readiness "$ROOT" "$WT" stream/demo main > "$OUT"
+expect_eq "interrupted primary administration is reported" "true" "$(fact root_interrupted "$OUT")"
+rm "$merge_head"
 
 cat > "$WT/WORKSTREAM.md" <<'EOF'
 # fixture handoff

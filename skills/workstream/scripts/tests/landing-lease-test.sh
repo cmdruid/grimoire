@@ -52,6 +52,9 @@ printf 'release\n' >"$RELEASE"
 if wait "$owner_pid"; then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: acquired transaction did not finish' >&2; fi
 expect 'the acquired transaction lands' 'status=landed' "$TMP/owner.out"
 expect_eq 'exactly one concurrent transaction advances the target' "$CANDIDATE" "$(git -C "$ROOT" rev-parse main)"
+expect_eq 'leased landing retains the primary target branch' main "$(git -C "$ROOT" branch --show-current)"
+expect_eq 'leased landing aligns the primary index' "$(git -C "$ROOT" rev-parse "$CANDIDATE^{tree}")" "$(git -C "$ROOT" write-tree)"
+expect_eq 'leased landing leaves the complete primary clean' '' "$(git -C "$ROOT" status --porcelain --untracked-files=all)"
 
 COMMON="$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir)"
 if [ -f "$COMMON/workstream-landing.lock" ] && [ ! -L "$COMMON/workstream-landing.lock" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: lease file is not a safe shared-Git file' >&2; fi

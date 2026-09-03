@@ -18,9 +18,14 @@ git clone -q "$SUB" "$ROOT/.streams/ready-link/vendor"
 git -C "$ROOT/.streams/ready-link" add vendor; git -C "$ROOT/.streams/ready-link" commit -qm 'add ready gitlink'
 "$HELPER" "$ROOT" unit-complete ready-link >"$OUT"; "$HELPER" "$ROOT" ship-prepare ready-link >"$OUT"
 expect 'available gitlink reaches gate' 'status=gate-required' "$OUT"
-expect 'local object is transferred to landing checkout' $'availability\ttransferred' "$ROOT/.streams/ready-link/workstream.tsv"
-if git -C "$ROOT/vendor" cat-file -e "$object^{commit}" 2>/dev/null; then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: landing checkout cannot obtain gitlink object' >&2; fi
+expect 'preparation records only worktree availability' $'availability\tready' "$ROOT/.streams/ready-link/workstream.tsv"
+if [ ! -e "$ROOT/vendor" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: preparation touched the primary gitlink path' >&2; fi
 expect 'local publication is not required' $'published\tnot-required' "$ROOT/.streams/ready-link/workstream.tsv"
+"$HELPER" "$ROOT" gate-run ready-link --class full --label gate -- true >"$OUT"
+"$HELPER" "$ROOT" land-advance ready-link --authority confirmed >"$OUT"
+if git -C "$ROOT/vendor" cat-file -e "$object^{commit}" 2>/dev/null; then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: leased landing did not transfer the gitlink object' >&2; fi
+expect_eq 'primary gitlink checkout matches the landed object' "$object" "$(git -C "$ROOT/vendor" rev-parse HEAD)"
+expect_eq 'gitlink landing leaves the primary clean' '' "$(git -C "$ROOT" status --porcelain --untracked-files=all)"
 
 "$HELPER" "$ROOT" runtime-init missing-link main missing >"$OUT"; "$HELPER" "$ROOT" unit-begin missing-link link link >"$OUT"
 git -C "$ROOT/.streams/missing-link" update-index --add --cacheinfo "160000,$object,missing"

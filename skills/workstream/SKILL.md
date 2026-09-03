@@ -36,6 +36,11 @@ every file operation uses an absolute path.
 - Never force a ref. Preparation may commit only on the stream branch. `ship --prepare` never
   changes a target or remote ref. Landing requires the user's current explicit invocation or one
   explicit approval bound to the reported instance, shipment, batch, target, and landing mode.
+- Every primary-checkout update runs under the repository landing lease. The primary must be on
+  the target branch, completely clean including untracked files, and free of interrupted Git
+  administration. Local and push landing fast-forward it before completion; merged PR delivery
+  records the remote observation first and synchronizes the primary only during authorized
+  postflight.
 - A `running`, `uncertain`, or rejected external receipt is not failure proof. Inspect durable
   effects and reconcile it; never replay automatically.
 
@@ -119,8 +124,11 @@ Changed inputs invalidate evidence.
 
 For an autonomous landing point, run preparation first and ask once with its readiness envelope.
 An explicit bare `ship` authorizes preparation and landing; `ship --prepare` authorizes preparation
-only. Local and destination updates are non-force and receipt-backed. A partial delivery retains
-the shipment. The two-parent reconciliation exception is legal only when the helper proves exact
+only. Local and destination updates are non-force and receipt-backed. Push advances the guarded
+primary first and publishes from the stream worktree while holding the same lease. PR publication
+and merge observation are worktree-local; `pr-verify` leaves an active postflight until an
+authorized `land-advance` synchronizes the guarded primary. A partial delivery retains the
+shipment. The two-parent reconciliation exception is legal only when the helper proves exact
 divergent destination tips and reports `partial-delivery`; its old candidate must be first parent.
 
 ## Project surfaces

@@ -14,6 +14,10 @@ printf 'unit\n' >>"$ROOT/.streams/final/file"; git -C "$ROOT/.streams/final" add
 "$HELPER" "$ROOT" unit-complete final >"$OUT"; "$HELPER" "$ROOT" ship-prepare final >"$OUT"; "$HELPER" "$ROOT" gate-run final --class full --label gate -- true >"$OUT"; "$HELPER" "$ROOT" land-advance final --authority confirmed >"$OUT"
 "$HELPER" "$ROOT" close-check final >"$OUT"; expect 'unfinalized shipment blocks close' 'lifecycle_blocked=yes' "$OUT"
 TRACKER="$ROOT/.streams/final/workstream.tsv"; RUNBOOK="$ROOT/.streams/final/WORKSTREAM.md"; cp "$TRACKER" "$TMP/tracker-before"
+awk -F '\t' '$2!="1/local-target"' "$TRACKER" >"$TMP/no-local-receipt.tsv"; cp "$TMP/no-local-receipt.tsv" "$TRACKER"
+if "$HELPER" "$ROOT" ship-finalize final >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'finalization requires local synchronization evidence' 'no advanced local-target receipt' "$ERR"
+cp "$TMP/tracker-before" "$TRACKER"
 git -C "$ROOT" switch -qc invalid-finalize
 printf 'side\n' >"$ROOT/side"; git -C "$ROOT" add side; git -C "$ROOT" commit -qm side
 side_tip="$(git -C "$ROOT" rev-parse HEAD)"

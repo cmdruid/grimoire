@@ -159,30 +159,22 @@ cmd_land_readiness() {
   local root="$1" wt="$2" branch="$3" target="$4"
   validate_ref "$branch"; validate_ref "$target"
 
-  local root_branch root_porcelain behind ahead wt_staged root_dirty_list own_sorted overlap
+  local root_branch root_porcelain behind ahead wt_staged interrupted entry path
   root_branch="$(git -C "$root" rev-parse --abbrev-ref HEAD)"
-  root_porcelain="$(git -C "$root" status --porcelain)"
+  root_porcelain="$(git -C "$root" status --porcelain --untracked-files=all)"
   behind="$(git -C "$wt" rev-list --count "$branch..$target")"
   ahead="$(git -C "$wt" rev-list --count "$target..$branch")"
   wt_staged="$(git -C "$wt" diff --cached --name-only)"
 
-  # Dirty-overlap split: `merge --ff-only` (the root_on_target landing path)
-  # aborts only when a dirty root path OVERLAPS the merge's changed set -- a
-  # sibling's DISJOINT WIP does not block the land. One boolean forced a round-trip on provably safe
-  # lands; the split lets the doctrine key on overlap only.
-  root_dirty_list="$( { git -C "$root" diff --name-only; \
-                        git -C "$root" diff --cached --name-only; \
-                        git -C "$root" ls-files --others --exclude-standard; } | sort -u )"
-  own_sorted="$(git -C "$wt" diff --name-only "$target...$branch" | sort -u)"
-  overlap="$(comm -12 <(printf '%s\n' "$root_dirty_list") <(printf '%s\n' "$own_sorted") | grep -v '^$' || true)"
-
   echo "root_on_target=$([ "$root_branch" = "$target" ] && echo true || echo false)"
   echo "root_dirty=$([ -n "$root_porcelain" ] && echo true || echo false)"
-  echo "root_dirty_overlapping=$([ -n "$overlap" ] && echo true || echo false)"
-  if [ -n "$overlap" ]; then
-    echo "root_dirty_overlap_paths:"
-    printf '%s\n' "$overlap" | sed 's/^/  /'
-  fi
+  interrupted=false
+  for entry in MERGE_HEAD rebase-merge rebase-apply CHERRY_PICK_HEAD REVERT_HEAD sequencer BISECT_START; do
+    path="$(git -C "$root" rev-parse --git-path "$entry")"
+    case "$path" in /*) ;; *) path="$root/$path" ;; esac
+    if [ -e "$path" ] || [ -L "$path" ]; then interrupted=true; fi
+  done
+  echo "root_interrupted=$interrupted"
   # Staged-but-uncommitted entries in the WORKTREE index (the git-mv strand
   # signature) -- resolve before landing; the gate reads the tree, not the index.
   echo "staged_uncommitted=$([ -n "$wt_staged" ] && echo true || echo false)"

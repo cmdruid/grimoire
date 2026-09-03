@@ -45,12 +45,20 @@ printf 'base\n' >"$PUSHROOT/file"; git -C "$PUSHROOT" add file; git -C "$PUSHROO
 UPSTREAM="$TMP/upstream"; git clone -q -b main "$REMOTE" "$UPSTREAM"; configure_repo "$UPSTREAM"
 printf 'upstream\n' >"$UPSTREAM/upstream"; git -C "$UPSTREAM" add upstream; git -C "$UPSTREAM" commit -qm upstream; git -C "$UPSTREAM" push -q origin main
 remote_before="$(git -C "$UPSTREAM" rev-parse HEAD)"
-mkdir -p "$PUSHROOT/.streams"; sed 's/landing: local/landing: push/' "$DIR/../../templates/streams-config.md" >"$PUSHROOT/.streams/CONFIG.md"
-"$HELPER" "$PUSHROOT" runtime-init pushed main pushed >"$OUT"; "$HELPER" "$PUSHROOT" unit-begin pushed unit unit >"$OUT"
+"$HELPER" "$PUSHROOT" runtime-init pushed main pushed --landing push >"$OUT"; "$HELPER" "$PUSHROOT" unit-begin pushed unit unit >"$OUT"
 printf 'unit\n' >>"$PUSHROOT/.streams/pushed/file"; git -C "$PUSHROOT/.streams/pushed" add file; git -C "$PUSHROOT/.streams/pushed" commit -qm unit
 "$HELPER" "$PUSHROOT" unit-complete pushed >"$OUT"; "$HELPER" "$PUSHROOT" ship-prepare pushed >"$OUT"; "$HELPER" "$PUSHROOT" gate-run pushed --class full --label gate -- true >"$OUT"
 if git -C "$PUSHROOT/.streams/pushed" merge-base --is-ancestor "$remote_before" HEAD; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 candidate="$(git -C "$PUSHROOT/.streams/pushed" rev-parse HEAD)"
+push_tracker="$PUSHROOT/.streams/pushed/workstream.tsv"; cp "$push_tracker" "$TMP/push-before-dirty.tsv"
+local_before_dirty="$(git -C "$PUSHROOT" rev-parse main)"; remote_before_dirty="$(git -C "$PUSHROOT/.streams/pushed" ls-remote --heads origin refs/heads/main | awk '{print $1}')"
+printf 'primary wip\n' >"$PUSHROOT/primary-wip"
+if "$HELPER" "$PUSHROOT" land-advance pushed --authority confirmed >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'dirty push primary refuses before either destination' 'primary checkout is not completely clean' "$ERR"
+expect_eq 'dirty push refusal preserves local target' "$local_before_dirty" "$(git -C "$PUSHROOT" rev-parse main)"
+expect_eq 'dirty push refusal preserves remote target' "$remote_before_dirty" "$(git -C "$PUSHROOT/.streams/pushed" ls-remote --heads origin refs/heads/main | awk '{print $1}')"
+if cmp -s "$TMP/push-before-dirty.tsv" "$push_tracker"; then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: dirty push refusal changed receipts' >&2; fi
+rm "$PUSHROOT/primary-wip"
 if WORKSTREAM_TEST_AFTER_REMOTE_RUNNING="$TMP/interrupt.sh" "$HELPER" "$PUSHROOT" land-advance pushed --authority confirmed >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 expect_absent 'acquired remote interruption is not lock contention' 'status=landing-busy' "$OUT"
 expect 'remote running receipt precedes push' $'remote-target\tstate\trunning' "$PUSHROOT/.streams/pushed/workstream.tsv"
@@ -58,6 +66,9 @@ expect 'both push destinations were recorded before mutation' $'remote-target\te
 "$HELPER" "$PUSHROOT" land-advance pushed --authority confirmed >"$OUT"
 expect_eq 'push advances local target' "$candidate" "$(git -C "$PUSHROOT" rev-parse main)"
 expect_eq 'push advances remote target' "$candidate" "$(git -C "$PUSHROOT" ls-remote --heads origin refs/heads/main | awk '{print $1}')"
+expect_eq 'push leaves primary on its target branch' main "$(git -C "$PUSHROOT" branch --show-current)"
+expect_eq 'push aligns the primary index to the candidate' "$(git -C "$PUSHROOT" rev-parse "$candidate^{tree}")" "$(git -C "$PUSHROOT" write-tree)"
+expect_eq 'push leaves the complete primary clean' '' "$(git -C "$PUSHROOT" status --porcelain --untracked-files=all)"
 "$HELPER" "$PUSHROOT" delivery-classify pushed >"$OUT"; expect 'two destinations classify complete' 'classifier=complete' "$OUT"
 tree="$(git -C "$PUSHROOT" rev-parse "$candidate^{tree}")"; descendant="$(printf 'remote follow-up\n' | git -C "$PUSHROOT" commit-tree "$tree" -p "$candidate")"
 git -C "$PUSHROOT" push -q origin "$descendant:refs/heads/main"
