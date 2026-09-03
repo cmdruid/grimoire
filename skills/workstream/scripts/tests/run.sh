@@ -21,6 +21,14 @@ echo "== isolation-contract-test.sh"
 bash "$DIR/isolation-contract-test.sh" || rc=1
 echo "== operator-note-test.sh"
 bash "$DIR/operator-note-test.sh" || rc=1
+echo "== shipment-prepare-test.sh"
+bash "$DIR/shipment-prepare-test.sh" || rc=1
+echo "== gate-contract-test.sh"
+bash "$DIR/gate-contract-test.sh" || rc=1
+echo "== gitlink-readiness-test.sh"
+bash "$DIR/gitlink-readiness-test.sh" || rc=1
+echo "== ship-friction-test.sh"
+bash "$DIR/ship-friction-test.sh" || rc=1
 echo "== hooks-test.sh"
 bash "$DIR/hooks-test.sh" || rc=1
 echo "== git-helpers-test.sh"

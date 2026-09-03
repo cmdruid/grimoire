@@ -27,6 +27,7 @@ usage: workstream.sh <canonical-root> <operation> [args...]
   unit-complete <stream>
   hook-start <stream> <identity> --isolation <available|unavailable>
   hook-complete <stream> <identity> --closure <path>
+  friction-add <stream> <reason>
   ship-prepare <stream>
   gate-run <stream> --class <docs|full> --label <label> -- <argv...>
   land-advance <stream> --authority confirmed
@@ -758,7 +759,7 @@ cmd_hook_start() {
 
 cmd_hook_complete() {
   [ "$#" -eq 4 ] && [ "$3" = --closure ] || die "usage: hook-complete <stream> <identity> --closure <path>"
-  local stream="$1" identity="$2" closure="$4" state status evidence raw
+  local stream="$1" identity="$2" closure="$4" state status evidence raw event shipment next
   admit_stream "$stream"
   state="$(tracker_get hook "$identity" state)" || die "unknown hook identity"
   [ "$state" = running ] || die "hook is not running"
@@ -768,11 +769,36 @@ cmd_hook_complete() {
     return 1
   fi
   evidence="$(sha256_file "$closure")"
+  event="$(tracker_get hook "$identity" name)"
   raw="$(mktemp "${TMPDIR:-/tmp}/workstream-hook-close.XXXXXX")"
   awk -F '\t' -v i="$identity" 'NR>1 && !(($1=="hook"&&$2==i&&($3=="state"||$3=="evidence-sha256"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
-  printf 'hook\t%s\tevidence-sha256\t%s\nhook\t%s\tstate\tcomplete\nphase\t-\tnext-action\taccumulate\n' "$identity" "$evidence" "$identity" >>"$raw"
+  if [ "$event" = ship-friction ]; then
+    shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2;exit}' "$TRACKER")"
+    [ -n "$shipment" ] && [ "$(tracker_get shipment "$shipment" phase)" = friction ] || { rm -f "$raw"; die "ship friction receipt is outside its phase"; }
+    awk -F '\t' -v s="$shipment" '!(($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome")))' "$raw" >"$raw.next"; mv "$raw.next" "$raw"
+    printf 'shipment\t%s\tphase\tfriction\nshipment\t%s\toutcome\tactive\n' "$shipment" "$shipment" >>"$raw"
+    next=prepare-ship
+  else
+    next=accumulate
+  fi
+  printf 'hook\t%s\tevidence-sha256\t%s\nhook\t%s\tstate\tcomplete\nphase\t-\tnext-action\t%s\n' "$identity" "$evidence" "$identity" "$next" >>"$raw"
   rewrite_tracker "$raw"; rm -f "$raw"
-  printf 'status=complete\nevidence_sha256=%s\nnext_action=accumulate\n' "$evidence"
+  printf 'status=complete\nevidence_sha256=%s\nnext_action=%s\n' "$evidence" "$next"
+}
+
+cmd_friction_add() {
+  [ "$#" -eq 2 ] || die "usage: friction-add <stream> <reason>"
+  local stream="$1" reason="$2" shipment raw
+  case "$reason" in rebase-conflict|semantic-conflict|target-reject|remote-reject|repeat-sync|gate-recovery|gitlink-repair|agent-intervention) ;; *) die "invalid friction reason" ;; esac
+  admit_stream "$stream"
+  shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2;exit}' "$TRACKER")"; [ -n "$shipment" ] || die "no active shipment"
+  if awk -F '\t' -v id="$shipment/$reason" '$1=="friction"&&$2==id{found=1}END{exit found?0:1}' "$TRACKER"; then
+    printf 'status=existing\nreason=%s\n' "$reason"; return
+  fi
+  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-friction.XXXXXX")"; tail -n +2 "$TRACKER" >"$raw"
+  printf 'friction\t%s/%s\tpresent\tyes\n' "$shipment" "$reason" >>"$raw"
+  rewrite_tracker "$raw"; rm -f "$raw"
+  printf 'status=recorded\nreason=%s\n' "$reason"
 }
 
 cmd_unit_begin() {
@@ -871,10 +897,32 @@ validate_history() {
 
 cmd_ship_prepare() {
   [ "$#" -eq 1 ] || die "usage: ship-prepare <stream>"
-  local stream="$1" shipment next target branch_tip target_tip raw history history_temp now units unit summary commits inputs
+  local stream="$1" shipment next target branch_tip target_tip raw history history_temp now units unit summary commits inputs gitlinks path object path_id availability missing phase outcome next_action
   admit_stream "$stream"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
   if [ -n "$shipment" ]; then
+    phase="$(tracker_get shipment "$shipment" phase)"
+    if [ "$phase" = friction ]; then
+      if awk -F '\t' -v prefix="$stream/$(tracker_get meta - instance-id)/shipment/$shipment/ship-friction" '$1=="hook"&&$2==prefix&&$3=="state"&&($4=="complete"||$4=="not-applicable"){ok=1}END{exit ok?0:1}' "$TRACKER"; then
+        if [ "$(git -C "$WT" rev-parse HEAD)" != "$(tracker_get shipment "$shipment" branch-tip)" ]; then
+          raw="$(mktemp "${TMPDIR:-/tmp}/workstream-regate.XXXXXX")"
+          awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="gate"&&$2==s)||($1=="shipment"&&$2==s&&($3=="branch-tip"||$3=="inputs-sha256"||$3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+          branch_tip="$(git -C "$WT" rev-parse HEAD)"; target_tip="$(git -C "$WT" rev-parse "$(runbook_field "$RUNBOOK" target)")"
+          inputs="$(sha256_text "$stream|$shipment|$branch_tip|$target_tip|hook-effects")"
+          printf 'shipment\t%s\tbranch-tip\t%s\nshipment\t%s\tinputs-sha256\t%s\nshipment\t%s\tphase\tgate\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tprepare-ship\n' \
+            "$shipment" "$branch_tip" "$shipment" "$inputs" "$shipment" "$shipment" >>"$raw"
+          rewrite_tracker "$raw"; rm -f "$raw"
+          printf 'status=resumed\nshipment=%s\nphase=gate\nnext_action=prepare-ship\n' "$shipment"
+          return
+        fi
+        raw="$(mktemp "${TMPDIR:-/tmp}/workstream-ready.XXXXXX")"
+        awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+        printf 'shipment\t%s\tphase\tready-to-land\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tland\n' "$shipment" "$shipment" >>"$raw"
+        rewrite_tracker "$raw"; rm -f "$raw"
+        printf 'status=ready\nshipment=%s\nnext_action=land\n' "$shipment"
+        return
+      fi
+    fi
     printf 'status=resumed\nshipment=%s\nnext_action=%s\n' "$shipment" "$(tracker_get phase - next-action)"
     return
   fi
@@ -909,19 +957,39 @@ cmd_ship_prepare() {
   fi
   branch_tip="$(git -C "$WT" rev-parse HEAD)"
   target_tip="$(git -C "$WT" rev-parse "$target")"
-  inputs="$(sha256_text "$stream|$next|$units|$branch_tip|$target_tip|$target")"
+  gitlinks="$(mktemp "${TMPDIR:-/tmp}/workstream-gitlinks.XXXXXX")"
+  missing=no
+  while IFS= read -r -d '' path; do
+    object="$(git -C "$WT" ls-tree HEAD -- "$path" | awk '$1=="160000"{print $3}')"
+    [ -n "$object" ] || continue
+    validate_text 'gitlink path' "$path"
+    path_id="$(sha256_text "$path")"
+    availability=missing
+    if [ -d "$WT/$path" ] && git -C "$WT/$path" cat-file -e "$object^{commit}" 2>/dev/null; then availability=ready; fi
+    [ "$availability" = ready ] || missing=yes
+    printf 'gitlink\t%s/%s\tavailability\t%s\ngitlink\t%s/%s\tobject\t%s\ngitlink\t%s/%s\tpath\t%s\ngitlink\t%s/%s\tpublished\tnot-required\n' \
+      "$next" "$path_id" "$availability" "$next" "$path_id" "$object" "$next" "$path_id" "$path" "$next" "$path_id" >>"$gitlinks"
+  done < <(git -C "$WT" diff --name-only -z --diff-filter=AM "$target_tip..HEAD")
+  inputs="$(sha256_text "$stream|$next|$units|$branch_tip|$target_tip|$target|$(sha256_file "$gitlinks")")"
+  if [ "$missing" = yes ]; then phase=gitlinks; outcome=blocked; next_action=blocked; else phase=gate; outcome=active; next_action=prepare-ship; fi
   raw="$(mktemp "${TMPDIR:-/tmp}/workstream-shipment.XXXXXX")"
   awk -F '\t' 'NR>1 && !(($1=="meta"&&$2=="-"&&$3=="next-shipment")||($1=="phase"&&$2=="-"&&($3=="name"||$3=="next-action")))' "$TRACKER" >"$raw"
-  printf 'meta\t-\tnext-shipment\t%s\nphase\t-\tname\tship\nphase\t-\tnext-action\tprepare-ship\n' "$((next + 1))" >>"$raw"
-  printf 'shipment\t%s\tphase\tgate\nshipment\t%s\toutcome\tactive\nshipment\t%s\tbranch-tip\t%s\nshipment\t%s\ttarget-tip\t%s\nshipment\t%s\tinputs-sha256\t%s\n' \
-    "$next" "$next" "$next" "$branch_tip" "$next" "$target_tip" "$next" "$inputs" >>"$raw"
+  printf 'meta\t-\tnext-shipment\t%s\nphase\t-\tname\tship\nphase\t-\tnext-action\t%s\n' "$((next + 1))" "$next_action" >>"$raw"
+  printf 'shipment\t%s\tphase\t%s\nshipment\t%s\toutcome\t%s\nshipment\t%s\tbranch-tip\t%s\nshipment\t%s\ttarget-tip\t%s\nshipment\t%s\tinputs-sha256\t%s\n' \
+    "$next" "$phase" "$next" "$outcome" "$next" "$branch_tip" "$next" "$target_tip" "$next" "$inputs" >>"$raw"
   local idx=1
   for unit in $units; do
     printf 'shipment-unit\t%s/%s\tunit\t%s\n' "$next" "$idx" "$unit" >>"$raw"
     idx=$((idx + 1))
   done
+  cat "$gitlinks" >>"$raw"
+  rm -f "$gitlinks"
   rewrite_tracker "$raw"
   rm -f "$raw"
+  if [ "$missing" = yes ]; then
+    printf 'status=blocked\nshipment=%s\nphase=gitlinks\nnext_action=blocked\n' "$next"
+    return 1
+  fi
   printf 'status=prepared\nshipment=%s\nbranch_tip=%s\ntarget_tip=%s\nnext_action=prepare-ship\n' "$next" "$branch_tip" "$target_tip"
 }
 
@@ -929,21 +997,23 @@ cmd_gate_run() {
   local stream="$1"; shift
   [ "${1:-}" = --class ] || die "gate-run requires --class"
   local class="${2:-}"; shift 2
+  local selector=no
+  if [ "${1:-}" = --selector ]; then selector=yes; shift; fi
   [ "${1:-}" = --label ] || die "gate-run requires --label"
   local label="${2:-}"; shift 2
   [ "${1:-}" = -- ] || die "gate-run requires -- before argv"
   shift
   [ "$#" -gt 0 ] || die "gate-run requires argv"
-  case "$class" in docs|full) ;; *) die "unsupported direct gate class: $class" ;; esac
+  case "$class:$selector" in docs:no|full:no|semantic:yes) ;; *) die "illegal gate class/selector combination" ;; esac
   validate_text 'gate label' "$label"
   [ "${#label}" -le 1024 ] || die "gate label exceeds 1024 bytes"
   admit_stream "$stream"
-  local shipment inputs command_file output evidence command rc raw branch_tip target_tip shipment_phase
+  local shipment inputs command_file output evidence command rc raw branch_tip target_tip shipment_phase private receipt receipt_status test_state combined prior_failed instance identity fingerprint hook_body hook_state friction_inputs existing_hook filtered
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
   [ -n "$shipment" ] || die "no active shipment"
   shipment_phase="$(tracker_get shipment "$shipment" phase)"
   command_file="$(mktemp "${TMPDIR:-/tmp}/workstream-command.XXXXXX")"
-  printf '%s\0' "$@" >"$command_file"
+  printf '%s\0' "$class" "$selector" "$label" "$@" >"$command_file"
   command="$(sha256_file "$command_file")"
   if [ "$shipment_phase" = ready-to-land ]; then
     [ "$(tracker_get gate "$shipment" outcome)" = passed ] && \
@@ -964,25 +1034,85 @@ cmd_gate_run() {
   [ "$branch_tip" = "$(tracker_get shipment "$shipment" branch-tip)" ] || die "branch changed after preparation"
   [ "$target_tip" = "$(tracker_get shipment "$shipment" target-tip)" ] || die "target changed after preparation"
   inputs="$(tracker_get shipment "$shipment" inputs-sha256)"
-  output="$(mktemp "${TMPDIR:-/tmp}/workstream-gate.XXXXXX")"
-  rc=0
-  (cd "$WT" && "$@") >"$output" 2>&1 || rc=$?
-  evidence="$(sha256_file "$output")"
+  output="$(mktemp "${TMPDIR:-/tmp}/workstream-gate.XXXXXX")"; rc=0
+  receipt_status=""
+  if [ "$selector" = yes ]; then
+    private="$(mktemp -d "${TMPDIR:-/tmp}/workstream-selector.XXXXXX")"; chmod 700 "$private"
+    receipt="$private/receipt.tsv"
+    git -C "$WT" diff --name-only -z "$target_tip..$branch_tip" >"$private/own"; : >"$private/incoming"
+    cp "$private/own" "$private/final"; printf '.streams/history.tsv\0' >"$private/generated"
+    chmod 600 "$private/own" "$private/incoming" "$private/final" "$private/generated"
+    (
+      while IFS='=' read -r name _; do case "$name" in WORKSTREAM_GATE_*) unset "$name" ;; esac; done < <(env)
+      WORKSTREAM_GATE_SCHEMA=workstream-gate@1; WORKSTREAM_GATE_ROOT="$ROOT"; WORKSTREAM_GATE_WORKTREE="$WT"
+      WORKSTREAM_GATE_BRANCH="$(runbook_field "$RUNBOOK" branch)"; WORKSTREAM_GATE_TARGET="$(runbook_field "$RUNBOOK" target)"
+      WORKSTREAM_GATE_BASE="$target_tip"; WORKSTREAM_GATE_LANDING="$(runbook_field "$RUNBOOK" landing)"
+      WORKSTREAM_GATE_OWN_MANIFEST="$private/own"; WORKSTREAM_GATE_INCOMING_MANIFEST="$private/incoming"
+      WORKSTREAM_GATE_FINAL_MANIFEST="$private/final"; WORKSTREAM_GATE_GENERATED_MANIFEST="$private/generated"; WORKSTREAM_GATE_RECEIPT="$receipt"
+      export WORKSTREAM_GATE_SCHEMA WORKSTREAM_GATE_ROOT WORKSTREAM_GATE_WORKTREE WORKSTREAM_GATE_BRANCH WORKSTREAM_GATE_TARGET
+      export WORKSTREAM_GATE_BASE WORKSTREAM_GATE_LANDING WORKSTREAM_GATE_OWN_MANIFEST WORKSTREAM_GATE_INCOMING_MANIFEST
+      export WORKSTREAM_GATE_FINAL_MANIFEST WORKSTREAM_GATE_GENERATED_MANIFEST WORKSTREAM_GATE_RECEIPT
+      cd "$WT" && "$@"
+    ) >"$output" 2>&1 || rc=$?
+    if [ -f "$receipt" ] && [ ! -L "$receipt" ] && [ "$(wc -c <"$receipt" | tr -d ' ')" -le 4096 ] && \
+      [ "$(sed -n '1p' "$receipt")" = $'key\tvalue' ] && [ "$(sed -n '2p' "$receipt")" = $'schema\tworkstream-gate@1' ] && \
+      [ "$(wc -l <"$receipt" | tr -d ' ')" -eq 4 ]; then
+      receipt_status="$(awk -F '\t' 'NR==3&&$1=="outcome"&&($2=="passed"||$2=="failed"){print $2}' "$receipt")"
+      test_state="$(awk -F '\t' 'NR==4&&$1=="test-state"&&$2!=""{print $2}' "$receipt")"
+    fi
+    if [ -z "$receipt_status" ] || [ -z "$test_state" ] || { [ "$rc" -eq 0 ] && [ "$receipt_status" != passed ]; } || { [ "$rc" -ne 0 ] && [ "$receipt_status" != failed ]; }; then
+      receipt_status=uncertain; rc=1
+    fi
+    combined="$(mktemp "${TMPDIR:-/tmp}/workstream-selector-evidence.XXXXXX")"; cat "$output" >"$combined"
+    [ -f "$receipt" ] && [ ! -L "$receipt" ] && cat "$receipt" >>"$combined"
+    evidence="$(sha256_file "$combined")"; rm -f "$combined"; rm -rf "$private"
+  else
+    (cd "$WT" && "$@") >"$output" 2>&1 || rc=$?
+    evidence="$(sha256_file "$output")"
+    receipt_status="$([ "$rc" -eq 0 ] && printf passed || printf failed)"
+  fi
+  prior_failed="$(awk -F '\t' -v s="$shipment" '$1=="gate"&&$2==s&&$3=="outcome"&&$4=="failed"{print "yes"}' "$TRACKER")"
   raw="$(mktemp "${TMPDIR:-/tmp}/workstream-gaterows.XXXXXX")"
   awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="gate"&&$2==s)||($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
   printf 'gate\t%s\tclass\t%s\ngate\t%s\tlabel\t%s\ngate\t%s\tinputs-sha256\t%s\ngate\t%s\tcommand-sha256\t%s\ngate\t%s\toutcome\t%s\ngate\t%s\tevidence-sha256\t%s\n' \
-    "$shipment" "$class" "$shipment" "$label" "$shipment" "$inputs" "$shipment" "$command" "$shipment" "$([ "$rc" -eq 0 ] && echo passed || echo failed)" "$shipment" "$evidence" >>"$raw"
-  if [ "$rc" -eq 0 ]; then
-    printf 'shipment\t%s\tphase\tready-to-land\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tland\n' "$shipment" "$shipment" >>"$raw"
+    "$shipment" "$class" "$shipment" "$label" "$shipment" "$inputs" "$shipment" "$command" "$shipment" "$receipt_status" "$shipment" "$evidence" >>"$raw"
+  if [ "$receipt_status" = passed ]; then
+    if [ "$prior_failed" = yes ] && ! grep -qF $'friction\t'"$shipment"$'/gate-recovery\tpresent\tyes' "$raw"; then
+      printf 'friction\t%s/gate-recovery\tpresent\tyes\n' "$shipment" >>"$raw"
+    fi
+    instance="$(tracker_get meta - instance-id)"; identity="$stream/$instance/shipment/$shipment/ship-friction"
+    fingerprint="$(runbook_block_field "$RUNBOOK" 'hook:ship-friction' fingerprint)" || die "compiled ship hook is malformed"
+    friction_inputs="$(awk -F '\t' -v s="$shipment" '$1=="friction"&&index($2,s "/")==1{print $2}' "$raw" | LC_ALL=C sort | shasum -a 256 | awk '{print $1}')"
+    hook_body="$(mktemp "${TMPDIR:-/tmp}/workstream-friction-body.XXXXXX")"; runbook_hook_body "$RUNBOOK" ship-friction >"$hook_body"
+    existing_hook="$(awk -F '\t' -v i="$identity" '$1=="hook"&&$2==i&&$3=="state"{print $4}' "$raw")"
+    [ "$existing_hook" != running ] || { rm -f "$raw" "$command_file" "$output" "$hook_body"; die "running ship hook cannot be replayed"; }
+    if [ -n "$existing_hook" ] && [ "$existing_hook" != complete ]; then
+      filtered="$(mktemp "${TMPDIR:-/tmp}/workstream-hook-refresh.XXXXXX")"
+      awk -F '\t' -v i="$identity" '!($1=="hook"&&$2==i)' "$raw" >"$filtered"; mv "$filtered" "$raw"
+    fi
+    if [ "$existing_hook" = complete ]; then
+      hook_state=complete
+      printf 'shipment\t%s\tphase\tready-to-land\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tland\n' "$shipment" "$shipment" >>"$raw"
+    elif grep -qF $'friction\t' "$raw" && grep -q '[^[:space:]]' "$hook_body"; then
+      hook_state=ready
+      printf 'hook\t%s\tfingerprint\t%s\nhook\t%s\tinputs-sha256\t%s\nhook\t%s\tname\tship-friction\nhook\t%s\tstate\tready\n' "$identity" "$fingerprint" "$identity" "$friction_inputs" "$identity" "$identity" >>"$raw"
+      printf 'shipment\t%s\tphase\tfriction\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tprepare-ship\n' "$shipment" "$shipment" >>"$raw"
+    else
+      hook_state=not-applicable
+      printf 'hook\t%s\tevidence-sha256\t%s\nhook\t%s\tfingerprint\t%s\nhook\t%s\tinputs-sha256\t%s\nhook\t%s\tname\tship-friction\nhook\t%s\tstate\tnot-applicable\n' \
+        "$identity" "$(sha256_text "$friction_inputs|not-applicable")" "$identity" "$fingerprint" "$identity" "$friction_inputs" "$identity" "$identity" >>"$raw"
+      printf 'shipment\t%s\tphase\tready-to-land\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tland\n' "$shipment" "$shipment" >>"$raw"
+    fi
+    rm -f "$hook_body"
   else
     printf 'shipment\t%s\tphase\tgate\nshipment\t%s\toutcome\tblocked\nphase\t-\tnext-action\tblocked\n' "$shipment" "$shipment" >>"$raw"
   fi
   rewrite_tracker "$raw"
   rm -f "$raw" "$command_file"
-  printf 'status=%s\nclass=%s\nlabel=%s\nevidence_sha256=%s\noutput_tail:\n' "$([ "$rc" -eq 0 ] && echo passed || echo failed)" "$class" "$label" "$evidence"
+  printf 'status=%s\nclass=%s\nlabel=%s\nevidence_sha256=%s\noutput_tail:\n' "$receipt_status" "$class" "$label" "$evidence"
   tail -n 7 "$output" | awk '{ print substr($0,1,1024) }'
   rm -f "$output"
-  return "$rc"
+  [ "$receipt_status" = passed ]
 }
 
 cmd_land_advance() {
@@ -1060,6 +1190,7 @@ main() {
     unit-complete) cmd_unit_complete "$@" ;;
     hook-start) cmd_hook_start "$@" ;;
     hook-complete) cmd_hook_complete "$@" ;;
+    friction-add) cmd_friction_add "$@" ;;
     ship-prepare) cmd_ship_prepare "$@" ;;
     gate-run) [ "$#" -ge 1 ] || die "gate-run requires a stream"; cmd_gate_run "$@" ;;
     land-advance) cmd_land_advance "$@" ;;
