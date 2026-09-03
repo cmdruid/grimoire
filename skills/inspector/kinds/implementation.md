@@ -64,6 +64,7 @@ revision-after-review: unavailable
 ## Revision legal locations
 
 None. Implementation never enters document `revise` or `refine`, writes status or stage, or
-publishes. The review phase never amends code. After an eligible `needs-rework` verdict,
-`verbs/review.md` may offer separately confirmed isolated remediation and full same-base re-review;
-that action is neither automatic from the verdict nor a revision legal location.
+publishes. The review phase never amends code. After any implementation verdict, `verbs/review.md`
+owns a separate action close: direct return, or separately confirmed inline or isolated remediation
+and optional full same-base re-review. That action is neither automatic from the verdict nor a
+revision legal location.

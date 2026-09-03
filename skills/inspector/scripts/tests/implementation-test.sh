@@ -18,6 +18,11 @@ for needle in 'named diff, range, worktree, or commit' 'behavior matches the gov
 done
 has "$REVIEW" 'Implementation target: inspect the full diff' "implementation review walk missing"
 has "$REVIEW" '## Implementation needs-rework action' "implementation action tracer missing"
+for needle in 'HEAD, staged diff, unstaged diff' 'reviewed untracked paths and contents' \
+  'Do not invent a snapshot or copy protocol' 'stop and offer inline execution' \
+  'same-pattern observations' 'full accumulated change'; do
+  has "$REVIEW" "$needle" "implementation action doctrine missing: $needle"
+done
 for needle in 'control-flow complexity' 'changed authored functions' \
   'same analyzer identity and version' \
   'report the analyzer identity, version, configuration, population, and exclusions' \
@@ -45,6 +50,34 @@ git_status() { git -C "$1" status --porcelain=v1 --untracked-files=all; }
 destination_clean_at() {
   [ "$(git_head "$1")" = "$2" ] && [ -z "$(git_status "$1")" ]
 }
+capture_identity() {
+  local destination="$1" output="$2" path
+  {
+    git_head "$destination"
+    git -C "$destination" diff --cached --binary
+    git -C "$destination" diff --binary
+    git_status "$destination"
+    git -C "$destination" ls-files --others --exclude-standard | while IFS= read -r path; do
+      printf 'untracked:%s:' "$path"
+      shasum "$destination/$path"
+    done
+  } > "$output"
+}
+same_identity() {
+  local destination="$1" expected="$2" actual="$3"
+  capture_identity "$destination" "$actual"
+  cmp -s "$expected" "$actual"
+}
+route_for() {
+  local destinations="$1" executor="$2" committed="$3" clean="$4" checkout="$5"
+  [ "$destinations" = one ] || { echo ask-destination; return; }
+  if [ "$executor:$committed:$clean:$checkout" = yes:yes:yes:yes ]; then
+    echo isolated
+  else
+    echo inline
+  fi
+}
+isolation_failure() { echo stop:offer-inline; }
 start_isolated() {
   local destination="$1" expected_head="$2" isolated="$3"
   destination_clean_at "$destination" "$expected_head" || return 1
@@ -90,6 +123,35 @@ printf '%s\n' RECOMMENDED > "$ROOT/recommended.diff"
 eq "recommended implementation verdict" approve-with-changes "$(verdict "$(review_fixture "$ROOT/recommended.diff")")"
 : > "$ROOT/clean.diff"
 eq "clean implementation verdict" approve "$(verdict "$(review_fixture "$ROOT/clean.diff")")"
+eq "eligible target defaults isolated" isolated "$(route_for one yes yes yes yes)"
+eq "dirty target exposes inline" inline "$(route_for one yes yes no yes)"
+eq "missing executor exposes inline" inline "$(route_for one no yes yes yes)"
+eq "uncommitted endpoint exposes inline" inline "$(route_for one yes no yes yes)"
+eq "ambiguous destination asks and stops" ask-destination "$(route_for many yes yes yes yes)"
+eq "post-confirm isolation failure never falls back" stop:offer-inline "$(isolation_failure)"
+
+route_matrix() {
+  printf '%s\n' \
+    'eligible:isolated' \
+    'dirty:inline' \
+    'ambiguous:ask-destination' \
+    'post-confirm-failure:stop:offer-inline'
+}
+route_matrix_contract() { [ "$(cat "$1")" = "$(route_matrix)" ]; }
+route_matrix > "$ROOT/routes.original"
+cp "$ROOT/routes.original" "$ROOT/routes.saved"
+for plant in \
+  'dirty:inline|dirty:isolated' \
+  'ambiguous:ask-destination|ambiguous:inline' \
+  'post-confirm-failure:stop:offer-inline|post-confirm-failure:inline'; do
+  before_row="${plant%%|*}" after_row="${plant#*|}"
+  sed "s/^$before_row$/$after_row/" "$ROOT/routes.original" > "$ROOT/routes.broken"
+  eq "route red-proof plants one invalid transition" 1 \
+    "$(grep -cF "$after_row" "$ROOT/routes.broken")"
+  rejects route_matrix_contract "$ROOT/routes.broken"
+done
+cmp -s "$ROOT/routes.original" "$ROOT/routes.saved" \
+  && pass=$((pass + 1)) || fail=$((fail + 1))
 
 DESTINATION="$ROOT/destination"
 ISOLATED="$ROOT/isolated"
@@ -107,6 +169,61 @@ git -C "$DESTINATION" add change.txt
 git -C "$DESTINATION" commit -qm reviewed
 reviewed_after="$(git_head "$DESTINATION")"
 destination_before="$(shasum "$DESTINATION/change.txt" | awk '{print $1}')"
+capture_identity "$DESTINATION" "$ROOT/reviewed.identity"
+
+assert_isolation_start_drift() {
+  local kind="$1" drift_repo="$ROOT/drift-$1" drift_isolated="$ROOT/drift-$1-isolated"
+  git clone -q "$DESTINATION" "$drift_repo"
+  git -C "$drift_repo" config user.name fixture
+  git -C "$drift_repo" config user.email fixture@example.invalid
+  case "$kind" in
+    head)
+      printf '%s\n' HEAD_DRIFT > "$drift_repo/head.txt"
+      git -C "$drift_repo" add head.txt
+      git -C "$drift_repo" commit -qm head-drift
+      eq "head drift plants one commit" 1 \
+        "$(git -C "$drift_repo" rev-list --count "$reviewed_after..HEAD")"
+      ;;
+    staged)
+      printf '%s\n' STAGED_DRIFT > "$drift_repo/staged.txt"
+      git -C "$drift_repo" add staged.txt
+      eq "staged drift plants one path" 1 \
+        "$(git -C "$drift_repo" diff --cached --name-only | grep -c '^staged.txt$')"
+      ;;
+    unstaged)
+      printf '%s\n' UNSTAGED_DRIFT >> "$drift_repo/change.txt"
+      eq "unstaged drift plants one path" 1 \
+        "$(git -C "$drift_repo" diff --name-only | grep -c '^change.txt$')"
+      ;;
+    untracked)
+      printf '%s\n' UNTRACKED_DRIFT > "$drift_repo/untracked.txt"
+      eq "untracked drift plants one path" 1 \
+        "$(git -C "$drift_repo" ls-files --others --exclude-standard | grep -c '^untracked.txt$')"
+      ;;
+  esac
+  rejects start_isolated "$drift_repo" "$reviewed_after" "$drift_isolated"
+  [ ! -e "$drift_isolated" ] && pass=$((pass + 1)) \
+    || { echo "FAIL $kind drift created isolation" >&2; fail=$((fail + 1)); }
+}
+for drift_kind in head staged unstaged untracked; do
+  assert_isolation_start_drift "$drift_kind"
+done
+
+DIRTY_DESTINATION="$ROOT/dirty-destination"
+git clone -q "$DESTINATION" "$DIRTY_DESTINATION"
+printf '%s\n' DIRTY_REVIEW_STATE >> "$DIRTY_DESTINATION/change.txt"
+cp "$DIRTY_DESTINATION/change.txt" "$ROOT/dirty.before"
+capture_identity "$DIRTY_DESTINATION" "$ROOT/dirty.identity"
+dirty_status="$(git_status "$DIRTY_DESTINATION")"
+sed 's/DIRTY_REVIEW_STATE/DIRTY_CHANGED_STATE/' "$DIRTY_DESTINATION/change.txt" \
+  > "$ROOT/dirty.next"
+mv "$ROOT/dirty.next" "$DIRTY_DESTINATION/change.txt"
+eq "dirty-content drift keeps status-path population" "$dirty_status" \
+  "$(git_status "$DIRTY_DESTINATION")"
+rejects same_identity "$DIRTY_DESTINATION" "$ROOT/dirty.identity" "$ROOT/dirty.current"
+cp "$ROOT/dirty.before" "$DIRTY_DESTINATION/change.txt"
+same_identity "$DIRTY_DESTINATION" "$ROOT/dirty.identity" "$ROOT/dirty.current" \
+  && pass=$((pass + 1)) || { echo "FAIL dirty identity not restored" >&2; fail=$((fail + 1)); }
 
 : > "$TRACE"
 printf '%s\n' 'verdict:needs-rework' \
@@ -122,6 +239,13 @@ eq "pre-write drift restoration" "$destination_before" \
   "$(shasum "$DESTINATION/change.txt" | awk '{print $1}')"
 destination_clean_at "$DESTINATION" "$reviewed_after" \
   && pass=$((pass + 1)) || { echo "FAIL destination not restored" >&2; fail=$((fail + 1)); }
+
+printf '%s\n' SAME_PATH_DRIFT >> "$DESTINATION/change.txt"
+eq "same-path drift preserves status population" ' M change.txt' "$(git_status "$DESTINATION")"
+rejects same_identity "$DESTINATION" "$ROOT/reviewed.identity" "$ROOT/current.identity"
+cp "$ROOT/change.before" "$DESTINATION/change.txt"
+same_identity "$DESTINATION" "$ROOT/reviewed.identity" "$ROOT/current.identity" \
+  && pass=$((pass + 1)) || { echo "FAIL identity not restored" >&2; fail=$((fail + 1)); }
 
 start_isolated "$DESTINATION" "$reviewed_after" "$ISOLATED"
 printf '%s\n' "pre-write:$reviewed_after:clean" "isolated-start:$reviewed_after" >> "$TRACE"
@@ -164,6 +288,11 @@ fresh_result="$(review_fixture "$DESTINATION/change.txt")"
 fresh_verdict="$(verdict "$fresh_result")"
 eq "full re-review keeps original change" 1 "$(grep -c '^ORIGINAL_CHANGE$' "$DESTINATION/change.txt")"
 eq "full re-review sees remaining recommendation" approve-with-changes "$fresh_verdict"
+printf '%s\n' OUTSIDE_FIX_MUTATION >> "$DESTINATION/change.txt"
+printf '%s\n' DESIGN_MISMATCH >> "$DESTINATION/change.txt"
+eq "full re-review sees mutation outside fix delta" needs-rework \
+  "$(verdict "$(review_fixture "$DESTINATION/change.txt")")"
+git -C "$DESTINATION" restore change.txt
 printf '%s\n' "fresh-verdict:$fresh_verdict" "fresh-action-close:$fresh_verdict" >> "$TRACE"
 trace_contract "$TRACE" "$base_endpoint" "$reviewed_after" "$returned_commit" "$fresh_verdict" \
   && pass=$((pass + 1)) || { echo "FAIL implementation action trace" >&2; fail=$((fail + 1)); }
@@ -176,6 +305,14 @@ rejects trace_contract "$ROOT/trace.broken" "$base_endpoint" "$reviewed_after" "
 awk -v row="pre-integration:$reviewed_after:clean" '$0 != row' "$TRACE" > "$ROOT/trace.broken"
 eq "pre-integration trace red-proof removes one row" 0 \
   "$(grep -cF "pre-integration:$reviewed_after:clean" "$ROOT/trace.broken" || true)"
+rejects trace_contract "$ROOT/trace.broken" "$base_endpoint" "$reviewed_after" "$returned_commit" "$fresh_verdict"
+awk -v row="re-review-base:$base_endpoint" '$0 != row' "$TRACE" > "$ROOT/trace.broken"
+eq "same-base red-proof removes one row" 0 \
+  "$(grep -cF "re-review-base:$base_endpoint" "$ROOT/trace.broken" || true)"
+rejects trace_contract "$ROOT/trace.broken" "$base_endpoint" "$reviewed_after" "$returned_commit" "$fresh_verdict"
+awk -v row="fresh-action-close:$fresh_verdict" '$0 != row' "$TRACE" > "$ROOT/trace.broken"
+eq "fresh-close red-proof removes one row" 0 \
+  "$(grep -cF "fresh-action-close:$fresh_verdict" "$ROOT/trace.broken" || true)"
 rejects trace_contract "$ROOT/trace.broken" "$base_endpoint" "$reviewed_after" "$returned_commit" "$fresh_verdict"
 cmp -s "$TRACE" "$ROOT/trace.original" && pass=$((pass + 1)) || fail=$((fail + 1))
 git -C "$DESTINATION" worktree remove "$ISOLATED"
@@ -215,7 +352,7 @@ rejects analyzer_delta_valid tool-a v2 cfg-a src generated tool-a v2 cfg-a src v
 contract_clean() {
   ! grep -qF 'A raw complexity score is automatically a finding.' "$1" \
     && ! grep -qF 'Apply the diff to construct an analyzer endpoint.' "$1" \
-    && ! grep -qF 'Implementation review may remediate complex code.' "$1" \
+    && ! grep -qF 'Implementation review may remediate code before confirmation.' "$1" \
     && ! grep -qF 'A numeric delta may omit analyzer identity and population.' "$1" \
     && ! grep -qF 'A numeric complexity row may omit function identity and source location.' "$1"
 }
@@ -230,7 +367,7 @@ red_proof() {
 }
 red_proof 'A raw complexity score is automatically a finding.'
 red_proof 'Apply the diff to construct an analyzer endpoint.'
-red_proof 'Implementation review may remediate complex code.'
+red_proof 'Implementation review may remediate code before confirmation.'
 red_proof 'A numeric delta may omit analyzer identity and population.'
 red_proof 'A numeric complexity row may omit function identity and source location.'
 cmp -s "$KIND" "$ROOT/implementation.original" && pass=$((pass + 1)) || fail=$((fail + 1))

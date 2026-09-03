@@ -154,7 +154,7 @@ Read-only; produce no commit.
     integrates only into the unchanged destination, and launches a complete same-base re-review;
     verdict reporting itself remains byte-identical and mutation-free.
 
-- [ ] **Slice 2: Complete action, presentation, and failure matrices** — requires: 1
+- [x] **Slice 2: Complete action, presentation, and failure matrices** — requires: 1
   - Files:
     - `skills/inspector/SKILL.md`
     - `skills/inspector/verbs/review.md`

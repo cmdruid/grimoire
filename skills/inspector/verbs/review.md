@@ -84,8 +84,9 @@ mint a record.
    | document `approve` | existing accept/publish offer; stop | existing accept/publish offer; stop | existing accept/publish offer; stop |
    | document `approve-with-changes` | enter revise with all recommended changes | offer accept/publish as-is or explicit revise; stop | offer accept/publish as-is; stop |
    | document `needs-rework` | enter revise with all findings | offer explicit revise; stop | verdict only; stop |
-   | implementation `approve` / `approve-with-changes` | verdict only; stop | verdict only; stop | verdict only; stop |
-   | implementation `needs-rework` | post-verdict action stop | post-verdict action stop | post-verdict action stop |
+   | implementation `approve` | direct return action; stop | direct return action; stop | direct return action; stop |
+   | implementation `approve-with-changes` | optional-fix action stop | optional-fix action stop | optional-fix action stop |
+   | implementation `needs-rework` | required-fix action stop | required-fix action stop | required-fix action stop |
 
    A passing publication offer says, “If you accept, this session will publish `<path>`.” A
    founding-shaped document instead says acceptance leaves `<path>` draft; it performs no gate
@@ -94,8 +95,8 @@ mint a record.
    `needs-rework` branch says, “If you want, I can fold these findings with `/inspector revise`; if
    you approve the revision proposal, I’ll re-review the amended document automatically.”
    An unavailable document `needs-rework` stops after the verdict and findings. Implementation never
-   offers publish, `revise`, or `refine`, and never writes status or stage. An eligible implementation
-   `needs-rework` may enter only the separate confirmed action below.
+   offers publish, `revise`, or `refine`, and never writes status or stage. Every implementation
+   verdict enters only the separate action close below.
 
    **Automatic entry.** After reporting the verdict and findings, immediately enter
    `verbs/revise.md` with the reviewed artifact, detected kind, resolved effective policy, complete
@@ -104,47 +105,89 @@ mint a record.
    This is the same turn, not an edit authorization. Questions are a stop. A non-empty proposal is
    a stop. No body, `status`, or `stage` changes before proposal confirmation.
 
-## Implementation needs-rework action
+## Implementation needs-rework action and every-verdict close
 
-After an implementation `needs-rework` verdict, retain the original review base, reviewed after
-endpoint, complete findings, and reviewed writable-destination identity. This is a separate
-post-verdict action stop; presenting it mutates nothing.
+After every implementation verdict, retain the original review base, reviewed after endpoint,
+complete findings, and the identity of the reviewed source state. The action close is a separate
+post-verdict stop; presenting it mutates nothing. `approve` offers a direct return to the calling
+workflow without a remediation checklist. The other verdicts use the shared action state below.
 
-For this isolated-remediation route, require an available isolated executor, a committed reviewed
-after endpoint, one clean exact writable destination at that endpoint, and the ability to create an
-isolated checkout from it. If any requirement is not provable, stop without mutation.
+Before rendering a fix action, resolve one unambiguous writable destination that owns the reviewed
+after endpoint or working-tree state. A named worktree can establish it. A commit or range requires a
+current checkout whose branch and HEAD relationship proves ownership. Never infer it from cwd. If no
+single destination is provable, ask for the destination and stop without presenting fix choices.
 
-When recommendations exist, present this exact ordered checklist:
+Determine isolation eligibility before presenting the action. Offer the isolated route only when an
+isolated executor exists, the reviewed after endpoint is committed, the resolved destination is
+clean and checked out at that exact endpoint, and an isolated checkout can be created from it. For a
+resolved dirty destination, missing executor, uncommitted endpoint, or unavailable checkout,
+isolation is ineligible. In that case, omit the isolation row. State that selected fixes will run
+inline and keep the remaining choices. Do not invent a snapshot or copy protocol. Do not guess a
+destination or rewrite detached history.
 
-```text
-[ ] Also fix recommended changes
-[x] Fix all must-fix findings
-[x] After selected fixes, re-review the complete implementation
-[x] For selected fixes, use an isolated implementation agent
-    Uncheck to perform the fixes inline.
-```
+Build these semantic rows in order; whole finding classes are selected, not individual findings:
 
-The recommendation row is initially focused. Omit it when no recommendations were reported. A clear
-acceptance confirms the visible defaults. Rejection, cancellation, or dismissal writes nothing. An
-unclear answer asks once. The verdict itself is never confirmation.
+| Row | Appears when | Default | Effect |
+|---|---|---|---|
+| Also fix recommended changes | recommendations exist | off; first and focused | add every recommendation |
+| Fix all must-fix findings | verdict is `needs-rework` | on | add every must-fix finding |
+| After selected fixes, re-review the complete implementation | a fix row exists | on | queue full review after complete application |
+| For selected fixes, use an isolated implementation agent | a fix row exists and isolation is eligible | on | selected means isolated; unchecked means inline |
 
-Immediately before creating the isolated checkout, re-resolve the destination. Require its HEAD to
-equal the reviewed after endpoint and require no staged, unstaged, or untracked changes. Any drift
-stops without a write.
+Thus `needs-rework` accepts must-fix, re-review, and eligible isolation defaults on Enter, with the
+optional recommendation row first. `approve-with-changes` accepts the implementation as-is on Enter;
+selecting its recommendation row activates the otherwise inert re-review and route modifiers. Omit
+rows for finding classes that are absent.
 
-Create the isolated checkout from the exact reviewed endpoint. Give the writer only the selected
-findings and governing context, confine writes to that checkout, and require a reviewable commit or
-diff plus verification evidence. The primary session inspects the returned diff and runs the relevant
-verification; the writer's self-report is not evidence.
+Use a native multi-select when one is available, preserving row order, defaults, and initial focus.
+Otherwise use a textual fallback with the same ordered checklist and one confirmation. The fallback
+must say that recommendations are excluded by default and state the actual selected route: isolated
+when offered and selected, otherwise inline. Do not name a harness-specific API or claim the user can
+submit an empty chat message.
 
-Immediately before integration, repeat the same destination guard. Drift leaves the returned result
-unapplied. Integrate only a complete selected package that the primary session inspected and verified.
+A clear acceptance such as `yes`, `proceed`, `do it`, `ok`, or equivalent confirms the displayed
+selection. An adjustment changes the package, is reflected back once, and then requires confirmation.
+`stop`, `not yet`, rejection, cancellation, or dismissal writes nothing and discards queued re-review.
+An unclear answer asks once. The verdict itself is never confirmation.
 
-When re-review is selected, run the complete implementation-review procedure from the original base
-through the full remediated result. Reload the effective doctrine and governing design, inspect the
-whole diff and surrounding code, run applicable gates, cover every axis, and choose a fresh verdict.
-Prior findings are evidence, not reduced scope. The new verdict gets a fresh action close. It
-authorizes no unattended write.
+Enforce row dependencies even when the presentation cannot disable controls. With no selected fix row,
+the route and re-review modifiers are inert and the unchanged target returns to its caller. With a fix
+row, resolve exactly one route: isolated when selected and eligible, inline otherwise. Re-review runs
+only after the complete selected package succeeds. A blocked or partially applied package stops,
+reports its state, and remains unreviewed. When the user deselects re-review, stop after fixes and say
+the resulting change has not passed Inspector review.
+
+### Destination identity and routes
+
+At review time capture the evidence population for the resolved destination: HEAD, staged diff, unstaged diff,
+and reviewed untracked paths and contents. Immediately before either route writes, re-resolve the
+destination and compare that complete identity with the verdict evidence. Any difference is drift:
+stop without mutation and require a fresh implementation review. This check detects change; it never
+reconstructs dirty state elsewhere.
+
+For inline execution, the primary session applies the selected package in the resolved destination.
+For isolated execution, repeat the identity check and require the clean destination HEAD to equal the
+reviewed after endpoint before creating the isolated checkout from that exact commit. Give the writer
+the target, governing design, baseline, and selected findings with their evidence and remedies. Confine
+writes to the isolated checkout and require a reviewable commit or diff plus verification evidence;
+same-pattern observations outside the package return as observations instead of widening scope.
+
+The primary session inspects the isolated result and runs relevant verification; a writer's
+self-report is not evidence. Immediately before integration, repeat the clean destination HEAD and
+status guard. New commits, staged, unstaged, or untracked changes leave the result unapplied. Integrate
+only a complete inspected and verified package. If isolation becomes unavailable after confirmation,
+stop and offer inline execution; never silently weaken the selected route.
+
+### Full re-review and loop
+
+When re-review is selected, run the complete implementation procedure from the original base through
+the full accumulated change at the remediated destination, never just the fix delta. Reload effective
+kind doctrine and governing design, inspect the whole diff and surrounding code, run applicable gates,
+cover every soundness and groundedness axis, and choose a fresh verdict. Prior findings are evidence,
+not reduced scope; changes outside the fix delta remain visible.
+
+The new verdict gets the same fresh action close. It authorizes no unattended write, and the user can
+stop at every cycle.
 
 ## Next-turn parse for document reviews
 

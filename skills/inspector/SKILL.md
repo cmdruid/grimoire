@@ -47,7 +47,7 @@ This package does **not** mint records.
 
 | Invocation | Verb file | Does |
 |---|---|---|
-| `review` | `verbs/review.md` | two-axis critique; resolve the kind's review-continuation policy; conversation verdict |
+| `review` | `verbs/review.md` | two-axis critique; resolve continuation; conversation verdict and applicable action close |
 | `revise` | `verbs/revise.md` | verify findings, propose corrections, fold on confirm; a review-origin chain re-reviews by default |
 | `refine` | `verbs/refine.md` | explicitly simplify a spec or plan; propose, confirm, apply, then mandatory full review |
 | `/inspector setup [<root>]` | `verbs/setup.md` | deploy all bundled kind doctrine absent-only |
@@ -58,7 +58,7 @@ approve document                     →  accept/publish  →  (host sequences /
 material + automatic-proposal        →  revise questions/proposal  →  confirm/apply + queued review  →  …
 material + offered                   →  explicit revise offer  →  stop
 material + unavailable               →  publish-as-is offer or verdict-only  →  stop
-implementation needs-rework          →  mutation-free verdict  →  confirm isolated remediation  →  full review
+implementation review                →  mutation-free verdict  →  actionable close  →  optional fixes + full review
 explicit refine of spec/plan         →  simplification proposal  →  confirm/apply + mandatory review
 ```
 
@@ -70,9 +70,9 @@ approval applies the proposal and immediately runs the existing `review` procedu
 review continuation; every accepted refinement runs review and that review may enter `revise`.
 
 Implementation remains `revision-after-review: unavailable`: it never enters document `revise` or
-`refine`. An isolation-eligible `needs-rework` verdict instead opens the separate post-verdict action
-stop in `verbs/review.md`. Only confirmation authorizes remediation; a completely applied package
-queues a full same-base review, and each fresh verdict authorizes no further write.
+`refine`. Every implementation verdict instead receives the separate post-verdict action close in
+`verbs/review.md`. Only confirmation authorizes remediation; a completely applied package may run a
+full same-base review, and each fresh verdict authorizes no further write.
 
 ## Kind-detect (review, revise, and refine; once)
 

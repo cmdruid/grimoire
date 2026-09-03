@@ -20,6 +20,13 @@ has "$REVIEW" 'offer accept/publish as-is or explicit revise' "recommended offer
 has "$REVIEW" 'Implementation needs-rework action' "implementation action close missing"
 has "$REVIEW" 'The verdict itself is never confirmation' "implementation confirmation guard missing"
 has "$REVIEW" 'fresh action close' "implementation re-review loop missing"
+has "$REVIEW" 'native multi-select' "native presentation adapter missing"
+has "$REVIEW" 'textual fallback' "textual presentation adapter missing"
+has "$REVIEW" 'one unambiguous writable destination' "implementation destination resolver missing"
+has "$REVIEW" 'omit the isolation row' "inline route disclosure missing"
+has "$REVIEW" 'no selected fix row' "inert modifier rule missing"
+has "$REVIEW" 'partially applied' "partial-package stop missing"
+has "$REVIEW" 'has not passed Inspector review' "unreviewed-result disclosure missing"
 has "$REVIEW" 'If you accept, this session will publish' "passing publish offer missing"
 has "$REVIEW" 're-review queued by default' "offered revise does not carry re-review"
 
@@ -115,8 +122,9 @@ close_review() {
   local kind="$1" verdict="$2" mode="$3"
   if [ "$kind" = implementation ]; then
     case "$verdict" in
-      needs-rework) echo implementation-action-close ;;
-      *) echo verdict-only ;;
+      needs-rework|approve-with-changes) echo implementation-action-close ;;
+      approve) echo direct-return ;;
+      *) echo invalid ;;
     esac
     return
   fi
@@ -139,15 +147,27 @@ eq "unavailable recommended can publish unchanged" publish-as-is-offer "$(close_
 eq "unavailable must-fix is verdict only" verdict-only "$(close_review document needs-rework unavailable)"
 eq "implementation needs-rework opens action close" implementation-action-close \
   "$(close_review implementation needs-rework unavailable)"
-eq "implementation recommendation remains verdict-only in tracer" verdict-only \
+eq "implementation recommendation opens optional action close" implementation-action-close \
   "$(close_review implementation approve-with-changes unavailable)"
+eq "implementation approval offers direct return" direct-return \
+  "$(close_review implementation approve unavailable)"
 
 implementation_defaults() {
-  printf '%s\n' \
-    'off:focused:Also fix recommended changes' \
-    'on:-:Fix all must-fix findings' \
-    'on:-:After selected fixes, re-review the complete implementation' \
-    'on:-:For selected fixes, use an isolated implementation agent'
+  local verdict="$1" recommendations="$2" isolation="$3"
+  [ "$verdict" = approve ] && { printf '%s\n' 'return:Return to the calling workflow'; return; }
+  [ "$recommendations" = yes ] && printf '%s\n' 'off:focused:Also fix recommended changes'
+  [ "$verdict" = needs-rework ] && printf '%s\n' 'on:-:Fix all must-fix findings'
+  printf '%s\n' 'on:-:After selected fixes, re-review the complete implementation'
+  if [ "$isolation" = yes ]; then
+    printf '%s\n' 'on:-:For selected fixes, use an isolated implementation agent'
+  else
+    printf '%s\n' 'route:inline:Selected fixes will run inline'
+  fi
+}
+present_defaults() {
+  local presentation="$1"
+  shift
+  case "$presentation" in native|textual) implementation_defaults "$@" ;; *) return 1 ;; esac
 }
 
 implementation_answer() {
@@ -164,11 +184,75 @@ expected_defaults="$(printf '%s\n' \
   'on:-:After selected fixes, re-review the complete implementation' \
   'on:-:For selected fixes, use an isolated implementation agent')"
 eq "implementation defaults preserve exact order and selection" "$expected_defaults" \
-  "$(implementation_defaults)"
+  "$(implementation_defaults needs-rework yes yes)"
+expected_recommended="$(printf '%s\n' \
+  'off:focused:Also fix recommended changes' \
+  'on:-:After selected fixes, re-review the complete implementation' \
+  'on:-:For selected fixes, use an isolated implementation agent')"
+eq "recommended verdict accepts as-is by default" "$expected_recommended" \
+  "$(implementation_defaults approve-with-changes yes yes)"
+expected_inline="$(printf '%s\n' \
+  'on:-:Fix all must-fix findings' \
+  'on:-:After selected fixes, re-review the complete implementation' \
+  'route:inline:Selected fixes will run inline')"
+eq "no recommendations suppresses empty row and discloses inline" "$expected_inline" \
+  "$(implementation_defaults needs-rework no no)"
+eq "approve has no meaningless checklist" 'return:Return to the calling workflow' \
+  "$(implementation_defaults approve no yes)"
+eq "native and textual adapters share semantic rows" \
+  "$(present_defaults native needs-rework yes yes)" \
+  "$(present_defaults textual needs-rework yes yes)"
+rejects present_defaults unsupported needs-rework yes yes
+
+rows_contract() { [ "$(cat "$1")" = "$2" ]; }
+printf '%s\n' "$expected_defaults" > "$ROOT/defaults.original"
+cp "$ROOT/defaults.original" "$ROOT/defaults.saved"
+awk 'NR == 1 { first=$0; next } NR == 2 { print; print first; next } { print }' \
+  "$ROOT/defaults.original" > "$ROOT/defaults.broken"
+eq "row-order red-proof swaps one focused row" 1 \
+  "$(grep -c '^on:-:Fix all must-fix findings$' "$ROOT/defaults.broken")"
+rejects rows_contract "$ROOT/defaults.broken" "$expected_defaults"
+printf '%s\n' "$expected_inline" > "$ROOT/inline.original"
+cp "$ROOT/inline.original" "$ROOT/inline.saved"
+cp "$ROOT/inline.original" "$ROOT/inline.broken"
+printf '%s\n' 'off:focused:Also fix recommended changes' >> "$ROOT/inline.broken"
+eq "absent-class red-proof plants one recommendation row" 1 \
+  "$(grep -c '^off:focused:Also fix recommended changes$' "$ROOT/inline.broken")"
+rejects rows_contract "$ROOT/inline.broken" "$expected_inline"
+cp "$ROOT/defaults.original" "$ROOT/textual.broken"
+printf '%s\n' 'route:inline:Selected fixes will run inline' >> "$ROOT/textual.broken"
+eq "presentation red-proof plants one route mismatch" 1 \
+  "$(grep -c '^route:inline:Selected fixes will run inline$' "$ROOT/textual.broken")"
+rejects rows_contract "$ROOT/textual.broken" "$(cat "$ROOT/defaults.original")"
+cmp -s "$ROOT/defaults.original" "$ROOT/defaults.saved" && pass=$((pass + 1)) || fail=$((fail + 1))
+cmp -s "$ROOT/inline.original" "$ROOT/inline.saved" && pass=$((pass + 1)) || fail=$((fail + 1))
 eq "default confirmation excludes recommendations" confirmed:must-fix:isolated:full-re-review \
   "$(implementation_answer yes)"
 eq "implementation rejection writes nothing" no-write "$(implementation_answer stop)"
 eq "unclear implementation answer asks" ask "$(implementation_answer maybe)"
+
+selection_result() {
+  local fixes="$1" complete="$2" rereview="$3" route="$4"
+  [ "$fixes" = none ] && { echo unchanged:return; return; }
+  [ "$complete" = complete ] || { echo stopped:partial:unreviewed; return; }
+  [ "$rereview" = yes ] || { echo "$route:applied:unreviewed"; return; }
+  echo "$route:applied:full-re-review"
+}
+eq "route and review modifiers are inert without fixes" unchanged:return \
+  "$(selection_result none complete yes isolated)"
+eq "partial package never queues review" stopped:partial:unreviewed \
+  "$(selection_result must-fix partial yes inline)"
+eq "deselected review reports unreviewed result" inline:applied:unreviewed \
+  "$(selection_result recommended complete no inline)"
+eq "complete package uses exactly selected route" isolated:applied:full-re-review \
+  "$(selection_result must-fix complete yes isolated)"
+printf '%s\n' stopped:partial:unreviewed > "$ROOT/partial.original"
+cp "$ROOT/partial.original" "$ROOT/partial.saved"
+printf '%s\n' isolated:applied:full-re-review > "$ROOT/partial.broken"
+eq "partial red-proof plants one premature review" 1 \
+  "$(grep -c '^isolated:applied:full-re-review$' "$ROOT/partial.broken")"
+rejects rows_contract "$ROOT/partial.broken" "$(cat "$ROOT/partial.original")"
+cmp -s "$ROOT/partial.original" "$ROOT/partial.saved" && pass=$((pass + 1)) || fail=$((fail + 1))
 
 answer_offer() {
   local verdict="$1" answer="$2"
