@@ -451,6 +451,66 @@ impl Manifest {
         })
     }
 
+    pub(crate) fn replace_desired(&self, desired: &crate::DesiredState) -> Result<ManifestEdit> {
+        let mut current = self.clone();
+
+        for (name, source) in self.skills.iter().rev() {
+            if desired.skills.get(name) != Some(source) {
+                current = current
+                    .mutate(ManifestMutation::UninstallSkill { name: name.clone() })?
+                    .manifest;
+            }
+        }
+        for (name, request) in self.packs.iter().rev() {
+            if desired
+                .packs
+                .get(name)
+                .is_none_or(|desired| desired.source != request.source)
+            {
+                current = current
+                    .mutate(ManifestMutation::UninstallPack { name: name.clone() })?
+                    .manifest;
+            }
+        }
+        for (name, request) in &desired.packs {
+            match current.packs.get(name) {
+                None => {
+                    current = current
+                        .mutate(ManifestMutation::InstallPack {
+                            name: name.clone(),
+                            request: request.clone(),
+                        })?
+                        .manifest;
+                }
+                Some(existing) if existing.exclude != request.exclude => {
+                    current = current
+                        .mutate(ManifestMutation::ReplacePackExclusions {
+                            name: name.clone(),
+                            exclude: request.exclude.clone(),
+                        })?
+                        .manifest;
+                }
+                Some(_) => {}
+            }
+        }
+        for (name, source) in &desired.skills {
+            if !current.skills.contains_key(name) {
+                current = current
+                    .mutate(ManifestMutation::InstallSkill {
+                        name: name.clone(),
+                        source: source.clone(),
+                    })?
+                    .manifest;
+            }
+        }
+
+        Ok(ManifestEdit {
+            before: self.original.clone(),
+            after: current.original.clone(),
+            manifest: current,
+        })
+    }
+
     fn entry_ranges(&self, table_name: &str, key: &str) -> Result<Vec<Range<usize>>> {
         let table = self
             .document

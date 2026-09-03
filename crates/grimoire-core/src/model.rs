@@ -472,6 +472,113 @@ pub enum SourceTrustIntent {
     All,
 }
 
+/// The complete desired roots staged by an adapter before one atomic replan.
+///
+/// It deliberately excludes source declarations: source custody has its own
+/// review and fetch ceremonies and cannot be changed by a tree toggle.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DesiredState {
+    pub skills: BTreeMap<SkillName, SourceAlias>,
+    pub packs: BTreeMap<PackName, crate::ManifestPack>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DesiredEdit {
+    SetSkill {
+        name: SkillName,
+        source: SourceAlias,
+        enabled: bool,
+    },
+    SetPack {
+        name: PackName,
+        source: SourceAlias,
+        enabled: bool,
+    },
+    SetPackOptional {
+        pack: PackName,
+        skill: SkillName,
+        enabled: bool,
+    },
+}
+
+impl DesiredState {
+    pub fn from_world(world: &WorldState) -> Self {
+        Self {
+            skills: world.manifest.skills.clone(),
+            packs: world.manifest.packs.clone(),
+        }
+    }
+
+    pub fn apply(&mut self, edit: DesiredEdit) -> Result<()> {
+        match edit {
+            DesiredEdit::SetSkill {
+                name,
+                source,
+                enabled,
+            } => {
+                if enabled {
+                    if let Some(current) = self.skills.get(&name) {
+                        if current != &source {
+                            return Err(CoreError::Request(format!(
+                                "skill `{name}` is already staged from source `{current}`"
+                            )));
+                        }
+                    }
+                    self.skills.insert(name, source);
+                } else if self.skills.get(&name) == Some(&source) {
+                    self.skills.remove(&name);
+                }
+            }
+            DesiredEdit::SetPack {
+                name,
+                source,
+                enabled,
+            } => {
+                if enabled {
+                    if let Some(current) = self.packs.get(&name) {
+                        if current.source != source {
+                            return Err(CoreError::Request(format!(
+                                "pack `{name}` is already staged from source `{}`",
+                                current.source
+                            )));
+                        }
+                    }
+                    self.packs.entry(name).or_insert(crate::ManifestPack {
+                        source,
+                        exclude: BTreeSet::new(),
+                    });
+                } else if self
+                    .packs
+                    .get(&name)
+                    .is_some_and(|pack| pack.source == source)
+                {
+                    self.packs.remove(&name);
+                }
+            }
+            DesiredEdit::SetPackOptional {
+                pack,
+                skill,
+                enabled,
+            } => {
+                let request = self
+                    .packs
+                    .get_mut(&pack)
+                    .ok_or_else(|| CoreError::Request(format!("pack `{pack}` is not staged")))?;
+                if enabled {
+                    request.exclude.remove(&skill);
+                } else {
+                    request.exclude.insert(skill);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn into_request(self) -> Request {
+        Request::ReplaceDesiredState { desired: self }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Request {
     Initialize,
@@ -500,6 +607,9 @@ pub enum Request {
     ReplacePackExclusions {
         name: PackName,
         exclude: BTreeSet<SkillName>,
+    },
+    ReplaceDesiredState {
+        desired: DesiredState,
     },
     UpdateSource {
         alias: SourceAlias,

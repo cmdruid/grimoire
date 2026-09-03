@@ -38,6 +38,7 @@ pub enum ManifestChange {
     InstallPack,
     UninstallPack,
     ReplacePackExclusions { removes_desired: bool },
+    ReplaceDesiredState { removes_desired: bool },
 }
 
 impl ManifestChange {
@@ -48,6 +49,9 @@ impl ManifestChange {
                 | Self::UninstallSkill
                 | Self::UninstallPack
                 | Self::ReplacePackExclusions {
+                    removes_desired: true
+                }
+                | Self::ReplaceDesiredState {
                     removes_desired: true
                 }
         )
@@ -334,144 +338,178 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
     let mut manifest_change = None;
     let mut requested_candidate_action = None;
     let mut requested_trust_action = None;
-    let manifest_edit =
-        match request {
-            Request::Initialize => unreachable!(),
-            Request::Reconcile => None,
-            Request::AddSource { prepared, trust } => {
-                let alias = prepared.alias().clone();
-                let source = prepared.source().clone();
-                manifest_change = Some(ManifestChange::AddSource);
-                let edit = world.manifest.mutate(ManifestMutation::AddSource {
-                    alias: alias.clone(),
-                    source,
+    let manifest_edit = match request {
+        Request::Initialize => unreachable!(),
+        Request::Reconcile => None,
+        Request::AddSource { prepared, trust } => {
+            let alias = prepared.alias().clone();
+            let source = prepared.source().clone();
+            manifest_change = Some(ManifestChange::AddSource);
+            let edit = world.manifest.mutate(ManifestMutation::AddSource {
+                alias: alias.clone(),
+                source,
+            })?;
+            if prepared.manifest_before() != world.manifest_bytes
+                || prepared.manifest_after() != edit.after
+                || prepared.declaration_hash() != edit.manifest.source_declaration_hash(&alias)?
+                || prepared.info().alias != alias
+                || prepared.info().candidate.declaration_hash != prepared.declaration_hash()
+            {
+                return Err(CoreError::Request(
+                    "prepared source no longer matches the immutable world".into(),
+                ));
+            }
+            if world
+                .source_states
+                .values()
+                .any(|state| state.identity.as_ref() == Some(&prepared.info().candidate.identity))
+            {
+                return Err(CoreError::Request(
+                    "source canonical identity is already registered in this scope".into(),
+                ));
+            }
+            let candidate_bytes = prepared.info().candidate.to_bytes()?;
+            requested_candidate_action = Some(Action::ReplaceCandidate {
+                scope: world.scope,
+                alias: alias.clone(),
+                source_key: prepared.info().candidate.source_key(),
+                before: None,
+                after: candidate_bytes,
+            });
+            candidate_preconditions.insert(alias, None);
+            if trust != SourceTrustIntent::Untrusted {
+                requested_trust_action = Some(trust_action_from_candidate(
+                    world,
+                    &prepared.info().candidate,
+                    trust,
+                )?);
+            }
+            Some(edit)
+        }
+        Request::RemoveSource { alias } => {
+            manifest_change = Some(ManifestChange::RemoveSource);
+            if let Some(candidate) = world.candidates.get(&alias) {
+                let before = candidate.candidate_bytes.clone().ok_or_else(|| {
+                    CoreError::Request("candidate observation lacks exact bytes".into())
                 })?;
-                if prepared.manifest_before() != world.manifest_bytes
-                    || prepared.manifest_after() != edit.after
-                    || prepared.declaration_hash()
-                        != edit.manifest.source_declaration_hash(&alias)?
-                    || prepared.info().alias != alias
-                    || prepared.info().candidate.declaration_hash != prepared.declaration_hash()
-                {
-                    return Err(CoreError::Request(
-                        "prepared source no longer matches the immutable world".into(),
-                    ));
-                }
-                if world.source_states.values().any(|state| {
-                    state.identity.as_ref() == Some(&prepared.info().candidate.identity)
-                }) {
-                    return Err(CoreError::Request(
-                        "source canonical identity is already registered in this scope".into(),
-                    ));
-                }
-                let candidate_bytes = prepared.info().candidate.to_bytes()?;
-                requested_candidate_action = Some(Action::ReplaceCandidate {
+                let identity = candidate.identity.clone().ok_or_else(|| {
+                    CoreError::Request("candidate observation lacks identity".into())
+                })?;
+                requested_candidate_action = Some(Action::RemoveCandidate {
                     scope: world.scope,
                     alias: alias.clone(),
-                    source_key: prepared.info().candidate.source_key(),
-                    before: None,
-                    after: candidate_bytes,
+                    source_key: crate::SourceKey::derive(&identity),
+                    before: before.clone(),
                 });
-                candidate_preconditions.insert(alias, None);
-                if trust != SourceTrustIntent::Untrusted {
-                    requested_trust_action = Some(trust_action_from_candidate(
-                        world,
-                        &prepared.info().candidate,
-                        trust,
-                    )?);
-                }
-                Some(edit)
+                candidate_preconditions.insert(alias.clone(), Some(ByteHash::of(&before)));
+            } else {
+                candidate_preconditions.insert(alias.clone(), None);
             }
-            Request::RemoveSource { alias } => {
-                manifest_change = Some(ManifestChange::RemoveSource);
-                if let Some(candidate) = world.candidates.get(&alias) {
-                    let before = candidate.candidate_bytes.clone().ok_or_else(|| {
-                        CoreError::Request("candidate observation lacks exact bytes".into())
-                    })?;
-                    let identity = candidate.identity.clone().ok_or_else(|| {
-                        CoreError::Request("candidate observation lacks identity".into())
-                    })?;
-                    requested_candidate_action = Some(Action::RemoveCandidate {
-                        scope: world.scope,
-                        alias: alias.clone(),
-                        source_key: crate::SourceKey::derive(&identity),
-                        before: before.clone(),
-                    });
-                    candidate_preconditions.insert(alias.clone(), Some(ByteHash::of(&before)));
-                } else {
-                    candidate_preconditions.insert(alias.clone(), None);
-                }
-                Some(
-                    world
-                        .manifest
-                        .mutate(ManifestMutation::RemoveSource { alias })?,
-                )
-            }
-            Request::InstallSkill { name, source } => {
-                manifest_change = Some(ManifestChange::InstallSkill);
-                Some(
-                    world
-                        .manifest
-                        .mutate(ManifestMutation::InstallSkill { name, source })?,
-                )
-            }
-            Request::UninstallSkill { name } => {
-                manifest_change = Some(ManifestChange::UninstallSkill);
-                Some(
-                    world
-                        .manifest
-                        .mutate(ManifestMutation::UninstallSkill { name })?,
-                )
-            }
-            Request::InstallPack { name, request } => {
-                manifest_change = Some(ManifestChange::InstallPack);
-                Some(
-                    world
-                        .manifest
-                        .mutate(ManifestMutation::InstallPack { name, request })?,
-                )
-            }
-            Request::UninstallPack { name } => {
-                manifest_change = Some(ManifestChange::UninstallPack);
-                Some(
-                    world
-                        .manifest
-                        .mutate(ManifestMutation::UninstallPack { name })?,
-                )
-            }
-            Request::ReplacePackExclusions { name, exclude } => {
-                let previous = &world
+            Some(
+                world
                     .manifest
-                    .packs
-                    .get(&name)
-                    .ok_or_else(|| CoreError::Request(format!("pack `{name}` is not requested")))?
-                    .exclude;
-                manifest_change = Some(ManifestChange::ReplacePackExclusions {
-                    removes_desired: !exclude.is_subset(previous),
-                });
-                Some(
-                    world
-                        .manifest
-                        .mutate(ManifestMutation::ReplacePackExclusions { name, exclude })?,
-                )
+                    .mutate(ManifestMutation::RemoveSource { alias })?,
+            )
+        }
+        Request::InstallSkill { name, source } => {
+            manifest_change = Some(ManifestChange::InstallSkill);
+            Some(
+                world
+                    .manifest
+                    .mutate(ManifestMutation::InstallSkill { name, source })?,
+            )
+        }
+        Request::UninstallSkill { name } => {
+            manifest_change = Some(ManifestChange::UninstallSkill);
+            Some(
+                world
+                    .manifest
+                    .mutate(ManifestMutation::UninstallSkill { name })?,
+            )
+        }
+        Request::InstallPack { name, request } => {
+            manifest_change = Some(ManifestChange::InstallPack);
+            Some(
+                world
+                    .manifest
+                    .mutate(ManifestMutation::InstallPack { name, request })?,
+            )
+        }
+        Request::UninstallPack { name } => {
+            manifest_change = Some(ManifestChange::UninstallPack);
+            Some(
+                world
+                    .manifest
+                    .mutate(ManifestMutation::UninstallPack { name })?,
+            )
+        }
+        Request::ReplacePackExclusions { name, exclude } => {
+            let previous = &world
+                .manifest
+                .packs
+                .get(&name)
+                .ok_or_else(|| CoreError::Request(format!("pack `{name}` is not requested")))?
+                .exclude;
+            manifest_change = Some(ManifestChange::ReplacePackExclusions {
+                removes_desired: !exclude.is_subset(previous),
+            });
+            Some(
+                world
+                    .manifest
+                    .mutate(ManifestMutation::ReplacePackExclusions { name, exclude })?,
+            )
+        }
+        Request::ReplaceDesiredState { desired } => {
+            if desired.skills == world.manifest.skills && desired.packs == world.manifest.packs {
+                None
+            } else {
+                manifest_change = Some(desired_manifest_change(world, &desired));
+                Some(world.manifest.replace_desired(&desired)?)
             }
-            Request::UpdateSource { alias } => {
-                let source = world.manifest.sources.get(&alias).ok_or_else(|| {
+        }
+        Request::UpdateSource { alias } => {
+            let source =
+                world.manifest.sources.get(&alias).ok_or_else(|| {
                     CoreError::Request(format!("source `{alias}` is not declared"))
                 })?;
+            if source.live {
+                return Err(CoreError::Request(format!(
+                    "live source `{alias}` updates immediately and cannot be updated"
+                )));
+            }
+            if let Some(candidate) = world
+                .candidates
+                .get(&alias)
+                .filter(|candidate| candidate.candidate_current)
+            {
+                desired_snapshots.insert(alias.clone(), candidate.snapshot.clone());
+                selected_candidates.insert(alias, candidate.clone());
+            } else if world.candidates.contains_key(&alias) {
+                request_blockers.push(Blocker::new(
+                    "source-candidate-stale",
+                    [("source", alias.to_string())],
+                ));
+            } else {
+                request_blockers.push(Blocker::new(
+                    "source-candidate-missing",
+                    [("source", alias.to_string())],
+                ));
+            }
+            None
+        }
+        Request::UpdateAll => {
+            for (alias, source) in &world.manifest.sources {
                 if source.live {
-                    return Err(CoreError::Request(format!(
-                        "live source `{alias}` updates immediately and cannot be updated"
-                    )));
+                    continue;
                 }
                 if let Some(candidate) = world
                     .candidates
-                    .get(&alias)
+                    .get(alias)
                     .filter(|candidate| candidate.candidate_current)
                 {
                     desired_snapshots.insert(alias.clone(), candidate.snapshot.clone());
-                    selected_candidates.insert(alias, candidate.clone());
-                } else if world.candidates.contains_key(&alias) {
+                    selected_candidates.insert(alias.clone(), candidate.clone());
+                } else if world.candidates.contains_key(alias) {
                     request_blockers.push(Blocker::new(
                         "source-candidate-stale",
                         [("source", alias.to_string())],
@@ -482,38 +520,13 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                         [("source", alias.to_string())],
                     ));
                 }
-                None
             }
-            Request::UpdateAll => {
-                for (alias, source) in &world.manifest.sources {
-                    if source.live {
-                        continue;
-                    }
-                    if let Some(candidate) = world
-                        .candidates
-                        .get(alias)
-                        .filter(|candidate| candidate.candidate_current)
-                    {
-                        desired_snapshots.insert(alias.clone(), candidate.snapshot.clone());
-                        selected_candidates.insert(alias.clone(), candidate.clone());
-                    } else if world.candidates.contains_key(alias) {
-                        request_blockers.push(Blocker::new(
-                            "source-candidate-stale",
-                            [("source", alias.to_string())],
-                        ));
-                    } else {
-                        request_blockers.push(Blocker::new(
-                            "source-candidate-missing",
-                            [("source", alias.to_string())],
-                        ));
-                    }
-                }
-                None
-            }
-            Request::TrustSource { .. } | Request::RevokeTrust { .. } | Request::Prune => {
-                unreachable!("handled before scope planning")
-            }
-        };
+            None
+        }
+        Request::TrustSource { .. } | Request::RevokeTrust { .. } | Request::Prune => {
+            unreachable!("handled before scope planning")
+        }
+    };
     let desired_manifest = manifest_edit
         .as_ref()
         .map_or(&world.manifest, |edit| &edit.manifest);
@@ -937,6 +950,71 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
         facts: resolution.facts,
         exit_class,
     })
+}
+
+fn desired_manifest_change(world: &WorldState, desired: &crate::DesiredState) -> ManifestChange {
+    let added_skills = desired
+        .skills
+        .iter()
+        .filter(|(name, source)| world.manifest.skills.get(*name) != Some(*source))
+        .count();
+    let removed_skills = world
+        .manifest
+        .skills
+        .iter()
+        .filter(|(name, source)| desired.skills.get(*name) != Some(*source))
+        .count();
+    let added_packs = desired
+        .packs
+        .iter()
+        .filter(|(name, request)| world.manifest.packs.get(*name) != Some(*request))
+        .count();
+    let removed_packs = world
+        .manifest
+        .packs
+        .iter()
+        .filter(|(name, request)| desired.packs.get(*name) != Some(*request))
+        .count();
+    let delta_count = added_skills + removed_skills + added_packs + removed_packs;
+
+    if delta_count == 1 {
+        return match (added_skills, removed_skills, added_packs, removed_packs) {
+            (1, 0, 0, 0) => ManifestChange::InstallSkill,
+            (0, 1, 0, 0) => ManifestChange::UninstallSkill,
+            (0, 0, 1, 0) => ManifestChange::InstallPack,
+            (0, 0, 0, 1) => ManifestChange::UninstallPack,
+            _ => unreachable!("one desired-state delta"),
+        };
+    }
+
+    if added_skills == 0
+        && removed_skills == 0
+        && added_packs == 1
+        && removed_packs == 1
+        && desired.packs.keys().eq(world.manifest.packs.keys())
+        && world.manifest.packs.iter().all(|(name, request)| {
+            desired
+                .packs
+                .get(name)
+                .is_some_and(|desired| desired.source == request.source)
+        })
+    {
+        let removes_desired = world.manifest.packs.iter().any(|(name, request)| {
+            desired
+                .packs
+                .get(name)
+                .is_some_and(|desired| !desired.exclude.is_subset(&request.exclude))
+        });
+        return ManifestChange::ReplacePackExclusions { removes_desired };
+    }
+
+    let removes_desired = removed_skills > 0
+        || world.manifest.packs.iter().any(|(name, request)| {
+            desired.packs.get(name).is_none_or(|desired| {
+                desired.source != request.source || !desired.exclude.is_subset(&request.exclude)
+            })
+        });
+    ManifestChange::ReplaceDesiredState { removes_desired }
 }
 
 fn plan_trust_mutation(

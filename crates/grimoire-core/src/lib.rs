@@ -15,6 +15,7 @@ mod scope;
 pub mod source;
 mod store;
 mod transaction;
+mod tree;
 mod trust;
 mod world;
 
@@ -42,5 +43,6 @@ pub use source::{
     SourceSummary, TrustCatalog, TrustSummary, TrustUse,
 };
 pub use store::MaterializationIntent;
+pub use tree::{project_tree, TreeItem, TreeItemKey, TreeProjection};
 pub use trust::{TrustBaseline, TrustMode, TrustMutation, TrustReceipt, TrustRecord, TrustStore};
 pub use world::{attach_inherited_global, load_world};

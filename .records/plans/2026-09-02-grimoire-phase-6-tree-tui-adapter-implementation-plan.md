@@ -31,7 +31,7 @@ This task is read-only and produces no commit.
   worker, and terminal restoration retain their existing ownership; the deleted alpha TUI is not
   a reuse target.
 - Re-run `RUSTC_WRAPPER= cargo test -p skill-grimoire -- --list` and
-  `RUSTC_WRAPPER= cargo check --workspace`. The planning baseline is 24 app tests, no TUI tests,
+  `RUSTC_WRAPPER= cargo check --workspace`. The planning baseline is 22 app tests, no TUI tests,
   reusable Ratatui/worker/terminal infrastructure, and no core tree projection, staged desired
   state, atomic multi-toggle request, TUI model, renderer, or event driver. Amend the plan if that
   baseline has moved.
@@ -68,7 +68,7 @@ This task is read-only and produces no commit.
 
 ## Slices
 
-- [ ] **Slice 1: One project skill stages into the exact plan pane** <requires: —>
+- [x] **Slice 1: One project skill stages into the exact plan pane** <requires: —>
   - Files: create `crates/grimoire-core/src/tree.rs`,
     `crates/grimoire-core/tests/tui_adapter.rs`, `crates/grimoire/src/tui/mod.rs`,
     `crates/grimoire/src/tui/model.rs`, `crates/grimoire/src/tui/render.rs`, and

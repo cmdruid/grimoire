@@ -5,5 +5,6 @@ pub mod command;
 pub mod env;
 pub mod render;
 pub mod runtime;
+pub mod tui;
 pub mod ui;
 pub mod worker;
