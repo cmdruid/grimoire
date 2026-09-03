@@ -31,6 +31,8 @@ echo "== ship-friction-test.sh"
 bash "$DIR/ship-friction-test.sh" || rc=1
 echo "== delivery-contract-test.sh"
 bash "$DIR/delivery-contract-test.sh" || rc=1
+echo "== landing-lease-test.sh"
+bash "$DIR/landing-lease-test.sh" || rc=1
 echo "== partial-delivery-test.sh"
 bash "$DIR/partial-delivery-test.sh" || rc=1
 echo "== pr-delivery-test.sh"

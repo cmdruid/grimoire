@@ -190,6 +190,22 @@ ALLOW_PARKED="no"
 RUNTIME=""
 TRACKER_FINGERPRINT=""
 RUNBOOK_FINGERPRINT=""
+LANDING_LOCK_BACKEND=""
+
+select_landing_lock_backend() {
+  local system
+  system="$(uname -s 2>/dev/null)" || die "cannot identify a supported landing lock primitive"
+  case "$system" in
+    Darwin|FreeBSD|NetBSD|OpenBSD|DragonFly)
+      command -v lockf >/dev/null 2>&1 || die "landing requires the lockf primitive on $system"
+      printf '%s\n' lockf
+      ;;
+    *)
+      command -v flock >/dev/null 2>&1 || die "landing requires the flock primitive on $system"
+      printf '%s\n' flock
+      ;;
+  esac
+}
 
 admit_root() {
   local supplied="$1" canonical top primary installed readme initialized=no starts=0 ends=0
@@ -1726,9 +1742,67 @@ remote_target_tip() {
   printf '%s\n' "$output" | awk 'NF==2{print $1; found++} END{if(found!=1)exit 2}'
 }
 
+landing_lock_path() {
+  local common canonical lock
+  common="$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || die "cannot resolve the shared Git directory"
+  case "$common" in /*) ;; *) die "shared Git directory is not absolute" ;; esac
+  canonical="$(canonical_dir "$common")" || die "shared Git directory is unsafe"
+  [ "$canonical" = "$common" ] || die "shared Git directory is not canonical"
+  lock="$common/workstream-landing.lock"
+  if [ -e "$lock" ] || [ -L "$lock" ]; then
+    [ -f "$lock" ] && [ ! -L "$lock" ] || die "landing lock path is unsafe"
+  fi
+  printf '%s\n' "$lock"
+}
+
+validate_landing_marker() { # marker
+  local marker="$1" parent
+  [ -f "$marker" ] && [ ! -L "$marker" ] || die "landing acquisition marker is unsafe"
+  parent="$(canonical_dir "$(dirname "$marker")")" || die "landing acquisition marker parent is unsafe"
+  case "$parent/" in "$ROOT/"|"$ROOT/"*) die "landing acquisition marker must be outside the repository" ;; esac
+  [ "$parent/$(basename "$marker")" = "$marker" ] || die "landing acquisition marker is not canonical"
+}
+
 cmd_land_advance() {
   [ "$#" -eq 3 ] && [ "$2" = --authority ] && [ "$3" = confirmed ] || die "landing requires --authority confirmed"
-  local stream="$1" shipment shipment_phase candidate expected target observed delivery state rc isolation landing remote_expected local_expected raw
+  local stream="$1" lock marker marker_dir rc=0
+  [ -n "$LANDING_LOCK_BACKEND" ] || die "landing lock primitive was not selected"
+  lock="$(landing_lock_path)"
+  marker_dir="$(canonical_dir "${TMPDIR:-/tmp}")" || die "temporary directory is unsafe"
+  case "$marker_dir/" in "$ROOT/"|"$ROOT/"*) die "temporary directory for landing must be outside the repository" ;; esac
+  marker="$(mktemp "$marker_dir/workstream-landing-acquired.XXXXXX")"
+  chmod 600 "$marker"
+  case "$LANDING_LOCK_BACKEND" in
+    lockf)
+      WORKSTREAM_LANDING_CHILD=yes lockf -s -t 0 -k "$lock" "$SELF" "$ROOT" _land-advance-transaction "$marker" "$stream" --authority confirmed || rc=$?
+      ;;
+    flock)
+      WORKSTREAM_LANDING_CHILD=yes flock -n "$lock" "$SELF" "$ROOT" _land-advance-transaction "$marker" "$stream" --authority confirmed || rc=$?
+      ;;
+    *) rm -f "$marker"; die "unsupported landing lock backend" ;;
+  esac
+  if [ ! -s "$marker" ]; then
+    rm -f "$marker"
+    case "$LANDING_LOCK_BACKEND:$rc" in lockf:75|flock:1)
+      printf 'status=landing-busy\nnext_action=land\n'
+      return 1
+      ;;
+    esac
+    die "landing lock wrapper failed before acquisition"
+  fi
+  rm -f "$marker"
+  return "$rc"
+}
+
+cmd_land_advance_transaction() {
+  [ "${WORKSTREAM_LANDING_CHILD:-}" = yes ] || die "private landing transaction cannot be invoked directly"
+  [ "$#" -eq 4 ] && [ "$3" = --authority ] && [ "$4" = confirmed ] || die "invalid private landing transaction"
+  local marker="$1" stream="$2" shipment shipment_phase candidate expected target observed delivery state rc isolation landing remote_expected local_expected raw
+  validate_landing_marker "$marker"
+  printf 'acquired\n' >"$marker"
+  if [ -n "${WORKSTREAM_TEST_AFTER_LANDING_ACQUIRED:-}" ]; then
+    "$WORKSTREAM_TEST_AFTER_LANDING_ACQUIRED" "$marker"
+  fi
   admit_stream "$stream"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
   [ -n "$shipment" ] || die "no active shipment"
@@ -2588,6 +2662,9 @@ cmd_migrate() {
 
 main() {
   [ "$#" -ge 2 ] || { usage; exit 2; }
+  if [ "$2" = land-advance ]; then
+    LANDING_LOCK_BACKEND="$(select_landing_lock_backend)"
+  fi
   case "$2" in setup|repair|anchor|migrate) ADMIT_OPERATION="$2" ;; *) ADMIT_OPERATION=ordinary ;; esac
   case "$2" in read|state|diagnose|list|unpark|close-check|repair) ALLOW_PARKED=yes ;; esac
   admit_root "$1"
@@ -2621,6 +2698,7 @@ main() {
     gate-run) [ "$#" -ge 1 ] || die "gate-run requires a stream"; cmd_gate_run "$@" ;;
     gate-none) cmd_gate_none "$@" ;;
     land-advance) cmd_land_advance "$@" ;;
+    _land-advance-transaction) cmd_land_advance_transaction "$@" ;;
     ship-finalize) cmd_ship_finalize "$@" ;;
     delivery-classify) cmd_delivery_classify "$@" ;;
     reconcile-partial) cmd_reconcile_partial "$@" ;;

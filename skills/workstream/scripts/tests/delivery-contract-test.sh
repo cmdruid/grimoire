@@ -18,6 +18,7 @@ exit 0
 EOF
 chmod +x "$TMP/interrupt.sh"
 if WORKSTREAM_TEST_AFTER_DELIVERY_RUNNING="$TMP/interrupt.sh" "$HELPER" "$ROOT" land-advance delivery --authority confirmed >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect_absent 'acquired local interruption is not lock contention' 'status=landing-busy' "$OUT"
 expect 'running receipt precedes mutation' $'state\trunning' "$ROOT/.streams/delivery/workstream.tsv"
 expect_eq 'interruption leaves target unchanged' "$target_before" "$(git -C "$ROOT" rev-parse main)"
 "$HELPER" "$ROOT" land-advance delivery --authority confirmed >"$OUT"
@@ -52,6 +53,7 @@ printf 'unit\n' >>"$PUSHROOT/file"; git -C "$PUSHROOT" add file; git -C "$PUSHRO
 if git -C "$PUSHROOT" merge-base --is-ancestor "$remote_before" HEAD; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 candidate="$(git -C "$PUSHROOT" rev-parse HEAD)"
 if WORKSTREAM_TEST_AFTER_REMOTE_RUNNING="$TMP/interrupt.sh" "$HELPER" "$PUSHROOT" land-advance pushed --authority confirmed >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect_absent 'acquired remote interruption is not lock contention' 'status=landing-busy' "$OUT"
 expect 'remote running receipt precedes push' $'remote-target\tstate\trunning' "$PUSHROOT/.streams/pushed/workstream.tsv"
 expect 'both push destinations were recorded before mutation' $'remote-target\texpected-tip\t'"$remote_before" "$PUSHROOT/.streams/pushed/workstream.tsv"
 "$HELPER" "$PUSHROOT" land-advance pushed --authority confirmed >"$OUT"
