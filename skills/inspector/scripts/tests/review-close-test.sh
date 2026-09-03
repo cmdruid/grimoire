@@ -195,7 +195,7 @@ eq "implementation approval offers direct return" direct-return \
   "$(close_review implementation approve unavailable)"
 
 render_surface() {
-  local verdict="$1" recommendations="$2" isolation="$3" default example
+  local verdict="$1" recommendations="$2" isolation="$3" reason="${4:-}" default example
   case "$verdict" in
     approve)
       printf '%s\n' 'approve — Implementation ready' '' '1. Return to the calling workflow'
@@ -214,6 +214,10 @@ render_surface() {
       ;;
     *) return 1 ;;
   esac
+  if [ "$isolation" = no ]; then
+    [ -n "$reason" ] || return 1
+    printf '\nIsolation unavailable: %s.\n' "$reason"
+  fi
   if [ "$verdict" = approve-with-changes ]; then
     printf '\n%s\n' 'Execution — if fixing, choose one:'
   else
@@ -250,6 +254,18 @@ render_surface() {
     printf '\nReply with `1` to return as-is, or a fixing combination such as `2-%s-R`.\n' "$default"
     printf 'Reply `yes` to accept the default: `1`.\n'
   fi
+}
+
+render_surface_from_route() {
+  local verdict="$1" recommendations="$2" route="$3" reason
+  case "$route" in
+    isolated) render_surface "$verdict" "$recommendations" yes ;;
+    inline:*)
+      reason="$(printf '%s' "${route#inline:}" | tr '-' ' ')"
+      render_surface "$verdict" "$recommendations" no "$reason"
+      ;;
+    *) return 1 ;;
+  esac
 }
 
 render_reduced_surface() {
@@ -403,8 +419,9 @@ without_recommendations="$(render_surface needs-rework no yes)"
 has <(printf '%s\n' "$without_recommendations") '1. Fix must-fix findings only (default)' "must-fix default missing"
 has <(printf '%s\n' "$without_recommendations") '4. Make no changes' "no-change gap missing"
 if ! printf '%s\n' "$without_recommendations" | grep -qE '^[23]\.'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
-inline_surface="$(render_surface needs-rework yes no)"
+inline_surface="$(render_surface_from_route needs-rework yes inline:executor-unavailable)"
 has <(printf '%s\n' "$inline_surface") 'I. Work inline (only route; default)' "inline-only default missing"
+has <(printf '%s\n' "$inline_surface") 'Isolation unavailable: executor unavailable.' "inline reason missing"
 if ! printf '%s\n' "$inline_surface" | grep -qF 'A. Use an isolated'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 has <(printf '%s\n' "$inline_surface") 'Reply `yes` to accept the defaults: `1-I-R`.' "inline-only footer default missing"
 if ! printf '%s\n' "$inline_surface" | grep -qF '1-A-R'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
@@ -588,6 +605,7 @@ review_action_contract() {
     'pending normalized selection' 'preserve any existing pending value' \
     'every rendered reply footer must' 'same current-surface scope and route availability validation' \
     'Offer `A` only when an isolated executor exists' 'state the specific failed eligibility reason' \
+    'with a read-only' 'without creating a checkout or running checkout hooks' \
     'stores only a pending scope' 'require a fresh confirmation' \
     'Render a fresh inline-only surface' 'changing only `A` to `I`' \
     'writer-started partial or blocked work' \
@@ -602,7 +620,8 @@ for needle in 'needs-rework — Next actions' '1. Return as-is (default)' \
   'repeated punctuation, or trailing punctuation' 'pending normalized selection' \
   'stores only a pending scope' 'Render a fresh inline-only surface' \
   'every rendered reply footer must' 'same current-surface scope and route availability validation' \
-  'Offer `A` only when an isolated executor exists'; do
+  'Offer `A` only when an isolated executor exists' \
+  'without creating a checkout or running checkout hooks'; do
   awk -v needle="$needle" 'index($0, needle) == 0 { print }' \
     "$ROOT/review-action.original" > "$ROOT/review-action.broken"
   eq "review contract red-proof removes one clause" 0 \

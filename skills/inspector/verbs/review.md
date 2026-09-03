@@ -143,7 +143,8 @@ Reply `yes` to accept the defaults: `1-A-R`.
 ```
 
 When no recommendations exist, omit scopes `2` and `3`; `1` remains the default. When isolation is
-ineligible, omit `A`, label `I` as the only route, and display `1-I-R` as the default. Treat the
+ineligible, omit `A`, label `I` as the only route, state the derived ineligibility reason immediately
+above the execution group, and display `1-I-R` as the default. Treat the
 fenced surface above as the fully eligible, all-findings example: every rendered reply footer must
 be regenerated from the scopes and routes actually displayed. Its examples must contain no omitted
 scope or unavailable route, and its `yes` line must name that surface's exact default. For
@@ -217,8 +218,12 @@ reconstructs dirty state elsewhere.
 For inline execution, the primary session applies the selected package in the resolved destination.
 Offer `A` only when an isolated executor exists, the reviewed after endpoint is a committed object,
 the destination is clean with HEAD at that exact endpoint, and an isolated checkout can actually be
-created from it. Derive all four facts from the current repository and executor state. Otherwise omit
-`A`, expose only `I`, and state the specific failed eligibility reason. For isolated execution, repeat
+created from it. Derive all four facts from the current repository and executor state with a read-only
+preflight: verify the executor, commit object, exact clean HEAD, worktree support, absent checkout
+target, and writable target parent without creating a checkout or running checkout hooks. Actual
+checkout creation occurs only after confirmation; a race or creation-time failure uses the pre-writer
+fallback below. Otherwise omit `A`, expose only `I`, and state the specific failed eligibility reason.
+For isolated execution, repeat
 the identity check and require the clean destination HEAD to equal the reviewed after endpoint before
 creating the isolated checkout from that exact commit. Give the writer
 the target, governing design, baseline, and selected findings with their evidence and remedies. Confine
