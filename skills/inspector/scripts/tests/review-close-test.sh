@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016 # Markdown code spans are literal throughout this fixture.
 set -euo pipefail
 HERE="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)"
 SKILL="$(CDPATH='' cd -P "$HERE/../.." && pwd)"
@@ -224,6 +225,26 @@ render_surface() {
   fi
 }
 
+render_reduced_surface() {
+  local verdict="$1" recommendations="$2"
+  case "$verdict" in
+    needs-rework)
+      printf '%s\n' 'needs-rework — Next actions' '' 'Fix scope — choose one:' \
+        '1. Fix must-fix findings only (default)'
+      [ "$recommendations" = yes ] && printf '%s\n' \
+        '2. Fix all findings' '3. Fix recommended changes only'
+      printf '%s\n' '4. Make no changes' '' \
+        'A fixing choice requires a writable destination before execution or re-review can be confirmed.'
+      ;;
+    approve-with-changes)
+      printf '%s\n' 'approve-with-changes — Next actions' '' 'Fix scope — choose one:' \
+        '1. Return as-is (default)' '2. Fix recommended changes' '' \
+        'A fixing choice requires a writable destination before execution or re-review can be confirmed.'
+      ;;
+    *) return 1 ;;
+  esac
+}
+
 scope_available() {
   case "$1:$2:$3" in
     needs-rework:yes:1|needs-rework:yes:2|needs-rework:yes:3|needs-rework:yes:4) return 0 ;;
@@ -301,6 +322,39 @@ action_reply() {
   esac
 }
 
+reduced_reply() {
+  local answer="$1" verdict="$2" recommendations="$3" scope
+  case "$answer" in
+    stop|'not yet'|cancel|dismiss) echo no-write:cleared; return ;;
+    yes|proceed|go|'do it'|ok)
+      [ "$verdict" = approve-with-changes ] && { echo unchanged:1; return; }
+      echo pending-scope:1
+      return
+      ;;
+    'make no changes') scope=4 ;;
+    'return as-is') scope=1 ;;
+    'fix must-fix findings') scope=1 ;;
+    'fix all findings') scope=2 ;;
+    'fix recommended changes') [ "$verdict" = needs-rework ] && scope=3 || scope=2 ;;
+    *)
+      printf '%s' "$answer" | LC_ALL=C grep -qE '^[0-9]$' || { echo ask:no-write; return; }
+      scope="$answer"
+      ;;
+  esac
+  scope_available "$verdict" "$recommendations" "$scope" || { echo ask:no-write; return; }
+  if [ "$verdict:$scope" = needs-rework:4 ] || [ "$verdict:$scope" = approve-with-changes:1 ]; then
+    printf 'unchanged:%s\n' "$scope"
+  else
+    printf 'pending-scope:%s\n' "$scope"
+  fi
+}
+
+resolve_pending_scope() {
+  local scope="$1" isolation="$2" route
+  [ "$isolation" = yes ] && route=A || route=I
+  printf 'pending-selection:%s-%s-R:confirm-required\n' "$scope" "$route"
+}
+
 needs_surface="$(render_surface needs-rework yes yes)"
 has <(printf '%s\n' "$needs_surface") '1. Fix must-fix findings only (default)' "needs-rework default missing"
 has <(printf '%s\n' "$needs_surface") '2. Fix all findings' "all-findings scope missing"
@@ -370,6 +424,56 @@ eq "rejection clears pending selection" no-write:cleared \
 eq "approve-with-changes yes returns unchanged" confirmed:1 \
   "$(action_reply yes approve-with-changes yes yes 1)"
 
+reduced_needs="$(render_reduced_surface needs-rework yes)"
+has <(printf '%s\n' "$reduced_needs") '4. Make no changes' "reduced needs-rework exit missing"
+if ! printf '%s\n' "$reduced_needs" | grep -qF 'Execution —'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+if ! printf '%s\n' "$reduced_needs" | grep -qF 'Afterward —'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+eq "reduced approve-with-changes yes returns unchanged" unchanged:1 \
+  "$(reduced_reply yes approve-with-changes yes)"
+eq "reduced needs-rework yes records only default scope" pending-scope:1 \
+  "$(reduced_reply yes needs-rework yes)"
+eq "reduced numeric no-change returns without destination" unchanged:4 \
+  "$(reduced_reply 4 needs-rework yes)"
+eq "reduced natural no-change returns without destination" unchanged:4 \
+  "$(reduced_reply 'make no changes' needs-rework yes)"
+eq "reduced numeric fix stores only scope" pending-scope:2 \
+  "$(reduced_reply 2 needs-rework yes)"
+eq "reduced natural fix stores only scope" pending-scope:3 \
+  "$(reduced_reply 'fix recommended changes' needs-rework yes)"
+eq "reduced surface rejects route prose" ask:no-write \
+  "$(reduced_reply 'fix must-fix inline' needs-rework yes)"
+eq "reduced surface rejects afterward prose" ask:no-write \
+  "$(reduced_reply 'fix must-fix then re-review' needs-rework yes)"
+eq "resolved eligible scope becomes pending complete code" pending-selection:2-A-R:confirm-required \
+  "$(resolve_pending_scope 2 yes)"
+eq "resolved inline scope becomes pending complete code" pending-selection:2-I-R:confirm-required \
+  "$(resolve_pending_scope 2 no)"
+
+reduced_matrix() {
+  printf '%s\n' \
+    "recommended-yes:$(reduced_reply yes approve-with-changes yes)" \
+    "needs-yes:$(reduced_reply yes needs-rework yes)" \
+    "no-change:$(reduced_reply 4 needs-rework yes)" \
+    "pending:$(reduced_reply 2 needs-rework yes)" \
+    "resolved:$(resolve_pending_scope 2 yes)"
+}
+reduced_matrix_contract() { [ "$(cat "$1")" = "$(reduced_matrix)" ]; }
+reduced_matrix > "$ROOT/reduced.original"
+cp "$ROOT/reduced.original" "$ROOT/reduced.saved"
+for mutation in \
+  'recommended-yes:unchanged:1|recommended-yes:pending-scope:2' \
+  'needs-yes:pending-scope:1|needs-yes:confirmed:1-A-R' \
+  'no-change:unchanged:4|no-change:pending-scope:4' \
+  'pending:pending-scope:2|pending:confirmed:2-A-R' \
+  'resolved:pending-selection:2-A-R:confirm-required|resolved:confirmed:2-A-R'; do
+  before_row="${mutation%%|*}" after_row="${mutation#*|}"
+  sed "s/^$before_row$/$after_row/" "$ROOT/reduced.original" > "$ROOT/reduced.broken"
+  eq "reduced-state red-proof plants one unsafe transition" 1 \
+    "$(grep -cF "$after_row" "$ROOT/reduced.broken")"
+  rejects reduced_matrix_contract "$ROOT/reduced.broken"
+done
+cmp -s "$ROOT/reduced.original" "$ROOT/reduced.saved" && pass=$((pass + 1)) || fail=$((fail + 1))
+
 grammar_matrix() {
   printf '%s\n' \
     "default:$(normalize_code 1 needs-rework yes yes)" \
@@ -404,6 +508,9 @@ review_action_contract() {
     'A direct valid code on a complete surface is explicit confirmation' \
     'repeated punctuation, or trailing punctuation' \
     'pending normalized selection' 'preserve any existing pending value' \
+    'stores only a pending scope' 'require a fresh confirmation' \
+    'Render a fresh inline-only surface' 'changing only `A` to `I`' \
+    'writer-started partial or blocked work' \
     'The verdict itself is never confirmation'; do
     grep -qF "$needle" "$file" || return 1
   done
@@ -412,7 +519,8 @@ review_action_contract "$REVIEW" && pass=$((pass + 1)) || fail=$((fail + 1))
 cp "$REVIEW" "$ROOT/review-action.original"
 for needle in 'needs-rework — Next actions' '1. Return as-is (default)' \
   'A direct valid code on a complete surface is explicit confirmation' \
-  'repeated punctuation, or trailing punctuation' 'pending normalized selection'; do
+  'repeated punctuation, or trailing punctuation' 'pending normalized selection' \
+  'stores only a pending scope' 'Render a fresh inline-only surface'; do
   awk -v needle="$needle" 'index($0, needle) == 0 { print }' \
     "$ROOT/review-action.original" > "$ROOT/review-action.broken"
   eq "review contract red-proof removes one clause" 0 \

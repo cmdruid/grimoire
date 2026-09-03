@@ -205,7 +205,7 @@ Read-only; produce no commit.
     Expected: every verdict surface and supported textual form maps deterministically, invalid input is
     fail-closed, and all document review fixtures remain unchanged and green.
 
-- [ ] **Slice 3: Stateful destination and failure safety** <requires: 2>
+- [x] **Slice 3: Stateful destination and failure safety** <requires: 2>
   - Files:
     - `.records/plans/2026-09-03-inspector-textual-implementation-review-action-close-implementation-plan.md`
     - `skills/inspector/verbs/review.md`
