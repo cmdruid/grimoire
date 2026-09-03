@@ -128,6 +128,16 @@ Source: `.spaces/foreman/operations/complete-remaining-app-phases.md`
   plan decision, or a recovery condition that needs human authority.
 
 
+## Progress
+
+- Phase 5: its complete CLI adapter plan was approved, then received an explicit supported no-op
+  refinement before implementation.
+- Phase 6: its approved tree TUI plan was explicitly refined from seven slices to four; a complete
+  re-review approved the refined plan before implementation.
+- Phase 7: its hard-cut integration and close-out plan received an explicit supported no-op
+  refinement after complete review and approval; implementation is next.
+
+
 ## Resume
 
 Run `/foreman goal resume goals/2026-09-02-complete-grimoire-phases-5-7-through-reviewed-refined-plans-without-intermediate-landing.md` from the state owner's current context.
