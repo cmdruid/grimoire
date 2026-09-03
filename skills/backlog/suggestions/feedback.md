@@ -1,9 +1,11 @@
 ---
 title: Project Feedback
-use-when: "Development-experience observations whose remedy belongs in this project."
+use-when: "Qualitative development experience whose remedy belongs in this project."
 ---
 
 ## feedback
 
-File concrete friction or a useful observation from project work only when the remedy belongs in this repository.
-Feedback about a reusable installed skill belongs in that skill's home feedback channel, not this tracker.
+File a concrete qualitative observation about usability, clarity, perceived performance, or
+development friction when the remedy belongs in this repository, even if the exact remedy isn't
+known yet. A vague preference or one-session reaction isn't durable project state. Feedback
+about a reusable installed skill belongs in that skill's home feedback channel, not this tracker.

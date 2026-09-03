@@ -174,7 +174,7 @@ pass, and lint reports `fails=0` with only understood pre-existing warnings.
     tracker layers remain byte-identical; no successful layer retains `.setup-selection`. Commit
     this setup/recovery tracer independently.
 
-- [ ] **Slice 2: Route and deduplicate unresolved failure families** <requires: Slice 1>
+- [x] **Slice 2: Route and deduplicate unresolved failure families** <requires: Slice 1>
   - Files:
     - Modify `skills/backlog/suggestions/tasks.md`, `skills/backlog/suggestions/issues.md`,
       `skills/backlog/suggestions/feedback.md`, and `skills/backlog/suggestions/routines.md`.

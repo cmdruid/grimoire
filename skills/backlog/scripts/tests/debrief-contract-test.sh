@@ -9,7 +9,12 @@ for needle in 'since the previous' 'Pure Q&A' 'child/delegate' 'Zero sections or
   'do not create a durable cursor' 'API `create` or `update`' \
   'Before consulting the editable project prompt' 'non-overridable remedy-owner cut' \
   'reusable installed skill' 'do not write it to `.trackers`' 'skill-tagged byproduct' \
-  'remedy belongs in this repository';do has "$D" "$needle";done
+  'remedy belongs in this repository' 'Route by the state of the knowledge' \
+  'unresolved operational sighting' 'established negative condition' 'chosen project outcome' \
+  'subjective slowness' 'timeout, hang, or unexplained benchmark' 'confirmed regression' \
+  'accepted optimization' 'Expected red-green failures' 'resolved during the current objective' \
+  'configured layer has no `failures` queue' 'page the bounded open `failures` population' \
+  'component or command, stable signature, and observed behavior' 'strongest current evidence';do has "$D" "$needle";done
 
 subject_cut_ok(){
   local file="$1" cut prompt
@@ -25,12 +30,23 @@ if subject_cut_ok "$D";then pass=$((pass+1));else echo 'FAIL remedy-owner cut is
 printf '%s\n' \
   $'case\towner\texpected' \
   $'project-workflow-friction\tproject\tfeedback' \
+  $'subjective-slowness\tproject\tfeedback' \
+  $'unexplained-timeout\tproject\tfailures' \
+  $'confirmed-regression\tproject\tissues' \
+  $'accepted-optimization\tproject\ttasks' \
+  $'unresolved-flake\tproject\tfailures' \
+  $'expected-red-green\tproject\tnone' \
+  $'same-session-resolved\tproject\tnone' \
+  $'qualitative-nitpick\tproject\tfeedback' \
+  $'vague-preference\tproject\tnone' \
   $'installed-skill-friction\tskill\tbyproduct' \
   $'project-defect\tproject\tissue' \
   $'project-work\tproject\ttask' \
   $'repeated-project-response\tproject\troutine' >"$T/debrief-cases.tsv"
-[ "$(awk -F '\t' 'NR > 1 && $2 == "project" { n++ } END { print n+0 }' "$T/debrief-cases.tsv")" -eq 4 ]&&pass=$((pass+1))||fail=$((fail+1))
+[ "$(awk -F '\t' 'NR > 1 && $2 == "project" { n++ } END { print n+0 }' "$T/debrief-cases.tsv")" -eq 13 ]&&pass=$((pass+1))||fail=$((fail+1))
 [ "$(awk -F '\t' 'NR > 1 && $2 == "skill" && $3 == "byproduct" { n++ } END { print n+0 }' "$T/debrief-cases.tsv")" -eq 1 ]&&pass=$((pass+1))||fail=$((fail+1))
+[ "$(awk -F '\t' 'NR > 1 && $3 == "failures" { n++ } END { print n+0 }' "$T/debrief-cases.tsv")" -eq 2 ]&&pass=$((pass+1))||fail=$((fail+1))
+[ "$(awk -F '\t' 'NR > 1 && $3 == "none" { n++ } END { print n+0 }' "$T/debrief-cases.tsv")" -eq 3 ]&&pass=$((pass+1))||fail=$((fail+1))
 
 # Red-proof the routine-criteria assertion: require one real replacement and a failed copied check.
 cp "$D" "$T/debrief.md";before="$(grep -cF 'trigger, repeated response/decision, cost/risk/confusion' "$T/debrief.md")";[ "$before" -eq 1 ]||{ echo 'FAIL mutation target count' >&2;exit 1;}
@@ -42,4 +58,15 @@ cmp "$D" "$T/debrief.md" >/dev/null||{ echo 'FAIL source changed' >&2;fail=$((fa
 # Red-proof the hard subject cut independently of the routine criteria.
 sed '/Before consulting the editable project prompt/,/remedy belongs in this repository/d' "$D" >"$T/no-subject-cut.md"
 if subject_cut_ok "$T/no-subject-cut.md";then echo 'FAIL missing remedy-owner cut passed' >&2;fail=$((fail+1));else pass=$((pass+1));fi
+
+failure_intake_ok(){
+  grep -qF 'page the bounded open `failures` population' "$1"&&
+    grep -qF 'component or command, stable signature, and observed behavior' "$1"&&
+    grep -qF 'Use `update` for one matching family' "$1"&&
+    grep -qF 'otherwise use `create`' "$1"
+}
+if failure_intake_ok "$D";then pass=$((pass+1));else echo 'FAIL failure-family intake contract' >&2;fail=$((fail+1));fi
+before="$(grep -cF 'component or command, stable signature, and observed behavior' "$D")";[ "$before" -eq 1 ]||{ echo 'FAIL failure mutation target count' >&2;exit 1;}
+sed 's/component or command, stable signature, and observed behavior/component alone/' "$D">"$T/broken-failure.md"
+if failure_intake_ok "$T/broken-failure.md";then echo 'FAIL broken failure-family contract passed' >&2;fail=$((fail+1));else pass=$((pass+1));fi
 echo "debrief-contract-test: $pass passed, $fail failed";[ "$fail" -eq 0 ]
