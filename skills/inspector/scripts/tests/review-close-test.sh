@@ -17,7 +17,9 @@ has "$REVIEW" 'Automatic entry.' "automatic continuation entry missing"
 # shellcheck disable=SC2016 # Markdown code spans are literal.
 has "$REVIEW" 'No body, `status`, or `stage` changes before proposal confirmation.' "automatic no-write guard missing"
 has "$REVIEW" 'offer accept/publish as-is or explicit revise' "recommended offered choice missing"
-has "$REVIEW" 'Do not offer publish, revise, or remediation' "implementation close guard missing"
+has "$REVIEW" 'Implementation needs-rework action' "implementation action close missing"
+has "$REVIEW" 'The verdict itself is never confirmation' "implementation confirmation guard missing"
+has "$REVIEW" 'fresh action close' "implementation re-review loop missing"
 has "$REVIEW" 'If you accept, this session will publish' "passing publish offer missing"
 has "$REVIEW" 're-review queued by default' "offered revise does not carry re-review"
 
@@ -111,7 +113,13 @@ cmp -s "$SPINE" "$ROOT/spine.original" && pass=$((pass + 1)) || fail=$((fail + 1
 
 close_review() {
   local kind="$1" verdict="$2" mode="$3"
-  [ "$kind" = implementation ] && { echo verdict-only; return; }
+  if [ "$kind" = implementation ]; then
+    case "$verdict" in
+      needs-rework) echo implementation-action-close ;;
+      *) echo verdict-only ;;
+    esac
+    return
+  fi
   case "$verdict:$mode" in
     approve:*) echo publish-offer ;;
     approve-with-changes:automatic-proposal|needs-rework:automatic-proposal) echo auto-revise-queued ;;
@@ -129,7 +137,38 @@ eq "offered recommended exposes choice" offer-publish-or-revise "$(close_review 
 eq "offered must-fix stops at offer" revise-offer "$(close_review document needs-rework offered)"
 eq "unavailable recommended can publish unchanged" publish-as-is-offer "$(close_review document approve-with-changes unavailable)"
 eq "unavailable must-fix is verdict only" verdict-only "$(close_review document needs-rework unavailable)"
-eq "implementation never transitions" verdict-only "$(close_review implementation approve-with-changes automatic-proposal)"
+eq "implementation needs-rework opens action close" implementation-action-close \
+  "$(close_review implementation needs-rework unavailable)"
+eq "implementation recommendation remains verdict-only in tracer" verdict-only \
+  "$(close_review implementation approve-with-changes unavailable)"
+
+implementation_defaults() {
+  printf '%s\n' \
+    'off:focused:Also fix recommended changes' \
+    'on:-:Fix all must-fix findings' \
+    'on:-:After selected fixes, re-review the complete implementation' \
+    'on:-:For selected fixes, use an isolated implementation agent'
+}
+
+implementation_answer() {
+  case "$1" in
+    yes|proceed|approved|ok) echo confirmed:must-fix:isolated:full-re-review ;;
+    stop|'not yet'|cancel|dismiss) echo no-write ;;
+    *) echo ask ;;
+  esac
+}
+
+expected_defaults="$(printf '%s\n' \
+  'off:focused:Also fix recommended changes' \
+  'on:-:Fix all must-fix findings' \
+  'on:-:After selected fixes, re-review the complete implementation' \
+  'on:-:For selected fixes, use an isolated implementation agent')"
+eq "implementation defaults preserve exact order and selection" "$expected_defaults" \
+  "$(implementation_defaults)"
+eq "default confirmation excludes recommendations" confirmed:must-fix:isolated:full-re-review \
+  "$(implementation_answer yes)"
+eq "implementation rejection writes nothing" no-write "$(implementation_answer stop)"
+eq "unclear implementation answer asks" ask "$(implementation_answer maybe)"
 
 answer_offer() {
   local verdict="$1" answer="$2"

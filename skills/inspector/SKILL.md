@@ -58,7 +58,7 @@ approve document                     →  accept/publish  →  (host sequences /
 material + automatic-proposal        →  revise questions/proposal  →  confirm/apply + queued review  →  …
 material + offered                   →  explicit revise offer  →  stop
 material + unavailable               →  publish-as-is offer or verdict-only  →  stop
-implementation review → verdict only
+implementation needs-rework          →  mutation-free verdict  →  confirm isolated remediation  →  full review
 explicit refine of spec/plan         →  simplification proposal  →  confirm/apply + mandatory review
 ```
 
@@ -68,6 +68,11 @@ authorizes an edit. A `revise` entered from any document review carries a queued
 approval applies the proposal and immediately runs the existing `review` procedure. Standalone
 `revise` invokes review only when its confirmation names re-review. `Refine` is never an automatic
 review continuation; every accepted refinement runs review and that review may enter `revise`.
+
+Implementation remains `revision-after-review: unavailable`: it never enters document `revise` or
+`refine`. An isolation-eligible `needs-rework` verdict instead opens the separate post-verdict action
+stop in `verbs/review.md`. Only confirmation authorizes remediation; a completely applied package
+queues a full same-base review, and each fresh verdict authorizes no further write.
 
 ## Kind-detect (review, revise, and refine; once)
 
@@ -118,6 +123,9 @@ including when both old and new declarations are present. A malformed, conflicti
 unrecognized declaration is also invalid doctrine: name the file and ask for correction; do not
 guess. `implementation` is reserved and always `unavailable`, even if its effective file says
 otherwise.
+
+For implementation, `unavailable` governs document revision only. It does not suppress the distinct
+confirmed implementation action close owned by `review`.
 
 ## Brief the human (every verb)
 

@@ -110,7 +110,7 @@ Read-only; produce no commit.
 
 ## Slices
 
-- [ ] **Slice 1: Default isolated remediation and full re-review tracer** — requires: —
+- [x] **Slice 1: Default isolated remediation and full re-review tracer** — requires: —
   - Files:
     - `skills/inspector/SKILL.md`
     - `skills/inspector/verbs/review.md`

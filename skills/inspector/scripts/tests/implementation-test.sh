@@ -12,10 +12,12 @@ rejects() { if "$@"; then echo "FAIL expected rejection: $*" >&2; fail=$((fail +
 for needle in 'named diff, range, worktree, or commit' 'behavior matches the governing design' \
   'passing test could still encode the wrong implementation' 'claimed deletions and absence assertions' \
   'call sites and configuration' 'compatibility substrate forbidden by the design' \
-  'None. Implementation review never amends code'; do
+  'None. Implementation never enters document `revise` or `refine`' \
+  'The review phase never amends code'; do
   has "$KIND" "$needle" "implementation doctrine missing: $needle"
 done
 has "$REVIEW" 'Implementation target: inspect the full diff' "implementation review walk missing"
+has "$REVIEW" '## Implementation needs-rework action' "implementation action tracer missing"
 for needle in 'control-flow complexity' 'changed authored functions' \
   'same analyzer identity and version' \
   'report the analyzer identity, version, configuration, population, and exclusions' \
@@ -30,22 +32,153 @@ review_fixture() {
     AVOIDABLE_BRANCHING_MISSING_PATHS; do
     if grep -qF "$marker" "$file"; then echo must-fix; findings=$((findings + 1)); fi
   done
-  [ "$findings" -gt 0 ] || { grep -qF COMPLEXITY_RECOMMENDED "$file" && echo recommended \
-    || grep -qF RECOMMENDED "$file" && echo recommended || echo clean; }
+  if grep -qF COMPLEXITY_RECOMMENDED "$file" || grep -qF RECOMMENDED "$file"; then
+    echo recommended
+    findings=$((findings + 1))
+  fi
+  [ "$findings" -gt 0 ] || echo clean
 }
 verdict() { case "$1" in *must-fix*) echo needs-rework ;; *recommended*) echo approve-with-changes ;; *) echo approve ;; esac; }
 
+git_head() { git -C "$1" rev-parse HEAD; }
+git_status() { git -C "$1" status --porcelain=v1 --untracked-files=all; }
+destination_clean_at() {
+  [ "$(git_head "$1")" = "$2" ] && [ -z "$(git_status "$1")" ]
+}
+start_isolated() {
+  local destination="$1" expected_head="$2" isolated="$3"
+  destination_clean_at "$destination" "$expected_head" || return 1
+  [ ! -e "$isolated" ] || return 1
+  git -C "$destination" worktree add -q "$isolated" -b fixture/isolated-fix "$expected_head"
+}
+integrate_returned() {
+  local destination="$1" captured_head="$2" returned_commit="$3" inspected="$4" verified="$5"
+  [ "$inspected" = yes ] && [ "$verified" = yes ] || return 1
+  destination_clean_at "$destination" "$captured_head" || return 1
+  git -C "$destination" merge --ff-only "$returned_commit" >/dev/null
+}
+trace_contract() {
+  local trace="$1" base="$2" reviewed_after="$3" returned="$4" fresh_verdict="$5" expected
+  expected="$(printf '%s\n' \
+    'verdict:needs-rework' \
+    'confirmed:must-fix:isolated:full-re-review' \
+    "pre-write:$reviewed_after:clean" \
+    "isolated-start:$reviewed_after" \
+    "writer-return:$returned:verified" \
+    "primary-inspect:$returned" \
+    "primary-verify:$returned" \
+    "pre-integration:$reviewed_after:clean" \
+    "integrated:$returned" \
+    "re-review-base:$base" \
+    "re-review-after:$returned" \
+    're-review-scope:complete' \
+    "fresh-verdict:$fresh_verdict" \
+    "fresh-action-close:$fresh_verdict")"
+  [ "$(cat "$trace")" = "$expected" ]
+}
+
 ROOT="$(mktemp -d)"; trap 'rm -rf "$ROOT"' EXIT
-printf '%s\n' DESIGN_MISMATCH FALSE_GREEN MISSED_CALL_SITE FORBIDDEN_COMPAT > "$ROOT/bad.diff"
+printf '%s\n' DESIGN_MISMATCH FALSE_GREEN MISSED_CALL_SITE FORBIDDEN_COMPAT RECOMMENDED > "$ROOT/bad.diff"
 before="$(shasum "$ROOT/bad.diff" | awk '{print $1}')"
 result="$(review_fixture "$ROOT/bad.diff")"
-eq "four implementation findings" 4 "$(printf '%s\n' "$result" | wc -l | tr -d ' ')"
+eq "five implementation findings" 5 "$(printf '%s\n' "$result" | wc -l | tr -d ' ')"
+eq "four must-fix findings" 4 "$(printf '%s\n' "$result" | grep -c '^must-fix$')"
+eq "one recommended finding" 1 "$(printf '%s\n' "$result" | grep -c '^recommended$')"
 eq "must-fix implementation verdict" needs-rework "$(verdict "$result")"
 eq "implementation fixture unmodified" "$before" "$(shasum "$ROOT/bad.diff" | awk '{print $1}')"
 printf '%s\n' RECOMMENDED > "$ROOT/recommended.diff"
 eq "recommended implementation verdict" approve-with-changes "$(verdict "$(review_fixture "$ROOT/recommended.diff")")"
 : > "$ROOT/clean.diff"
 eq "clean implementation verdict" approve "$(verdict "$(review_fixture "$ROOT/clean.diff")")"
+
+DESTINATION="$ROOT/destination"
+ISOLATED="$ROOT/isolated"
+TRACE="$ROOT/trace"
+mkdir "$DESTINATION"
+git -C "$DESTINATION" init -q
+git -C "$DESTINATION" config user.name fixture
+git -C "$DESTINATION" config user.email fixture@example.invalid
+printf '%s\n' BASE > "$DESTINATION/change.txt"
+git -C "$DESTINATION" add change.txt
+git -C "$DESTINATION" commit -qm base
+base_endpoint="$(git_head "$DESTINATION")"
+printf '%s\n' DESIGN_MISMATCH RECOMMENDED ORIGINAL_CHANGE > "$DESTINATION/change.txt"
+git -C "$DESTINATION" add change.txt
+git -C "$DESTINATION" commit -qm reviewed
+reviewed_after="$(git_head "$DESTINATION")"
+destination_before="$(shasum "$DESTINATION/change.txt" | awk '{print $1}')"
+
+: > "$TRACE"
+printf '%s\n' 'verdict:needs-rework' \
+  'confirmed:must-fix:isolated:full-re-review' >> "$TRACE"
+
+cp "$DESTINATION/change.txt" "$ROOT/change.before"
+printf '%s\n' PRE_WRITE_DRIFT >> "$DESTINATION/change.txt"
+eq "pre-write drift plant count" 1 "$(grep -c '^PRE_WRITE_DRIFT$' "$DESTINATION/change.txt")"
+rejects start_isolated "$DESTINATION" "$reviewed_after" "$ISOLATED"
+[ ! -e "$ISOLATED" ] && pass=$((pass + 1)) || { echo "FAIL drift created isolation" >&2; fail=$((fail + 1)); }
+cp "$ROOT/change.before" "$DESTINATION/change.txt"
+eq "pre-write drift restoration" "$destination_before" \
+  "$(shasum "$DESTINATION/change.txt" | awk '{print $1}')"
+destination_clean_at "$DESTINATION" "$reviewed_after" \
+  && pass=$((pass + 1)) || { echo "FAIL destination not restored" >&2; fail=$((fail + 1)); }
+
+start_isolated "$DESTINATION" "$reviewed_after" "$ISOLATED"
+printf '%s\n' "pre-write:$reviewed_after:clean" "isolated-start:$reviewed_after" >> "$TRACE"
+awk '$0 != "DESIGN_MISMATCH"' "$ISOLATED/change.txt" > "$ROOT/next"
+mv "$ROOT/next" "$ISOLATED/change.txt"
+git -C "$ISOLATED" add change.txt
+git -C "$ISOLATED" commit -qm fix
+returned_commit="$(git_head "$ISOLATED")"
+grep -qF RECOMMENDED "$ISOLATED/change.txt" && ! grep -qF DESIGN_MISMATCH "$ISOLATED/change.txt" \
+  && writer_verified=yes || writer_verified=no
+eq "isolated writer verification" yes "$writer_verified"
+eq "writer leaves destination head" "$reviewed_after" "$(git_head "$DESTINATION")"
+eq "writer leaves destination clean" "" "$(git_status "$DESTINATION")"
+eq "writer leaves destination bytes" "$destination_before" \
+  "$(shasum "$DESTINATION/change.txt" | awk '{print $1}')"
+printf '%s\n' "writer-return:$returned_commit:verified" >> "$TRACE"
+
+git -C "$DESTINATION" diff --check "$reviewed_after..$returned_commit"
+inspected=yes
+git -C "$DESTINATION" show "$returned_commit:change.txt" | grep -qF ORIGINAL_CHANGE \
+  && primary_verified=yes || primary_verified=no
+eq "primary verification" yes "$primary_verified"
+printf '%s\n' "primary-inspect:$returned_commit" "primary-verify:$returned_commit" >> "$TRACE"
+
+printf '%s\n' PRE_INTEGRATION_DRIFT > "$DESTINATION/drift.tmp"
+eq "pre-integration drift plant count" 1 "$(grep -c '^PRE_INTEGRATION_DRIFT$' "$DESTINATION/drift.tmp")"
+rejects integrate_returned "$DESTINATION" "$reviewed_after" "$returned_commit" "$inspected" "$primary_verified"
+eq "drift leaves destination head" "$reviewed_after" "$(git_head "$DESTINATION")"
+rm -f "$DESTINATION/drift.tmp"
+destination_clean_at "$DESTINATION" "$reviewed_after" \
+  && pass=$((pass + 1)) || { echo "FAIL integration drift not restored" >&2; fail=$((fail + 1)); }
+
+printf '%s\n' "pre-integration:$reviewed_after:clean" >> "$TRACE"
+integrate_returned "$DESTINATION" "$reviewed_after" "$returned_commit" "$inspected" "$primary_verified"
+printf '%s\n' "integrated:$returned_commit" \
+  "re-review-base:$base_endpoint" \
+  "re-review-after:$returned_commit" \
+  're-review-scope:complete' >> "$TRACE"
+fresh_result="$(review_fixture "$DESTINATION/change.txt")"
+fresh_verdict="$(verdict "$fresh_result")"
+eq "full re-review keeps original change" 1 "$(grep -c '^ORIGINAL_CHANGE$' "$DESTINATION/change.txt")"
+eq "full re-review sees remaining recommendation" approve-with-changes "$fresh_verdict"
+printf '%s\n' "fresh-verdict:$fresh_verdict" "fresh-action-close:$fresh_verdict" >> "$TRACE"
+trace_contract "$TRACE" "$base_endpoint" "$reviewed_after" "$returned_commit" "$fresh_verdict" \
+  && pass=$((pass + 1)) || { echo "FAIL implementation action trace" >&2; fail=$((fail + 1)); }
+
+cp "$TRACE" "$ROOT/trace.original"
+awk -v row="pre-write:$reviewed_after:clean" '$0 != row' "$TRACE" > "$ROOT/trace.broken"
+eq "pre-write trace red-proof removes one row" 0 \
+  "$(grep -cF "pre-write:$reviewed_after:clean" "$ROOT/trace.broken" || true)"
+rejects trace_contract "$ROOT/trace.broken" "$base_endpoint" "$reviewed_after" "$returned_commit" "$fresh_verdict"
+awk -v row="pre-integration:$reviewed_after:clean" '$0 != row' "$TRACE" > "$ROOT/trace.broken"
+eq "pre-integration trace red-proof removes one row" 0 \
+  "$(grep -cF "pre-integration:$reviewed_after:clean" "$ROOT/trace.broken" || true)"
+rejects trace_contract "$ROOT/trace.broken" "$base_endpoint" "$reviewed_after" "$returned_commit" "$fresh_verdict"
+cmp -s "$TRACE" "$ROOT/trace.original" && pass=$((pass + 1)) || fail=$((fail + 1))
+git -C "$DESTINATION" worktree remove "$ISOLATED"
 
 printf '%s\n' AVOIDABLE_BRANCHING_MISSING_PATHS > "$ROOT/complex.diff"
 eq "avoidable branching is material" needs-rework "$(verdict "$(review_fixture "$ROOT/complex.diff")")"
