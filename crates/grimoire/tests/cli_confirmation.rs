@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 use skill_grimoire::command::{run_from, Console};
 use skill_grimoire::env::Environment;
+use skill_grimoire::runtime::SystemGitRunner;
 use tempfile::tempdir;
 
 struct TestEnvironment {
@@ -80,10 +81,12 @@ impl Console for TestConsole {
 }
 
 fn invoke(environment: &TestEnvironment, console: &mut TestConsole, args: &[&str]) -> u8 {
+    let git = SystemGitRunner::default();
     run_from(
         std::iter::once("grimoire").chain(args.iter().copied()),
         environment,
         console,
+        &git,
     )
 }
 

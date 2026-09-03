@@ -121,9 +121,18 @@ pub fn load_world(
         .map(|(alias, state)| (alias.clone(), state.snapshot.clone()))
         .collect::<BTreeMap<_, _>>();
     for (alias, state) in &candidates {
-        snapshots
-            .entry(alias.clone())
-            .or_insert_with(|| state.snapshot.clone());
+        match locked_states.get(alias) {
+            Some(locked)
+                if locked.store != SnapshotStore::Valid
+                    && locked.snapshot.id == state.snapshot.id =>
+            {
+                snapshots.insert(alias.clone(), state.snapshot.clone());
+            }
+            None => {
+                snapshots.insert(alias.clone(), state.snapshot.clone());
+            }
+            Some(_) => {}
+        }
     }
     let links = lock
         .skills

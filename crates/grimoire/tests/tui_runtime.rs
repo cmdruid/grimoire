@@ -13,6 +13,7 @@ use grimoire_core::{
 };
 use skill_grimoire::command::{run_from, Console};
 use skill_grimoire::env::Environment;
+use skill_grimoire::runtime::SystemGitRunner;
 use skill_grimoire::tui::{drive, Dialog, Driver, DriverEvent, Effect, JobOutcome, TuiModel};
 
 #[test]
@@ -434,7 +435,12 @@ impl Console for RoutingConsole {
 fn bare_invocation_rejects_nonterminals_before_routing_to_the_driver() {
     let mut nonterminal = RoutingConsole::default();
     assert_eq!(
-        run_from(["grimoire"], &FixedEnvironment, &mut nonterminal),
+        run_from(
+            ["grimoire"],
+            &FixedEnvironment,
+            &mut nonterminal,
+            &SystemGitRunner::default(),
+        ),
         2
     );
     assert_eq!(nonterminal.tui_runs, 0);
@@ -444,6 +450,14 @@ fn bare_invocation_rejects_nonterminals_before_routing_to_the_driver() {
         terminal: true,
         ..RoutingConsole::default()
     };
-    assert_eq!(run_from(["grimoire"], &FixedEnvironment, &mut terminal), 0);
+    assert_eq!(
+        run_from(
+            ["grimoire"],
+            &FixedEnvironment,
+            &mut terminal,
+            &SystemGitRunner::default(),
+        ),
+        0
+    );
     assert_eq!(terminal.tui_runs, 1);
 }

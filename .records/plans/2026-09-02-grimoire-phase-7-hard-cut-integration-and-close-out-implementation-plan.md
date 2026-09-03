@@ -105,7 +105,7 @@ This task is read-only and produces no commit.
     outer and hostile relevant content still stop, and both layouts complete the real
     install/check/uninstall path.
 
-- [ ] **Slice 2: Prove one planner across adapters and another home offline** <requires: 1>
+- [x] **Slice 2: Prove one planner across adapters and another home offline** <requires: 1>
   - Files: modify `crates/grimoire/src/command.rs`,
     `crates/grimoire/tests/tui_parity.rs`, `crates/grimoire/tests/support/mod.rs`, and create
     `crates/grimoire/tests/offline_reproduction.rs`; modify only the narrow core test support or

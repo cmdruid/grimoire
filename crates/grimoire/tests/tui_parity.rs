@@ -4,9 +4,10 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
-use grimoire_core::{
-    load_world, plan, Paths, PlanningMode, Request, SkillName, SourceAlias, TreeItemKey, WorldState,
-};
+use clap::Parser;
+use grimoire_core::{load_world, plan, Paths, SkillName, SourceAlias, TreeItemKey, WorldState};
+use skill_grimoire::args::Cli;
+use skill_grimoire::command::desired_command_input;
 use skill_grimoire::runtime::{SystemGitRunner, SystemRuntime};
 use skill_grimoire::tui::TuiModel;
 use tempfile::tempdir;
@@ -50,10 +51,6 @@ fn direct_core_cli_and_tui_emit_identical_blocked_additive_and_destructive_plans
     ));
 
     let paths = Paths::project(project.clone(), home.join(".grimoire")).unwrap();
-    let install = Request::InstallSkill {
-        name: SkillName::new("one").unwrap(),
-        source: SourceAlias::new("fixture").unwrap(),
-    };
     let key = TreeItemKey::Skill {
         source: SourceAlias::new("fixture").unwrap(),
         name: SkillName::new("one").unwrap(),
@@ -63,7 +60,6 @@ fn direct_core_cli_and_tui_emit_identical_blocked_additive_and_destructive_plans
         load(&paths),
         &project,
         &home,
-        install.clone(),
         &key,
         &["install", "one", "--source", "fixture", "--dry-run"],
     );
@@ -79,7 +75,6 @@ fn direct_core_cli_and_tui_emit_identical_blocked_additive_and_destructive_plans
         load(&paths),
         &project,
         &home,
-        install,
         &key,
         &["install", "one", "--source", "fixture", "--dry-run"],
     );
@@ -95,9 +90,6 @@ fn direct_core_cli_and_tui_emit_identical_blocked_additive_and_destructive_plans
         load(&paths),
         &project,
         &home,
-        Request::UninstallSkill {
-            name: SkillName::new("one").unwrap(),
-        },
         &key,
         &["uninstall", "one", "--dry-run"],
     );
@@ -109,16 +101,23 @@ fn assert_parity(
     world: WorldState,
     project: &Path,
     home: &Path,
-    request: Request,
     key: &TreeItemKey,
     cli: &[&str],
 ) -> grimoire_core::Plan {
-    let direct = plan(&world, request, PlanningMode::Normal).unwrap();
-    let bytes = direct.to_bytes().unwrap();
+    let parsed = Cli::try_parse_from(std::iter::once("grimoire").chain(cli.iter().copied()))
+        .unwrap()
+        .command
+        .unwrap();
+    let input = desired_command_input(&world, &parsed).unwrap();
 
+    let direct = plan(&world, input.request.clone(), input.mode).unwrap();
     let mut tui = TuiModel::new(world).unwrap();
     tui.toggle(key).unwrap();
-    assert_eq!(tui.plan_bytes().unwrap(), bytes);
+    assert_eq!(tui.staged_request(), input.request);
+    assert_eq!(tui.plan(), &direct);
+    assert_eq!(tui.plan().is_destructive(), direct.is_destructive());
+
+    let bytes = direct.to_bytes().unwrap();
 
     let output = support::run(project, home, cli);
     assert_eq!(

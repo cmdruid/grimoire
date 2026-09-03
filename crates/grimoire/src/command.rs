@@ -1,21 +1,139 @@
-use std::collections::BTreeSet;
 use std::ffi::OsString;
 use std::io::{self, IsTerminal, Write};
 
 use clap::{error::ErrorKind, Parser};
+use grimoire_core::source::GitRunner;
 use grimoire_core::{
     apply, attach_inherited_global, check, context_report, load_trust_world, load_world,
     observe_reachability, plan, prepare_source_add, refresh_source, source_diff, source_info,
-    source_key_for_alias, source_summaries, trust_catalog, Approval, CoreError, ManifestPack,
-    ManifestSource, PackName, PlanningMode, Request, ScopePaths, SkillName, SourceAlias, SourceKey,
-    SourceTrustIntent,
+    source_key_for_alias, source_summaries, trust_catalog, Approval, CoreError, DesiredEdit,
+    DesiredState, ManifestSource, PackName, PlanningMode, Request, ScopePaths, SkillName,
+    SourceAlias, SourceKey, SourceTrustIntent, WorldState,
 };
 
 use crate::args::{Cli, Command, SourceCommand, StoreCommand, TrustCommand};
 use crate::env::{
     resolve_global_paths, resolve_init_paths, resolve_scope_paths, Environment, SystemPathProbe,
 };
-use crate::runtime::{SystemGitRunner, SystemRuntime};
+use crate::runtime::SystemRuntime;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlanningInput {
+    pub request: Request,
+    pub mode: PlanningMode,
+}
+
+pub fn desired_command_input(
+    world: &WorldState,
+    command: &Command,
+) -> grimoire_core::Result<PlanningInput> {
+    let (edit, mode) = match command {
+        Command::Install {
+            name: None,
+            pack: false,
+            source: None,
+            frozen,
+            ..
+        } => {
+            return Ok(PlanningInput {
+                request: Request::Reconcile,
+                mode: if *frozen {
+                    PlanningMode::Frozen
+                } else {
+                    PlanningMode::Normal
+                },
+            });
+        }
+        Command::Install {
+            name: Some(name),
+            pack: false,
+            source: Some(source),
+            frozen,
+            ..
+        } => (
+            DesiredEdit::SetSkill {
+                name: SkillName::new(name.clone())?,
+                source: SourceAlias::new(source.clone())?,
+                enabled: true,
+            },
+            if *frozen {
+                PlanningMode::Frozen
+            } else {
+                PlanningMode::Normal
+            },
+        ),
+        Command::Install {
+            name: Some(name),
+            pack: true,
+            source: Some(source),
+            frozen,
+            ..
+        } => (
+            DesiredEdit::SetPack {
+                name: PackName::new(name.clone())?,
+                source: SourceAlias::new(source.clone())?,
+                enabled: true,
+            },
+            if *frozen {
+                PlanningMode::Frozen
+            } else {
+                PlanningMode::Normal
+            },
+        ),
+        Command::Uninstall {
+            name, pack: false, ..
+        } => {
+            let name = SkillName::new(name.clone())?;
+            let source =
+                world.manifest.skills.get(&name).cloned().ok_or_else(|| {
+                    CoreError::Manifest(format!("skill `{name}` is not requested"))
+                })?;
+            (
+                DesiredEdit::SetSkill {
+                    name,
+                    source,
+                    enabled: false,
+                },
+                PlanningMode::Normal,
+            )
+        }
+        Command::Uninstall {
+            name, pack: true, ..
+        } => {
+            let name = PackName::new(name.clone())?;
+            let source = world
+                .manifest
+                .packs
+                .get(&name)
+                .map(|request| request.source.clone())
+                .ok_or_else(|| CoreError::Manifest(format!("pack `{name}` is not requested")))?;
+            (
+                DesiredEdit::SetPack {
+                    name,
+                    source,
+                    enabled: false,
+                },
+                PlanningMode::Normal,
+            )
+        }
+        Command::Install { .. } => {
+            return Err(CoreError::Request(
+                "operand installs require `--source <alias>`".into(),
+            ));
+        }
+        _ => {
+            return Err(CoreError::Request(
+                "command does not express desired-state input".into(),
+            ));
+        }
+    };
+    let mut desired = DesiredState::from_world(world);
+    desired.apply(edit)?;
+    Ok(PlanningInput {
+        request: desired.into_request(),
+        mode,
+    })
+}
 
 pub trait Console {
     fn is_terminal(&self) -> bool;
@@ -56,7 +174,12 @@ impl Console for SystemConsole {
     }
 }
 
-pub fn run_from<I, T>(args: I, environment: &dyn Environment, console: &mut dyn Console) -> u8
+pub fn run_from<I, T>(
+    args: I,
+    environment: &dyn Environment,
+    console: &mut dyn Console,
+    git: &dyn GitRunner,
+) -> u8
 where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
@@ -81,7 +204,7 @@ where
             return if result.is_ok() { exit } else { 5 };
         }
     };
-    match execute(cli, environment, console) {
+    match execute(cli, environment, console, git) {
         Ok(code) => code,
         Err(error) => {
             let code = exit_for_error(&error);
@@ -101,6 +224,7 @@ fn execute(
     cli: Cli,
     environment: &dyn Environment,
     console: &mut dyn Console,
+    git: &dyn GitRunner,
 ) -> grimoire_core::Result<u8> {
     let Some(command) = cli.command else {
         if !console.is_terminal() {
@@ -110,12 +234,17 @@ fn execute(
         }
         return console.run_tui(environment);
     };
+    if matches!(
+        &command,
+        Command::Install { .. } | Command::Uninstall { .. }
+    ) {
+        return execute_desired_command(&command, environment, console, git);
+    }
     match command {
         Command::Init { scope } => {
             let paths = resolve_init_paths(environment, &scope, &SystemPathProbe)?;
-            let runner = SystemGitRunner::default();
             let runtime = SystemRuntime;
-            let world = load_world(&paths, &runner, &runtime)?;
+            let world = load_world(&paths, git, &runtime)?;
             let plan = plan(&world, Request::Initialize, PlanningMode::Normal)?;
             let mut bytes = Vec::new();
             crate::render::plan(&plan, &mut bytes).map_err(output_error)?;
@@ -126,71 +255,11 @@ fn execute(
             console.write_stdout(&bytes).map_err(output_error)?;
             Ok(0)
         }
-        Command::Source { command } => execute_source(command, environment, console),
+        Command::Source { command } => execute_source(command, environment, console, git),
         Command::Trust { command } => execute_trust(command, environment, console),
-        Command::Install {
-            name,
-            pack,
-            source,
-            dry_run,
-            frozen,
-            yes,
-            scope,
-        } => {
-            let request = match (name, source, pack) {
-                (None, None, false) => Request::Reconcile,
-                (Some(name), Some(source), false) => Request::InstallSkill {
-                    name: SkillName::new(name)?,
-                    source: SourceAlias::new(source)?,
-                },
-                (Some(name), Some(source), true) => Request::InstallPack {
-                    name: PackName::new(name)?,
-                    request: ManifestPack {
-                        source: SourceAlias::new(source)?,
-                        exclude: BTreeSet::new(),
-                    },
-                },
-                _ => {
-                    return Err(CoreError::Request(
-                        "operand installs require `--source <alias>`".into(),
-                    ))
-                }
-            };
-            execute_scoped_request(
-                environment,
-                console,
-                &scope,
-                request,
-                if frozen {
-                    PlanningMode::Frozen
-                } else {
-                    PlanningMode::Normal
-                },
-                ApplyOptions { dry_run, yes },
-            )
+        Command::Install { .. } | Command::Uninstall { .. } => {
+            unreachable!("desired commands return before dispatch")
         }
-        Command::Uninstall {
-            name,
-            pack,
-            dry_run,
-            yes,
-            scope,
-        } => execute_scoped_request(
-            environment,
-            console,
-            &scope,
-            if pack {
-                Request::UninstallPack {
-                    name: PackName::new(name)?,
-                }
-            } else {
-                Request::UninstallSkill {
-                    name: SkillName::new(name)?,
-                }
-            },
-            PlanningMode::Normal,
-            ApplyOptions { dry_run, yes },
-        ),
         Command::Update {
             source,
             dry_run,
@@ -208,9 +277,10 @@ fn execute(
             },
             PlanningMode::Normal,
             ApplyOptions { dry_run, yes },
+            git,
         ),
         Command::List { scope } => {
-            let world = load_context_world(environment, &scope)?;
+            let world = load_context_world(environment, &scope, git)?;
             let report = context_report(&world);
             let mut bytes = Vec::new();
             crate::render::context_report(&report, &mut bytes).map_err(output_error)?;
@@ -220,7 +290,7 @@ fn execute(
             ))
         }
         Command::Check { scope } => {
-            let world = load_context_world(environment, &scope)?;
+            let world = load_context_world(environment, &scope, git)?;
             let report = check(&world);
             let mut bytes = Vec::new();
             crate::render::check_report(&report, &mut bytes).map_err(output_error)?;
@@ -240,9 +310,8 @@ fn execute(
                 crate::render::observations(&observation.findings, &mut bytes)
                     .map_err(output_error)?;
                 console.write_stdout(&bytes).map_err(output_error)?;
-                let runner = SystemGitRunner::default();
                 let world =
-                    load_world(&paths, &runner, &runtime)?.with_reachability(observation.clone());
+                    load_world(&paths, git, &runtime)?.with_reachability(observation.clone());
                 let code = apply_request(
                     &paths,
                     &world,
@@ -261,17 +330,59 @@ fn execute(
 fn load_context_world(
     environment: &dyn Environment,
     scope: &crate::args::ScopeArgs,
+    git: &dyn GitRunner,
 ) -> grimoire_core::Result<grimoire_core::WorldState> {
     let paths = resolve_scope_paths(environment, scope, &SystemPathProbe)?;
-    let runner = SystemGitRunner::default();
     let runtime = SystemRuntime;
-    let world = load_world(&paths, &runner, &runtime)?;
+    let world = load_world(&paths, git, &runtime)?;
     if matches!(paths.scope, ScopePaths::Global { .. }) {
         return Ok(world);
     }
     let global_paths = resolve_global_paths(environment)?;
-    let global = load_world(&global_paths, &runner, &runtime)?;
+    let global = load_world(&global_paths, git, &runtime)?;
     attach_inherited_global(world, &global)
+}
+
+fn execute_desired_command(
+    command: &Command,
+    environment: &dyn Environment,
+    console: &mut dyn Console,
+    git: &dyn GitRunner,
+) -> grimoire_core::Result<u8> {
+    let (scope, options) = match command {
+        Command::Install {
+            scope,
+            dry_run,
+            yes,
+            ..
+        }
+        | Command::Uninstall {
+            scope,
+            dry_run,
+            yes,
+            ..
+        } => (
+            scope,
+            ApplyOptions {
+                dry_run: *dry_run,
+                yes: *yes,
+            },
+        ),
+        _ => unreachable!("desired command dispatch"),
+    };
+    let paths = resolve_scope_paths(environment, scope, &SystemPathProbe)?;
+    let runtime = SystemRuntime;
+    let world = load_world(&paths, git, &runtime)?;
+    let input = desired_command_input(&world, command)?;
+    apply_request(
+        &paths,
+        &world,
+        input.request,
+        input.mode,
+        console,
+        &runtime,
+        options,
+    )
 }
 
 fn execute_scoped_request(
@@ -281,11 +392,11 @@ fn execute_scoped_request(
     request: Request,
     mode: PlanningMode,
     options: ApplyOptions,
+    git: &dyn GitRunner,
 ) -> grimoire_core::Result<u8> {
     let paths = resolve_scope_paths(environment, scope, &SystemPathProbe)?;
-    let runner = SystemGitRunner::default();
     let runtime = SystemRuntime;
-    let world = load_world(&paths, &runner, &runtime)?;
+    let world = load_world(&paths, git, &runtime)?;
     apply_request(&paths, &world, request, mode, console, &runtime, options)
 }
 
@@ -293,6 +404,7 @@ fn execute_source(
     command: SourceCommand,
     environment: &dyn Environment,
     console: &mut dyn Console,
+    git: &dyn GitRunner,
 ) -> grimoire_core::Result<u8> {
     let scope = match &command {
         SourceCommand::Add { scope, .. }
@@ -304,9 +416,8 @@ fn execute_source(
         | SourceCommand::Trust { scope, .. } => scope,
     };
     let paths = resolve_scope_paths(environment, scope, &SystemPathProbe)?;
-    let runner = SystemGitRunner::default();
     let runtime = SystemRuntime;
-    let world = load_world(&paths, &runner, &runtime)?;
+    let world = load_world(&paths, git, &runtime)?;
     match command {
         SourceCommand::Add {
             alias,
@@ -319,7 +430,7 @@ fn execute_source(
         } => {
             let alias = SourceAlias::new(alias)?;
             let source = ManifestSource::from_cli(location, reference, live)?;
-            let prepared = prepare_source_add(paths.clone(), &world, alias, source, &runner)?;
+            let prepared = prepare_source_add(paths.clone(), &world, alias, source, git)?;
             let trust = if trust_all {
                 SourceTrustIntent::All
             } else if trust {
@@ -366,7 +477,7 @@ fn execute_source(
             };
             let mut findings = false;
             for alias in aliases {
-                let info = refresh_source(paths.clone(), alias, &runner)?;
+                let info = refresh_source(paths.clone(), alias, git)?;
                 let mut bytes = Vec::new();
                 crate::render::source_info(&info, &mut bytes).map_err(output_error)?;
                 console.write_stdout(&bytes).map_err(output_error)?;

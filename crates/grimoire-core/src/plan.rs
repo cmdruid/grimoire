@@ -693,8 +693,14 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
         } else {
             selected_candidates
                 .get(alias)
+                .or_else(|| {
+                    world.source_states.get(alias).filter(|state| {
+                        desired_snapshots
+                            .get(alias)
+                            .is_some_and(|snapshot| snapshot.id == state.snapshot.id)
+                    })
+                })
                 .or_else(|| world.locked_states.get(alias))
-                .or_else(|| world.source_states.get(alias))
         };
         let Some(state) = state else {
             blockers.push(Blocker::new(

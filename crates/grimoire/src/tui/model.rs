@@ -210,6 +210,15 @@ impl TuiModel {
         &self.active_state().plan
     }
 
+    pub fn staged_request(&self) -> Request {
+        let state = self.active_state();
+        if state.world.manifest_present && state.world.lock_present {
+            state.desired.clone().into_request()
+        } else {
+            Request::Initialize
+        }
+    }
+
     pub fn plan_bytes(&self) -> Result<Vec<u8>> {
         self.plan().to_bytes()
     }
