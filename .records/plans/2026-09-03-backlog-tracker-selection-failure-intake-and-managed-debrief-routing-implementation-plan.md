@@ -217,7 +217,7 @@ pass, and lint reports `fails=0` with only understood pre-existing warnings.
     family through the unchanged provider API; initialized prompts and tables remain untouched unless
     the user explicitly adds `failures`. Commit failure intake independently.
 
-- [ ] **Slice 3: Manage the standalone project debrief route lifecycle** <requires: Task 0>
+- [x] **Slice 3: Manage the standalone project debrief route lifecycle** <requires: Task 0>
   - Files:
     - Create `skills/backlog/templates/agents-route.md`.
     - Modify `skills/backlog/scripts/trackers-anchor.sh`,
