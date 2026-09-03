@@ -26,7 +26,7 @@ every file operation uses an absolute path.
 
 ## Custody and safety
 
-- A linked stream lives at `<root>/.streams/<stream>` on `stream/<stream>`. Its ignored top-level
+- Every stream lives at `<root>/.streams/<stream>` on `stream/<stream>`. Its ignored top-level
   `WORKSTREAM.md` and `workstream.tsv` never merge. Tracked `.streams` control files may appear in
   every checkout; only `<root>/.streams/workstream.sh` is installed authority.
 - Stop on a root, worktree, branch, target, instance, runbook-hash, tracker-schema, worktree-registry,
@@ -49,7 +49,6 @@ Read only the selected verb file, then follow it. No verb requires another verb 
 | `load <stream>` | `verbs/load.md` |
 | `save [<operator-note>]` | `verbs/save.md` |
 | `sync` | `verbs/sync.md` |
-| `park` / `unpark` | `verbs/park.md` |
 | `ship [--prepare]` | `verbs/ship.md` |
 | `recycle [<source>]` | `verbs/recycle.md` |
 | `close` | `verbs/close.md` |

@@ -37,10 +37,10 @@ git init -q --bare "$SUB_REMOTE"; init_repo "$SUB_SEED"
 printf 'published\n' >"$SUB_SEED/file"; git -C "$SUB_SEED" add file; git -C "$SUB_SEED" commit -qm published; git -C "$SUB_SEED" remote add origin "$SUB_REMOTE"; git -C "$SUB_SEED" push -qu origin main
 git init -q --bare "$PUSH_REMOTE"; init_repo "$PUSH_ROOT"
 printf 'base\n' >"$PUSH_ROOT/file"; git -C "$PUSH_ROOT" add file; git -C "$PUSH_ROOT" commit -qm initial; git -C "$PUSH_ROOT" remote add origin "$PUSH_REMOTE"; git -C "$PUSH_ROOT" push -qu origin main
-"$HELPER" "$PUSH_ROOT" runtime-init published main published --isolation in-place --landing push >"$OUT"
+"$HELPER" "$PUSH_ROOT" runtime-init published main published --landing push >"$OUT"
 "$HELPER" "$PUSH_ROOT" unit-begin published link link >"$OUT"
-git -C "$PUSH_ROOT" config advice.addEmbeddedRepo false; git clone -q -b main "$SUB_REMOTE" "$PUSH_ROOT/vendor"
-git -C "$PUSH_ROOT" add vendor; git -C "$PUSH_ROOT" commit -qm 'add published gitlink'
+git -C "$PUSH_ROOT/.streams/published" config advice.addEmbeddedRepo false; git clone -q -b main "$SUB_REMOTE" "$PUSH_ROOT/.streams/published/vendor"
+git -C "$PUSH_ROOT/.streams/published" add vendor; git -C "$PUSH_ROOT/.streams/published" commit -qm 'add published gitlink'
 "$HELPER" "$PUSH_ROOT" unit-complete published >"$OUT"; "$HELPER" "$PUSH_ROOT" ship-prepare published >"$OUT"
 expect 'published remote gitlink reaches gate' 'status=gate-required' "$OUT"
 expect 'remote publication is recorded' $'published\tyes' "$PUSH_ROOT/.streams/published/workstream.tsv"

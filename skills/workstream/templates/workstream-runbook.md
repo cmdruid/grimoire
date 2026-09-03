@@ -7,7 +7,6 @@ root	<root>
 worktree	<worktree>
 branch	<branch>
 target	<target>
-isolation	worktree
 landing	local
 <!-- /workstream:identity@1 -->
 
@@ -21,7 +20,6 @@ operator-note	-
 
 <!-- workstream:policy@1 -->
 mode	delegate	bundled
-isolation	worktree	bundled
 landing	local	bundled
 ship-cadence	milestone	bundled
 defaults-fingerprint	<sha256>	bundled

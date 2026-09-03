@@ -1,7 +1,7 @@
 # `save [<operator-note>]` — preserve semantic intent
 
 Use save only before a context reset or custody transfer when Git and helper state don't capture a
-needed semantic fact. Resolve the current stream and call:
+needed semantic fact. Resolve the current registered stream worktree and call:
 
 ```text
 workstream.sh ROOT operator-note STREAM NOTE

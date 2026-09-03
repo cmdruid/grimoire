@@ -7,8 +7,8 @@ Repeat `--inherit mode|landing|ship-cadence` to return an explicit value to proj
 defaults. Supplying an explicit value and `--inherit` for the same field refuses.
 
 Reconfig requires clean tracked work, stable Git custody, and no running hook. It validates the
-current project `CONFIG.md`, refuses an isolation change, previews the old and new contract hashes,
-and replaces only the compiled policy and hook spans. The runbook's purpose, coordinates,
+current project `CONFIG.md`, previews the old and new contract hashes, and replaces only the
+compiled policy and hook spans. The runbook's purpose, coordinates,
 orientation, operator note, and project prose remain unchanged. Existing receipts retain their
 original hook fingerprints; only identities that haven't started use the new body.
 

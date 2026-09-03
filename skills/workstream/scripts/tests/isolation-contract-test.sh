@@ -16,7 +16,6 @@ write_config() {
   cat >"$ROOT/.streams/CONFIG.md" <<EOF
 <!-- workstream:defaults@1 -->
 mode: delegate
-isolation: worktree
 landing: local
 ship-cadence: milestone
 <!-- /workstream:defaults@1 -->

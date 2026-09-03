@@ -17,7 +17,7 @@ usage() {
 usage: workstream.sh <canonical-root> <operation> [args...]
 
   runtime-init <stream> <target> [brief] [--source-kind <brief|plan|roadmap>] [--cursor <value>]
-    [--mode <delegate|manual>] [--isolation <worktree|in-place>]
+    [--mode <delegate|manual>]
     [--landing <local|push|pr>] [--ship-cadence <milestone|per-track|per-stage>]
   setup
   repair
@@ -33,8 +33,6 @@ usage: workstream.sh <canonical-root> <operation> [args...]
   hook-complete <stream> <identity> --closure <path>
   friction-add <stream> <reason>
   sync <stream>
-  park <stream>
-  unpark <stream>
   recycle <stream> [--source-kind <brief|plan|roadmap>] [--cursor <value>]
   close-check <stream>
   list
@@ -186,7 +184,6 @@ validate_no_nested_stream_state() { # runtime checkout/state directory
 ROOT=""
 SELF=""
 ADMIT_OPERATION="ordinary"
-ALLOW_PARKED="no"
 RUNTIME=""
 TRACKER_FINGERPRINT=""
 RUNBOOK_FINGERPRINT=""
@@ -314,7 +311,7 @@ validate_config() {
     /^<!-- \/workstream:hook:(feature-completion|ship-friction)@1 -->$/ { if(state!="hook") fail(); state=""; event=""; next }
     /<!-- \/?workstream:/ { fail(); next }
     state=="defaults" {
-      if($0 !~ /^(mode|isolation|landing|ship-cadence): [^[:space:]]+$/) fail()
+      if($0 !~ /^(mode|landing|ship-cadence): [^[:space:]]+$/) fail()
       split($0,p,": "); if(seen[p[1]]++) fail(); scalar[p[1]]=p[2]; next
     }
     state=="hook" {
@@ -325,9 +322,8 @@ validate_config() {
       next
     }
     END {
-      if(state!="" || defaults!=1 || seen["mode"]!=1 || seen["isolation"]!=1 || seen["landing"]!=1 || seen["ship-cadence"]!=1) fail()
-      if(scalar["mode"]!~/^(delegate|manual)$/ || scalar["isolation"]!~/^(worktree|in-place)$/ || scalar["landing"]!~/^(local|push|pr)$/ || scalar["ship-cadence"]!~/^(milestone|per-track|per-stage)$/) fail()
-      if(scalar["isolation"]=="worktree" && scalar["landing"]!="local") fail()
+      if(state!="" || defaults!=1 || seen["mode"]!=1 || seen["landing"]!=1 || seen["ship-cadence"]!=1) fail()
+      if(scalar["mode"]!~/^(delegate|manual)$/ || scalar["landing"]!~/^(local|push|pr)$/ || scalar["ship-cadence"]!~/^(milestone|per-track|per-stage)$/) fail()
       for(e in hooks) if(execution[e]=="inline" && concurrency[e]=="parallel-preferred") fail()
       exit bad ? 2 : 0
     }
@@ -370,8 +366,8 @@ compiled_hook_fingerprint() { # event execution concurrency body-file
 
 compile_config() {
   local config="$ROOT/.streams/CONFIG.md" event body_var exec_var concurrency_var source_var fingerprint_var
-  MODE=delegate; ISOLATION=worktree; LANDING=local; SHIP_CADENCE=milestone; DEFAULTS_SOURCE=bundled
-  MODE_SOURCE=bundled; ISOLATION_SOURCE=bundled; LANDING_SOURCE=bundled; SHIP_CADENCE_SOURCE=bundled
+  MODE=delegate; LANDING=local; SHIP_CADENCE=milestone; DEFAULTS_SOURCE=bundled
+  MODE_SOURCE=bundled; LANDING_SOURCE=bundled; SHIP_CADENCE_SOURCE=bundled
   FEATURE_EXECUTION=inline; FEATURE_CONCURRENCY=serial; FEATURE_SOURCE=bundled
   FRICTION_EXECUTION=inline; FRICTION_CONCURRENCY=serial; FRICTION_SOURCE=bundled
   FEATURE_BODY="$(mktemp "${TMPDIR:-/tmp}/workstream-feature.XXXXXX")"
@@ -379,10 +375,10 @@ compile_config() {
   : >"$FEATURE_BODY"; : >"$FRICTION_BODY"
   if [ -e "$config" ] || [ -L "$config" ]; then
     validate_config "$config"
-    MODE="$(config_default "$config" mode)"; ISOLATION="$(config_default "$config" isolation)"
-    LANDING="$(config_default "$config" landing)"; SHIP_CADENCE="$(config_default "$config" ship-cadence)"
+    MODE="$(config_default "$config" mode)"; LANDING="$(config_default "$config" landing)"
+    SHIP_CADENCE="$(config_default "$config" ship-cadence)"
     DEFAULTS_SOURCE=project
-    MODE_SOURCE=project; ISOLATION_SOURCE=project; LANDING_SOURCE=project; SHIP_CADENCE_SOURCE=project
+    MODE_SOURCE=project; LANDING_SOURCE=project; SHIP_CADENCE_SOURCE=project
     for event in feature-completion ship-friction; do
       case "$event" in
         feature-completion) body_var=FEATURE_BODY; exec_var=FEATURE_EXECUTION; concurrency_var=FEATURE_CONCURRENCY; source_var=FEATURE_SOURCE ;;
@@ -396,7 +392,7 @@ compile_config() {
       fi
     done
   fi
-  DEFAULTS_FINGERPRINT="$(sha256_text "mode=$MODE|isolation=$ISOLATION|landing=$LANDING|ship-cadence=$SHIP_CADENCE")"
+  DEFAULTS_FINGERPRINT="$(sha256_text "mode=$MODE|landing=$LANDING|ship-cadence=$SHIP_CADENCE")"
   for event in feature-completion ship-friction; do
     case "$event" in
       feature-completion) body_var=FEATURE_BODY; exec_var=FEATURE_EXECUTION; concurrency_var=FEATURE_CONCURRENCY; fingerprint_var=FEATURE_FINGERPRINT ;;
@@ -420,7 +416,7 @@ stream_paths() {
 }
 
 admit_stream_coordinates() {
-  local stream="$1" top branch target recorded_root recorded_wt recorded_stream isolation held current
+  local stream="$1" top branch target recorded_root recorded_wt recorded_stream current
   stream_paths "$stream"
   [ -d "$RUNTIME" ] && [ ! -L "$RUNTIME" ] || die "stream runtime is missing or unsafe: $stream"
   [ -f "$RUNBOOK" ] && [ ! -L "$RUNBOOK" ] || die "runbook is missing or unsafe: $RUNBOOK"
@@ -431,36 +427,18 @@ admit_stream_coordinates() {
   recorded_stream="$(runbook_field "$RUNBOOK" stream)" || die "invalid runbook stream"
   branch="$(runbook_field "$RUNBOOK" branch)" || die "invalid runbook branch"
   target="$(runbook_field "$RUNBOOK" target)" || die "invalid runbook target"
-  isolation="$(runbook_field "$RUNBOOK" isolation)" || die "invalid runbook isolation"
   [ "$recorded_root" = "$ROOT" ] || die "runbook root mismatch"
   [ "$recorded_stream" = "$stream" ] || die "runbook stream mismatch"
   validate_ref "$branch"
   validate_ref "$target"
-  case "$isolation" in
-    worktree)
-      WT="$RUNTIME"
-      [ "$recorded_wt" = "$WT" ] || die "runbook worktree mismatch"
-      top="$(git -C "$WT" rev-parse --show-toplevel 2>/dev/null)" || die "stream is not a Git worktree"
-      top="$(canonical_dir "$top")" || die "stream top level is unsafe"
-      [ "$top" = "$WT" ] || die "stream worktree coordinate disagrees with Git"
-      [ "$(git -C "$WT" branch --show-current)" = "$branch" ] || die "stream branch is not held"
-      git -C "$ROOT" worktree list --porcelain | grep -qxF "worktree $WT" || die "stream worktree is not registered"
-      validate_no_nested_stream_state "$RUNTIME"
-      ;;
-    in-place)
-      WT="$ROOT"
-      [ "$recorded_wt" = "$ROOT" ] || die "in-place worktree mismatch"
-      held="$(git -C "$ROOT" branch --show-current)"
-      if [ "$held" != "$branch" ]; then
-        [ "$ALLOW_PARKED" = yes ] && [ "$held" = "$target" ] || die "in-place stream branch is not held"
-      fi
-      if git -C "$ROOT" worktree list --porcelain | awk -v b="refs/heads/$branch" '$1=="branch"&&$2==b{found=1} END{exit found?0:1}'; then
-        [ "$held" = "$branch" ] || die "in-place branch is held by another worktree"
-      fi
-      validate_no_nested_stream_state "$RUNTIME"
-      ;;
-    *) die "unsupported isolation: $isolation" ;;
-  esac
+  WT="$RUNTIME"
+  [ "$recorded_wt" = "$WT" ] || die "runbook worktree mismatch"
+  top="$(git -C "$WT" rev-parse --show-toplevel 2>/dev/null)" || die "stream is not a Git worktree"
+  top="$(canonical_dir "$top")" || die "stream top level is unsafe"
+  [ "$top" = "$WT" ] || die "stream worktree coordinate disagrees with Git"
+  [ "$(git -C "$WT" branch --show-current)" = "$branch" ] || die "stream branch is not held"
+  git -C "$ROOT" worktree list --porcelain | grep -qxF "worktree $WT" || die "stream worktree is not registered"
+  validate_no_nested_stream_state "$RUNTIME"
   validate_tracked_control_surface "$WT"
   git -C "$WT" rev-parse --verify --quiet "$target^{commit}" >/dev/null || die "target does not resolve"
   TRACKER_FINGERPRINT="$(file_fingerprint "$TRACKER")"
@@ -566,7 +544,7 @@ validate_tracker() {
       if(value["queue","-","source-kind"]~/^(brief|template)$/ && value["queue","-","cursor"]!="-") bad=1
       if(value["queue","-","state"]=="exhausted" && value["queue","-","cursor"]!="-") bad=1
       need("phase","-","name"); need("phase","-","next-action"); fields("phase","-",2)
-      if(value["phase","-","name"]!~/^(none|plan|build|ship)$/ || value["phase","-","next-action"]!~/^(define-unit|plan|build|feature-hook|accumulate|sync|unpark|prepare-ship|land|await-merge|postflight|recycle|close|blocked)$/) bad=1
+      if(value["phase","-","name"]!~/^(none|plan|build|ship)$/ || value["phase","-","next-action"]!~/^(define-unit|plan|build|feature-hook|accumulate|sync|prepare-ship|land|await-merge|postflight|recycle|close|blocked)$/) bad=1
 
       for(key in ids) {
         split(key,a,SUBSEP); r=a[1]; i=a[2]
@@ -654,7 +632,7 @@ validate_tracker() {
         if(has("gate",shipment_id,"outcome") && value["gate",shipment_id,"inputs-sha256"]!=value["shipment",shipment_id,"inputs-sha256"]) bad=1
       } else {
         pn=value["phase","-","name"]; na=value["phase","-","next-action"]
-        if(pn=="none" && na!~/^(define-unit|build|feature-hook|accumulate|sync|unpark|recycle|close|blocked)$/) bad=1
+        if(pn=="none" && na!~/^(define-unit|build|feature-hook|accumulate|sync|recycle|close|blocked)$/) bad=1
         if(pn=="plan" && na!="plan") bad=1
         if(pn=="build" && na!~/^(build|feature-hook|accumulate)$/) bad=1
         if(pn=="ship" && na!="prepare-ship") bad=1
@@ -778,7 +756,7 @@ emit_runbook() {
   printf '# %s — workstream runbook\n\n' "$stream"
   printf '<!-- workstream:identity@1 -->\n'
   printf 'stream\t%s\ninstance-id\t%s\nroot\t%s\nworktree\t%s\n' "$stream" "$instance" "$ROOT" "$WT"
-  printf 'branch\t%s\ntarget\t%s\nisolation\t%s\nlanding\t%s\n' "$branch" "$target" "$ISOLATION" "$LANDING"
+  printf 'branch\t%s\ntarget\t%s\nlanding\t%s\n' "$branch" "$target" "$LANDING"
   printf '<!-- /workstream:identity@1 -->\n\n'
   printf '<!-- workstream:brief@1 -->\n'
   printf 'purpose\t%s\n' "$brief"
@@ -787,8 +765,8 @@ emit_runbook() {
   printf 'operator-note\t-\n'
   printf '<!-- /workstream:brief@1 -->\n\n'
   printf '<!-- workstream:policy@1 -->\n'
-  printf 'mode\t%s\t%s\nisolation\t%s\t%s\nlanding\t%s\t%s\nship-cadence\t%s\t%s\n' \
-    "$MODE" "$MODE_SOURCE" "$ISOLATION" "$ISOLATION_SOURCE" "$LANDING" "$LANDING_SOURCE" "$SHIP_CADENCE" "$SHIP_CADENCE_SOURCE"
+  printf 'mode\t%s\t%s\nlanding\t%s\t%s\nship-cadence\t%s\t%s\n' \
+    "$MODE" "$MODE_SOURCE" "$LANDING" "$LANDING_SOURCE" "$SHIP_CADENCE" "$SHIP_CADENCE_SOURCE"
   printf 'defaults-fingerprint\t%s\t%s\n' "$DEFAULTS_FINGERPRINT" "$DEFAULTS_SOURCE"
   printf '<!-- /workstream:policy@1 -->\n\n'
   printf '<!-- workstream:hook:feature-completion@1 -->\n'
@@ -806,8 +784,8 @@ emit_runbook() {
 cmd_runtime_init() {
   [ "$#" -ge 2 ] || die "usage: runtime-init <stream> <target> [brief] [options]"
   local stream="$1" target="$2" brief="Ad hoc workstream" branch instance runbook_candidate tracker_candidate runbook_temp tracker_temp runbook_hash next history
-  local source_kind=brief cursor=- queue_state=intake mode_opt="" isolation_opt="" landing_opt="" cadence_opt=""
-  local source_seen=no cursor_seen=no mode_seen=no isolation_seen=no landing_seen=no cadence_seen=no
+  local source_kind=brief cursor=- queue_state=intake mode_opt="" landing_opt="" cadence_opt=""
+  local source_seen=no cursor_seen=no mode_seen=no landing_seen=no cadence_seen=no
   shift 2
   if [ "$#" -gt 0 ] && [[ "$1" != --* ]]; then brief="$1"; shift; fi
   while [ "$#" -gt 0 ]; do
@@ -823,10 +801,6 @@ cmd_runtime_init() {
       --mode)
         [ "$#" -ge 2 ] && [ "$mode_seen" = no ] || die "--mode requires one value"
         mode_opt="$2"; mode_seen=yes; shift 2
-        ;;
-      --isolation)
-        [ "$#" -ge 2 ] && [ "$isolation_seen" = no ] || die "--isolation requires one value"
-        isolation_opt="$2"; isolation_seen=yes; shift 2
         ;;
       --landing)
         [ "$#" -ge 2 ] && [ "$landing_seen" = no ] || die "--landing requires one value"
@@ -844,7 +818,6 @@ cmd_runtime_init() {
   validate_text brief "$brief" yes
   case "$source_kind" in brief|plan|roadmap) ;; *) die "invalid queue source kind" ;; esac
   case "$mode_opt" in ''|delegate|manual) ;; *) die "invalid mode override" ;; esac
-  case "$isolation_opt" in ''|worktree|in-place) ;; *) die "invalid isolation override" ;; esac
   case "$landing_opt" in ''|local|push|pr) ;; *) die "invalid landing override" ;; esac
   case "$cadence_opt" in ''|milestone|per-track|per-stage) ;; *) die "invalid ship-cadence override" ;; esac
   if [ "$source_kind" = plan ] || [ "$source_kind" = roadmap ]; then
@@ -873,22 +846,10 @@ cmd_runtime_init() {
 
   compile_config
   if [ -n "$mode_opt" ]; then MODE="$mode_opt"; MODE_SOURCE=explicit; DEFAULTS_SOURCE=explicit; fi
-  if [ -n "$isolation_opt" ]; then ISOLATION="$isolation_opt"; ISOLATION_SOURCE=explicit; DEFAULTS_SOURCE=explicit; fi
   if [ -n "$landing_opt" ]; then LANDING="$landing_opt"; LANDING_SOURCE=explicit; DEFAULTS_SOURCE=explicit; fi
   if [ -n "$cadence_opt" ]; then SHIP_CADENCE="$cadence_opt"; SHIP_CADENCE_SOURCE=explicit; DEFAULTS_SOURCE=explicit; fi
-  [ "$ISOLATION" != worktree ] || [ "$LANDING" = local ] || die "worktree isolation requires local landing"
-  DEFAULTS_FINGERPRINT="$(sha256_text "mode=$MODE|isolation=$ISOLATION|landing=$LANDING|ship-cadence=$SHIP_CADENCE")"
-  if [ "$ISOLATION" = in-place ]; then
-    [ "$(git -C "$ROOT" branch --show-current)" = "$target" ] || die "in-place creation requires the target branch to be held"
-    [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ] || die "in-place creation requires clean tracked work"
-    while IFS= read -r candidate; do
-      grep -qE '^isolation[[:space:]]+in-place$' "$candidate" && die "another in-place stream already exists"
-    done < <(find "$ROOT/.streams" -mindepth 2 -maxdepth 2 -type f -name WORKSTREAM.md -print 2>/dev/null)
-    WT="$ROOT"
-  else
-    [ "$LANDING" = local ] || die "linked worktree isolation requires local landing"
-    WT="$RUNTIME"
-  fi
+  DEFAULTS_FINGERPRINT="$(sha256_text "mode=$MODE|landing=$LANDING|ship-cadence=$SHIP_CADENCE")"
+  WT="$RUNTIME"
   # The entropy read is deliberately before every repository mutation.
   instance="$(mint_instance_id)"
   next=1
@@ -911,13 +872,7 @@ cmd_runtime_init() {
   ensure_exclusions
   mkdir -p "$ROOT/.streams"
   [ -d "$ROOT/.streams" ] && [ ! -L "$ROOT/.streams" ] || die "control home became unsafe"
-  if [ "$ISOLATION" = worktree ]; then
-    git -C "$ROOT" worktree add -q -b "$branch" "$WT" "$target"
-  else
-    git -C "$ROOT" branch "$branch" "$target"
-    git -C "$ROOT" switch -q "$branch"
-    mkdir -p "$RUNTIME"
-  fi
+  git -C "$ROOT" worktree add -q -b "$branch" "$WT" "$target"
   runbook_temp="$(mktemp "$RUNTIME/.WORKSTREAM.md.XXXXXX")"
   tracker_temp="$(mktemp "$RUNTIME/.workstream.tsv.XXXXXX")"
   cp "$runbook_candidate" "$runbook_temp"
@@ -940,8 +895,6 @@ cmd_state() {
   target="$(runbook_field "$RUNBOOK" target)"
   phase="$(tracker_get phase - name)"
   next="$(tracker_get phase - next-action)"
-  if [ "$(runbook_field "$RUNBOOK" isolation)" = in-place ] &&
-     [ "$(git -C "$ROOT" branch --show-current)" = "$target" ]; then next=unpark; fi
   queue="$(tracker_get queue - state)"
   unit="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="active" {print $2}' "$TRACKER")"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
@@ -951,7 +904,7 @@ cmd_state() {
 
 cmd_read() {
   [ "$#" -eq 1 ] || die "usage: read <stream>"
-  local stream="$1" purpose orientation note source_kind source_pointer instance phase next queue unit unit_slug unit_summary shipment hook_identity hook_state mode isolation landing cadence branch target
+  local stream="$1" purpose orientation note source_kind source_pointer instance phase next queue unit unit_slug unit_summary shipment hook_identity hook_state mode landing cadence branch target
   admit_stream "$stream"
   purpose="$(runbook_block_field "$RUNBOOK" brief purpose)" || die "runbook purpose is malformed"
   orientation="$(runbook_block_field "$RUNBOOK" brief orientation)" || die "runbook orientation is malformed"
@@ -960,18 +913,16 @@ cmd_read() {
   source_pointer="$(runbook_block_field "$RUNBOOK" brief queue-source)" || die "runbook queue source is malformed"
   instance="$(tracker_get meta - instance-id)"; phase="$(tracker_get phase - name)"
   next="$(tracker_get phase - next-action)"; queue="$(tracker_get queue - state)"
-  if [ "$(runbook_field "$RUNBOOK" isolation)" = in-place ] &&
-     [ "$(git -C "$ROOT" branch --show-current)" = "$(runbook_field "$RUNBOOK" target)" ]; then next=unpark; fi
   unit="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="active" {print $2}' "$TRACKER")"
   if [ -n "$unit" ]; then unit_slug="$(tracker_get unit "$unit" slug)"; unit_summary="$(tracker_get unit "$unit" summary)"; else unit_slug=-; unit_summary=-; fi
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
   hook_identity="$(awk -F '\t' '$1=="hook"&&$3=="state"&&($4=="ready"||$4=="running") {print $2; exit}' "$TRACKER")"
   if [ -n "$hook_identity" ]; then hook_state="$(tracker_get hook "$hook_identity" state)"; else hook_identity=-; hook_state=-; fi
-  mode="$(runbook_policy_part "$RUNBOOK" mode 2)"; isolation="$(runbook_field "$RUNBOOK" isolation)"
-  landing="$(runbook_field "$RUNBOOK" landing)"; cadence="$(runbook_policy_part "$RUNBOOK" ship-cadence 2)"
+  mode="$(runbook_policy_part "$RUNBOOK" mode 2)"; landing="$(runbook_field "$RUNBOOK" landing)"
+  cadence="$(runbook_policy_part "$RUNBOOK" ship-cadence 2)"
   branch="$(runbook_field "$RUNBOOK" branch)"; target="$(runbook_field "$RUNBOOK" target)"
-  printf 'schema=workstream-read@1\nstream=%s,instance_id=%s\nworktree=%s\ncoordinates=branch:%s,target:%s,isolation:%s,landing:%s\npolicy=mode:%s,ship-cadence:%s\npurpose=%s\norientation=%s\noperator_note=%s\nqueue=source-kind:%s,source:%s,state:%s\nunit=id:%s,slug:%s,summary:%s\nshipment=%s,hook_identity=%s,hook_state=%s\nnext_action=%s\n' \
-    "$stream" "$instance" "$WT" "$branch" "$target" "$isolation" "$landing" "$mode" "$cadence" "$purpose" "$orientation" "$note" "$source_kind" "$source_pointer" "$queue" "${unit:--}" "$unit_slug" "$unit_summary" "${shipment:--}" "$hook_identity" "$hook_state" "$next"
+  printf 'schema=workstream-read@1\nstream=%s,instance_id=%s\nworktree=%s\ncoordinates=branch:%s,target:%s,landing:%s\npolicy=mode:%s,ship-cadence:%s\npurpose=%s\norientation=%s\noperator_note=%s\nqueue=source-kind:%s,source:%s,state:%s\nunit=id:%s,slug:%s,summary:%s\nshipment=%s,hook_identity=%s,hook_state=%s\nnext_action=%s\n' \
+    "$stream" "$instance" "$WT" "$branch" "$target" "$landing" "$mode" "$cadence" "$purpose" "$orientation" "$note" "$source_kind" "$source_pointer" "$queue" "${unit:--}" "$unit_slug" "$unit_summary" "${shipment:--}" "$hook_identity" "$hook_state" "$next"
 }
 
 cmd_diagnose() {
@@ -1029,7 +980,7 @@ cmd_phase_set() {
   current_phase="$(tracker_get phase - name)"; current_next="$(tracker_get phase - next-action)"
   if [ "$mode" = delegate ]; then
     [ "$phase" = none ] || die "delegate mode requires phase none"
-    case "$next" in define-unit|accumulate|sync|unpark|recycle|close|blocked) ;; *) die "illegal delegate phase transition" ;; esac
+    case "$next" in define-unit|accumulate|sync|recycle|close|blocked) ;; *) die "illegal delegate phase transition" ;; esac
   else
     case "$current_phase:$current_next:$phase:$next" in
       none:define-unit:plan:plan|plan:plan:build:build) ;;
@@ -1041,7 +992,7 @@ cmd_phase_set() {
     esac
   fi
   case "$phase" in none|plan|build|ship) ;; *) die "invalid phase" ;; esac
-  case "$next" in define-unit|plan|build|feature-hook|accumulate|sync|unpark|prepare-ship|land|await-merge|postflight|recycle|close|blocked) ;; *) die "invalid next action" ;; esac
+  case "$next" in define-unit|plan|build|feature-hook|accumulate|sync|prepare-ship|land|await-merge|postflight|recycle|close|blocked) ;; *) die "invalid next action" ;; esac
   raw="$(mktemp "${TMPDIR:-/tmp}/workstream-phase.XXXXXX")"
   awk -F '\t' 'NR>1 && !(($1=="phase"&&$2=="-"&&($3=="name"||$3=="next-action")))' "$TRACKER" >"$raw"
   printf 'phase\t-\tname\t%s\nphase\t-\tnext-action\t%s\n' "$phase" "$next" >>"$raw"
@@ -1797,7 +1748,7 @@ cmd_land_advance() {
 cmd_land_advance_transaction() {
   [ "${WORKSTREAM_LANDING_CHILD:-}" = yes ] || die "private landing transaction cannot be invoked directly"
   [ "$#" -eq 4 ] && [ "$3" = --authority ] && [ "$4" = confirmed ] || die "invalid private landing transaction"
-  local marker="$1" stream="$2" shipment shipment_phase candidate expected target observed delivery state rc isolation landing remote_expected local_expected raw
+  local marker="$1" stream="$2" shipment shipment_phase candidate expected target observed delivery state rc landing remote_expected local_expected raw
   validate_landing_marker "$marker"
   printf 'acquired\n' >"$marker"
   if [ -n "${WORKSTREAM_TEST_AFTER_LANDING_ACQUIRED:-}" ]; then
@@ -1825,7 +1776,6 @@ cmd_land_advance_transaction() {
   target="$(runbook_field "$RUNBOOK" target)"
   landing="$(runbook_field "$RUNBOOK" landing)"
   case "$landing" in local|push) ;; pr) die "PR landing requires pr-await" ;; *) die "unsupported landing mode" ;; esac
-  isolation="$(runbook_field "$RUNBOOK" isolation)"
   [ "$(git -C "$WT" rev-parse HEAD)" = "$candidate" ] || die "candidate changed"
   delivery="$shipment/local-target"
   state="$(awk -F '\t' -v i="$delivery" '$1=="delivery"&&$2==i&&$3=="state"{print $4}' "$TRACKER")"
@@ -1855,14 +1805,8 @@ cmd_land_advance_transaction() {
     if [ "$observed" = "$expected" ]; then
       [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ] || die "primary checkout has tracked dirt"
       rc=0
-      if [ "$isolation" = in-place ]; then
-        [ "$(git -C "$ROOT" branch --show-current)" = "$(runbook_field "$RUNBOOK" branch)" ] || die "in-place stream is not held"
-        git -C "$ROOT" merge-base --is-ancestor "$expected" "$candidate" || die "candidate is not a fast-forward"
-        git -C "$ROOT" update-ref "refs/heads/$target" "$candidate" "$expected" || rc=$?
-      else
-        [ "$(git -C "$ROOT" branch --show-current)" = "$target" ] || die "primary checkout is not on the target"
-        git -C "$ROOT" merge --ff-only -q "$(runbook_field "$RUNBOOK" branch)" || rc=$?
-      fi
+      [ "$(git -C "$ROOT" branch --show-current)" = "$target" ] || die "primary checkout is not on the target"
+      git -C "$ROOT" merge --ff-only -q "$(runbook_field "$RUNBOOK" branch)" || rc=$?
       observed="$(git -C "$ROOT" rev-parse "$target")"
       [ "$rc" -eq 0 ] || state=rejected
     else
@@ -1933,31 +1877,6 @@ cmd_sync() {
   if ! git -C "$WT" rebase "$target"; then printf 'status=conflict\nnext_action=blocked\n'; return 1; fi
   after="$(git -C "$WT" rev-parse HEAD)"
   printf 'status=synced\nbefore=%s\nafter=%s\nnext_action=%s\n' "$before" "$after" "$(tracker_get phase - next-action)"
-}
-
-cmd_park() {
-  [ "$#" -eq 1 ] || die "usage: park <stream>"
-  local stream="$1" branch target
-  admit_stream "$stream"
-  [ "$(runbook_field "$RUNBOOK" isolation)" = in-place ] || die "park applies only to an in-place stream"
-  branch="$(runbook_field "$RUNBOOK" branch)"; target="$(runbook_field "$RUNBOOK" target)"
-  [ "$(git -C "$ROOT" branch --show-current)" = "$branch" ] || die "in-place stream is not held"
-  [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ] || die "park requires clean tracked work"
-  ! awk -F '\t' '$1=="hook"&&$3=="state"&&($4=="ready"||$4=="running"){found=1}END{exit found?0:1}' "$TRACKER" || die "park refuses an unresolved hook"
-  git -C "$ROOT" switch -q "$target"
-  printf 'status=parked\nstream=%s\nbranch=%s\nnext_action=unpark\n' "$stream" "$target"
-}
-
-cmd_unpark() {
-  [ "$#" -eq 1 ] || die "usage: unpark <stream>"
-  local stream="$1" branch target
-  admit_stream "$stream"
-  [ "$(runbook_field "$RUNBOOK" isolation)" = in-place ] || die "unpark applies only to an in-place stream"
-  branch="$(runbook_field "$RUNBOOK" branch)"; target="$(runbook_field "$RUNBOOK" target)"
-  [ "$(git -C "$ROOT" branch --show-current)" = "$target" ] || die "root is not holding the recorded target"
-  [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ] || die "unpark requires clean tracked work"
-  git -C "$ROOT" switch -q "$branch"
-  printf 'status=unparked\nstream=%s\nbranch=%s\nnext_action=%s\n' "$stream" "$branch" "$(tracker_get phase - next-action)"
 }
 
 cmd_recycle() {
@@ -2173,7 +2092,6 @@ Text outside the versioned blocks is explanatory. Empty hook bodies disable thei
 
 <!-- workstream:defaults@1 -->
 mode: delegate
-isolation: worktree
 landing: local
 ship-cadence: milestone
 <!-- /workstream:defaults@1 -->
@@ -2270,32 +2188,21 @@ cmd_control_surface() {
 
 cmd_setup() { [ "$#" -eq 0 ] || die "usage: setup"; cmd_control_surface setup; }
 reconstruct_idle_tracker() { # stream
-  local stream="$1" recorded_stream recorded_root recorded_worktree branch target isolation held top before current instance next history candidate temp runbook_hash
+  local stream="$1" recorded_stream recorded_root recorded_worktree branch target top before current instance next history candidate temp runbook_hash
   [ -f "$RUNBOOK" ] && [ ! -L "$RUNBOOK" ] || die "stream repair requires a safe runbook"
   [ ! -e "$TRACKER" ] && [ ! -L "$TRACKER" ] || die "stream tracker is unsafe"
   recorded_stream="$(runbook_field "$RUNBOOK" stream)"; recorded_root="$(runbook_field "$RUNBOOK" root)"
   recorded_worktree="$(runbook_field "$RUNBOOK" worktree)"; branch="$(runbook_field "$RUNBOOK" branch)"
-  target="$(runbook_field "$RUNBOOK" target)"; isolation="$(runbook_field "$RUNBOOK" isolation)"
+  target="$(runbook_field "$RUNBOOK" target)"
   [ "$recorded_stream" = "$stream" ] && [ "$recorded_root" = "$ROOT" ] || die "runbook identity disagrees with the requested stream"
   [ "$branch" = "stream/$stream" ] || die "runbook branch is not canonical"
   validate_ref "$branch"; validate_ref "$target"; git -C "$ROOT" rev-parse --verify --quiet "$target^{commit}" >/dev/null || die "target does not resolve"
-  case "$isolation" in
-    worktree)
-      [ "$recorded_worktree" = "$RUNTIME" ] || die "runbook worktree mismatch"
-      top="$(git -C "$RUNTIME" rev-parse --show-toplevel 2>/dev/null)" || die "stream is not a Git worktree"
-      [ "$(canonical_dir "$top")" = "$RUNTIME" ] || die "stream worktree coordinate disagrees with Git"
-      [ "$(git -C "$RUNTIME" branch --show-current)" = "$branch" ] || die "stream branch is not held"
-      git -C "$ROOT" worktree list --porcelain | grep -qxF "worktree $RUNTIME" || die "stream worktree is not registered"
-      WT="$RUNTIME"
-      ;;
-    in-place)
-      [ "$recorded_worktree" = "$ROOT" ] || die "in-place worktree mismatch"
-      held="$(git -C "$ROOT" branch --show-current)"
-      [ "$held" = "$branch" ] || [ "$held" = "$target" ] || die "in-place stream branch is not held or parked"
-      WT="$ROOT"
-      ;;
-    *) die "unsupported isolation: $isolation" ;;
-  esac
+  [ "$recorded_worktree" = "$RUNTIME" ] || die "runbook worktree mismatch"
+  top="$(git -C "$RUNTIME" rev-parse --show-toplevel 2>/dev/null)" || die "stream is not a Git worktree"
+  [ "$(canonical_dir "$top")" = "$RUNTIME" ] || die "stream worktree coordinate disagrees with Git"
+  [ "$(git -C "$RUNTIME" branch --show-current)" = "$branch" ] || die "stream branch is not held"
+  git -C "$ROOT" worktree list --porcelain | grep -qxF "worktree $RUNTIME" || die "stream worktree is not registered"
+  WT="$RUNTIME"
   validate_tracked_control_surface "$WT"
   [ -z "$(git -C "$WT" status --porcelain --untracked-files=no)" ] || die "tracker reconstruction requires clean tracked work"
   git -C "$WT" merge-base --is-ancestor "$branch" "$target" || die "tracker reconstruction refuses unlanded commits"
@@ -2396,7 +2303,7 @@ cmd_reconfig() {
   local stream="$1"; shift
   local purpose branch target source_kind source_pointer generated managed candidate old_hash new_hash raw before current temp config_before config_current
   local mode_opt="" landing_opt="" cadence_opt="" inherit_mode=no inherit_landing=no inherit_cadence=no field
-  local old_mode old_mode_source old_landing old_landing_source old_cadence old_cadence_source old_isolation old_isolation_source
+  local old_mode old_mode_source old_landing old_landing_source old_cadence old_cadence_source
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --mode) [ "$#" -ge 2 ] || die "--mode requires a value"; mode_opt="$2"; shift 2 ;;
@@ -2424,20 +2331,13 @@ cmd_reconfig() {
   old_mode="$(runbook_policy_part "$RUNBOOK" mode 2)"; old_mode_source="$(runbook_policy_part "$RUNBOOK" mode 3)"
   old_landing="$(runbook_policy_part "$RUNBOOK" landing 2)"; old_landing_source="$(runbook_policy_part "$RUNBOOK" landing 3)"
   old_cadence="$(runbook_policy_part "$RUNBOOK" ship-cadence 2)"; old_cadence_source="$(runbook_policy_part "$RUNBOOK" ship-cadence 3)"
-  old_isolation="$(runbook_field "$RUNBOOK" isolation)"; old_isolation_source="$(runbook_policy_part "$RUNBOOK" isolation 3)"
   config_before="$(file_fingerprint "$ROOT/.streams/CONFIG.md")"
   compile_config
-  if [ "$old_isolation_source" = explicit ]; then
-    ISOLATION="$old_isolation"; ISOLATION_SOURCE=explicit
-  else
-    [ "$ISOLATION" = "$old_isolation" ] || die "reconfig cannot change isolation"
-  fi
   if [ -n "$mode_opt" ]; then MODE="$mode_opt"; MODE_SOURCE=explicit; elif [ "$inherit_mode" = no ] && [ "$old_mode_source" = explicit ]; then MODE="$old_mode"; MODE_SOURCE=explicit; fi
   if [ -n "$landing_opt" ]; then LANDING="$landing_opt"; LANDING_SOURCE=explicit; elif [ "$inherit_landing" = no ] && [ "$old_landing_source" = explicit ]; then LANDING="$old_landing"; LANDING_SOURCE=explicit; fi
   if [ -n "$cadence_opt" ]; then SHIP_CADENCE="$cadence_opt"; SHIP_CADENCE_SOURCE=explicit; elif [ "$inherit_cadence" = no ] && [ "$old_cadence_source" = explicit ]; then SHIP_CADENCE="$old_cadence"; SHIP_CADENCE_SOURCE=explicit; fi
-  if [ "$MODE_SOURCE" = explicit ] || [ "$ISOLATION_SOURCE" = explicit ] || [ "$LANDING_SOURCE" = explicit ] || [ "$SHIP_CADENCE_SOURCE" = explicit ]; then DEFAULTS_SOURCE=explicit; fi
-  [ "$ISOLATION" != worktree ] || [ "$LANDING" = local ] || die "worktree isolation requires local landing"
-  DEFAULTS_FINGERPRINT="$(sha256_text "mode=$MODE|isolation=$ISOLATION|landing=$LANDING|ship-cadence=$SHIP_CADENCE")"
+  if [ "$MODE_SOURCE" = explicit ] || [ "$LANDING_SOURCE" = explicit ] || [ "$SHIP_CADENCE_SOURCE" = explicit ]; then DEFAULTS_SOURCE=explicit; fi
+  DEFAULTS_FINGERPRINT="$(sha256_text "mode=$MODE|landing=$LANDING|ship-cadence=$SHIP_CADENCE")"
   purpose="$(runbook_block_field "$RUNBOOK" brief purpose)"; branch="$(runbook_field "$RUNBOOK" branch)"; target="$(runbook_field "$RUNBOOK" target)"
   source_kind="$(runbook_block_field "$RUNBOOK" brief queue-source-kind)"; source_pointer="$(runbook_block_field "$RUNBOOK" brief queue-source)"
   generated="$(mktemp "${TMPDIR:-/tmp}/workstream-reconfig-generated.XXXXXX")"; emit_runbook "$stream" "$(tracker_get meta - instance-id)" "$branch" "$target" "$purpose" "$source_kind" "$source_pointer" >"$generated"
@@ -2514,8 +2414,8 @@ build_migration_manifest() { # old-home manifest
     if [ "$registered" = "$old" ]; then
       kind=worktree; branch="$(git -C "$old" branch --show-current)"; checkout="$old"
     elif [ -f "$old/WORKSTREAM.md" ] && grep -qE '^- isolation:[[:space:]]*in-place|^isolation[[:space:]]+in-place$' "$old/WORKSTREAM.md"; then
-      kind=in-place; branch="$(sed -n -E 's/^- branch:[[:space:]]*//p; s/^branch[[:space:]]+//p' "$old/WORKSTREAM.md" | head -n 1)"; checkout="$ROOT"
-      [ -n "$branch" ] || branch="stream/$stream"
+      rm -f "$temp"
+      die "legacy in-place stream must be finished or closed before migration: $stream"
     else
       die "legacy child has ambiguous topology: $stream"
     fi
@@ -2568,7 +2468,7 @@ cmd_migrate() {
     case "$stage" in pending)
       [ -d "$old" ] && [ ! -L "$old" ] || die "pending migration source is missing: $stream"
       [ "$(sha256_file "$old/WORKSTREAM.md")" = "$handoff_hash" ] || die "legacy handoff changed after inventory: $stream"
-      checkout="$old"; [ "$kind" = in-place ] && checkout="$ROOT"
+      checkout="$old"
       [ "$(git -C "$checkout" rev-parse "$branch^{commit}")" = "$tip" ] || die "legacy branch moved after inventory: $stream"
       old_mode_check="$(legacy_handoff_field "$old/WORKSTREAM.md" mode)" || die "legacy mode is ambiguous"
       old_landing_check="$(legacy_handoff_field "$old/WORKSTREAM.md" landing)" || die "legacy landing is ambiguous"
@@ -2620,10 +2520,9 @@ cmd_migrate() {
       case "$old_mode" in '') ;; delegate|manual) MODE="$old_mode"; MODE_SOURCE=explicit ;; *) die "legacy mode is invalid" ;; esac
       case "$old_landing" in '') ;; local|push|pr) LANDING="$old_landing"; LANDING_SOURCE=explicit ;; *) die "legacy landing is invalid" ;; esac
       case "$old_cadence" in '') ;; milestone|per-track|per-stage) SHIP_CADENCE="$old_cadence"; SHIP_CADENCE_SOURCE=explicit ;; *) die "legacy ship cadence is invalid" ;; esac
-      if [ "$kind" = in-place ]; then ISOLATION=in-place; ISOLATION_SOURCE=explicit; WT="$ROOT"; else ISOLATION=worktree; ISOLATION_SOURCE=explicit; LANDING=local; WT="$destination"; fi
-      [ "$ISOLATION" != worktree ] || [ "$LANDING" = local ] || die "legacy linked stream has non-local landing"
-      if [ "$MODE_SOURCE" = explicit ] || [ "$ISOLATION_SOURCE" = explicit ] || [ "$LANDING_SOURCE" = explicit ] || [ "$SHIP_CADENCE_SOURCE" = explicit ]; then DEFAULTS_SOURCE=explicit; fi
-      DEFAULTS_FINGERPRINT="$(sha256_text "mode=$MODE|isolation=$ISOLATION|landing=$LANDING|ship-cadence=$SHIP_CADENCE")"
+      WT="$destination"
+      if [ "$MODE_SOURCE" = explicit ] || [ "$LANDING_SOURCE" = explicit ] || [ "$SHIP_CADENCE_SOURCE" = explicit ]; then DEFAULTS_SOURCE=explicit; fi
+      DEFAULTS_FINGERPRINT="$(sha256_text "mode=$MODE|landing=$LANDING|ship-cadence=$SHIP_CADENCE")"
       legacy_feature_hook "$legacy" "$FEATURE_BODY"
       if grep -q '[^[:space:]]' "$FEATURE_BODY"; then FEATURE_EXECUTION=inline; FEATURE_CONCURRENCY=serial; FEATURE_SOURCE=legacy; fi
       FEATURE_FINGERPRINT="$(compiled_hook_fingerprint feature-completion "$FEATURE_EXECUTION" "$FEATURE_CONCURRENCY" "$FEATURE_BODY")"
@@ -2666,7 +2565,6 @@ main() {
     LANDING_LOCK_BACKEND="$(select_landing_lock_backend)"
   fi
   case "$2" in setup|repair|anchor|migrate) ADMIT_OPERATION="$2" ;; *) ADMIT_OPERATION=ordinary ;; esac
-  case "$2" in read|state|diagnose|list|unpark|close-check|repair) ALLOW_PARKED=yes ;; esac
   admit_root "$1"
   shift
   local operation="$1"; shift
@@ -2689,8 +2587,6 @@ main() {
     hook-complete) cmd_hook_complete "$@" ;;
     friction-add) cmd_friction_add "$@" ;;
     sync) cmd_sync "$@" ;;
-    park) cmd_park "$@" ;;
-    unpark) cmd_unpark "$@" ;;
     recycle) cmd_recycle "$@" ;;
     close-check) cmd_close_check "$@" ;;
     list) cmd_list "$@" ;;

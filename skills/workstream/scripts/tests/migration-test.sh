@@ -88,10 +88,10 @@ cat >"$ROOT3/.workstreams/old/WORKSTREAM.md" <<'EOF'
 - integration-target: main
 - isolation: in-place
 EOF
-"$HELPER" "$ROOT3" migrate inventory >"$OUT"
-"$HELPER" "$ROOT3" migrate apply >"$OUT"; expect 'in-place migration applies' 'status=migrated' "$OUT"
-expect 'in-place migration records root coordinate' $'worktree\t'"$ROOT3" "$ROOT3/.streams/old/WORKSTREAM.md"
-"$HELPER" "$ROOT3" read old >"$OUT"; expect 'migrated in-place stream admits' 'schema=workstream-read@1' "$OUT"
+if "$HELPER" "$ROOT3" migrate inventory >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'in-place migration is refused' 'must be finished or closed before migration: old' "$ERR"
+if [ -d "$ROOT3/.workstreams/old" ] && [ ! -e "$ROOT3/.streams/.migration.tsv" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+expect_eq 'in-place refusal does not switch the primary branch' stream/old "$(git -C "$ROOT3" branch --show-current)"
 
 ROOT4="$TMP/bound"; init_repo "$ROOT4"
 printf 'base\n' >"$ROOT4/file"; git -C "$ROOT4" add file; git -C "$ROOT4" commit -qm initial; mkdir -p "$ROOT4/.workstreams"

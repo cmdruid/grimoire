@@ -27,8 +27,6 @@ usage: workstream-git.sh <subcommand> [args...]
                                                           markdown gate truth table
   land-readiness   <root> <worktree> <branch> <target>   ship/land snapshot
   cheatsheet-check <worktree> [<handoff>]                 cheat-sheet pointer drift
-  inplace-scan     <root>                                 in-place streams present?
-  inplace-state    <root> <stream> <branch> <target>     custody facts (in-place)
 
 Each prints `key=value` facts then (where useful) evidence lists. Read-only;
 emits no recommendation -- the agent maps facts to action via SKILL.md.
@@ -170,8 +168,7 @@ cmd_land_readiness() {
 
   # Dirty-overlap split: `merge --ff-only` (the root_on_target landing path)
   # aborts only when a dirty root path OVERLAPS the merge's changed set -- a
-  # sibling's DISJOINT WIP does not block the land (and the by-ref advance never
-  # touches the tree at all). One boolean forced a round-trip on provably safe
+  # sibling's DISJOINT WIP does not block the land. One boolean forced a round-trip on provably safe
   # lands; the split lets the doctrine key on overlap only.
   root_dirty_list="$( { git -C "$root" diff --name-only; \
                         git -C "$root" diff --cached --name-only; \
@@ -270,54 +267,6 @@ cmd_cheatsheet_check() {
   echo "stale=$stale"
 }
 
-# inplace-scan: which streams (if any) record in-place isolation? The tree is
-# singular, so create --in-place refuses when this is non-empty.
-cmd_inplace_scan() {
-  [ "$#" -eq 1 ] || { echo "usage: workstream-git.sh inplace-scan <root>" >&2; exit 2; }
-  local root="$1" f name found=""
-  for f in "$root"/.streams/*/WORKSTREAM.md; do
-    [ -f "$f" ] || continue
-    if grep -qE $'^isolation\tin-place$|^- isolation: *in-place' "$f"; then
-      name="$(basename "$(dirname "$f")")"
-      found="${found:+$found,}$name"
-    fi
-  done
-  echo "inplace_streams=${found:-none}"
-}
-
-# inplace-state: custody facts for an in-place stream. The agent classifies
-# held/parked/foreign from these (verbs/park.md, load.md) -- the script only
-# reports what git and the hand-off say.
-cmd_inplace_state() {
-  [ "$#" -eq 4 ] || { echo "usage: workstream-git.sh inplace-state <root> <stream> <branch> <target>" >&2; exit 2; }
-  local root="$1" stream="$2" branch="$3" target="$4"
-  validate_ref "$branch"; validate_ref "$target"
-  local handoff="$root/.streams/$stream/WORKSTREAM.md"
-
-  local head_branch porcelain behind ahead top_subj
-  head_branch="$(git -C "$root" rev-parse --abbrev-ref HEAD)"
-  porcelain="$(git -C "$root" status --porcelain)"
-  behind="$(git -C "$root" rev-list --count "$branch..$target")"
-  ahead="$(git -C "$root" rev-list --count "$target..$branch")"
-  top_subj="$(git -C "$root" log -1 --format='%s' "$branch")"
-
-  echo "head_branch=$head_branch"
-  echo "on_stream_branch=$([ "$head_branch" = "$branch" ] && echo true || echo false)"
-  echo "on_target=$([ "$head_branch" = "$target" ] && echo true || echo false)"
-  if [ -f "$handoff" ]; then
-    echo "handoff_parked=$(grep -qE '^Parked: *true' "$handoff" && echo true || echo false)"
-  else
-    echo "handoff_parked=unknown"
-  fi
-  # printf + bare case, NOT case-inside-$(...): bash 3.2's parser (macOS /bin/bash)
-  # breaks on the unescaped ')' in a case-pattern nested in a quoted $(...).
-  printf "top_wip="
-  case "$top_subj" in wip:*) echo true ;; *) echo false ;; esac
-  echo "dirty=$([ -n "$porcelain" ] && echo true || echo false)"
-  echo "behind=$behind"
-  echo "ahead=$ahead"
-}
-
 main() {
   [ "$#" -ge 1 ] || { usage; exit 2; }
   local sub="$1"; shift
@@ -327,8 +276,6 @@ main() {
     gate-facts)       cmd_gate_facts "$@" ;;
     land-readiness)   cmd_land_readiness "$@" ;;
     cheatsheet-check) cmd_cheatsheet_check "$@" ;;
-    inplace-scan)     cmd_inplace_scan "$@" ;;
-    inplace-state)    cmd_inplace_state "$@" ;;
     *) echo "unknown subcommand: $sub" >&2; usage; exit 2 ;;
   esac
 }

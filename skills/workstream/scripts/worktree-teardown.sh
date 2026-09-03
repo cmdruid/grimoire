@@ -34,7 +34,6 @@ if awk -F '\t' '$1=="shipment" || ($1=="hook"&&$3=="state"&&($4=="ready"||$4=="r
   echo 'worktree-teardown.sh: unresolved lifecycle state blocks teardown' >&2
   exit 2
 fi
-isolation="$(sed -n 's/^isolation[[:space:]]*//p' "$runtime/WORKSTREAM.md" | head -n 1)"
 recorded_worktree="$(sed -n 's/^worktree[[:space:]]*//p' "$runtime/WORKSTREAM.md" | head -n 1)"
 target="$(sed -n 's/^target[[:space:]]*//p' "$runtime/WORKSTREAM.md" | head -n 1)"
 landing="$(sed -n 's/^landing[[:space:]]*//p' "$runtime/WORKSTREAM.md" | head -n 1)"
@@ -48,20 +47,7 @@ if [ "$force" != "--force" ]; then
   fi
 fi
 
-if [ "$isolation" = in-place ]; then
-  [ "$recorded_worktree" = "$root" ] || { echo 'worktree-teardown.sh: in-place coordinate mismatch' >&2; exit 2; }
-  [ -z "$(git -C "$root" status --porcelain --untracked-files=no)" ] || { echo 'worktree-teardown.sh: tracked work is dirty' >&2; exit 2; }
-  current="$(git -C "$root" branch --show-current)"
-  if [ "$current" = "$branch" ]; then git -C "$root" switch -q "$target"; else [ "$current" = "$target" ] || { echo 'worktree-teardown.sh: branch mismatch' >&2; exit 2; }; fi
-  [ "$(find "$runtime" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')" -eq 2 ] || { echo 'worktree-teardown.sh: unknown runtime content' >&2; exit 2; }
-  rm -f "$runtime/WORKSTREAM.md" "$runtime/workstream.tsv"
-  rmdir "$runtime"
-  git -C "$root" branch -D "$branch"
-  exit 0
-fi
-
 worktree="$runtime"
-[ "$isolation" = worktree ] || { echo 'worktree-teardown.sh: unknown isolation' >&2; exit 2; }
 [ "$recorded_worktree" = "$worktree" ] || { echo 'worktree-teardown.sh: recorded worktree mismatch' >&2; exit 2; }
 top="$(git -C "$worktree" rev-parse --show-toplevel)"
 [ "$top" = "$worktree" ] || { echo 'worktree-teardown.sh: worktree coordinate mismatch' >&2; exit 2; }

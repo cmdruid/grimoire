@@ -4,7 +4,6 @@ Text outside the versioned blocks is explanatory. Empty hook bodies disable thei
 
 <!-- workstream:defaults@1 -->
 mode: delegate
-isolation: worktree
 landing: local
 ship-cadence: milestone
 <!-- /workstream:defaults@1 -->

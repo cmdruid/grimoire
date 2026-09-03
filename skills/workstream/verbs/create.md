@@ -8,16 +8,16 @@ for the package's debug or design intake, read only `templates/debug.md` or
 `templates/design.md` and reduce its durable mission and pointers to the bounded brief. Omission
 means an ad hoc intake whose first unit is not yet defined.
 
-Accept explicit `--mode`, `--isolation`, `--landing`, and `--ship-cadence` choices. Pass only choices
-the user supplied; they override project defaults, which override bundled defaults. Worktree
-isolation permits only local landing. Invoke the effective helper:
+Accept explicit `--mode`, `--landing`, and `--ship-cadence` choices. Pass only choices the user
+supplied; they override project defaults, which override bundled defaults. Invoke the effective
+helper:
 
 ```text
 workstream.sh ROOT runtime-init STREAM TARGET BRIEF [--source-kind KIND --cursor PATH] [POLICY OPTIONS]
 ```
 
 The helper validates configuration, secure instance entropy, exclusions, target topology, branch
-absence, and the `.streams/STREAM` coordinate before creating anything. Entropy or admission
+absence, and the registered `.streams/STREAM` worktree coordinate before creating anything. Entropy or admission
 failure must leave no ref, worktree, path, or runtime byte. A retry of the same admitted instance
 returns `existing` and preserves its ID.
 

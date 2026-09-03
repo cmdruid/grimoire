@@ -11,7 +11,6 @@ printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -q
 cat >"$ROOT/.streams/CONFIG.md" <<'EOF'
 <!-- workstream:defaults@1 -->
 mode: delegate
-isolation: worktree
 landing: local
 ship-cadence: milestone
 <!-- /workstream:defaults@1 -->

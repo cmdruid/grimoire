@@ -6,7 +6,7 @@ uncertain, awaiting-merge, or unfinalized shipment reports `lifecycle_blocked=ye
 teardown.
 
 After the branch is fully contained in the recorded target, run the package teardown helper with
-the exact root and stream. It revalidates `.streams/STREAM` against the Git worktree registry,
+the exact root and stream. It revalidates the sole `.streams/STREAM` coordinate against the Git worktree registry,
 removes that worktree, deletes only `stream/STREAM`, and prunes stale worktree administration.
 Use `--force` only after an explicit discard decision.
 

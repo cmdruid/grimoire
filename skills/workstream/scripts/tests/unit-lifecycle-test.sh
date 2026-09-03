@@ -30,7 +30,6 @@ mkdir -p "$ROOT/.streams"
 cat >"$ROOT/.streams/CONFIG.md" <<'EOF'
 <!-- workstream:defaults@1 -->
 mode: manual
-isolation: worktree
 landing: local
 ship-cadence: per-stage
 <!-- /workstream:defaults@1 -->

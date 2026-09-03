@@ -1,7 +1,7 @@
 # `status` — list admitted streams without entering them
 
 Resolve the canonical primary root and invoke `workstream.sh ROOT list`. The helper scans only
-immediate `.streams` runtime directories, validates each runbook/tracker/Git coordinate, and emits
+immediate `.streams` runtime worktrees, validates each runbook/tracker/Git coordinate, and emits
 compact identity, phase, and next-action facts. It never emits hook bodies or raw tracker rows.
 
 Report malformed or unregistered children as blockers; don't read them approximately. Don't load,

@@ -1,6 +1,7 @@
 # `load <stream>` — resume one admitted stream
 
-Resolve the canonical primary root without reading sibling handoffs. Invoke the effective helper
+Resolve the canonical primary root without reading sibling handoffs. The named stream must be the
+registered worktree at `<root>/.streams/<stream>`. Invoke the effective helper
 with `read <stream>`. It must validate the Git worktree registry, root/worktree/branch/target,
 instance ID, runbook contract, tracker schema, and any pending transaction before returning the
 bounded purpose, note, state, and one `next_action`.

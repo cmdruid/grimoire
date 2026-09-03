@@ -14,7 +14,6 @@ TRACKER="$ROOT/.streams/config/workstream.tsv"; old_receipt="$(awk -F '\t' '$1==
 cat >"$ROOT/.streams/CONFIG.md" <<'EOF'
 <!-- workstream:defaults@1 -->
 mode: delegate
-isolation: worktree
 landing: local
 ship-cadence: per-stage
 <!-- /workstream:defaults@1 -->
@@ -94,14 +93,15 @@ expect 'runbook race preserves concurrent prose' 'Concurrent operator appendix.'
 expect_eq 'runbook race writes no tracker transaction' "$tracker_before" "$(shasum -a 256 "$TRACKER" | awk '{print $1}')"
 if [ "$runbook_before" != "$(shasum -a 256 "$ROOT/.streams/config/WORKSTREAM.md" | awk '{print $1}')" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 
-sed 's/isolation: worktree/isolation: in-place/' "$ROOT/.streams/CONFIG.md" >"$TMP/topology"; cp "$TMP/topology" "$ROOT/.streams/CONFIG.md"
+awk '{ print } $0=="mode: delegate" { print "isolation: worktree" }' "$ROOT/.streams/CONFIG.md" >"$TMP/topology"; cp "$TMP/topology" "$ROOT/.streams/CONFIG.md"
 if "$HELPER" "$ROOT" reconfig config >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
-expect 'topology refusal preserves worktree coordinate' $'isolation\tworktree' "$ROOT/.streams/config/WORKSTREAM.md"
+expect 'retired config field is rejected' 'configuration violates workstream config@1' "$ERR"
+expect_absent 'retired config field never enters the runbook' $'isolation\t' "$ROOT/.streams/config/WORKSTREAM.md"
 
-ROOT2="$TMP/explicit-topology"; init_repo "$ROOT2"
+ROOT2="$TMP/unknown-option"; init_repo "$ROOT2"
 printf 'base\n' >"$ROOT2/file"; git -C "$ROOT2" add file; git -C "$ROOT2" commit -qm initial; mkdir -p "$ROOT2/.streams"
 sed -n 'p' "$DIR/../../templates/streams-config.md" >"$ROOT2/.streams/CONFIG.md"
-"$HELPER" "$ROOT2" runtime-init explicit main explicit --isolation in-place >"$OUT"
-"$HELPER" "$ROOT2" reconfig explicit >"$OUT"; expect 'explicit topology survives reconfig' 'status=unchanged' "$OUT"
-expect 'explicit topology provenance survives' $'isolation\tin-place\texplicit' "$ROOT2/.streams/explicit/WORKSTREAM.md"
+if "$HELPER" "$ROOT2" runtime-init explicit main explicit --isolation worktree >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'retired create option is unknown' 'unknown runtime-init option: --isolation' "$ERR"
+if [ ! -e "$ROOT2/.streams/explicit" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 report 'workstream reconfig'

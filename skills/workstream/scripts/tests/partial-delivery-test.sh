@@ -9,11 +9,11 @@ ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"; trap 'rm -rf "$TMP"' EXIT
 REMOTE="$TMP/remote.git"; UPSTREAM="$TMP/upstream"; git init -q --bare "$REMOTE"
 init_repo "$ROOT"
 printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial; git -C "$ROOT" remote add origin "$REMOTE"; git -C "$ROOT" push -qu origin main
-mkdir -p "$ROOT/.streams"; sed -e 's/isolation: worktree/isolation: in-place/' -e 's/landing: local/landing: push/' "$DIR/../../templates/streams-config.md" >"$ROOT/.streams/CONFIG.md"
+mkdir -p "$ROOT/.streams"; sed 's/landing: local/landing: push/' "$DIR/../../templates/streams-config.md" >"$ROOT/.streams/CONFIG.md"
 "$HELPER" "$ROOT" runtime-init partial main partial >"$OUT"; "$HELPER" "$ROOT" unit-begin partial unit unit >"$OUT"
-printf 'unit\n' >>"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm unit
+printf 'unit\n' >>"$ROOT/.streams/partial/file"; git -C "$ROOT/.streams/partial" add file; git -C "$ROOT/.streams/partial" commit -qm unit
 "$HELPER" "$ROOT" unit-complete partial >"$OUT"; "$HELPER" "$ROOT" ship-prepare partial >"$OUT"; "$HELPER" "$ROOT" gate-run partial --class full --label gate -- true >"$OUT"
-candidate="$(git -C "$ROOT" rev-parse HEAD)"
+candidate="$(git -C "$ROOT/.streams/partial" rev-parse HEAD)"
 expect_eq 'clean landing is not a merge' 1 "$(git -C "$ROOT" rev-list --parents -n1 "$candidate" | awk '{print NF-1}')"
 TRACKER="$ROOT/.streams/partial/workstream.tsv"
 cat >"$TMP/interrupt.sh" <<'EOF'
@@ -30,9 +30,9 @@ if "$HELPER" "$ROOT" reconcile-partial partial >"$OUT" 2>"$ERR"; then fail=$((fa
 "$HELPER" "$ROOT" reconcile-partial partial --authority confirmed >"$OUT"
 expect 'partial tips reconcile' 'status=reconciled' "$OUT"
 expect 'reconciliation invalidates authority' 'authority=invalidated' "$OUT"
-merged="$(git -C "$ROOT" rev-parse HEAD)"
-expect_eq 'candidate is first parent' "$candidate" "$(git -C "$ROOT" rev-parse "$merged^1")"
-expect_eq 'divergent tip is second parent' "$divergent" "$(git -C "$ROOT" rev-parse "$merged^2")"
+merged="$(git -C "$ROOT/.streams/partial" rev-parse HEAD)"
+expect_eq 'candidate is first parent' "$candidate" "$(git -C "$ROOT/.streams/partial" rev-parse "$merged^1")"
+expect_eq 'divergent tip is second parent' "$divergent" "$(git -C "$ROOT/.streams/partial" rev-parse "$merged^2")"
 expect_absent 'destination receipts become stale and clear' $'delivery\t' "$TRACKER"
 expect 'reconciliation returns to gate' $'phase\tgate' "$TRACKER"
 report 'workstream partial delivery'

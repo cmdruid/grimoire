@@ -71,27 +71,15 @@ cat > "$WT/WORKSTREAM.md" <<'EOF'
 - stale: `missing.md`
 
 ## Queue state
-Parked: true
 EOF
-printf 'worktree\t%s\nisolation\tworktree\ntarget\tmain\nlanding\tlocal\n' "$WT" >>"$WT/WORKSTREAM.md"
+printf 'worktree\t%s\ntarget\tmain\nlanding\tlocal\n' "$WT" >>"$WT/WORKSTREAM.md"
 printf 'record\tid\tfield\tvalue\n' >"$WT/workstream.tsv"
 "$FACTS" cheatsheet-check "$WT" > "$OUT"
 expect_eq "cheatsheet checks both refs" "2" "$(fact checked "$OUT")"
 expect_eq "cheatsheet reports one stale ref" "1" "$(fact stale "$OUT")"
 
-mkdir "$ROOT/.streams/inplace"
-printf '%s\n' '# in-place' '- isolation: in-place' > "$ROOT/.streams/inplace/WORKSTREAM.md"
-"$FACTS" inplace-scan "$ROOT" > "$OUT"
-expect_eq "in-place scan finds recorded stream" "inplace" "$(fact inplace_streams "$OUT")"
-printf '%s\n' '# in-place' $'isolation\tin-place' > "$ROOT/.streams/inplace/WORKSTREAM.md"
-"$FACTS" inplace-scan "$ROOT" > "$OUT"
-expect_eq "in-place scan accepts composed identity grammar" "inplace" "$(fact inplace_streams "$OUT")"
-"$FACTS" inplace-state "$ROOT" demo stream/demo main > "$OUT"
-expect_eq "root checkout is not holding stream branch" "false" "$(fact on_stream_branch "$OUT")"
-expect_eq "root checkout is on target" "true" "$(fact on_target "$OUT")"
-expect_eq "in-place state reads handoff custody" "true" "$(fact handoff_parked "$OUT")"
-rm -f "$ROOT/.streams/inplace/WORKSTREAM.md"
-rmdir "$ROOT/.streams/inplace"
+if "$FACTS" inplace-scan "$ROOT" >"$OUT" 2>&1; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect "retired topology fact command is unknown" "unknown subcommand: inplace-scan" "$OUT"
 
 if "$TEARDOWN" "$ROOT" demo --wrong >/dev/null 2>&1; then
   echo "FAIL: teardown accepted an unknown flag" >&2
@@ -114,11 +102,10 @@ expect_eq "teardown removes worktree" "false" "$([ -e "$WT" ] && echo true || ec
 expect_eq "teardown removes branch" "false" \
   "$(git -C "$ROOT" show-ref --verify --quiet refs/heads/stream/demo && echo true || echo false)"
 
-sed 's/isolation: worktree/isolation: in-place/' "$DIR/../../templates/streams-config.md" >"$ROOT/.streams/CONFIG.md"
-"$RUNTIME" "$ROOT" runtime-init inplace main inplace >"$OUT"
-"$TEARDOWN" "$ROOT" inplace >/dev/null
-expect_eq 'in-place teardown restores target branch' main "$(git -C "$ROOT" branch --show-current)"
-expect_eq 'in-place teardown removes runtime' false "$([ -e "$ROOT/.streams/inplace" ] && echo true || echo false)"
-expect_eq 'in-place teardown removes branch' false "$(git -C "$ROOT" show-ref --verify --quiet refs/heads/stream/inplace && echo true || echo false)"
+"$RUNTIME" "$ROOT" runtime-init second main second >"$OUT"
+"$TEARDOWN" "$ROOT" second >/dev/null
+expect_eq 'linked teardown leaves the primary branch unchanged' main "$(git -C "$ROOT" branch --show-current)"
+expect_eq 'linked teardown removes the exact runtime' false "$([ -e "$ROOT/.streams/second" ] && echo true || echo false)"
+expect_eq 'linked teardown removes the exact branch' false "$(git -C "$ROOT" show-ref --verify --quiet refs/heads/stream/second && echo true || echo false)"
 
 report "git-helpers-test.sh"

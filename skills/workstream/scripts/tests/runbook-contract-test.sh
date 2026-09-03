@@ -19,7 +19,6 @@ write_valid_config() {
 # project prose
 <!-- workstream:defaults@1 -->
 mode: delegate
-isolation: worktree
 landing: local
 ship-cadence: milestone
 <!-- /workstream:defaults@1 -->
@@ -84,6 +83,7 @@ if [ ! -e "$ROOT/.streams/bad-version" ] && ! git -C "$ROOT" show-ref --verify -
 
 write_valid_config
 sed 's/landing: local/landing: push/' "$ROOT/.streams/CONFIG.md" >"$TMP/bad-combo"; cp "$TMP/bad-combo" "$ROOT/.streams/CONFIG.md"
-if "$HELPER" "$ROOT" runtime-init bad-combo main bad >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+"$HELPER" "$ROOT" runtime-init push-config main push >"$OUT"
+expect 'linked stream accepts configured push landing' $'landing\tpush\tproject' "$ROOT/.streams/push-config/WORKSTREAM.md"
 
 report 'workstream runbook contract'
