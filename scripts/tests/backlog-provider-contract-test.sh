@@ -6,7 +6,7 @@ T="$(mktemp -d "${TMPDIR:-/tmp}/backlog-provider-contract.XXXXXX")";trap 'rm -rf
 fail(){ echo "FAIL: $*" >&2;return 1;}
 
 validate(){
-  local root="$1" owners repair_defs legacy_hits unexpected legacy_count
+  local root="$1" owners repair_defs legacy_hits unexpected legacy_count managed_hits managed_unexpected
   legacy_hits="$(rg -n 'tracker-api\.sh|tracker-api' "$root/skills" "$root/scripts" "$root/README.md" --glob '!**/scripts/tests/backlog-provider-contract-test.sh'||true)"
   legacy_count="$(printf '%s\n' "$legacy_hits"|sed '/^$/d'|wc -l|tr -d ' ')"
   unexpected="$(printf '%s\n' "$legacy_hits"|awk '
@@ -28,17 +28,29 @@ validate(){
   for retired in scripts/register-route.sh scripts/route-status.sh templates/debrief-anchor.md;do
     [ ! -e "$root/skills/backlog/$retired" ]||{ fail "retired Backlog route surface remains: $retired";return 1;}
   done
-  if rg -n 'AGENTS\.md|CLAUDE\.md|register-route|route-status|debrief-anchor|skill:backlog' \
+  if rg -n 'AGENTS\.md|CLAUDE\.md|trackers-anchor\.sh|register-route|route-status|debrief-anchor|skill:backlog' \
     "$root/skills/backlog/scripts" --glob '!**/tests/**' --glob '!trackers-anchor.sh' >/dev/null;then
     fail 'non-anchor Backlog production scripts retain front-door ownership';return 1
   fi
   [ "$(rg -l 'AGENTS\.md' "$root/skills/backlog/scripts" --glob '!**/tests/**'|wc -l|tr -d ' ')" -eq 1 ]&&
     rg -q 'AGENTS\.md' "$root/skills/backlog/scripts/trackers-anchor.sh"||{
       fail 'explicit anchor is not the singular Backlog front-door writer';return 1;}
-  if rg -n 'CLAUDE\.md|register-route|route-status|debrief-anchor|skill:backlog' \
+  if rg -n 'CLAUDE\.md|register-route|route-status|debrief-anchor' \
     "$root/skills/backlog/scripts/trackers-anchor.sh" >/dev/null;then
     fail 'explicit anchor restored retired route ownership';return 1
   fi
+  managed_hits="$(rg -l '<!-- skill:backlog (BEGIN|END)' \
+    "$root/skills/backlog/SKILL.md" "$root/skills/backlog/verbs" \
+    "$root/skills/backlog/scripts" "$root/skills/backlog/templates" --glob '!**/tests/**'||true)"
+  managed_unexpected="$(printf '%s\n' "$managed_hits"|awk '
+    /\/scripts\/trackers-anchor[.]sh$/ {next}
+    /\/templates\/agents-route[.]md$/ {next}
+    /\/verbs\/anchor[.]md$/ {next}
+    NF {print}
+  ')"
+  [ -z "$managed_unexpected" ]||{ fail 'managed Backlog marker escaped anchor ownership';return 1;}
+  grep -qF '<!-- skill:backlog BEGIN built-against:__BUILT_AGAINST__ -->' \
+    "$root/skills/backlog/templates/agents-route.md"||{ fail 'managed route template missing';return 1;}
   grep -qF 'tracker@2' "$root/skills/analyst/SKILL.md"||{ fail 'Analyst does not require tracker@2';return 1;}
   grep -qF 'tracker@2' "$root/skills/foreman/SKILL.md"||{ fail 'Foreman does not require tracker@2';return 1;}
   repair_defs="$(rg -o '^install_provider\(\)' "$root/skills/backlog/scripts" --glob '!**/tests/**'|wc -l|tr -d ' ')"
@@ -72,6 +84,8 @@ red_proof "$FIX/skills/backlog/scripts/backlog-setup.sh" 'install_provider(){ :;
 red_proof "$FIX/skills/backlog/scripts/trackers.sh" '# tracker@1 compatibility'
 red_proof "$FIX/skills/backlog/scripts/tracker-layer-status.sh" '# receipts.tsv fallback'
 red_proof "$FIX/skills/backlog/scripts/backlog-setup.sh" '# inspect AGENTS.md before setup'
+red_proof "$FIX/skills/backlog/scripts/backlog-setup.sh" '"$SKILL/scripts/trackers-anchor.sh" preview --root "$ROOT"'
+red_proof "$FIX/skills/backlog/verbs/repair.md" '<!-- skill:backlog BEGIN built-against:injected -->'
 validate "$FIX"
-[ "$mutations" -eq 9 ]||{ echo 'FAIL: mutation count drifted' >&2;exit 1;}
+[ "$mutations" -eq 11 ]||{ echo 'FAIL: mutation count drifted' >&2;exit 1;}
 echo "backlog-provider-contract-test: $mutations red proofs passed"

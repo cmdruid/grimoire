@@ -9,7 +9,7 @@ trap 'rm -rf "$T"' EXIT
 fail() { echo "FAIL: $*" >&2; return 1; }
 
 validate() {
-  local root="$1" probe expected tracker_file
+  local root="$1" probe expected tracker_file live_trackers
   [ -x "$root/.records/records.sh" ] || { fail 'deployed records provider missing'; return 1; }
   [ -x "$root/.trackers/trackers.sh" ] || { fail 'deployed tracker provider missing'; return 1; }
   cmp -s "$root/skills/journal/scripts/records.sh" "$root/.records/records.sh" || {
@@ -32,11 +32,21 @@ validate() {
       fail 'deployed tracker root contains a queue TSV'; return 1;
     }
   done
+  live_trackers="$(find "$root/.trackers/tables" -maxdepth 1 -type f -name '*.tsv' -exec basename {} .tsv \;|sort)"
+  [ "$live_trackers" = $'feedback\nissues\nroutines\ntasks' ] || {
+    fail 'deployed tracker table population changed'; return 1;
+  }
   for tracker_file in feedback issues routines tasks;do
     [ "$(head -n 1 "$root/.trackers/tables/$tracker_file.tsv")" = $'id\tcreated\ttext\tevidence' ] || {
       fail "deployed tracker table is malformed: $tracker_file"; return 1;
     }
   done
+  [ ! -e "$root/.trackers/.setup-selection" ] || {
+    fail 'deployed tracker layer retains setup selection intent'; return 1;
+  }
+  if find "$root/.trackers" -maxdepth 1 -name '.setup-selection.tmp.*' -print -quit|grep -q .;then
+    fail 'deployed tracker layer retains setup selection temporary'; return 1
+  fi
   [ "$("$root/.trackers/trackers.sh" describe|sed -n 's/^schema=//p')" = tracker@2 ] || {
     fail 'deployed tracker provider schema is not tracker@2'; return 1;
   }
@@ -117,6 +127,18 @@ mv "$FIX/.trackers/tables/.gitkeep" "$T/table-marker"
 if validate "$FIX" >/dev/null 2>&1;then fail 'missing table marker survived';exit 1;fi
 mv "$T/table-marker" "$FIX/.trackers/tables/.gitkeep";mutations=$((mutations + 1))
 
+printf 'id\tcreated\ttext\tevidence\n' >"$FIX/.trackers/tables/failures.tsv"
+if validate "$FIX" >/dev/null 2>&1;then fail 'unexpected live failures queue survived';exit 1;fi
+rm "$FIX/.trackers/tables/failures.tsv";mutations=$((mutations + 1))
+
+printf '%s\n' 'schema=backlog/setup-selection@1' 'trackers=tasks' >"$FIX/.trackers/.setup-selection"
+if validate "$FIX" >/dev/null 2>&1;then fail 'selection intent residue survived';exit 1;fi
+rm "$FIX/.trackers/.setup-selection";mutations=$((mutations + 1))
+
+printf 'partial\n' >"$FIX/.trackers/.setup-selection.tmp.fixture"
+if validate "$FIX" >/dev/null 2>&1;then fail 'selection temporary residue survived';exit 1;fi
+rm "$FIX/.trackers/.setup-selection.tmp.fixture";mutations=$((mutations + 1))
+
 before="$T/readme.before"
 cp "$FIX/.records/README.md" "$before"
 [ "$(grep -cF '.records/records.sh list' "$before")" -eq 1 ] || {
@@ -130,5 +152,5 @@ cmp -s "$before" "$FIX/.records/README.md" || { fail 'README restoration drifted
 mutations=$((mutations + 1))
 
 validate "$FIX"
-[ "$mutations" -eq 6 ] || { fail 'mutation count drifted'; exit 1; }
+[ "$mutations" -eq 9 ] || { fail 'mutation count drifted'; exit 1; }
 echo "canonical-provider-parity-test: $mutations red proofs passed"

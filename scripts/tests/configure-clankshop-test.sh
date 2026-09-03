@@ -40,7 +40,9 @@ grep -qF 'Run `/journal repair`' "$root/.records/README.md" || fail "Journal rep
 "$root/.records/records.sh" list >/dev/null || fail "Journal README provider is unusable"
 [ -x "$root/.trackers/trackers.sh" ] || fail "Backlog provider missing"
 for file in README.md trackers.sh history.tsv;do [ -f "$root/.trackers/$file" ]||fail "Backlog tracker layer missing: $file";done
-for file in .gitkeep tasks.tsv issues.tsv feedback.tsv routines.tsv;do [ -f "$root/.trackers/tables/$file" ]||fail "Backlog tracker table missing: $file";done
+for file in .gitkeep tasks.tsv issues.tsv failures.tsv feedback.tsv routines.tsv;do [ -f "$root/.trackers/tables/$file" ]||fail "Backlog tracker table missing: $file";done
+[ ! -e "$root/.trackers/.setup-selection" ]||fail "Backlog setup retained selection intent"
+if find "$root/.trackers" -maxdepth 1 -name '.setup-selection.tmp.*' -print -quit|grep -q .;then fail "Backlog setup retained selection temporary";fi
 [ ! -e "$root/.trackers/tracker-api.sh" ]||fail "Backlog installed the pre-cut provider"
 cmp -s "$repo/skills/backlog/scripts/trackers.sh" "$root/.trackers/trackers.sh"||fail "Backlog provider is not byte-identical"
 description="$($root/.trackers/trackers.sh describe)"
@@ -51,6 +53,7 @@ readme_facts="$("$repo/skills/backlog/scripts/tracker-readme-status.sh" \
   "$repo/skills/backlog/templates/trackers-readme-block.md" "$root/.trackers/README.md")"
 grep -qxF 'readme_status=current' <(printf '%s\n' "$readme_facts")||fail "Backlog tracker guide is not current"
 grep -q '^## tasks$' "$root/.trackers/DEBRIEF.md"||fail "Backlog cookbook missing tasks"
+grep -q '^## failures$' "$root/.trackers/DEBRIEF.md"||fail "Backlog cookbook missing failures"
 grep -q '^## routines$' "$root/.trackers/DEBRIEF.md"||fail "Backlog cookbook missing routines"
 cmp -s "$tmp/agents.before" "$root/AGENTS.md" || fail "core setup changed the project front door"
 hooks="$tmp/hooks.out";"$repo/skills/workstream/scripts/hooks.sh" parse --dir "$root/.agents/skilldata/workstream/hooks" --known feature-completion --known after-eventful-ship >"$hooks"

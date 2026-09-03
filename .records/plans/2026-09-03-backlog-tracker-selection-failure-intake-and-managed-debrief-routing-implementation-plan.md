@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -312,7 +312,7 @@ pass, and lint reports `fails=0` with only understood pre-existing warnings.
     never touches the front door; explicit `--debrief` uses the same anchor path; setup and anchor
     retain separate commits and failure outcomes. Commit setup/anchor composition independently.
 
-- [ ] **Slice 5: Close documentation, parity, and full boundary gates** <requires: Slices 1–4>
+- [x] **Slice 5: Close documentation, parity, and full boundary gates** <requires: Slices 1–4>
   - Files:
     - Modify `README.md`, `scripts/tests/backlog-provider-contract-test.sh`,
       `scripts/tests/project-layer-anchor-contract-test.sh`, and

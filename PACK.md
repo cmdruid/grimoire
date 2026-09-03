@@ -70,7 +70,10 @@ at write time while preserving explicit `mark` / `map` / `walk`. None is part of
   proves the record closure reachable, seeds the stream, primes its existing hand-off through
   Workstream's generic helper, then loads that same stream. Normal Workstream use performs no
   Foreman checks.
-- Backlog's explicit setup defaults to `tasks`, `issues`, project-owned `feedback`, and `routines`; it owns the
+- Backlog's explicit first setup selects from the packaged `tasks`, `issues`, `failures`,
+  project-owned `feedback`, and `routines` queues and defaults to all five; initialized layers
+  retain their incumbent population and prompt. Unresolved operational sightings route to
+  `failures`, while qualitative project experience routes to `feedback`. Backlog owns the
   first-class `.trackers` layer, its `tracker@2` provider, queue tables, lifecycle history, and
   editable debrief-routing prompt. The pack itself installs no tracker, script, route, or debrief
   policy. Foreman consumes
@@ -125,8 +128,12 @@ refusal, and rerun.
 
 ### 3. Apply optional project policy
 
-Backlog setup configures only `.trackers`; it does not author a project front door or Workstream
-hooks. Workstream's hook points remain independently owned and unchanged by this profile.
+Backlog's tracker transaction configures only `.trackers`. A first-time attended setup may
+separately offer its managed project debrief route, defaulting off; `--debrief` is explicit consent
+to the same standalone anchor lifecycle. Include `AGENTS.md` among approved destinations before
+accepting that choice. Unattended setup without the flag and initialized reconciliation do not offer
+or author the route. Workstream's hook points remain independently owned and unchanged by this
+profile.
 When Delegate is selected, the project may place this policy in
 `.agents/skilldata/delegate/hooks/byproducts.md`:
 
