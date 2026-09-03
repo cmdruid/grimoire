@@ -72,7 +72,6 @@ fact() { printf '%s\n' "$1" | sed -n "s/^$2=//p" | head -1; }
 guard_stream() {
   guard="$("$BASE/save-guard.sh" "$ROOT")" || return 1
   [ "$(fact "$guard" worktree_stream)" != true ] || return 1
-  [ "$(fact "$guard" inplace_branch_match)" != true ] || return 1
 }
 
 acquire_lock() {

@@ -4,8 +4,8 @@ Use the generic **Save discipline** in `references/disciplines.md`; this file ad
 ownership, Git, and publication rules.
 
 1. Resolve the root through `SKILL.md`, reject target-like arguments, and run
-   `scripts/save-guard.sh <root>`. A worktree stream or matching in-place stream refuses before any
-   Checkpoint read or write. In Git, tracked `CHECKPOINT.md` or `CHECKPOINT.md.tmp` also refuses.
+   `scripts/save-guard.sh <root>`. A top-level `WORKSTREAM.md` refuses before any Checkpoint read or
+   write. In Git, tracked `CHECKPOINT.md` or `CHECKPOINT.md.tmp` also refuses.
 2. Determine ownership without reading a body:
    - Absent target: create a token with `scripts/checkpoint-file.sh token`.
    - One complete stable handle for this root: validate it with

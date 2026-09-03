@@ -49,6 +49,10 @@ for policy in local push pr; do
   if git -C "$ROOT4" worktree list --porcelain | grep -qxF "worktree $ROOT4/.streams/$policy"; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 done
 expect_eq 'creation never switches the primary branch' main "$(git -C "$ROOT4" branch --show-current)"
+"$HELPER" "$ROOT4" read-current "$ROOT4/.streams/local" >"$OUT"
+expect 'current-worktree admission resolves the registered coordinate' 'stream=local,instance_id=' "$OUT"
+if "$HELPER" "$ROOT4" read-current "$ROOT4" >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'primary checkout cannot masquerade as a current stream' 'current worktree has no safe top-level runbook' "$ERR"
 if "$HELPER" "$ROOT4" runtime-init retired main retired --isolation worktree >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 expect 'retired isolation option is unknown' 'unknown runtime-init option: --isolation' "$ERR"
 if "$HELPER" "$ROOT4" runtime-init retired main retired --in-place >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi

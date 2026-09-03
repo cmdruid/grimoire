@@ -22,6 +22,7 @@ usage: workstream.sh <canonical-root> <operation> [args...]
   setup
   repair
   read <stream>
+  read-current <worktree>
   state <stream>
   diagnose <stream>
   operator-note <stream> <note>
@@ -902,10 +903,8 @@ cmd_state() {
     "$stream" "$instance" "$branch" "$target" "$phase" "$next" "$queue" "${unit:--}" "${shipment:--}"
 }
 
-cmd_read() {
-  [ "$#" -eq 1 ] || die "usage: read <stream>"
+emit_read_projection() { # stream; requires admitted globals
   local stream="$1" purpose orientation note source_kind source_pointer instance phase next queue unit unit_slug unit_summary shipment hook_identity hook_state mode landing cadence branch target
-  admit_stream "$stream"
   purpose="$(runbook_block_field "$RUNBOOK" brief purpose)" || die "runbook purpose is malformed"
   orientation="$(runbook_block_field "$RUNBOOK" brief orientation)" || die "runbook orientation is malformed"
   note="$(runbook_block_field "$RUNBOOK" brief operator-note)" || die "runbook operator note is malformed"
@@ -923,6 +922,31 @@ cmd_read() {
   branch="$(runbook_field "$RUNBOOK" branch)"; target="$(runbook_field "$RUNBOOK" target)"
   printf 'schema=workstream-read@1\nstream=%s,instance_id=%s\nworktree=%s\ncoordinates=branch:%s,target:%s,landing:%s\npolicy=mode:%s,ship-cadence:%s\npurpose=%s\norientation=%s\noperator_note=%s\nqueue=source-kind:%s,source:%s,state:%s\nunit=id:%s,slug:%s,summary:%s\nshipment=%s,hook_identity=%s,hook_state=%s\nnext_action=%s\n' \
     "$stream" "$instance" "$WT" "$branch" "$target" "$landing" "$mode" "$cadence" "$purpose" "$orientation" "$note" "$source_kind" "$source_pointer" "$queue" "${unit:--}" "$unit_slug" "$unit_summary" "${shipment:--}" "$hook_identity" "$hook_state" "$next"
+}
+
+cmd_read() {
+  [ "$#" -eq 1 ] || die "usage: read <stream>"
+  admit_stream "$1"
+  emit_read_projection "$1"
+}
+
+cmd_read_current() {
+  [ "$#" -eq 1 ] || die "usage: read-current <worktree>"
+  local supplied="$1" current top candidate_runbook stream
+  current="$(canonical_dir "$supplied")" || die "current worktree is not a real directory"
+  [ "$current" = "$supplied" ] || die "current worktree is not canonical"
+  top="$(git -C "$current" rev-parse --show-toplevel 2>/dev/null)" || die "current worktree is not a Git checkout"
+  top="$(canonical_dir "$top")" || die "current Git top level is unsafe"
+  [ "$top" = "$current" ] || die "current worktree is not its Git top level"
+  candidate_runbook="$current/WORKSTREAM.md"
+  [ -f "$candidate_runbook" ] && [ ! -L "$candidate_runbook" ] || die "current worktree has no safe top-level runbook"
+  stream="$(runbook_field "$candidate_runbook" stream)" || die "current runbook stream identity is malformed"
+  validate_stream_name "$stream"
+  stream_paths "$stream"
+  [ "$current" = "$RUNTIME" ] && [ "$candidate_runbook" = "$RUNBOOK" ] || die "current worktree is not the registered stream coordinate"
+  admit_stream "$stream"
+  [ "$WT" = "$current" ] || die "admitted stream differs from the current worktree"
+  emit_read_projection "$stream"
 }
 
 cmd_diagnose() {
@@ -2237,11 +2261,11 @@ emit_recovery_anchor() {
 <!-- workstream:recovery-anchor@1 -->
 ## Workstream compaction recovery
 
-Only after context compaction, resolve the current Git top level. If its top-level
-`WORKSTREAM.md` has matching root/worktree/branch coordinates, read its bounded brief through the
-effective `.streams/workstream.sh`, reconcile it with Git, and resume its one reported action. For
-an in-place stream, admit only `.streams/<stream>/WORKSTREAM.md` whose recorded branch is currently
-checked out. Handoffs visible from the root otherwise belong to other sessions: do not read them.
+Only after context compaction, resolve the current Git top level. With no top-level
+`WORKSTREAM.md`, this route is inert: do not scan `.streams` or infer custody from a branch. With
+one present, stop and invoke the canonical primary helper with `read-current` for that top level.
+Reconcile its bounded projection with Git and resume only its reported action. Do not read the
+complete runbook, raw tracker, or another checkout's handoff.
 <!-- /workstream:recovery-anchor@1 -->
 EOF
 }
@@ -2576,6 +2600,7 @@ main() {
     reconfig) cmd_reconfig "$@" ;;
     migrate) cmd_migrate "$@" ;;
     read) cmd_read "$@" ;;
+    read-current) cmd_read_current "$@" ;;
     state) cmd_state "$@" ;;
     diagnose) cmd_diagnose "$@" ;;
     operator-note) cmd_operator_note "$@" ;;

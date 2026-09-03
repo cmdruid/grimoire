@@ -125,11 +125,8 @@ follow-up is not journal's job (scope boundary, below).
   of the checkout that holds the records you wrote — never a different clone, and never the
   repo's root checkout from inside a stream worktree (that lands the commit on the trunk
   through the shared index). `<branch>` is `git -C <root> branch --show-current`. Then, in
-  order: empty `<branch>` (detached HEAD) → STOP. `<root>/WORKSTREAM.md` exists and its
-  tab-delimited identity block has `branch` equal to `<branch>` → this tree is a worktree stream;
-  commit here. A `<root>/.streams/*/WORKSTREAM.md` has tab-delimited identity rows with
-  `isolation` equal to `in-place` and `branch` equal to `<branch>` → this tree is an in-place stream holding the root; commit
-  here. `<branch>` matches `stream/*` or `feature/*` → STOP (a work branch this session
+  order: empty `<branch>` (detached HEAD) → STOP. `<root>/WORKSTREAM.md` exists → this tree is a
+  worktree stream; commit here. `<branch>` matches `stream/*` or `feature/*` → STOP (a work branch this session
   does not hold). Otherwise commit here (the current trunk — never hardcode `main`).
 - **Pathspec-atomic commit (the shared root index is contended).** Stage *and* commit scoped to
   exactly the paths you wrote, in one step, via `scripts/scoped-commit.sh <root> "<msg>"

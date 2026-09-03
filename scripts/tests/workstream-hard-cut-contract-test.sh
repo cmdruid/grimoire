@@ -79,6 +79,54 @@ if rg -n 'Coordinates `branch:`|isolation: in-place.*Coordinates' \
 else
   pass=$((pass + 1))
 fi
+
+custody_paths=(
+  AGENTS.md
+  skills/checkpoint/SKILL.md
+  skills/checkpoint/verbs/save.md
+  skills/checkpoint/scripts/save-guard.sh
+  skills/debugger/SKILL.md
+  skills/delegate/SKILL.md
+  skills/delegate/references/codex.md
+  skills/journal/SKILL.md
+  skills/notepad/SKILL.md
+  skills/workstream/templates/compaction-anchor.md
+)
+if rg -ni 'in-place|inplace_|\.streams/\*/WORKSTREAM' "${custody_paths[@]/#/$ROOT/}" >/dev/null; then
+  fail_with 'retired topology remains in active custody paths'
+else
+  pass=$((pass + 1))
+fi
+
+if rg -ni 'checkpoint' "$ROOT/skills/workstream" >/dev/null; then
+  fail_with 'Workstream retains a Checkpoint reference'
+else
+  pass=$((pass + 1))
+fi
+
+recovery_anchor_clean() { # file
+  local file="$1"
+  grep -qF 'read-current' "$file" &&
+    ! grep -qF '.streams/*/WORKSTREAM.md' "$file" &&
+    ! grep -qiE '^(scan|read|open|cat|parse) .*(raw (runbook|tracker|workstream\.tsv)|\.streams/.*/WORKSTREAM\.md)' "$file"
+}
+for anchor in "$ROOT/AGENTS.md" "$ROOT/skills/workstream/templates/compaction-anchor.md"; do
+  if recovery_anchor_clean "$anchor"; then pass=$((pass + 1)); else fail_with "recovery anchor escaped bounded current-worktree admission: $anchor"; fi
+done
+
+cp "$ROOT/skills/workstream/templates/compaction-anchor.md" "$TMP/recovery-mutated.md"
+printf '%s\n' 'Scan .streams/*/WORKSTREAM.md for custody.' >>"$TMP/recovery-mutated.md"
+expect_count="$(grep -cF '.streams/*/WORKSTREAM.md' "$TMP/recovery-mutated.md")"
+if [ "$expect_count" -eq 1 ] && ! recovery_anchor_clean "$TMP/recovery-mutated.md"; then pass=$((pass + 1)); else fail_with 'sibling-scan recovery guard has no counted red arm'; fi
+cp "$ROOT/skills/workstream/templates/compaction-anchor.md" "$TMP/recovery-mutated.md"
+printf '%s\n' 'Read raw workstream.tsv for recovery.' >>"$TMP/recovery-mutated.md"
+expect_count="$(grep -ciF 'Read raw workstream.tsv' "$TMP/recovery-mutated.md")"
+if [ "$expect_count" -eq 1 ] && ! recovery_anchor_clean "$TMP/recovery-mutated.md"; then pass=$((pass + 1)); else fail_with 'raw-projection recovery guard has no counted red arm'; fi
+
+mkdir -p "$TMP/workstream-copy"
+cp "$ROOT/skills/workstream/SKILL.md" "$TMP/workstream-copy/SKILL.md"
+printf '%s\n' 'Checkpoint coupling mutation.' >>"$TMP/workstream-copy/SKILL.md"
+if [ "$(rg -ni -c 'checkpoint' "$TMP/workstream-copy/SKILL.md")" -eq 1 ]; then pass=$((pass + 1)); else fail_with 'Workstream cross-reference guard has no counted red arm'; fi
 mkdir -p "$TMP/custody"
 for skill in debugger delegate journal notepad; do cp "$ROOT/skills/$skill/SKILL.md" "$TMP/custody/$skill.md"; done
 # Backticks are literal documentation text.
@@ -92,7 +140,7 @@ fi
 
 # Backticks are literal documentation text.
 # shellcheck disable=SC2016
-if grep -qF 'revalidates `.streams/STREAM` against the Git worktree registry' \
+if grep -qF 'revalidates the sole `.streams/STREAM` coordinate against the Git worktree registry' \
      "$ROOT/skills/workstream/verbs/close.md" &&
    grep -qF 'Do not delete `.streams` control files' "$ROOT/skills/workstream/verbs/close.md"; then
   pass=$((pass + 1))

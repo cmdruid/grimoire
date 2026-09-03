@@ -15,3 +15,8 @@ authority for that known local action, not for target/remote mutation. Ask only 
 unit, semantic conflict, or landing decision.
 
 Done when custody is admitted and execution resumes, or one concrete mismatch is reported.
+
+Compaction recovery is not a named load. When the current Git top level contains
+`WORKSTREAM.md`, use `read-current <current-top-level>` so the helper proves that checkout is the
+registered stream coordinate before emitting this same bounded projection. With no top-level
+runbook, recovery is inert; never search sibling worktrees for one.

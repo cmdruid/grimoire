@@ -43,6 +43,8 @@ echo "== control-surface-test.sh"
 bash "$DIR/control-surface-test.sh" || rc=1
 echo "== anchor-test.sh"
 bash "$DIR/anchor-test.sh" || rc=1
+echo "== recovery-contract-test.sh"
+bash "$DIR/recovery-contract-test.sh" || rc=1
 echo "== reconfig-test.sh"
 bash "$DIR/reconfig-test.sh" || rc=1
 echo "== migration-test.sh"

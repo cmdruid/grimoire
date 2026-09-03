@@ -77,8 +77,9 @@ later ship phases.
 
 `save` changes only the bounded operator note when semantic intent must survive a reset or custody
 transfer. Git and helper state already record mechanical progress; don't save after every action.
-After compaction, follow the project's recovery anchor, admit this stream, call `read`, reconcile
-the projection with Git, and continue the one known action. Never inspect sibling runbooks.
+After compaction, follow the project's recovery anchor. Only a top-level `WORKSTREAM.md` activates
+recovery; call `read-current` for that Git top level, reconcile the projection with Git, and
+continue the one known action. Never inspect sibling runbooks.
 
 ## Hooks
 
