@@ -83,6 +83,14 @@ for kind in file symlink directory;do
   no complete "$R";has "$T/out" 'reason=ambiguous-state';[ -e "$path" ]||[ -L "$path" ]&&pass=$((pass+1))||{ echo "FAIL setup removed foreign $kind temporary" >&2;fail=$((fail+1));}
 done
 
+# Any unexplained entry makes a selected or legacy prehistory shape ambiguous.
+XP="$T/selected-extra";newroot "$XP"
+if STOP_AT=1 BACKLOG_SETUP_TEST_AFTER_WRITE="$HOOK" "$SETUP" "$XP" --apply --trackers tasks >/dev/null 2>&1;then echo 'FAIL selected-prefix interruption missed' >&2;fail=$((fail+1));else pass=$((pass+1));fi
+printf 'foreign\n'>"$XP/.trackers/foreign.txt";no complete "$XP";has "$T/out" 'reason=ambiguous-state'
+[ -f "$XP/.trackers/.setup-selection" ]&&[ -f "$XP/.trackers/foreign.txt" ]&&pass=$((pass+1))||{ echo 'FAIL selected extra-file refusal changed evidence' >&2;fail=$((fail+1));}
+LX="$T/legacy-extra";newroot "$LX";mkdir -p "$LX/.trackers";printf 'foreign\n'>"$LX/.trackers/foreign.txt"
+no complete "$LX";has "$T/out" 'reason=ambiguous-state';[ -f "$LX/.trackers/foreign.txt" ]&&pass=$((pass+1))||{ echo 'FAIL legacy extra-file refusal removed evidence' >&2;fail=$((fail+1));}
+
 # A durable history plus valid intent is cleanup-only; a retry rewrites no incumbent byte.
 CLEANUP_STOP="$T/stop-cleanup.sh";printf '%s\n' '#!/bin/sh' 'exit 86'>"$CLEANUP_STOP";chmod +x "$CLEANUP_STOP"
 CL="$T/cleanup";newroot "$CL";if BACKLOG_SETUP_TEST_BEFORE_SELECTION_REMOVE="$CLEANUP_STOP" "$SETUP" "$CL" --apply --trackers failures >/dev/null 2>&1;then echo 'FAIL cleanup interruption missed' >&2;fail=$((fail+1));else pass=$((pass+1));fi

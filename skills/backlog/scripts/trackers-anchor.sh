@@ -42,14 +42,16 @@ SKILL="$(CDPATH='' cd -P "$(dirname "$0")/.."&&pwd)"
 ROUTE="$SKILL/templates/agents-route.md";LEGACY="$SKILL/templates/agents-pointer.md"
 README_TEMPLATE="$SKILL/templates/trackers-readme-block.md";README_STATUS="$SKILL/scripts/tracker-readme-status.sh"
 RUNTIME="$SKILL/scripts/tracker-runtime-check.sh";PROVIDER_SOURCE="$SKILL/scripts/trackers.sh"
-for resource in "$ROUTE" "$LEGACY" "$README_TEMPLATE" "$PROVIDER_SOURCE";do [ -f "$resource" ]&&[ ! -L "$resource" ]||die 'package resources unavailable';done
-[ -x "$README_STATUS" ]&&[ -x "$RUNTIME" ]||die 'package resources unavailable'
-ROUTE_BEGIN='<!-- skill:backlog BEGIN built-against:__BUILT_AGAINST__ -->';ROUTE_END='<!-- skill:backlog END -->'
-[ "$(head -n1 "$ROUTE")" = "$ROUTE_BEGIN" ]&&[ "$(tail -n1 "$ROUTE")" = "$ROUTE_END" ]&&
-  [ "$(grep -cF '__BUILT_AGAINST__' "$ROUTE")" -eq 1 ]&&[ "$(grep -cF '<!-- skill:backlog BEGIN' "$ROUTE")" -eq 1 ]&&
-  [ "$(grep -cFx "$ROUTE_END" "$ROUTE")" -eq 1 ]||die 'invalid route template'
-
-stamp="$(git -C "$SKILL" log -1 --format=%h -- . 2>/dev/null||true)";[ -n "$stamp" ]||stamp='unversioned'
+stamp=''
+if [ "$remove" = no ];then
+  for resource in "$ROUTE" "$LEGACY" "$README_TEMPLATE" "$PROVIDER_SOURCE";do [ -f "$resource" ]&&[ ! -L "$resource" ]||die 'package resources unavailable';done
+  [ -x "$README_STATUS" ]&&[ -x "$RUNTIME" ]||die 'package resources unavailable'
+  ROUTE_BEGIN='<!-- skill:backlog BEGIN built-against:__BUILT_AGAINST__ -->';ROUTE_END='<!-- skill:backlog END -->'
+  [ "$(head -n1 "$ROUTE")" = "$ROUTE_BEGIN" ]&&[ "$(tail -n1 "$ROUTE")" = "$ROUTE_END" ]&&
+    [ "$(grep -cF '__BUILT_AGAINST__' "$ROUTE")" -eq 1 ]&&[ "$(grep -cF '<!-- skill:backlog BEGIN' "$ROUTE")" -eq 1 ]&&
+    [ "$(grep -cFx "$ROUTE_END" "$ROUTE")" -eq 1 ]||die 'invalid route template'
+  stamp="$(git -C "$SKILL" log -1 --format=%h -- . 2>/dev/null||true)";[ -n "$stamp" ]||stamp='unversioned'
+fi
 HEADING='## Skill routes (self-registered)';BEGIN_PREFIX='<!-- skill:backlog BEGIN built-against:';END_MARK='<!-- skill:backlog END -->'
 target="$root/AGENTS.md";layer="$root/.trackers";readme="$layer/README.md"
 
@@ -113,7 +115,7 @@ WORK="$(mktemp -d "${TMPDIR:-/tmp}/backlog-anchor.XXXXXX")";DEST_TMP=''
 cleanup(){ [ -z "$DEST_TMP" ]||rm -f "$DEST_TMP";rm -rf "$WORK";}
 trap cleanup EXIT HUP INT TERM
 CURRENT="$WORK/current";MIGRATED="$WORK/migrated";BLOCK="$WORK/block";CANDIDATE="$WORK/candidate";ANALYSIS="$WORK/analysis";SECOND="$WORK/second"
-sed "s/__BUILT_AGAINST__/$stamp/g" "$ROUTE">"$BLOCK"
+[ "$remove" = yes ]||sed "s/__BUILT_AGAINST__/$stamp/g" "$ROUTE">"$BLOCK"
 
 snapshot_current(){ validate_target;if [ -f "$target" ];then cp "$target" "$CURRENT";else :>"$CURRENT";fi;}
 migrate_legacy(){

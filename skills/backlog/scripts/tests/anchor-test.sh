@@ -48,6 +48,13 @@ preview "$existing">"$OUT";has "$OUT" 'action=refresh';has "$OUT" 'status=noop';
 cp "$existing/AGENTS.md" "$TMP/before-remove";rm "$existing/.trackers/history.tsv";preview "$existing" remove>"$OUT";has "$OUT" 'action=remove';has "$OUT" 'status=change';apply_preview "$existing" remove;has "$OUT" 'removed=AGENTS.md';absent "$existing/AGENTS.md" '<!-- skill:backlog BEGIN';has "$existing/AGENTS.md" '<!-- skill:other BEGIN';has "$existing/AGENTS.md" 'KEEP'
 preview "$existing" remove>"$OUT";has "$OUT" 'status=noop';no preview "$existing";has "$ERR" 'reason=ledger-recovery-required'
 
+# Removal needs only front-door custody, even when the layer or install-only package resources fail.
+missing_layer="$TMP/remove-missing-layer";new_root "$missing_layer";apply_preview "$missing_layer";mv "$missing_layer/.trackers" "$TMP/missing-layer-state";apply_preview "$missing_layer" remove;has "$OUT" 'removed=AGENTS.md'
+malformed_layer="$TMP/remove-malformed-layer";new_root "$malformed_layer";apply_preview "$malformed_layer";printf 'malformed\n'>"$malformed_layer/.trackers/history.tsv";apply_preview "$malformed_layer" remove;has "$OUT" 'removed=AGENTS.md'
+damaged_package="$TMP/damaged-package";cp -R "$SKILL" "$damaged_package";damaged_root="$TMP/remove-damaged-package";new_root "$damaged_root";apply_preview "$damaged_root";mv "$damaged_package/templates/agents-route.md" "$TMP/agents-route.missing"
+"$damaged_package/scripts/trackers-anchor.sh" preview --root "$damaged_root" --remove>"$OUT" 2>"$ERR"
+base="$(fact base-sha256)";candidate="$(fact candidate-sha256)";"$damaged_package/scripts/trackers-anchor.sh" apply --root "$damaged_root" --remove --confirmed --base-sha256 "$base" --candidate-sha256 "$candidate">"$OUT" 2>"$ERR";has "$OUT" 'removed=AGENTS.md'
+
 # Exact legacy output migrates; customized project prose survives alongside the managed route.
 legacy="$TMP/legacy";new_root "$legacy";printf '# Project preface\n\n'>"$legacy/AGENTS.md";cat "$POINTER">>"$legacy/AGENTS.md";apply_preview "$legacy";absent "$legacy/AGENTS.md" '## Project trackers';has "$legacy/AGENTS.md" '## Skill routes (self-registered)';has "$legacy/AGENTS.md" '# Project preface'
 custom="$TMP/custom";new_root "$custom";sed 's/Actionable project follow-ups/Customized project follow-ups/' "$POINTER">"$custom/AGENTS.md";apply_preview "$custom";has "$custom/AGENTS.md" 'Customized project follow-ups';has "$custom/AGENTS.md" '<!-- skill:backlog BEGIN'
@@ -74,6 +81,10 @@ printf 'concurrent\n'>"$stale/AGENTS.md";no "$ANCHOR" apply --root "$stale" --co
 race="$TMP/race";new_root "$race";printf '# Existing\n'>"$race/AGENTS.md";preview "$race">"$OUT";base="$(fact base-sha256)";candidate="$(fact candidate-sha256)"
 hook="$TMP/race-hook.sh";printf '%s\n' '#!/bin/sh' 'printf "CONCURRENT_PROJECT_EDIT\n" >>"$1/AGENTS.md"'>"$hook";chmod +x "$hook"
 rc=0;BACKLOG_ANCHOR_TEST_AFTER_PREFLIGHT="$hook" "$ANCHOR" apply --root "$race" --confirmed --base-sha256 "$base" --candidate-sha256 "$candidate">"$OUT" 2>"$ERR"||rc=$?;eq 'race refusal rc' 2 "$rc";has "$ERR" 'reason=concurrent-project-edit detail=AGENTS.md';has "$race/AGENTS.md" 'CONCURRENT_PROJECT_EDIT';absent "$race/AGENTS.md" '### /backlog'
+deleted="$TMP/deleted";new_root "$deleted";printf '# Existing\n'>"$deleted/AGENTS.md";preview "$deleted">"$OUT";base="$(fact base-sha256)";candidate="$(fact candidate-sha256)"
+delete_hook="$TMP/delete-hook.sh";printf '%s\n' '#!/bin/sh' 'mv "$1/AGENTS.md" "$1/AGENTS.md.concurrently-deleted"'>"$delete_hook";chmod +x "$delete_hook"
+rc=0;BACKLOG_ANCHOR_TEST_AFTER_PREFLIGHT="$delete_hook" "$ANCHOR" apply --root "$deleted" --confirmed --base-sha256 "$base" --candidate-sha256 "$candidate">"$OUT" 2>"$ERR"||rc=$?;eq 'concurrent deletion refusal rc' 2 "$rc";has "$ERR" 'reason=concurrent-project-edit detail=AGENTS.md'
+[ ! -e "$deleted/AGENTS.md" ]&&[ -f "$deleted/AGENTS.md.concurrently-deleted" ]&&pass=$((pass+1))||{ echo 'FAIL anchor recreated concurrently deleted front door' >&2;fail=$((fail+1));}
 
 # Surrounding bytes and file mode survive install; the preservation oracle is red-proved.
 bytes="$TMP/bytes";new_root "$bytes";printf 'FIRST\r\nSECOND'>"$bytes/AGENTS.md";chmod 640 "$bytes/AGENTS.md";cp "$bytes/AGENTS.md" "$TMP/bytes.before";mode_before="$(stat -f '%Lp' "$bytes/AGENTS.md" 2>/dev/null||stat -c '%a' "$bytes/AGENTS.md")";apply_preview "$bytes"

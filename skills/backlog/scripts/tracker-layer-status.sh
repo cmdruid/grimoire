@@ -37,7 +37,7 @@ normalize_selection(){
   printf '%s\n' "$result"
 }
 
-selection_status=absent;selection_trackers='';selection_temp=absent
+selection_status=absent;selection_trackers='';selection_temp=absent;unexpected_entry=false
 if [ -e "$LAYER" ];then
   [ -d "$LAYER" ]&&[ ! -L "$LAYER" ]||die unsafe-trackers-root "$TR"
   shopt -s nullglob
@@ -57,6 +57,25 @@ if [ -e "$LAYER" ];then
     else selection_status=invalid
     fi
   fi
+  shopt -s nullglob dotglob
+  for entry in "$LAYER"/*;do
+    name="$(basename "$entry")"
+    case "$name" in
+      .setup-selection|tables|trackers.sh|history.tsv|README.md|DEBRIEF.md);;
+      *)unexpected_entry=true;;
+    esac
+  done
+  if [ -d "$TABLES" ]&&[ ! -L "$TABLES" ];then
+    for entry in "$TABLES"/*;do
+      name="$(basename "$entry")"
+      case "$name" in
+        .gitkeep);;
+        *.tsv)valid_stem "${name%.tsv}"||unexpected_entry=true;;
+        *)unexpected_entry=true;;
+      esac
+    done
+  fi
+  shopt -u dotglob nullglob
 fi
 
 provider_status=absent
@@ -158,8 +177,11 @@ if git -C "$ROOT" rev-parse --verify HEAD >/dev/null 2>&1;then
   [ "$head_path" = "$TR/history.tsv" ]&&head_has_history=true
 fi
 
+unexpected_prefix=false
+if [ "$unexpected_entry" = true ]&&{ [ "$selection_status" = valid ]||[ "$history_state" = absent ];};then unexpected_prefix=true;fi
+
 layer_status=ambiguous;recovery_action=human-review
-if [ "$selection_temp" = present ]||[ "$selection_status" = invalid ];then
+if [ "$selection_temp" = present ]||[ "$selection_status" = invalid ]||[ "$unexpected_prefix" = true ];then
   layer_status=ambiguous;recovery_action=human-review
 elif [ "$history_state" = valid ]&&[ "$selection_status" = valid ];then
   if [ "$tables_state" = valid ]&&[ "$queue_state" = valid ]&&[ "$prompt_state" = valid ]&&
