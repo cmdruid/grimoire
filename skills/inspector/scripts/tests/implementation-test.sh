@@ -9,6 +9,7 @@ has() { if grep -qF -- "$2" "$1"; then pass=$((pass + 1)); else echo "FAIL $3" >
 eq() { if [ "$2" = "$3" ]; then pass=$((pass + 1)); else echo "FAIL $1 expected=$2 got=$3" >&2; fail=$((fail + 1)); fi; }
 rejects() { if "$@"; then echo "FAIL expected rejection: $*" >&2; fail=$((fail + 1)); else pass=$((pass + 1)); fi; }
 
+# shellcheck disable=SC2016 # Markdown code spans are literal.
 for needle in 'named diff, range, worktree, or commit' 'behavior matches the governing design' \
   'passing test could still encode the wrong implementation' 'claimed deletions and absence assertions' \
   'call sites and configuration' 'compatibility substrate forbidden by the design' \
@@ -44,6 +45,18 @@ review_fixture() {
   [ "$findings" -gt 0 ] || echo clean
 }
 verdict() { case "$1" in *must-fix*) echo needs-rework ;; *recommended*) echo approve-with-changes ;; *) echo approve ;; esac; }
+
+full_review_fixture() {
+  local repository="$1" base="$2" after="$3" range_file="$ROOT/full-review.range" current_file="$ROOT/full-review.current"
+  [ "$(git_head "$repository")" = "$after" ] || { echo endpoint-mismatch; return; }
+  git -C "$repository" diff "$base" -- change.txt > "$range_file"
+  grep -q '^+ORIGINAL_CHANGE$' "$range_file" || { echo baseline-too-narrow; return; }
+  cp "$repository/change.txt" "$current_file"
+  review_fixture "$current_file"
+}
+full_review_contract() {
+  [ "$(full_review_fixture "$1" "$2" "$3")" != baseline-too-narrow ]
+}
 
 git_head() { git -C "$1" rev-parse HEAD; }
 git_status() { git -C "$1" status --porcelain=v1 --untracked-files=all; }
@@ -202,8 +215,12 @@ assert_isolation_start_drift() {
       ;;
   esac
   rejects start_isolated "$drift_repo" "$reviewed_after" "$drift_isolated"
-  [ ! -e "$drift_isolated" ] && pass=$((pass + 1)) \
-    || { echo "FAIL $kind drift created isolation" >&2; fail=$((fail + 1)); }
+  if [ ! -e "$drift_isolated" ]; then
+    pass=$((pass + 1))
+  else
+    echo "FAIL $kind drift created isolation" >&2
+    fail=$((fail + 1))
+  fi
 }
 for drift_kind in head staged unstaged untracked; do
   assert_isolation_start_drift "$drift_kind"
@@ -222,8 +239,12 @@ eq "dirty-content drift keeps status-path population" "$dirty_status" \
   "$(git_status "$DIRTY_DESTINATION")"
 rejects same_identity "$DIRTY_DESTINATION" "$ROOT/dirty.identity" "$ROOT/dirty.current"
 cp "$ROOT/dirty.before" "$DIRTY_DESTINATION/change.txt"
-same_identity "$DIRTY_DESTINATION" "$ROOT/dirty.identity" "$ROOT/dirty.current" \
-  && pass=$((pass + 1)) || { echo "FAIL dirty identity not restored" >&2; fail=$((fail + 1)); }
+if same_identity "$DIRTY_DESTINATION" "$ROOT/dirty.identity" "$ROOT/dirty.current"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL dirty identity not restored" >&2
+  fail=$((fail + 1))
+fi
 
 : > "$TRACE"
 printf '%s\n' 'verdict:needs-rework' \
@@ -233,19 +254,32 @@ cp "$DESTINATION/change.txt" "$ROOT/change.before"
 printf '%s\n' PRE_WRITE_DRIFT >> "$DESTINATION/change.txt"
 eq "pre-write drift plant count" 1 "$(grep -c '^PRE_WRITE_DRIFT$' "$DESTINATION/change.txt")"
 rejects start_isolated "$DESTINATION" "$reviewed_after" "$ISOLATED"
-[ ! -e "$ISOLATED" ] && pass=$((pass + 1)) || { echo "FAIL drift created isolation" >&2; fail=$((fail + 1)); }
+if [ ! -e "$ISOLATED" ]; then
+  pass=$((pass + 1))
+else
+  echo "FAIL drift created isolation" >&2
+  fail=$((fail + 1))
+fi
 cp "$ROOT/change.before" "$DESTINATION/change.txt"
 eq "pre-write drift restoration" "$destination_before" \
   "$(shasum "$DESTINATION/change.txt" | awk '{print $1}')"
-destination_clean_at "$DESTINATION" "$reviewed_after" \
-  && pass=$((pass + 1)) || { echo "FAIL destination not restored" >&2; fail=$((fail + 1)); }
+if destination_clean_at "$DESTINATION" "$reviewed_after"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL destination not restored" >&2
+  fail=$((fail + 1))
+fi
 
 printf '%s\n' SAME_PATH_DRIFT >> "$DESTINATION/change.txt"
 eq "same-path drift preserves status population" ' M change.txt' "$(git_status "$DESTINATION")"
 rejects same_identity "$DESTINATION" "$ROOT/reviewed.identity" "$ROOT/current.identity"
 cp "$ROOT/change.before" "$DESTINATION/change.txt"
-same_identity "$DESTINATION" "$ROOT/reviewed.identity" "$ROOT/current.identity" \
-  && pass=$((pass + 1)) || { echo "FAIL identity not restored" >&2; fail=$((fail + 1)); }
+if same_identity "$DESTINATION" "$ROOT/reviewed.identity" "$ROOT/current.identity"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL identity not restored" >&2
+  fail=$((fail + 1))
+fi
 
 start_isolated "$DESTINATION" "$reviewed_after" "$ISOLATED"
 printf '%s\n' "pre-write:$reviewed_after:clean" "isolated-start:$reviewed_after" >> "$TRACE"
@@ -275,8 +309,12 @@ eq "pre-integration drift plant count" 1 "$(grep -c '^PRE_INTEGRATION_DRIFT$' "$
 rejects integrate_returned "$DESTINATION" "$reviewed_after" "$returned_commit" "$inspected" "$primary_verified"
 eq "drift leaves destination head" "$reviewed_after" "$(git_head "$DESTINATION")"
 rm -f "$DESTINATION/drift.tmp"
-destination_clean_at "$DESTINATION" "$reviewed_after" \
-  && pass=$((pass + 1)) || { echo "FAIL integration drift not restored" >&2; fail=$((fail + 1)); }
+if destination_clean_at "$DESTINATION" "$reviewed_after"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL integration drift not restored" >&2
+  fail=$((fail + 1))
+fi
 
 printf '%s\n' "pre-integration:$reviewed_after:clean" >> "$TRACE"
 integrate_returned "$DESTINATION" "$reviewed_after" "$returned_commit" "$inspected" "$primary_verified"
@@ -284,18 +322,25 @@ printf '%s\n' "integrated:$returned_commit" \
   "re-review-base:$base_endpoint" \
   "re-review-after:$returned_commit" \
   're-review-scope:complete' >> "$TRACE"
-fresh_result="$(review_fixture "$DESTINATION/change.txt")"
+fresh_result="$(full_review_fixture "$DESTINATION" "$base_endpoint" "$returned_commit")"
 fresh_verdict="$(verdict "$fresh_result")"
 eq "full re-review keeps original change" 1 "$(grep -c '^ORIGINAL_CHANGE$' "$DESTINATION/change.txt")"
 eq "full re-review sees remaining recommendation" approve-with-changes "$fresh_verdict"
+eq "fix-delta baseline is rejected as too narrow" baseline-too-narrow \
+  "$(full_review_fixture "$DESTINATION" "$reviewed_after" "$returned_commit")"
+rejects full_review_contract "$DESTINATION" "$reviewed_after" "$returned_commit"
 printf '%s\n' OUTSIDE_FIX_MUTATION >> "$DESTINATION/change.txt"
 printf '%s\n' DESIGN_MISMATCH >> "$DESTINATION/change.txt"
 eq "full re-review sees mutation outside fix delta" needs-rework \
-  "$(verdict "$(review_fixture "$DESTINATION/change.txt")")"
+  "$(verdict "$(full_review_fixture "$DESTINATION" "$base_endpoint" "$returned_commit")")"
 git -C "$DESTINATION" restore change.txt
 printf '%s\n' "fresh-verdict:$fresh_verdict" "fresh-action-close:$fresh_verdict" >> "$TRACE"
-trace_contract "$TRACE" "$base_endpoint" "$reviewed_after" "$returned_commit" "$fresh_verdict" \
-  && pass=$((pass + 1)) || { echo "FAIL implementation action trace" >&2; fail=$((fail + 1)); }
+if trace_contract "$TRACE" "$base_endpoint" "$reviewed_after" "$returned_commit" "$fresh_verdict"; then
+  pass=$((pass + 1))
+else
+  echo "FAIL implementation action trace" >&2
+  fail=$((fail + 1))
+fi
 
 cp "$TRACE" "$ROOT/trace.original"
 awk -v row="pre-write:$reviewed_after:clean" '$0 != row' "$TRACE" > "$ROOT/trace.broken"

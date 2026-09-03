@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -203,7 +203,7 @@ Read-only; produce no commit.
     Expected: the complete action and route matrices pass, all existing document and setup behavior
     remains green, and skill lint reports `fails=0` without a new warning class.
 
-- [ ] **Slice 3: Public responsibility alignment and release gate** — requires: 2
+- [x] **Slice 3: Public responsibility alignment and release gate** — requires: 2
   - Files:
     - `skills/inspector/scripts/tests/review-close-test.sh`
     - `skills/inspector/scripts/tests/implementation-test.sh`

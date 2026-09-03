@@ -6,6 +6,8 @@ REVIEW="$SKILL/verbs/review.md"
 KINDS="$SKILL/kinds"
 ROUTER="$SKILL/SKILL.md"
 SPINE="$(CDPATH='' cd -P "$SKILL/../.." && pwd)/docs/design/2026-08-21-architect-contractor-inspector.md"
+README="$(CDPATH='' cd -P "$SKILL/../.." && pwd)/README.md"
+PACK="$(CDPATH='' cd -P "$SKILL/../.." && pwd)/PACK.md"
 ROOT="$(mktemp -d)"; trap 'rm -rf "$ROOT"' EXIT
 pass=0 fail=0
 has() { if grep -qF -- "$2" "$1"; then pass=$((pass + 1)); else echo "FAIL $3" >&2; fail=$((fail + 1)); fi; }
@@ -29,6 +31,32 @@ has "$REVIEW" 'partially applied' "partial-package stop missing"
 has "$REVIEW" 'has not passed Inspector review' "unreviewed-result disclosure missing"
 has "$REVIEW" 'If you accept, this session will publish' "passing publish offer missing"
 has "$REVIEW" 're-review queued by default' "offered revise does not carry re-review"
+has "$SPINE" 'confirmed inline or isolated remediation' "responsibility spine action close missing"
+has "$README" 'actionable post-verdict fix and re-review close' "README action close missing"
+has "$PACK" 'confirmed implementation fixes and full re-review' "pack action close missing"
+
+live_surface_clean() {
+  ! grep -qFi 'implementation review remains verdict-only' "$1" \
+    && ! grep -qFi 'implementation review → verdict only' "$1" \
+    && ! grep -qFi 'implementation, any verdict | verdict only' "$1" \
+    && ! grep -qFi 'implementation remediation is outside Inspector' "$1" \
+    && ! grep -qFi 'implementation review never amends code, writes status' "$1"
+}
+for live_surface in "$ROUTER" "$REVIEW" "$KINDS/implementation.md" "$SPINE" "$README" "$PACK"; do
+  if live_surface_clean "$live_surface"; then
+    pass=$((pass + 1))
+  else
+    echo "FAIL stale implementation close in $live_surface" >&2
+    fail=$((fail + 1))
+  fi
+done
+cp "$SPINE" "$ROOT/live.original"
+cp "$ROOT/live.original" "$ROOT/live.broken"
+printf '%s\n' 'Implementation review remains verdict-only.' >> "$ROOT/live.broken"
+eq "live-surface red-proof plants one retired claim" 1 \
+  "$(grep -ciF 'Implementation review remains verdict-only.' "$ROOT/live.broken")"
+rejects live_surface_clean "$ROOT/live.broken"
+cmp -s "$SPINE" "$ROOT/live.original" && pass=$((pass + 1)) || fail=$((fail + 1))
 
 resolve_policy() {
   local kind="$1" file="$2" count old_count value
@@ -171,8 +199,14 @@ present_defaults() {
 }
 
 implementation_answer() {
-  case "$1" in
-    yes|proceed|approved|ok) echo confirmed:must-fix:isolated:full-re-review ;;
+  local answer="$1" fixes="$2" route="$3" rereview="$4" review_state
+  [ "$rereview" = yes ] && review_state=full-re-review || review_state=no-re-review
+  case "$answer" in
+    yes|proceed|'do it'|ok)
+      [ "$fixes" = none ] && { echo confirmed:unchanged:return; return; }
+      echo "confirmed:$fixes:$route:$review_state"
+      ;;
+    adjust) echo "reflect:$fixes:$route:$review_state" ;;
     stop|'not yet'|cancel|dismiss) echo no-write ;;
     *) echo ask ;;
   esac
@@ -227,9 +261,19 @@ rejects rows_contract "$ROOT/textual.broken" "$(cat "$ROOT/defaults.original")"
 cmp -s "$ROOT/defaults.original" "$ROOT/defaults.saved" && pass=$((pass + 1)) || fail=$((fail + 1))
 cmp -s "$ROOT/inline.original" "$ROOT/inline.saved" && pass=$((pass + 1)) || fail=$((fail + 1))
 eq "default confirmation excludes recommendations" confirmed:must-fix:isolated:full-re-review \
-  "$(implementation_answer yes)"
-eq "implementation rejection writes nothing" no-write "$(implementation_answer stop)"
-eq "unclear implementation answer asks" ask "$(implementation_answer maybe)"
+  "$(implementation_answer yes must-fix isolated yes)"
+eq "inline confirmation follows displayed route" confirmed:must-fix:inline:full-re-review \
+  "$(implementation_answer proceed must-fix inline yes)"
+eq "recommendation adjustment follows displayed package" confirmed:recommended:inline:full-re-review \
+  "$(implementation_answer 'do it' recommended inline yes)"
+eq "as-is submission ignores inert modifiers" confirmed:unchanged:return \
+  "$(implementation_answer ok none isolated yes)"
+eq "selection adjustment is reflected before work" reflect:recommended:inline:no-re-review \
+  "$(implementation_answer adjust recommended inline no)"
+eq "implementation rejection writes nothing" no-write \
+  "$(implementation_answer stop must-fix isolated yes)"
+eq "unclear implementation answer asks" ask \
+  "$(implementation_answer maybe must-fix isolated yes)"
 
 selection_result() {
   local fixes="$1" complete="$2" rereview="$3" route="$4"

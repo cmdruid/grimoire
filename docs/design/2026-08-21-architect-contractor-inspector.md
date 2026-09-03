@@ -42,10 +42,11 @@ pack runbook or host procedure, not in their descriptions or setup.
   never writes implementation plans, builds, or reviews.
 - Contractor owns roadmap, plan, runbook, and build. It never writes a
   spec, reviews, or ships to trunk.
-- Inspector owns review, revise, and refine for the supported artifact kinds.
-  Review is conversation-only until a passing document verdict is
-  accepted; revise corrects supported findings, while explicit refine simplifies specs and plans.
-  Both mutation verbs propose before applying and return the artifact to draft.
+- Inspector owns review, revise, and refine for the supported artifact kinds. Review is mutation-free
+  through its verdict. An accepted passing document review writes its existing gate; an implementation
+  verdict offers direct return or separately confirmed fixes and full re-review. Revise corrects
+  supported document findings, while explicit refine simplifies specs and plans. Both document
+  mutation verbs propose before applying and return the artifact to draft.
 - A published spec is the gate into plan/build. Plans, roadmaps, and
   runbooks additionally use `stage: approved` after accepted review.
 - Kind policy is Inspector-owned project doctrine at:
@@ -73,9 +74,10 @@ separate packages. Contractor begins only after the specification gate.
 discriminators, judgment axes, and the review-continuation selector. The verb machine owns the
 selector's meaning, status custody, verdict vocabulary, stop implementation, and confirmation.
 
-**Conversation verdict, artifact gate.** Review findings are ephemeral
-until revise folds them. Accepted passing review writes the artifact's
-existing status/stage gate; no second review artifact is minted.
+**Conversation verdict, artifact gate.** Document review findings are ephemeral until revise folds
+them. Implementation findings may instead enter the separately confirmed action close. Accepted
+passing document review writes the artifact's existing status/stage gate; no second review artifact
+is minted.
 
 **Propose before apply.** Revise verifies and classifies findings,
 surfaces required questions, proposes concrete amendments, stops, then
@@ -107,9 +109,11 @@ A material document review follows its effective kind's continuation selector. A
 enter revision classification and reach questions or a proposal without another user command;
 offered kinds stop at an explicit choice; unavailable kinds do not revise. Every revision still
 stops before apply, and a confirmed fold leaves the artifact draft. Implementation review remains
-verdict-only. Refinement is an explicit spec/plan simplification pass and always re-reviews an
-accepted change. The active Inspector extensions specify adequacy, review-close parsing,
-continuation, implementation review, setup, and the revise/refine split.
+mutation-free through its verdict, then may enter confirmed inline or isolated remediation followed
+by a full same-base re-review. That action never enters document revise or refine. Refinement is an
+explicit spec/plan simplification pass and always re-reviews an accepted change. The active Inspector
+extensions specify adequacy, review-close parsing, continuation, implementation review, setup, and
+the revise/refine split.
 
 Founding-shaped work remains draft because it is a conversation driver,
 not a publish-gated job artifact.
@@ -150,7 +154,7 @@ Router surface:
 
 | Verb | Owns |
 |---|---|
-| `review` | independent two-axis judgment and conversation verdict |
+| `review` | independent two-axis judgment, conversation verdict, and applicable action close |
 | `revise` | findings verification, proposal, confirmed in-place correction |
 | `refine` | optional minimum-sufficiency proposal for a spec or plan |
 | `setup` | Inspector-owned project kind doctrine deployment |
