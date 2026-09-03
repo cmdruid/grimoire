@@ -11,6 +11,16 @@ echo "== state-contract-test.sh"
 bash "$DIR/state-contract-test.sh" || rc=1
 echo "== read-envelope-test.sh"
 bash "$DIR/read-envelope-test.sh" || rc=1
+echo "== runbook-contract-test.sh"
+bash "$DIR/runbook-contract-test.sh" || rc=1
+echo "== unit-lifecycle-test.sh"
+bash "$DIR/unit-lifecycle-test.sh" || rc=1
+echo "== hook-runtime-test.sh"
+bash "$DIR/hook-runtime-test.sh" || rc=1
+echo "== isolation-contract-test.sh"
+bash "$DIR/isolation-contract-test.sh" || rc=1
+echo "== operator-note-test.sh"
+bash "$DIR/operator-note-test.sh" || rc=1
 echo "== hooks-test.sh"
 bash "$DIR/hooks-test.sh" || rc=1
 echo "== git-helpers-test.sh"

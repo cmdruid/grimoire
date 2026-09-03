@@ -17,9 +17,16 @@ usage() {
 usage: workstream.sh <canonical-root> <operation> [args...]
 
   runtime-init <stream> <target> [brief]
+  read <stream>
   state <stream>
+  diagnose <stream>
+  operator-note <stream> <note>
+  phase-set <stream> <phase> <next-action>
+  contract-recover <stream>
   unit-begin <stream> <slug> <summary>
   unit-complete <stream>
+  hook-start <stream> <identity> --isolation <available|unavailable>
+  hook-complete <stream> <identity> --closure <path>
   ship-prepare <stream>
   gate-run <stream> --class <docs|full> --label <label> -- <argv...>
   land-advance <stream> --authority confirmed
@@ -45,6 +52,18 @@ sha256_text() {
   local temp
   temp="$(mktemp "${TMPDIR:-/tmp}/workstream-hash.XXXXXX")"
   printf '%s' "$1" >"$temp"
+  sha256_file "$temp"
+  rm -f "$temp"
+}
+
+runbook_contract_hash() {
+  local file="$1" temp
+  temp="$(mktemp "${TMPDIR:-/tmp}/workstream-contract.XXXXXX")"
+  awk '
+    /^<!-- workstream:(identity|policy)@1 -->$/ || /^<!-- workstream:hook:(feature-completion|ship-friction)@1 -->$/ { inside=1 }
+    inside { print }
+    /^<!-- \/workstream:(identity|policy)@1 -->$/ || /^<!-- \/workstream:hook:(feature-completion|ship-friction)@1 -->$/ { inside=0 }
+  ' "$file" >"$temp"
   sha256_file "$temp"
   rm -f "$temp"
 }
@@ -110,6 +129,127 @@ runbook_field() {
   ' "$file"
 }
 
+runbook_block_field() {
+  local file="$1" block="$2" key="$3"
+  awk -v block="$block" -v key="$key" '
+    $0=="<!-- workstream:" block "@1 -->" { inside=1; next }
+    $0=="<!-- /workstream:" block "@1 -->" { inside=0 }
+    inside && index($0, key "\t")==1 { split($0,part,"\t"); print part[2]; found++ }
+    END { if(found!=1) exit 2 }
+  ' "$file"
+}
+
+runbook_hook_body() {
+  local file="$1" event="$2"
+  awk -v event="$event" '
+    $0=="<!-- workstream:hook:" event "@1 -->" { inside=1; metadata=1; next }
+    $0=="<!-- /workstream:hook:" event "@1 -->" { inside=0 }
+    inside && metadata && $0=="" { metadata=0; next }
+    inside && !metadata { print }
+  ' "$file"
+}
+
+validate_config() {
+  local file="$1"
+  [ -f "$file" ] && [ ! -L "$file" ] || die "configuration is not a regular file"
+  awk '
+    function fail() { bad=1 }
+    /^<!-- workstream:defaults@1 -->$/ { if(state!=""||defaults++) fail(); state="defaults"; next }
+    /^<!-- \/workstream:defaults@1 -->$/ { if(state!="defaults") fail(); state=""; next }
+    /^<!-- workstream:hook:(feature-completion|ship-friction)@1 -->$/ {
+      if(state!="") fail(); event=$0; sub(/^<!-- workstream:hook:/,"",event); sub(/@1 -->$/,"",event)
+      if(hooks[event]++) fail(); state="hook"; hookline=0; next
+    }
+    /^<!-- \/workstream:hook:(feature-completion|ship-friction)@1 -->$/ { if(state!="hook") fail(); state=""; event=""; next }
+    /<!-- \/?workstream:/ { fail(); next }
+    state=="defaults" {
+      if($0 !~ /^(mode|isolation|landing|ship-cadence): [^[:space:]]+$/) fail()
+      split($0,p,": "); if(seen[p[1]]++) fail(); scalar[p[1]]=p[2]; next
+    }
+    state=="hook" {
+      hookline++
+      if(hookline==1) { if($0!~/^execution: (inline|isolated-preferred|isolated-required)$/) fail(); split($0,p,": "); execution[event]=p[2]; next }
+      if(hookline==2) { if($0!~/^concurrency: (serial|parallel-preferred)$/) fail(); split($0,p,": "); concurrency[event]=p[2]; next }
+      if(hookline==3) { if($0!="") fail(); next }
+      next
+    }
+    END {
+      if(state!="" || defaults!=1 || seen["mode"]!=1 || seen["isolation"]!=1 || seen["landing"]!=1 || seen["ship-cadence"]!=1) fail()
+      if(scalar["mode"]!~/^(delegate|manual)$/ || scalar["isolation"]!~/^(worktree|in-place)$/ || scalar["landing"]!~/^(local|push|pr)$/ || scalar["ship-cadence"]!~/^(milestone|per-track|per-stage)$/) fail()
+      if(scalar["isolation"]=="worktree" && scalar["landing"]!="local") fail()
+      for(e in hooks) if(execution[e]=="inline" && concurrency[e]=="parallel-preferred") fail()
+      exit bad ? 2 : 0
+    }
+  ' "$file" || die "configuration violates workstream config@1"
+}
+
+config_default() {
+  local file="$1" key="$2"
+  awk -v key="$key" '
+    /^<!-- workstream:defaults@1 -->$/ { inside=1; next }
+    /^<!-- \/workstream:defaults@1 -->$/ { inside=0 }
+    inside && index($0,key ": ")==1 { print substr($0,length(key)+3) }
+  ' "$file"
+}
+
+config_hook_meta() {
+  local file="$1" event="$2" key="$3"
+  awk -v event="$event" -v key="$key" '
+    $0=="<!-- workstream:hook:" event "@1 -->" { inside=1; next }
+    $0=="<!-- /workstream:hook:" event "@1 -->" { inside=0 }
+    inside && index($0,key ": ")==1 { print substr($0,length(key)+3) }
+  ' "$file"
+}
+
+config_hook_body() {
+  local file="$1" event="$2"
+  awk -v event="$event" '
+    $0=="<!-- workstream:hook:" event "@1 -->" { inside=1; line=0; next }
+    $0=="<!-- /workstream:hook:" event "@1 -->" { inside=0 }
+    inside { line++; if(line>3) print }
+  ' "$file"
+}
+
+compile_config() {
+  local config="$ROOT/.streams/CONFIG.md" event body_var exec_var concurrency_var source_var fingerprint_var combined
+  MODE=delegate; ISOLATION=worktree; LANDING=local; SHIP_CADENCE=milestone; DEFAULTS_SOURCE=bundled
+  FEATURE_EXECUTION=inline; FEATURE_CONCURRENCY=serial; FEATURE_SOURCE=bundled
+  FRICTION_EXECUTION=inline; FRICTION_CONCURRENCY=serial; FRICTION_SOURCE=bundled
+  FEATURE_BODY="$(mktemp "${TMPDIR:-/tmp}/workstream-feature.XXXXXX")"
+  FRICTION_BODY="$(mktemp "${TMPDIR:-/tmp}/workstream-friction.XXXXXX")"
+  : >"$FEATURE_BODY"; : >"$FRICTION_BODY"
+  if [ -e "$config" ] || [ -L "$config" ]; then
+    validate_config "$config"
+    MODE="$(config_default "$config" mode)"; ISOLATION="$(config_default "$config" isolation)"
+    LANDING="$(config_default "$config" landing)"; SHIP_CADENCE="$(config_default "$config" ship-cadence)"
+    DEFAULTS_SOURCE=project
+    for event in feature-completion ship-friction; do
+      case "$event" in
+        feature-completion) body_var=FEATURE_BODY; exec_var=FEATURE_EXECUTION; concurrency_var=FEATURE_CONCURRENCY; source_var=FEATURE_SOURCE ;;
+        ship-friction) body_var=FRICTION_BODY; exec_var=FRICTION_EXECUTION; concurrency_var=FRICTION_CONCURRENCY; source_var=FRICTION_SOURCE ;;
+      esac
+      if grep -qF "<!-- workstream:hook:$event@1 -->" "$config"; then
+        printf -v "$exec_var" '%s' "$(config_hook_meta "$config" "$event" execution)"
+        printf -v "$concurrency_var" '%s' "$(config_hook_meta "$config" "$event" concurrency)"
+        printf -v "$source_var" '%s' project
+        config_hook_body "$config" "$event" >"${!body_var}"
+      fi
+    done
+  fi
+  DEFAULTS_FINGERPRINT="$(sha256_text "mode=$MODE|isolation=$ISOLATION|landing=$LANDING|ship-cadence=$SHIP_CADENCE")"
+  for event in feature-completion ship-friction; do
+    case "$event" in
+      feature-completion) body_var=FEATURE_BODY; exec_var=FEATURE_EXECUTION; concurrency_var=FEATURE_CONCURRENCY; fingerprint_var=FEATURE_FINGERPRINT ;;
+      ship-friction) body_var=FRICTION_BODY; exec_var=FRICTION_EXECUTION; concurrency_var=FRICTION_CONCURRENCY; fingerprint_var=FRICTION_FINGERPRINT ;;
+    esac
+    combined="$(mktemp "${TMPDIR:-/tmp}/workstream-hook-config.XXXXXX")"
+    printf 'event=%s\nexecution=%s\nconcurrency=%s\n\n' "$event" "${!exec_var}" "${!concurrency_var}" >"$combined"
+    cat "${!body_var}" >>"$combined"
+    printf -v "$fingerprint_var" '%s' "$(sha256_file "$combined")"
+    rm -f "$combined"
+  done
+}
+
 stream_paths() {
   local stream="$1"
   validate_stream_name "$stream"
@@ -122,7 +262,7 @@ stream_paths() {
   TRACKER="$WT/workstream.tsv"
 }
 
-admit_stream() {
+admit_stream_coordinates() {
   local stream="$1" top branch target recorded_root recorded_wt recorded_stream
   stream_paths "$stream"
   [ -d "$WT" ] && [ ! -L "$WT" ] || die "stream runtime is missing or unsafe: $stream"
@@ -144,7 +284,14 @@ admit_stream() {
   [ "$(git -C "$WT" branch --show-current)" = "$branch" ] || die "stream branch is not held"
   git -C "$WT" rev-parse --verify --quiet "$target^{commit}" >/dev/null || die "target does not resolve"
   validate_tracker "$TRACKER"
-  [ "$(sha256_file "$RUNBOOK")" = "$(tracker_get meta - runbook-contract-sha256)" ] || die "runbook and tracker are not bound"
+}
+
+admit_stream() {
+  local stream="$1" pending
+  admit_stream_coordinates "$stream"
+  pending="$(awk -F '\t' '$1=="meta"&&$2=="-"&&$3=="pending-runbook-contract-sha256"{print $4}' "$TRACKER")"
+  [ -z "$pending" ] || die "runbook contract transaction is pending; recover it before ordinary use"
+  [ "$(runbook_contract_hash "$RUNBOOK")" = "$(tracker_get meta - runbook-contract-sha256)" ] || die "runbook and tracker are not bound"
 }
 
 record_rank_awk='function rank(r) {
@@ -360,17 +507,28 @@ emit_runbook() {
   printf '# %s — workstream runbook\n\n' "$stream"
   printf '<!-- workstream:identity@1 -->\n'
   printf 'stream\t%s\ninstance-id\t%s\nroot\t%s\nworktree\t%s\n' "$stream" "$instance" "$ROOT" "$WT"
-  printf 'branch\t%s\ntarget\t%s\nisolation\tworktree\nlanding\tlocal\n' "$branch" "$target"
+  printf 'branch\t%s\ntarget\t%s\nisolation\t%s\nlanding\t%s\n' "$branch" "$target" "$ISOLATION" "$LANDING"
   printf '<!-- /workstream:identity@1 -->\n\n'
   printf '<!-- workstream:brief@1 -->\n'
   printf 'purpose\t%s\n' "$brief"
   printf 'orientation\tVerify pointers against Git before trusting them.\n'
   printf 'operator-note\t-\n'
   printf '<!-- /workstream:brief@1 -->\n\n'
-  printf '<!-- workstream:hooks@1 -->\n'
-  printf 'feature-completion\tinline\tserial\tdisabled\n'
-  printf 'ship-friction\tinline\tserial\tdisabled\n'
-  printf '<!-- /workstream:hooks@1 -->\n'
+  printf '<!-- workstream:policy@1 -->\n'
+  printf 'mode\t%s\t%s\nisolation\t%s\t%s\nlanding\t%s\t%s\nship-cadence\t%s\t%s\n' \
+    "$MODE" "$DEFAULTS_SOURCE" "$ISOLATION" "$DEFAULTS_SOURCE" "$LANDING" "$DEFAULTS_SOURCE" "$SHIP_CADENCE" "$DEFAULTS_SOURCE"
+  printf 'defaults-fingerprint\t%s\t%s\n' "$DEFAULTS_FINGERPRINT" "$DEFAULTS_SOURCE"
+  printf '<!-- /workstream:policy@1 -->\n\n'
+  printf '<!-- workstream:hook:feature-completion@1 -->\n'
+  printf 'execution\t%s\nconcurrency\t%s\nsource\t%s\nfingerprint\t%s\n\n' \
+    "$FEATURE_EXECUTION" "$FEATURE_CONCURRENCY" "$FEATURE_SOURCE" "$FEATURE_FINGERPRINT"
+  cat "$FEATURE_BODY"
+  printf '<!-- /workstream:hook:feature-completion@1 -->\n\n'
+  printf '<!-- workstream:hook:ship-friction@1 -->\n'
+  printf 'execution\t%s\nconcurrency\t%s\nsource\t%s\nfingerprint\t%s\n\n' \
+    "$FRICTION_EXECUTION" "$FRICTION_CONCURRENCY" "$FRICTION_SOURCE" "$FRICTION_FINGERPRINT"
+  cat "$FRICTION_BODY"
+  printf '<!-- /workstream:hook:ship-friction@1 -->\n'
 }
 
 cmd_runtime_init() {
@@ -393,6 +551,8 @@ cmd_runtime_init() {
   [ ! -e "$WT" ] && [ ! -L "$WT" ] || die "stream path already exists"
   ! git -C "$ROOT" show-ref --verify --quiet "refs/heads/$branch" || die "stream branch already exists"
 
+  compile_config
+  [ "$ISOLATION" = worktree ] && [ "$LANDING" = local ] || die "runtime-init supports local worktree isolation only"
   # The entropy read is deliberately before every repository mutation.
   instance="$(mint_instance_id)"
   next=1
@@ -407,7 +567,8 @@ cmd_runtime_init() {
   runbook_candidate="$(mktemp "${TMPDIR:-/tmp}/workstream-runbook.XXXXXX")"
   tracker_candidate="$(mktemp "${TMPDIR:-/tmp}/workstream-tracker.XXXXXX")"
   emit_runbook "$stream" "$instance" "$branch" "$target" "$brief" >"$runbook_candidate"
-  runbook_hash="$(sha256_file "$runbook_candidate")"
+  runbook_hash="$(runbook_contract_hash "$runbook_candidate")"
+  rm -f "$FEATURE_BODY" "$FRICTION_BODY"
   {
     printf 'record\tid\tfield\tvalue\n'
     printf 'meta\t-\tschema\tworkstream@1\n'
@@ -429,7 +590,7 @@ cmd_runtime_init() {
   cp "$runbook_candidate" "$runbook_temp"
   cp "$tracker_candidate" "$tracker_temp"
   rm -f "$runbook_candidate" "$tracker_candidate"
-  [ "$(sha256_file "$runbook_temp")" = "$runbook_hash" ] || die "runbook candidate changed"
+  [ "$(runbook_contract_hash "$runbook_temp")" = "$runbook_hash" ] || die "runbook candidate changed"
   validate_tracker "$tracker_temp"
   chmod 600 "$runbook_temp" "$tracker_temp"
   mv "$runbook_temp" "$RUNBOOK"
@@ -451,6 +612,167 @@ cmd_state() {
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
   printf 'schema=workstream-state@1\nstream=%s\ninstance_id=%s\nbranch=%s\ntarget=%s\nphase=%s\nnext_action=%s\nqueue_state=%s\nactive_unit=%s\nshipment=%s\n' \
     "$stream" "$instance" "$branch" "$target" "$phase" "$next" "$queue" "${unit:--}" "${shipment:--}"
+}
+
+cmd_read() {
+  [ "$#" -eq 1 ] || die "usage: read <stream>"
+  local stream="$1" purpose orientation note instance phase next queue unit shipment
+  admit_stream "$stream"
+  purpose="$(runbook_block_field "$RUNBOOK" brief purpose)" || die "runbook purpose is malformed"
+  orientation="$(runbook_block_field "$RUNBOOK" brief orientation)" || die "runbook orientation is malformed"
+  note="$(runbook_block_field "$RUNBOOK" brief operator-note)" || die "runbook operator note is malformed"
+  instance="$(tracker_get meta - instance-id)"; phase="$(tracker_get phase - name)"
+  next="$(tracker_get phase - next-action)"; queue="$(tracker_get queue - state)"
+  unit="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="active" {print $2}' "$TRACKER")"
+  shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
+  printf 'schema=workstream-read@1\nstream=%s\ninstance_id=%s\npurpose=%s\norientation=%s\noperator_note=%s\nstate=phase:%s,queue:%s,unit:%s,shipment:%s\nnext_action=%s\n' \
+    "$stream" "$instance" "$purpose" "$orientation" "$note" "$phase" "$queue" "${unit:--}" "${shipment:--}" "$next"
+}
+
+cmd_diagnose() {
+  [ "$#" -eq 1 ] || die "usage: diagnose <stream>"
+  local stream="$1" running complete gates shipment
+  admit_stream "$stream"
+  running="$(awk -F '\t' '$1=="hook"&&$3=="state"&&$4=="running"{n++}END{print n+0}' "$TRACKER")"
+  complete="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="complete"{n++}END{print n+0}' "$TRACKER")"
+  gates="$(awk -F '\t' '$1=="gate"&&$3=="outcome"{value=$4}END{print value==""?"none":value}' "$TRACKER")"
+  shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2 ":" $4; exit}' "$TRACKER")"
+  printf 'schema=workstream-diagnose@1\nstream=%s\ntracker=valid\nrunbook=bound\nrunning_hooks=%s\ncompleted_units=%s\ngate=%s\nshipment=%s\nnext_action=%s\n' \
+    "$stream" "$running" "$complete" "$gates" "${shipment:-none}" "$(tracker_get phase - next-action)"
+}
+
+cmd_operator_note() {
+  [ "$#" -eq 2 ] || die "usage: operator-note <stream> <note>"
+  local stream="$1" note="$2" before temp current count
+  admit_stream "$stream"
+  validate_text 'operator note' "$note" yes
+  if [ "$(runbook_block_field "$RUNBOOK" brief operator-note)" = "$note" ]; then
+    printf 'status=unchanged\nnext_action=%s\n' "$(tracker_get phase - next-action)"
+    return
+  fi
+  before="$(file_fingerprint "$RUNBOOK")"
+  temp="$(mktemp "$WT/.WORKSTREAM.md.XXXXXX")"
+  awk -v note="$note" '
+    /^<!-- workstream:brief@1 -->$/ { inside=1 }
+    /^<!-- \/workstream:brief@1 -->$/ { inside=0 }
+    inside && index($0,"operator-note\t")==1 { print "operator-note\t" note; changed++; next }
+    { print }
+    END { if(changed!=1) exit 2 }
+  ' "$RUNBOOK" >"$temp" || { rm -f "$temp"; die "operator note span is malformed"; }
+  [ "$(runbook_contract_hash "$temp")" = "$(tracker_get meta - runbook-contract-sha256)" ] || { rm -f "$temp"; die "note edit changed managed contract"; }
+  if [ -n "${WORKSTREAM_TEST_BEFORE_RUNBOOK_REPLACE:-}" ]; then "$WORKSTREAM_TEST_BEFORE_RUNBOOK_REPLACE" "$RUNBOOK"; fi
+  current="$(file_fingerprint "$RUNBOOK")"
+  [ "$current" = "$before" ] || { rm -f "$temp"; die "runbook changed concurrently"; }
+  [ ! -L "$WT" ] && [ ! -L "$RUNBOOK" ] || { rm -f "$temp"; die "runbook destination became unsafe"; }
+  chmod 600 "$temp"
+  mv -f "$temp" "$RUNBOOK"
+  count="$(runbook_block_field "$RUNBOOK" brief operator-note | wc -c | tr -d ' ')"
+  printf 'status=saved\nnote_bytes=%s\nnext_action=%s\n' "$((count - 1))" "$(tracker_get phase - next-action)"
+}
+
+cmd_phase_set() {
+  [ "$#" -eq 3 ] || die "usage: phase-set <stream> <phase> <next-action>"
+  local stream="$1" phase="$2" next="$3" mode raw
+  admit_stream "$stream"
+  mode="$(runbook_block_field "$RUNBOOK" policy mode)" || die "runbook mode is malformed"
+  if [ "$mode" = delegate ]; then [ "$phase" = none ] || die "delegate mode requires phase none"; fi
+  case "$phase" in none|plan|build|ship) ;; *) die "invalid phase" ;; esac
+  case "$next" in define-unit|plan|build|feature-hook|accumulate|sync|unpark|prepare-ship|land|await-merge|postflight|recycle|close|blocked) ;; *) die "invalid next action" ;; esac
+  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-phase.XXXXXX")"
+  awk -F '\t' 'NR>1 && !(($1=="phase"&&$2=="-"&&($3=="name"||$3=="next-action")))' "$TRACKER" >"$raw"
+  printf 'phase\t-\tname\t%s\nphase\t-\tnext-action\t%s\n' "$phase" "$next" >>"$raw"
+  rewrite_tracker "$raw"; rm -f "$raw"
+  printf 'status=updated\nphase=%s\nnext_action=%s\n' "$phase" "$next"
+}
+
+cmd_contract_recover() {
+  [ "$#" -eq 1 ] || die "usage: contract-recover <stream>"
+  local stream="$1" pending incumbent actual raw outcome
+  admit_stream_coordinates "$stream"
+  pending="$(awk -F '\t' '$1=="meta"&&$2=="-"&&$3=="pending-runbook-contract-sha256"{print $4}' "$TRACKER")"
+  [ -n "$pending" ] || { printf 'status=not-needed\n'; return; }
+  incumbent="$(tracker_get meta - runbook-contract-sha256)"
+  actual="$(runbook_contract_hash "$RUNBOOK")"
+  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-contract-recover.XXXXXX")"
+  if [ "$actual" = "$incumbent" ]; then
+    awk -F '\t' 'NR>1 && !(($1=="meta"&&$2=="-"&&$3=="pending-runbook-contract-sha256"))' "$TRACKER" >"$raw"
+    outcome=rolled-back
+  elif [ "$actual" = "$pending" ]; then
+    awk -F '\t' 'NR>1 && !(($1=="meta"&&$2=="-"&&($3=="pending-runbook-contract-sha256"||$3=="runbook-contract-sha256")))' "$TRACKER" >"$raw"
+    printf 'meta\t-\trunbook-contract-sha256\t%s\n' "$pending" >>"$raw"
+    outcome=promoted
+  else
+    rm -f "$raw"
+    die "runbook matches neither side of the pending contract transaction"
+  fi
+  rewrite_tracker "$raw"; rm -f "$raw"
+  printf 'status=recovered\noutcome=%s\n' "$outcome"
+}
+
+closure_field() {
+  local file="$1" key="$2"
+  awk -v key="$key" 'index($0,key ": ")==1 {print substr($0,length(key)+3); n++} END{if(n!=1)exit 2}' "$file"
+}
+
+validate_closure() {
+  local file="$1" status summary effects actions
+  [ -f "$file" ] && [ ! -L "$file" ] || die "closure is not a regular file"
+  [ "$(wc -l <"$file" | tr -d ' ')" -eq 4 ] || die "closure must have exactly four lines"
+  [ "$(sed -n '1p' "$file")" != "" ] || die "closure status is missing"
+  status="$(closure_field "$file" status)" || die "closure status is malformed"
+  summary="$(closure_field "$file" summary)" || die "closure summary is malformed"
+  effects="$(closure_field "$file" effects)" || die "closure effects are malformed"
+  actions="$(closure_field "$file" parent-actions)" || die "closure parent actions are malformed"
+  case "$status" in complete|blocked|uncertain) ;; *) die "closure status is invalid" ;; esac
+  validate_text 'closure summary' "$summary"; validate_text 'closure effects' "$effects" yes; validate_text 'closure parent actions' "$actions" yes
+  [ "$(sed -n '1p' "$file")" = "status: $status" ] && [ "$(sed -n '2p' "$file")" = "summary: $summary" ] && \
+    [ "$(sed -n '3p' "$file")" = "effects: $effects" ] && [ "$(sed -n '4p' "$file")" = "parent-actions: $actions" ] || die "closure rows are not canonical"
+  printf '%s\n' "$status"
+}
+
+cmd_hook_start() {
+  [ "$#" -eq 4 ] && [ "$3" = --isolation ] || die "usage: hook-start <stream> <identity> --isolation <available|unavailable>"
+  local stream="$1" identity="$2" availability="$4" event state execution concurrency selected fallback
+  admit_stream "$stream"
+  case "$availability" in available|unavailable) ;; *) die "invalid isolation capability" ;; esac
+  event="$(tracker_get hook "$identity" name)" || die "unknown hook identity"
+  state="$(tracker_get hook "$identity" state)" || die "hook state is missing"
+  [ "$state" = ready ] || die "hook is $state; explicit reconciliation is required"
+  execution="$(runbook_block_field "$RUNBOOK" "hook:$event" execution)" || die "compiled hook policy is malformed"
+  concurrency="$(runbook_block_field "$RUNBOOK" "hook:$event" concurrency)" || die "compiled hook policy is malformed"
+  selected=inline; fallback=none
+  if [ "$concurrency" = parallel-preferred ] || [ "$execution" != inline ]; then
+    if [ "$availability" = available ]; then
+      selected=isolated
+      fallback="$([ "$execution" = isolated-required ] && printf stop || printf inline)"
+    elif [ "$execution" = isolated-required ]; then
+      die "serial isolation is required but unavailable"
+    else
+      selected=inline; fallback=inline
+    fi
+  fi
+  replace_value hook "$identity" state running
+  printf 'schema=workstream-hook@1\nidentity=%s\nexecution=%s\nfallback=%s\ninstructions:\n' "$identity" "$selected" "$fallback"
+  runbook_hook_body "$RUNBOOK" "$event"
+}
+
+cmd_hook_complete() {
+  [ "$#" -eq 4 ] && [ "$3" = --closure ] || die "usage: hook-complete <stream> <identity> --closure <path>"
+  local stream="$1" identity="$2" closure="$4" state status evidence raw
+  admit_stream "$stream"
+  state="$(tracker_get hook "$identity" state)" || die "unknown hook identity"
+  [ "$state" = running ] || die "hook is not running"
+  status="$(validate_closure "$closure")"
+  if [ "$status" != complete ]; then
+    printf 'status=%s\nhook_state=running\nnext_action=blocked\n' "$status"
+    return 1
+  fi
+  evidence="$(sha256_file "$closure")"
+  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-hook-close.XXXXXX")"
+  awk -F '\t' -v i="$identity" 'NR>1 && !(($1=="hook"&&$2==i&&($3=="state"||$3=="evidence-sha256"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+  printf 'hook\t%s\tevidence-sha256\t%s\nhook\t%s\tstate\tcomplete\nphase\t-\tnext-action\taccumulate\n' "$identity" "$evidence" "$identity" >>"$raw"
+  rewrite_tracker "$raw"; rm -f "$raw"
+  printf 'status=complete\nevidence_sha256=%s\nnext_action=accumulate\n' "$evidence"
 }
 
 cmd_unit_begin() {
@@ -484,7 +806,7 @@ cmd_unit_begin() {
 
 cmd_unit_complete() {
   [ "$#" -eq 1 ] || die "usage: unit-complete <stream>"
-  local stream="$1" id boundary count raw index instance identity fingerprint inputs evidence subject
+  local stream="$1" id boundary count raw index instance identity fingerprint inputs evidence subject hook_body hook_state next
   admit_stream "$stream"
   id="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="active" {print $2}' "$TRACKER")"
   if [ -z "$id" ]; then
@@ -509,15 +831,25 @@ cmd_unit_complete() {
   done < <(git -C "$WT" log --reverse --format='%s' "$boundary..HEAD")
   instance="$(tracker_get meta - instance-id)"
   identity="$stream/$instance/unit/$id/feature-completion"
-  fingerprint="$(sha256_text disabled)"
+  fingerprint="$(runbook_block_field "$RUNBOOK" 'hook:feature-completion' fingerprint)" || die "compiled feature hook is malformed"
   inputs="$(sha256_text "$identity|$(git -C "$WT" rev-parse HEAD)")"
-  evidence="$(sha256_text not-applicable)"
-  printf 'hook\t%s\tname\tfeature-completion\nhook\t%s\tfingerprint\t%s\nhook\t%s\tstate\tnot-applicable\nhook\t%s\tinputs-sha256\t%s\nhook\t%s\tevidence-sha256\t%s\n' \
-    "$identity" "$identity" "$fingerprint" "$identity" "$identity" "$inputs" "$identity" "$evidence" >>"$raw"
-  printf 'phase\t-\tnext-action\taccumulate\n' >>"$raw"
+  hook_body="$(mktemp "${TMPDIR:-/tmp}/workstream-feature-body.XXXXXX")"
+  runbook_hook_body "$RUNBOOK" feature-completion >"$hook_body"
+  if grep -q '[^[:space:]]' "$hook_body"; then
+    hook_state=ready; next=feature-hook
+    printf 'hook\t%s\tname\tfeature-completion\nhook\t%s\tfingerprint\t%s\nhook\t%s\tstate\tready\nhook\t%s\tinputs-sha256\t%s\n' \
+      "$identity" "$identity" "$fingerprint" "$identity" "$identity" "$inputs" >>"$raw"
+  else
+    hook_state=not-applicable; next=accumulate
+    evidence="$(sha256_text not-applicable)"
+    printf 'hook\t%s\tname\tfeature-completion\nhook\t%s\tfingerprint\t%s\nhook\t%s\tstate\tnot-applicable\nhook\t%s\tinputs-sha256\t%s\nhook\t%s\tevidence-sha256\t%s\n' \
+      "$identity" "$identity" "$fingerprint" "$identity" "$identity" "$inputs" "$identity" "$evidence" >>"$raw"
+  fi
+  rm -f "$hook_body"
+  printf 'phase\t-\tnext-action\t%s\n' "$next" >>"$raw"
   rewrite_tracker "$raw"
   rm -f "$raw"
-  printf 'status=unit-complete\nunit=%s\ncommits=%s\nnext_action=accumulate\n' "$id" "$count"
+  printf 'status=unit-complete\nunit=%s\ncommits=%s\nhook_state=%s\nnext_action=%s\n' "$id" "$count" "$hook_state" "$next"
 }
 
 validate_history() {
@@ -718,9 +1050,16 @@ main() {
   local operation="$1"; shift
   case "$operation" in
     runtime-init) cmd_runtime_init "$@" ;;
+    read) cmd_read "$@" ;;
     state) cmd_state "$@" ;;
+    diagnose) cmd_diagnose "$@" ;;
+    operator-note) cmd_operator_note "$@" ;;
+    phase-set) cmd_phase_set "$@" ;;
+    contract-recover) cmd_contract_recover "$@" ;;
     unit-begin) cmd_unit_begin "$@" ;;
     unit-complete) cmd_unit_complete "$@" ;;
+    hook-start) cmd_hook_start "$@" ;;
+    hook-complete) cmd_hook_complete "$@" ;;
     ship-prepare) cmd_ship_prepare "$@" ;;
     gate-run) [ "$#" -ge 1 ] || die "gate-run requires a stream"; cmd_gate_run "$@" ;;
     land-advance) cmd_land_advance "$@" ;;

@@ -17,7 +17,26 @@ orientation	Verify pointers against Git before trusting them.
 operator-note	-
 <!-- /workstream:brief@1 -->
 
-<!-- workstream:hooks@1 -->
-feature-completion	inline	serial	disabled
-ship-friction	inline	serial	disabled
-<!-- /workstream:hooks@1 -->
+<!-- workstream:policy@1 -->
+mode	delegate	bundled
+isolation	worktree	bundled
+landing	local	bundled
+ship-cadence	milestone	bundled
+defaults-fingerprint	<sha256>	bundled
+<!-- /workstream:policy@1 -->
+
+<!-- workstream:hook:feature-completion@1 -->
+execution	inline
+concurrency	serial
+source	bundled
+fingerprint	<sha256>
+
+<!-- /workstream:hook:feature-completion@1 -->
+
+<!-- workstream:hook:ship-friction@1 -->
+execution	inline
+concurrency	serial
+source	bundled
+fingerprint	<sha256>
+
+<!-- /workstream:hook:ship-friction@1 -->

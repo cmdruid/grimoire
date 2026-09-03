@@ -101,7 +101,8 @@ rm "$TRACKER"
 mv "$TMP/tracker-regular.tsv" "$TRACKER"
 
 cp "$ROOT/.streams/guarded/WORKSTREAM.md" "$TMP/runbook-save.md"
-printf '\ncorrupt\n' >>"$ROOT/.streams/guarded/WORKSTREAM.md"
+awk 'BEGIN{OFS="\t"} index($0,"landing\t")==1{$2="push"} {print}' "$ROOT/.streams/guarded/WORKSTREAM.md" >"$TMP/runbook-corrupt.md"
+cp "$TMP/runbook-corrupt.md" "$ROOT/.streams/guarded/WORKSTREAM.md"
 if "$HELPER" "$ROOT" state guarded >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 cp "$TMP/runbook-save.md" "$ROOT/.streams/guarded/WORKSTREAM.md"
 
