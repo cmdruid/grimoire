@@ -22,6 +22,12 @@ pub trait Console {
     fn read_line(&mut self, line: &mut String) -> io::Result<usize>;
     fn write_stdout(&mut self, bytes: &[u8]) -> io::Result<()>;
     fn write_stderr(&mut self, bytes: &[u8]) -> io::Result<()>;
+
+    fn run_tui(&mut self, _environment: &dyn Environment) -> grimoire_core::Result<u8> {
+        Err(CoreError::Request(
+            "this console has no interactive TUI driver".into(),
+        ))
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -29,7 +35,7 @@ pub struct SystemConsole;
 
 impl Console for SystemConsole {
     fn is_terminal(&self) -> bool {
-        io::stdin().is_terminal()
+        io::stdin().is_terminal() && io::stdout().is_terminal()
     }
 
     fn read_line(&mut self, line: &mut String) -> io::Result<usize> {
@@ -42,6 +48,11 @@ impl Console for SystemConsole {
 
     fn write_stderr(&mut self, bytes: &[u8]) -> io::Result<()> {
         io::stderr().write_all(bytes)
+    }
+
+    fn run_tui(&mut self, environment: &dyn Environment) -> grimoire_core::Result<u8> {
+        crate::tui::run_system(environment)?;
+        Ok(0)
     }
 }
 
@@ -92,9 +103,12 @@ fn execute(
     console: &mut dyn Console,
 ) -> grimoire_core::Result<u8> {
     let Some(command) = cli.command else {
-        return Err(CoreError::Request(
-            "the tree interface is not available until Phase 6".into(),
-        ));
+        if !console.is_terminal() {
+            return Err(CoreError::Request(
+                "bare grimoire requires interactive stdin and stdout".into(),
+            ));
+        }
+        return console.run_tui(environment);
     };
     match command {
         Command::Init { scope } => {

@@ -48,8 +48,8 @@ fn representative_tree_buffer_is_stable() {
         concat!(
             "\"Project  [Global]                                                       \"\n",
             "\"┌Tree────────────────────────┐┌Plan────────────────────────────────────┐\"\n",
-            "\"│    global [trusted-all,atte││{                                       │\"\n",
-            "\"│  [ ] journal               ││  \"actions\": [],                        │\"\n",
+            "\"│>    global [trusted-all,att││{                                       │\"\n",
+            "\"│   [ ] journal              ││  \"actions\": [],                        │\"\n",
             "\"│                            ││  \"blockers\": [],                       │\"\n",
             "\"│                            ││  \"preconditions\": {                    │\"\n",
             "\"│                            ││    \"manifest\":                         │\"\n",

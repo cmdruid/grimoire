@@ -16,6 +16,8 @@
 
 use std::io::{self, Stdout};
 use std::panic;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread::{self, ThreadId};
 
 use ratatui::crossterm::execute;
@@ -27,20 +29,48 @@ use ratatui::Terminal;
 
 pub type Tui = Terminal<CrosstermBackend<Stdout>>;
 
+/// A terminal plus its shared, exactly-once restoration latch.
+///
+/// The UI-thread panic hook and ordinary cleanup race through the same latch,
+/// so either path may restore first without emitting teardown twice.
+pub struct Session {
+    terminal: Tui,
+    restored: Arc<AtomicBool>,
+}
+
+impl Session {
+    pub fn terminal_mut(&mut self) -> &mut Tui {
+        &mut self.terminal
+    }
+
+    pub fn restore(&mut self) -> io::Result<()> {
+        restore_once(&self.restored)
+    }
+}
+
+impl Drop for Session {
+    fn drop(&mut self) {
+        let _ = self.restore();
+    }
+}
+
 /// Enter the TUI: install the thread-aware panic hook, then raw mode and the
 /// alternate screen. The hook goes first so a failure in setup is still cleaned
 /// up.
-pub fn init() -> io::Result<Tui> {
-    install_panic_hook(thread::current().id(), || {
-        let _ = restore();
+pub fn init() -> io::Result<Session> {
+    let restored = Arc::new(AtomicBool::new(false));
+    let panic_restored = Arc::clone(&restored);
+    install_panic_hook(thread::current().id(), move || {
+        let _ = restore_once(&panic_restored);
     });
     enable_raw_mode()?;
     // Past this point raw mode is ON, so a `?` that returned straight to the
     // caller would hand back a cooked-off terminal — the very failure the panic
     // hook exists to prevent, arriving through the ordinary error path instead.
-    enter().inspect_err(|_| {
-        let _ = restore();
-    })
+    let terminal = enter().inspect_err(|_| {
+        let _ = restore_once(&restored);
+    })?;
+    Ok(Session { terminal, restored })
 }
 
 fn enter() -> io::Result<Tui> {
@@ -52,10 +82,18 @@ fn enter() -> io::Result<Tui> {
 /// Leave the TUI. Safe to call twice — the second call is a no-op in practice,
 /// which matters because the panic path and the normal path can both reach it.
 pub fn restore() -> io::Result<()> {
-    // Raw mode first: it has the wider side effects.
-    disable_raw_mode()?;
-    execute!(io::stdout(), LeaveAlternateScreen)?;
-    Ok(())
+    // Attempt both even if one fails: either half left behind damages the
+    // caller's shell. Report the first failure after both cleanup attempts.
+    let raw = disable_raw_mode();
+    let screen = execute!(io::stdout(), LeaveAlternateScreen);
+    raw.and(screen)
+}
+
+fn restore_once(restored: &AtomicBool) -> io::Result<()> {
+    if restored.swap(true, Ordering::AcqRel) {
+        return Ok(());
+    }
+    restore()
 }
 
 /// Wrap the current panic hook so `restore` runs **only** for panics on

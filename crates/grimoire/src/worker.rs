@@ -1,13 +1,12 @@
 //! The worker seam: blocking core operations, off the render thread.
 //!
 //! `grimoire-core` is synchronous by design (Phase 2 amended the roadmap's async
-//! posture), and its long operations — `enumerate`, `check`, `install` — hash
-//! member trees. Running one on the render thread freezes the UI, so they run
+//! posture), and world loading, apply, fetch, and update touch the filesystem
+//! or run Git. Running them on the render thread freezes the UI, so they run
 //! here and come back as events.
 //!
 //! No async runtime is involved. One thread, one job at a time, two channels.
-//! The UI is modal — you install one pack at a time — so there is never more
-//! than one operation in flight, and a runtime would buy nothing.
+//! The UI admits one operation at a time, so a runtime would buy nothing.
 //!
 //! Two properties this module exists to guarantee, both proven in
 //! `tests/worker.rs`:

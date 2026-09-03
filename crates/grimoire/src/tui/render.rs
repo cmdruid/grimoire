@@ -3,7 +3,7 @@ use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use ratatui::Frame;
 
-use super::{ActiveScope, TuiModel};
+use super::{ActiveScope, Dialog, TuiModel};
 
 pub fn draw(frame: &mut Frame<'_>, model: &TuiModel) {
     if frame.area().width < 40 || frame.area().height < 7 {
@@ -30,27 +30,61 @@ pub fn draw(frame: &mut Frame<'_>, model: &TuiModel) {
     frame.render_widget(Paragraph::new(tabs), rows[0]);
 
     let tree_height = usize::from(columns[0].height.saturating_sub(2));
+    let selected = model.selected_item().map(|item| &item.key);
     let tree = model
         .visible_items(tree_height)
         .iter()
-        .map(render_item)
+        .map(|item| render_item(item, selected == Some(&item.key)))
         .collect::<Vec<_>>()
         .join("\n");
+    let tree_title = if model.is_busy() {
+        "Tree — working"
+    } else {
+        "Tree"
+    };
     frame.render_widget(
-        Paragraph::new(tree).block(Block::default().title("Tree").borders(Borders::ALL)),
+        Paragraph::new(tree).block(Block::default().title(tree_title).borders(Borders::ALL)),
         columns[0],
     );
 
-    let plan = String::from_utf8_lossy(&model.plan_bytes().unwrap_or_default()).into_owned();
+    let plan = match model.dialog() {
+        Some(Dialog::ConfirmTrustAll { baseline, .. }) => format!(
+            "This grants future snapshots for the canonical source identity.\n\nBaseline commit: {}\nBaseline tree: {}\nInventory: {}\nReview tree: {}",
+            baseline.commit.as_deref().unwrap_or("live"),
+            baseline.tree.as_deref().unwrap_or("live"),
+            baseline.inventory,
+            baseline.review_tree,
+        ),
+        _ => String::from_utf8_lossy(
+            &model
+                .dialog_plan()
+                .unwrap_or_else(|| model.plan())
+                .to_bytes()
+                .unwrap_or_default(),
+        )
+        .into_owned(),
+    };
+    let dialog_title;
+    let plan_title = match model.dialog() {
+        Some(Dialog::ConfirmDestructive) => "Apply destructive plan? [y/N]",
+        Some(Dialog::ConfirmTrustAll {
+            alias, source_key, ..
+        }) => {
+            dialog_title = format!("Trust all snapshots for {alias} ({source_key})? [y/N]");
+            &dialog_title
+        }
+        Some(Dialog::Blocked { .. }) => "Blocked",
+        None => model.status().unwrap_or("Plan"),
+    };
     frame.render_widget(
         Paragraph::new(plan)
-            .block(Block::default().title("Plan").borders(Borders::ALL))
+            .block(Block::default().title(plan_title).borders(Borders::ALL))
             .wrap(Wrap { trim: false }),
         columns[1],
     );
 }
 
-fn render_item(item: &TreeItem) -> String {
+fn render_item(item: &TreeItem, focused: bool) -> String {
     let marker = match item.kind {
         TreeItemKind::Source { .. } => "    ",
         TreeItemKind::Pack(PackSelection::Off) => "[ ] ",
@@ -93,7 +127,8 @@ fn render_item(item: &TreeItem) -> String {
             .unwrap_or_default(),
     };
     format!(
-        "{}{}{}{}",
+        "{}{}{}{}{}",
+        if focused { ">" } else { " " },
         "  ".repeat(item.depth.into()),
         marker,
         item.label,

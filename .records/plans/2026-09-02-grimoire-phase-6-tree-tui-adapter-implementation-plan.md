@@ -103,7 +103,7 @@ This task is read-only and produces no commit.
     `RUSTC_WRAPPER= cargo check --workspace`; expected: tree facts and edits remain core-derived,
     both scopes render deterministically, and inherited/global facts cannot become project edits.
 
-- [ ] **Slice 4: Run actions through distinct ceremonies and one runtime** <requires: 1, 2>
+- [x] **Slice 4: Run actions through distinct ceremonies and one runtime** <requires: 1, 2>
   - Files: create `crates/grimoire/src/tui/driver.rs` and
     `crates/grimoire/tests/tui_runtime.rs`; modify the TUI model/render modules,
     `crates/grimoire/src/main.rs`, `crates/grimoire/src/command.rs`,
