@@ -21,15 +21,48 @@ for path in \
   if [ -e "$ROOT/$path" ]; then fail_with "retired artifact remains: $path"; else pass=$((pass + 1)); fi
 done
 
-production="$TMP/production.files"
-find "$ROOT/skills/workstream" -type f \( -name '*.md' -o -name '*.sh' \) \
-  ! -path '*/scripts/tests/*' -print >"$production"
+production=()
+while IFS= read -r -d '' path; do production+=("$path"); done < <(
+  find "$ROOT/skills/workstream" -type f \( -name '*.md' -o -name '*.sh' \) \
+    ! -path '*/scripts/tests/*' -print0
+)
+
+custody_paths=(
+  AGENTS.md
+  skills/checkpoint/SKILL.md
+  skills/checkpoint/verbs/save.md
+  skills/checkpoint/scripts/save-guard.sh
+  skills/debugger/SKILL.md
+  skills/delegate/SKILL.md
+  skills/delegate/references/codex.md
+  skills/journal/SKILL.md
+  skills/notepad/SKILL.md
+  skills/workstream/templates/compaction-anchor.md
+)
+custody_files=()
+for path in "${custody_paths[@]}"; do custody_files+=("$ROOT/$path"); done
+
+printf '%s\n' 'workstream-hard-cut population:'
+printf '  %s\n' "${production[@]}" "${custody_files[@]}"
+
+rg_absent() {
+  local rc=0
+  rg "$@" >"$TMP/rg.out" 2>"$TMP/rg.err" || rc=$?
+  case "$rc" in
+    0) return 1 ;;
+    1) return 0 ;;
+    *) cat "$TMP/rg.err" >&2; return "$rc" ;;
+  esac
+}
 
 token_census_clean() { # root token
-  local root="$1" token="$2" files="$TMP/census.files"
-  find "$root/skills/workstream" -type f \( -name '*.md' -o -name '*.sh' \) \
-    ! -path '*/scripts/tests/*' -print >"$files"
-  ! xargs grep -nF -- "$token" <"$files" >/dev/null 2>&1
+  local root="$1" token="$2" path
+  local files=()
+  while IFS= read -r -d '' path; do files+=("$path"); done < <(
+    find "$root/skills/workstream" -type f \( -name '*.md' -o -name '*.sh' \) \
+      ! -path '*/scripts/tests/*' -print0
+  )
+  rg_absent -nF -- "$token" "${files[@]}"
 }
 
 for token in '.records/streams' '.spa''ces/workstream' 'after-eventful-ship' 'flow.md' 'workstream-handoff.md' \
@@ -41,35 +74,58 @@ for token in '.records/streams' '.spa''ces/workstream' 'after-eventful-ship' 'fl
   fi
 done
 
-if xargs grep -niE 'callback registry|callback dispatcher|general callback' <"$production" >"$TMP/hits" 2>/dev/null; then
-  fail_with 'general Callback machinery remains in Workstream production prose'
-else
+if rg_absent -ni 'callback registry|callback dispatcher|general callback' "${production[@]}"; then
   pass=$((pass + 1))
+else
+  fail_with 'general Callback machinery remains in Workstream production prose or its census failed'
 fi
 
-retired_current_topology_clean() { # newline-delimited file list
-  ! xargs rg -ni '\.workstreams|ALLOW_PARKED|inplace_|--in-place|isolation[[:space:]:]+(worktree|in-place)|(^|[^[:alnum:]_-])(park(ed|ing)?|unpark)([^[:alnum:]_-]|$)' <"$1" >/dev/null 2>&1
+retired_current_topology_clean() { # file...
+  rg_absent -ni '\.workstreams|ALLOW_PARKED|inplace_|--in-place|isolation[[:space:]:]+(worktree|in-place)|(^|[^[:alnum:]_-])(park(ed|ing)?|unpark)([^[:alnum:]_-]|$)' "$@"
 }
 
-grep -vE '/scripts/workstream-migrate\.sh$|/verbs/migrate\.md$' "$production" >"$TMP/current-production.files"
-if retired_current_topology_clean "$TMP/current-production.files"; then
+current_production=()
+for path in "${production[@]}"; do
+  case "$path" in
+    "$ROOT/skills/workstream/scripts/workstream-migrate.sh"|"$ROOT/skills/workstream/verbs/migrate.md") ;;
+    *) current_production+=("$path") ;;
+  esac
+done
+if retired_current_topology_clean "${current_production[@]}"; then
   pass=$((pass + 1))
 else
-  fail_with 'retired topology remains in the current Workstream surface'
+  fail_with 'retired topology remains in the current Workstream surface or its census failed'
+fi
+set +e
+retired_current_topology_clean "$TMP/missing-active-source.md" >/dev/null 2>&1
+census_rc=$?
+set -e
+if [ "$census_rc" -gt 1 ]; then
+  pass=$((pass + 1))
+else
+  fail_with 'retired topology census treated an inspection error as clean'
 fi
 
 # The legacy spelling is legal only in the migration procedure, package helper,
 # migration fixture, and this source guard.
 legacy_files_for_root() { # root output
-  local root="$1" output="$2"
+  local root="$1" output="$2" raw="$2.raw" rc=0
   rg -l '\.workstreams' "$root/AGENTS.md" "$root/README.md" "$root/PACK.md" \
     "$root/skills" "$root/scripts" "$root/crates/grimoire-pack" \
-    --glob '*.md' --glob '*.sh' --glob '*.rs' 2>/dev/null |
-    sed "s#^$root/##" | LC_ALL=C sort -u >"$output" || true
+    --glob '*.md' --glob '*.sh' --glob '*.rs' >"$raw" 2>"$TMP/rg.err" || rc=$?
+  case "$rc" in
+    0|1) ;;
+    *) cat "$TMP/rg.err" >&2; rm -f "$raw"; return "$rc" ;;
+  esac
+  sed "s#^$root/##" "$raw" | LC_ALL=C sort -u >"$output"
+  rm -f "$raw"
 }
 
 legacy_files="$TMP/legacy.files"
-legacy_files_for_root "$ROOT" "$legacy_files"
+if ! legacy_files_for_root "$ROOT" "$legacy_files"; then
+  fail_with 'legacy allowlist census failed'
+  : >"$legacy_files"
+fi
 printf '%s\n' \
   'scripts/tests/workstream-hard-cut-contract-test.sh' \
   'skills/workstream/scripts/tests/migration-test.sh' \
@@ -94,13 +150,13 @@ for path in \
   skills/workstream/verbs/migrate.md; do
   cp "$ROOT/$path" "$TMP/legacy-copy/$path"
 done
-legacy_files_for_root "$TMP/legacy-copy" "$TMP/legacy-copy.clean"
+if ! legacy_files_for_root "$TMP/legacy-copy" "$TMP/legacy-copy.clean"; then fail_with 'disposable legacy allowlist census failed'; fi
 if cmp -s "$TMP/legacy.expected" "$TMP/legacy-copy.clean"; then pass=$((pass + 1)); else fail_with 'disposable legacy allowlist fixture is not initially clean'; fi
 printf '# disallowed .workstreams runtime probe\n' >"$TMP/legacy-copy/skills/workstream/scripts/workstream.sh"
-legacy_files_for_root "$TMP/legacy-copy" "$TMP/legacy-copy.mutated"
+if ! legacy_files_for_root "$TMP/legacy-copy" "$TMP/legacy-copy.mutated"; then fail_with 'mutated legacy allowlist census failed'; fi
 if cmp -s "$TMP/legacy.expected" "$TMP/legacy-copy.mutated"; then fail_with 'legacy allowlist stayed green after runtime mutation'; else pass=$((pass + 1)); fi
 rm "$TMP/legacy-copy/skills/workstream/scripts/workstream.sh"
-legacy_files_for_root "$TMP/legacy-copy" "$TMP/legacy-copy.restored"
+if ! legacy_files_for_root "$TMP/legacy-copy" "$TMP/legacy-copy.restored"; then fail_with 'restored legacy allowlist census failed'; fi
 if cmp -s "$TMP/legacy.expected" "$TMP/legacy-copy.restored" && cmp -s "$TMP/legacy-copy.clean" "$TMP/legacy-copy.restored"; then
   pass=$((pass + 1))
 else
@@ -108,28 +164,30 @@ else
 fi
 
 # Generated controls and one generated runtime worktree obey the same hard cut.
-generated="$TMP/generated-project"
+generated="$TMP/generated project"
 mkdir -p "$generated"; git -C "$generated" init -q
 git -C "$generated" config user.name Fixture; git -C "$generated" config user.email fixture@example.invalid
 printf 'seed\n' >"$generated/file"; git -C "$generated" add file; git -C "$generated" commit -qm seed
 git -C "$generated" branch -M main
 "$ROOT/skills/workstream/scripts/workstream.sh" "$generated" setup >/dev/null
 "$generated/.streams/workstream.sh" "$generated" runtime-init generated main generated >/dev/null
-find "$generated/.streams" -type f -print | LC_ALL=C sort >"$TMP/generated.files"
-if retired_current_topology_clean "$TMP/generated.files"; then pass=$((pass + 1)); else fail_with 'generated control surface contains retired topology'; fi
+generated_files=()
+while IFS= read -r -d '' path; do generated_files+=("$path"); done < <(find "$generated/.streams" -type f -print0)
+printf '%s\n' 'workstream-hard-cut generated population:'
+printf '  %s\n' "${generated_files[@]}"
+if retired_current_topology_clean "${generated_files[@]}"; then pass=$((pass + 1)); else fail_with 'generated control surface contains retired topology or its census failed'; fi
 
 fixture="$generated/.streams/generated/WORKSTREAM.md"
-printf '%s\n' "$fixture" >"$TMP/generated-mutation.files"
 for mutation in '.workstreams' 'ALLOW_PARKED' 'inplace_' '--in-place' 'isolation: worktree' 'park' 'parked' 'parking' 'unpark'; do
   cp "$fixture" "$TMP/generated.before"
   printf '%s\n' "$mutation" >>"$fixture"
-  if [ "$(grep -cF -- "$mutation" "$fixture")" -eq 1 ] && ! retired_current_topology_clean "$TMP/generated-mutation.files"; then
+  if [ "$(grep -cF -- "$mutation" "$fixture")" -eq 1 ] && ! retired_current_topology_clean "$fixture"; then
     pass=$((pass + 1))
   else
     fail_with "generated topology guard stayed green after mutation: $mutation"
   fi
   cp "$TMP/generated.before" "$fixture"
-  if cmp -s "$TMP/generated.before" "$fixture" && retired_current_topology_clean "$TMP/generated-mutation.files"; then
+  if cmp -s "$TMP/generated.before" "$fixture" && retired_current_topology_clean "$fixture"; then
     pass=$((pass + 1))
   else
     fail_with "generated topology guard did not restore after mutation: $mutation"
@@ -137,15 +195,17 @@ for mutation in '.workstreams' 'ALLOW_PARKED' 'inplace_' '--in-place' 'isolation
 done
 
 if grep -qF 'never read or edit the TSV directly' "$ROOT/skills/workstream/SKILL.md" &&
-   ! rg -n '(^|[^Nn]ever )(read|edit|write|parse)[^.]*(workstream\.tsv|the TSV)' \
-      "$ROOT/skills/workstream/SKILL.md" "$ROOT/skills/workstream/verbs" >/dev/null; then
+   rg_absent -n '(^|[^Nn]ever )(read|edit|write|parse)[^.]*(workstream\.tsv|the TSV)' \
+      "$ROOT/skills/workstream/SKILL.md" "$ROOT/skills/workstream/verbs"; then
   pass=$((pass + 1))
 else
-  fail_with 'raw tracker-reading instruction escaped the helper boundary'
+  fail_with 'raw tracker-reading instruction escaped the helper boundary or its census failed'
 fi
 
+# Backticks are literal documentation text.
+# shellcheck disable=SC2016
 cross_skill_topology_clean() {
-  ! rg -n 'Coordinates `branch:`|isolation: in-place.*Coordinates' "$@" >/dev/null
+  rg_absent -n 'Coordinates `branch:`|isolation: in-place.*Coordinates' "$@"
 }
 if ! cross_skill_topology_clean \
      "$ROOT/skills/debugger/SKILL.md" "$ROOT/skills/delegate/SKILL.md" \
@@ -155,29 +215,17 @@ else
   pass=$((pass + 1))
 fi
 
-custody_paths=(
-  AGENTS.md
-  skills/checkpoint/SKILL.md
-  skills/checkpoint/verbs/save.md
-  skills/checkpoint/scripts/save-guard.sh
-  skills/debugger/SKILL.md
-  skills/delegate/SKILL.md
-  skills/delegate/references/codex.md
-  skills/journal/SKILL.md
-  skills/notepad/SKILL.md
-  skills/workstream/templates/compaction-anchor.md
-)
-custody_topology_clean() { ! rg -ni 'in-place|inplace_|\.streams/\*/WORKSTREAM' "$@" >/dev/null; }
-if ! custody_topology_clean "${custody_paths[@]/#/$ROOT/}"; then
-  fail_with 'retired topology remains in active custody paths'
+custody_topology_clean() { rg_absent -ni 'in-place|inplace_|\.streams/\*/WORKSTREAM' "$@"; }
+if ! custody_topology_clean "${custody_files[@]}"; then
+  fail_with 'retired topology remains in active custody paths or its census failed'
 else
   pass=$((pass + 1))
 fi
 
-if rg -ni 'checkpoint' "$ROOT/skills/workstream" >/dev/null; then
-  fail_with 'Workstream retains a Checkpoint reference'
-else
+if rg_absent -ni 'checkpoint' "$ROOT/skills/workstream"; then
   pass=$((pass + 1))
+else
+  fail_with 'Workstream retains a Checkpoint reference or its census failed'
 fi
 
 recovery_anchor_clean() { # file

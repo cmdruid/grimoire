@@ -74,7 +74,23 @@ validate_legacy_checkout() { # checkout stream
 }
 
 registered_at() { # root path
-  git -C "$1" worktree list --porcelain | awk -v p="$2" '$1=="worktree"&&$2==p{print $2; found++} END{if(found>1)exit 2}'
+  local registry_root="$1" expected="$2" registry record path found=0
+  registry="$(mktemp "${TMPDIR:-/tmp}/workstream-migration-registry.XXXXXX")"
+  git -C "$registry_root" worktree list --porcelain -z >"$registry" || {
+    rm -f "$registry"
+    return 2
+  }
+  while IFS= read -r -d '' record; do
+    case "$record" in
+      'worktree '*)
+        path="${record#worktree }"
+        if [ "$path" = "$expected" ]; then found=$((found + 1)); fi
+        ;;
+    esac
+  done <"$registry"
+  rm -f "$registry"
+  [ "$found" -le 1 ] || return 2
+  if [ "$found" -eq 1 ]; then printf '%s\n' "$expected"; fi
 }
 
 validate_legacy_shape() { # source stream destination

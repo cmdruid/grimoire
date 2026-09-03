@@ -59,6 +59,22 @@ expect 'Git registry follows move' "worktree $ROOT/.streams/legacy" <(git -C "$R
 "$HELPER" "$ROOT" read legacy >"$OUT"; expect 'migrated stream admits' 'schema=workstream-read@1' "$OUT"
 "$HELPER" "$ROOT" read legacy-two >"$OUT"; expect 'second migrated stream admits' 'schema=workstream-read@1' "$OUT"
 
+SPACE_ROOT="$TMP/project with space"; init_repo "$SPACE_ROOT"
+printf 'base\n' >"$SPACE_ROOT/file"; git -C "$SPACE_ROOT" add file; git -C "$SPACE_ROOT" commit -qm initial
+mkdir -p "$SPACE_ROOT/.workstreams"
+git -C "$SPACE_ROOT" worktree add -q -b stream/spaced "$SPACE_ROOT/.workstreams/spaced" main
+printf '# spaced legacy handoff\n' >"$SPACE_ROOT/.workstreams/spaced/WORKSTREAM.md"
+"$MIGRATOR" "$SPACE_ROOT" inventory >"$OUT"
+expect 'migration inventories a worktree below a root containing spaces' 'stream=spaced' "$OUT"
+"$MIGRATOR" "$SPACE_ROOT" apply >"$OUT"
+expect 'migration below a root containing spaces applies' 'status=migrated' "$OUT"
+if [ -d "$SPACE_ROOT/.streams/spaced" ] && [ ! -e "$SPACE_ROOT/.workstreams" ] &&
+   git -C "$SPACE_ROOT" worktree list --porcelain | grep -qFx "worktree $SPACE_ROOT/.streams/spaced"; then
+  pass=$((pass + 1))
+else
+  fail=$((fail + 1)); echo 'FAIL: migration did not preserve the spaced-root worktree registry' >&2
+fi
+
 mkdir -p "$ROOT/.workstreams"; git -C "$ROOT" worktree add -q -b stream/nested "$ROOT/.workstreams/nested" main
 mkdir -p "$ROOT/.workstreams/nested/.streams/copied"
 if "$MIGRATOR" "$ROOT" inventory >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
