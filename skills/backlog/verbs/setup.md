@@ -31,8 +31,9 @@
 Done when a fresh public layer contains exactly the selected subset of
 `tasks,issues,failures,feedback,routines`, its matching prompt sections, README, executable adjacent
 `trackers.sh`, lifecycle history, and `.trackers/tables/.gitkeep`; no `.setup-selection` or reserved
-temporary remains; no project front door changed; and a rerun preserves an initialized queue
-population while changing only drifted package-owned surfaces.
+temporary remains; any project front-door change was explicitly consented and completed through the
+separate anchor transaction; and a rerun preserves an initialized queue population while changing
+only drifted package-owned surfaces.
 
 Setup intentionally does not read or move tracker@1 state. When it refuses a flat tracker@1 layout,
 use `/backlog migrate`; migration remains the only legacy reader.
