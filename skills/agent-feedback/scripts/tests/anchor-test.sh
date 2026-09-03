@@ -220,6 +220,76 @@ run_anchor "$home" apply --remove --confirmed --base-sha256 "$base" >/dev/null
 same "$home/.agents/FEEDBACK.md" "$TMP/legacy.before"
 has "$home/.agents/AGENTS.md" 'Send reusable-skill feedback to `/old-feedback`.'
 
+# Install and update scan only unfenced H3 slash-command headings in the
+# self-registered section. A feedback token must be hyphen-delimited.
+cases="$SKILL/scripts/tests/fixtures/anchor-cases.tsv"
+while IFS=$'\t' read -r case_name _signal _capture_count route_heading expected_conflict; do
+  [ "$route_heading" != route_heading ] || continue
+  [ "$route_heading" != - ] || continue
+  route_home="$TMP/route-$case_name"; new_home "$route_home"; mkdir -p "$route_home/.agents"
+  chmod 700 "$route_home/.agents"
+  printf '## Skill routes (self-registered)\n\n%s\n' "$route_heading" >"$route_home/.agents/AGENTS.md"
+  chmod 600 "$route_home/.agents/AGENTS.md"; cp "$route_home/.agents/AGENTS.md" "$TMP/$case_name.before"
+  if [ "$expected_conflict" = yes ]; then
+    if run_anchor "$route_home" preview >"$TMP/$case_name.out" 2>"$TMP/$case_name.err"; then
+      fail "$case_name preview accepted competitor"
+    else
+      pass
+    fi
+    [ ! -s "$TMP/$case_name.out" ] && pass || fail "$case_name proposed a write"
+    printf 'reason=competing-feedback-route action=resolve-route conflict=%s\n' "$route_heading" >"$TMP/$case_name.expected"
+    same "$TMP/$case_name.err" "$TMP/$case_name.expected"
+    same "$route_home/.agents/AGENTS.md" "$TMP/$case_name.before"
+    route_base="$(shasum -a 256 "$route_home/.agents/AGENTS.md" | awk '{print $1}')"
+    if run_anchor "$route_home" apply --confirmed --base-sha256 "$route_base" \
+      >"$TMP/$case_name.apply.out" 2>"$TMP/$case_name.apply.err"; then
+      fail "$case_name apply bypassed competitor"
+    else
+      pass
+    fi
+    [ ! -s "$TMP/$case_name.apply.out" ] && pass || fail "$case_name apply proposed a write"
+    same "$TMP/$case_name.apply.err" "$TMP/$case_name.expected"
+    same "$route_home/.agents/AGENTS.md" "$TMP/$case_name.before"
+  else
+    run_anchor "$route_home" preview >"$TMP/$case_name.out"
+    has "$TMP/$case_name.out" 'status=change'
+    route_base="$(sed -n 's/^base-sha256=//p' "$TMP/$case_name.out")"
+    run_anchor "$route_home" apply --confirmed --base-sha256 "$route_base" >/dev/null
+    has "$route_home/.agents/AGENTS.md" "$route_heading"
+  fi
+done <"$cases"
+
+# Fenced H3 lookalikes are examples, not competitors.
+home="$TMP/competing-fenced"; new_home "$home"; mkdir -p "$home/.agents"; chmod 700 "$home/.agents"
+printf '## Skill routes (self-registered)\n\n```markdown\n### /review-feedback — example only\n```\n' >"$home/.agents/AGENTS.md"
+chmod 600 "$home/.agents/AGENTS.md"
+run_anchor "$home" preview >"$preview"; has "$preview" 'status=change'
+
+# A matching H3 outside the reserved section is out of scan scope.
+home="$TMP/competitor-outside-section"; new_home "$home"; mkdir -p "$home/.agents"; chmod 700 "$home/.agents"
+printf '# Personal route\n\n### /review-feedback — outside reserved section\n\n## Skill routes (self-registered)\n' >"$home/.agents/AGENTS.md"
+chmod 600 "$home/.agents/AGENTS.md"
+run_anchor "$home" preview >"$preview"; has "$preview" 'status=change'
+
+# Update refuses a competitor, while removal ignores it and deletes only the
+# owned block.
+home="$TMP/competitor-removal"; new_home "$home"
+run_anchor "$home" preview >"$preview"; base="$(sed -n 's/^base-sha256=//p' "$preview")"
+run_anchor "$home" apply --confirmed --base-sha256 "$base" >/dev/null
+printf '\n### /review-feedback — retained competitor\n' >>"$home/.agents/AGENTS.md"
+cp "$home/.agents/AGENTS.md" "$TMP/competitor-installed.before"
+if run_anchor "$home" preview >"$TMP/competitor-update.out" 2>"$TMP/competitor-update.err"; then
+  fail 'competitor update accepted'
+else
+  pass
+fi
+has "$TMP/competitor-update.err" 'reason=competing-feedback-route action=resolve-route conflict=### /review-feedback — retained competitor'
+same "$home/.agents/AGENTS.md" "$TMP/competitor-installed.before"
+run_anchor "$home" preview --remove >"$preview"; base="$(sed -n 's/^base-sha256=//p' "$preview")"
+run_anchor "$home" apply --remove --confirmed --base-sha256 "$base" >/dev/null
+has "$home/.agents/AGENTS.md" '### /review-feedback — retained competitor'
+no grep -qF '<!-- skill:agent-feedback BEGIN' "$home/.agents/AGENTS.md"
+
 # The stamp follows the latest commit touching the package path, not repository-wide HEAD.
 repo="$TMP/stamp-repo"
 mkdir -p "$repo/skill/scripts" "$repo/skill/templates"
@@ -257,6 +327,7 @@ no test -e "$stamp_home/.agents"
 has "$TEMPLATE" 'friction, a gap, a preservation win, or a well-supported request'
 has "$TEMPLATE" 'ordinary success'
 has "$TEMPLATE" 'feedback about `agent-feedback` itself'
+has "$TEMPLATE" 'Explicit human `/agent-feedback capture` remains valid'
 has "$TEMPLATE" 'once before the final response'
 has "$VERB" 'competing route'
 has "$VERB" 'ask the human'
@@ -265,7 +336,6 @@ has "$VERB" 'preview'
 has "$VERB" 'apply'
 has "$VERB" '/agent-feedback anchor --remove'
 
-cases="$SKILL/scripts/tests/fixtures/anchor-cases.tsv"
 ok test -f "$cases"
 [ "$(awk -F '\t' 'NR > 1 && $3 == 1 { count++ } END { print count+0 }' "$cases")" -eq 4 ] && pass || fail 'four qualifying cold-route cases'
 [ "$(awk -F '\t' 'NR > 1 && $3 == 0 { count++ } END { print count+0 }' "$cases")" -eq 2 ] && pass || fail 'two silent cold-route cases'

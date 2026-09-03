@@ -198,6 +198,60 @@ if [ "$begins" -eq 1 ]; then
   fi
 fi
 
+find_competing_route() {
+  awk -v heading="$HEADING" -v begin_prefix="$BEGIN_PREFIX" -v end_mark="$END_MARK" '
+    function fence_candidate(s,    spaces,c,n) {
+      spaces=0
+      while(spaces<3 && substr(s,spaces+1,1)==" ") spaces++
+      s=substr(s,spaces+1)
+      c=substr(s,1,1)
+      if(c!="`" && c!="~") return 0
+      n=0
+      while(substr(s,n+1,1)==c) n++
+      if(n<3) return 0
+      candidate_char=c; candidate_len=n; candidate_rest=substr(s,n+1)
+      return 1
+    }
+    BEGIN { fence=0; section=0; owned=0 }
+    {
+      scan=$0
+      sub(/\r$/, "", scan)
+      if(fence_candidate(scan)) {
+        if(!fence) {
+          if(candidate_char=="~" || index(candidate_rest,"`")==0) {
+            fence=1; fence_char=candidate_char; fence_len=candidate_len; next
+          }
+        } else if(candidate_char==fence_char && candidate_len>=fence_len && candidate_rest ~ /^[ \t]*$/) {
+          fence=0; fence_char=""; fence_len=0; next
+        }
+      }
+      if(fence) next
+      if(scan==heading) { section=1; next }
+      if(section && scan ~ /^##[ \t]+/) { section=0; owned=0 }
+      if(!section) next
+      if(index(scan,begin_prefix)==1) { owned=1; next }
+      if(scan==end_mark) { owned=0; next }
+      if(owned || scan !~ /^###[ \t]+\//) next
+      slug=scan
+      sub(/^###[ \t]+\//, "", slug)
+      sub(/[ \t].*$/, "", slug)
+      if(slug !~ /^[a-z0-9][a-z0-9-]*$/) next
+      count=split(slug, parts, "-")
+      for(i=1;i<=count;i++) {
+        if(parts[i]=="feedback") { print scan; exit }
+      }
+    }
+  ' "$CURRENT"
+}
+
+if [ "$remove" = no ]; then
+  competing_route="$(find_competing_route)"
+  if [ -n "$competing_route" ]; then
+    printf 'reason=competing-feedback-route action=resolve-route conflict=%s\n' "$competing_route" >&2
+    exit 2
+  fi
+fi
+
 emit_replacement() {
   head -n "$((begin_line - 1))" "$CURRENT" >"$CANDIDATE"
   cat "$BLOCK" >>"$CANDIDATE"

@@ -278,7 +278,7 @@ Spec: → `specs/2026-09-03-agent-feedback-capture-and-independent-skill-tuning.
       explicit human cases; expect exactly the qualifying agent rows and requested human rows, no
       agent-path follow-up, and no ordinary-success, project-owned, or self-recursive capture.
 
-- [ ] **Slice 4: Owned optional anchor with generic route-conflict protection** <requires: 3>
+- [x] **Slice 4: Owned optional anchor with generic route-conflict protection** <requires: 3>
   - Files:
     - Modify `skills/agent-feedback/verbs/anchor.md`,
       `skills/agent-feedback/scripts/feedback-anchor.sh`,

@@ -10,8 +10,12 @@ or inapplicable route never impairs explicit capture.
 
 1. Run `scripts/feedback-anchor.sh preview` and retain its `base-sha256` value.
 2. Inspect the complete diff. Also scan prose outside the owned block for a competing route for
-   feedback.
-   If one exists, quote it and ask the human to approve the cutover; do not apply while unresolved.
+   feedback. Scan only unfenced bytes in the self-registered route section. A competitor is exactly
+   an H3 slash-command heading whose lowercase command slug contains `feedback` as a
+   hyphen-delimited token; other heading levels, fenced examples, and lookalike substrings do not
+   compete. If one exists, the helper refuses preview and apply with
+   `reason=competing-feedback-route action=resolve-route conflict=<exact-heading>`. Quote that route
+   and ask the human to approve a manual cutover; no confirmation token bypasses the refusal.
 3. Describe the proposed global change and ask for explicit confirmation.
 4. Only after confirmation, run
    `scripts/feedback-anchor.sh apply --confirmed --base-sha256 <preview-value>`.
@@ -27,7 +31,7 @@ Preview with `scripts/feedback-anchor.sh preview --remove`, show the complete di
 confirmation, then apply that exact base with
 `scripts/feedback-anchor.sh apply --remove --confirmed --base-sha256 <preview-value>`.
 Removal deletes only this package's well-formed owned block and preserves every surrounding byte. It
-never deletes feedback data or touches predecessor files or markers.
+ignores competing routes and never deletes feedback data or touches another owner's files or markers.
 
 ## Done when
 

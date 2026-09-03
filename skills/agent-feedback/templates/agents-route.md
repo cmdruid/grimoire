@@ -6,5 +6,6 @@ concrete use exposed friction, a gap, a preservation win, or a well-supported re
 checks and remain silent when they fail. Do not invoke it for ordinary success, generic praise,
 project-owned defects, speculative redesign, or automatic feedback about `agent-feedback` itself.
 Capture is advisory: failure never changes the completed work's outcome.
+Explicit human `/agent-feedback capture` remains valid, including feedback about `agent-feedback`.
 Edges: produces `feedback-observation`.
 <!-- skill:agent-feedback END -->
