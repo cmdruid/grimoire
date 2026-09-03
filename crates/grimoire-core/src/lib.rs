@@ -43,6 +43,9 @@ pub use source::{
     SourceSummary, TrustCatalog, TrustSummary, TrustUse,
 };
 pub use store::MaterializationIntent;
-pub use tree::{project_tree, TreeItem, TreeItemKey, TreeProjection};
+pub use tree::{
+    project_tree, PackSelection, SkillAvailability, TreeItem, TreeItemKey, TreeItemKind,
+    TreeProjection,
+};
 pub use trust::{TrustBaseline, TrustMode, TrustMutation, TrustReceipt, TrustRecord, TrustStore};
 pub use world::{attach_inherited_global, load_world};

@@ -4,9 +4,10 @@ use grimoire_core::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Pack, Skill, SourceInventory, SourcePath,
 };
 use grimoire_core::{
-    plan, project_tree, CanonicalIdentity, DesiredEdit, DesiredState, InstalledLink, PlanningMode,
-    Request, Scope, SnapshotId, SnapshotKind, SnapshotStore, SourceAlias, SourceSnapshot,
-    SourceState, TreeItemKey, TrustBaseline, TrustReceipt, TrustStore, WorldState,
+    plan, project_tree, CanonicalIdentity, DesiredEdit, DesiredState, InstalledLink, PackSelection,
+    PlanningMode, Request, RequestRoot, Scope, SkillAvailability, SnapshotId, SnapshotKind,
+    SnapshotStore, SourceAlias, SourceSnapshot, SourceState, TreeItemKey, TreeItemKind,
+    TrustBaseline, TrustReceipt, TrustStore, WorldState,
 };
 
 const EMPTY_LOCK: &[u8] = include_bytes!("fixtures/lock/empty.json");
@@ -18,15 +19,27 @@ const MANIFEST: &str = concat!(
 
 fn world() -> WorldState {
     let content = compute_inventory_digest(&[], &[], &[]);
-    let skills = vec![Skill {
-        name: "journal".into(),
-        path: SourcePath::from("skills/journal"),
-        content_digest: content,
-        files: Vec::new(),
-        symlinks: Vec::new(),
-        submodules: Vec::new(),
+    let skills = ["journal", "notes"]
+        .into_iter()
+        .map(|name| Skill {
+            name: name.into(),
+            path: SourcePath::from(format!("skills/{name}").as_str()),
+            content_digest: content,
+            files: Vec::new(),
+            symlinks: Vec::new(),
+            submodules: Vec::new(),
+        })
+        .collect::<Vec<_>>();
+    let packs = vec![Pack {
+        name: "toolkit".into(),
+        path: SourcePath::from("PACK.md"),
+        digest: content,
+        description: "fixture toolkit".into(),
+        required: vec!["journal".into()],
+        optional: vec!["notes".into(), "ghost".into()],
+        missing_required: Vec::new(),
+        missing_optional: vec!["ghost".into()],
     }];
-    let packs: Vec<Pack> = Vec::new();
     let inventory = SourceInventory {
         inventory_digest: compute_inventory_digest(&skills, &packs, &[]),
         review_tree_digest: compute_review_tree_digest(&[]),
@@ -79,6 +92,78 @@ fn world() -> WorldState {
     )
     .unwrap()
     .with_trust_bytes(Some(trust))
+}
+
+#[test]
+fn packs_members_shared_roots_and_unavailable_items_are_core_facts() {
+    let world = world();
+    let mut desired = DesiredState::from_world(&world);
+    desired
+        .apply(DesiredEdit::SetPack {
+            name: "toolkit".try_into().unwrap(),
+            source: "grimoire".try_into().unwrap(),
+            enabled: true,
+        })
+        .unwrap();
+    desired
+        .apply(DesiredEdit::SetSkill {
+            name: "notes".try_into().unwrap(),
+            source: "grimoire".try_into().unwrap(),
+            enabled: true,
+        })
+        .unwrap();
+
+    let tree = project_tree(&world, &desired).unwrap();
+    let pack = tree
+        .item(&TreeItemKey::Pack {
+            source: "grimoire".try_into().unwrap(),
+            name: "toolkit".try_into().unwrap(),
+        })
+        .unwrap();
+    assert_eq!(pack.kind, TreeItemKind::Pack(PackSelection::Partial));
+
+    let required = tree
+        .item(&TreeItemKey::PackMember {
+            source: "grimoire".try_into().unwrap(),
+            pack: "toolkit".try_into().unwrap(),
+            name: "journal".try_into().unwrap(),
+        })
+        .unwrap();
+    assert_eq!(
+        required.kind,
+        TreeItemKind::Skill(SkillAvailability::Required)
+    );
+    assert!(required.selected);
+    assert!(!required.toggleable);
+
+    let unavailable = tree
+        .item(&TreeItemKey::PackMember {
+            source: "grimoire".try_into().unwrap(),
+            pack: "toolkit".try_into().unwrap(),
+            name: "ghost".try_into().unwrap(),
+        })
+        .unwrap();
+    assert_eq!(
+        unavailable.kind,
+        TreeItemKind::Skill(SkillAvailability::Unavailable)
+    );
+    assert_eq!(unavailable.inert_reason.as_deref(), Some("unavailable"));
+
+    let notes = tree
+        .item(&TreeItemKey::Skill {
+            source: "grimoire".try_into().unwrap(),
+            name: "notes".try_into().unwrap(),
+        })
+        .unwrap();
+    assert_eq!(
+        notes.requested_by,
+        [
+            RequestRoot::Pack("toolkit".try_into().unwrap()),
+            RequestRoot::Skill("notes".try_into().unwrap()),
+        ]
+        .into_iter()
+        .collect()
+    );
 }
 
 #[test]

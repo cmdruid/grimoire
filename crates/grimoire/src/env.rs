@@ -36,6 +36,26 @@ impl PathProbe for SystemPathProbe {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TuiPaths {
+    pub project: Option<Paths>,
+    pub global: Paths,
+}
+
+/// Resolve both TUI tabs without turning an absent project into an error.
+pub fn resolve_tui_paths(environment: &dyn Environment, probe: &dyn PathProbe) -> Result<TuiPaths> {
+    let cwd = absolute_current_dir(environment)?;
+    let user_home = user_home(environment)?;
+    let grimoire_home = grimoire_home(environment, &user_home)?;
+    let project = grimoire_core::discover_project(&cwd, probe)?
+        .map(|root| Paths::project(root, grimoire_home.clone()))
+        .transpose()?;
+    Ok(TuiPaths {
+        project,
+        global: Paths::global(user_home, grimoire_home)?,
+    })
+}
+
 pub fn resolve_init_paths(
     environment: &dyn Environment,
     scope: &InitScope,

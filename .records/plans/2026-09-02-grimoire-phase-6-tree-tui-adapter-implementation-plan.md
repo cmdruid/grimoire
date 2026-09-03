@@ -85,7 +85,7 @@ This task is read-only and produces no commit.
     `RUSTC_WRAPPER= cargo check --workspace`; expected: one UI intent crosses core-owned staging
     and planning without I/O or an adapter-owned domain decision.
 
-- [ ] **Slice 2: Complete the tree and independent scopes** <requires: 1>
+- [x] **Slice 2: Complete the tree and independent scopes** <requires: 1>
   - Files: create `crates/grimoire/tests/tui_state.rs` and
     `crates/grimoire/tests/tui_render.rs`; modify the core tree/staging projection,
     `crates/grimoire/src/env.rs`, and the TUI model/render modules from Slice 1.
