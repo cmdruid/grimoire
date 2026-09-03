@@ -154,7 +154,9 @@ valid_reference(){
   valid_raw_text "$value" "$limit" || return 1
   stripped="$(LC_ALL=C printf '%s' "$value" | tr -d '\t\r\n')"
   ! LC_ALL=C printf '%s' "$stripped" | grep -q '[[:cntrl:]]' || return 1
-  case "$value" in /*|..|../*|*/../*|*/..) return 1;; esac
+  case "$value" in
+    /*|\\*|[A-Za-z]:[/\\]*|..|../*|*/../*|*/..) return 1;;
+  esac
 }
 valid_subject_ref(){ [ "$1" = unknown ] || valid_reference "$1" 512; }
 valid_project_ref(){ [ -z "$1" ] && return 0; case "$1" in local-sha256:*) valid_hex "${1#local-sha256:}" 16;; *) return 1;; esac; }
@@ -208,11 +210,12 @@ validate_file(){
       if(!slug($6)||length($6)>120||($7!="unknown"&&!safe_ref($7,512))||decoded_len($8)<1||decoded_len($8)>240)exit 14
       if($9!="friction"&&$9!="gap"&&$9!="win"&&$9!="request")exit 15
       if(decoded_len($10)<1||decoded_len($10)>240||decoded_len($11)<1||decoded_len($11)>4000)exit 16
-      if(decoded_len($12)>2000||decoded_len($13)>2000||decoded_len($14)>2000)exit 17
+      d12=decoded_len($12);d13=decoded_len($13);d14=decoded_len($14)
+      if(d12<0||d13<0||d14<0||d12>2000||d13>2000||d14>2000)exit 17
       if($4=="agent"&&(decoded_len($12)<1||decoded_len($13)<1||decoded_len($14)<1))exit 18
       if($15!="yes"&&$15!="no")exit 19
       if($16!=""&&!(substr($16,1,13)=="local-sha256:"&&hex(substr($16,14),16)))exit 20
-      if($17=="open") {if($18!=""||$19!=""||$20!="")exit 21}
+      if($17=="open") {if($2!=$3||$18!=""||$19!=""||$20!="")exit 21}
       else if($17=="closed") {
         if($18!="addressed"&&$18!="preserved"&&$18!="declined"&&$18!="stale"&&$18!="duplicate")exit 22
         if(decoded_len($19)<1||decoded_len($19)>2000)exit 23
@@ -348,9 +351,11 @@ cmd_query(){
       *) usage;;
     esac
   done
-  [ -z "$origin" ] || { case "$origin" in agent|human) ;; *) usage;; esac; }
-  [ -z "$subject_type" ] || { case "$subject_type" in skill|agent|harness|tool|workflow) ;; *) usage;; esac; }
-  [ -z "$subject" ] || valid_slug "$subject" || usage
+  if [ "$so" = yes ]; then case "$origin" in agent|human) ;; *) usage;; esac; fi
+  if [ "$st" = yes ]; then case "$subject_type" in skill|agent|harness|tool|workflow) ;; *) usage;; esac; fi
+  if [ "$ss" = yes ]; then
+    valid_slug "$subject" && [ "$(byte_length "$subject")" -le 120 ] || usage
+  fi
   case "$status" in open|closed) ;; *) usage;; esac
   case "$limit" in ''|*[!0-9]*) usage;; esac
   [ "$limit" -ge 1 ] && [ "$limit" -le 100 ] || usage
@@ -403,7 +408,7 @@ cmd_close(){
   valid_feedback_id "$id" || reason invalid-id check-entry
   case "$disposition" in addressed|preserved|declined|stale|duplicate) ;; *) reason invalid-disposition check-entry;; esac
   valid_raw_text "$resolution" 2000 || reason invalid-resolution check-entry
-  [ -z "$result_ref" ] || valid_reference "$result_ref" 2000 || reason invalid-result-ref check-entry
+  [ "$sf" = no ] || valid_reference "$result_ref" 2000 || reason invalid-result-ref check-entry
   case "$disposition" in addressed|preserved|duplicate) [ -n "$result_ref" ] || reason result-ref-required check-entry;; esac
   local encoded_resolution encoded_ref found status old_disposition old_resolution old_ref now action
   encoded_resolution="$(encode_text "$resolution")"; encoded_ref="$(encode_text "$result_ref")"

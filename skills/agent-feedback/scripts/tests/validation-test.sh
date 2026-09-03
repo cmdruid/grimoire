@@ -46,6 +46,16 @@ F="$(store_for "$H")"; cp "$F" "$T/multibyte.before"
 no capture_fields "$H" agent x "${utf8_240}a" x x x x
 same "$F" "$T/multibyte.before"
 
+subject_max="$(repeat_text a 120)"; subject_long="${subject_max}a"
+ok env HOME="$H" "$PROVIDER" capture --origin human --subject-type skill --subject "$subject_max" \
+  --subject-ref unknown --invocation x --kind request --summary x --statement x \
+  --incident '' --consequence '' --suggestion '' --redacted no
+F="$(store_for "$H")"; cp "$F" "$T/subject.before"
+no env HOME="$H" "$PROVIDER" capture --origin human --subject-type skill --subject "$subject_long" \
+  --subject-ref unknown --invocation x --kind request --summary x --statement x \
+  --incident '' --consequence '' --suggestion '' --redacted no
+same "$F" "$T/subject.before"
+
 # Human details may be empty; agent details may not. Every enum is enforced.
 H="$T/conditional"; new_home "$H"; capture_fields "$H" human x x x '' '' '' >/dev/null
 F="$(store_for "$H")"; cp "$F" "$T/conditional.before"
@@ -72,29 +82,66 @@ same "$F" "$T/control.before"
 
 # References reject absolute/traversal forms and conditional close references
 # are enforced.
-for ref in /private/path .. ../path path/../secret; do
+for ref in /private/path '..' ../path path/../secret 'C:\Users\name' '\\server\share'; do
   no env HOME="$H" "$PROVIDER" capture --origin human --subject-type skill --subject architect \
     --subject-ref "$ref" --invocation x --kind request --summary x --statement x \
     --incident '' --consequence '' --suggestion '' --redacted no
 done
+safe_ref="$(repeat_text r 512)"; long_ref="${safe_ref}r"
+ok env HOME="$H" "$PROVIDER" capture --origin human --subject-type skill --subject architect \
+  --subject-ref "$safe_ref" --invocation x --kind request --summary x --statement x \
+  --incident '' --consequence '' --suggestion '' --redacted no
+cp "$F" "$T/ref.before"
+no env HOME="$H" "$PROVIDER" capture --origin human --subject-type skill --subject architect \
+  --subject-ref "$long_ref" --invocation x --kind request --summary x --statement x \
+  --incident '' --consequence '' --suggestion '' --redacted no
+no env HOME="$H" "$PROVIDER" capture --origin human --subject-type skill --subject architect \
+  --subject-ref unknown --invocation x --kind request --summary x --statement x \
+  --incident '' --consequence '' --suggestion '' --redacted maybe
+no env HOME="$H" "$PROVIDER" capture --origin human --subject-type skill --subject architect \
+  --subject-ref unknown --invocation x --kind request --summary x --statement x \
+  --incident '' --consequence '' --suggestion '' --redacted no --project-ref local-sha256:short
+same "$F" "$T/ref.before"
 id="$(awk -F '\t' 'NR==2{print $1}' "$F")"
 no env HOME="$H" "$PROVIDER" close --id "$id" --as duplicate --reason Same
 ok env HOME="$H" "$PROVIDER" close --id "$id" --as duplicate --reason Same --result-ref AF-20260903T120000Z-deadbeef
 
+H="$T/close-limits"; new_home "$H"; capture_human "$H" >"$T/close-limit-capture"
+id="$(sed -n 's/^captured=//p' "$T/close-limit-capture")"; F="$(store_for "$H")"
+result_max="$(repeat_text r 2000)"; result_long="${result_max}r"; resolution_max="$(repeat_text x 2000)"
+ok env HOME="$H" "$PROVIDER" close --id "$id" --as declined --reason "$resolution_max" --result-ref "$result_max"
+H="$T/close-over"; new_home "$H"; capture_human "$H" >"$T/close-over-capture"
+id="$(sed -n 's/^captured=//p' "$T/close-over-capture")"; F="$(store_for "$H")"; cp "$F" "$T/close-over.before"
+no env HOME="$H" "$PROVIDER" close --id "$id" --as declined --reason "${resolution_max}x"
+no env HOME="$H" "$PROVIDER" close --id "$id" --as declined --reason x --result-ref "$result_long"
+same "$F" "$T/close-over.before"
+
 # Whole-store validation precedes filtering and mutation. Representative
 # malformed 20-column rows, the encoded row ceiling, and invalid UTF-8 leave
 # incumbent bytes untouched.
-for mutation in bad-id bad-subject bad-kind bad-lifecycle missing-column extra-column over-row invalid-utf8; do
+for mutation in bad-id bad-created bad-subject bad-kind bad-lifecycle open-time-drift \
+  unknown-detail-escape dangling-detail-escape duplicate-id missing-column extra-column \
+  missing-final-newline over-row invalid-utf8 control-byte; do
   M="$T/malformed-$mutation"; new_home "$M"; capture_human "$M" >/dev/null; MF="$(store_for "$M")"
   case "$mutation" in
     bad-id) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$1="AF-20261340T250061Z-deadbeef";print}' "$MF" >"$T/mutant" ;;
+    bad-created) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$2="2023-02-29T12:00:00Z";$3=$2;print}' "$MF" >"$T/mutant" ;;
     bad-subject) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$6="Bad";print}' "$MF" >"$T/mutant" ;;
     bad-kind) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$9="other";print}' "$MF" >"$T/mutant" ;;
     bad-lifecycle) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$17="closed";print}' "$MF" >"$T/mutant" ;;
+    open-time-drift) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$3="2000-01-01T00:00:00Z";print}' "$MF" >"$T/mutant" ;;
+    unknown-detail-escape) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$12="bad\\q";print}' "$MF" >"$T/mutant" ;;
+    dangling-detail-escape) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$12="bad\\";print}' "$MF" >"$T/mutant" ;;
+    duplicate-id) cat "$MF" >"$T/mutant"; tail -n 1 "$MF" >>"$T/mutant" ;;
     missing-column) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{NF=19;print}' "$MF" >"$T/mutant" ;;
     extra-column) awk 'NR==1{print;next}{print $0 "\textra"}' "$MF" >"$T/mutant" ;;
+    missing-final-newline) sed -n '1p' "$MF" >"$T/mutant"; printf '%s' "$(tail -n 1 "$MF")" >>"$T/mutant" ;;
     over-row) { printf '%s\n' "$HEADER"; printf 'AF-20260903T120000Z-deadbeef\t2026-09-03T12:00:00Z\t2026-09-03T12:00:00Z\thuman\tskill\tarchitect\tunknown\tx\trequest\tx\t'; repeat_text x 32600; printf '\t\t\t\tno\t\topen\t\t\t\n'; } >"$T/mutant" ;;
     invalid-utf8) cp "$MF" "$T/mutant"; printf '\377' >>"$T/mutant" ;;
+    control-byte)
+      row="$(tail -n 1 "$MF")"
+      { sed -n '1p' "$MF"; printf '%s' "${row%%Please*}"; printf '\001'; printf '%s\n' "Please${row#*Please}"; } >"$T/mutant"
+      ;;
   esac
   mv "$T/mutant" "$MF"; cp "$MF" "$T/$mutation.before"
   no env HOME="$M" "$PROVIDER" query

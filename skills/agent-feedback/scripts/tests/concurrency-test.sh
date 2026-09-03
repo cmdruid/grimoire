@@ -64,6 +64,15 @@ same "$F" "$T/interrupt.before"
 [ "$(find "$(dirname "$F")" -name '.agent-feedback.tsv.tmp.*' | wc -l | tr -d '[:space:]')" = 0 ] && pass || fail 'interrupt left temporary'
 [ ! -e "$F.lock" ] && pass || fail 'interrupt left lock'
 
+capture_human "$H" debugger request >"$T/close-interrupt-capture"
+close_interrupt_id="$(sed -n 's/^captured=//p' "$T/close-interrupt-capture")"
+cp "$F" "$T/close-interrupt.before"
+no env HOME="$H" AGENT_FEEDBACK_TEST_BEFORE_RENAME="$HOOK" "$PROVIDER" close \
+  --id "$close_interrupt_id" --as stale --reason 'Interrupted close.'
+same "$F" "$T/close-interrupt.before"
+[ "$(find "$(dirname "$F")" -name '.agent-feedback.tsv.tmp.*' | wc -l | tr -d '[:space:]')" = 0 ] && pass || fail 'close interrupt left temporary'
+[ ! -e "$F.lock" ] && pass || fail 'close interrupt left lock'
+
 # ID generation rerolls a planted collision while holding the lock.
 collision_time=2026-09-03T12:00:00Z
 constant="$T/constant.sh"; printf '%s\n' '#!/bin/sh' 'printf deadbeef' >"$constant"; chmod +x "$constant"

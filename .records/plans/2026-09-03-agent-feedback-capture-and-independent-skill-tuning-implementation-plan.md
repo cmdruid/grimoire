@@ -226,7 +226,7 @@ Spec: → `specs/2026-09-03-agent-feedback-capture-and-independent-skill-tuning.
       `bash skills/backlog/scripts/tests/skill-doc-test.sh`, and `bash scripts/tests/run.sh` → green.
     - `test ! -e skills/skill-feedback` → succeeds.
 
-- [ ] **Slice 3: Widen capture across origins, subjects, and quality boundaries** <requires: 2>
+- [x] **Slice 3: Widen capture across origins, subjects, and quality boundaries** <requires: 2>
   - Files:
     - Modify `skills/agent-feedback/SKILL.md`, `skills/agent-feedback/verbs/capture.md`, and, only
       where validation or rendering needs adjustment,

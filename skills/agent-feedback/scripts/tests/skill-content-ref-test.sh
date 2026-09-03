@@ -11,6 +11,14 @@ printf '%s' $'#!/bin/sh\necho root\n' > "$R/scripts/run.sh"; chmod 755 "$R/scrip
 actual="$($IDENTITY "$R")"
 [ "$actual" = content-sha256:dac22413d43775828b480b061dc43077cf4cae3c34b6d00570fa635f2ad6122a ] && pass || fail "root golden mismatch: $actual"
 
+capture_home="$T/capture-home"; new_home "$capture_home"
+HOME="$capture_home" "$PROVIDER" capture --origin human --subject-type skill --subject root \
+  --subject-ref "$actual" --invocation '/agent-feedback capture' --kind request \
+  --summary 'Preserve this exact package identity.' --statement 'Preserve this exact package identity.' \
+  --incident '' --consequence '' --suggestion '' --redacted no >/dev/null
+HOME="$capture_home" "$PROVIDER" query --format tsv >"$T/reference.tsv"
+[ "$(awk -F '\t' 'NR==2{print $7}' "$T/reference.tsv")" = "$actual" ] && pass || fail 'skill subject reference was not retained'
+
 H="$T/helper"; mkdir -p "$H"
 printf '%s' $'---\nname: helper\n---\n\n# Helper\n' > "$H/SKILL.md"
 ln -s SKILL.md "$H/copy.md"
