@@ -316,3 +316,59 @@ fn repoint_and_remove_capture_the_owned_link_before_mutating_it() {
         assert_eq!(fs::read(&destination).unwrap(), b"foreign\n", "{operation}");
     }
 }
+
+#[test]
+fn a_late_link_race_rolls_back_earlier_owned_changes() {
+    let (_temporary, paths, old, initial) = fixture();
+    apply(&paths, &initial, Approval::NotRequired, &Runtime::plain()).unwrap();
+    let destination = paths.skills_dir().join("one");
+    let new = OwnedLinkTarget::Stored {
+        source_key: SourceKey::parse("3".repeat(64)).unwrap(),
+        snapshot_key: SnapshotKey::parse("4".repeat(64)).unwrap(),
+        skill_path: "skills/one".into(),
+    };
+    fs::create_dir_all(new.resolve(&paths).unwrap()).unwrap();
+    let plan = Plan {
+        actions: vec![
+            Action::CreateLink {
+                scope: Scope::Project,
+                skill: "two".try_into().unwrap(),
+                target: old.clone(),
+            },
+            Action::RepointLink {
+                scope: Scope::Project,
+                skill: "one".try_into().unwrap(),
+                before: old.clone(),
+                after: new,
+            },
+        ],
+        blockers: Vec::new(),
+        preconditions: Preconditions {
+            manifest: Some(ByteHash::of(&fs::read(paths.manifest_path()).unwrap())),
+            lock: Some(ByteHash::of(&fs::read(paths.lock_path()).unwrap())),
+            candidates: BTreeMap::new(),
+            stores: BTreeMap::new(),
+            trust: None,
+            projects: Some(ByteHash::of(&fs::read(paths.projects_path()).unwrap())),
+            reachability: None,
+            links: BTreeMap::from([
+                (
+                    "one".try_into().unwrap(),
+                    LinkPrecondition::Symlink(old.resolve(&paths).unwrap()),
+                ),
+                ("two".try_into().unwrap(), LinkPrecondition::Absent),
+            ]),
+        },
+        facts: Vec::new(),
+        exit_class: grimoire_core::ExitClass::Success,
+    };
+    let runtime = Runtime::racing(destination.clone(), "before-link-mutation", true);
+
+    assert!(matches!(
+        apply(&paths, &plan, Approval::Granted, &runtime),
+        Err(grimoire_core::CoreError::StalePlan(_))
+    ));
+    assert_eq!(fs::read(&destination).unwrap(), b"foreign\n");
+    assert!(!paths.skills_dir().join("two").exists());
+    assert!(!paths.transaction_journal_path(&paths.scope_key()).exists());
+}

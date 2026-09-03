@@ -906,12 +906,19 @@ fn restore_before(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
         .then(|| DirectoryIdentity::capture_or_create(&paths.skills_dir()))
         .transpose()?;
     for link in journal.links.iter().rev() {
-        let actual = current_link(paths, link)?;
+        let destination = paths.skills_dir().join(&link.skill);
+        let actual = match observe_link(&destination)? {
+            LinkPrecondition::Absent => None,
+            LinkPrecondition::Symlink(target) => Some(path_bytes(&target)),
+            // A concurrent owner may replace an entry while another link in
+            // the same transaction is being applied. Roll back our changes,
+            // but never move or remove that foreign entry.
+            LinkPrecondition::File | LinkPrecondition::Directory => continue,
+        };
         if actual == link.before {
             let parent = parent_identity
                 .as_ref()
                 .expect("link recovery has parent identity");
-            let destination = paths.skills_dir().join(&link.skill);
             if let Some(after) = &link.after {
                 parent.cleanup_capture_if_owned(
                     &format!(".{}.{}.link-swap", link.skill, nonce),
@@ -929,18 +936,14 @@ fn restore_before(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
             continue;
         }
         if actual != link.after {
-            return Err(CoreError::RecoveryRequired(format!(
-                "link `{}` is neither recorded before nor after state",
-                link.skill
-            )));
+            continue;
         }
-        let destination = paths.skills_dir().join(&link.skill);
         match &link.before {
             Some(raw) => match &link.after {
                 Some(after) => parent_identity
                     .as_ref()
                     .expect("link recovery has parent identity")
-                    .replace_owned_link(
+                    .restore_repointed_link(
                         &link.skill,
                         &bytes_path(after),
                         &bytes_path(raw),
@@ -1535,6 +1538,38 @@ impl DirectoryIdentity {
         self.sync(destination)
     }
 
+    fn restore_repointed_link(
+        &self,
+        name: &str,
+        expected: &Path,
+        target: &Path,
+        nonce: &str,
+        destination: &Path,
+    ) -> Result<()> {
+        let temporary = format!(".{name}.{nonce}.link-swap");
+        if self.read_link_optional(&temporary, destination)?.is_none() {
+            return self.replace_owned_link(name, expected, target, nonce, destination);
+        }
+        if self.read_link(name, destination)? != expected {
+            return Err(CoreError::RecoveryRequired(format!(
+                "link `{name}` changed while restoring its exchange capture"
+            )));
+        }
+        // The capture can be the recorded before target or a foreign entry
+        // that raced the transaction. Put either one back; only the known
+        // transaction target is removed after the exchange.
+        renameat_with(
+            &self.descriptor,
+            temporary.as_str(),
+            &self.descriptor,
+            name,
+            RenameFlags::EXCHANGE,
+        )
+        .map_err(|error| link_error(destination, error))?;
+        self.remove_verified_link(temporary.as_str(), expected, destination)?;
+        self.sync(destination)
+    }
+
     fn restore_removed_link(
         &self,
         name: &str,
@@ -1544,7 +1579,7 @@ impl DirectoryIdentity {
     ) -> Result<()> {
         let temporary = format!(".{name}.{nonce}.link-remove");
         match self.read_link_optional(&temporary, destination)? {
-            Some(captured) if captured == target => {
+            Some(_) => {
                 renameat_with(
                     &self.descriptor,
                     temporary.as_str(),
@@ -1555,9 +1590,6 @@ impl DirectoryIdentity {
                 .map_err(|error| link_error(destination, error))?;
                 self.sync(destination)
             }
-            Some(_) => Err(CoreError::RecoveryRequired(format!(
-                "link removal capture for `{name}` is not the recorded owned target"
-            ))),
             None => self.create_link(name, target, destination),
         }
     }
@@ -1661,7 +1693,7 @@ mod link_capture_tests {
         )
         .unwrap();
         parent
-            .replace_owned_link(
+            .restore_repointed_link(
                 "one",
                 Path::new("new"),
                 Path::new("old"),
@@ -1684,6 +1716,30 @@ mod link_capture_tests {
             .restore_removed_link("one", Path::new("old"), "recovery", &destination)
             .unwrap();
         assert_eq!(fs::read_link(&destination).unwrap(), Path::new("old"));
+        assert!(!parent_path.join(".one.recovery.link-remove").exists());
+
+        fs::remove_file(&destination).unwrap();
+        std::os::unix::fs::symlink("new", &destination).unwrap();
+        std::os::unix::fs::symlink("foreign", parent_path.join(".one.recovery.link-swap")).unwrap();
+        parent
+            .restore_repointed_link(
+                "one",
+                Path::new("new"),
+                Path::new("old"),
+                "recovery",
+                &destination,
+            )
+            .unwrap();
+        assert_eq!(fs::read_link(&destination).unwrap(), Path::new("foreign"));
+        assert!(!parent_path.join(".one.recovery.link-swap").exists());
+
+        fs::remove_file(&destination).unwrap();
+        std::os::unix::fs::symlink("foreign", parent_path.join(".one.recovery.link-remove"))
+            .unwrap();
+        parent
+            .restore_removed_link("one", Path::new("old"), "recovery", &destination)
+            .unwrap();
+        assert_eq!(fs::read_link(&destination).unwrap(), Path::new("foreign"));
         assert!(!parent_path.join(".one.recovery.link-remove").exists());
 
         fs::remove_file(&destination).unwrap();
