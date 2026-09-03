@@ -79,4 +79,53 @@ else
   fail 'signal left a temporary'
 fi
 
+# A signal delivered by mv only after a successful rename reports the committed
+# result instead of instructing the caller to duplicate the mutation.
+post_rename_bin="$T/post-rename-bin"; mkdir "$post_rename_bin"
+post_rename_mv="$post_rename_bin/mv"
+# shellcheck disable=SC2016
+printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' \
+  '"$AF_REAL_MV" "$@"' \
+  'for arg in "$@"; do if [[ "$arg" == *".agent-feedback.tsv.tmp."* ]]; then kill -TERM "$PPID"; break; fi; done' \
+  >"$post_rename_mv"
+chmod +x "$post_rename_mv"
+random_source="$T/post-rename-random.sh"
+printf '%s\n' '#!/bin/sh' 'printf feedface' >"$random_source"; chmod +x "$random_source"
+
+P="$T/post-rename-home"; new_home "$P"; HOME="$P" "$PROVIDER" init >/dev/null
+PF="$(store_for "$P")"
+if env HOME="$P" PATH="$post_rename_bin:$PATH" AF_REAL_MV="$real_mv" \
+  AGENT_FEEDBACK_TEST_UTC_NOW=2026-09-03T12:00:00Z \
+  AGENT_FEEDBACK_TEST_RANDOM_SOURCE="$random_source" "$PROVIDER" "${capture_args[@]}" \
+  >"$T/post-rename-capture.out" 2>"$T/post-rename-capture.err"; then
+  pass
+else
+  fail 'post-rename capture signal did not report success'
+fi
+printf '%s\n' 'captured=AF-20260903T120000Z-feedface' 'count=1' 'redacted=no' \
+  >"$T/post-rename-capture.expected"
+same "$T/post-rename-capture.out" "$T/post-rename-capture.expected"
+if [ ! -s "$T/post-rename-capture.err" ]; then pass; else fail 'post-rename capture emitted a diagnostic'; fi
+if [ "$(awk 'END{print NR-1}' "$PF")" = 1 ]; then pass; else fail 'post-rename capture was not committed once'; fi
+if [ ! -e "$PF.lock" ]; then pass; else fail 'post-rename capture left a lock'; fi
+
+close_id='AF-20260903T120000Z-feedface'
+if env HOME="$P" PATH="$post_rename_bin:$PATH" AF_REAL_MV="$real_mv" \
+  AGENT_FEEDBACK_TEST_UTC_NOW=2026-09-03T13:00:00Z "$PROVIDER" close \
+  --id "$close_id" --as stale --reason 'Post-rename close.' \
+  >"$T/post-rename-close.out" 2>"$T/post-rename-close.err"; then
+  pass
+else
+  fail 'post-rename close signal did not report success'
+fi
+printf 'closed=%s\ncount=1\n' "$close_id" >"$T/post-rename-close.expected"
+same "$T/post-rename-close.out" "$T/post-rename-close.expected"
+if [ ! -s "$T/post-rename-close.err" ]; then pass; else fail 'post-rename close emitted a diagnostic'; fi
+if [ "$(awk -F '\t' -v id="$close_id" '$1==id{print $17":"$18}' "$PF")" = 'closed:stale' ]; then
+  pass
+else
+  fail 'post-rename close was not committed'
+fi
+if [ ! -e "$PF.lock" ]; then pass; else fail 'post-rename close left a lock'; fi
+
 finish filesystem-failure-test

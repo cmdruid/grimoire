@@ -91,9 +91,20 @@ for ref in /private/path '..' ../path path/../secret 'path\..\secret' 'C:\Users\
     --subject-ref "$ref" --invocation x --kind request --summary x --statement x \
     --incident '' --consequence '' --suggestion '' --redacted no
 done
+for ref in $'relative\t/private' $'relative\r/private' $'relative\n/private'; do
+  no env HOME="$H" "$PROVIDER" capture --origin human --subject-type skill --subject architect \
+    --subject-ref "$ref" --invocation x --kind request --summary x --statement x \
+    --incident '' --consequence '' --suggestion '' --redacted no
+done
 ok env HOME="$H" "$PROVIDER" capture --origin human --subject-type tool --subject provider \
   --subject-ref 'https://example.invalid/releases/1' --invocation x --kind request --summary x --statement x \
   --incident '' --consequence '' --suggestion '' --redacted no
+literal_escape_ref='docs\team\routes\note'
+ok env HOME="$H" "$PROVIDER" capture --origin human --subject-type tool --subject provider \
+  --subject-ref "$literal_escape_ref" --invocation x --kind request --summary x --statement x \
+  --incident '' --consequence '' --suggestion '' --redacted no
+HOME="$H" "$PROVIDER" query --subject provider >"$T/reference-escape.out"
+has "$T/reference-escape.out" "subject_ref=$literal_escape_ref"
 safe_ref="$(repeat_text r 512)"; long_ref="${safe_ref}r"
 ok env HOME="$H" "$PROVIDER" capture --origin human --subject-type skill --subject architect \
   --subject-ref "$safe_ref" --invocation x --kind request --summary x --statement x \
@@ -113,13 +124,18 @@ id="$(awk -F '\t' 'NR==2{print $1}' "$F")"
 no env HOME="$H" "$PROVIDER" close --id "$id" --as duplicate --reason Same
 ok env HOME="$H" "$PROVIDER" close --id "$id" --as duplicate --reason Same --result-ref AF-20260903T120000Z-deadbeef
 
-R="$T/reference-close"; new_home "$R"; capture_human "$R" >"$T/reference-close.capture"
-rid="$(sed -n 's/^captured=//p' "$T/reference-close.capture")"; RF="$(store_for "$R")"
-for ref in /private/result 'C:\private\result' '\\server\result' "$tilde_root/result" 'file:///private/result' 'path/../result'; do
+ref_case=0
+for ref in /private/result 'C:\private\result' '\\server\result' "$tilde_root/result" 'file:///private/result' 'path/../result' \
+  $'relative\t/private' $'relative\r/private' $'relative\n/private'; do
+  ref_case=$((ref_case + 1)); R="$T/reference-close-$ref_case"; new_home "$R"
+  capture_human "$R" >"$T/reference-close.capture"
+  rid="$(sed -n 's/^captured=//p' "$T/reference-close.capture")"; RF="$(store_for "$R")"
   cp "$RF" "$T/reference-close.before"
   no env HOME="$R" "$PROVIDER" close --id "$rid" --as addressed --reason Done --result-ref "$ref"
   same "$RF" "$T/reference-close.before"
 done
+R="$T/reference-close-safe"; new_home "$R"; capture_human "$R" >"$T/reference-close.capture"
+rid="$(sed -n 's/^captured=//p' "$T/reference-close.capture")"
 ok env HOME="$R" "$PROVIDER" close --id "$rid" --as addressed --reason Done \
   --result-ref 'https://example.invalid/results/1'
 
@@ -138,6 +154,7 @@ same "$F" "$T/close-over.before"
 # incumbent bytes untouched.
 for mutation in bad-id bad-created bad-subject bad-kind bad-lifecycle open-time-drift \
   absolute-subject-ref drive-subject-ref unc-subject-ref tilde-subject-ref file-uri-subject-ref traversal-subject-ref unsafe-result-ref \
+  tab-subject-ref cr-subject-ref newline-subject-ref tab-result-ref cr-result-ref newline-result-ref \
   unknown-detail-escape dangling-detail-escape duplicate-id missing-column extra-column \
   missing-final-newline over-row invalid-utf8 control-byte; do
   M="$T/malformed-$mutation"; new_home "$M"; capture_human "$M" >/dev/null; MF="$(store_for "$M")"
@@ -154,8 +171,19 @@ for mutation in bad-id bad-created bad-subject bad-kind bad-lifecycle open-time-
     tilde-subject-ref) TEST_REF="$tilde_private" awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$7=r;print}' "$MF" >"$T/mutant" ;;
     file-uri-subject-ref) TEST_REF='file:///private/source' awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$7=r;print}' "$MF" >"$T/mutant" ;;
     traversal-subject-ref) TEST_REF='path/../source' awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$7=r;print}' "$MF" >"$T/mutant" ;;
+    tab-subject-ref) TEST_REF='relative\t/private' awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$7=r;print}' "$MF" >"$T/mutant" ;;
+    cr-subject-ref) TEST_REF='relative\r/private' awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$7=r;print}' "$MF" >"$T/mutant" ;;
+    newline-subject-ref) TEST_REF='relative\n/private' awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$7=r;print}' "$MF" >"$T/mutant" ;;
     unsafe-result-ref)
       awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$3="2026-09-03T13:00:00Z";$17="closed";$18="addressed";$19="done";$20="file:///private/result";print}' "$MF" >"$T/mutant"
+      ;;
+    tab-result-ref|cr-result-ref|newline-result-ref)
+      case "$mutation" in
+        tab-result-ref) TEST_REF='relative\t/private' ;;
+        cr-result-ref) TEST_REF='relative\r/private' ;;
+        newline-result-ref) TEST_REF='relative\n/private' ;;
+      esac
+      TEST_REF="$TEST_REF" awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$3="2026-09-03T13:00:00Z";$17="closed";$18="addressed";$19="done";$20=r;print}' "$MF" >"$T/mutant"
       ;;
     unknown-detail-escape) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$12="bad\\q";print}' "$MF" >"$T/mutant" ;;
     dangling-detail-escape) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$12="bad\\";print}' "$MF" >"$T/mutant" ;;

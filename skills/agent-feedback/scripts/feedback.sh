@@ -5,6 +5,8 @@ umask 077
 HEADER=$'id\tcreated_at\tupdated_at\torigin\tsubject_type\tsubject\tsubject_ref\tinvocation\tkind\tsummary\tstatement\tincident\tconsequence\tsuggestion\tredacted\tproject_ref\tstatus\tdisposition\tresolution\tresult_ref'
 DATA_DIR="" DATA_FILE="" LOCK_DIR="" LOCK_OWNED=no TEMP_FILE=""
 QUERY_ROWS="" QUERY_SORTED="" QUERY_SELECTED=""
+MUTATION_STATE=idle MUTATION_KIND="" MUTATION_ID="" MUTATION_DISPOSITION=""
+MUTATION_RESOLUTION="" MUTATION_REF="" MUTATION_SUCCESS_OUTPUT=""
 
 # References are stored encoded, so direct arguments are encoded and checked
 # by this same byte-oriented grammar before any row reaches the store.
@@ -16,6 +18,7 @@ REFERENCE_AWK='
   function safe_ref(s,limit, d,lower){
     if(decoded_len(s)<1||decoded_len(s)>limit)return 0
     d=decoded_ref(s);lower=tolower(d)
+    if(index(d,"\t")||index(d,"\r")||index(d,"\n"))return 0
     if(substr(d,1,1)=="/"||substr(d,1,1)=="\\"||substr(d,1,1)=="~")return 0
     if(length(d)>=3&&substr(d,1,1)~/[A-Za-z]/&&substr(d,2,1)==":"&&ref_sep(substr(d,3,1)))return 0
     if(lower~/^file:/||has_parent_segment(d))return 0
@@ -25,6 +28,26 @@ REFERENCE_AWK='
 
 reason(){ printf 'reason=%s action=%s\n' "$1" "$2" >&2; exit 2; }
 usage(){ reason usage check-command; }
+
+mutation_commit_visible(){
+  [ -f "$DATA_FILE" ] && [ ! -L "$DATA_FILE" ] || return 1
+  case "$MUTATION_KIND" in
+    capture)
+      LC_ALL=C awk -F '\t' -v id="$MUTATION_ID" \
+        'NR>1&&$1==id&&$17=="open"{n++}END{exit n==1?0:1}' "$DATA_FILE" \
+        >/dev/null 2>&1
+      ;;
+    close)
+      LC_ALL=C awk -F '\t' -v id="$MUTATION_ID" -v d="$MUTATION_DISPOSITION" \
+        -v r="$MUTATION_RESOLUTION" -v ref="$MUTATION_REF" \
+        'NR>1&&$1==id&&$17=="closed"&&$18==d&&$19==r&&$20==ref{n++}END{exit n==1?0:1}' \
+        "$DATA_FILE" >/dev/null 2>&1
+      ;;
+    *) return 1;;
+  esac
+}
+
+emit_mutation_success(){ printf '%s' "$MUTATION_SUCCESS_OUTPUT"; }
 
 cleanup(){
   [ -z "$QUERY_ROWS" ] || rm -f -- "$QUERY_ROWS" >/dev/null 2>&1 || true
@@ -38,7 +61,17 @@ cleanup(){
     rmdir -- "$LOCK_DIR" 2>/dev/null || true
   fi
 }
-on_signal(){ trap - HUP INT TERM; reason interrupted retry; }
+on_signal(){
+  trap - HUP INT TERM
+  case "$MUTATION_STATE" in
+    committed) emit_mutation_success; exit 0;;
+    renaming)
+      if mutation_commit_visible; then emit_mutation_success; exit 0; fi
+      reason interrupted inspect-store
+      ;;
+    *) reason interrupted retry;;
+  esac
+}
 trap cleanup EXIT
 trap on_signal HUP INT TERM
 
@@ -46,6 +79,22 @@ make_temp(){ mktemp "$1" 2>/dev/null || reason write-failed retry; }
 set_private_mode(){ chmod "$1" "$2" >/dev/null 2>&1 || reason write-failed retry; }
 copy_for_write(){ cp -- "$1" "$2" >/dev/null 2>&1 || reason write-failed retry; }
 rename_for_write(){ mv -- "$1" "$2" >/dev/null 2>&1 || reason write-failed retry; }
+
+commit_mutation(){
+  MUTATION_STATE=renaming
+  if ! mv -- "$TEMP_FILE" "$DATA_FILE" >/dev/null 2>&1; then
+    MUTATION_STATE=idle
+    reason write-failed retry
+  fi
+  MUTATION_STATE=committed
+  TEMP_FILE=""
+}
+
+finish_mutation(){
+  trap '' HUP INT TERM
+  emit_mutation_success
+  MUTATION_STATE=idle
+}
 
 resolve_paths(){
   case "${HOME:-}" in /*) ;; *) reason invalid-home set-absolute-HOME;; esac
@@ -361,8 +410,11 @@ cmd_capture(){
     [ -x "$AGENT_FEEDBACK_TEST_BEFORE_RENAME" ] || reason test-hook-invalid retry
     "$AGENT_FEEDBACK_TEST_BEFORE_RENAME" "$DATA_FILE" "$TEMP_FILE" 2>/dev/null || reason interrupted retry
   fi
-  check_prefix; validate_file "$DATA_FILE"; rename_for_write "$TEMP_FILE" "$DATA_FILE"; TEMP_FILE=""
-  printf 'captured=%s\ncount=1\nredacted=%s\n' "$id" "$redacted"
+  check_prefix; validate_file "$DATA_FILE"
+  MUTATION_KIND=capture; MUTATION_ID="$id"
+  printf -v MUTATION_SUCCESS_OUTPUT 'captured=%s\ncount=1\nredacted=%s\n' "$id" "$redacted"
+  commit_mutation
+  finish_mutation
 }
 
 cmd_query(){
@@ -469,7 +521,13 @@ cmd_close(){
       [ -x "$AGENT_FEEDBACK_TEST_BEFORE_RENAME" ] || reason test-hook-invalid retry
       "$AGENT_FEEDBACK_TEST_BEFORE_RENAME" "$DATA_FILE" "$TEMP_FILE" 2>/dev/null || reason interrupted retry
     fi
-    check_prefix; validate_file "$DATA_FILE"; rename_for_write "$TEMP_FILE" "$DATA_FILE"; TEMP_FILE=""
+    check_prefix; validate_file "$DATA_FILE"
+    MUTATION_KIND=close; MUTATION_ID="$id"; MUTATION_DISPOSITION="$disposition"
+    MUTATION_RESOLUTION="$encoded_resolution"; MUTATION_REF="$encoded_ref"
+    printf -v MUTATION_SUCCESS_OUTPUT 'closed=%s\ncount=1\n' "$id"
+    commit_mutation
+    finish_mutation
+    return
   fi
   printf '%s=%s\ncount=1\n' "$action" "$id"
 }
