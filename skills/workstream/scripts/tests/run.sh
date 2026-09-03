@@ -4,8 +4,14 @@
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "== hooks-test.sh"
 rc=0
+echo "== runtime-tracer-test.sh"
+bash "$DIR/runtime-tracer-test.sh" || rc=1
+echo "== state-contract-test.sh"
+bash "$DIR/state-contract-test.sh" || rc=1
+echo "== read-envelope-test.sh"
+bash "$DIR/read-envelope-test.sh" || rc=1
+echo "== hooks-test.sh"
 bash "$DIR/hooks-test.sh" || rc=1
 echo "== git-helpers-test.sh"
 bash "$DIR/git-helpers-test.sh" || rc=1
