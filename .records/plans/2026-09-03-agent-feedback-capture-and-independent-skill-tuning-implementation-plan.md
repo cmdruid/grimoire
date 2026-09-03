@@ -314,7 +314,7 @@ Spec: → `specs/2026-09-03-agent-feedback-capture-and-independent-skill-tuning.
       no recursion; never target the repository's real `AGENTS.md`.
     - `bash skills/agent-feedback/scripts/tests/run.sh` → green.
 
-- [ ] **Slice 6: Widen tune to generic evidence and the full mutation gate** <requires: 1>
+- [x] **Slice 6: Widen tune to generic evidence and the full mutation gate** <requires: 1>
   - Files:
     - Modify `skills/skill-builder/verbs/tune.md` and
       `skills/skill-builder/scripts/tests/tune-contract-test.sh`.
