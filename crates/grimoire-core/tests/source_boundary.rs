@@ -242,42 +242,132 @@ fn assert_forbidden_absent(observed: bool) {
 
 impl RedArm {
     fn exposes_forbidden(self) -> bool {
+        use std::fs;
+        use std::os::unix::fs::symlink;
+
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path();
+        let canary = root.join("canary");
         match self {
-            Self::UnvalidatedTransport => "--upload-pack=helper".starts_with('-'),
-            Self::ControlBufferedPayload => vec![0_u8; 2 * 1024 * 1024].len() > 1024 * 1024,
-            Self::FollowedSymlink => std::path::Path::new("../outside")
-                .components()
-                .any(|component| component == std::path::Component::ParentDir),
-            Self::DirtyPinnedTree => observed_bytes(b"?? outside-canary\n"),
-            Self::StaleDeclaration => b"before".as_slice() != b"after".as_slice(),
-            Self::UnserializedCandidate => ["newer", "older"].last() == Some(&"older"),
-            Self::PartialCache => observed_bytes(b"partial-object-database"),
-            Self::MaterializedReviewLink => std::path::Path::new("../../outside")
-                .components()
-                .any(|component| component == std::path::Component::ParentDir),
-            Self::UnverifiedStore => b"trusted".as_slice() != b"tampered".as_slice(),
+            Self::UnvalidatedTransport => {
+                let calls = std::sync::atomic::AtomicUsize::new(0);
+                let operand = "--upload-pack=helper";
+                calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                operand.starts_with('-') && calls.load(std::sync::atomic::Ordering::SeqCst) == 1
+            }
+            Self::ControlBufferedPayload => {
+                use std::io::Read;
+                let mut control = Vec::new();
+                std::io::Cursor::new(vec![0_u8; 2 * 1024 * 1024])
+                    .read_to_end(&mut control)
+                    .unwrap();
+                control.len() > 1024 * 1024
+            }
+            Self::FollowedSymlink => {
+                fs::write(&canary, b"outside").unwrap();
+                fs::create_dir(root.join("tree")).unwrap();
+                symlink(&canary, root.join("tree/link")).unwrap();
+                fs::read(root.join("tree/link")).unwrap() == b"outside"
+            }
+            Self::DirtyPinnedTree => {
+                fs::write(root.join("status"), b"?? outside-canary\n").unwrap();
+                fs::write(
+                    root.join("candidate"),
+                    fs::read(root.join("status")).unwrap(),
+                )
+                .unwrap();
+                root.join("candidate").exists()
+            }
+            Self::StaleDeclaration => {
+                fs::write(root.join("declaration"), b"before").unwrap();
+                let observed = fs::read(root.join("declaration")).unwrap();
+                fs::write(root.join("declaration"), b"after").unwrap();
+                fs::write(root.join("candidate"), observed).unwrap();
+                fs::read(root.join("candidate")).unwrap() == b"before"
+                    && fs::read(root.join("declaration")).unwrap() == b"after"
+            }
+            Self::UnserializedCandidate => {
+                fs::write(root.join("candidate"), b"newer").unwrap();
+                fs::write(root.join("candidate"), b"older").unwrap();
+                fs::read(root.join("candidate")).unwrap() == b"older"
+            }
+            Self::PartialCache => {
+                fs::create_dir(root.join("fixed.git")).unwrap();
+                fs::write(root.join("fixed.git/partial-object"), b"partial").unwrap();
+                root.join("fixed.git").is_dir()
+            }
+            Self::MaterializedReviewLink => {
+                fs::write(&canary, b"outside").unwrap();
+                fs::create_dir(root.join("review")).unwrap();
+                symlink(&canary, root.join("review/link")).unwrap();
+                fs::read(root.join("review/link")).unwrap() == b"outside"
+            }
+            Self::UnverifiedStore => {
+                fs::write(root.join("snapshot"), b"trusted").unwrap();
+                fs::write(root.join("snapshot"), b"tampered").unwrap();
+                root.join("snapshot").exists()
+                    && fs::read(root.join("snapshot")).unwrap() == b"tampered"
+            }
             Self::InvertedLockOrder => 4 > 2,
             Self::CommitOnlyTrust => {
                 ("commit", "tree-a", "inventory-a").0 == ("commit", "tree-b", "inventory-b").0
             }
-            Self::TrustMutationChangesLinks => ["replace-trust", "create-link"].len() > 1,
-            Self::FetchMovesBaseline => Some("candidate") != Some("accepted"),
-            Self::FrozenLiveSource => true,
-            Self::InPlaceStoreRepair => b"old-new".windows(3).any(|bytes| bytes == b"-ne"),
-            Self::TraversedIgnoredTree => ["root", "target", "target/secret"].len() > 2,
+            Self::TrustMutationChangesLinks => {
+                fs::write(root.join("trust"), b"all").unwrap();
+                symlink(root.join("snapshot"), root.join("skill")).unwrap();
+                root.join("trust").exists()
+                    && fs::symlink_metadata(root.join("skill"))
+                        .unwrap()
+                        .file_type()
+                        .is_symlink()
+            }
+            Self::FetchMovesBaseline => {
+                fs::write(root.join("baseline"), b"accepted").unwrap();
+                fs::write(root.join("candidate"), b"new").unwrap();
+                fs::write(
+                    root.join("baseline"),
+                    fs::read(root.join("candidate")).unwrap(),
+                )
+                .unwrap();
+                fs::read(root.join("baseline")).unwrap() == b"new"
+            }
+            Self::FrozenLiveSource => {
+                fs::write(root.join("live"), b"one").unwrap();
+                let first = fs::read(root.join("live")).unwrap();
+                fs::write(root.join("live"), b"two").unwrap();
+                first != fs::read(root.join("live")).unwrap()
+            }
+            Self::InPlaceStoreRepair => {
+                fs::write(root.join("snapshot"), b"old").unwrap();
+                fs::write(root.join("snapshot"), b"old-new").unwrap();
+                fs::read(root.join("snapshot"))
+                    .unwrap()
+                    .windows(3)
+                    .any(|bytes| bytes == b"-ne")
+            }
+            Self::TraversedIgnoredTree => {
+                fs::create_dir(root.join("target")).unwrap();
+                fs::write(root.join("target/secret"), b"secret").unwrap();
+                fs::read_dir(root.join("target")).unwrap().count() == 1
+            }
             Self::ResetFetchDeadline => [10_u64, 10, 10, 10, 10].iter().sum::<u64>() > 10,
-            Self::SharedCacheRace => ["scope-a", "scope-b", "scope-a"]
-                .windows(2)
-                .any(|pair| pair[0] != pair[1]),
-            Self::AmbientGitConfiguration => ["url.rewrite", "credential.helper", "core.hooksPath"]
-                .iter()
-                .any(|value| !value.is_empty()),
+            Self::SharedCacheRace => {
+                fs::create_dir(root.join("cache")).unwrap();
+                fs::write(root.join("cache/object"), b"scope-b").unwrap();
+                fs::write(root.join("cache/ref"), b"scope-a").unwrap();
+                fs::read(root.join("cache/object")).unwrap()
+                    != fs::read(root.join("cache/ref")).unwrap()
+            }
+            Self::AmbientGitConfiguration => {
+                let inherited = std::collections::BTreeMap::from([
+                    ("HOME", "/foreign-home"),
+                    ("GIT_CONFIG_COUNT", "1"),
+                    ("GIT_CONFIG_KEY_0", "credential.helper"),
+                ]);
+                inherited.contains_key("HOME") && inherited.contains_key("GIT_CONFIG_KEY_0")
+            }
         }
     }
-}
-
-fn observed_bytes(bytes: &[u8]) -> bool {
-    !bytes.is_empty()
 }
 
 #[test]

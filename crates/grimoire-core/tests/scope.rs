@@ -74,13 +74,45 @@ fn explicit_and_global_paths_are_resolved_without_ambient_environment() {
 
 #[test]
 fn scope_keys_are_stable_and_global_is_literal() {
-    let project = Paths::project(PathBuf::from("/work/project"), PathBuf::from("/home/g")).unwrap();
-    let same =
-        Paths::project(PathBuf::from("/work/project"), PathBuf::from("/other/home")).unwrap();
-    let other = Paths::project(PathBuf::from("/work/other"), PathBuf::from("/home/g")).unwrap();
+    let temporary = tempfile::tempdir().unwrap();
+    let root = temporary.path().canonicalize().unwrap();
+    let project_root = root.join("project");
+    let other_root = root.join("other");
+    std::fs::create_dir_all(&project_root).unwrap();
+    std::fs::create_dir_all(&other_root).unwrap();
+    let project = Paths::project(project_root.clone(), root.join("home-a")).unwrap();
+    let same = Paths::project(project_root, root.join("home-b")).unwrap();
+    let other = Paths::project(other_root, root.join("home-a")).unwrap();
     let global = Paths::global(PathBuf::from("/home/u"), PathBuf::from("/home/g")).unwrap();
     assert_eq!(project.scope_key(), same.scope_key());
     assert_ne!(project.scope_key(), other.scope_key());
     assert_eq!(project.scope_key().len(), 64);
     assert_eq!(global.scope_key(), "global");
+}
+
+#[cfg(unix)]
+#[test]
+fn project_paths_capture_one_canonical_root() {
+    use std::os::unix::fs::symlink;
+
+    let temporary = tempfile::tempdir().unwrap();
+    let root = temporary.path().canonicalize().unwrap();
+    let original = root.join("original");
+    let replacement = root.join("replacement");
+    let alias = root.join("project-link");
+    std::fs::create_dir_all(&original).unwrap();
+    std::fs::create_dir_all(&replacement).unwrap();
+    symlink(&original, &alias).unwrap();
+
+    let paths = Paths::project(alias.clone(), root.join("home")).unwrap();
+    std::fs::remove_file(&alias).unwrap();
+    symlink(&replacement, &alias).unwrap();
+
+    assert_eq!(paths.manifest_path(), original.join("grimoire.toml"));
+    assert_eq!(
+        paths.scope_key(),
+        Paths::project(original, root.join("other-home"))
+            .unwrap()
+            .scope_key()
+    );
 }

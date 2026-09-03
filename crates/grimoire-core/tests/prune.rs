@@ -164,8 +164,10 @@ fn fixture() -> Fixture {
     let project = reference('a', 'b');
     create_store(&paths, &project);
     let missing_project = root.join("missing-project");
+    fs::create_dir(&missing_project).unwrap();
     let project_paths =
         Paths::project(missing_project.clone(), paths.grimoire_home.clone()).unwrap();
+    fs::remove_dir(&missing_project).unwrap();
     let record = ProjectRecord {
         path: missing_project,
         scope_key: project_paths.scope_key(),

@@ -75,19 +75,24 @@ fn missing_project_falls_back_to_global_with_a_typed_remedy() {
     );
 }
 
-struct TestEnvironment;
+struct TestEnvironment {
+    current_dir: PathBuf,
+    home: PathBuf,
+}
 
 impl Environment for TestEnvironment {
     fn current_dir(&self) -> std::io::Result<PathBuf> {
-        Ok(PathBuf::from("/workspace/project/nested"))
+        Ok(self.current_dir.clone())
     }
 
     fn var_os(&self, name: &str) -> Option<OsString> {
-        (name == "HOME").then(|| OsString::from("/users/test"))
+        (name == "HOME").then(|| self.home.clone().into_os_string())
     }
 }
 
-struct TestProbe;
+struct TestProbe {
+    manifest: PathBuf,
+}
 
 impl PathProbe for TestProbe {
     fn is_dir(&self, _path: &Path) -> bool {
@@ -95,20 +100,35 @@ impl PathProbe for TestProbe {
     }
 
     fn is_file(&self, path: &Path) -> bool {
-        path == Path::new("/workspace/project/grimoire.toml")
+        path == self.manifest
     }
 }
 
 #[test]
 fn tui_path_resolution_returns_both_independent_scopes() {
-    let paths = resolve_tui_paths(&TestEnvironment, &TestProbe).unwrap();
+    let temporary = tempfile::tempdir().unwrap();
+    let root = temporary.path().canonicalize().unwrap();
+    let project = root.join("project");
+    let nested = project.join("nested");
+    let home = root.join("home");
+    std::fs::create_dir_all(&nested).unwrap();
+    std::fs::create_dir(&home).unwrap();
+    let environment = TestEnvironment {
+        current_dir: nested,
+        home: home.clone(),
+    };
+    let probe = TestProbe {
+        manifest: project.join("grimoire.toml"),
+    };
+
+    let paths = resolve_tui_paths(&environment, &probe).unwrap();
     assert!(matches!(
         paths.project.unwrap().scope,
-        ScopePaths::Project { root } if root == Path::new("/workspace/project")
+        ScopePaths::Project { root } if root == project
     ));
     assert!(matches!(
         paths.global.scope,
-        ScopePaths::Global { user_home } if user_home == Path::new("/users/test")
+        ScopePaths::Global { user_home } if user_home == home
     ));
 }
 

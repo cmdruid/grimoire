@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use grimoire_core::source::{GitCommand, GitResult, GitRunner};
@@ -9,6 +10,7 @@ use grimoire_core::{
     Request, RequestRoot, Result, Scope, SnapshotKey, SourceKey, SourceKind, TransactionRuntime,
     WorldState,
 };
+use sha2::{Digest as _, Sha256};
 
 struct NoGit;
 
@@ -81,6 +83,20 @@ fn initialized_project(root: &std::path::Path, name: &std::ffi::OsStr) -> Paths 
     .unwrap()
 }
 
+fn project_scope_key(path: &Path) -> String {
+    use std::os::unix::ffi::OsStrExt;
+
+    let mut digest = Sha256::new();
+    digest.update(b"grimoire/scope-key@1");
+    digest.update([0]);
+    for field in [b"project".as_slice(), path.as_os_str().as_bytes()] {
+        digest.update([1]);
+        digest.update((field.len() as u64).to_be_bytes());
+        digest.update(field);
+    }
+    format!("{:x}", digest.finalize())
+}
+
 #[test]
 fn successful_loads_refresh_utf8_and_raw_project_records_deterministically() {
     let temporary = tempfile::tempdir().unwrap();
@@ -112,8 +128,7 @@ fn successful_loads_refresh_utf8_and_raw_project_records_deterministically() {
 
     use std::os::unix::ffi::OsStrExt;
     let raw_path = root.join(std::ffi::OsStr::from_bytes(b"raw-\xff"));
-    let raw_paths = Paths::project(raw_path.clone(), first.grimoire_home.clone()).unwrap();
-    let raw_scope = raw_paths.scope_key();
+    let raw_scope = project_scope_key(&raw_path);
     index.records.insert(
         raw_scope.clone(),
         ProjectRecord {

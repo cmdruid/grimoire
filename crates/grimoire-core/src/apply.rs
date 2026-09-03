@@ -1,5 +1,9 @@
-use std::fs;
+use std::fs::{self, File};
 use std::path::{Path, PathBuf};
+
+use rustix::fs::{
+    open, readlinkat, renameat_with, symlinkat, unlinkat, AtFlags, Mode, OFlags, RenameFlags,
+};
 
 use sha2::{Digest as _, Sha256};
 
@@ -115,6 +119,7 @@ pub fn recover(paths: &Paths, runtime: &dyn TransactionRuntime) -> Result<Recove
                 "committed transaction does not match its recorded after state".into(),
             ));
         }
+        cleanup_captured_links(paths, &journal)?;
         RecoveryDisposition::RolledForward {
             scope_key: scope_key.clone(),
         }
@@ -709,8 +714,11 @@ fn execute(
                         checkpoint: "before-link-mutation".into(),
                     });
                 }
-                create_symlink(&target.resolve(paths)?, &destination)?;
-                sync_directory(&paths.skills_dir())?;
+                parent_identity.create_link(
+                    skill.as_str(),
+                    &target.resolve(paths)?,
+                    &destination,
+                )?;
                 if checkpoint(runtime, "after-link-mutation")? {
                     return Ok(ApplyOutcome::Interrupted {
                         checkpoint: "after-link-mutation".into(),
@@ -743,7 +751,13 @@ fn execute(
                         checkpoint: "before-link-mutation".into(),
                     });
                 }
-                replace_symlink(&destination, &after.resolve(paths)?, &journal.nonce)?;
+                parent_identity.replace_owned_link(
+                    skill.as_str(),
+                    &before.resolve(paths)?,
+                    &after.resolve(paths)?,
+                    &journal.nonce,
+                    &destination,
+                )?;
                 if checkpoint(runtime, "after-link-mutation")? {
                     return Ok(ApplyOutcome::Interrupted {
                         checkpoint: "after-link-mutation".into(),
@@ -771,9 +785,12 @@ fn execute(
                         checkpoint: "before-link-mutation".into(),
                     });
                 }
-                fs::remove_file(&destination)
-                    .map_err(|error| crate::transaction::io_error(&destination, error))?;
-                sync_directory(&paths.skills_dir())?;
+                parent_identity.remove_owned_link(
+                    skill.as_str(),
+                    &target.resolve(paths)?,
+                    &journal.nonce,
+                    &destination,
+                )?;
                 if checkpoint(runtime, "after-link-mutation")? {
                     return Ok(ApplyOutcome::Interrupted {
                         checkpoint: "after-link-mutation".into(),
@@ -885,9 +902,30 @@ fn rollback(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
 }
 
 fn restore_before(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
+    let parent_identity = (!journal.links.is_empty())
+        .then(|| DirectoryIdentity::capture_or_create(&paths.skills_dir()))
+        .transpose()?;
     for link in journal.links.iter().rev() {
         let actual = current_link(paths, link)?;
         if actual == link.before {
+            let parent = parent_identity
+                .as_ref()
+                .expect("link recovery has parent identity");
+            let destination = paths.skills_dir().join(&link.skill);
+            if let Some(after) = &link.after {
+                parent.cleanup_capture_if_owned(
+                    &format!(".{}.{}.link-swap", link.skill, nonce),
+                    &bytes_path(after),
+                    &destination,
+                )?;
+            }
+            if let Some(before) = &link.before {
+                parent.cleanup_capture_if_owned(
+                    &format!(".{}.{}.link-remove", link.skill, nonce),
+                    &bytes_path(before),
+                    &destination,
+                )?;
+            }
             continue;
         }
         if actual != link.after {
@@ -898,8 +936,31 @@ fn restore_before(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
         }
         let destination = paths.skills_dir().join(&link.skill);
         match &link.before {
-            Some(raw) => replace_symlink(&destination, &bytes_path(raw), nonce)?,
-            None => remove_file_if_present(&destination)?,
+            Some(raw) => match &link.after {
+                Some(after) => parent_identity
+                    .as_ref()
+                    .expect("link recovery has parent identity")
+                    .replace_owned_link(
+                        &link.skill,
+                        &bytes_path(after),
+                        &bytes_path(raw),
+                        nonce,
+                        &destination,
+                    )?,
+                None => parent_identity
+                    .as_ref()
+                    .expect("link recovery has parent identity")
+                    .restore_removed_link(&link.skill, &bytes_path(raw), nonce, &destination)?,
+            },
+            None => parent_identity
+                .as_ref()
+                .expect("link recovery has parent identity")
+                .remove_owned_link(
+                    &link.skill,
+                    &bytes_path(link.after.as_ref().expect("created link has after target")),
+                    nonce,
+                    &destination,
+                )?,
         }
     }
     for state in journal.state.iter().rev() {
@@ -922,6 +983,23 @@ fn restore_before(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
                 matches!(state.name, StateName::Trust | StateName::Candidate).then_some(0o600),
             )?,
             None => remove_file_if_present(&path)?,
+        }
+    }
+    Ok(())
+}
+
+fn cleanup_captured_links(paths: &Paths, journal: &Journal) -> Result<()> {
+    if journal.links.is_empty() {
+        return Ok(());
+    }
+    let parent = DirectoryIdentity::capture_or_create(&paths.skills_dir())?;
+    for link in &journal.links {
+        let destination = paths.skills_dir().join(&link.skill);
+        if let Some(before) = &link.before {
+            for suffix in ["link-swap", "link-remove"] {
+                let temporary = format!(".{}.{}.{suffix}", link.skill, journal.nonce);
+                parent.cleanup_capture_if_owned(&temporary, &bytes_path(before), &destination)?;
+            }
         }
     }
     Ok(())
@@ -1068,33 +1146,6 @@ fn require_link(path: &Path, expected: Option<&Path>) -> Result<()> {
             path.display()
         ))),
     }
-}
-
-fn create_symlink(target: &Path, destination: &Path) -> Result<()> {
-    #[cfg(unix)]
-    {
-        std::os::unix::fs::symlink(target, destination)
-            .map_err(|error| crate::transaction::io_error(destination, error))
-    }
-    #[cfg(not(unix))]
-    unreachable!("Grimoire supports Unix hosts")
-}
-
-fn replace_symlink(destination: &Path, target: &Path, nonce: &str) -> Result<()> {
-    let parent = destination
-        .parent()
-        .ok_or_else(|| CoreError::Transaction("link path has no parent".into()))?;
-    fs::create_dir_all(parent).map_err(|error| crate::transaction::io_error(parent, error))?;
-    let name = destination
-        .file_name()
-        .and_then(|value| value.to_str())
-        .ok_or_else(|| CoreError::Transaction("skill name is not UTF-8".into()))?;
-    let temporary = parent.join(format!(".{name}.{nonce}.link"));
-    remove_file_if_present(&temporary)?;
-    create_symlink(target, &temporary)?;
-    fs::rename(&temporary, destination)
-        .map_err(|error| crate::transaction::io_error(destination, error))?;
-    sync_directory(parent)
 }
 
 fn state_path(paths: &Paths, state: &StateTransition) -> Result<PathBuf> {
@@ -1289,8 +1340,10 @@ fn validate_nonce(nonce: &str) -> Result<()> {
     }
 }
 
-#[derive(Clone, Copy)]
 struct DirectoryIdentity {
+    // All link mutations stay relative to this held directory. Revalidating only
+    // the path would reopen the parent-replacement race before the syscall.
+    descriptor: File,
     device: u64,
     inode: u64,
 }
@@ -1302,18 +1355,21 @@ impl DirectoryIdentity {
     }
 
     fn capture(path: &Path) -> Result<Self> {
-        let metadata = fs::symlink_metadata(path)
+        let descriptor: File = open(
+            path,
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map_err(|error| link_error(path, error))?
+        .into();
+        let metadata = descriptor
+            .metadata()
             .map_err(|error| crate::transaction::io_error(path, error))?;
-        if !metadata.is_dir() || metadata.file_type().is_symlink() {
-            return Err(CoreError::Transaction(format!(
-                "link parent is not an owned directory: {}",
-                path.display()
-            )));
-        }
         #[cfg(unix)]
         {
             use std::os::unix::fs::MetadataExt;
             Ok(Self {
+                descriptor,
                 device: metadata.dev(),
                 inode: metadata.ino(),
             })
@@ -1322,7 +1378,7 @@ impl DirectoryIdentity {
         unreachable!("Grimoire supports Unix hosts")
     }
 
-    fn revalidate(self, path: &Path) -> Result<()> {
+    fn revalidate(&self, path: &Path) -> Result<()> {
         let current = Self::capture(path)?;
         if current.device == self.device && current.inode == self.inode {
             Ok(())
@@ -1331,5 +1387,301 @@ impl DirectoryIdentity {
                 "installed-link parent directory changed".into(),
             ))
         }
+    }
+
+    fn create_link(&self, name: &str, target: &Path, destination: &Path) -> Result<()> {
+        symlinkat(target, &self.descriptor, name).map_err(|error| {
+            if error == rustix::io::Errno::EXIST {
+                CoreError::StalePlan(format!(
+                    "final ownership changed at {}",
+                    destination.display()
+                ))
+            } else {
+                link_error(destination, error)
+            }
+        })?;
+        self.sync(destination)
+    }
+
+    fn replace_owned_link(
+        &self,
+        name: &str,
+        expected: &Path,
+        target: &Path,
+        nonce: &str,
+        destination: &Path,
+    ) -> Result<()> {
+        let temporary = format!(".{name}.{nonce}.link-swap");
+        if let Some(captured) = self.read_link_optional(&temporary, destination)? {
+            // Recovery may find an exchange that reached the filesystem before
+            // its captured old link was removed.
+            let current = self.read_link(name, destination)?;
+            if captured == target && current == expected {
+                renameat_with(
+                    &self.descriptor,
+                    temporary.as_str(),
+                    &self.descriptor,
+                    name,
+                    RenameFlags::EXCHANGE,
+                )
+                .map_err(|error| link_error(destination, error))?;
+                self.remove_verified_link(temporary.as_str(), expected, destination)?;
+                return self.sync(destination);
+            }
+            return Err(CoreError::RecoveryRequired(format!(
+                "link exchange capture for `{name}` is not a recoverable generation"
+            )));
+        }
+        symlinkat(target, &self.descriptor, temporary.as_str())
+            .map_err(|error| link_error(destination, error))?;
+        // Exchange captures whichever entry currently occupies `name`. Only
+        // the captured expected symlink is ever deleted.
+        if let Err(error) = renameat_with(
+            &self.descriptor,
+            temporary.as_str(),
+            &self.descriptor,
+            name,
+            RenameFlags::EXCHANGE,
+        ) {
+            let _ = unlinkat(&self.descriptor, temporary.as_str(), AtFlags::empty());
+            return Err(if error == rustix::io::Errno::NOENT {
+                CoreError::StalePlan(format!(
+                    "final ownership changed at {}",
+                    destination.display()
+                ))
+            } else {
+                link_error(destination, error)
+            });
+        }
+
+        let captured = self.read_link(temporary.as_str(), destination);
+        if !matches!(captured.as_ref(), Ok(actual) if actual == expected) {
+            renameat_with(
+                &self.descriptor,
+                temporary.as_str(),
+                &self.descriptor,
+                name,
+                RenameFlags::EXCHANGE,
+            )
+            .map_err(|error| {
+                CoreError::RecoveryRequired(format!(
+                    "cannot restore raced link `{name}` after ownership mismatch: {error}"
+                ))
+            })?;
+            self.remove_verified_link(temporary.as_str(), target, destination)?;
+            self.sync(destination)?;
+            return Err(CoreError::StalePlan(format!(
+                "final ownership changed at {}",
+                destination.display()
+            )));
+        }
+        self.remove_verified_link(temporary.as_str(), expected, destination)?;
+        self.sync(destination)
+    }
+
+    fn remove_owned_link(
+        &self,
+        name: &str,
+        expected: &Path,
+        nonce: &str,
+        destination: &Path,
+    ) -> Result<()> {
+        let temporary = format!(".{name}.{nonce}.link-remove");
+        // A no-replace rename first captures the exact directory entry. This
+        // avoids unlinking a foreign replacement introduced after validation.
+        renameat_with(
+            &self.descriptor,
+            name,
+            &self.descriptor,
+            temporary.as_str(),
+            RenameFlags::NOREPLACE,
+        )
+        .map_err(|error| {
+            if error == rustix::io::Errno::NOENT {
+                CoreError::StalePlan(format!(
+                    "final ownership changed at {}",
+                    destination.display()
+                ))
+            } else if error == rustix::io::Errno::EXIST {
+                CoreError::RecoveryRequired(format!(
+                    "link capture path already exists for `{name}`"
+                ))
+            } else {
+                link_error(destination, error)
+            }
+        })?;
+
+        let captured = self.read_link(temporary.as_str(), destination);
+        if !matches!(captured.as_ref(), Ok(actual) if actual == expected) {
+            renameat_with(
+                &self.descriptor,
+                temporary.as_str(),
+                &self.descriptor,
+                name,
+                RenameFlags::NOREPLACE,
+            )
+            .map_err(|error| {
+                CoreError::RecoveryRequired(format!(
+                    "cannot restore raced link `{name}` after ownership mismatch: {error}"
+                ))
+            })?;
+            self.sync(destination)?;
+            return Err(CoreError::StalePlan(format!(
+                "final ownership changed at {}",
+                destination.display()
+            )));
+        }
+        self.remove_verified_link(temporary.as_str(), expected, destination)?;
+        self.sync(destination)
+    }
+
+    fn restore_removed_link(
+        &self,
+        name: &str,
+        target: &Path,
+        nonce: &str,
+        destination: &Path,
+    ) -> Result<()> {
+        let temporary = format!(".{name}.{nonce}.link-remove");
+        match self.read_link_optional(&temporary, destination)? {
+            Some(captured) if captured == target => {
+                renameat_with(
+                    &self.descriptor,
+                    temporary.as_str(),
+                    &self.descriptor,
+                    name,
+                    RenameFlags::NOREPLACE,
+                )
+                .map_err(|error| link_error(destination, error))?;
+                self.sync(destination)
+            }
+            Some(_) => Err(CoreError::RecoveryRequired(format!(
+                "link removal capture for `{name}` is not the recorded owned target"
+            ))),
+            None => self.create_link(name, target, destination),
+        }
+    }
+
+    fn read_link(&self, name: &str, destination: &Path) -> Result<PathBuf> {
+        let target = readlinkat(&self.descriptor, name, Vec::new())
+            .map_err(|error| link_error(destination, error))?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::ffi::OsStrExt;
+            Ok(PathBuf::from(std::ffi::OsStr::from_bytes(
+                target.to_bytes(),
+            )))
+        }
+        #[cfg(not(unix))]
+        unreachable!("Grimoire supports Unix hosts")
+    }
+
+    fn read_link_optional(&self, name: &str, destination: &Path) -> Result<Option<PathBuf>> {
+        match readlinkat(&self.descriptor, name, Vec::new()) {
+            Ok(target) => {
+                #[cfg(unix)]
+                {
+                    use std::os::unix::ffi::OsStrExt;
+                    Ok(Some(PathBuf::from(std::ffi::OsStr::from_bytes(
+                        target.to_bytes(),
+                    ))))
+                }
+                #[cfg(not(unix))]
+                unreachable!("Grimoire supports Unix hosts")
+            }
+            Err(error) if error == rustix::io::Errno::NOENT => Ok(None),
+            Err(error) => Err(link_error(destination, error)),
+        }
+    }
+
+    fn remove_verified_link(&self, name: &str, expected: &Path, destination: &Path) -> Result<()> {
+        if self.read_link(name, destination)? != expected {
+            return Err(CoreError::RecoveryRequired(format!(
+                "captured owned link changed before cleanup at {}",
+                destination.display()
+            )));
+        }
+        unlinkat(&self.descriptor, name, AtFlags::empty())
+            .map_err(|error| link_error(destination, error))
+    }
+
+    fn cleanup_capture_if_owned(
+        &self,
+        name: &str,
+        expected: &Path,
+        destination: &Path,
+    ) -> Result<()> {
+        let Some(actual) = self.read_link_optional(name, destination)? else {
+            return Ok(());
+        };
+        if actual != expected {
+            return Err(CoreError::RecoveryRequired(format!(
+                "link capture `{name}` is not the recorded owned target"
+            )));
+        }
+        self.remove_verified_link(name, expected, destination)?;
+        self.sync(destination)
+    }
+
+    fn sync(&self, destination: &Path) -> Result<()> {
+        self.descriptor
+            .sync_all()
+            .map_err(|error| crate::transaction::io_error(destination, error))
+    }
+}
+
+fn link_error(path: &Path, error: rustix::io::Errno) -> CoreError {
+    CoreError::Io {
+        path: path.display().to_string(),
+        message: error.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod link_capture_tests {
+    use super::*;
+
+    #[test]
+    fn interrupted_exchange_and_removal_captures_restore_without_clobbering() {
+        let temporary = tempfile::tempdir().unwrap();
+        let parent_path = temporary.path().join("skills");
+        let parent = DirectoryIdentity::capture_or_create(&parent_path).unwrap();
+        let destination = parent_path.join("one");
+
+        std::os::unix::fs::symlink("old", &destination).unwrap();
+        symlinkat("new", &parent.descriptor, ".one.recovery.link-swap").unwrap();
+        renameat_with(
+            &parent.descriptor,
+            ".one.recovery.link-swap",
+            &parent.descriptor,
+            "one",
+            RenameFlags::EXCHANGE,
+        )
+        .unwrap();
+        parent
+            .replace_owned_link(
+                "one",
+                Path::new("new"),
+                Path::new("old"),
+                "recovery",
+                &destination,
+            )
+            .unwrap();
+        assert_eq!(fs::read_link(&destination).unwrap(), Path::new("old"));
+        assert!(!parent_path.join(".one.recovery.link-swap").exists());
+
+        renameat_with(
+            &parent.descriptor,
+            "one",
+            &parent.descriptor,
+            ".one.recovery.link-remove",
+            RenameFlags::NOREPLACE,
+        )
+        .unwrap();
+        parent
+            .restore_removed_link("one", Path::new("old"), "recovery", &destination)
+            .unwrap();
+        assert_eq!(fs::read_link(&destination).unwrap(), Path::new("old"));
+        assert!(!parent_path.join(".one.recovery.link-remove").exists());
     }
 }

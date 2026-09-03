@@ -27,6 +27,12 @@ impl Paths {
     pub fn project(root: PathBuf, grimoire_home: PathBuf) -> Result<Self> {
         require_absolute(&root, "project root")?;
         require_absolute(&grimoire_home, "Grimoire home")?;
+        let root = root.canonicalize().map_err(|error| {
+            CoreError::Request(format!(
+                "cannot canonicalize project root `{}`: {error}",
+                root.display()
+            ))
+        })?;
         Ok(Self {
             grimoire_home,
             scope: ScopePaths::Project { root },
@@ -149,10 +155,7 @@ impl Paths {
     pub fn scope_key(&self) -> String {
         match &self.scope {
             ScopePaths::Global { .. } => "global".into(),
-            ScopePaths::Project { root } => {
-                let canonical = root.canonicalize().unwrap_or_else(|_| root.clone());
-                project_scope_key(&canonical)
-            }
+            ScopePaths::Project { root } => project_scope_key(root),
         }
     }
 }

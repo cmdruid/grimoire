@@ -185,8 +185,8 @@ fn refresh_projects(
 
     let timestamp = runtime.unix_time()?;
     for (scope_key, (project, indexed)) in projects {
-        let project_paths = Paths::project(project.clone(), paths.grimoire_home.clone())?;
         let refreshed = (|| {
+            let project_paths = Paths::project(project.clone(), paths.grimoire_home.clone())?;
             let manifest_bytes = read_required_bounded(&project_paths.manifest_path())?;
             let lock_bytes = read_required_bounded(&project_paths.lock_path())?;
             let manifest = crate::Manifest::parse(manifest_bytes)?;

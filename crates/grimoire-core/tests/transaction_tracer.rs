@@ -14,6 +14,8 @@ use tempfile::TempDir;
 
 struct Runtime {
     race_path: Option<PathBuf>,
+    race_checkpoint: &'static str,
+    replace_existing: bool,
     raced: AtomicBool,
 }
 
@@ -21,13 +23,17 @@ impl Runtime {
     fn plain() -> Self {
         Self {
             race_path: None,
+            race_checkpoint: "",
+            replace_existing: false,
             raced: AtomicBool::new(false),
         }
     }
 
-    fn racing(path: PathBuf) -> Self {
+    fn racing(path: PathBuf, checkpoint: &'static str, replace_existing: bool) -> Self {
         Self {
             race_path: Some(path),
+            race_checkpoint: checkpoint,
+            replace_existing,
             raced: AtomicBool::new(false),
         }
     }
@@ -43,8 +49,11 @@ impl TransactionRuntime for Runtime {
     }
 
     fn checkpoint(&self, name: &'static str) -> Result<FaultDisposition> {
-        if name == "before-link-ownership" && !self.raced.swap(true, Ordering::SeqCst) {
+        if name == self.race_checkpoint && !self.raced.swap(true, Ordering::SeqCst) {
             if let Some(path) = &self.race_path {
+                if self.replace_existing {
+                    fs::remove_file(path).unwrap();
+                }
                 fs::write(path, b"foreign\n").unwrap();
             }
         }
@@ -235,13 +244,75 @@ fn stale_and_foreign_state_are_inert() {
 
 #[test]
 fn final_link_revalidation_preserves_a_racing_foreign_entry() {
-    let (_temporary, paths, _target, plan) = fixture();
-    let destination = paths.skills_dir().join("one");
-    let runtime = Runtime::racing(destination.clone());
-    assert!(matches!(
-        apply(&paths, &plan, Approval::NotRequired, &runtime),
-        Err(grimoire_core::CoreError::StalePlan(_))
-    ));
-    assert_eq!(fs::read(destination).unwrap(), b"foreign\n");
-    assert!(!paths.transaction_journal_path(&paths.scope_key()).exists());
+    for checkpoint in ["before-link-ownership", "before-link-mutation"] {
+        let (_temporary, paths, _target, plan) = fixture();
+        let destination = paths.skills_dir().join("one");
+        let runtime = Runtime::racing(destination.clone(), checkpoint, false);
+        assert!(matches!(
+            apply(&paths, &plan, Approval::NotRequired, &runtime),
+            Err(grimoire_core::CoreError::StalePlan(_))
+        ));
+        assert_eq!(fs::read(destination).unwrap(), b"foreign\n");
+        assert!(!paths.transaction_journal_path(&paths.scope_key()).exists());
+    }
+}
+
+#[test]
+fn repoint_and_remove_capture_the_owned_link_before_mutating_it() {
+    for operation in ["repoint", "remove"] {
+        let (_temporary, paths, old, initial) = fixture();
+        apply(&paths, &initial, Approval::NotRequired, &Runtime::plain()).unwrap();
+        let destination = paths.skills_dir().join("one");
+        let action = match operation {
+            "repoint" => {
+                let new = OwnedLinkTarget::Stored {
+                    source_key: SourceKey::parse("3".repeat(64)).unwrap(),
+                    snapshot_key: SnapshotKey::parse("4".repeat(64)).unwrap(),
+                    skill_path: "skills/one".into(),
+                };
+                fs::create_dir_all(new.resolve(&paths).unwrap()).unwrap();
+                Action::RepointLink {
+                    scope: Scope::Project,
+                    skill: "one".try_into().unwrap(),
+                    before: old.clone(),
+                    after: new,
+                }
+            }
+            "remove" => Action::RemoveLink {
+                scope: Scope::Project,
+                skill: "one".try_into().unwrap(),
+                target: old.clone(),
+            },
+            _ => unreachable!(),
+        };
+        let plan = Plan {
+            actions: vec![action],
+            blockers: Vec::new(),
+            preconditions: Preconditions {
+                manifest: Some(ByteHash::of(&fs::read(paths.manifest_path()).unwrap())),
+                lock: Some(ByteHash::of(&fs::read(paths.lock_path()).unwrap())),
+                candidates: BTreeMap::new(),
+                stores: BTreeMap::new(),
+                trust: None,
+                projects: Some(ByteHash::of(&fs::read(paths.projects_path()).unwrap())),
+                reachability: None,
+                links: BTreeMap::from([(
+                    "one".try_into().unwrap(),
+                    LinkPrecondition::Symlink(old.resolve(&paths).unwrap()),
+                )]),
+            },
+            facts: Vec::new(),
+            exit_class: grimoire_core::ExitClass::Success,
+        };
+        let runtime = Runtime::racing(destination.clone(), "before-link-mutation", true);
+
+        assert!(
+            matches!(
+                apply(&paths, &plan, Approval::Granted, &runtime),
+                Err(grimoire_core::CoreError::StalePlan(_))
+            ),
+            "racing foreign entry survived {operation} ownership"
+        );
+        assert_eq!(fs::read(&destination).unwrap(), b"foreign\n", "{operation}");
+    }
 }

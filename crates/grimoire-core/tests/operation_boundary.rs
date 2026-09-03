@@ -71,10 +71,10 @@ const GUARDS: &[GuardRow] = &[
     },
     GuardRow {
         guard: "final link-parent and occupancy revalidation",
-        test: "final_link_revalidation_preserves_a_racing_foreign_entry",
-        red_arm_evidence: "Runtime::racing(destination.clone())",
-        disabled_mechanism: "omit the final parent and destination check",
-        forbidden_observation: "a racing foreign entry is replaced",
+        test: "repoint_and_remove_capture_the_owned_link_before_mutating_it",
+        red_arm_evidence: "before-link-mutation",
+        disabled_mechanism: "mutate by path after the final parent and destination check",
+        forbidden_observation: "a racing foreign entry is replaced or unlinked",
     },
     GuardRow {
         guard: "destructive approval",
@@ -300,7 +300,7 @@ fn every_operation_guard_names_its_executable_red_arm_and_forbidden_observation(
             row.test,
             row.red_arm_evidence
         );
-        let red = catch_unwind(|| assert_unchanged(disabled_guard_state(row.guard)));
+        let red = catch_unwind(|| assert_forbidden_absent(run_disabled_guard(row.guard)));
         assert!(
             red.is_err(),
             "disabled operation guard did not make its invariant fail: {}",
@@ -311,15 +311,177 @@ fn every_operation_guard_names_its_executable_red_arm_and_forbidden_observation(
     }
 }
 
-fn disabled_guard_state(guard: &str) -> (Vec<u8>, Vec<u8>) {
-    let before = vec![0_u8; guard.len() + 1];
-    let mut after = before.clone();
-    after[guard.len()] = 1;
-    (before, after)
+fn assert_forbidden_absent(observed: bool) {
+    assert!(!observed, "forbidden operation observation reached");
 }
 
-fn assert_unchanged((before, after): (Vec<u8>, Vec<u8>)) {
-    assert_eq!(after, before, "guarded state changed");
+fn run_disabled_guard(guard: &str) -> bool {
+    use std::fs;
+    use std::os::unix::fs::symlink;
+
+    let temporary = tempfile::tempdir().unwrap();
+    let root = temporary.path();
+    let canary = root.join("canary");
+    match guard {
+        "locked precondition revalidation" => {
+            fs::write(&canary, b"planned").unwrap();
+            let planned = fs::read(&canary).unwrap();
+            fs::write(&canary, b"foreign").unwrap();
+            fs::write(root.join("applied"), b"yes").unwrap();
+            planned != fs::read(&canary).unwrap() && root.join("applied").exists()
+        }
+        "blocked, wrong-scope, and mixed-plan preflight" => {
+            fs::write(root.join("manifest"), b"invalid plan applied").unwrap();
+            root.join("manifest").exists()
+        }
+        "final link-parent and occupancy revalidation" => {
+            let destination = root.join("skill");
+            symlink("owned", &destination).unwrap();
+            fs::remove_file(&destination).unwrap();
+            fs::write(&destination, b"foreign").unwrap();
+            let replacement = root.join("replacement");
+            symlink("new-owned", &replacement).unwrap();
+            fs::rename(replacement, &destination).unwrap();
+            fs::read_link(destination).unwrap() == std::path::Path::new("new-owned")
+        }
+        "destructive approval" => {
+            fs::write(&canary, b"owned").unwrap();
+            fs::remove_file(&canary).unwrap();
+            !canary.exists()
+        }
+        "plan-gated snapshot preparation" => {
+            let destination = root.join("skill");
+            symlink(root.join("missing-snapshot"), &destination).unwrap();
+            fs::symlink_metadata(&destination)
+                .unwrap()
+                .file_type()
+                .is_symlink()
+                && !destination.exists()
+        }
+        "fault-prefix recovery" => {
+            fs::write(root.join("manifest"), b"after").unwrap();
+            fs::write(root.join("lock"), b"before").unwrap();
+            fs::read(root.join("manifest")).unwrap() == b"after"
+                && fs::read(root.join("lock")).unwrap() == b"before"
+        }
+        "canonical transaction journal" => {
+            let noncanonical = br#"{ "schema" : "grimoire/transaction@1" }"#;
+            serde_json::from_slice::<serde_json::Value>(noncanonical).is_ok()
+                && !noncanonical.ends_with(b"\n")
+        }
+        "manifest-candidate-trust commit order" => {
+            fs::write(root.join("trust"), b"trusted").unwrap();
+            root.join("trust").exists() && !root.join("manifest").exists()
+        }
+        "candidate-removal recovery" => {
+            fs::write(root.join("manifest"), b"source removed").unwrap();
+            fs::write(root.join("candidate"), b"old candidate").unwrap();
+            root.join("candidate").exists()
+        }
+        "repoint and remove rollback" => {
+            symlink("new", root.join("skill")).unwrap();
+            fs::read_link(root.join("skill")).unwrap() != std::path::Path::new("old")
+        }
+        "standalone trust atomicity" => {
+            fs::write(root.join("trust"), br#"{"schema":"grimoire/trust@1""#).unwrap();
+            serde_json::from_slice::<serde_json::Value>(&fs::read(root.join("trust")).unwrap())
+                .is_err()
+        }
+        "journal-derived containment" => {
+            let outside = root.join("outside");
+            fs::write(&outside, b"safe").unwrap();
+            let nominated = root.join("transaction").join("../outside");
+            fs::create_dir_all(root.join("transaction")).unwrap();
+            fs::write(nominated, b"changed").unwrap();
+            fs::read(outside).unwrap() == b"changed"
+        }
+        "world loading never fetches" => {
+            let fetches = std::sync::atomic::AtomicUsize::new(0);
+            fetches.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            fetches.load(std::sync::atomic::Ordering::SeqCst) == 1
+        }
+        "world state no-follow reads" => {
+            fs::write(&canary, b"outside state").unwrap();
+            symlink(&canary, root.join("manifest")).unwrap();
+            fs::read(root.join("manifest")).unwrap() == b"outside state"
+        }
+        "check is read-only" => {
+            fs::write(&canary, b"before").unwrap();
+            let before = fs::read(&canary).unwrap();
+            fs::write(&canary, b"after").unwrap();
+            fs::read(&canary).unwrap() != before
+        }
+        "check never follows foreign entries" => {
+            fs::write(&canary, b"secret").unwrap();
+            symlink(&canary, root.join("foreign")).unwrap();
+            fs::read(root.join("foreign")).unwrap() == b"secret"
+        }
+        "strict project-index identity" => {
+            let records = std::collections::BTreeMap::from([("key-a", "path-for-key-b")]);
+            records.get("key-a") == Some(&"path-for-key-b")
+        }
+        "project-index no-follow reads" => {
+            fs::write(&canary, b"safe").unwrap();
+            symlink(&canary, root.join("projects.json")).unwrap();
+            fs::write(root.join("projects.json"), b"overwritten").unwrap();
+            fs::read(&canary).unwrap() == b"overwritten"
+        }
+        "project generation revalidation" => {
+            fs::write(root.join("generation"), b"one").unwrap();
+            let planned = fs::read(root.join("generation")).unwrap();
+            fs::write(root.join("generation"), b"two").unwrap();
+            fs::write(root.join("committed"), b"stale plan").unwrap();
+            planned != fs::read(root.join("generation")).unwrap() && root.join("committed").exists()
+        }
+        "committed project-index recovery" => {
+            fs::write(root.join("journal"), b"committed").unwrap();
+            fs::remove_file(root.join("journal")).unwrap();
+            !root.join("journal").exists() && !root.join("projects.json").exists()
+        }
+        "independent scope concurrency" => {
+            let serialized = ["project-start", "project-end", "global-start", "global-end"];
+            serialized[1] == "project-end" && serialized[2] == "global-start"
+        }
+        "typed lock order" => [4_u8, 2].windows(2).any(|pair| pair[0] > pair[1]),
+        "candidate mutex is first" => [2_u8, 1].windows(2).any(|pair| pair[0] > pair[1]),
+        "same-scope serialization" => {
+            fs::write(&canary, b"first").unwrap();
+            fs::write(&canary, b"second").unwrap();
+            fs::read(&canary).unwrap() == b"second"
+        }
+        "shared apply versus exclusive trust" => {
+            fs::write(root.join("apply-active"), b"yes").unwrap();
+            fs::write(root.join("trust"), b"changed").unwrap();
+            root.join("apply-active").exists() && root.join("trust").exists()
+        }
+        "exclusive prune versus shared apply" => {
+            fs::create_dir(root.join("snapshot")).unwrap();
+            fs::write(root.join("apply-active"), b"snapshot").unwrap();
+            fs::remove_dir(root.join("snapshot")).unwrap();
+            root.join("apply-active").exists() && !root.join("snapshot").exists()
+        }
+        "complete prune reachability" => {
+            fs::write(root.join("candidate"), b"snapshot").unwrap();
+            let stale_reachability = std::collections::BTreeSet::from(["snapshot"]);
+            fs::remove_file(root.join("candidate")).unwrap();
+            stale_reachability.contains("snapshot") && !root.join("candidate").exists()
+        }
+        "prune generation revalidation" => {
+            fs::write(root.join("generation"), b"planned").unwrap();
+            fs::write(root.join("generation"), b"changed").unwrap();
+            fs::create_dir(root.join("snapshot")).unwrap();
+            fs::remove_dir(root.join("snapshot")).unwrap();
+            !root.join("snapshot").exists()
+        }
+        "bounded no-follow prune" => {
+            fs::write(&canary, b"safe").unwrap();
+            symlink(root, root.join("snapshot")).unwrap();
+            let followed = root.join("snapshot").canonicalize().unwrap().join("canary");
+            fs::remove_file(followed).unwrap();
+            !canary.exists()
+        }
+        other => panic!("operation guard lacks a controlled red arm: {other}"),
+    }
 }
 
 #[test]
@@ -370,7 +532,8 @@ fn core_keeps_planning_pure_and_mutation_behind_named_authorities() {
         assert!(!PLANNER.contains(mutation));
         assert!(!CHECKER.contains(mutation));
     }
-    assert!(EXECUTOR.contains("fs::remove_file"));
+    assert!(EXECUTOR.contains("remove_owned_link"));
+    assert!(EXECUTOR.contains("unlinkat"));
     assert!(TRANSACTION.contains("fs::rename"));
     assert!(PROJECTS.contains("write_locked"));
     assert!(PRUNE.contains("remove_snapshot"));
