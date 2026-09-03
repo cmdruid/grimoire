@@ -164,7 +164,7 @@ This task is read-only and produces no commit.
     `RUSTC_WRAPPER= cargo check --workspace`. Expected: every negative row is backed by a live
     breaking arm and all forbidden observations stay unreachable in production.
 
-- [ ] **Slice 4: Delete the superseded alpha product lineage and residue** <requires: 3>
+- [x] **Slice 4: Delete the superseded alpha product lineage and residue** <requires: 3>
   - Files: delete `docs/design/2026-08-07-grimoire-repurpose-design.md`,
     `docs/design/2026-08-08-pack-format-design.md`,
     `docs/design/2026-08-08-pack-format-impl-plan.md`,

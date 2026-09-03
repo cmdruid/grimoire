@@ -210,6 +210,7 @@ impl TuiModel {
         &self.active_state().plan
     }
 
+    /// Returns the core request represented by the active scope's staged state.
     pub fn staged_request(&self) -> Request {
         let state = self.active_state();
         if state.world.manifest_present && state.world.lock_present {

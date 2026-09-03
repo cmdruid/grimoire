@@ -72,8 +72,8 @@ global capture and guided tuning of reusable-skill observations). See *The packs
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
-Earlier design lineage lives under `docs/design/`; the published product contract above supersedes
-those historical package shapes.
+Historical records that still explain the repository and skills library live under `docs/design/`.
+The published product contract above is the sole authority for Grimoire package-manager behavior.
 
 ### Storage convention: packages and skill-owned data
 
@@ -127,8 +127,7 @@ acts as a skill. See the published Grimoire product contract above.
 
 ## Repo layout
 
-Beyond the skills, this repo carries the pack format and its tooling (the umbrella design:
-`docs/design/2026-08-07-grimoire-repurpose-design.md`):
+Beyond the skills, this repo carries the package manager and its product records:
 
 - **`crates/`** — a Cargo workspace (build from the repo root). `grimoire-pack` owns canonical
   source inventory, `grimoire-core` owns declarative state, resolution, and the pure planner, and
@@ -136,8 +135,8 @@ Beyond the skills, this repo carries the pack format and its tooling (the umbrel
   at build time — content appears only as test fixtures.
 - **`.records/specs/`** — published product contracts, including the canonical pack and inventory
   format.
-- **`repos/`** — gitignored reading references (e.g. the qntx `skill` clone); real dependencies
-  come from crates.io, pinned.
+- **`docs/design/`** — retained historical records about repository and skills-library evolution;
+  package-manager behavior comes from the published contract, not these records.
 
 ## Authoring conventions
 

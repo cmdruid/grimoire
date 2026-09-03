@@ -17,12 +17,14 @@ use crate::env::{
 };
 use crate::runtime::SystemRuntime;
 
+/// The exact core request and mode produced by a desired-state CLI command.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlanningInput {
     pub request: Request,
     pub mode: PlanningMode,
 }
 
+/// Normalizes parsed install, reconcile, or uninstall intent against one immutable world.
 pub fn desired_command_input(
     world: &WorldState,
     command: &Command,

@@ -1,8 +1,9 @@
 # ② repo restructure — design brief (doubles as the plan)
 
-**Status:** shipped (2026-08-08). Sub-project ② of the grimoire repurpose
-(`docs/design/2026-08-07-grimoire-repurpose-design.md`, §2 topology + §6 risks). Small-feature
-tier: this brief is also the implementation plan — no separate plan doc.
+**Status:** shipped (2026-08-08). This retained historical record explains the workspace topology
+that survived the original Grimoire repurpose. Its former parent design described a superseded
+product model and has been removed; the published package-manager contract under `.records/specs/`
+is now authoritative. Small-feature tier: this brief also served as the implementation plan.
 
 ## Problem
 
