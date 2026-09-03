@@ -1,6 +1,6 @@
 ---
 doctype: streams
-status: draft
+status: archived
 schema: workstream/plan@1
 tags: [plan]
 ---
