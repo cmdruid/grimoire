@@ -22,12 +22,14 @@ user responds.
 
 ## Goal
 
-Every implementation verdict ends with a plain-text action close. When one writable destination is
-already provable, its numbered scope choice and lettered modifiers can be submitted in one short
-response. When ownership is unresolved, a non-mutating exit remains one response while fixing first
-requires the exceptional destination-resolution turn. Safe defaults remain obvious, `yes` accepts
-the applicable displayed or pending choice, explicit combinations select every supported route, and
-invalid or incomplete combinations never authorize a write.
+Every material implementation verdict ends with a plain-text action close. A clean `approve` has no
+decision to make, so Inspector reports readiness and returns to its caller automatically. When one
+writable destination is already provable for a material verdict, its numbered scope choice and
+lettered modifiers can be submitted in one short response. When ownership is unresolved, a
+non-mutating exit remains one response while fixing first requires the exceptional
+destination-resolution turn. Safe defaults remain obvious, `yes` accepts the applicable displayed or
+pending choice, explicit combinations select every supported route, and invalid or incomplete
+combinations never authorize a write.
 
 The existing mutation boundary, destination-identity checks, isolation rules, complete-package gate,
 and full same-base re-review remain intact. No native prompt capability is assumed.
@@ -122,8 +124,8 @@ choose one** and **Afterward — if fixing, choose one**. Label their defaults *
 use the same eligibility rules. `yes` or `1` returns unchanged. `2`, `2-A-R`, or another valid `2`
 combination confirms the selected remediation.
 
-For `approve`, report that the implementation is ready and offer `1. Return to the calling workflow`.
-Do not render execution or re-review choices.
+For `approve`, report that the implementation is ready and return control to the calling workflow
+immediately. Render no option, action menu, confirmation request, or internal “return to caller” seam.
 
 ### Parse and confirmation
 
@@ -237,7 +239,8 @@ evidence, not reduced scope.
 
 “Independent review” means rerunning the complete review judgment from the full evidence rather than
 accepting the implementation writer's self-report. A separate provider, model, or reviewing agent is
-not required. Every fresh verdict renders a fresh text action close and authorizes no unattended write.
+not required. Every fresh material verdict renders a fresh text action close and authorizes no
+unattended write; a fresh `approve` returns automatically.
 
 ### Package and lineage
 
@@ -256,10 +259,11 @@ continue to depend on the superseded spec.
 
 Extend Inspector's behavioral fixtures to prove:
 
-- **Rendered surfaces:** each verdict emits only its applicable numbered scopes, preserves exact
+- **Rendered surfaces:** each material verdict emits only its applicable numbered scopes, preserves exact
   meanings and defaults, uses `A/I/R/N` consistently, identifies the inline-only default when
   isolation is unavailable, labels approve-with-changes modifiers as conditional on fixing, and
-  contains no checkbox syntax, native-control promise, or Enter claim.
+  contains no checkbox syntax, native-control promise, or Enter claim. `approve` emits no action
+  surface and returns automatically.
 - **Parser:** compact, uniformly separated, and mixed-separator forms normalize identically; outer
   whitespace is ignored while repeated punctuation, trailing punctuation, unmatched input, and
   unavailable or out-of-order codes are rejected by a whole-response match. Number-only responses

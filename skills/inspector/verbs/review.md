@@ -84,7 +84,7 @@ mint a record.
    | document `approve` | existing accept/publish offer; stop | existing accept/publish offer; stop | existing accept/publish offer; stop |
    | document `approve-with-changes` | enter revise with all recommended changes | offer accept/publish as-is or explicit revise; stop | offer accept/publish as-is; stop |
    | document `needs-rework` | enter revise with all findings | offer explicit revise; stop | verdict only; stop |
-   | implementation `approve` | direct return action; stop | direct return action; stop | direct return action; stop |
+   | implementation `approve` | report ready; resume caller | report ready; resume caller | report ready; resume caller |
    | implementation `approve-with-changes` | optional-fix action stop | optional-fix action stop | optional-fix action stop |
    | implementation `needs-rework` | required-fix action stop | required-fix action stop | required-fix action stop |
 
@@ -96,7 +96,8 @@ mint a record.
    you approve the revision proposal, I’ll re-review the amended document automatically.”
    An unavailable document `needs-rework` stops after the verdict and findings. Implementation never
    offers publish, `revise`, or `refine`, and never writes status or stage. Every implementation
-   verdict enters only the separate action close below.
+   material verdict enters only the separate action close below. Implementation `approve` reports
+   readiness and immediately resumes its caller without a stop or confirmation.
 
    **Automatic entry.** After reporting the verdict and findings, immediately enter
    `verbs/revise.md` with the reviewed artifact, detected kind, resolved effective policy, complete
@@ -107,7 +108,7 @@ mint a record.
 
 ## Implementation textual action close
 
-After every implementation verdict, retain the original review base, reviewed after endpoint,
+After every material implementation verdict, retain the original review base, reviewed after endpoint,
 complete findings, destination evidence, and the identity of the reviewed source state. The action
 close is a separate post-verdict stop; presenting it mutates nothing.
 The verdict itself is never confirmation. The action state is conversation-only and holds at most
@@ -151,8 +152,8 @@ scope or unavailable route, and its `yes` line must name that surface's exact de
 `approve-with-changes`, render `1. Return as-is (default)` and `2. Fix recommended changes`, followed
 by **Execution — if fixing, choose one** and **Afterward — if fixing, choose one**. Label their
 defaults **default if fixing**. `yes` or `1` returns unchanged; `2` enters the selected remediation.
-For `approve`, report that the implementation is ready and offer only
-`1. Return to the calling workflow`; do not render execution or afterward choices.
+For `approve`, report that the implementation is ready and return control to the calling workflow
+immediately. Render no option, action surface, confirmation request, or internal caller seam.
 
 ### Parse and confirmation
 
@@ -257,8 +258,9 @@ kind doctrine and governing design, inspect the whole diff and surrounding code,
 cover every soundness and groundedness axis, and choose a fresh verdict. Prior findings are evidence,
 not reduced scope; changes outside the fix delta remain visible.
 
-The new verdict gets the same fresh action close. It authorizes no unattended write, and the user can
-stop at every cycle.
+A new material verdict gets the same fresh action close. It authorizes no unattended write, and the
+user can stop at every material cycle. A new `approve` reports readiness and resumes the caller
+automatically.
 
 ## Next-turn parse for document reviews
 

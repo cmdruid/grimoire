@@ -58,7 +58,8 @@ approve document                     →  accept/publish  →  (host sequences /
 material + automatic-proposal        →  revise questions/proposal  →  confirm/apply + queued review  →  …
 material + offered                   →  explicit revise offer  →  stop
 material + unavailable               →  publish-as-is offer or verdict-only  →  stop
-implementation review                →  mutation-free verdict  →  plain-text action close  →  optional fixes + full review
+implementation material verdict       →  plain-text action close  →  optional fixes + full review
+implementation approve                →  report ready  →  resume caller automatically
 explicit refine of spec/plan         →  simplification proposal  →  confirm/apply + mandatory review
 ```
 
@@ -70,11 +71,11 @@ approval applies the proposal and immediately runs the existing `review` procedu
 review continuation; every accepted refinement runs review and that review may enter `revise`.
 
 Implementation remains `revision-after-review: unavailable`: it never enters document `revise` or
-`refine`. Every implementation verdict instead receives the separate post-verdict action close in
-`verbs/review.md`. Its numbered scope and `A`/`I` plus `R`/`N` modifiers preserve pending scope and
-confirmation boundaries. Only a complete confirmed selection authorizes eligible inline or isolated
-remediation; a completely applied package may run a full same-base review, and each fresh verdict
-authorizes no further write.
+`refine`. A material implementation verdict receives the separate post-verdict action close in
+`verbs/review.md`; `approve` reports readiness and resumes the caller automatically. The close's
+numbered scope and `A`/`I` plus `R`/`N` modifiers preserve pending scope and confirmation boundaries.
+Only a complete confirmed selection authorizes eligible inline or isolated remediation; a completely
+applied package may run a full same-base review, and each fresh verdict authorizes no further write.
 
 ## Kind-detect (review, revise, and refine; once)
 

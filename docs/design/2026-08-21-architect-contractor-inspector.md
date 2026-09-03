@@ -44,8 +44,8 @@ pack runbook or host procedure, not in their descriptions or setup.
   spec, reviews, or ships to trunk.
 - Inspector owns review, revise, and refine for the supported artifact kinds. Review is mutation-free
   through its verdict. An accepted passing document review writes its existing gate; an implementation
-  verdict offers a plain-text action close for direct return or separately confirmed fixes and full
-  re-review. Revise corrects
+  material verdict offers a plain-text action close for separately confirmed fixes and full re-review;
+  `approve` resumes the caller automatically. Revise corrects
   supported document findings, while explicit refine simplifies specs and plans. Both document
   mutation verbs propose before applying and return the artifact to draft.
 - A published spec is the gate into plan/build. Plans, roadmaps, and

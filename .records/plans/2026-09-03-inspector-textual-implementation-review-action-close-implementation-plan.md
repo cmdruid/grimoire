@@ -132,7 +132,8 @@ Read-only; produce no commit.
     1. Red-first, replace the shared native/textual adapter with all three verdict surfaces before
        removing its live contract. `needs-rework` exposes numbered scope plus `A/I` and `R/N` groups;
        `approve-with-changes` defaults to return-as-is and labels its modifiers **if fixing**; `approve`
-       offers only direct return. No surface uses checkbox, focus, native-control, or Enter language.
+       reports readiness and automatically resumes its caller without an action surface. No surface
+       uses checkbox, focus, native-control, or Enter language.
     2. Implement the complete basic selection semantics in `review.md`: verdict-local scope numbers;
        eligible `A` or inline-only `I`; default `R` for fixing; inert modifiers for non-mutating scope;
        `yes` bound to the displayed default; direct valid code as confirmation; and rejection as
@@ -311,14 +312,16 @@ Read-only; produce no commit.
 
 - Every published-spec requirement maps to one slice with no open decision branch or stale dependency
   on the archived presentation contract.
-- Every implementation verdict renders its applicable plain-text close; all supported codes normalize
-  deterministically, and invalid, rejected, incomplete, or unavailable selections remain no-write.
+- Every material implementation verdict renders its applicable plain-text close; `approve` resumes its
+  caller automatically without a redundant choice. All supported codes normalize deterministically,
+  and invalid, rejected, incomplete, or unavailable selections remain no-write.
 - Ambiguous destination ownership leaves safe exits usable and cannot convert a pending scope into write
   authorization without destination resolution and fresh confirmation.
 - Isolation fallback is limited to unchanged pre-writer capability failure; drift, partial work, and
   unverified results stop under their stricter rules.
 - Integration requires the complete selected package plus primary inspection and verification; a full
-  original-base review covers every changed path and emits a fresh action close.
+  original-base review covers every changed path and emits a fresh material action close or
+  automatically resumes the caller on `approve`.
 - Inspector remains self-contained and instruction-led; document review/revise/refine, kind resolution,
   setup, status custody, typed edges, complexity evidence, README inventory, and pack seams remain green.
 - Every new guard is red-proven, every slice verification passes, the complete gate is green, and only

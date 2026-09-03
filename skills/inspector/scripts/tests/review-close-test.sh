@@ -49,6 +49,7 @@ live_surface_clean() {
     && ! grep -qFi 'checkbox syntax' "$1" \
     && ! grep -qFi 'first and focused' "$1" \
     && ! grep -qFi 'unchecked means inline' "$1" \
+    && ! grep -qF 'Return to the calling workflow' "$1" \
     && ! grep -qFi 'defaults on Enter' "$1" \
     && ! grep -qFi 'as-is on Enter' "$1"
 }
@@ -63,7 +64,7 @@ done
 cp "$SPINE" "$ROOT/live.original"
 for retired in 'Implementation review remains verdict-only.' 'native multi-select' \
   'textual fallback' 'checkbox syntax' 'first and focused' 'unchecked means inline' \
-  'defaults on Enter' 'as-is on Enter'; do
+  'Return to the calling workflow' 'defaults on Enter' 'as-is on Enter'; do
   cp "$ROOT/live.original" "$ROOT/live.broken"
   printf '%s\n' "$retired" >> "$ROOT/live.broken"
   eq "live-surface red-proof plants one retired claim" 1 \
@@ -165,7 +166,7 @@ close_review() {
   if [ "$kind" = implementation ]; then
     case "$verdict" in
       needs-rework|approve-with-changes) echo implementation-action-close ;;
-      approve) echo direct-return ;;
+      approve) echo resume-caller ;;
       *) echo invalid ;;
     esac
     return
@@ -191,14 +192,14 @@ eq "implementation needs-rework opens action close" implementation-action-close 
   "$(close_review implementation needs-rework unavailable)"
 eq "implementation recommendation opens optional action close" implementation-action-close \
   "$(close_review implementation approve-with-changes unavailable)"
-eq "implementation approval offers direct return" direct-return \
+eq "implementation approval resumes caller automatically" resume-caller \
   "$(close_review implementation approve unavailable)"
 
 render_surface() {
   local verdict="$1" recommendations="$2" isolation="$3" reason="${4:-}" default example
   case "$verdict" in
     approve)
-      printf '%s\n' 'approve — Implementation ready' '' '1. Return to the calling workflow'
+      printf '%s\n' 'approve — Implementation ready'
       return
       ;;
     needs-rework)
@@ -292,7 +293,7 @@ scope_available() {
   case "$1:$2:$3" in
     needs-rework:yes:1|needs-rework:yes:2|needs-rework:yes:3|needs-rework:yes:4) return 0 ;;
     needs-rework:no:1|needs-rework:no:4) return 0 ;;
-    approve-with-changes:*:1|approve-with-changes:*:2|approve:*:1) return 0 ;;
+    approve-with-changes:*:1|approve-with-changes:*:2) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -313,13 +314,8 @@ normalize_code() {
   case "$rest" in A*|I*) route="$(printf '%s' "$rest" | cut -c1)"; rest="$(printf '%s' "$rest" | cut -c2-)" ;; esac
   case "$rest" in R*|N*) after="$(printf '%s' "$rest" | cut -c1)"; rest="$(printf '%s' "$rest" | cut -c2-)" ;; esac
   [ -z "$rest" ] || return 1
-  if [ "$verdict" = approve ]; then
-    [ -z "$route$after" ] || return 1
-  else
-    [ "$route" != A ] || [ "$isolation" = yes ] || return 1
-  fi
-  if [ "$verdict:$scope" = needs-rework:4 ] || [ "$verdict:$scope" = approve-with-changes:1 ] \
-    || [ "$verdict" = approve ]; then
+  [ "$route" != A ] || [ "$isolation" = yes ] || return 1
+  if [ "$verdict:$scope" = needs-rework:4 ] || [ "$verdict:$scope" = approve-with-changes:1 ]; then
     printf '%s\n' "$scope"
     return
   fi
@@ -414,7 +410,7 @@ recommended_surface="$(render_surface approve-with-changes yes yes)"
 has <(printf '%s\n' "$recommended_surface") '1. Return as-is (default)' "return default missing"
 has <(printf '%s\n' "$recommended_surface") 'Execution — if fixing, choose one:' "conditional execution label missing"
 approve_surface="$(render_surface approve no yes)"
-eq "approve offers only direct return" "$(printf '%s\n' 'approve — Implementation ready' '' '1. Return to the calling workflow')" "$approve_surface"
+eq "approve reports readiness without an action surface" 'approve — Implementation ready' "$approve_surface"
 without_recommendations="$(render_surface needs-rework no yes)"
 has <(printf '%s\n' "$without_recommendations") '1. Fix must-fix findings only (default)' "must-fix default missing"
 has <(printf '%s\n' "$without_recommendations") '4. Make no changes' "no-change gap missing"
@@ -430,6 +426,7 @@ if ! printf '%s\n' "$without_recommendations" | grep -qE '`[23]-'; then pass=$((
 has <(printf '%s\n' "$recommended_surface") 'Reply with `1` to return as-is, or a fixing combination such as `2-A-R`.' "approve-with-changes footer missing"
 if ! printf '%s\n' "$approve_surface" | grep -qF 'Execution —'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 if ! printf '%s\n' "$approve_surface" | grep -qF 'Afterward —'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+if ! printf '%s\n' "$approve_surface" | grep -qE '^[0-9]+\.'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 
 surface_matrix() {
   printf '%s\n' \
@@ -438,7 +435,8 @@ surface_matrix() {
     "inline-a-code:$(printf '%s\n' "$inline_surface" | grep -cF '1-A-R' || true)" \
     "absent-scope:$(printf '%s\n' "$without_recommendations" | grep -cE '`[23]-' || true)" \
     "recommended-fix-example:$(printf '%s\n' "$recommended_surface" | grep -cF 'fixing combination such as `2-A-R`')" \
-    "approve-modifiers:$(printf '%s\n' "$approve_surface" | grep -cF 'Execution —' || true)"
+    "approve-modifiers:$(printf '%s\n' "$approve_surface" | grep -cF 'Execution —' || true)" \
+    "approve-options:$(printf '%s\n' "$approve_surface" | grep -cE '^[0-9]+\.' || true)"
 }
 surface_matrix_contract() { [ "$(cat "$1")" = "$(surface_matrix)" ]; }
 surface_matrix > "$ROOT/surface.original"
@@ -449,7 +447,8 @@ for mutation in \
   'inline-a-code:0|inline-a-code:1' \
   'absent-scope:0|absent-scope:1' \
   'recommended-fix-example:1|recommended-fix-example:0' \
-  'approve-modifiers:0|approve-modifiers:1'; do
+  'approve-modifiers:0|approve-modifiers:1' \
+  'approve-options:0|approve-options:1'; do
   before_row="${mutation%%|*}" after_row="${mutation#*|}"
   sed "s/^$before_row$/$after_row/" "$ROOT/surface.original" > "$ROOT/surface.broken"
   eq "surface red-proof plants one unavailable code" 1 \
@@ -490,6 +489,7 @@ eq "inline-only available no-change modifiers are inert" 1 \
   "$(normalize_code 1-I-N approve-with-changes yes no)"
 rejects normalize_code 1-A-N approve-with-changes yes no
 rejects normalize_code 1-A-N approve no yes
+rejects normalize_code 1 approve no yes
 for invalid in '' A-R '1--A' '1,,A' '1-,A' '1-A-' '1-X-R' '1-A-I' '1-R-A' \
   '1-R-N' '1-2-A' '9-A-R'; do
   rejects normalize_code "$invalid" needs-rework yes yes
@@ -569,6 +569,7 @@ grammar_matrix() {
     "inline-no-change:$(normalize_code 1-I-N approve-with-changes yes no)" \
     "inline-unavailable:$(normalize_code 1-A-N approve-with-changes yes no 2>/dev/null || echo reject)" \
     "approve-unavailable:$(normalize_code 1-A-N approve no yes 2>/dev/null || echo reject)" \
+    "approve-code:$(normalize_code 1 approve no yes 2>/dev/null || echo reject)" \
     "natural-absent:$(action_reply 'fix recommendations inline and stop' needs-rework no yes 1-A-R)" \
     "pending:$(action_reply yes needs-rework yes yes 1-A-R 3-I-N)" \
     "invalid:$(action_reply '1--A' needs-rework yes yes 1-A-R 3-I-N)"
@@ -583,6 +584,7 @@ for mutation in \
   'inline-no-change:1|inline-no-change:1-I-N' \
   'inline-unavailable:reject|inline-unavailable:1' \
   'approve-unavailable:reject|approve-unavailable:1' \
+  'approve-code:reject|approve-code:1' \
   'natural-absent:ask:none|natural-absent:reflect:3-I-N' \
   'pending:confirmed:3-I-N|pending:confirmed:1-A-R' \
   'invalid:ask:3-I-N|invalid:confirmed:1-A-R'; do
@@ -597,7 +599,8 @@ cmp -s "$ROOT/grammar.original" "$ROOT/grammar.saved" && pass=$((pass + 1)) || f
 review_action_contract() {
   local file="$1" needle
   for needle in 'needs-rework — Next actions' '1. Fix must-fix findings only (default)' \
-    'approve-with-changes' '1. Return as-is (default)' '1. Return to the calling workflow' \
+    'approve-with-changes' '1. Return as-is (default)' \
+    'Render no option, action surface, confirmation request, or internal caller seam' \
     'A. Use an isolated implementation agent (default)' 'I. Work inline' \
     'R. Re-review the complete implementation (default)' 'N. Stop without re-review' \
     'A direct valid code on a complete surface is explicit confirmation' \
@@ -616,6 +619,7 @@ review_action_contract() {
 review_action_contract "$REVIEW" && pass=$((pass + 1)) || fail=$((fail + 1))
 cp "$REVIEW" "$ROOT/review-action.original"
 for needle in 'needs-rework — Next actions' '1. Return as-is (default)' \
+  'Render no option, action surface, confirmation request, or internal caller seam' \
   'A direct valid code on a complete surface is explicit confirmation' \
   'repeated punctuation, or trailing punctuation' 'pending normalized selection' \
   'stores only a pending scope' 'Render a fresh inline-only surface' \
