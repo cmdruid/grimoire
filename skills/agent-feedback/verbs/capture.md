@@ -59,9 +59,11 @@ described below. Invoke the same exact provider `capture` grammar used by the hu
 
 When inside a project, an optional project reference is
 `local-sha256:<first-16-lowercase-hex>` of the physically resolved Git root; never store the path.
-`subject_ref` is `unknown` unless current context supplies a privacy-safe, non-absolute,
-traversal-free reference of at most 512 bytes; only a skill subject may use the package content
-identity helper, and a repository commit never substitutes for subject identity. Provider failure is
+`subject_ref` is `unknown` unless current context supplies a privacy-safe reference of at most 512
+bytes. References may be repository-relative identities or non-local URLs, but never contain a
+parent traversal segment or use a POSIX-absolute, Windows-drive, UNC/backslash-rooted, tilde-rooted,
+or local `file:` URI form. Only a skill subject may use the package content identity helper, and a
+repository commit never substitutes for subject identity. Provider failure is
 advisory to completed work: report its single diagnostic without reopening the work or questioning
 the user.
 

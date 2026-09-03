@@ -82,11 +82,18 @@ same "$F" "$T/control.before"
 
 # References reject absolute/traversal forms and conditional close references
 # are enforced.
-for ref in /private/path '..' ../path path/../secret 'C:\Users\name' '\\server\share'; do
+tilde_root='~'
+tilde_private="$tilde_root/private"
+tilde_user="${tilde_root}user/private"
+for ref in /private/path '..' ../path path/../secret 'path\..\secret' 'C:\Users\name' 'C:/Users/name' \
+  '\\server\share' "$tilde_root" "$tilde_private" "$tilde_user" 'file:///private/path' 'FILE://localhost/private/path'; do
   no env HOME="$H" "$PROVIDER" capture --origin human --subject-type skill --subject architect \
     --subject-ref "$ref" --invocation x --kind request --summary x --statement x \
     --incident '' --consequence '' --suggestion '' --redacted no
 done
+ok env HOME="$H" "$PROVIDER" capture --origin human --subject-type tool --subject provider \
+  --subject-ref 'https://example.invalid/releases/1' --invocation x --kind request --summary x --statement x \
+  --incident '' --consequence '' --suggestion '' --redacted no
 safe_ref="$(repeat_text r 512)"; long_ref="${safe_ref}r"
 ok env HOME="$H" "$PROVIDER" capture --origin human --subject-type skill --subject architect \
   --subject-ref "$safe_ref" --invocation x --kind request --summary x --statement x \
@@ -106,6 +113,16 @@ id="$(awk -F '\t' 'NR==2{print $1}' "$F")"
 no env HOME="$H" "$PROVIDER" close --id "$id" --as duplicate --reason Same
 ok env HOME="$H" "$PROVIDER" close --id "$id" --as duplicate --reason Same --result-ref AF-20260903T120000Z-deadbeef
 
+R="$T/reference-close"; new_home "$R"; capture_human "$R" >"$T/reference-close.capture"
+rid="$(sed -n 's/^captured=//p' "$T/reference-close.capture")"; RF="$(store_for "$R")"
+for ref in /private/result 'C:\private\result' '\\server\result' "$tilde_root/result" 'file:///private/result' 'path/../result'; do
+  cp "$RF" "$T/reference-close.before"
+  no env HOME="$R" "$PROVIDER" close --id "$rid" --as addressed --reason Done --result-ref "$ref"
+  same "$RF" "$T/reference-close.before"
+done
+ok env HOME="$R" "$PROVIDER" close --id "$rid" --as addressed --reason Done \
+  --result-ref 'https://example.invalid/results/1'
+
 H="$T/close-limits"; new_home "$H"; capture_human "$H" >"$T/close-limit-capture"
 id="$(sed -n 's/^captured=//p' "$T/close-limit-capture")"; F="$(store_for "$H")"
 result_max="$(repeat_text r 2000)"; result_long="${result_max}r"; resolution_max="$(repeat_text x 2000)"
@@ -120,6 +137,7 @@ same "$F" "$T/close-over.before"
 # malformed 20-column rows, the encoded row ceiling, and invalid UTF-8 leave
 # incumbent bytes untouched.
 for mutation in bad-id bad-created bad-subject bad-kind bad-lifecycle open-time-drift \
+  absolute-subject-ref drive-subject-ref unc-subject-ref tilde-subject-ref file-uri-subject-ref traversal-subject-ref unsafe-result-ref \
   unknown-detail-escape dangling-detail-escape duplicate-id missing-column extra-column \
   missing-final-newline over-row invalid-utf8 control-byte; do
   M="$T/malformed-$mutation"; new_home "$M"; capture_human "$M" >/dev/null; MF="$(store_for "$M")"
@@ -130,6 +148,15 @@ for mutation in bad-id bad-created bad-subject bad-kind bad-lifecycle open-time-
     bad-kind) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$9="other";print}' "$MF" >"$T/mutant" ;;
     bad-lifecycle) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$17="closed";print}' "$MF" >"$T/mutant" ;;
     open-time-drift) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$3="2000-01-01T00:00:00Z";print}' "$MF" >"$T/mutant" ;;
+    absolute-subject-ref) TEST_REF='/private/source' awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$7=r;print}' "$MF" >"$T/mutant" ;;
+    drive-subject-ref) TEST_REF='C:\\Users\\name' awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$7=r;print}' "$MF" >"$T/mutant" ;;
+    unc-subject-ref) TEST_REF='\\\\server\\share' awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$7=r;print}' "$MF" >"$T/mutant" ;;
+    tilde-subject-ref) TEST_REF="$tilde_private" awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$7=r;print}' "$MF" >"$T/mutant" ;;
+    file-uri-subject-ref) TEST_REF='file:///private/source' awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$7=r;print}' "$MF" >"$T/mutant" ;;
+    traversal-subject-ref) TEST_REF='path/../source' awk -F '\t' 'BEGIN{OFS="\t";r=ENVIRON["TEST_REF"]}NR==1{print;next}{$7=r;print}' "$MF" >"$T/mutant" ;;
+    unsafe-result-ref)
+      awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$3="2026-09-03T13:00:00Z";$17="closed";$18="addressed";$19="done";$20="file:///private/result";print}' "$MF" >"$T/mutant"
+      ;;
     unknown-detail-escape) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$12="bad\\q";print}' "$MF" >"$T/mutant" ;;
     dangling-detail-escape) awk -F '\t' 'BEGIN{OFS="\t"}NR==1{print;next}{$12="bad\\";print}' "$MF" >"$T/mutant" ;;
     duplicate-id) cat "$MF" >"$T/mutant"; tail -n 1 "$MF" >>"$T/mutant" ;;

@@ -199,6 +199,25 @@ eq 'unsupported entry refuses' 2 "$rc"
 has "$ERR" 'reason=unsupported-entry'
 rm "$T/repo/skills/demo/pipe"
 
+# File::Find must not warn-and-skip an unreadable tracked subtree and then
+# attest to a partial digest as complete custody.
+mkdir -p "$T/repo/skills/unreadable/private"
+printf '%s\n' '---' 'name: unreadable' 'description: Test.' '---' >"$T/repo/skills/unreadable/SKILL.md"
+printf 'tracked secret\n' >"$T/repo/skills/unreadable/private/value"
+git -C "$T/repo" add skills/unreadable
+git -C "$T/repo" -c user.name=test -c user.email=test@example.invalid commit -qm unreadable
+chmod 000 "$T/repo/skills/unreadable/private"
+if (cd "$T/repo/skills/unreadable/private" 2>/dev/null); then
+  fail 'permission fixture did not deny traversal'
+else
+  pass=$((pass+1))
+fi
+run "$T/repo" unreadable
+eq 'unreadable subtree refuses' 2 "$rc"
+has "$ERR" 'reason=unreadable-entry'
+if [ ! -s "$OUT" ]; then pass=$((pass+1)); else fail 'unreadable subtree emitted success facts'; fi
+chmod 700 "$T/repo/skills/unreadable/private"
+
 eq 'helper leaves repository state unchanged except fixture changes' "$before" "$(git -C "$T/repo" status --short | grep -v '^?? skills/wrong/' || true)"
 
 printf 'source-custody-test: pass=%s fail=%s\n' "$pass" "$fail"

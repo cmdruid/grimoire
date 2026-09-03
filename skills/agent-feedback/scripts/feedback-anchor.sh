@@ -7,7 +7,7 @@ die() {
 }
 
 usage() {
-  die 'usage: feedback-anchor.sh preview [--remove] | apply [--remove] --confirmed --base-sha256 <digest-or-absent>'
+  die 'usage: feedback-anchor.sh preview [--remove] | apply [--remove] --confirmed --base-sha256 <digest-or-absent> --candidate-sha256 <digest>'
 }
 
 sha256_file() {
@@ -43,6 +43,7 @@ shift
 remove=no
 confirmed=no
 base_arg=''
+candidate_arg=''
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --remove)
@@ -60,20 +61,29 @@ while [ "$#" -gt 0 ]; do
       base_arg="$2"
       shift 2
       ;;
+    --candidate-sha256)
+      [ "$command_name" = apply ] && [ -z "$candidate_arg" ] && [ "$#" -ge 2 ] || usage
+      candidate_arg="$2"
+      shift 2
+      ;;
     *) usage ;;
   esac
 done
 
 case "$command_name" in
   preview)
-    [ "$confirmed" = no ] && [ -z "$base_arg" ] || usage
+    [ "$confirmed" = no ] && [ -z "$base_arg" ] && [ -z "$candidate_arg" ] || usage
     ;;
   apply)
-    [ "$confirmed" = yes ] && [ -n "$base_arg" ] || usage
+    [ "$confirmed" = yes ] && [ -n "$base_arg" ] && [ -n "$candidate_arg" ] || usage
     case "$base_arg" in
       absent) ;;
       *[!0-9a-f]*|'') usage ;;
       *) [ "${#base_arg}" -eq 64 ] || usage ;;
+    esac
+    case "$candidate_arg" in
+      *[!0-9a-f]*|'') usage ;;
+      *) [ "${#candidate_arg}" -eq 64 ] || usage ;;
     esac
     ;;
   *) usage ;;
@@ -119,14 +129,22 @@ BLOCK="$WORK_DIR/block"
 CURRENT="$WORK_DIR/current"
 CANDIDATE="$WORK_DIR/candidate"
 ANALYSIS="$WORK_DIR/analysis"
+validate_paths
 sed "s/__BUILT_AGAINST__/$stamp/g" "$TEMPLATE" >"$BLOCK"
-if [ -f "$AGENTS_FILE" ]; then
-  cp "$AGENTS_FILE" "$CURRENT"
+if [ -e "$AGENTS_FILE" ]; then
+  validate_paths
+  cp "$AGENTS_FILE" "$CURRENT" || die 'cannot-snapshot-agents-file'
+  base_snapshot="$(sha256_file "$CURRENT")"
 else
   : >"$CURRENT"
+  base_snapshot=absent
 fi
-
 validate_paths
+if [ -n "${AGENT_FEEDBACK_TEST_AFTER_SNAPSHOT:-}" ]; then
+  [ -x "$AGENT_FEEDBACK_TEST_AFTER_SNAPSHOT" ] || die 'invalid-test-hook'
+  "$AGENT_FEEDBACK_TEST_AFTER_SNAPSHOT" "$AGENTS_FILE" || die 'test-hook-failed'
+fi
+[ "$(current_identity)" = "$base_snapshot" ] || die 'base-changed'
 
 awk -v heading="$HEADING" -v begin_prefix="$BEGIN_PREFIX" -v end_mark="$END_MARK" '
   function fence_candidate(s,    spaces,c,n,rest) {
@@ -160,7 +178,7 @@ awk -v heading="$HEADING" -v begin_prefix="$BEGIN_PREFIX" -v end_mark="$END_MARK
     if(fence) next
     if (scan == heading) { headings++; heading_line=NR; next }
     if (index(scan, "<!-- skill:agent-feedback BEGIN") > 0) {
-      if (index(scan, begin_prefix) == 1 && scan ~ / -->$/) { begins++; begin_line=NR } else invalid++
+      if (scan ~ /^<!-- skill:agent-feedback BEGIN built-against:[A-Za-z0-9][A-Za-z0-9._-]* -->$/) { begins++; begin_line=NR } else invalid++
       next
     }
     if (index(scan, "<!-- skill:agent-feedback END") > 0) {
@@ -291,7 +309,8 @@ else
   cat "$BLOCK" >>"$CANDIDATE"
 fi
 
-base_now="$(current_identity)"
+base_now="$base_snapshot"
+candidate_now="$(sha256_file "$CANDIDATE")"
 if cmp -s "$CURRENT" "$CANDIDATE"; then
   status=noop
 else
@@ -301,6 +320,7 @@ fi
 if [ "$command_name" = preview ]; then
   printf 'status=%s\n' "$status"
   printf 'base-sha256=%s\n' "$base_now"
+  printf 'candidate-sha256=%s\n' "$candidate_now"
   if [ "$status" = change ]; then
     diff -u --label 'AGENTS.md:current' --label 'AGENTS.md:proposed' "$CURRENT" "$CANDIDATE" || true
   fi
@@ -309,6 +329,7 @@ fi
 
 validate_paths
 [ "$(current_identity)" = "$base_arg" ] || die 'base-changed'
+[ "$candidate_now" = "$candidate_arg" ] || die 'candidate-changed'
 if [ "$status" = noop ]; then
   printf 'status=noop\n'
   exit 0

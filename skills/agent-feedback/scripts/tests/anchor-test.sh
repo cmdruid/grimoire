@@ -17,23 +17,33 @@ run_anchor() {
   HOME="$home" "$ANCHOR" "$@"
 }
 
+apply_preview() {
+  local home="$1" preview_file="$2"
+  shift 2
+  local base candidate
+  base="$(sed -n 's/^base-sha256=//p' "$preview_file")"
+  candidate="$(sed -n 's/^candidate-sha256=//p' "$preview_file")"
+  run_anchor "$home" apply "$@" --confirmed --base-sha256 "$base" --candidate-sha256 "$candidate"
+}
+
 home="$TMP/absent"
 new_home "$home"
 preview="$TMP/preview"
 run_anchor "$home" preview >"$preview"
 has "$preview" 'status=change'
 has "$preview" 'base-sha256=absent'
+ok grep -Eq '^candidate-sha256=[0-9a-f]{64}$' "$preview"
 has "$preview" '## Skill routes (self-registered)'
 has "$preview" '<!-- skill:agent-feedback BEGIN built-against:'
 has "$preview" 'Edges: produces `feedback-observation`.'
 no test -e "$home/.agents"
 no run_anchor "$home" apply --base-sha256 absent
 no test -e "$home/.agents"
-no run_anchor "$home" apply --confirmed --base-sha256 deadbeef
+no run_anchor "$home" apply --confirmed --base-sha256 deadbeef --candidate-sha256 deadbeef
 no test -e "$home/.agents"
 
 apply_out="$TMP/apply"
-run_anchor "$home" apply --confirmed --base-sha256 absent >"$apply_out"
+apply_preview "$home" "$preview" >"$apply_out"
 has "$apply_out" 'wrote=AGENTS.md'
 agents="$home/.agents/AGENTS.md"
 ok test -f "$agents"
@@ -45,19 +55,36 @@ has "$agents" 'Edges: produces `feedback-observation`.'
 run_anchor "$home" preview >"$preview"
 has "$preview" 'status=noop'
 base="$(sed -n 's/^base-sha256=//p' "$preview")"
-run_anchor "$home" apply --confirmed --base-sha256 "$base" >"$apply_out"
+candidate="$(sed -n 's/^candidate-sha256=//p' "$preview")"
+run_anchor "$home" apply --confirmed --base-sha256 "$base" --candidate-sha256 "$candidate" >"$apply_out"
 has "$apply_out" 'status=noop'
 
 # A preview token is optimistic concurrency control, not a reusable authorization.
 printf '\nconcurrent edit\n' >>"$agents"
-no run_anchor "$home" apply --confirmed --base-sha256 "$base"
+no run_anchor "$home" apply --confirmed --base-sha256 "$base" --candidate-sha256 "$candidate"
 has "$agents" 'concurrent edit'
+
+# A concurrent change between snapshot and preview identity cannot produce a
+# token for stale candidate bytes.
+snapshot_hook="$TMP/change-after-snapshot.sh"
+printf '%s\n' '#!/bin/sh' 'printf "snapshot race\n" >>"$1"' >"$snapshot_hook"
+chmod +x "$snapshot_hook"
+cp "$agents" "$TMP/snapshot-race.before"
+if HOME="$home" AGENT_FEEDBACK_TEST_AFTER_SNAPSHOT="$snapshot_hook" "$ANCHOR" preview \
+  >"$TMP/snapshot-race.out" 2>"$TMP/snapshot-race.err"; then
+  fail 'snapshot race produced a preview'
+else
+  pass
+fi
+if [ ! -s "$TMP/snapshot-race.out" ]; then pass; else fail 'snapshot race emitted a confirmation token'; fi
+has "$TMP/snapshot-race.err" 'error=base-changed'
+has "$agents" 'snapshot race'
 
 # Removal deletes only the owned block and preserves the heading and surrounding bytes.
 run_anchor "$home" preview --remove >"$preview"
 base="$(sed -n 's/^base-sha256=//p' "$preview")"
 cp "$agents" "$TMP/before-remove"
-run_anchor "$home" apply --remove --confirmed --base-sha256 "$base" >"$apply_out"
+apply_preview "$home" "$preview" --remove >"$apply_out"
 has "$apply_out" 'removed=AGENTS.md'
 has "$agents" '## Skill routes (self-registered)'
 has "$agents" 'concurrent edit'
@@ -66,7 +93,7 @@ cp "$agents" "$TMP/after-remove"
 run_anchor "$home" preview --remove >"$preview"
 has "$preview" 'status=noop'
 base="$(sed -n 's/^base-sha256=//p' "$preview")"
-run_anchor "$home" apply --remove --confirmed --base-sha256 "$base" >"$apply_out"
+apply_preview "$home" "$preview" --remove >"$apply_out"
 has "$apply_out" 'status=noop'
 same "$agents" "$TMP/after-remove"
 
@@ -79,7 +106,7 @@ printf '# Personal instructions\n\nKeep this.\n\n## Skill routes (self-registere
 chmod 600 "$home/.agents/AGENTS.md"
 run_anchor "$home" preview >"$preview"
 base="$(sed -n 's/^base-sha256=//p' "$preview")"
-run_anchor "$home" apply --confirmed --base-sha256 "$base" >/dev/null
+apply_preview "$home" "$preview" >/dev/null
 has "$home/.agents/AGENTS.md" 'Existing route.'
 has "$home/.agents/AGENTS.md" 'Keep tail.'
 
@@ -93,11 +120,11 @@ chmod 600 "$home/.agents/AGENTS.md"
 printf 'before\r\n## Skill routes (self-registered)\r\nkeep-before\r\nafter-without-newline' >"$TMP/drifted-expected-remove"
 run_anchor "$home" preview --remove >"$preview"
 base="$(sed -n 's/^base-sha256=//p' "$preview")"
-run_anchor "$home" apply --remove --confirmed --base-sha256 "$base" >/dev/null
+apply_preview "$home" "$preview" --remove >/dev/null
 same "$home/.agents/AGENTS.md" "$TMP/drifted-expected-remove"
 
 # Malformed or ambiguous ownership is a hard refusal with no mutation.
-for case_name in duplicate-heading orphan-begin orphan-end duplicate-block inverted-block block-before-heading block-after-section malformed-marker; do
+for case_name in duplicate-heading orphan-begin orphan-end duplicate-block inverted-block block-before-heading block-after-section malformed-marker prefixed-marker trailing-marker; do
   case_home="$TMP/$case_name"
   new_home "$case_home"
   mkdir -p "$case_home/.agents"
@@ -127,6 +154,12 @@ for case_name in duplicate-heading orphan-begin orphan-end duplicate-block inver
     malformed-marker)
       printf '## Skill routes (self-registered)\n <!-- skill:agent-feedback BEGIN built-against:a -->\nx\n<!-- skill:agent-feedback END -->\n' >"$case_home/.agents/AGENTS.md"
       ;;
+    prefixed-marker)
+      printf '## Skill routes (self-registered)\nforeign <!-- skill:agent-feedback BEGIN built-against:a -->\nx\n<!-- skill:agent-feedback END -->\n' >"$case_home/.agents/AGENTS.md"
+      ;;
+    trailing-marker)
+      printf '## Skill routes (self-registered)\n<!-- skill:agent-feedback BEGIN built-against:a --> foreign -->\nx\n<!-- skill:agent-feedback END -->\n' >"$case_home/.agents/AGENTS.md"
+      ;;
   esac
   chmod 600 "$case_home/.agents/AGENTS.md"
   cp "$case_home/.agents/AGENTS.md" "$TMP/$case_name.before"
@@ -144,7 +177,7 @@ chmod 600 "$home/.agents/AGENTS.md"
 run_anchor "$home" preview >"$preview"
 has "$preview" 'status=change'
 base="$(sed -n 's/^base-sha256=//p' "$preview")"
-run_anchor "$home" apply --confirmed --base-sha256 "$base" >/dev/null
+apply_preview "$home" "$preview" >/dev/null
 [ "$(grep -c '^## Skill routes (self-registered)$' "$home/.agents/AGENTS.md")" -eq 2 ] && pass || fail 'fenced heading handling'
 
 # Fence parsing follows the opening delimiter and length. Shorter or unlike
@@ -168,7 +201,7 @@ for fence_case in longer-backtick tilde-with-backtick longer-tilde; do
   chmod 600 "$home/.agents/AGENTS.md"
   run_anchor "$home" preview >"$preview"
   base="$(sed -n 's/^base-sha256=//p' "$preview")"
-  run_anchor "$home" apply --confirmed --base-sha256 "$base" >/dev/null
+  apply_preview "$home" "$preview" >/dev/null
   has "$home/.agents/AGENTS.md" 'fake example body'
   [ "$(grep -c '^## Skill routes (self-registered)$' "$home/.agents/AGENTS.md")" -eq 2 ] && pass || fail "$fence_case heading handling"
 done
@@ -182,7 +215,7 @@ ln -s "$real_home" "$home"
 run_anchor "$home" preview >"$preview"
 has "$preview" 'base-sha256=absent'
 base="$(sed -n 's/^base-sha256=//p' "$preview")"
-run_anchor "$home" apply --confirmed --base-sha256 "$base" >/dev/null
+apply_preview "$home" "$preview" >/dev/null
 ok test -f "$real_home/.agents/AGENTS.md"
 
 # Unsafe descendants and files are rejected; legacy feedback is never touched.
@@ -200,7 +233,11 @@ mkdir -p "$home/.agents"
 chmod 700 "$home/.agents"
 printf 'outside\n' >"$outside/file"
 ln -s "$outside/file" "$home/.agents/AGENTS.md"
-no run_anchor "$home" preview
+watch_bin="$TMP/watch-bin"; mkdir -p "$watch_bin"
+printf '%s\n' '#!/bin/sh' 'if [ "$1" = "$WATCH_SOURCE" ]; then printf "read\n" >"$WATCH_LOG"; fi' 'exec /bin/cp "$@"' >"$watch_bin/cp"
+chmod +x "$watch_bin/cp"
+no env PATH="$watch_bin:$PATH" WATCH_SOURCE="$home/.agents/AGENTS.md" WATCH_LOG="$TMP/symlink-read.log" HOME="$home" "$ANCHOR" preview
+no test -e "$TMP/symlink-read.log"
 has "$outside/file" 'outside'
 
 home="$TMP/legacy"
@@ -213,10 +250,10 @@ chmod 600 "$home/.agents/AGENTS.md"
 cp "$home/.agents/FEEDBACK.md" "$TMP/legacy.before"
 run_anchor "$home" preview >"$preview"
 base="$(sed -n 's/^base-sha256=//p' "$preview")"
-run_anchor "$home" apply --confirmed --base-sha256 "$base" >/dev/null
+apply_preview "$home" "$preview" >/dev/null
 run_anchor "$home" preview --remove >"$preview"
 base="$(sed -n 's/^base-sha256=//p' "$preview")"
-run_anchor "$home" apply --remove --confirmed --base-sha256 "$base" >/dev/null
+apply_preview "$home" "$preview" --remove >/dev/null
 same "$home/.agents/FEEDBACK.md" "$TMP/legacy.before"
 has "$home/.agents/AGENTS.md" 'Send reusable-skill feedback to `/old-feedback`.'
 
@@ -241,7 +278,7 @@ while IFS=$'\t' read -r case_name _signal _capture_count route_heading expected_
     same "$TMP/$case_name.err" "$TMP/$case_name.expected"
     same "$route_home/.agents/AGENTS.md" "$TMP/$case_name.before"
     route_base="$(shasum -a 256 "$route_home/.agents/AGENTS.md" | awk '{print $1}')"
-    if run_anchor "$route_home" apply --confirmed --base-sha256 "$route_base" \
+    if run_anchor "$route_home" apply --confirmed --base-sha256 "$route_base" --candidate-sha256 "$(printf '%064d' 0)" \
       >"$TMP/$case_name.apply.out" 2>"$TMP/$case_name.apply.err"; then
       fail "$case_name apply bypassed competitor"
     else
@@ -254,7 +291,7 @@ while IFS=$'\t' read -r case_name _signal _capture_count route_heading expected_
     run_anchor "$route_home" preview >"$TMP/$case_name.out"
     has "$TMP/$case_name.out" 'status=change'
     route_base="$(sed -n 's/^base-sha256=//p' "$TMP/$case_name.out")"
-    run_anchor "$route_home" apply --confirmed --base-sha256 "$route_base" >/dev/null
+    apply_preview "$route_home" "$TMP/$case_name.out" >/dev/null
     has "$route_home/.agents/AGENTS.md" "$route_heading"
   fi
 done <"$cases"
@@ -275,7 +312,7 @@ run_anchor "$home" preview >"$preview"; has "$preview" 'status=change'
 # owned block.
 home="$TMP/competitor-removal"; new_home "$home"
 run_anchor "$home" preview >"$preview"; base="$(sed -n 's/^base-sha256=//p' "$preview")"
-run_anchor "$home" apply --confirmed --base-sha256 "$base" >/dev/null
+apply_preview "$home" "$preview" >/dev/null
 printf '\n### /review-feedback — retained competitor\n' >>"$home/.agents/AGENTS.md"
 cp "$home/.agents/AGENTS.md" "$TMP/competitor-installed.before"
 if run_anchor "$home" preview >"$TMP/competitor-update.out" 2>"$TMP/competitor-update.err"; then
@@ -286,7 +323,7 @@ fi
 has "$TMP/competitor-update.err" 'reason=competing-feedback-route action=resolve-route conflict=### /review-feedback — retained competitor'
 same "$home/.agents/AGENTS.md" "$TMP/competitor-installed.before"
 run_anchor "$home" preview --remove >"$preview"; base="$(sed -n 's/^base-sha256=//p' "$preview")"
-run_anchor "$home" apply --remove --confirmed --base-sha256 "$base" >/dev/null
+apply_preview "$home" "$preview" --remove >/dev/null
 has "$home/.agents/AGENTS.md" '### /review-feedback — retained competitor'
 no grep -qF '<!-- skill:agent-feedback BEGIN' "$home/.agents/AGENTS.md"
 
@@ -317,6 +354,23 @@ git -C "$repo" commit -qm 'skill change'
 second_stamp="$(git -C "$repo" log -1 --format=%h -- skill)"
 HOME="$stamp_home" "$repo/skill/scripts/feedback-anchor.sh" preview >"$preview"
 has "$preview" "built-against:$second_stamp"
+
+# Confirmation binds the rendered candidate, not just the destination base.
+stamp_base="$(sed -n 's/^base-sha256=//p' "$preview")"
+stamp_candidate="$(sed -n 's/^candidate-sha256=//p' "$preview")"
+awk '{ print }' "$repo/skill/templates/agents-route.md" >"$TMP/template.before"
+awk '{ if ($0 == "<!-- skill:agent-feedback END -->") print "changed package bytes"; print }' \
+  "$TMP/template.before" >"$repo/skill/templates/agents-route.md"
+if HOME="$stamp_home" "$repo/skill/scripts/feedback-anchor.sh" apply --confirmed \
+  --base-sha256 "$stamp_base" --candidate-sha256 "$stamp_candidate" \
+  >"$TMP/candidate-drift.out" 2>"$TMP/candidate-drift.err"; then
+  fail 'changed candidate reused preview authorization'
+else
+  pass
+fi
+has "$TMP/candidate-drift.err" 'error=candidate-changed'
+no test -e "$stamp_home/.agents"
+awk '{ print }' "$TMP/template.before" >"$repo/skill/templates/agents-route.md"
 
 # A malformed package template cannot produce global instructions.
 printf '<!-- skill:agent-feedback BEGIN built-against:no-placeholder -->\n<!-- skill:agent-feedback END -->\n' >"$repo/skill/templates/agents-route.md"

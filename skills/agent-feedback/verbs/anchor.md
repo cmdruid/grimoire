@@ -8,7 +8,8 @@ or inapplicable route never impairs explicit capture.
 
 ## Install or update
 
-1. Run `scripts/feedback-anchor.sh preview` and retain its `base-sha256` value.
+1. Run `scripts/feedback-anchor.sh preview` and retain its `base-sha256` and
+   `candidate-sha256` values.
 2. Inspect the complete diff. Also scan prose outside the owned block for a competing route for
    feedback. Scan only unfenced bytes in the self-registered route section. A competitor is exactly
    an H3 slash-command heading whose lowercase command slug contains `feedback` as a
@@ -18,7 +19,7 @@ or inapplicable route never impairs explicit capture.
    and ask the human to approve a manual cutover; no confirmation token bypasses the refusal.
 3. Describe the proposed global change and ask for explicit confirmation.
 4. Only after confirmation, run
-   `scripts/feedback-anchor.sh apply --confirmed --base-sha256 <preview-value>`.
+   `scripts/feedback-anchor.sh apply --confirmed --base-sha256 <preview-base> --candidate-sha256 <preview-candidate>`.
 5. Report the helper's result. A stale preview, unsafe path, malformed block, or changed file is a
    refusal; do not repair or overwrite it automatically.
 
@@ -28,12 +29,12 @@ silent for ordinary success, and suppresses automatic feedback about `agent-feed
 ## Remove
 
 Preview with `scripts/feedback-anchor.sh preview --remove`, show the complete diff, ask for explicit
-confirmation, then apply that exact base with
-`scripts/feedback-anchor.sh apply --remove --confirmed --base-sha256 <preview-value>`.
+confirmation, then apply that exact base and candidate with
+`scripts/feedback-anchor.sh apply --remove --confirmed --base-sha256 <preview-base> --candidate-sha256 <preview-candidate>`.
 Removal deletes only this package's well-formed owned block and preserves every surrounding byte. It
 ignores competing routes and never deletes feedback data or touches another owner's files or markers.
 
 ## Done when
 
-Preview preceded mutation, confirmation covered the exact base digest, and the helper returned
+Preview preceded mutation, confirmation covered the exact base and candidate digests, and the helper returned
 `wrote=AGENTS.md`, `removed=AGENTS.md`, or `status=noop`.

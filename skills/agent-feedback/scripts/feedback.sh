@@ -6,22 +6,46 @@ HEADER=$'id\tcreated_at\tupdated_at\torigin\tsubject_type\tsubject\tsubject_ref\
 DATA_DIR="" DATA_FILE="" LOCK_DIR="" LOCK_OWNED=no TEMP_FILE=""
 QUERY_ROWS="" QUERY_SORTED="" QUERY_SELECTED=""
 
+# References are stored encoded, so direct arguments are encoded and checked
+# by this same byte-oriented grammar before any row reaches the store.
+REFERENCE_AWK='
+  function decoded_len(s, i,c,n,nextc){n=0;for(i=1;i<=length(s);i++){c=substr(s,i,1);if(c~/[[:cntrl:]]/)return -1;if(c=="\\"){if(i==length(s))return -1;nextc=substr(s,i+1,1);if(nextc!="\\"&&nextc!="t"&&nextc!="r"&&nextc!="n")return -1;i++}n++}return n}
+  function decoded_ref(s, i,c,nextc,out){out="";for(i=1;i<=length(s);i++){c=substr(s,i,1);if(c=="\\"){nextc=substr(s,++i,1);if(nextc=="t")out=out "\t";else if(nextc=="r")out=out "\r";else if(nextc=="n")out=out "\n";else out=out "\\"}else out=out c}return out}
+  function ref_sep(c){return c=="/"||c=="\\"}
+  function has_parent_segment(s, i,before,after){for(i=1;i<length(s);i++){if(substr(s,i,2)!="..")continue;before=i==1?"":substr(s,i-1,1);after=i+1==length(s)?"":substr(s,i+2,1);if((before==""||ref_sep(before))&&(after==""||ref_sep(after)))return 1}return 0}
+  function safe_ref(s,limit, d,lower){
+    if(decoded_len(s)<1||decoded_len(s)>limit)return 0
+    d=decoded_ref(s);lower=tolower(d)
+    if(substr(d,1,1)=="/"||substr(d,1,1)=="\\"||substr(d,1,1)=="~")return 0
+    if(length(d)>=3&&substr(d,1,1)~/[A-Za-z]/&&substr(d,2,1)==":"&&ref_sep(substr(d,3,1)))return 0
+    if(lower~/^file:/||has_parent_segment(d))return 0
+    return 1
+  }
+'
+
 reason(){ printf 'reason=%s action=%s\n' "$1" "$2" >&2; exit 2; }
 usage(){ reason usage check-command; }
 
 cleanup(){
-  [ -z "$QUERY_ROWS" ] || rm -f -- "$QUERY_ROWS"
-  [ -z "$QUERY_SORTED" ] || rm -f -- "$QUERY_SORTED"
-  [ -z "$QUERY_SELECTED" ] || rm -f -- "$QUERY_SELECTED"
+  [ -z "$QUERY_ROWS" ] || rm -f -- "$QUERY_ROWS" >/dev/null 2>&1 || true
+  [ -z "$QUERY_SORTED" ] || rm -f -- "$QUERY_SORTED" >/dev/null 2>&1 || true
+  [ -z "$QUERY_SELECTED" ] || rm -f -- "$QUERY_SELECTED" >/dev/null 2>&1 || true
   if [ -n "$TEMP_FILE" ] && [ -f "$TEMP_FILE" ] && [ ! -L "$TEMP_FILE" ]; then
-    rm -f -- "$TEMP_FILE"
+    rm -f -- "$TEMP_FILE" >/dev/null 2>&1 || true
   fi
   if [ "$LOCK_OWNED" = yes ] && [ -d "$LOCK_DIR" ] && [ ! -L "$LOCK_DIR" ]; then
-    rm -f -- "$LOCK_DIR/pid"
+    rm -f -- "$LOCK_DIR/pid" >/dev/null 2>&1 || true
     rmdir -- "$LOCK_DIR" 2>/dev/null || true
   fi
 }
-trap cleanup EXIT HUP INT TERM
+on_signal(){ trap - HUP INT TERM; reason interrupted retry; }
+trap cleanup EXIT
+trap on_signal HUP INT TERM
+
+make_temp(){ mktemp "$1" 2>/dev/null || reason write-failed retry; }
+set_private_mode(){ chmod "$1" "$2" >/dev/null 2>&1 || reason write-failed retry; }
+copy_for_write(){ cp -- "$1" "$2" >/dev/null 2>&1 || reason write-failed retry; }
+rename_for_write(){ mv -- "$1" "$2" >/dev/null 2>&1 || reason write-failed retry; }
 
 resolve_paths(){
   case "${HOME:-}" in /*) ;; *) reason invalid-home set-absolute-HOME;; esac
@@ -56,11 +80,11 @@ ensure_layout(){
   home="${DATA_DIR%/.agents/skilldata/agent-feedback}"
   agents="$home/.agents"; skilldata="$agents/skilldata"
   check_prefix
-  if [ ! -d "$agents" ]; then mkdir -m 700 -- "$agents" || reason write-failed inspect-parent; fi
+  if [ ! -d "$agents" ]; then mkdir -m 700 -- "$agents" 2>/dev/null || reason write-failed inspect-parent; fi
   check_prefix
-  if [ ! -d "$skilldata" ]; then mkdir -m 700 -- "$skilldata" || reason write-failed inspect-parent; fi
+  if [ ! -d "$skilldata" ]; then mkdir -m 700 -- "$skilldata" 2>/dev/null || reason write-failed inspect-parent; fi
   check_prefix
-  if [ ! -d "$DATA_DIR" ]; then mkdir -m 700 -- "$DATA_DIR" || reason write-failed inspect-parent; fi
+  if [ ! -d "$DATA_DIR" ]; then mkdir -m 700 -- "$DATA_DIR" 2>/dev/null || reason write-failed inspect-parent; fi
   check_prefix
 }
 
@@ -76,8 +100,8 @@ try_remove_stale_lock(){
   IFS= read -r pid <"$LOCK_DIR/pid" || return 1
   case "$pid" in ''|*[!0-9]*) return 1;; esac
   if ps -p "$pid" >/dev/null 2>&1; then return 1; fi
-  rm -f -- "$LOCK_DIR/pid" || return 1
-  rmdir -- "$LOCK_DIR" || return 1
+  rm -f -- "$LOCK_DIR/pid" >/dev/null 2>&1 || return 1
+  rmdir -- "$LOCK_DIR" >/dev/null 2>&1 || return 1
 }
 
 acquire_lock(){
@@ -85,14 +109,20 @@ acquire_lock(){
   while [ "$attempts" -lt 50 ]; do
     check_prefix
     if mkdir -m 700 -- "$LOCK_DIR" 2>/dev/null; then
-      printf '%s\n' "$$" >"$LOCK_DIR/pid"; chmod 600 "$LOCK_DIR/pid"; LOCK_OWNED=yes; return 0
+      LOCK_OWNED=yes
+      { printf '%s\n' "$$" >"$LOCK_DIR/pid"; } 2>/dev/null || reason write-failed retry
+      set_private_mode 600 "$LOCK_DIR/pid"
+      return 0
     fi
-    attempts=$((attempts + 1)); sleep 0.1
+    attempts=$((attempts + 1)); sleep 0.1 2>/dev/null || reason interrupted retry
   done
   if [ "$allow_stale" = yes ] && try_remove_stale_lock; then
     check_prefix
     if mkdir -m 700 -- "$LOCK_DIR" 2>/dev/null; then
-      printf '%s\n' "$$" >"$LOCK_DIR/pid"; chmod 600 "$LOCK_DIR/pid"; LOCK_OWNED=yes; return 0
+      LOCK_OWNED=yes
+      { printf '%s\n' "$$" >"$LOCK_DIR/pid"; } 2>/dev/null || reason write-failed retry
+      set_private_mode 600 "$LOCK_DIR/pid"
+      return 0
     fi
   fi
   reason feedback-busy retry
@@ -131,7 +161,7 @@ current_utc(){
   if [ -n "${AGENT_FEEDBACK_TEST_UTC_NOW:-}" ]; then
     now="$AGENT_FEEDBACK_TEST_UTC_NOW"; valid_utc_timestamp "$now" || reason test-hook-invalid retry
   else
-    now="$(date -u '+%Y-%m-%dT%H:%M:%SZ')" || reason clock-unavailable retry
+    now="$(date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null)" || reason clock-unavailable retry
   fi
   printf '%s\n' "$now"
 }
@@ -150,13 +180,14 @@ valid_raw_text(){
 valid_optional_text(){ [ -z "$1" ] || valid_raw_text "$1" "$2"; }
 
 valid_reference(){
-  local value="$1" limit="$2" stripped
+  local value="$1" limit="$2" stripped encoded
   valid_raw_text "$value" "$limit" || return 1
   stripped="$(LC_ALL=C printf '%s' "$value" | tr -d '\t\r\n')"
   ! LC_ALL=C printf '%s' "$stripped" | grep -q '[[:cntrl:]]' || return 1
-  case "$value" in
-    /*|\\*|[A-Za-z]:[/\\]*|..|../*|*/../*|*/..) return 1;;
-  esac
+  encoded="$(encode_text "$value")"
+  LC_ALL=C printf '%s\n' "$encoded" | LC_ALL=C awk -v limit="$limit" "$REFERENCE_AWK
+    { exit safe_ref(\$0,limit) ? 0 : 1 }
+  "
 }
 valid_subject_ref(){ [ "$1" = unknown ] || valid_reference "$1" 512; }
 valid_project_ref(){ [ -z "$1" ] && return 0; case "$1" in local-sha256:*) valid_hex "${1#local-sha256:}" 16;; *) return 1;; esac; }
@@ -182,9 +213,10 @@ validate_file(){
   local file="$1" last
   [ -f "$file" ] && [ ! -L "$file" ] || reason invalid-store run-setup
   validate_utf8_file "$file"
-  last="$(tail -c 1 "$file" 2>/dev/null | od -An -tuC | tr -d '[:space:]')"
+  last="$({ tail -c 1 "$file" | od -An -tuC | tr -d '[:space:]'; } 2>/dev/null)" ||
+    reason invalid-store repair-manually
   [ "$last" = 10 ] || reason invalid-store repair-manually
-  if LC_ALL=C tr -d '\t\n' <"$file" | LC_ALL=C grep -q '[[:cntrl:]]'; then reason invalid-store repair-manually; fi
+  if { LC_ALL=C tr -d '\t\n' <"$file" | LC_ALL=C grep -q '[[:cntrl:]]'; } 2>/dev/null; then reason invalid-store repair-manually; fi
   LC_ALL=C awk -F '\t' -v header="$HEADER" '
     function hex(s,n){return length(s)==n && s !~ /[^0-9a-f]/}
     function digits(s){return s!="" && s !~ /[^0-9]/}
@@ -200,8 +232,7 @@ validate_file(){
     function basic(s){return length(s)==16&&substr(s,9,1)=="T"&&substr(s,16,1)=="Z"&&parts(substr(s,1,4),substr(s,5,2),substr(s,7,2),substr(s,10,2),substr(s,12,2),substr(s,14,2))}
     function feedback_id(s){return length(s)==28&&substr(s,1,3)=="AF-"&&substr(s,12,1)=="T"&&substr(s,19,1)=="Z"&&substr(s,20,1)=="-"&&basic(substr(s,4,16))&&hex(substr(s,21),8)}
     function slug(s){return s~/^[a-z0-9][a-z0-9-]*[a-z0-9]$/||s~/^[a-z0-9]$/}
-    function decoded_len(s, i,c,n,nextc){n=0;for(i=1;i<=length(s);i++){c=substr(s,i,1);if(c~/[[:cntrl:]]/)return -1;if(c=="\\"){if(i==length(s))return -1;nextc=substr(s,i+1,1);if(nextc!="\\"&&nextc!="t"&&nextc!="r"&&nextc!="n")return -1;i++}n++}return n}
-    function safe_ref(s,limit){if(s==""||substr(s,1,1)=="/"||s~/(^|\/)\.\.(\/|$)/)return 0;return decoded_len(s)>=1&&decoded_len(s)<=limit}
+    '"$REFERENCE_AWK"'
     NR==1{if($0!=header||NF!=20)exit 10;next}
     {
       if(NF!=20||length($0)+1>32768||!feedback_id($1)||seen[$1]++)exit 11
@@ -230,10 +261,12 @@ validate_file(){
 ensure_file_locked(){
   check_prefix
   if [ ! -e "$DATA_FILE" ]; then
-    TEMP_FILE="$(mktemp "$DATA_DIR/.agent-feedback.tsv.tmp.XXXXXX")" || reason write-failed retry
-    chmod 600 "$TEMP_FILE"; printf '%s\n' "$HEADER" >"$TEMP_FILE"; validate_file "$TEMP_FILE"
+    TEMP_FILE="$(make_temp "$DATA_DIR/.agent-feedback.tsv.tmp.XXXXXX")"
+    set_private_mode 600 "$TEMP_FILE"
+    { printf '%s\n' "$HEADER" >"$TEMP_FILE"; } 2>/dev/null || reason write-failed retry
+    validate_file "$TEMP_FILE"
     check_prefix; [ ! -e "$DATA_FILE" ] || reason concurrent-change retry
-    mv -- "$TEMP_FILE" "$DATA_FILE"; TEMP_FILE=""
+    rename_for_write "$TEMP_FILE" "$DATA_FILE"; TEMP_FILE=""
   fi
   validate_file "$DATA_FILE"
 }
@@ -241,9 +274,9 @@ ensure_file_locked(){
 random_hex(){
   if [ -n "${AGENT_FEEDBACK_TEST_RANDOM_SOURCE:-}" ]; then
     [ -x "$AGENT_FEEDBACK_TEST_RANDOM_SOURCE" ] || reason random-unavailable retry
-    "$AGENT_FEEDBACK_TEST_RANDOM_SOURCE"
+    "$AGENT_FEEDBACK_TEST_RANDOM_SOURCE" 2>/dev/null || reason random-unavailable retry
   else
-    od -An -N4 -tx1 /dev/urandom | tr -d ' \n'
+    { od -An -N4 -tx1 /dev/urandom | tr -d ' \n'; } 2>/dev/null || reason random-unavailable retry
   fi
 }
 
@@ -255,7 +288,7 @@ cmd_describe(){
 cmd_init(){
   [ "$#" -eq 0 ] || usage
   resolve_paths; ensure_layout; acquire_lock yes; ensure_file_locked
-  chmod 700 "$DATA_DIR"; chmod 600 "$DATA_FILE"; printf 'status=ready\n'
+  set_private_mode 700 "$DATA_DIR"; set_private_mode 600 "$DATA_FILE"; printf 'status=ready\n'
 }
 
 cmd_capture(){
@@ -300,7 +333,7 @@ cmd_capture(){
   case "$redacted" in yes|no) ;; *) reason invalid-redacted use-yes-or-no;; esac
   valid_project_ref "$project_ref" || reason invalid-project-ref recompute-reference
 
-  local now id_time hex id collision_attempts=0 collision_free=no
+  local now id_time hex id collision_attempts=0 collision_free=no collision
   local e_ref e_inv e_summary e_statement e_incident e_consequence e_suggestion
   e_ref="$(encode_text "$subject_ref")"; e_inv="$(encode_text "$invocation")"; e_summary="$(encode_text "$summary")"
   e_statement="$(encode_text "$statement")"; e_incident="$(encode_text "$incident")"
@@ -310,23 +343,25 @@ cmd_capture(){
   while [ "$collision_attempts" -lt 100 ]; do
     collision_attempts=$((collision_attempts + 1))
     hex="$(random_hex)"; valid_hex "$hex" 8 || reason random-unavailable retry; id="AF-$id_time-$hex"
-    if ! LC_ALL=C awk -F '\t' -v id="$id" 'NR>1&&$1==id{found=1}END{exit found?0:1}' "$DATA_FILE"; then
+    collision="$(LC_ALL=C awk -F '\t' -v id="$id" 'NR>1&&$1==id{found=1}END{print found?"yes":"no"}' "$DATA_FILE" 2>/dev/null)" ||
+      reason read-failed retry
+    if [ "$collision" = no ]; then
       collision_free=yes
       break
     fi
   done
   [ "$collision_free" = yes ] || reason id-collision retry
-  TEMP_FILE="$(mktemp "$DATA_DIR/.agent-feedback.tsv.tmp.XXXXXX")" || reason write-failed retry
-  chmod 600 "$TEMP_FILE"; cp -- "$DATA_FILE" "$TEMP_FILE"
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\topen\t\t\t\n' \
+  TEMP_FILE="$(make_temp "$DATA_DIR/.agent-feedback.tsv.tmp.XXXXXX")"
+  set_private_mode 600 "$TEMP_FILE"; copy_for_write "$DATA_FILE" "$TEMP_FILE"
+  { printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\topen\t\t\t\n' \
     "$id" "$now" "$now" "$origin" "$subject_type" "$subject" "$e_ref" "$e_inv" "$kind" "$e_summary" \
-    "$e_statement" "$e_incident" "$e_consequence" "$e_suggestion" "$redacted" "$project_ref" >>"$TEMP_FILE"
+    "$e_statement" "$e_incident" "$e_consequence" "$e_suggestion" "$redacted" "$project_ref" >>"$TEMP_FILE"; } 2>/dev/null || reason write-failed retry
   validate_file "$TEMP_FILE"
   if [ -n "${AGENT_FEEDBACK_TEST_BEFORE_RENAME:-}" ]; then
     [ -x "$AGENT_FEEDBACK_TEST_BEFORE_RENAME" ] || reason test-hook-invalid retry
-    "$AGENT_FEEDBACK_TEST_BEFORE_RENAME" "$DATA_FILE" "$TEMP_FILE"
+    "$AGENT_FEEDBACK_TEST_BEFORE_RENAME" "$DATA_FILE" "$TEMP_FILE" 2>/dev/null || reason interrupted retry
   fi
-  check_prefix; validate_file "$DATA_FILE"; mv -- "$TEMP_FILE" "$DATA_FILE"; TEMP_FILE=""
+  check_prefix; validate_file "$DATA_FILE"; rename_for_write "$TEMP_FILE" "$DATA_FILE"; TEMP_FILE=""
   printf 'captured=%s\ncount=1\nredacted=%s\n' "$id" "$redacted"
 }
 
@@ -365,25 +400,28 @@ cmd_query(){
   resolve_paths; check_prefix
   [ -e "$DATA_FILE" ] || reason feedback-not-initialized run-setup-or-capture
   validate_file "$DATA_FILE"
-  QUERY_ROWS="$(mktemp "${TMPDIR:-/tmp}/agent-feedback-query.XXXXXX")"
-  QUERY_SORTED="$(mktemp "${TMPDIR:-/tmp}/agent-feedback-sort.XXXXXX")"
-  QUERY_SELECTED="$(mktemp "${TMPDIR:-/tmp}/agent-feedback-page.XXXXXX")"
-  LC_ALL=C awk -F '\t' -v o="$origin" -v t="$subject_type" -v s="$subject" -v x="$status" \
-    'NR>1&&(o==""||$4==o)&&(t==""||$5==t)&&(s==""||$6==s)&&$17==x' "$DATA_FILE" >"$QUERY_ROWS"
-  if [ "$order" = newest ]; then LC_ALL=C sort -t $'\t' -k2,2r -k1,1r "$QUERY_ROWS" >"$QUERY_SORTED"
-  else LC_ALL=C sort -t $'\t' -k2,2 -k1,1 "$QUERY_ROWS" >"$QUERY_SORTED"; fi
-  head -n "$limit" "$QUERY_SORTED" >"$QUERY_SELECTED"
+  QUERY_ROWS="$(make_temp "${TMPDIR:-/tmp}/agent-feedback-query.XXXXXX")"
+  QUERY_SORTED="$(make_temp "${TMPDIR:-/tmp}/agent-feedback-sort.XXXXXX")"
+  QUERY_SELECTED="$(make_temp "${TMPDIR:-/tmp}/agent-feedback-page.XXXXXX")"
+  { LC_ALL=C awk -F '\t' -v o="$origin" -v t="$subject_type" -v s="$subject" -v x="$status" \
+    'NR>1&&(o==""||$4==o)&&(t==""||$5==t)&&(s==""||$6==s)&&$17==x' "$DATA_FILE" >"$QUERY_ROWS"; } 2>/dev/null || reason read-failed retry
+  if [ "$order" = newest ]; then
+    { LC_ALL=C sort -t $'\t' -k2,2r -k1,1r "$QUERY_ROWS" >"$QUERY_SORTED"; } 2>/dev/null || reason read-failed retry
+  else
+    { LC_ALL=C sort -t $'\t' -k2,2 -k1,1 "$QUERY_ROWS" >"$QUERY_SORTED"; } 2>/dev/null || reason read-failed retry
+  fi
+  { head -n "$limit" "$QUERY_SORTED" >"$QUERY_SELECTED"; } 2>/dev/null || reason read-failed retry
   if [ "$format" = tsv ]; then
     printf '%s\n' "$HEADER"
-    if [ "$include_project" = yes ]; then cat "$QUERY_SELECTED"
-    else LC_ALL=C awk -F '\t' 'BEGIN{OFS="\t"}{$16="";print}' "$QUERY_SELECTED"; fi
+    if [ "$include_project" = yes ]; then cat "$QUERY_SELECTED" 2>/dev/null || reason read-failed retry
+    else LC_ALL=C awk -F '\t' 'BEGIN{OFS="\t"}{$16="";print}' "$QUERY_SELECTED" 2>/dev/null || reason read-failed retry; fi
   else
     LC_ALL=C awk -F '\t' '
       function decode(s,out,i,c,n){out="";for(i=1;i<=length(s);i++){c=substr(s,i,1);if(c=="\\"){n=substr(s,++i,1);if(n=="t")out=out"\t";else if(n=="r")out=out"\r";else if(n=="n")out=out"\n";else out=out"\\"}else out=out c}return out}
       {print "id="$1;print "created_at="$2;print "updated_at="$3;print "origin="$4;print "subject_type="$5;print "subject="$6;print "subject_ref="decode($7);print "invocation="decode($8);print "kind="$9;print "summary="decode($10);print "statement="decode($11);print "incident="decode($12);print "consequence="decode($13);print "suggestion="decode($14);print "redacted="$15;print "status="$17;print "disposition="$18;print "resolution="decode($19);print "result_ref="decode($20);print "--"}
-    ' "$QUERY_SELECTED"
+    ' "$QUERY_SELECTED" 2>/dev/null || reason read-failed retry
   fi
-  rm -f -- "$QUERY_ROWS" "$QUERY_SORTED" "$QUERY_SELECTED"
+  rm -f -- "$QUERY_ROWS" "$QUERY_SORTED" "$QUERY_SELECTED" >/dev/null 2>&1 || reason cleanup-failed retry
   QUERY_ROWS=""; QUERY_SORTED=""; QUERY_SELECTED=""
 }
 
@@ -414,22 +452,24 @@ cmd_close(){
   encoded_resolution="$(encode_text "$resolution")"; encoded_ref="$(encode_text "$result_ref")"
   resolve_paths; check_prefix; [ -e "$DATA_FILE" ] || reason feedback-not-initialized run-setup-or-capture
   acquire_lock no; validate_file "$DATA_FILE"
-  found="$(LC_ALL=C awk -F '\t' -v id="$id" 'NR>1&&$1==id{print $17"\t"$18"\t"$19"\t"$20;found=1}END{if(!found)exit 1}' "$DATA_FILE")" || reason missing-id refresh-query
+  found="$(LC_ALL=C awk -F '\t' -v id="$id" 'NR>1&&$1==id{print $17"\t"$18"\t"$19"\t"$20}' "$DATA_FILE" 2>/dev/null)" ||
+    reason read-failed retry
+  [ -n "$found" ] || reason missing-id refresh-query
   IFS=$'\t' read -r status old_disposition old_resolution old_ref <<<"$found"
   if [ "$status" = open ]; then action=closed
   elif [ "$status" = closed ] && [ "$old_disposition" = "$disposition" ] && [ "$old_resolution" = "$encoded_resolution" ] && [ "$old_ref" = "$encoded_ref" ]; then action=unchanged
   else reason conflicting-close refresh-query; fi
   if [ "$action" = closed ]; then
-    now="$(current_utc)"; TEMP_FILE="$(mktemp "$DATA_DIR/.agent-feedback.tsv.tmp.XXXXXX")" || reason write-failed retry
-    chmod 600 "$TEMP_FILE"
-    LC_ALL=C awk -F '\t' -v OFS='\t' -v id="$id" -v now="$now" -v d="$disposition" -v r="$encoded_resolution" -v ref="$encoded_ref" \
-      'NR==1{print;next}$1==id&&$17=="open"{$3=now;$17="closed";$18=d;$19=r;$20=ref}{print}' "$DATA_FILE" >"$TEMP_FILE"
+    now="$(current_utc)"; TEMP_FILE="$(make_temp "$DATA_DIR/.agent-feedback.tsv.tmp.XXXXXX")"
+    set_private_mode 600 "$TEMP_FILE"
+    { LC_ALL=C awk -F '\t' -v OFS='\t' -v id="$id" -v now="$now" -v d="$disposition" -v r="$encoded_resolution" -v ref="$encoded_ref" \
+      'NR==1{print;next}$1==id&&$17=="open"{$3=now;$17="closed";$18=d;$19=r;$20=ref}{print}' "$DATA_FILE" >"$TEMP_FILE"; } 2>/dev/null || reason write-failed retry
     validate_file "$TEMP_FILE"
     if [ -n "${AGENT_FEEDBACK_TEST_BEFORE_RENAME:-}" ]; then
       [ -x "$AGENT_FEEDBACK_TEST_BEFORE_RENAME" ] || reason test-hook-invalid retry
-      "$AGENT_FEEDBACK_TEST_BEFORE_RENAME" "$DATA_FILE" "$TEMP_FILE"
+      "$AGENT_FEEDBACK_TEST_BEFORE_RENAME" "$DATA_FILE" "$TEMP_FILE" 2>/dev/null || reason interrupted retry
     fi
-    check_prefix; validate_file "$DATA_FILE"; mv -- "$TEMP_FILE" "$DATA_FILE"; TEMP_FILE=""
+    check_prefix; validate_file "$DATA_FILE"; rename_for_write "$TEMP_FILE" "$DATA_FILE"; TEMP_FILE=""
   fi
   printf '%s=%s\ncount=1\n' "$action" "$id"
 }

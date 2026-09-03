@@ -106,16 +106,21 @@ package_sha256="$(LC_ALL=C perl -MDigest::SHA -MFile::Find -MFcntl=:mode -e '
   use strict; use warnings; use bytes;
   my $root = shift @ARGV;
   my @entries;
-  find({ no_chdir => 1, follow => 0, wanted => sub {
-    my $path = $File::Find::name;
-    return if $path eq $root;
-    my $rel = substr($path, length($root) + 1);
-    if ($rel =~ m{(?:^|/)\.git(?:/|$)}) {
-      $File::Find::prune = 1 if -d _;
-      return;
-    }
-    push @entries, $rel;
-  }}, $root);
+  my $walked = eval {
+    local $SIG{__WARN__} = sub { die "traversal-warning\n"; };
+    find({ no_chdir => 1, follow => 0, wanted => sub {
+      my $path = $File::Find::name;
+      return if $path eq $root;
+      my $rel = substr($path, length($root) + 1);
+      if ($rel =~ m{(?:^|/)\.git(?:/|$)}) {
+        $File::Find::prune = 1 if -d _;
+        return;
+      }
+      push @entries, $rel;
+    }}, $root);
+    1;
+  };
+  if (!$walked) { print STDERR "reason=unreadable-entry\n"; exit 2; }
   @entries = sort { $a cmp $b } @entries;
   my $sha = Digest::SHA->new(256);
   sub frame { my ($value) = @_; $sha->add(pack("Q>", length($value)), $value); }

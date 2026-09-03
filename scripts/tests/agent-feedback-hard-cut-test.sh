@@ -10,12 +10,16 @@ skill_word=skill
 feedback_word=feedback
 agents_word=agents
 skilldata_word=skilldata
+agent_word=agent
 s_word=S
 f_word=F
 old_name="${skill_word}-${feedback_word}"
+current_name="${agent_word}-${feedback_word}"
 schema_name="${old_name}@1"
 id_prefix="${s_word}${f_word}-"
 global_path=".${agents_word}/${skilldata_word}/${old_name}"
+current_global_path=".${agents_word}/${skilldata_word}/${current_name}"
+generic_global_path=".${agents_word}/${skilldata_word}/foreign-owner"
 slash_command="/${old_name}"
 begin_mark="<!-- ${skill_word}:${old_name} BEGIN"
 end_mark="<!-- ${skill_word}:${old_name} END"
@@ -25,7 +29,10 @@ sort_tmp="${old_name}-sort."
 page_tmp="${old_name}-page."
 anchor_tmp="${old_name}-anchor."
 agents_tmp=".AGENTS.md.${old_name}."
-negative_marker='hard-cut-negative-fixture'
+fixture_word="$(printf '%s%s' 'fi' 'xture')"
+negative_marker="hard-cut-negative-${fixture_word}"
+approved_negative_path="skills/${current_name}/scripts/tests/fixtures/anchor-cases.tsv"
+approved_negative_line="predecessor-generic	-	-	### ${slash_command} — prior route # ${negative_marker}	yes"
 
 labels=(package schema id-prefix global-path slash-command begin-delimiter end-delimiter data-temp query-temp sort-temp page-temp anchor-temp agents-temp)
 values=("$old_name" "$schema_name" "$id_prefix" "$global_path" "$slash_command" "$begin_mark" "$end_mark" "$data_tmp" "$query_tmp" "$sort_tmp" "$page_tmp" "$anchor_tmp" "$agents_tmp")
@@ -55,7 +62,7 @@ excluded_path() {
 }
 
 scan_live() {
-  local root="$1" rel file token label bad i
+  local root="$1" rel file token label match matches line i marker_count=0
 
   while IFS= read -r -d '' rel; do
     excluded_path "$rel" && continue
@@ -72,15 +79,51 @@ scan_live() {
 
     file="$root/$rel"
     [ -f "$file" ] || continue
+    matches="$(LC_ALL=C grep -a -nF -- "$negative_marker" "$file" 2>/dev/null || true)"
+    while IFS= read -r match; do
+      [ -n "$match" ] || continue
+      line="${match#*:}"
+      if [ "$rel" = "$approved_negative_path" ] && [ "$line" = "$approved_negative_line" ]; then
+        marker_count=$((marker_count + 1))
+      else
+        echo "hard-cut violation kind=annotation path=$rel match=$match" >&2
+        return 1
+      fi
+    done <<<"$matches"
     for ((i = 0; i < ${#values[@]}; i++)); do
       token="${values[$i]}"
       label="${labels[$i]}"
-      if bad="$(LC_ALL=C grep -a -nF -- "$token" "$file" 2>/dev/null | grep -Fv -- "$negative_marker" | sed -n '1p')"; then
-        echo "hard-cut violation kind=content form=$label path=$rel match=$bad" >&2
+      matches="$(LC_ALL=C grep -a -nF -- "$token" "$file" 2>/dev/null || true)"
+      while IFS= read -r match; do
+        [ -n "$match" ] || continue
+        line="${match#*:}"
+        if [ "$rel" = "$approved_negative_path" ] && [ "$line" = "$approved_negative_line" ]; then
+          continue
+        fi
+        echo "hard-cut violation kind=content form=$label path=$rel match=$match" >&2
         return 1
-      fi
+      done <<<"$matches"
     done
   done < <(live_files "$root")
+  if [ "$marker_count" -gt 1 ]; then
+    echo "hard-cut violation kind=annotation-count count=$marker_count" >&2
+    return 1
+  fi
+}
+
+builder_global_access_free() {
+  local builder="$1" rel match
+  while IFS= read -r -d '' rel; do
+    case "$rel" in
+      SKILL.md | docs/DOCTRINE.md | verbs/check.md | verbs/new.md | verbs/review.md | \
+        scripts/skills-lint.sh | scripts/tests/lint-global-skilldata-test.sh | scripts/tests/lint-skilldata-path-test.sh)
+        continue
+        ;;
+    esac
+    while IFS= read -r match; do
+      [ -z "$match" ] || return 1
+    done < <(LC_ALL=C grep -a -nE '(~|\$HOME|\$\{HOME\})/\.agents/skilldata' "$builder/$rel" 2>/dev/null || true)
+  done < <(cd "$builder" && find . -type f -print0 | while IFS= read -r -d '' rel; do printf '%s\0' "${rel#./}"; done)
 }
 
 edge_digest() {
@@ -97,13 +140,20 @@ edge_digest() {
 independence_ok() {
   local builder="$1" collector="$2"
   ! grep -R -Fq -- "$old_name" "$builder" 2>/dev/null &&
+    ! grep -R -Fq -- "$current_name" "$builder" 2>/dev/null &&
     ! grep -R -Fq -- 'skill-builder' "$collector" 2>/dev/null &&
-    ! grep -Fq -- "$global_path" "$builder/SKILL.md" "$builder/verbs/tune.md" "$builder/scripts/source-custody.sh" 2>/dev/null &&
+    ! grep -R -Fq -- "$current_global_path" "$builder" 2>/dev/null &&
+    builder_global_access_free "$builder" &&
     [ "$(edge_digest "$builder/SKILL.md" skill-builder)" = 020203784f053f489652df9fd2effe59b0f3ccf607233532c014c099a326ae35 ] &&
     [ "$(edge_digest "$collector/SKILL.md" agent-feedback)" = 54ea9c32404a02f3c18a1bc233ec93cc2b2619a03b39925f975a843f57c4e585 ]
 }
 
 if scan_live "$ROOT"; then pass; else fail 'live retired-contract sweep'; fi
+if [ "$(grep -Fxc -- "$approved_negative_line" "$ROOT/$approved_negative_path" 2>/dev/null || true)" = 1 ]; then
+  pass
+else
+  fail 'approved negative fixture is not exact and unique'
+fi
 if independence_ok "$ROOT/skills/skill-builder" "$ROOT/skills/agent-feedback"; then
   pass
 else
@@ -148,10 +198,17 @@ rmdir "$fixture_root/$old_name"
 if scan_live "$fixture_root"; then pass; else fail 'path fixture cleanup stayed red'; fi
 
 printf '\n%s # %s\n' "$slash_command" "$negative_marker" >>"$fixture_root/README.md"
-if scan_live "$fixture_root"; then pass; else fail 'annotated negative fixture rejected'; fi
-printf '%s\n' "$slash_command" >>"$fixture_root/README.md"
-if scan_live "$fixture_root" >/dev/null 2>&1; then fail 'unannotated negative stayed green'; else pass; fi
+if scan_live "$fixture_root" >/dev/null 2>&1; then fail 'annotation outside approved fixture stayed green'; else pass; fi
 cp "$tmp/README.before" "$fixture_root/README.md"
+
+mkdir -p "$fixture_root/$(dirname "$approved_negative_path")"
+printf '%s\n' "$approved_negative_line" >"$fixture_root/$approved_negative_path"
+cp "$fixture_root/$approved_negative_path" "$tmp/negative.before"
+if scan_live "$fixture_root"; then pass; else fail 'exact approved negative fixture rejected'; fi
+printf '%s\n' "$approved_negative_line" >>"$fixture_root/$approved_negative_path"
+if scan_live "$fixture_root" >/dev/null 2>&1; then fail 'duplicate approved annotation stayed green'; else pass; fi
+cp "$tmp/negative.before" "$fixture_root/$approved_negative_path"
+if cmp -s "$tmp/negative.before" "$fixture_root/$approved_negative_path" && scan_live "$fixture_root"; then pass; else fail 'negative fixture restore drifted'; fi
 
 for excluded in .git .records docs/design .workstreams .worktrees; do
   mkdir -p "$fixture_root/$excluded"
@@ -173,6 +230,11 @@ if independence_ok "$boundary_root/skill-builder" "$boundary_root/agent-feedback
 cp "$tmp/tune.before" "$boundary_root/skill-builder/verbs/tune.md"
 if cmp -s "$tmp/tune.before" "$boundary_root/skill-builder/verbs/tune.md" && independence_ok "$boundary_root/skill-builder" "$boundary_root/agent-feedback"; then pass; else fail 'builder dependency restore drifted'; fi
 
+printf '\n%s\n' "$current_name" >>"$boundary_root/skill-builder/scripts/source-custody.sh"
+if independence_ok "$boundary_root/skill-builder" "$boundary_root/agent-feedback"; then fail 'current collector dependency plant stayed green'; else pass; fi
+cp "$ROOT/skills/skill-builder/scripts/source-custody.sh" "$boundary_root/skill-builder/scripts/source-custody.sh"
+if cmp -s "$ROOT/skills/skill-builder/scripts/source-custody.sh" "$boundary_root/skill-builder/scripts/source-custody.sh" && independence_ok "$boundary_root/skill-builder" "$boundary_root/agent-feedback"; then pass; else fail 'current collector dependency restore drifted'; fi
+
 printf '\nskill-builder\n' >>"$boundary_root/agent-feedback/verbs/capture.md"
 if independence_ok "$boundary_root/skill-builder" "$boundary_root/agent-feedback"; then fail 'collector dependency plant stayed green'; else pass; fi
 cp "$tmp/capture.before" "$boundary_root/agent-feedback/verbs/capture.md"
@@ -182,6 +244,11 @@ printf '\n%s\n' "$global_path" >>"$boundary_root/skill-builder/verbs/tune.md"
 if independence_ok "$boundary_root/skill-builder" "$boundary_root/agent-feedback"; then fail 'builder global-access plant stayed green'; else pass; fi
 cp "$tmp/tune.before" "$boundary_root/skill-builder/verbs/tune.md"
 if cmp -s "$tmp/tune.before" "$boundary_root/skill-builder/verbs/tune.md" && independence_ok "$boundary_root/skill-builder" "$boundary_root/agent-feedback"; then pass; else fail 'builder global-access restore drifted'; fi
+
+printf '\npath="$HOME/%s"\n' "$generic_global_path" >>"$boundary_root/skill-builder/scripts/source-custody.sh"
+if independence_ok "$boundary_root/skill-builder" "$boundary_root/agent-feedback"; then fail 'builder generic global-access plant stayed green'; else pass; fi
+cp "$ROOT/skills/skill-builder/scripts/source-custody.sh" "$boundary_root/skill-builder/scripts/source-custody.sh"
+if cmp -s "$ROOT/skills/skill-builder/scripts/source-custody.sh" "$boundary_root/skill-builder/scripts/source-custody.sh" && independence_ok "$boundary_root/skill-builder" "$boundary_root/agent-feedback"; then pass; else fail 'builder generic global-access restore drifted'; fi
 
 printf '\nedge drift\n' >>"$boundary_root/skill-builder/SKILL.md"
 if independence_ok "$boundary_root/skill-builder" "$boundary_root/agent-feedback"; then
