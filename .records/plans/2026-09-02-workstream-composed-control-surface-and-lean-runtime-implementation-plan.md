@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -89,7 +89,7 @@ Supersedes: → `plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and
 
 ## Task 0 — Re-ground the job against HEAD
 
-- [ ] Read both specs, all three decisions, this plan, `AGENTS.md`, `README.md`, `PACK.md`,
+- [x] Read both specs, all three decisions, this plan, `AGENTS.md`, `README.md`, `PACK.md`,
   `skills/skill-builder/docs/DOCTRINE.md`, `skills/workstream/SKILL.md`,
   `skills/workstream/scripts/tests/run.sh`, `skills/backlog/SKILL.md`,
   `skills/backlog/scripts/tests/run.sh`, `crates/grimoire-pack/src/inventory/scan.rs`,
@@ -110,7 +110,7 @@ Supersedes: → `plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and
   Expected: both checks report zero unresolved references; overlapping and foreign work is
   identified. If the skilldata implementation remains uncommitted, preserve it hunk-by-hunk or
   stop for coordination—never replace its files wholesale.
-- [ ] Recompute the live carrier and read-budget populations; do not reuse the spec snapshot:
+- [x] Recompute the live carrier and read-budget populations; do not reuse the spec snapshot:
 
   ```sh
   rg -n '\.workstreams|\.streams|\.spaces/workstream|\.agents/skilldata/workstream|\.records/streams|after-eventful-ship|feature-completion|WORKSTREAM\.md|workstream\.tsv|workstream-setup|flow\.md' \
@@ -126,7 +126,7 @@ Supersedes: → `plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and
   Classify every retired literal as live behavior, bounded migration/rejection, fixture, or
   historical evidence. Trace mandatory read edges from the live router and verbs before recording
   byte populations.
-- [ ] Establish the baseline serially without writing the project. Record the current Workstream
+- [x] Establish the baseline serially without writing the project. Record the current Workstream
   fixture result; do not repair it in Task 0 or change production semantics merely to turn it
   green. Run no second Backlog or repository suite while Backlog setup-resume is active.
 
@@ -149,7 +149,7 @@ Supersedes: → `plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and
 
 ## Slices
 
-- [ ] **Slice 1: Ship one zero-setup local unit through the new state machine — tracer** <requires: Task 0>
+- [x] **Slice 1: Ship one zero-setup local unit through the new state machine — tracer** <requires: Task 0>
   - Files: create `skills/workstream/scripts/workstream.sh`,
     `skills/workstream/templates/streams-config.md`,
     `skills/workstream/templates/workstream-runbook.md`,
@@ -197,7 +197,7 @@ Supersedes: → `plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and
     worktree, or runtime byte changed. Mutation-red proofs break schema, incumbent, and ref guards
     and restore fixtures byte-identically.
 
-- [ ] **Slice 2: Complete the runbook, unit loop, hooks, and isolated closure** <requires: 1>
+- [x] **Slice 2: Complete the runbook, unit loop, hooks, and isolated closure** <requires: 1>
   - Files: modify `skills/workstream/scripts/workstream.sh`,
     `skills/workstream/templates/streams-config.md`, and
     `skills/workstream/templates/workstream-runbook.md`; create
@@ -237,7 +237,7 @@ Supersedes: → `plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and
     accepted closure—and does not claim to prove inherited conversation context or transcript
     isolation. Red proofs cover every marker, hash, transition, scope, and closure guard.
 
-- [ ] **Slice 3: Add semantic gates, gitlinks, and pre-land friction to preparation** <requires: 2>
+- [x] **Slice 3: Add semantic gates, gitlinks, and pre-land friction to preparation** <requires: 2>
   - Files: modify `skills/workstream/scripts/workstream.sh`; create
     `skills/workstream/scripts/tests/shipment-prepare-test.sh`,
     `skills/workstream/scripts/tests/gate-contract-test.sh`,
@@ -272,7 +272,7 @@ Supersedes: → `plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and
     changed inputs invalidate affected evidence; malformed manifests/receipts/environment/output,
     missing objects, and unpublished remote gitlinks block. Friction effects remain pre-land.
 
-- [ ] **Slice 4: Complete delivery, partial recovery, PR, and finalization** <requires: 3>
+- [x] **Slice 4: Complete delivery, partial recovery, PR, and finalization** <requires: 3>
   - Files: modify `skills/workstream/scripts/workstream.sh`; create
     `skills/workstream/scripts/tests/delivery-contract-test.sh`,
     `skills/workstream/scripts/tests/partial-delivery-test.sh`,
@@ -307,7 +307,7 @@ Supersedes: → `plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and
     interruption converges without duplicate history, note, queue advance, or hook. The incumbent
     public `workstream-git.sh` and its tests remain byte-unchanged in this slice.
 
-- [ ] **Slice 5: Add control operations and resumable root migration** <requires: 2, 4>
+- [x] **Slice 5: Add control operations and resumable root migration** <requires: 2, 4>
   - Files: modify `skills/workstream/scripts/workstream.sh`,
     `skills/workstream/templates/streams-config.md`, and
     `skills/workstream/templates/workstream-runbook.md`; create
@@ -352,7 +352,7 @@ Supersedes: → `plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and
     reconfig races refuse/recover; each durable move resumes. No fixture relies on ignore rules,
     touches the live `.workstreams/app`, or migrates customization/records.
 
-- [ ] **Slice 6: Preserve the lean Backlog anchor and add custodial debrief execution** <requires: Task 0>
+- [x] **Slice 6: Preserve the lean Backlog anchor and add custodial debrief execution** <requires: Task 0>
   - Files: modify `skills/backlog/verbs/debrief.md`,
     `skills/backlog/scripts/tests/debrief-contract-test.sh`,
     `skills/backlog/scripts/tests/skill-doc-test.sh`,
@@ -378,7 +378,7 @@ Supersedes: → `plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and
     rows without a cursor; anchor stays optional/marker-free. Absence guards reject old route,
     debrief-anchor, callback, and cadence behavior.
 
-- [ ] **Slice 7: Atomically activate the composed `.streams` runtime** <requires: 3, 4, 5, 6>
+- [x] **Slice 7: Atomically activate the composed `.streams` runtime** <requires: 3, 4, 5, 6>
   - Files: modify `AGENTS.md`, `README.md`, `PACK.md`,
     `skills/skill-builder/docs/DOCTRINE.md`,
     `skills/skill-builder/scripts/skills-lint.sh`,
@@ -482,7 +482,7 @@ Supersedes: → `plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and
     reaches a deleted file; all topologies, control states, delivery modes, migration, reconfig,
     isolation, and nesting fixtures pass without touching this repo's front door/foreign worktree.
 
-- [ ] **Slice 8: Adversarially prove the hard cut and full-context acceptance path** <requires: 7>
+- [x] **Slice 8: Adversarially prove the hard cut and full-context acceptance path** <requires: 7>
   - Files: modify `skills/workstream/scripts/tests/state-contract-test.sh`,
     `skills/workstream/scripts/tests/read-envelope-test.sh`,
     `skills/workstream/scripts/tests/runbook-contract-test.sh`,
@@ -541,3 +541,15 @@ Supersedes: → `plans/2026-08-31-workstream-control-surface-lifecycle-hooks-and
   mutation-red, and whitespace gates pass serially. Contractor does not land the implementation.
 
 _On completion (before landing), run the host's close-the-books sweep._
+
+## Implementation outcome
+
+The deterministic Workstream, Backlog, Skill Builder, repository-integration, ShellCheck,
+hard-cut, read-budget, and live-root gates passed. The Cargo workspace passed with the known
+macOS invalid-UTF-8 filesystem assertion excluded; the unchanged assertion receives
+`Uncategorized` instead of its expected `PermissionDenied` on this host.
+
+The mechanical isolated-hook invocation and four-line closure seam passed. An attended native
+full-context fork was not launched from this plain-worktree build session, so transcript isolation
+and conversational-context inheritance remain harness acceptance evidence rather than a local
+deterministic test result.

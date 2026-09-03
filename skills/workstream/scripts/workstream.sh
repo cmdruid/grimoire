@@ -286,8 +286,15 @@ config_hook_body() {
   ' "$file"
 }
 
+compiled_hook_fingerprint() { # event execution concurrency body-file
+  local event="$1" execution="$2" concurrency="$3" body="$4" combined fingerprint
+  combined="$(mktemp "${TMPDIR:-/tmp}/workstream-hook-config.XXXXXX")"
+  printf 'event=%s\nexecution=%s\nconcurrency=%s\n\n' "$event" "$execution" "$concurrency" >"$combined"
+  cat "$body" >>"$combined"; fingerprint="$(sha256_file "$combined")"; rm -f "$combined"; printf '%s\n' "$fingerprint"
+}
+
 compile_config() {
-  local config="$ROOT/.streams/CONFIG.md" event body_var exec_var concurrency_var source_var fingerprint_var combined
+  local config="$ROOT/.streams/CONFIG.md" event body_var exec_var concurrency_var source_var fingerprint_var
   MODE=delegate; ISOLATION=worktree; LANDING=local; SHIP_CADENCE=milestone; DEFAULTS_SOURCE=bundled
   MODE_SOURCE=bundled; ISOLATION_SOURCE=bundled; LANDING_SOURCE=bundled; SHIP_CADENCE_SOURCE=bundled
   FEATURE_EXECUTION=inline; FEATURE_CONCURRENCY=serial; FEATURE_SOURCE=bundled
@@ -320,11 +327,7 @@ compile_config() {
       feature-completion) body_var=FEATURE_BODY; exec_var=FEATURE_EXECUTION; concurrency_var=FEATURE_CONCURRENCY; fingerprint_var=FEATURE_FINGERPRINT ;;
       ship-friction) body_var=FRICTION_BODY; exec_var=FRICTION_EXECUTION; concurrency_var=FRICTION_CONCURRENCY; fingerprint_var=FRICTION_FINGERPRINT ;;
     esac
-    combined="$(mktemp "${TMPDIR:-/tmp}/workstream-hook-config.XXXXXX")"
-    printf 'event=%s\nexecution=%s\nconcurrency=%s\n\n' "$event" "${!exec_var}" "${!concurrency_var}" >"$combined"
-    cat "${!body_var}" >>"$combined"
-    printf -v "$fingerprint_var" '%s' "$(sha256_file "$combined")"
-    rm -f "$combined"
+    printf -v "$fingerprint_var" '%s' "$(compiled_hook_fingerprint "$event" "${!exec_var}" "${!concurrency_var}" "${!body_var}")"
   done
 }
 
@@ -1779,13 +1782,64 @@ cmd_control_surface() {
 }
 
 cmd_setup() { [ "$#" -eq 0 ] || die "usage: setup"; cmd_control_surface setup; }
+reconstruct_idle_tracker() { # stream
+  local stream="$1" recorded_stream recorded_root recorded_worktree branch target isolation held top before current instance next history candidate temp runbook_hash
+  [ -f "$RUNBOOK" ] && [ ! -L "$RUNBOOK" ] || die "stream repair requires a safe runbook"
+  [ ! -e "$TRACKER" ] && [ ! -L "$TRACKER" ] || die "stream tracker is unsafe"
+  recorded_stream="$(runbook_field "$RUNBOOK" stream)"; recorded_root="$(runbook_field "$RUNBOOK" root)"
+  recorded_worktree="$(runbook_field "$RUNBOOK" worktree)"; branch="$(runbook_field "$RUNBOOK" branch)"
+  target="$(runbook_field "$RUNBOOK" target)"; isolation="$(runbook_field "$RUNBOOK" isolation)"
+  [ "$recorded_stream" = "$stream" ] && [ "$recorded_root" = "$ROOT" ] || die "runbook identity disagrees with the requested stream"
+  [ "$branch" = "stream/$stream" ] || die "runbook branch is not canonical"
+  validate_ref "$branch"; validate_ref "$target"; git -C "$ROOT" rev-parse --verify --quiet "$target^{commit}" >/dev/null || die "target does not resolve"
+  case "$isolation" in
+    worktree)
+      [ "$recorded_worktree" = "$RUNTIME" ] || die "runbook worktree mismatch"
+      top="$(git -C "$RUNTIME" rev-parse --show-toplevel 2>/dev/null)" || die "stream is not a Git worktree"
+      [ "$(canonical_dir "$top")" = "$RUNTIME" ] || die "stream worktree coordinate disagrees with Git"
+      [ "$(git -C "$RUNTIME" branch --show-current)" = "$branch" ] || die "stream branch is not held"
+      git -C "$ROOT" worktree list --porcelain | grep -qxF "worktree $RUNTIME" || die "stream worktree is not registered"
+      WT="$RUNTIME"
+      ;;
+    in-place)
+      [ "$recorded_worktree" = "$ROOT" ] || die "in-place worktree mismatch"
+      held="$(git -C "$ROOT" branch --show-current)"
+      [ "$held" = "$branch" ] || [ "$held" = "$target" ] || die "in-place stream branch is not held or parked"
+      WT="$ROOT"
+      ;;
+    *) die "unsupported isolation: $isolation" ;;
+  esac
+  validate_tracked_control_surface "$WT"
+  [ -z "$(git -C "$WT" status --porcelain --untracked-files=no)" ] || die "tracker reconstruction requires clean tracked work"
+  git -C "$WT" merge-base --is-ancestor "$branch" "$target" || die "tracker reconstruction refuses unlanded commits"
+  instance="$(runbook_field "$RUNBOOK" instance-id)"; runbook_hash="$(runbook_contract_hash "$RUNBOOK")"
+  next=1; history="$ROOT/.streams/history.tsv"
+  if [ -e "$history" ] || [ -L "$history" ]; then
+    validate_history "$history"
+    next="$(awk -F '\t' -v s="$stream" 'NR>1&&$1==s&&$2+0>=m{m=$2+1}END{print m+0}' "$history")"; [ "$next" -gt 0 ] || next=1
+  fi
+  before="$(file_fingerprint "$RUNBOOK")"; candidate="$(mktemp "${TMPDIR:-/tmp}/workstream-repair-tracker.XXXXXX")"
+  {
+    printf 'record\tid\tfield\tvalue\nmeta\t-\tschema\tworkstream@1\nmeta\t-\tinstance-id\t%s\n' "$instance"
+    printf 'meta\t-\tnext-shipment\t%s\nmeta\t-\tnext-unit\t%s\nmeta\t-\trunbook-contract-sha256\t%s\n' "$next" "$next" "$runbook_hash"
+    printf 'queue\t-\tcursor\t-\nqueue\t-\tsource-kind\tbrief\nqueue\t-\tstate\tintake\nphase\t-\tname\tnone\nphase\t-\tnext-action\tdefine-unit\n'
+  } >"$candidate"
+  validate_tracker "$candidate"; current="$(file_fingerprint "$RUNBOOK")"; [ "$current" = "$before" ] || { rm -f "$candidate"; die "runbook changed during tracker reconstruction"; }
+  temp="$(mktemp "$RUNTIME/.workstream.tsv.XXXXXX")"; cp "$candidate" "$temp"; rm -f "$candidate"; chmod 600 "$temp"
+  [ ! -e "$TRACKER" ] && [ ! -L "$TRACKER" ] || { rm -f "$temp"; die "tracker appeared during reconstruction"; }
+  mv "$temp" "$TRACKER"
+}
+
 cmd_repair() {
   if [ "$#" -eq 0 ]; then cmd_control_surface repair; return; fi
   [ "$#" -eq 1 ] || die "usage: repair [stream]"
   stream_paths "$1"
-  [ -f "$RUNBOOK" ] && [ ! -L "$RUNBOOK" ] && [ -f "$TRACKER" ] && [ ! -L "$TRACKER" ] || die "stream repair requires both safe runtime files"
+  [ -f "$RUNBOOK" ] && [ ! -L "$RUNBOOK" ] || die "stream repair requires a safe runbook"
+  local outcome=repaired
+  if [ ! -e "$TRACKER" ] && [ ! -L "$TRACKER" ]; then reconstruct_idle_tracker "$1"; outcome=reconstructed; fi
+  [ -f "$TRACKER" ] && [ ! -L "$TRACKER" ] || die "stream tracker is unsafe"
   ensure_exclusions; chmod 600 "$RUNBOOK" "$TRACKER"; admit_stream "$1"
-  printf 'status=repaired\noperation=repair-stream\nstream=%s\nnext_action=%s\n' "$1" "$(tracker_get phase - next-action)"
+  printf 'status=%s\noperation=repair-stream\nstream=%s\nnext_action=%s\n' "$outcome" "$1" "$(tracker_get phase - next-action)"
 }
 
 emit_recovery_anchor() {
@@ -1926,6 +1980,27 @@ migration_stage() { # manifest stream stage
   mv -f "$temp" "$manifest"
 }
 
+legacy_handoff_field() { # file key
+  local file="$1" key="$2"
+  awk -v prefix="- $key:" '
+    index($0,prefix)==1 {
+      value=substr($0,length(prefix)+1); sub(/^[[:space:]]+/,"",value); sub(/[[:space:]]+$/,"",value)
+      print value; found++
+    }
+    END { if(found>1) exit 2 }
+  ' "$file"
+}
+
+legacy_feature_hook() { # file output
+  local file="$1" output="$2"
+  awk '
+    $0=="feature-completion:" { inside=1; next }
+    inside && ($0~/^[a-z][a-z-]*:$/ || /^##[[:space:]]/) { inside=0 }
+    inside { print }
+  ' "$file" >"$output"
+  if [ "$(awk 'NF{print;exit}' "$output")" = '(empty)' ]; then : >"$output"; fi
+}
+
 build_migration_manifest() { # old-home manifest
   local old_home="$1" manifest="$2" temp old stream destination registered kind branch target instance
   [ -d "$old_home" ] && [ ! -L "$old_home" ] || die "legacy stream home is unsafe"
@@ -1957,7 +2032,8 @@ build_migration_manifest() { # old-home manifest
 
 cmd_migrate() {
   local action="${1:-inventory}" old_home="$ROOT/.workstreams" new_home="$ROOT/.streams" manifest="$ROOT/.streams/.migration.tsv"
-  local stream old destination kind branch target stage instance count=0 purpose runbook_temp tracker_temp runbook_hash next history
+  local stream old destination kind branch target stage instance count=0 purpose runbook_temp tracker_temp runbook_hash next history legacy
+  local old_mode old_landing old_cadence source_kind cursor queue_state
   [ "$#" -eq 1 ] || die "usage: migrate <inventory|apply>"
   case "$action" in inventory|apply) ;; *) die "invalid migration action" ;; esac
   if [ ! -e "$old_home" ] && [ ! -f "$manifest" ]; then printf 'status=none\nstreams=0\n'; return; fi
@@ -1984,10 +2060,32 @@ cmd_migrate() {
     fi
     if [ "$stage" = moved ]; then
       [ -d "$destination" ] && [ ! -L "$destination" ] || die "moved migration destination is missing: $stream"
-      purpose="$(sed -n -E 's/^purpose[[:space:]]+//p; s/^# (.*) — workstream.*/\1/p; s/^# (.*) hand-?off.*/\1/p' "$destination/WORKSTREAM.md" 2>/dev/null | head -n 1)"
+      legacy="$destination/WORKSTREAM.md"; [ -f "$legacy" ] && [ ! -L "$legacy" ] || die "moved legacy handoff is missing or unsafe: $stream"
+      purpose="$(sed -n -E 's/^purpose[[:space:]]+//p; s/^# (.*) — workstream.*/\1/p; s/^# (.*) hand-?off.*/\1/p' "$legacy" 2>/dev/null | head -n 1)"
       [ -n "$purpose" ] || purpose="Migrated workstream $stream"
       compile_config
-      if [ "$kind" = in-place ]; then ISOLATION=in-place; WT="$ROOT"; else ISOLATION=worktree; LANDING=local; WT="$destination"; fi
+      old_mode="$(legacy_handoff_field "$legacy" mode)" || die "legacy mode is ambiguous"
+      old_landing="$(legacy_handoff_field "$legacy" landing)" || die "legacy landing is ambiguous"
+      old_cadence="$(legacy_handoff_field "$legacy" ship-cadence)" || die "legacy ship cadence is ambiguous"
+      case "$old_mode" in '') ;; delegate|manual) MODE="$old_mode"; MODE_SOURCE=explicit ;; *) die "legacy mode is invalid" ;; esac
+      case "$old_landing" in '') ;; local|push|pr) LANDING="$old_landing"; LANDING_SOURCE=explicit ;; *) die "legacy landing is invalid" ;; esac
+      case "$old_cadence" in '') ;; milestone|per-track|per-stage) SHIP_CADENCE="$old_cadence"; SHIP_CADENCE_SOURCE=explicit ;; *) die "legacy ship cadence is invalid" ;; esac
+      if [ "$kind" = in-place ]; then ISOLATION=in-place; ISOLATION_SOURCE=explicit; WT="$ROOT"; else ISOLATION=worktree; ISOLATION_SOURCE=explicit; LANDING=local; WT="$destination"; fi
+      [ "$ISOLATION" != worktree ] || [ "$LANDING" = local ] || die "legacy linked stream has non-local landing"
+      if [ "$MODE_SOURCE" = explicit ] || [ "$ISOLATION_SOURCE" = explicit ] || [ "$LANDING_SOURCE" = explicit ] || [ "$SHIP_CADENCE_SOURCE" = explicit ]; then DEFAULTS_SOURCE=explicit; fi
+      DEFAULTS_FINGERPRINT="$(sha256_text "mode=$MODE|isolation=$ISOLATION|landing=$LANDING|ship-cadence=$SHIP_CADENCE")"
+      legacy_feature_hook "$legacy" "$FEATURE_BODY"
+      if grep -q '[^[:space:]]' "$FEATURE_BODY"; then FEATURE_EXECUTION=inline; FEATURE_CONCURRENCY=serial; FEATURE_SOURCE=legacy; fi
+      FEATURE_FINGERPRINT="$(compiled_hook_fingerprint feature-completion "$FEATURE_EXECUTION" "$FEATURE_CONCURRENCY" "$FEATURE_BODY")"
+      source_kind="$(legacy_handoff_field "$legacy" source-kind)" || die "legacy queue source kind is ambiguous"
+      cursor="$(legacy_handoff_field "$legacy" source)" || die "legacy queue source is ambiguous"
+      case "$source_kind" in plan|roadmap)
+          [ -n "$cursor" ] && [[ "$cursor" != \(* ]] || die "legacy queue pointer is missing"
+          validate_text 'legacy queue pointer' "$cursor"; queue_state=ready
+          ;;
+        brief|template|'') source_kind="${source_kind:-brief}"; cursor=-; queue_state=intake ;;
+        *) die "legacy queue source kind is invalid" ;;
+      esac
       RUNTIME="$destination"; RUNBOOK="$RUNTIME/WORKSTREAM.md"; TRACKER="$RUNTIME/workstream.tsv"
       next=1; history="$ROOT/.streams/history.tsv"
       if [ -e "$history" ]; then validate_history "$history"; next="$(awk -F '\t' -v s="$stream" 'NR>1&&$1==s&&$2+0>=m{m=$2+1}END{print m+0}' "$history")"; [ "$next" -gt 0 ] || next=1; fi
@@ -1995,7 +2093,7 @@ cmd_migrate() {
       runbook_hash="$(runbook_contract_hash "$runbook_temp")"; tracker_temp="$(mktemp "$RUNTIME/.workstream.tsv.XXXXXX")"
       {
         printf 'record\tid\tfield\tvalue\nmeta\t-\tschema\tworkstream@1\nmeta\t-\tinstance-id\t%s\nmeta\t-\tnext-shipment\t%s\nmeta\t-\tnext-unit\t%s\nmeta\t-\trunbook-contract-sha256\t%s\n' "$instance" "$next" "$next" "$runbook_hash"
-        printf 'queue\t-\tcursor\t-\nqueue\t-\tsource-kind\tbrief\nqueue\t-\tstate\tintake\nphase\t-\tname\tnone\nphase\t-\tnext-action\tdefine-unit\n'
+        printf 'queue\t-\tcursor\t%s\nqueue\t-\tsource-kind\t%s\nqueue\t-\tstate\t%s\nphase\t-\tname\tnone\nphase\t-\tnext-action\tdefine-unit\n' "$cursor" "$source_kind" "$queue_state"
       } >"$tracker_temp"
       validate_tracker "$tracker_temp"; chmod 600 "$runbook_temp" "$tracker_temp"; mv "$runbook_temp" "$RUNBOOK"; mv "$tracker_temp" "$TRACKER"
       rm -f "$FEATURE_BODY" "$FRICTION_BODY"; migration_stage "$manifest" "$stream" complete

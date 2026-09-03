@@ -39,6 +39,13 @@ printf 'base\n' >"$ROOT2/file"; git -C "$ROOT2" add file; git -C "$ROOT2" commit
 "$HELPER" "$ROOT2" repair repairable >"$OUT"; expect 'targeted repair reports scope' 'operation=repair-stream' "$OUT"
 expect_eq 'targeted repair restores runbook mode' 600 "$(stat -f '%Lp' "$ROOT2/.streams/repairable/WORKSTREAM.md")"
 expect_eq 'targeted repair restores tracker mode' 600 "$(stat -f '%Lp' "$ROOT2/.streams/repairable/workstream.tsv")"
+rm "$ROOT2/.streams/repairable/workstream.tsv"
+"$HELPER" "$ROOT2" repair repairable >"$OUT"; expect 'idle tracker is reconstructed' 'status=reconstructed' "$OUT"
+expect 'reconstructed tracker preserves instance' "$(sed -n 's/^instance-id[[:space:]]*//p' "$ROOT2/.streams/repairable/WORKSTREAM.md")" "$ROOT2/.streams/repairable/workstream.tsv"
+printf 'unlanded\n' >>"$ROOT2/.streams/repairable/file"; git -C "$ROOT2/.streams/repairable" add file; git -C "$ROOT2/.streams/repairable" commit -qm unlanded
+rm "$ROOT2/.streams/repairable/workstream.tsv"
+if "$HELPER" "$ROOT2" repair repairable >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'unlanded reconstruction refuses' 'refuses unlanded commits' "$ERR"
 
 ROOT3="$TMP/helper-only"; git init -q -b main "$ROOT3"; git -C "$ROOT3" config user.name test; git -C "$ROOT3" config user.email test@example.invalid
 printf 'base\n' >"$ROOT3/file"; git -C "$ROOT3" add file; git -C "$ROOT3" commit -qm initial; mkdir -p "$ROOT3/.streams"; cp "$HELPER" "$ROOT3/.streams/workstream.sh"
