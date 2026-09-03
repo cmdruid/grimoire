@@ -6,10 +6,9 @@
 # (is the branch fully merged? ship-or-discard any unshipped WIP? the default is discard)
 # stays in `close`'s prose and must be settled BEFORE calling this.
 #
-# Pass --force when WIP was discarded or the worktree is otherwise dirty (e.g. a
-# drafted-next-plan left uncommitted by the last ship). WORKSTREAM.md is excluded, so it
-# never blocks removal. `branch -D` is safe here: by this point the branch is either
-# merged or deliberately discarded.
+# Pass --force when WIP was deliberately discarded or the worktree is otherwise dirty.
+# WORKSTREAM.md and workstream.tsv are excluded, so they never block removal. `branch -D`
+# is safe here only after the caller has proved the branch landed or obtained discard authority.
 set -euo pipefail
 
 if [ "$#" -lt 2 ]; then
@@ -25,8 +24,15 @@ if [ -n "$force" ] && [ "$force" != "--force" ]; then
   exit 2
 fi
 
-worktree="$root/.workstreams/$stream"
+case "$stream" in ''|*[!a-z0-9-]*|-*|*-|*--*) echo 'worktree-teardown.sh: invalid stream name' >&2; exit 2;; esac
+root="$(cd "$root" && pwd -P)"
+worktree="$root/.streams/$stream"
 branch="stream/$stream"
+[ -d "$worktree" ] && [ ! -L "$worktree" ] || { echo 'worktree-teardown.sh: unsafe worktree coordinate' >&2; exit 2; }
+top="$(git -C "$worktree" rev-parse --show-toplevel)"
+[ "$top" = "$worktree" ] || { echo 'worktree-teardown.sh: worktree coordinate mismatch' >&2; exit 2; }
+[ "$(git -C "$worktree" branch --show-current)" = "$branch" ] || { echo 'worktree-teardown.sh: branch mismatch' >&2; exit 2; }
+git -C "$root" worktree list --porcelain | grep -qxF "worktree $worktree" || { echo 'worktree-teardown.sh: unregistered worktree' >&2; exit 2; }
 
 if [ "$force" = "--force" ]; then
   git -C "$root" worktree remove --force "$worktree"

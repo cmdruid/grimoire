@@ -68,10 +68,8 @@ cmd_stream_state() {
   local wt="$1" branch="$2" target="$3"
   validate_ref "$branch"; validate_ref "$target"
 
-  local head_branch toplevel porcelain ahead behind drafts last_subj last_age rec_rel rec_re
+  local head_branch toplevel porcelain ahead behind last_subj last_age
   local staged rebase_ip gp
-  rec_rel=.records
-  rec_re="${rec_rel//./\\.}"
   head_branch="$(git -C "$wt" rev-parse --abbrev-ref HEAD)"
   toplevel="$(git -C "$wt" rev-parse --show-toplevel)"
   # Enumerate individual untracked files. The default collapses a wholly-untracked
@@ -91,18 +89,9 @@ cmd_stream_state() {
   last_subj="$(git -C "$wt" log -1 --format='%s')"
   last_age="$(git -C "$wt" log -1 --format='%cr')"
 
-  # Untracked Workstream manifest drafts are expected dirt, not WIP.
-  drafts="$(printf '%s\n' "$porcelain" | sed -n "s#^?? \($rec_re/streams/.*\.md\)\$#\1#p" | grep -v '/archive/' | paste -sd, - || true)"
-  [ -z "$drafts" ] && drafts="none"
-  # Real WIP = any porcelain line that is NOT an untracked top-level streams
-  # draft (the same set `drafts` reports). An untracked file under
-  # streams/archive/ (or deeper) is real WIP, not a draft -- it must surface in
-  # wip_tracked rather than as dirt no fact explains.
   local wip
-  wip="$(printf '%s\n' "$porcelain" | grep -v '^$' | grep -vE "^\?\? $rec_re/streams/[^/]+\.md\$" || true)"
+  wip="$(printf '%s\n' "$porcelain" | grep -v '^$' || true)"
 
-  echo "records=$rec_rel"
-  echo "records-root=$rec_rel"
   echo "branch_matches=$([ "$head_branch" = "$branch" ] && echo true || echo false)"
   echo "toplevel_matches=$([ "$toplevel" = "$wt" ] && echo true || echo false)"
   echo "behind=$behind"            # commits on <target> the branch lacks -> sync due if >0
@@ -119,10 +108,9 @@ cmd_stream_state() {
   fi
   echo "rebase_in_progress=$rebase_ip"  # true => an interrupted rebase holds the tree
   # A tree carrying its own top-level hand-off must not ALSO contain a nested
-  # .workstreams/ -- that is the corruption signature of a save that resolved the
+  # .streams/ -- that is the corruption signature of copied runtime state.
   # hand-off's root-relative address against the worktree (stray stale copy).
-  echo "nested_stray_handoff=$([ -f "$wt/WORKSTREAM.md" ] && [ -e "$wt/.workstreams" ] && echo true || echo false)"
-  echo "drafted_next_plan=$drafts"
+  echo "nested_stray_handoff=$([ -f "$wt/WORKSTREAM.md" ] && find "$wt/.streams" -mindepth 2 -maxdepth 2 -type f -name WORKSTREAM.md -print -quit 2>/dev/null | grep -q . && echo true || echo false)"
   echo "last_commit=$last_subj"
   echo "last_commit_age=$last_age"
 }
@@ -287,7 +275,7 @@ cmd_cheatsheet_check() {
 cmd_inplace_scan() {
   [ "$#" -eq 1 ] || { echo "usage: workstream-git.sh inplace-scan <root>" >&2; exit 2; }
   local root="$1" f name found=""
-  for f in "$root"/.workstreams/*/WORKSTREAM.md; do
+  for f in "$root"/.streams/*/WORKSTREAM.md; do
     [ -f "$f" ] || continue
     if grep -qE '^- isolation: *in-place' "$f"; then
       name="$(basename "$(dirname "$f")")"
@@ -304,7 +292,7 @@ cmd_inplace_state() {
   [ "$#" -eq 4 ] || { echo "usage: workstream-git.sh inplace-state <root> <stream> <branch> <target>" >&2; exit 2; }
   local root="$1" stream="$2" branch="$3" target="$4"
   validate_ref "$branch"; validate_ref "$target"
-  local handoff="$root/.workstreams/$stream/WORKSTREAM.md"
+  local handoff="$root/.streams/$stream/WORKSTREAM.md"
 
   local head_branch porcelain behind ahead top_subj
   head_branch="$(git -C "$root" rev-parse --abbrev-ref HEAD)"

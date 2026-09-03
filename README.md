@@ -87,14 +87,14 @@ global capture and guided tuning of reusable-skill observations). See *The packs
 | `foreman` | curate project operations: inventory and run publisher-owned procedures, capture or ingest brownfield know-how, verify and compose operations, and compile immutable goal runbooks |
 | `skill-feedback` | capture concrete reusable-skill observations into a private global TSV and guide later bounded review; standalone, outside every pack |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
-| `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
+| `workstream` | drive a lean, resumable development stream with guarded create → ship → recycle lifecycle |
 
 Historical records that still explain the repository and skills library live under `docs/design/`.
 The published product contract above is the sole authority for Grimoire package-manager behavior.
 
 ### Storage convention: packages and skill-owned data
 
-A project has four distinct fixed surfaces. **`.agents/skills/`** contains project-local installed
+A project has four general fixed surfaces. **`.agents/skills/`** contains project-local installed
 skill packages and is never mutable skill data. **`.agents/skilldata/`**
 holds skill-owned working files beneath `<skill>/<kind>/`; owners are open and the kinds are
 `doctrine`, `drafts`, `hooks`, `operations`, `scripts`, and `templates`. Operations are flat
@@ -109,6 +109,9 @@ staged engine lives at `.records/records.sh`, beside the introductory
 **`.trackers`** holds public `tracker@2` queue TSVs under `tables/`, the shared
 `history.tsv` lifecycle ledger, and adjacent canonical provider `.trackers/trackers.sh`. Backlog owns that
 layer; consumer skills invoke the installed provider directly.
+Workstream alone may additionally use the fixed **`.streams/`** control home for its optional
+`CONFIG.md`, guide, helper, compact history, and ignored runtime worktrees. It is a narrow lifecycle
+exception, not generic skilldata and not a selectable project root.
 These canonical homes are constants, not front-door configuration. Each durable-home skill owns
 its files. Projects can explicitly invoke `/journal anchor` or `/backlog anchor` to add short,
 project-owned `AGENTS.md` pointers to the corresponding local guide; setup, repair, migration, and

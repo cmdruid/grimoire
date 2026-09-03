@@ -1191,6 +1191,53 @@ cmd_land_advance() {
   printf 'status=landed\nshipment=%s\ncandidate=%s\nnext_action=postflight\n' "$shipment" "$candidate"
 }
 
+cmd_sync() {
+  [ "$#" -eq 1 ] || die "usage: sync <stream>"
+  local stream="$1" target before after
+  admit_stream "$stream"; target="$(runbook_field "$RUNBOOK" target)"
+  [ -z "$(git -C "$WT" status --porcelain --untracked-files=no)" ] || die "sync requires clean tracked work"
+  before="$(git -C "$WT" rev-parse HEAD)"
+  if git -C "$WT" merge-base --is-ancestor "$target" HEAD; then printf 'status=current\nhead=%s\nnext_action=%s\n' "$before" "$(tracker_get phase - next-action)"; return; fi
+  if ! git -C "$WT" rebase "$target"; then printf 'status=conflict\nnext_action=blocked\n'; return 1; fi
+  after="$(git -C "$WT" rev-parse HEAD)"
+  printf 'status=synced\nbefore=%s\nafter=%s\nnext_action=%s\n' "$before" "$after" "$(tracker_get phase - next-action)"
+}
+
+cmd_recycle() {
+  [ "$#" -eq 1 ] || die "usage: recycle <stream>"
+  local stream="$1" raw
+  admit_stream "$stream"
+  [ "$(tracker_get queue - state)" = exhausted ] || die "recycle requires a finalized queue"
+  [ -z "$(git -C "$WT" status --porcelain --untracked-files=no)" ] || die "recycle requires clean tracked work"
+  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-recycle.XXXXXX")"
+  awk -F '\t' 'NR>1 && !(($1=="queue"&&$2=="-"&&($3=="cursor"||$3=="state"))||($1=="phase"&&$2=="-"&&($3=="name"||$3=="next-action")))' "$TRACKER" >"$raw"
+  printf 'queue\t-\tcursor\t-\nqueue\t-\tstate\tintake\nphase\t-\tname\tnone\nphase\t-\tnext-action\tdefine-unit\n' >>"$raw"
+  rewrite_tracker "$raw"; rm -f "$raw"
+  printf 'status=recycled\nnext_action=define-unit\n'
+}
+
+cmd_close_check() {
+  [ "$#" -eq 1 ] || die "usage: close-check <stream>"
+  local stream="$1" branch target ahead dirty
+  admit_stream "$stream"; branch="$(runbook_field "$RUNBOOK" branch)"; target="$(runbook_field "$RUNBOOK" target)"
+  ahead="$(git -C "$WT" rev-list --count "$target..$branch")"; dirty="$([ -n "$(git -C "$WT" status --porcelain --untracked-files=no)" ] && printf yes || printf no)"
+  printf 'schema=workstream-close@1\nstream=%s\nbranch=%s\ntarget=%s\nahead=%s\ndirty=%s\nworktree=%s\n' "$stream" "$branch" "$target" "$ahead" "$dirty" "$WT"
+}
+
+cmd_list() {
+  [ "$#" -eq 0 ] || die "usage: list"
+  local directory stream count=0
+  printf 'schema=workstream-list@1\n'
+  [ -d "$ROOT/.streams" ] || { printf 'count=0\n'; return; }
+  while IFS= read -r directory; do
+    [ -f "$directory/WORKSTREAM.md" ] && [ -f "$directory/workstream.tsv" ] || continue
+    stream="$(basename "$directory")"; admit_stream "$stream"
+    printf 'stream=%s,branch=%s,phase=%s,next=%s\n' "$stream" "$(runbook_field "$RUNBOOK" branch)" "$(tracker_get phase - name)" "$(tracker_get phase - next-action)"
+    count=$((count + 1))
+  done < <(find "$ROOT/.streams" -mindepth 1 -maxdepth 1 -type d -print | LC_ALL=C sort)
+  printf 'count=%s\n' "$count"
+}
+
 cmd_ship_finalize() {
   [ "$#" -eq 1 ] || { [ "$#" -eq 3 ] && [ "$2" = --note ]; } || die "usage: ship-finalize <stream> [--note <note>]"
   local stream="$1" shipment candidate target raw note=""
@@ -1553,6 +1600,10 @@ main() {
     hook-start) cmd_hook_start "$@" ;;
     hook-complete) cmd_hook_complete "$@" ;;
     friction-add) cmd_friction_add "$@" ;;
+    sync) cmd_sync "$@" ;;
+    recycle) cmd_recycle "$@" ;;
+    close-check) cmd_close_check "$@" ;;
+    list) cmd_list "$@" ;;
     ship-prepare) cmd_ship_prepare "$@" ;;
     gate-run) [ "$#" -ge 1 ] || die "gate-run requires a stream"; cmd_gate_run "$@" ;;
     land-advance) cmd_land_advance "$@" ;;

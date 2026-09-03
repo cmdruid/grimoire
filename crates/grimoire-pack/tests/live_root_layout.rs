@@ -23,7 +23,7 @@ fn selected_root() -> PathBuf {
 
 #[cfg(unix)]
 #[test]
-fn root_discovery_excludes_nested_workstreams() {
+fn root_discovery_excludes_nested_streams() {
     let inventory = scan(&FsTree::new(selected_root())).expect("scan selected root");
     let names: Vec<_> = inventory
         .skills
@@ -43,8 +43,8 @@ fn root_discovery_excludes_nested_workstreams() {
             !path
                 .as_bytes()
                 .split(|byte| *byte == b'/')
-                .any(|part| part == b".workstreams"),
-            "nested workstream content escaped discovery: {path}"
+                .any(|part| part == b".streams"),
+            "nested stream content escaped discovery: {path}"
         );
     }
 }

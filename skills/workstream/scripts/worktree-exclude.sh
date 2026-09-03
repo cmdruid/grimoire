@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 # worktree-exclude.sh <worktree>
 #
-# Idempotently exclude the live hand-off (WORKSTREAM.md) from inside the worktree, so it
-# never shows as untracked there and can't be swept into a commit or block a clean
-# `git worktree remove`. (The `.workstreams/` .gitignore already hides it from the MAIN
-# checkout; this covers the view from INSIDE the linked worktree.)
+# Idempotently install the three shared runtime exclusions.
 #
 # For a linked worktree, `--git-path info/exclude` resolves to the SHARED common-dir
 # exclude -- so one line covers every stream forever. The grep guard makes re-runs a
@@ -21,4 +18,6 @@ excl="$(git -C "$worktree" rev-parse --git-path info/exclude)"
 # --git-path may return a RELATIVE path (a main checkout does); resolve it against
 # the worktree, not the caller's cwd, or the line lands in the wrong file.
 case "$excl" in /*) ;; *) excl="$worktree/$excl" ;; esac
-grep -qxF 'WORKSTREAM.md' "$excl" || printf 'WORKSTREAM.md\n' >> "$excl"
+for pattern in '/.streams/*/' '/WORKSTREAM.md' '/workstream.tsv'; do
+  grep -qxF "$pattern" "$excl" || printf '%s\n' "$pattern" >>"$excl"
+done

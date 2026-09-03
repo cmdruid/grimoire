@@ -6,6 +6,7 @@ SCRIPTS="$(cd "$DIR/.." && pwd)"
 FACTS="$SCRIPTS/workstream-git.sh"
 EXCLUDE="$SCRIPTS/worktree-exclude.sh"
 TEARDOWN="$SCRIPTS/worktree-teardown.sh"
+# shellcheck disable=SC1091
 . "$DIR/lib.sh"
 
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-git-test.XXXXXX")"
@@ -17,13 +18,13 @@ git -C "$ROOT" init -q
 git -C "$ROOT" branch -m main
 git -C "$ROOT" config user.name test
 git -C "$ROOT" config user.email test@example.invalid
-printf '.workstreams/\n' > "$ROOT/.gitignore"
+printf '.streams/*/\n' > "$ROOT/.gitignore"
 printf '# fixture\n' > "$ROOT/README.md"
 printf 'base\n' > "$ROOT/code.txt"
 git -C "$ROOT" add .gitignore README.md code.txt
 git -C "$ROOT" commit -qm initial
-mkdir "$ROOT/.workstreams"
-WT="$ROOT/.workstreams/demo"
+mkdir "$ROOT/.streams"
+WT="$ROOT/.streams/demo"
 git -C "$ROOT" worktree add -q -b stream/demo "$WT" main
 
 fact() { sed -n "s/^$1=//p" "$2" | head -n 1; }
@@ -33,23 +34,19 @@ OUT="$TMP/out"
 "$EXCLUDE" "$WT"
 exclude="$(git -C "$WT" rev-parse --git-path info/exclude)"
 case "$exclude" in /*) ;; *) exclude="$WT/$exclude" ;; esac
-expect_eq "handoff exclusion is idempotent" "1" "$(grep -cFx WORKSTREAM.md "$exclude")"
+for pattern in '/.streams/*/' '/WORKSTREAM.md' '/workstream.tsv'; do
+  expect_eq "runtime exclusion is idempotent: $pattern" "1" "$(grep -cFx "$pattern" "$exclude")"
+done
 
 "$FACTS" stream-state "$WT" stream/demo main > "$OUT"
 expect_eq "stream-state branch guard" "true" "$(fact branch_matches "$OUT")"
 expect_eq "stream-state toplevel guard" "true" "$(fact toplevel_matches "$OUT")"
 expect_eq "fresh stream ahead" "0" "$(fact ahead "$OUT")"
 
-mkdir -p "$WT/.records/streams"
-printf '# next\n' > "$WT/.records/streams/next.md"
-"$FACTS" stream-state "$WT" stream/demo main > "$OUT"
-expect_eq "stream manifest draft is classified" ".records/streams/next.md" "$(fact drafted_next_plan "$OUT")"
-expect_eq "stream manifest draft is not real WIP" "false" "$(fact wip_tracked "$OUT")"
 printf 'scratch\n' > "$WT/scratch.txt"
 "$FACTS" stream-state "$WT" stream/demo main > "$OUT"
-expect_eq "other dirt is real WIP" "true" "$(fact wip_tracked "$OUT")"
-rm "$WT/scratch.txt" "$WT/.records/streams/next.md"
-rmdir "$WT/.records/streams" "$WT/.records"
+expect_eq "ordinary dirt is real WIP" "true" "$(fact wip_tracked "$OUT")"
+rm "$WT/scratch.txt"
 
 printf '# stream docs\n' > "$WT/stream.md"
 git -C "$WT" add stream.md
@@ -82,16 +79,16 @@ EOF
 expect_eq "cheatsheet checks both refs" "2" "$(fact checked "$OUT")"
 expect_eq "cheatsheet reports one stale ref" "1" "$(fact stale "$OUT")"
 
-mkdir "$ROOT/.workstreams/inplace"
-printf '%s\n' '# in-place' '- isolation: in-place' > "$ROOT/.workstreams/inplace/WORKSTREAM.md"
+mkdir "$ROOT/.streams/inplace"
+printf '%s\n' '# in-place' '- isolation: in-place' > "$ROOT/.streams/inplace/WORKSTREAM.md"
 "$FACTS" inplace-scan "$ROOT" > "$OUT"
 expect_eq "in-place scan finds recorded stream" "inplace" "$(fact inplace_streams "$OUT")"
 "$FACTS" inplace-state "$ROOT" demo stream/demo main > "$OUT"
 expect_eq "root checkout is not holding stream branch" "false" "$(fact on_stream_branch "$OUT")"
 expect_eq "root checkout is on target" "true" "$(fact on_target "$OUT")"
 expect_eq "in-place state reads handoff custody" "true" "$(fact handoff_parked "$OUT")"
-rm -f "$ROOT/.workstreams/inplace/WORKSTREAM.md"
-rmdir "$ROOT/.workstreams/inplace"
+rm -f "$ROOT/.streams/inplace/WORKSTREAM.md"
+rmdir "$ROOT/.streams/inplace"
 
 if "$TEARDOWN" "$ROOT" demo --wrong >/dev/null 2>&1; then
   echo "FAIL: teardown accepted an unknown flag" >&2

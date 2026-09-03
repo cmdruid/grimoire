@@ -110,7 +110,7 @@ the retained snapshot; without one, present them as observations in the calling 
 ## The decision tree -- pick the mechanism
 
 A target checkout is **held** when either (a) `<toplevel>/WORKSTREAM.md` exists, or (b) a
-`<toplevel>/.workstreams/*/WORKSTREAM.md` records `isolation: in-place` and its Coordinates
+`<toplevel>/.streams/*/WORKSTREAM.md` records `isolation` as `in-place` and its identity block
 `branch:` equals `git -C <toplevel> branch --show-current`. Codex (or any tree-writing executor)
 **must not** write a held tree.
 

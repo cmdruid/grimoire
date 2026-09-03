@@ -1,38 +1,16 @@
 #!/usr/bin/env bash
 set -u
-DIR="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)"; SKILL="$(CDPATH='' cd -P "$DIR/../.." && pwd)"; PRIME="$DIR/../workstream-prime.sh"; TEMPLATE="$SKILL/templates/workstream-handoff.md"
+DIR="$(cd "$(dirname "$0")" && pwd)"; # shellcheck disable=SC1091
 . "$DIR/lib.sh"
-T="$(mktemp -d "${TMPDIR:-/tmp}/workstream-prime-test.XXXXXX")"; trap 'rm -rf "$T"' EXIT
-H="$T/WORKSTREAM.md"; SOURCE='.records/goals/2026-08-26-release.md'; OUT="$T/out"
-awk -v h="$H" -v source="$SOURCE" '
-  /^- source:[[:space:]]*/ {print "- source:        " source; next}
-  /^- this hand-off:[[:space:]]*/ {print "- this hand-off: " h; next}
-  {print}
-' "$TEMPLATE" >"$H"
-sed -i.bak '/^## Queue state$/a\
-Parked: false\
-Phase: build' "$H"; rm "$H.bak"
-strip_owned() { awk '
-  /^## TL;DR$|^## Queue state$|^## What.s next$/ {skip=1; next}
-  skip&&/^## / {skip=0}
-  !skip {print}
-' "$1"; }
-strip_owned "$H" >"$T/before"
-"$PRIME" --handoff "$H" --source "$SOURCE" --unit 'Complete the accepted goal runbook.' --next '/foreman goal resume .records/goals/2026-08-26-release.md' >"$OUT"
-expect "primed status" 'status=primed' "$OUT"; expect "queue unit" 'Current unit: Complete the accepted goal runbook.' "$H"
-expect_eq "same next sentence twice" 2 "$(grep -cFx '/foreman goal resume .records/goals/2026-08-26-release.md' "$H")"
-expect "parked kept" 'Parked: false' "$H"; expect "phase kept" 'Phase: build' "$H"
-strip_owned "$H" >"$T/after"; if cmp -s "$T/before" "$T/after"; then pass=$((pass+1)); else echo 'FAIL: unrelated bytes changed' >&2; fail=$((fail+1)); fi
-sum="$(cksum "$H")"; "$PRIME" --handoff "$H" --source "$SOURCE" --unit 'Complete the accepted goal runbook.' --next '/foreman goal resume .records/goals/2026-08-26-release.md' >"$OUT"
-expect "idempotent status" 'status=unchanged' "$OUT"; expect_eq "idempotent bytes" "$sum" "$(cksum "$H")"
-
-if "$PRIME" --handoff "$H" --source wrong.md --unit Unit --next Next >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi
-expect "wrong source refused" 'reason=wrong-source' "$OUT"
-M="$T/missing.md"; sed "/^## What's next$/d" "$H" >"$M"
-if "$PRIME" --handoff "$M" --source "$SOURCE" --unit Unit --next Next >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi
-expect "missing section refused" 'reason=malformed-sections' "$OUT"
-L="$T/link.md"; ln -s "$H" "$L"
-if "$PRIME" --handoff "$L" --source "$SOURCE" --unit Unit --next Next >"$OUT"; then fail=$((fail+1)); else pass=$((pass+1)); fi
-expect "symlink refused" 'reason=unsafe-handoff' "$OUT"
-expect_absent "generic helper has no foreman knowledge" 'foreman' "$PRIME"
-report "workstream-prime-test.sh"
+PRIME="$DIR/../workstream-prime.sh"; HELPER="$DIR/../workstream.sh"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-prime.XXXXXX")"; TMP="$(cd "$TMP" && pwd -P)"; ROOT="$TMP/project"; OUT="$TMP/out"; trap 'rm -rf "$TMP"' EXIT
+git init -q -b main "$ROOT"; git -C "$ROOT" config user.name test; git -C "$ROOT" config user.email test@example.invalid
+printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial
+"$HELPER" "$ROOT" runtime-init prime main prime >"$OUT"
+"$PRIME" "$ROOT" prime first 'First bounded unit' >"$OUT"
+expect 'prime delegates to guarded unit transition' 'status=unit-started' "$OUT"
+expect 'prime records unit summary' $'summary\tFirst bounded unit' "$ROOT/.streams/prime/workstream.tsv"
+"$PRIME" "$ROOT" prime first 'First bounded unit' >"$OUT"; expect 'prime retry recovers' 'status=resumed' "$OUT"
+if "$PRIME" "$ROOT" other first first >"$OUT" 2>/dev/null; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect_absent 'prime has no foreign workflow knowledge' 'foreman' "$PRIME"
+report 'workstream-prime-test.sh'

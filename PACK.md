@@ -60,14 +60,15 @@ at write time while preserving explicit `mark` / `map` / `walk`. None is part of
 - Journal defines the record contract. Notepad writes notes, Auditor and Debugger write reports,
   and Analyst reads records, reports, the first-class tracker provider, and git history into cited
   briefings.
-- A workstream owns its `WORKSTREAM.md` save-state. The root checkout may instead carry one
-  token-bound `CHECKPOINT.md`; one session never uses both lifecycles.
+- A workstream owns one concise `WORKSTREAM.md` runbook and helper-owned `workstream.tsv` state. The
+  root checkout may instead carry one token-bound `CHECKPOINT.md`; one session never uses both
+  lifecycles.
 - Foreman compiles verified operation closures into immutable goal records. A root pursuit asks
-  Checkpoint to own mutable progress; a stream pursuit reads Workstream's hand-off. The harness goal
+  Checkpoint to own mutable progress; a stream pursuit reads Workstream's admitted projection. The harness goal
   feature may drive either runbook, but Foreman never writes either runtime surface or expands tool
   permission.
 - An opt-in stream launch treats one Foreman goal as one Workstream queue unit: the root coordinator
-  proves the record closure reachable, seeds the stream, primes its existing hand-off through
+  proves the record closure reachable, seeds the stream, primes its current unit through
   Workstream's generic helper, then loads that same stream. Normal Workstream use performs no
   Foreman checks.
 - Backlog's explicit setup defaults to `tasks`, `issues`, project-owned `feedback`, and `routines`; it owns the
@@ -100,13 +101,16 @@ Clankshop for `<project-root>`.” Installation does not cache or execute this s
 
 ### 1. Inspect and propose
 
-Read the target project's instructions, inspect the fixed `.agents/skilldata`, `.records`, and `.trackers`
-homes, and inspect installed members plus Git state. Do not write yet.
+Read the target project's instructions, inspect the fixed `.agents/skilldata`, `.records`, and
+`.trackers` homes plus `.streams` when present, and inspect installed members plus Git state. Do not
+write yet.
 
 Propose one bounded profile that names every selected setup and every destination it may change:
 
 - Core records: Journal.
-- Delivery loop: Journal, Backlog's default or selected trackers, Workstream, and optionally Delegate.
+- Delivery loop: Journal, Backlog's default or selected trackers, Workstream, and optionally
+  Delegate. Workstream needs no setup for ordinary use; propose its optional control surface only
+  when the project wants committed defaults or hooks.
 - Optional customization: Architect, Contractor, Notepad, Analyst, Debugger, or Inspector only when
   the project wants editable versions of their active surfaces.
 - Deferred enhancement: Auditor is optional and time-intensive. Never include it in the initial
@@ -118,15 +122,17 @@ pre-sweep Git state and refuse an approved destination that already contains unr
 ### 2. Run member-owned setup
 
 Announce a configuration sweep, then invoke only the approved members' public setup procedures in
-write-only mode. Each member writes only its declared owner surface; no member commits or sets up a
-sibling. Project-authored surfaces are absent-only and incumbents remain byte-for-byte. Follow each
-member's own preflight, migration, and collision response; report any partial safe writes, correct the
-refusal, and rerun.
+write-only mode. Each member writes only its declared owner surface; no member sets up a sibling.
+Workstream is excluded from this aggregate sweep: its optional setup owns one atomic control-surface
+commit and must be requested and run separately. Project-authored surfaces are absent-only and
+incumbents remain byte-for-byte. Follow each member's own preflight, migration, and collision
+response; report any partial safe writes, correct the refusal, and rerun.
 
 ### 3. Apply optional project policy
 
 Backlog setup configures only `.trackers`; it does not author a project front door or Workstream
-hooks. Workstream's hook points remain independently owned and unchanged by this profile.
+hooks. Workstream's two hook points live in its own optional `.streams/CONFIG.md` and remain
+independently owned and unchanged by this profile.
 When Delegate is selected, the project may place this policy in
 `.agents/skilldata/delegate/hooks/byproducts.md`:
 

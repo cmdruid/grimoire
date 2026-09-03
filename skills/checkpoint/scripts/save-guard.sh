@@ -27,12 +27,12 @@ echo "head_branch=$head_branch"
 
 inplace="none"
 inplace_match=false
-for f in "$top"/.workstreams/*/WORKSTREAM.md; do
+for f in "$top"/.streams/*/WORKSTREAM.md; do
   [ -f "$f" ] && [ ! -L "$f" ] || continue
-  grep -qE '^- isolation:[[:space:]]*in-place' "$f" || continue
+  grep -qE '^isolation[[:space:]]+in-place$' "$f" || continue
   name="$(basename "$(dirname "$f")")"
   if [ "$inplace" = "none" ]; then inplace="$name"; else inplace="$inplace,$name"; fi
-  branch="$(sed -n 's/^- branch:[[:space:]]*//p' "$f" | head -1 | sed 's/[[:space:]]*$//')"
+  branch="$(sed -n 's/^branch[[:space:]]*//p' "$f" | head -1 | sed 's/[[:space:]]*$//')"
   [ -n "$branch" ] && [ "$branch" = "$head_branch" ] && inplace_match=true
 done
 echo "inplace_stream=$inplace"

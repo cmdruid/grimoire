@@ -18,8 +18,6 @@ run_core_sweep(){
   AUDITOR_SETUP_TEST_INVOKED_SENTINEL="$auditor_sentinel" \
     "$repo/skills/backlog/scripts/backlog-setup.sh" "$root" --apply >/dev/null
   AUDITOR_SETUP_TEST_INVOKED_SENTINEL="$auditor_sentinel" \
-    "$repo/skills/workstream/scripts/workstream-setup.sh" --write-only "$root" >/dev/null
-  AUDITOR_SETUP_TEST_INVOKED_SENTINEL="$auditor_sentinel" \
     "$repo/skills/delegate/scripts/delegate-setup.sh" --write-only "$root" >/dev/null
 }
 
@@ -53,9 +51,7 @@ grep -qxF 'readme_status=current' <(printf '%s\n' "$readme_facts")||fail "Backlo
 grep -q '^## tasks$' "$root/.trackers/DEBRIEF.md"||fail "Backlog cookbook missing tasks"
 grep -q '^## routines$' "$root/.trackers/DEBRIEF.md"||fail "Backlog cookbook missing routines"
 cmp -s "$tmp/agents.before" "$root/AGENTS.md" || fail "core setup changed the project front door"
-hooks="$tmp/hooks.out";"$repo/skills/workstream/scripts/hooks.sh" parse --dir "$root/.agents/skilldata/workstream/hooks" --known feature-completion --known after-eventful-ship >"$hooks"
-grep -q 'hook_feature_completion=empty' "$hooks"||fail "feature hook is not independent and empty"
-grep -q 'hook_after_eventful_ship=empty' "$hooks"||fail "ship hook is not independent and empty"
+[ ! -e "$root/.streams" ]||fail "zero-floor Workstream unexpectedly installed a control surface"
 grep -q 'proposed class' "$root/.agents/skilldata/delegate/hooks/byproducts.md"||fail "Delegate policy not readable"
 grep -q 'actionable project-owned byproduct' "$root/.agents/skilldata/delegate/hooks/byproducts.md"||fail "Delegate policy does not qualify project feedback"
 grep -q 'affected skill tag' "$root/.agents/skilldata/delegate/hooks/byproducts.md"||fail "Delegate policy loses reusable-skill byproducts"
@@ -64,9 +60,9 @@ if grep -qF 'skill-feedback' "$root/.agents/skilldata/delegate/hooks/byproducts.
 if grep -qE '^(agent-workspace|agent-records|agent-trackers|records-root):' "$root/AGENTS.md";then fail "default roots were declared";fi
 
 # Derive the aggregate set from Git over approved destinations, not setup output.
-git -C "$root" add -N -- .records .trackers .agents/skilldata/workstream .agents/skilldata/delegate
+git -C "$root" add -N -- .records .trackers .agents/skilldata/delegate
 paths=();while IFS= read -r path;do [ -n "$path" ]&&paths+=("$path");done \
-  < <(git -C "$root" diff --name-only -- .records .trackers .agents/skilldata/journal .agents/skilldata/workstream .agents/skilldata/delegate)
+  < <(git -C "$root" diff --name-only -- .records .trackers .agents/skilldata/journal .agents/skilldata/delegate)
 [ "${#paths[@]}" -gt 0 ]||fail "aggregate path set is empty"
 git -C "$root" add -- "${paths[@]}";git -C "$root" commit -qm 'Configure Clankshop delivery loop' -- "${paths[@]}"
 [ "$(git -C "$root" rev-list --count HEAD)" -eq 2 ]||fail "configuration did not make exactly one aggregate commit"

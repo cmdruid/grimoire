@@ -1,259 +1,145 @@
 ---
 name: workstream
-description: "Drive a long-lived development stream as a continuous loop, shipping queued features in a git worktree or in-place. Own stream creation, save/load, sync, landing, parking, recycling, teardown, and status. Use when the user runs `/workstream`, manages a stream lifecycle, or ships its work."
+description: "Drive a long-lived development stream through a guarded, resumable lifecycle. Use for /workstream create, load, save, sync, ship, recycle, close, status, setup, repair, anchor, reconfig, or migrate."
 ---
 
-# workstream
+# Workstream
 
-Encodes a development pipeline (the host's routing/planning/worktree conventions, where
-documented) as an explicit, re-entrant loop. A workstream = one isolated slot — its own worktree
-(default) or the main checkout held in place — bound to one stream of work for its whole life,
-shipping features off the stream's queue. **The queue's source is pluggable** —
-a standalone plan, a section of an ongoing roadmap, an inline brief, or defined ad hoc in the first
-iteration. **Two archetypes follow from the source:** a *plan/roadmap* stream has a **linear queue**
-and `ship` advances item->item; a *template/intake* stream (a `kind: workstream-template` source —
-e.g. debug, design) has **no predefined queue** — each unit is independent, so `ship` lands a unit
-and **`recycle`** clears the instance back to a blank unit from the template. A fully landed slot
-may also recycle onto an explicit tracked plan or roadmap, rebinding its queue without throwing
-away the worktree or warm build cache. The hand-off is the
-loop's save-state; a session reset is your version-control operation on context (save then reset =
-checkpoint; reset without save = rollback). The steady state is build-then-land — but **how often it
-lands is the stream's `Ship cadence`** (`flow.md`), because `ship` is expensive; teardown (`close`)
-is rare — only when the stream's queue is exhausted or the stream is paused.
+Use one persistent branch and checkout to build and land a queue of coherent units. The project
+remains free-form outside a stream. Inside one, `WORKSTREAM.md` is the concise runbook and
+`workstream.tsv` is helper-owned state; never read or edit the TSV directly.
 
-This `SKILL.md` is a **thin router**: it holds the scope rule, the dispatch table, and the
-discipline every verb shares. Each verb's procedure lives in `verbs/<verb>.md`, and the loop's
-orchestration doctrine (execution modes, autonomy/seam rules, confident launch, ship cadence, reset
-ritual, eventful-ship handling) lives in **`flow.md`** — both **read on demand**. When a verb is
-selected, **read its file and follow it**; do not reconstruct a procedure from memory.
+## Scope and zero floor
 
-## Scope — one session drives exactly one workstream
+One session drives exactly one stream. Never load or create a different stream from inside an
+active stream. On an explicit human request, you may seed another stream for a separate session,
+then stop without entering it. Capture tangents through the host's follow-up lane.
 
-A `/workstream` session **drives one** stream for its life. The invariant is about *driving*, not
-merely *touching*: **an agent operating inside a workstream NEVER drives or `load`s another
-workstream** (here *another* = a *different* stream; re-entering the SAME stream after a context reset
-is the normal resume, not a violation). Driving two streams from one context splits the loop — that
-is the harm this rule exists to prevent. Two consequences follow, keyed on *what you'd actually do*:
+Setup is optional. When `.streams/workstream.sh` is absent, use this package's
+`scripts/workstream.sh` with the canonical primary root. When the installed helper exists, every
+ordinary operation must use that exact file; stale, unsafe, or partial installed state points to
+`repair`. Control operations use the package helper so they can refresh installed bytes.
 
-- **You never spawn a stream for your own work.** When in-stream work surfaces something that *would
-  be* its own stream — a tangent, a debug bug, the next roadmap track — you **capture or surface it;
-  you never stand it up to drive**: a **defect** → the host's bug-filing lane; **feature work** →
-  the host's follow-up lane;
-  the **next track / a new stream** → name it at a seam and hand it to the human/coordinator. Plain
-  `create` *enters the loop*, so standing up a stream to drive is a **coordinator-only**,
-  trunk-resident action — never yours. Needing isolation for a sub-task of your *own* feature is a
-  `/delegate` worktree, not a second stream.
-- **You MAY *seed* a stream for someone else to drive — only on an explicit human request.** When the
-  human explicitly asks you to stand up a *different* stream for **them** to drive in a **separate
-  session**, you may run **`create --seed-only`** (`verbs/create.md`): it runs create's mechanics,
-  hands back the `/workstream load` command, and **STOPS before entering the loop**. You seed; you
-  never drive it. This is the *only* way a second stream originates from inside a workstream; it fires
-  **only** on that explicit, in-band request — never inferred, never for your own tangent, and never
-  in an unattended/autonomous loop (no human is present to ask) — and it never touches your own loop.
-- **A root coordinator may seed, prime, and load that same stream as one launch.** This narrow
-  exception applies only when the session is not already driving any stream and an explicit caller
-  needs to set the initial queue unit before entry. The coordinator runs `create --seed-only`, the
-  generic prime helper, then `load` for exactly the stream it just created. It cannot switch targets
-  or use the exception after a stream is loaded.
+Always pass the canonical primary checkout as the helper's first argument. Resolve stream paths
+from admitted helper output, never from the current directory. Every Git command uses `git -C` and
+every file operation uses an absolute path.
 
-The `create`/`load` guards (in their verb files) enforce this mechanically.
+## Custody and safety
 
-A stream's **isolation** (Coordinates `isolation: worktree | in-place`, chosen at `create`) does not
-change scope: one session still drives one stream. An **in-place** stream additionally holds the one
-shared tree (custody — `verbs/park.md`), so at most one exists per repo, enforced at `create`.
+- A linked stream lives at `<root>/.streams/<stream>` on `stream/<stream>`. Its ignored top-level
+  `WORKSTREAM.md` and `workstream.tsv` never merge. Tracked `.streams` control files may appear in
+  every checkout; only `<root>/.streams/workstream.sh` is installed authority.
+- Stop on a root, worktree, branch, target, instance, runbook-hash, tracker-schema, worktree-registry,
+  symlink, nested-runtime, or interrupted-Git mismatch. Ignore rules are hygiene, not admission.
+- The custodial parent is the sole lifecycle writer. Helpers compute and mutate typed facts; you
+  decide semantic scope, conflict resolution, gate selection, hook completion, and follow-up.
+- Never force a ref. Preparation may commit only on the stream branch. `ship --prepare` never
+  changes a target or remote ref. Landing requires the user's current explicit invocation or one
+  explicit approval bound to the reported instance, shipment, batch, target, and landing mode.
+- A `running`, `uncertain`, or rejected external receipt is not failure proof. Inspect durable
+  effects and reconcile it; never replay automatically.
 
-## Two layers: verbs are primitives, the flow orchestrates them
+## Dispatch
 
-- **Verbs** are *primitives* — each does exactly one intrinsic job and is invokable by **either
-  party at any time** (`/workstream sync` by hand works identically to the agent calling it
-  mid-flow) — with one scope limit: an agent already inside a workstream must not invoke plain
-  `create` (create-and-drive) nor `load` a *different* stream; it may only run `create --seed-only`,
-  and only on an explicit human request to stand a stream up for a separate session. A root
-  coordinator not yet driving a stream may use the same-stream seed/prime/load launch above.
-- **The flow** (`flow.md`) is the agent's orchestration — it calls verbs at the loop's seams and
-  sequences work and saves around the one event that matters, the **context reset**. Read it at
-  every loop entry (`create` / `load` / `recycle`).
+Read only the selected verb file, then follow it. No verb requires another verb file.
 
-**No verb auto-saves** (one exception: `park` embeds a save — its custody hand-over is a context-loss
-boundary, `verbs/park.md`). A save otherwise belongs to the flow's reset ritual, not to `sync` or
-`ship`. A manual verb invocation runs its own procedure and then rejoins the flow at the next seam.
+| Invocation | Procedure |
+|---|---|
+| `create <stream> [<source-or-brief>]` | `verbs/create.md` |
+| `load <stream>` | `verbs/load.md` |
+| `save [<operator-note>]` | `verbs/save.md` |
+| `sync` | `verbs/sync.md` |
+| `park` / `unpark` | `verbs/park.md` |
+| `ship [--prepare]` | `verbs/ship.md` |
+| `recycle [<source>]` | `verbs/recycle.md` |
+| `close` | `verbs/close.md` |
+| `status` | `verbs/status.md` |
+| `setup [<root>]` | `verbs/setup.md` |
+| `repair [<stream>]` | `verbs/repair.md` |
+| `anchor [status|install|refresh|remove] [<front-door>]` | `verbs/anchor.md` |
+| `reconfig [<stream>]` | `verbs/reconfig.md` |
+| `migrate` | `verbs/migrate.md` |
 
-## Verb dispatch (read the file, then follow it)
+## Runtime loop
 
-| Invocation | Verb file | Also read | Does | Runs |
-|---|---|---|---|---|
-| `create <stream> [<src>] [--in-place]` | `verbs/create.md` | `flow.md` | seed worktree or in-place branch + hand-off, enter the loop (`--seed-only`: seed + hand back a `load` command, no loop) | root checkout (`--seed-only`: also from a workstream) |
-| `load <stream>` | `verbs/load.md` | `flow.md` | re-enter an existing stream after a reset | worktree |
-| `save` | `verbs/save.md` | — | checkpoint the hand-off in place (the stream's "save a checkpoint" — never `/checkpoint`) | worktree |
-| `sync` | `verbs/sync.md` | — | pull the trunk's movement into the worktree | worktree |
-| `park` / `unpark` | `verbs/park.md` | — | hand the shared tree back to the trunk / take it back (in-place only) | root (in-place) |
-| `ship` | `verbs/ship.md` | `verbs/sync.md` | land accumulated feature(s), advance the queue | worktree |
-| `recycle [<source>]` | `verbs/recycle.md` | `flow.md`, `verbs/create.md` | fresh unit or replacement queue in the same worktree | worktree |
-| `close` | `verbs/close.md` | `verbs/ship.md` (if WIP ships) | tear the stream down | root |
-| `status` | `verbs/status.md` | — | list active workstreams (read-only) | anywhere |
-| `setup [<root>]` | `verbs/setup.md` | — | deploy active templates and empty hook points | root |
-| `migrate <source-path>` | `verbs/migrate.md` | — | preview and upgrade Workstream records/templates | anywhere |
+Use the helper's single `next_action`; don't reconstruct state by reading the tracker. Define a
+bounded unit, build and verify it, commit it, complete its unit boundary, and resolve the emitted
+feature hook. Accumulate completed units until the runbook cadence or an explicit request reaches
+a landing point. Prepare one immutable shipment, select the host's documented gate for what will
+land, resolve pre-land friction, obtain authority, land, and finalize. `recycle` starts a fresh
+intake only after finalization. `close` is teardown, not a reporting ceremony.
 
-## Host layout
+`save` changes only the bounded operator note when semantic intent must survive a reset or custody
+transfer. Git and helper state already record mechanical progress; don't save after every action.
+After compaction, follow the project's recovery anchor, admit this stream, call `read`, reconcile
+the projection with Git, and continue the one known action. Never inspect sibling runbooks.
 
-Workstream is **self-contained**: its own state is `.workstreams/<stream>/` (hand-offs, registry)
-plus ordinary git branches and worktrees, and **every verb works on any repo** — no pack
-install or project scaffold is a precondition, and no verb ever refuses or stalls for lack
-of one.
+## Hooks
 
-- At `create`/`recycle`, read the two canonical files beneath `$HOOKS_DIR`
-  (absolute `<root>/.agents/skilldata/workstream/hooks/`) when present;
-  empty or absent → no extra glue command. Unrelated files are ignored.
-- Do not create a doctrine home or invoke any pack lifecycle as a side effect.
-- **Records (every host).** Workstream-owned execution manifests and debriefs land only in
-  `.records/streams/`; Contractor-style queue-source plans remain in `plans/` and are never
-  claimed merely because Workstream consumes them. Resolve active `manifest.md` / `debrief.md` at
-  `.agents/skilldata/workstream/templates/` when present; otherwise read the bundled active template
-  without a project write. Only `/workstream setup` deploys a fresh copy. Recognized legacy
-  locations require `/workstream migrate <path>`. Mint `doctype: streams` with
-  `schema: workstream/plan@1`, tag `plan`, or
-  `schema: workstream/debrief@1`, tag `debrief`, using `records.sh new streams --dir streams
-  --schema <schema> --template <resolved>` when available; otherwise synthesize the same four-key
-  profile in file mode. Names are `YYYY-MM-DD-<slug>.md`, links are `→ <store>/<file>.md`, and
-  generic dates/revisions are never stamped. Never write a flat records template.
+Version 1 recognizes only `feature-completion` and `ship-friction`. The helper stores their
+compiled snapshot and receipt. When it returns `feature-hook` or a friction phase, call
+`hook-start` with whether the current harness already exposes native same-context isolation.
 
-## Discipline (applies to EVERY verb — non-negotiable)
+If the helper selects isolation, use only that native full-context fork: pause the parent after the
+receipt is `running`, give the fork the one emitted body and custody facts, suppress its reasoning
+and tool transcript, and accept only this closure:
 
-- **cwd-independent — ALL commands, not just git.** Every git command uses `git -C <path>`; every
-  file op uses an **absolute** path; and **any other command that resolves relative paths** (build
-  tools, test runners, greps, scripts) is prefixed `cd <worktree> && …` **in the same tool call**.
-  Never trust a bare `cd` to persist between tool calls ("cd doesn't stick") — a mid-session cwd
-  reset has silently retargeted a bare test run at the ROOT checkout, producing a false-green
-  against the trunk's code. A standalone `cd` is UX-only — it positions the user's prompt, never
-  the agent's correctness. Related trap: never `git stash` inside a compound cleanup one-liner —
-  the stash is repo-**global** (shared across all worktrees), so a reflexive stash in a worktree
-  sweeps and strands state; bank WIP as a `wip:` commit instead (`verbs/park.md`).
-- **Present worktree-local references as absolute worktree paths.** When you show the user (in chat,
-  a summary, a hand-off) a doc/file you created or changed in the worktree, give its **absolute
-  worktree path** (`<worktree>/.records/streams/foo.md`), not a bare repo-relative one — a bare path
-  resolves against the **root checkout**, where the worktree's unmerged work doesn't exist yet, so the
-  link is broken until the stream ships. The same applies to a `file:line` you cite. Note such a doc
-  is "on the stream branch until ship" so the reader knows why the root copy isn't there.
-- **Resolve paths from Coordinates**, never from cwd. Each workstream's hand-off carries a
-  Coordinates block (worktree, root checkout, branch, queue source) written once by `create`.
-  Read it; do not guess.
-- **The main session is the sole writer of the shared worktree.** A subagent can't hold the worktree's
-  cwd, so it must **never edit or commit in the shared tree directly** — a stray edit silently corrupts
-  the trunk. A bounded authoring unit may be submitted through `/delegate`; after its returned result,
-  the main session alone applies or merges any artifact and resumes this loop. If Delegate or a needed
-  optional transport is unavailable, execute the unit inline. Delegate the authoring; never the writing
-  of the shared tree.
-- **The live hand-off never merges.** The live hand-off **is** Coordinates
-  `this hand-off:` — one absolute path; `.workstreams/<stream>/WORKSTREAM.md` is only its
-  **ROOT-relative address** (a worktree stream's checkout lives AT `<root>/.workstreams/<stream>`,
-  so the two coincide). Never resolve the relative form against the *worktree* — that mints a stray
-  nested `.workstreams/` copy the next `load` won't read (stream-state's `nested_stray_handoff`
-  flags the signature; `save` verifies its target against Coordinates). The
-  `.workstreams/` .gitignore hides it from the **main** checkout; `create` ALSO adds it to the
-  worktree's own `info/exclude` so it's ignored from **inside** the worktree too. Durable records
-  (the feature's plan closure + ledger line, debrief report, roadmap-ledger row, ADR) are committed
-  **on the branch** and reach the trunk through the ff-merge — not hand-committed to the root.
-- **Land locally onto `<target>` first.** Integrate against the workstream's `<target>`
-  (Coordinates `integration-target`): `git -C <worktree> rebase <target>` + a by-ref
-  advance of `<target>` (`verbs/ship.md` -> *Landing*). Never hardcode `main` — the trunk
-  may be `dev` later. Do not treat a remote as the integration target. In-place
-  `landing: push | pr` is an optional *tail* after that local land (`pr` skips the local
-  advance and opens a PR instead — still keyed on `<target>`, not on `origin/main`).
-- **Shared trunk is contended — the root index is a shared resource.** Every stream's trunk commit
-  passes through the *one* root index, and `git commit` records the **entire** index — not just what
-  you `git add`'d this turn — so a sibling staging concurrently gets swept into your commit (ISSUES
-  W1). Two rules: **(1) Don't hand-commit a stream's own records to the root at all** — the feature's
-  plan closure + ledger line and roadmap-ledger row commit **on the branch** and reach the trunk
-  via the **ff-merge**, the single root mutation (and `--ff-only` fails safe: rejected → re-`sync` +
-  retry). **(2) If project-authored hook work must touch the root** (`create` seeds its plan **on the
-  branch**, and `close` writes nothing), stage **and** commit in **one** tool call scoped with an
-  explicit pathspec: `git -C <root> add <p> && git -C <root> commit -m "…" -- <p>` — the `-- <p>`
-  excludes anything that raced into the index. A **rename/move** (`git mv`) stages a delete + an
-  add: the commit pathspec must name **both** paths (`git commit -- <old> <new>`) — naming only the
-  new path records the add-half and silently strands the staged deletion (`git status --short`
-  showing `R` is not proof the commit captured it). Never `git add -A` / `commit -a`; never leave
-  staged work in the root index across tool calls.
-- **Commits:** imperative subject; no `Co-Authored-By` trailer.
-- **Gate before landing code, not for nothing.** Run the host's full gate before a trunk commit
-  whose **own diff** is **build-relevant**, defined by one simple rule: **any changed path that does
-  not end in `.md`** (so code, build manifests, AND *data* files all count — only pure
-  markdown is exempt; a host gate may validate data files, so they are never silently skippable). A
-  **markdown-only** change needs only the host's fast doc-linter. Key the decision on *what your
-  commits change*, never on *what a sync pulled in* — the full four-branch matrix is
-  `verbs/sync.md` step 3 (Landing applies the same one); an **unchanged tree** (a no-op sync) still
-  carries the loop's last green gate. `workstream-git.sh gate-facts` computes both axes for you.
-- **Auto-compaction is an involuntary reset (Scenario C).** If your context has just been
-  compacted/summarized mid-loop, stop and run `flow.md` -> *Scenario C*: re-read the hand-off +
-  `flow.md`, facts-gather against git and the records the hand-off names, skip write-back,
-  then continue without a user round-trip if the next action is KNOWN. (`create` registers the
-  host front-door anchor that points a compacted session here; a *failed* compaction is a hard
-  session boundary — save if possible, reset, `load`.)
+```text
+status: complete | blocked | uncertain
+summary: <single-line summary>
+effects: <paths, identifiers, or none>
+parent-actions: <actions or none>
+```
 
-### Helper scripts (token-free state analysis — facts, not verdicts)
+The fork may perform scoped hook effects but must not invoke Workstream lifecycle verbs, edit the
+runbook or tracker, create/load another stream, or outlive the parent. Do not substitute
+`/delegate`, `codex exec`, a shell subprocess, a generic worker, capability discovery, or a
+parallel dispatcher. If native isolation is unavailable, use the helper's inline-or-stop result.
+Once execution starts, failure never falls back inline. Validate claimed Git/filesystem effects
+before `hook-complete`.
 
-The skill ships `scripts/workstream-git.sh` (resolve it from **this skill's own base directory**,
-never a host path — invoke it by that absolute path so an approval allowlist can match a single
-stable entrypoint). Read-only git/worktree inspection printing compact `key=value` facts + evidence
-(it never touches the worktree/index/refs; `land-readiness`'s conflict forecast writes loose objects
-only). It **never recommends an action** — it reports the variables the verb procedures consume, and
-you layer on session state it cannot see (e.g. "I already gated this `<target>` tip this turn").
-Subcommands (each consuming verb file names the facts it reads):
+## Gates and delivery
 
-- `stream-state <worktree> <branch> <target>` — launch/`load`/`recycle` snapshot (behind/ahead,
-  dirty vs drafted-plan, branch/toplevel guards, staged-index strand, interrupted-rebase and
-  stray-nested-hand-off signatures).
-- `gate-facts <worktree> <branch> <target> [<pre-rebase-base>]` — the two docs-only axes +
-  changed-file lists for the gate-by-what-lands matrix. **Post-rebase, the 4th arg is required**
-  (`verbs/sync.md` step 2 captures it): without it the incoming axis reads vacuously empty.
-- `land-readiness <root> <worktree> <branch> <target>` — ff-safety, root state (dirty split into
-  overlapping vs disjoint — only overlap blocks a land), and a read-only
-  conflict **forecast** (`git merge-tree`; `unknown` on git <2.38).
-- `cheatsheet-check <worktree> [<handoff>]` — flags hand-off cheat-sheet pointers that no longer
-  resolve at HEAD — in-place streams pass their `.workstreams/<stream>/WORKSTREAM.md` path.
-- `inplace-scan <root>` — which streams record in-place isolation (`create --in-place`'s
-  one-resident guard).
-- `inplace-state <root> <stream> <branch> <target>` — custody facts for an in-place stream
-  (held/parked/foreign classification inputs; WIP-bank + dirty state).
-The skill also bundles `scripts/hooks.sh` (project-hooks parser/compiler — resolve it from this
-skill's own base directory, same as `workstream-git.sh`). `parse` is read-only over an absolute
-`--dir` and only the declared `--known` seam files; missing hooks are empty and do not create a
-project directory. `compile`
-hashes that canonical known-file population and projects `## Hooks (compiled)` into
-`--handoff`; `compiled-get` / `compiled-put` preserve that exclusive span
-across a template rewrite (`save` does not recompile). It also bundles
-`scripts/worktree-exclude.sh` (idempotent hand-off exclusion, used by
-`create`) and `scripts/worktree-teardown.sh` (the `close` mechanics).
-`scripts/workstream-prime.sh` is the opt-in launch bridge: given a validated absolute hand-off,
-its recorded source pointer, one current-unit sentence, and one literal next action, it atomically
-rewrites only TL;DR, Queue state, and What's next. It preserves Queue control lines and never invokes
-the action. Ordinary Workstream verbs do not call it.
+Select a gate from host instructions. Use only:
+
+- `gate-run --class docs|full --label LABEL -- ARGV...` for an exact direct command.
+- `gate-run --class semantic --selector --label LABEL -- ARGV...` for a documented selector.
+
+Unknown paths default to the full gate. Only the shipment's validated history rows are exempt from
+build relevance. The helper stores digests and a bounded output tail, not commands or transcripts.
+Changed inputs invalidate evidence.
+
+For an autonomous landing point, run preparation first and ask once with its readiness envelope.
+An explicit bare `ship` authorizes preparation and landing; `ship --prepare` authorizes preparation
+only. Local and destination updates are non-force and receipt-backed. A partial delivery retains
+the shipment. The two-parent reconciliation exception is legal only when the helper proves exact
+divergent destination tips and reports `partial-delivery`; its old candidate must be first parent.
+
+## Project surfaces
+
+The only tracked control files are `.streams/.gitignore`, `CONFIG.md`, `README.md`, `history.tsv`,
+and `workstream.sh`. Immediate child directories are ignored runtime worktrees. `CONFIG.md` is
+absent-only project configuration; `reconfig` is the sole adoption path. `history.tsv` has one
+landed row per unit and is overview, never recovery authority.
+
+Workstream consumes tracked plans and roadmaps or an inline brief. It creates no Workstream record
+store, execution manifest, debrief archive, project template home, or generic activity log.
+
 ## Project templates
 
-- `manifest.md`
-- `debrief.md`
-
-Hand-off (`workstream-handoff.md`), compaction anchor (`compaction-anchor.md`), coordinator
-(`coordinator.md`), and `kind: workstream-template` intake files (`debug.md`, `design.md`) are
-package-only and read by their named create/recycle paths; they are never copied as project
-templates.
+None. Workstream's project control files are fixed owned surfaces, not generic project templates.
+The package-only `templates/streams-config.md`, `templates/streams-readme-block.md`,
+`templates/workstream-runbook.md`, and `templates/compaction-anchor.md` document or generate their
+named fixed surfaces. `templates/debug.md` and `templates/design.md` are optional intake briefs;
+`templates/coordinator.md` is an optional root-session guide. Read any of the latter three only
+when the user explicitly selects it.
 
 ## Edges
 
 <!-- edges:workstream -->
-- produces: plan, report — Workstream execution records
-- handoff: — (none; the loop is the skill)
-- consumes: plan, roadmap — typed queue sources; free-text briefs and intake templates are direct invocation inputs
+- produces: — (history is Workstream's internal control ledger)
+- handoff: — (the stream loop is live state, not a cross-skill artifact)
+- consumes: plan, roadmap — optional durable queue sources; inline briefs are direct input
 <!-- /edges:workstream -->
 
-## Done when
-
-The selected verb's done-when holds and the stream returns to the loop with its custody, hand-off,
-queue, gate, and landing state mutually consistent. The loop is complete only when its queue is
-exhausted or deliberately closed and every landing point has passed the configured ship seam.
-
-## On-demand doctrine
-
-**`flow.md`** — the agent orchestration: execution modes (`delegate`/`manual`), the autonomy rule,
-the seam rule, confident launch, ship cadence, the reset ritual, the manual-mode phase loop, and
-eventful-ship handling. Read it at every loop entry (`create`/`load`/`recycle`); mid-loop verbs assume
-it is already in context.
+Done when the selected verb reaches its stated terminal result or stops on one explicit blocker.
