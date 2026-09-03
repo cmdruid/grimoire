@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::io::{Cursor, Read};
 
-use super::super::{InventoryError, SourcePath, TreeEntry, TreeReader};
+use super::super::{InventoryError, SourcePath, TreeEntry, TreeReader, VisitDecision};
 
 #[derive(Default)]
 pub(crate) struct MemoryTree {
@@ -41,15 +41,25 @@ impl MemoryTree {
 impl TreeReader for MemoryTree {
     fn visit_entries(
         &self,
-        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<VisitDecision, InventoryError>,
     ) -> Result<(), InventoryError> {
+        let mut skipped = Vec::new();
         for entry in &self.entries {
             let mut entry = entry.clone();
+            if skipped
+                .iter()
+                .any(|path: &SourcePath| entry.path.is_descendant_of(path))
+            {
+                continue;
+            }
             if entry.kind == super::super::TreeEntryKind::File && entry.size.is_none() {
                 entry.size = self.files.get(&entry.path).map(|bytes| bytes.len() as u64);
             }
-            if !visitor(entry)? {
-                break;
+            let path = entry.path.clone();
+            match visitor(entry)? {
+                VisitDecision::Continue => {}
+                VisitDecision::SkipSubtree => skipped.push(path),
+                VisitDecision::Stop => break,
             }
         }
         Ok(())
@@ -80,8 +90,8 @@ impl FixtureTree {
     fn walk(
         &self,
         directory: &std::path::Path,
-        entries: &mut Vec<TreeEntry>,
-    ) -> Result<(), InventoryError> {
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<VisitDecision, InventoryError>,
+    ) -> Result<bool, InventoryError> {
         use std::os::unix::ffi::OsStrExt;
         use std::os::unix::fs::MetadataExt;
 
@@ -103,25 +113,33 @@ impl FixtureTree {
             let relative = path.strip_prefix(&self.root).unwrap();
             let raw = SourcePath::new(relative.as_os_str().as_bytes().to_vec());
             let file_type = metadata.file_type();
-            if file_type.is_dir() {
-                entries.push(TreeEntry::directory(raw));
-                self.walk(&path, entries)?;
+            let entry = if file_type.is_dir() {
+                TreeEntry::directory(raw)
             } else if file_type.is_file() {
                 let mut entry = TreeEntry::file(raw, metadata.mode());
                 entry.size = Some(metadata.len());
-                entries.push(entry);
+                entry
             } else if file_type.is_symlink() {
                 let target = std::fs::read_link(&path).map_err(|error| InventoryError::Tree {
                     path: raw.clone(),
                     message: error.to_string(),
                 })?;
-                entries.push(TreeEntry::symlink(
-                    raw,
-                    target.as_os_str().as_bytes().to_vec(),
-                ));
+                TreeEntry::symlink(raw, target.as_os_str().as_bytes().to_vec())
+            } else {
+                continue;
+            };
+            let decision = visitor(entry)?;
+            if decision == VisitDecision::Stop {
+                return Ok(false);
+            }
+            if file_type.is_dir()
+                && decision == VisitDecision::Continue
+                && !self.walk(&path, visitor)?
+            {
+                return Ok(false);
             }
         }
-        Ok(())
+        Ok(true)
     }
 }
 
@@ -129,16 +147,9 @@ impl FixtureTree {
 impl TreeReader for FixtureTree {
     fn visit_entries(
         &self,
-        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<VisitDecision, InventoryError>,
     ) -> Result<(), InventoryError> {
-        let mut entries = Vec::new();
-        self.walk(&self.root, &mut entries)?;
-        entries.sort_by(|left, right| left.path.cmp(&right.path));
-        for entry in entries {
-            if !visitor(entry)? {
-                break;
-            }
-        }
+        self.walk(&self.root, visitor)?;
         Ok(())
     }
 

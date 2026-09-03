@@ -398,9 +398,7 @@ fn command_parts(command: GitCommand) -> Result<CommandParts> {
                 format!("--git-dir={}", bare_repository.display()).into(),
                 "ls-tree".into(),
                 "-rz".into(),
-                "-r".into(),
                 "-l".into(),
-                "--full-tree".into(),
                 tree.into(),
             ]);
             payload = true;

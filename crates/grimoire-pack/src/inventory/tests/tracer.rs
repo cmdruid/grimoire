@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::io::{Cursor, Read};
 
 use super::super::digest::{inventory_bytes, review_tree_bytes, skill_content_bytes};
-use super::super::{scan, InventoryError, SourcePath, TreeEntry, TreeReader};
+use super::super::{scan, InventoryError, SourcePath, TreeEntry, TreeReader, VisitDecision};
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
@@ -48,7 +48,7 @@ impl MemoryTree {
 impl TreeReader for MemoryTree {
     fn visit_entries(
         &self,
-        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<VisitDecision, InventoryError>,
     ) -> Result<(), InventoryError> {
         let mut entries = self.entries.clone();
         entries.reverse();
@@ -56,7 +56,7 @@ impl TreeReader for MemoryTree {
             if entry.kind == super::super::TreeEntryKind::File && entry.size.is_none() {
                 entry.size = self.files.get(&entry.path).map(|bytes| bytes.len() as u64);
             }
-            if !visitor(entry)? {
+            if visitor(entry)? == VisitDecision::Stop {
                 break;
             }
         }

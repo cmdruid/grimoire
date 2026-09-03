@@ -15,6 +15,13 @@ pub enum TreeEntryKind {
     Socket,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VisitDecision {
+    Continue,
+    SkipSubtree,
+    Stop,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TreeEntry {
     pub path: SourcePath,
@@ -61,11 +68,13 @@ impl TreeEntry {
 }
 
 pub trait TreeReader {
-    /// Visit a stable snapshot as raw source-relative paths. Adapters must stop when the visitor
-    /// returns `false` and must not follow symlinks.
+    /// Visit a stable snapshot as raw source-relative paths.
+    ///
+    /// Readers must be repeatable, must not follow symlinks, must stop completely on `Stop`, and
+    /// must not enumerate a directory's descendants after `SkipSubtree`.
     fn visit_entries(
         &self,
-        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<VisitDecision, InventoryError>,
     ) -> Result<(), InventoryError>;
 
     /// Open a regular file from that snapshot without following a path that changed kind.

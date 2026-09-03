@@ -8,7 +8,7 @@ mod yaml;
 pub use digest::{compute_inventory_digest, compute_review_tree_digest};
 pub use model::*;
 pub use scan::scan;
-pub use tree::{TreeEntry, TreeEntryKind, TreeReader};
+pub use tree::{TreeEntry, TreeEntryKind, TreeReader, VisitDecision};
 
 #[cfg(test)]
 mod tests;

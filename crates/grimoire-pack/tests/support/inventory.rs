@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::io::{Cursor, Read};
 
-use grimoire_pack::inventory::{InventoryError, SourcePath, TreeEntry, TreeReader};
+use grimoire_pack::inventory::{InventoryError, SourcePath, TreeEntry, TreeReader, VisitDecision};
 
 #[derive(Clone, Default)]
 pub struct TestTree {
@@ -48,15 +48,25 @@ impl TestTree {
 impl TreeReader for TestTree {
     fn visit_entries(
         &self,
-        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<VisitDecision, InventoryError>,
     ) -> Result<(), InventoryError> {
         let mut entries = self.entries.clone();
         if self.reverse {
             entries.reverse();
         }
+        let mut skipped = Vec::new();
         for entry in entries {
-            if !visitor(entry)? {
-                break;
+            if skipped
+                .iter()
+                .any(|path: &SourcePath| entry.path.is_descendant_of(path))
+            {
+                continue;
+            }
+            let path = entry.path.clone();
+            match visitor(entry)? {
+                VisitDecision::Continue => {}
+                VisitDecision::SkipSubtree => skipped.push(path),
+                VisitDecision::Stop => break,
             }
         }
         Ok(())
@@ -88,8 +98,8 @@ impl FsTree {
         &self,
         directory: &std::path::Path,
         relative: &[u8],
-        entries: &mut Vec<TreeEntry>,
-    ) -> Result<(), InventoryError> {
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<VisitDecision, InventoryError>,
+    ) -> Result<bool, InventoryError> {
         use std::os::unix::ffi::OsStrExt;
         use std::os::unix::fs::{FileTypeExt, MetadataExt};
 
@@ -114,19 +124,16 @@ impl FsTree {
             let metadata = std::fs::symlink_metadata(child.path())
                 .map_err(|error| self.error(&child_relative, error))?;
             let file_type = metadata.file_type();
-            if file_type.is_dir() {
-                entries.push(TreeEntry::directory(path));
-                if !ignored_directory(name) && !child.path().join(".git").exists() {
-                    self.walk(&child.path(), &child_relative, entries)?;
-                }
+            let entry = if file_type.is_dir() {
+                TreeEntry::directory(path)
             } else if file_type.is_file() {
                 let mut entry = TreeEntry::file(path, metadata.mode());
                 entry.size = Some(metadata.len());
-                entries.push(entry);
+                entry
             } else if file_type.is_symlink() {
                 let target = std::fs::read_link(child.path())
                     .map_err(|error| self.error(&child_relative, error))?;
-                entries.push(TreeEntry::symlink(path, target.as_os_str().as_bytes()));
+                TreeEntry::symlink(path, target.as_os_str().as_bytes())
             } else {
                 let kind = if file_type.is_fifo() {
                     grimoire_pack::inventory::TreeEntryKind::Fifo
@@ -135,17 +142,27 @@ impl FsTree {
                 } else {
                     grimoire_pack::inventory::TreeEntryKind::Device
                 };
-                entries.push(TreeEntry {
+                TreeEntry {
                     path,
                     kind,
                     mode: metadata.mode(),
                     size: None,
                     link_target: None,
                     submodule_commit: None,
-                });
+                }
+            };
+            let decision = visitor(entry)?;
+            if decision == VisitDecision::Stop {
+                return Ok(false);
+            }
+            if file_type.is_dir()
+                && decision == VisitDecision::Continue
+                && !self.walk(&child.path(), &child_relative, visitor)?
+            {
+                return Ok(false);
             }
         }
-        Ok(())
+        Ok(true)
     }
 
     fn error(&self, path: &[u8], error: std::io::Error) -> InventoryError {
@@ -160,15 +177,9 @@ impl FsTree {
 impl TreeReader for FsTree {
     fn visit_entries(
         &self,
-        visitor: &mut dyn FnMut(TreeEntry) -> Result<bool, InventoryError>,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<VisitDecision, InventoryError>,
     ) -> Result<(), InventoryError> {
-        let mut entries = Vec::new();
-        self.walk(&self.root, b"", &mut entries)?;
-        for entry in entries {
-            if !visitor(entry)? {
-                break;
-            }
-        }
+        self.walk(&self.root, b"", visitor)?;
         Ok(())
     }
 
@@ -189,25 +200,4 @@ impl TreeReader for FsTree {
             .map(|file| Box::new(file) as Box<dyn Read>)
             .map_err(|error| self.error(path.as_bytes(), error))
     }
-}
-
-#[cfg(unix)]
-fn ignored_directory(name: &[u8]) -> bool {
-    matches!(
-        name,
-        b".git"
-            | b".hg"
-            | b".svn"
-            | b".grimoire"
-            | b"node_modules"
-            | b"target"
-            | b".cache"
-            | b".tmp"
-            | b".worktrees"
-            | b".workstreams"
-            | b"build"
-            | b"dist"
-            | b"vendor"
-            | b"fixtures"
-    )
 }

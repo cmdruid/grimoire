@@ -3,7 +3,9 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
-use grimoire_pack::inventory::{InventoryError, SourcePath, TreeEntry, TreeEntryKind, TreeReader};
+use grimoire_pack::inventory::{
+    InventoryError, SourcePath, TreeEntry, TreeEntryKind, TreeReader, VisitDecision,
+};
 use rustix::fs::{openat, readlinkat, statat, AtFlags, Dir, Mode, OFlags, Stat};
 
 use super::{validate_ref, CanonicalIdentity, GitCommand, GitRunner, GitSnapshot, SourceKind};
@@ -117,7 +119,7 @@ impl HeldDirectoryReader {
         &self,
         directory: &File,
         relative: &SourcePath,
-        visitor: &mut dyn FnMut(TreeEntry) -> std::result::Result<bool, InventoryError>,
+        visitor: &mut dyn FnMut(TreeEntry) -> std::result::Result<VisitDecision, InventoryError>,
     ) -> std::result::Result<bool, InventoryError> {
         let before = directory
             .metadata()
@@ -173,11 +175,12 @@ impl HeldDirectoryReader {
                     submodule_commit: None,
                 },
             };
-            if !visitor(entry)? {
+            let decision = visitor(entry)?;
+            if decision == VisitDecision::Stop {
                 return Ok(false);
             }
 
-            if kind == 0o040000 {
+            if kind == 0o040000 && decision == VisitDecision::Continue {
                 let child_fd = openat(directory, name, directory_flags(), Mode::empty())
                     .map_err(|error| rustix_tree_error(&child_relative, error))?;
                 let child_directory: File = child_fd.into();
@@ -354,7 +357,7 @@ fn parse_object_line(bytes: Vec<u8>, name: &str) -> Result<String> {
 impl TreeReader for HeldDirectoryReader {
     fn visit_entries(
         &self,
-        visitor: &mut dyn FnMut(TreeEntry) -> std::result::Result<bool, InventoryError>,
+        visitor: &mut dyn FnMut(TreeEntry) -> std::result::Result<VisitDecision, InventoryError>,
     ) -> std::result::Result<(), InventoryError> {
         self.revalidate().map_err(core_to_tree)?;
         self.walk(

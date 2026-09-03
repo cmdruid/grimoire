@@ -15,6 +15,12 @@ struct FixtureGit {
     tree: Vec<u8>,
 }
 
+struct PrunableGit {
+    trees: BTreeMap<String, Vec<u8>>,
+    blobs: BTreeMap<String, Vec<u8>>,
+    visited: Mutex<Vec<String>>,
+}
+
 #[derive(Default)]
 struct DeadlineGit {
     deadlines: Mutex<Vec<Instant>>,
@@ -88,6 +94,79 @@ impl GitRunner for FixtureGit {
             ))
         }
     }
+}
+
+impl GitRunner for PrunableGit {
+    fn run(&self, command: GitCommand) -> Result<GitResult> {
+        let stdout = match command {
+            GitCommand::LsTree { tree, .. } => {
+                self.visited.lock().unwrap().push(tree.clone());
+                self.trees
+                    .get(&tree)
+                    .unwrap_or_else(|| panic!("visited pruned tree {tree}"))
+                    .clone()
+            }
+            GitCommand::CatBlob { object, .. } => self.blobs[&object].clone(),
+            other => panic!("unexpected prunable fixture command: {other:?}"),
+        };
+        Ok(GitResult {
+            stdout,
+            stderr: Vec::new(),
+        })
+    }
+}
+
+#[test]
+fn git_tree_walk_never_enumerates_an_ignored_subtree() {
+    let root = "4".repeat(40);
+    let target = "5".repeat(40);
+    let skills = "6".repeat(40);
+    let fixture = "7".repeat(40);
+    let manifest = "8".repeat(40);
+    let manifest_bytes = b"---\nname: fixture\n---\n".to_vec();
+    let git = PrunableGit {
+        trees: BTreeMap::from([
+            (
+                root.clone(),
+                format!(
+                    "040000 tree {skills} -\tskills\0\
+                     040000 tree {target} -\ttarget\0"
+                )
+                .into_bytes(),
+            ),
+            (
+                skills.clone(),
+                format!("040000 tree {fixture} -\tfixture\0").into_bytes(),
+            ),
+            (
+                fixture.clone(),
+                format!(
+                    "100644 blob {manifest} {}\tSKILL.md\0",
+                    manifest_bytes.len()
+                )
+                .into_bytes(),
+            ),
+        ]),
+        blobs: BTreeMap::from([(manifest, manifest_bytes)]),
+        visited: Mutex::new(Vec::new()),
+    };
+    let snapshot = GitSnapshot {
+        identity: CanonicalIdentity::remote("github:example/fixture").unwrap(),
+        requested_ref: Some("main".into()),
+        fetched_ref: "refs/heads/main".into(),
+        commit: "3".repeat(40),
+        tree: root.clone(),
+        bare_repository: PathBuf::from("/fixture.git"),
+    };
+
+    let inventory = scan(&GitTreeReader::new(&git, &snapshot)).unwrap();
+
+    assert_eq!(inventory.skills[0].name, "fixture");
+    let visited = git.visited.lock().unwrap();
+    assert_eq!(visited.iter().filter(|tree| *tree == &root).count(), 2);
+    assert_eq!(visited.iter().filter(|tree| *tree == &skills).count(), 2);
+    assert_eq!(visited.iter().filter(|tree| *tree == &fixture).count(), 2);
+    assert!(!visited.contains(&target));
 }
 
 #[test]

@@ -150,6 +150,35 @@ fn entry_limit_reports_100001_without_partial_identity() {
 }
 
 #[test]
+fn ignored_subtree_is_counted_once_and_skill_ignored_names_remain_content() {
+    let mut tree = MemoryTree::default();
+    tree.entries.push(TreeEntry::directory("target"));
+    tree.entries.extend((0..100_001).map(|index| {
+        let path = format!("target/object-{index:06}");
+        TreeEntry::file(path.as_str(), 0o100644)
+    }));
+    tree.skill("skills/real", "real");
+    tree.entries
+        .push(TreeEntry::directory("skills/real/target"));
+    tree.file("skills/real/target/kept.txt", b"kept".to_vec());
+
+    let inventory = scan(&tree).unwrap();
+    assert!(!inventory
+        .findings
+        .iter()
+        .any(|finding| finding.code == "discovery-entry-limit"));
+    assert_eq!(inventory.skills.len(), 1);
+    assert!(inventory.skills[0]
+        .files
+        .iter()
+        .any(|file| file.path == SourcePath::from("target/kept.txt")));
+    assert!(inventory
+        .reviewed_entries
+        .iter()
+        .all(|entry| !entry.path.as_bytes().starts_with(b"target/")));
+}
+
+#[test]
 fn submodules_are_inert_outside_skills_and_invalid_inside() {
     let mut tree = MemoryTree::default();
     tree.skill("skills/real", "real");

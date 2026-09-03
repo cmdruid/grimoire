@@ -4,7 +4,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use grimoire_pack::inventory::{InventoryError, SourcePath, TreeEntry, TreeEntryKind, TreeReader};
+use grimoire_pack::inventory::{
+    InventoryError, SourcePath, TreeEntry, TreeEntryKind, TreeReader, VisitDecision,
+};
 
 use super::{validate_ref, CanonicalIdentity};
 use crate::{CoreError, Result};
@@ -110,21 +112,20 @@ impl<'a> GitTreeReader<'a> {
             blobs: Mutex::new(BTreeMap::new()),
         }
     }
-}
 
-impl TreeReader for GitTreeReader<'_> {
-    fn visit_entries(
+    fn walk_tree(
         &self,
-        visitor: &mut dyn FnMut(TreeEntry) -> std::result::Result<bool, InventoryError>,
-    ) -> std::result::Result<(), InventoryError> {
-        let mut blobs = self.blobs.lock().expect("blob map mutex poisoned");
+        tree: &str,
+        prefix: &SourcePath,
+        visitor: &mut dyn FnMut(TreeEntry) -> std::result::Result<VisitDecision, InventoryError>,
+    ) -> std::result::Result<bool, InventoryError> {
         let mut pending = Vec::new();
         let mut stopped = false;
         let mut inventory_error = None;
         let result = self.runner.stream(
             GitCommand::LsTree {
                 bare_repository: self.bare_repository.clone(),
-                tree: self.tree.clone(),
+                tree: tree.to_owned(),
             },
             64 * 1024,
             &mut |chunk| {
@@ -134,21 +135,46 @@ impl TreeReader for GitTreeReader<'_> {
                     if record.len() == 1 {
                         continue;
                     }
-                    let entry = match parse_tree_record(
+                    let (entry, object) = match parse_tree_record(
                         &record[..record.len() - 1],
+                        prefix,
                         self.runner,
                         &self.bare_repository,
-                        &mut blobs,
                     ) {
-                        Ok(entry) => entry,
+                        Ok(parsed) => parsed,
                         Err(error) => {
                             inventory_error = Some(error);
                             return Err(CoreError::Source("invalid streamed Git tree".into()));
                         }
                     };
+                    if entry.kind == TreeEntryKind::File {
+                        self.blobs
+                            .lock()
+                            .expect("blob map mutex poisoned")
+                            .insert(entry.path.clone(), object.clone());
+                    }
+                    let directory = (entry.kind == TreeEntryKind::Directory)
+                        .then(|| (entry.path.clone(), object));
                     match visitor(entry) {
-                        Ok(true) => {}
-                        Ok(false) => {
+                        Ok(VisitDecision::Continue) => {
+                            if let Some((path, object)) = directory {
+                                match self.walk_tree(&object, &path, visitor) {
+                                    Ok(true) => {}
+                                    Ok(false) => {
+                                        stopped = true;
+                                        return Ok(false);
+                                    }
+                                    Err(error) => {
+                                        inventory_error = Some(error);
+                                        return Err(CoreError::Source(
+                                            "inventory visitor rejected Git tree".into(),
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                        Ok(VisitDecision::SkipSubtree) => {}
+                        Ok(VisitDecision::Stop) => {
                             stopped = true;
                             return Ok(false);
                         }
@@ -170,6 +196,17 @@ impl TreeReader for GitTreeReader<'_> {
         if !stopped && !pending.is_empty() {
             return Err(tree_message("unterminated ls-tree record"));
         }
+        Ok(!stopped)
+    }
+}
+
+impl TreeReader for GitTreeReader<'_> {
+    fn visit_entries(
+        &self,
+        visitor: &mut dyn FnMut(TreeEntry) -> std::result::Result<VisitDecision, InventoryError>,
+    ) -> std::result::Result<(), InventoryError> {
+        self.blobs.lock().expect("blob map mutex poisoned").clear();
+        self.walk_tree(&self.tree, &SourcePath::from(""), visitor)?;
         Ok(())
     }
 
@@ -243,10 +280,10 @@ impl TreeReader for GitTreeReader<'_> {
 
 fn parse_tree_record(
     record: &[u8],
+    prefix: &SourcePath,
     runner: &dyn GitRunner,
     bare_repository: &Path,
-    blobs: &mut BTreeMap<SourcePath, String>,
-) -> std::result::Result<TreeEntry, InventoryError> {
+) -> std::result::Result<(TreeEntry, String), InventoryError> {
     let separator = record
         .iter()
         .position(|byte| *byte == b'\t')
@@ -269,7 +306,11 @@ fn parse_tree_record(
         .map_err(|_| tree_message("invalid ls-tree object"))?
         .to_owned();
     super::identity::validate_object_id(&object).map_err(core_tree_error)?;
-    let source_path = SourcePath::new(path.to_vec());
+    let source_path = if prefix.as_bytes().is_empty() {
+        SourcePath::new(path.to_vec())
+    } else {
+        prefix.join(path)
+    };
     match (mode, kind) {
         (0o120000, "blob") => {
             let mut target = Vec::new();
@@ -277,7 +318,7 @@ fn parse_tree_record(
                 .stream(
                     GitCommand::CatBlob {
                         bare_repository: bare_repository.to_path_buf(),
-                        object,
+                        object: object.clone(),
                     },
                     64 * 1024,
                     &mut |chunk| {
@@ -289,25 +330,32 @@ fn parse_tree_record(
                     },
                 )
                 .map_err(core_tree_error)?;
-            Ok(TreeEntry::symlink(source_path, target))
+            Ok((TreeEntry::symlink(source_path, target), object))
         }
-        (0o160000, "commit") => Ok(TreeEntry {
-            path: source_path,
-            kind: TreeEntryKind::Submodule,
-            mode,
-            size: None,
-            link_target: None,
-            submodule_commit: Some(object),
-        }),
+        (0o160000, "commit") => Ok((
+            TreeEntry {
+                path: source_path,
+                kind: TreeEntryKind::Submodule,
+                mode,
+                size: None,
+                link_target: None,
+                submodule_commit: Some(object.clone()),
+            },
+            object,
+        )),
+        (0o040000, "tree") => {
+            let mut entry = TreeEntry::directory(source_path);
+            entry.mode = mode;
+            Ok((entry, object))
+        }
         (_, "blob") => {
             let size = std::str::from_utf8(fields[3])
                 .ok()
                 .and_then(|size| size.parse::<u64>().ok())
                 .ok_or_else(|| tree_message("invalid ls-tree size"))?;
-            blobs.insert(source_path.clone(), object);
             let mut entry = TreeEntry::file(source_path, mode);
             entry.size = Some(size);
-            Ok(entry)
+            Ok((entry, object))
         }
         _ => Err(tree_message("unsupported ls-tree entry")),
     }

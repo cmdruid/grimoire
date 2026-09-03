@@ -10,7 +10,7 @@ use super::yaml::{self, Value, YamlFailure};
 use super::{
     Boundary, FileFact, Finding, InventoryError, Pack, ReviewedEntry, ReviewedPayload, Severity,
     Skill, SourceInventory, SourcePath, SubmoduleFact, SymlinkFact, SymlinkSafety, TreeEntry,
-    TreeEntryKind, TreeReader,
+    TreeEntryKind, TreeReader, VisitDecision,
 };
 
 const IGNORED_DIRECTORIES: &[&[u8]] = &[
@@ -33,14 +33,100 @@ const FRONTMATTER_BYTE_LIMIT: usize = 65_536;
 const REVIEW_BYTE_LIMIT: u64 = 128 * 1024 * 1024;
 
 pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> {
+    let mut skill_manifests = Vec::new();
+    let mut nested_checkouts = Vec::new();
+    let mut symlink_paths = Vec::new();
+    let mut discovery_entries = 0_usize;
+    reader.visit_entries(&mut |entry| {
+        discovery_entries += 1;
+        if entry.kind == TreeEntryKind::Symlink {
+            symlink_paths.push(entry.path.clone());
+        }
+        if entry.path.file_name() == b".git" {
+            if let Some(parent) = entry
+                .path
+                .parent()
+                .filter(|path| !path.as_bytes().is_empty())
+            {
+                nested_checkouts.push(parent);
+            }
+        }
+        if entry.kind == TreeEntryKind::File && entry.path.file_name() == b"SKILL.md" {
+            skill_manifests.push(entry.clone());
+        }
+        Ok(if discovery_entries > 100_000 {
+            VisitDecision::Stop
+        } else if entry.kind == TreeEntryKind::Directory
+            && IGNORED_DIRECTORIES.contains(&entry.path.file_name())
+        {
+            VisitDecision::SkipSubtree
+        } else {
+            VisitDecision::Continue
+        })
+    })?;
+    nested_checkouts.sort();
+    nested_checkouts.dedup();
+    symlink_paths.sort();
+    symlink_paths.dedup();
+
+    let mut findings = Vec::new();
+    let mut skill_roots: Vec<(SourcePath, String)> = Vec::new();
+    skill_manifests.retain(|entry| {
+        outer_visible(entry, &nested_checkouts, &symlink_paths)
+            && path_is_usable(entry)
+            && directory_depth(entry) <= 32
+    });
+    skill_manifests.sort_by(|left, right| {
+        directory_depth(left)
+            .cmp(&directory_depth(right))
+            .then_with(|| left.path.cmp(&right.path))
+    });
+    for entry in &skill_manifests {
+        let root = entry.path.parent().unwrap_or_else(|| SourcePath::from(""));
+        if skill_roots
+            .iter()
+            .any(|(parent, _)| root.is_descendant_of(parent))
+        {
+            continue;
+        }
+        let bytes = read_frontmatter(reader, &entry.path)?;
+        match parse_skill_name(&bytes) {
+            Ok(name) => skill_roots.push((root, name)),
+            Err(failure) => findings.push(finding(entry.path.clone(), failure)),
+        }
+    }
+    skill_roots.sort_by(|left, right| left.0.cmp(&right.0));
+
     let mut entries = Vec::with_capacity(100_001);
     reader.visit_entries(&mut |entry| {
+        let inside_skill = skill_roots
+            .iter()
+            .any(|(root, _)| entry.path == *root || entry.path.is_descendant_of(root));
+        let behind_boundary = nested_checkouts
+            .iter()
+            .chain(symlink_paths.iter())
+            .any(|boundary| entry.path != *boundary && entry.path.is_descendant_of(boundary));
+        if behind_boundary || (!inside_skill && ignored_descendant(&entry.path)) {
+            return Ok(if entry.kind == TreeEntryKind::Directory {
+                VisitDecision::SkipSubtree
+            } else {
+                VisitDecision::Continue
+            });
+        }
+        let skip = entry.kind == TreeEntryKind::Directory
+            && !inside_skill
+            && IGNORED_DIRECTORIES.contains(&entry.path.file_name());
         entries.push(entry);
-        Ok(entries.len() <= 100_000)
+        Ok(if entries.len() > 100_000 {
+            VisitDecision::Stop
+        } else if skip {
+            VisitDecision::SkipSubtree
+        } else {
+            VisitDecision::Continue
+        })
     })?;
     entries.sort_by(|left, right| left.path.cmp(&right.path));
 
-    let mut findings = Vec::new();
     if entries.len() > 100_000 {
         findings.push(limit_finding(
             "discovery-entry-limit",
@@ -58,49 +144,6 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
             33,
         ));
     }
-    let nested_checkouts: Vec<_> = entries
-        .iter()
-        .filter(|entry| entry.path.file_name() == b".git")
-        .filter_map(|entry| entry.path.parent())
-        .filter(|path| !path.as_bytes().is_empty())
-        .collect();
-    let symlink_paths: Vec<_> = entries
-        .iter()
-        .filter(|entry| entry.kind == TreeEntryKind::Symlink)
-        .map(|entry| entry.path.clone())
-        .collect();
-
-    let mut skill_roots: Vec<(SourcePath, String)> = Vec::new();
-    let mut skill_manifests: Vec<_> = entries
-        .iter()
-        .filter(|entry| {
-            entry.kind == TreeEntryKind::File
-                && entry.path.file_name() == b"SKILL.md"
-                && outer_visible(entry, &nested_checkouts, &symlink_paths)
-                && path_is_usable(entry)
-                && directory_depth(entry) <= 32
-        })
-        .collect();
-    skill_manifests.sort_by(|left, right| {
-        directory_depth(left)
-            .cmp(&directory_depth(right))
-            .then_with(|| left.path.cmp(&right.path))
-    });
-    for entry in skill_manifests {
-        let root = entry.path.parent().unwrap_or_else(|| SourcePath::from(""));
-        if skill_roots
-            .iter()
-            .any(|(parent, _)| root.is_descendant_of(parent))
-        {
-            continue;
-        }
-        let bytes = read_frontmatter(reader, &entry.path)?;
-        match parse_skill_name(&bytes) {
-            Ok(name) => skill_roots.push((root, name)),
-            Err(failure) => findings.push(finding(entry.path.clone(), failure)),
-        }
-    }
-    skill_roots.sort_by(|left, right| left.0.cmp(&right.0));
 
     let mut validator = EntryValidator::new();
     for entry in &entries {
@@ -305,6 +348,16 @@ fn outer_visible(
         .iter()
         .chain(symlinks)
         .any(|boundary| entry.path == *boundary || entry.path.is_descendant_of(boundary))
+}
+
+fn ignored_descendant(path: &SourcePath) -> bool {
+    let components = path
+        .as_bytes()
+        .split(|byte| *byte == b'/')
+        .collect::<Vec<_>>();
+    components[..components.len().saturating_sub(1)]
+        .iter()
+        .any(|component| IGNORED_DIRECTORIES.contains(component))
 }
 
 fn limit_finding(code: &str, path: Option<SourcePath>, limit: usize, observed: usize) -> Finding {

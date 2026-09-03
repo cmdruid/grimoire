@@ -73,7 +73,7 @@ This task is read-only and produces no commit.
 
 ## Slices
 
-- [ ] **Slice 1: Install the root `clankshop` pack through the real CLI** <requires: —>
+- [x] **Slice 1: Install the root `clankshop` pack through the real CLI** <requires: —>
   - Files: modify `crates/grimoire-pack/src/inventory/tree.rs`,
     `crates/grimoire-pack/src/inventory/scan.rs`, inventory test readers and discovery tests,
     `crates/grimoire-core/src/source/local.rs`, `crates/grimoire-core/src/source/git.rs`, and their
