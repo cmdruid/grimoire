@@ -5,6 +5,11 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 rc=0
+echo "== source-custody-test.sh"
+bash "$DIR/source-custody-test.sh" || rc=1
+echo "== tune-contract-test.sh"
+bash "$DIR/tune-contract-test.sh" || rc=1
+
 echo "== lint-records-writer-test.sh"
 bash "$DIR/lint-records-writer-test.sh" || rc=1
 echo "== lint-edges-test.sh"

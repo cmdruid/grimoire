@@ -102,7 +102,7 @@ Spec: → `specs/2026-09-03-agent-feedback-capture-and-independent-skill-tuning.
       spec's package-relative provider shorthand and not-yet-created `skills/agent-feedback/`
       references.
 
-- [ ] **Slice 1: Independent `skill-builder tune` source-identity tracer** <requires: Task 0>
+- [x] **Slice 1: Independent `skill-builder tune` source-identity tracer** <requires: Task 0>
   - Files:
     - Modify `skills/skill-builder/SKILL.md` and
       `skills/skill-builder/scripts/tests/run.sh`.

@@ -1,6 +1,6 @@
 ---
 name: skill-builder
-description: "The toolmaker steward for a skills library itself -- not project code, the skills that build it. `new` scaffolds a skill's SKILL.md against the self-init tiers + typed-edge pattern; `check` (alias `audit`) runs the mechanical lint gate plus the independence/boundary-audit workflow; `review` judges a skill's substance; `calibrate` folds accreted authoring decisions back into the portable doctrine. Portable: installs in any skills library, authoring discipline travels with it, no host-repo dependency. Use when scaffolding a new skill, auditing, linting, or a skill review (followability, holes), asking about skill-authoring conventions (self-init tiers, typed edges), or checking whether a skill's description routes on its own."
+description: "The toolmaker steward for a skills library itself -- not project code, the skills that build it. `new` scaffolds a skill; `check` (alias `audit`) runs the lint and independence gate; `review` judges a skill's substance; `tune` revises an explicitly selected editable skill source from conversational or named prose evidence; `calibrate` folds authoring decisions into portable doctrine. Portable: installs in any skills library with no host-repo dependency. Use when scaffolding, auditing, linting, reviewing, or explicitly tuning a skill; asking about skill-authoring conventions; or checking whether a skill's description routes on its own."
 ---
 
 # skill-builder — the toolmaker steward
@@ -26,6 +26,7 @@ memory.
 | `new` | `verbs/new.md` | Scaffold a new skill's `SKILL.md` (+ `setup` if durable-home tier) against `docs/DOCTRINE.md`'s pattern |
 | `check` (alias `audit`) | `verbs/check.md` | Run `scripts/skills-lint.sh` + the boundary-audit workflow; report findings |
 | `review` | `verbs/review.md` | Judge a skill package's substance against the skill `review-brief`; optionally consume a `review` baton |
+| `tune` | `verbs/tune.md` | Revalidate evidence, confirmation-gate, and verify a bounded revision to an editable skill source |
 | `calibrate` | `verbs/calibrate.md` | Fold accreted authoring decisions back into `docs/DOCTRINE.md` (milestone-triggered, human-curated) |
 
 ## What this skill bundles
@@ -44,6 +45,8 @@ memory.
   library it's pointed at. Red-proofs for the records-writer checks live in
   `scripts/tests/lint-records-writer-test.sh`; a nonempty project-template inventory must route
   setup and cover every declared file.
+- **`scripts/source-custody.sh`** — read-only source resolution and proposal-identity facts for
+  `tune`, including a deterministic digest of tracked, dirty, and untracked package content.
 ## Disposition (scored against its own doctrine)
 
 - **Self-init / home:** none — an **in-place steward**. It maintains the host library's own `skills/`
