@@ -2,6 +2,6 @@ case	signal	expected_capture_count
 friction	A repeated workaround was required.	1
 gap	The skill had no route for a necessary case.	1
 win	A fragile behavior was preserved unexpectedly well.	1
-new-skill	The work revealed a reusable capability with no owner.	1
+request	The work revealed a reusable capability with no owner.	1
 ordinary-success	The skill completed normally.	0
-self-feedback	The observation concerns skill-feedback itself.	0
+self-feedback	The observation concerns agent-feedback itself.	0

@@ -2,7 +2,7 @@
 set -euo pipefail
 HERE="$(CDPATH='' cd -P "$(dirname "$0")" && pwd)"
 . "$HERE/lib.sh"
-T="$(mktemp -d "${TMPDIR:-/tmp}/skill-feedback-identity.XXXXXX")"
+T="$(mktemp -d "${TMPDIR:-/tmp}/agent-feedback-identity.XXXXXX")"
 trap 'rm -rf "$T"' EXIT
 
 R="$T/root"; mkdir -p "$R/scripts"

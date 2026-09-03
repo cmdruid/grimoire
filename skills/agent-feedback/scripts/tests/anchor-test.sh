@@ -24,8 +24,8 @@ run_anchor "$home" preview >"$preview"
 has "$preview" 'status=change'
 has "$preview" 'base-sha256=absent'
 has "$preview" '## Skill routes (self-registered)'
-has "$preview" '<!-- skill:skill-feedback BEGIN built-against:'
-has "$preview" 'Edges: produces `skill-observation`.'
+has "$preview" '<!-- skill:agent-feedback BEGIN built-against:'
+has "$preview" 'Edges: produces `feedback-observation`.'
 no test -e "$home/.agents"
 no run_anchor "$home" apply --base-sha256 absent
 no test -e "$home/.agents"
@@ -39,8 +39,8 @@ agents="$home/.agents/AGENTS.md"
 ok test -f "$agents"
 if [ "$(mode_of "$home/.agents")" = 700 ]; then pass; else fail '.agents mode is not 0700'; fi
 if [ "$(mode_of "$agents")" = 600 ]; then pass; else fail 'AGENTS.md mode is not 0600'; fi
-has "$agents" '### /skill-feedback — capture reusable-skill feedback'
-has "$agents" 'Edges: produces `skill-observation`.'
+has "$agents" '### /agent-feedback — capture reusable agent-system feedback'
+has "$agents" 'Edges: produces `feedback-observation`.'
 
 run_anchor "$home" preview >"$preview"
 has "$preview" 'status=noop'
@@ -61,7 +61,7 @@ run_anchor "$home" apply --remove --confirmed --base-sha256 "$base" >"$apply_out
 has "$apply_out" 'removed=AGENTS.md'
 has "$agents" '## Skill routes (self-registered)'
 has "$agents" 'concurrent edit'
-no grep -qF '<!-- skill:skill-feedback BEGIN' "$agents"
+no grep -qF '<!-- skill:agent-feedback BEGIN' "$agents"
 cp "$agents" "$TMP/after-remove"
 run_anchor "$home" preview --remove >"$preview"
 has "$preview" 'status=noop'
@@ -88,7 +88,7 @@ home="$TMP/drifted"
 new_home "$home"
 mkdir -p "$home/.agents"
 chmod 700 "$home/.agents"
-printf 'before\r\n## Skill routes (self-registered)\r\nkeep-before\r\n<!-- skill:skill-feedback BEGIN built-against:old -->\r\nold owned bytes\r\n<!-- skill:skill-feedback END -->\r\nafter-without-newline' >"$home/.agents/AGENTS.md"
+printf 'before\r\n## Skill routes (self-registered)\r\nkeep-before\r\n<!-- skill:agent-feedback BEGIN built-against:old -->\r\nold owned bytes\r\n<!-- skill:agent-feedback END -->\r\nafter-without-newline' >"$home/.agents/AGENTS.md"
 chmod 600 "$home/.agents/AGENTS.md"
 printf 'before\r\n## Skill routes (self-registered)\r\nkeep-before\r\nafter-without-newline' >"$TMP/drifted-expected-remove"
 run_anchor "$home" preview --remove >"$preview"
@@ -107,25 +107,25 @@ for case_name in duplicate-heading orphan-begin orphan-end duplicate-block inver
       printf '## Skill routes (self-registered)\n\n## Skill routes (self-registered)\n' >"$case_home/.agents/AGENTS.md"
       ;;
     orphan-begin)
-      printf '<!-- skill:skill-feedback BEGIN built-against:test -->\n' >"$case_home/.agents/AGENTS.md"
+      printf '<!-- skill:agent-feedback BEGIN built-against:test -->\n' >"$case_home/.agents/AGENTS.md"
       ;;
     orphan-end)
-      printf '<!-- skill:skill-feedback END -->\n' >"$case_home/.agents/AGENTS.md"
+      printf '<!-- skill:agent-feedback END -->\n' >"$case_home/.agents/AGENTS.md"
       ;;
     duplicate-block)
-      printf '<!-- skill:skill-feedback BEGIN built-against:a -->\nx\n<!-- skill:skill-feedback END -->\n<!-- skill:skill-feedback BEGIN built-against:b -->\ny\n<!-- skill:skill-feedback END -->\n' >"$case_home/.agents/AGENTS.md"
+      printf '<!-- skill:agent-feedback BEGIN built-against:a -->\nx\n<!-- skill:agent-feedback END -->\n<!-- skill:agent-feedback BEGIN built-against:b -->\ny\n<!-- skill:agent-feedback END -->\n' >"$case_home/.agents/AGENTS.md"
       ;;
     inverted-block)
-      printf '## Skill routes (self-registered)\n<!-- skill:skill-feedback END -->\n<!-- skill:skill-feedback BEGIN built-against:a -->\n' >"$case_home/.agents/AGENTS.md"
+      printf '## Skill routes (self-registered)\n<!-- skill:agent-feedback END -->\n<!-- skill:agent-feedback BEGIN built-against:a -->\n' >"$case_home/.agents/AGENTS.md"
       ;;
     block-before-heading)
-      printf '<!-- skill:skill-feedback BEGIN built-against:a -->\nx\n<!-- skill:skill-feedback END -->\n## Skill routes (self-registered)\n' >"$case_home/.agents/AGENTS.md"
+      printf '<!-- skill:agent-feedback BEGIN built-against:a -->\nx\n<!-- skill:agent-feedback END -->\n## Skill routes (self-registered)\n' >"$case_home/.agents/AGENTS.md"
       ;;
     block-after-section)
-      printf '## Skill routes (self-registered)\n## Tail\n<!-- skill:skill-feedback BEGIN built-against:a -->\nx\n<!-- skill:skill-feedback END -->\n' >"$case_home/.agents/AGENTS.md"
+      printf '## Skill routes (self-registered)\n## Tail\n<!-- skill:agent-feedback BEGIN built-against:a -->\nx\n<!-- skill:agent-feedback END -->\n' >"$case_home/.agents/AGENTS.md"
       ;;
     malformed-marker)
-      printf '## Skill routes (self-registered)\n <!-- skill:skill-feedback BEGIN built-against:a -->\nx\n<!-- skill:skill-feedback END -->\n' >"$case_home/.agents/AGENTS.md"
+      printf '## Skill routes (self-registered)\n <!-- skill:agent-feedback BEGIN built-against:a -->\nx\n<!-- skill:agent-feedback END -->\n' >"$case_home/.agents/AGENTS.md"
       ;;
   esac
   chmod 600 "$case_home/.agents/AGENTS.md"
@@ -139,7 +139,7 @@ home="$TMP/fenced"
 new_home "$home"
 mkdir -p "$home/.agents"
 chmod 700 "$home/.agents"
-printf '# Examples\n\n```markdown\n## Skill routes (self-registered)\n<!-- skill:skill-feedback BEGIN built-against:fake -->\n<!-- skill:skill-feedback END -->\n```\n' >"$home/.agents/AGENTS.md"
+printf '# Examples\n\n```markdown\n## Skill routes (self-registered)\n<!-- skill:agent-feedback BEGIN built-against:fake -->\n<!-- skill:agent-feedback END -->\n```\n' >"$home/.agents/AGENTS.md"
 chmod 600 "$home/.agents/AGENTS.md"
 run_anchor "$home" preview >"$preview"
 has "$preview" 'status=change'
@@ -156,13 +156,13 @@ for fence_case in longer-backtick tilde-with-backtick longer-tilde; do
   chmod 700 "$home/.agents"
   case "$fence_case" in
     longer-backtick)
-      printf '# Examples\n\n````markdown\n```\n## Skill routes (self-registered)\n<!-- skill:skill-feedback BEGIN built-against:fake -->\nfake example body\n<!-- skill:skill-feedback END -->\n```\n````\n' >"$home/.agents/AGENTS.md"
+      printf '# Examples\n\n````markdown\n```\n## Skill routes (self-registered)\n<!-- skill:agent-feedback BEGIN built-against:fake -->\nfake example body\n<!-- skill:agent-feedback END -->\n```\n````\n' >"$home/.agents/AGENTS.md"
       ;;
     tilde-with-backtick)
-      printf '# Examples\n\n~~~markdown\n```\n## Skill routes (self-registered)\n<!-- skill:skill-feedback BEGIN built-against:fake -->\nfake example body\n<!-- skill:skill-feedback END -->\n```\n~~~\n' >"$home/.agents/AGENTS.md"
+      printf '# Examples\n\n~~~markdown\n```\n## Skill routes (self-registered)\n<!-- skill:agent-feedback BEGIN built-against:fake -->\nfake example body\n<!-- skill:agent-feedback END -->\n```\n~~~\n' >"$home/.agents/AGENTS.md"
       ;;
     longer-tilde)
-      printf '# Examples\n\n~~~~markdown\n~~~\n## Skill routes (self-registered)\n<!-- skill:skill-feedback BEGIN built-against:fake -->\nfake example body\n<!-- skill:skill-feedback END -->\n~~~\n~~~~\n' >"$home/.agents/AGENTS.md"
+      printf '# Examples\n\n~~~~markdown\n~~~\n## Skill routes (self-registered)\n<!-- skill:agent-feedback BEGIN built-against:fake -->\nfake example body\n<!-- skill:agent-feedback END -->\n~~~\n~~~~\n' >"$home/.agents/AGENTS.md"
       ;;
   esac
   chmod 600 "$home/.agents/AGENTS.md"
@@ -249,21 +249,21 @@ HOME="$stamp_home" "$repo/skill/scripts/feedback-anchor.sh" preview >"$preview"
 has "$preview" "built-against:$second_stamp"
 
 # A malformed package template cannot produce global instructions.
-printf '<!-- skill:skill-feedback BEGIN built-against:no-placeholder -->\n<!-- skill:skill-feedback END -->\n' >"$repo/skill/templates/agents-route.md"
+printf '<!-- skill:agent-feedback BEGIN built-against:no-placeholder -->\n<!-- skill:agent-feedback END -->\n' >"$repo/skill/templates/agents-route.md"
 no env HOME="$stamp_home" "$repo/skill/scripts/feedback-anchor.sh" preview
 no test -e "$stamp_home/.agents"
 
 # Cold-route doctrine covers all four signal kinds, silence, and recursion prevention.
-has "$TEMPLATE" 'friction, a gap, a preservation win, or a plausible new-skill signal'
+has "$TEMPLATE" 'friction, a gap, a preservation win, or a well-supported request'
 has "$TEMPLATE" 'ordinary success'
-has "$TEMPLATE" 'feedback about `skill-feedback` itself'
+has "$TEMPLATE" 'feedback about `agent-feedback` itself'
 has "$TEMPLATE" 'once before the final response'
 has "$VERB" 'competing route'
 has "$VERB" 'ask the human'
 has "$VERB" 'always load'
 has "$VERB" 'preview'
 has "$VERB" 'apply'
-has "$VERB" '/skill-feedback anchor --remove'
+has "$VERB" '/agent-feedback anchor --remove'
 
 cases="$SKILL/scripts/tests/fixtures/anchor-cases.tsv"
 ok test -f "$cases"

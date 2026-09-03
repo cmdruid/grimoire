@@ -37,20 +37,20 @@ require "$PACK" 'It owns no setup and never repairs scripts or workflows'
 require "$PACK" 'project-owned byproduct'
 require "$PACK" 'affected skill tag'
 require "$ROOT/README.md" 'Five skills sit outside the pack'
-require "$ROOT/README.md" '| `skill-feedback` |'
+require "$ROOT/README.md" '| `agent-feedback` |'
 require "$ROOT/README.md" 'Open a GitHub issue tagged with the skill'
-require "$ROOT/README.md" 'standalone `/skill-feedback` skill'
+require "$ROOT/README.md" 'standalone `/agent-feedback` skill'
 
-skill_feedback_boundary_ok(){
+agent_feedback_boundary_ok(){
   local pack="$1" readme="$2" agents="$3"
-  ! grep -qF 'skill-feedback' "$pack" &&
-    ! grep -qF '.agents/skilldata/skill-feedback' "$pack" &&
+  ! grep -qF 'agent-feedback' "$pack" &&
+    ! grep -qF '.agents/skilldata/agent-feedback' "$pack" &&
     grep -qF 'project-owned byproduct' "$pack" &&
     grep -qF 'affected skill tag' "$pack" &&
     grep -qF 'Five skills sit outside the pack' "$readme" &&
-    grep -qF '| `skill-feedback` |' "$readme" &&
-    grep -qF 'standalone `/skill-feedback` skill' "$readme" &&
-    ! grep -qF '<!-- skill:skill-feedback BEGIN' "$agents"
+    grep -qF '| `agent-feedback` |' "$readme" &&
+    grep -qF 'standalone `/agent-feedback` skill' "$readme" &&
+    ! grep -qF '<!-- skill:agent-feedback BEGIN' "$agents"
 }
 
 workspace_absent(){
@@ -114,7 +114,7 @@ if cmp -s "$tmp/PACK.before" "$fixture"; then pass=$((pass + 1)); else echo 'FAI
 if workspace_absent "$fixture"; then pass=$((pass + 1)); else echo 'FAIL: restored PACK contract stayed red' >&2; fail=$((fail + 1)); fi
 
 if chiropractor_contract_ok "$PACK"; then pass=$((pass + 1)); else echo 'FAIL: live Chiropractor pack contract invalid' >&2; fail=$((fail + 1)); fi
-if skill_feedback_boundary_ok "$PACK" "$ROOT/README.md" "$ROOT/AGENTS.md";then pass=$((pass+1));else echo 'FAIL: skill-feedback pack boundary invalid' >&2;fail=$((fail+1));fi
+if agent_feedback_boundary_ok "$PACK" "$ROOT/README.md" "$ROOT/AGENTS.md";then pass=$((pass+1));else echo 'FAIL: agent-feedback pack boundary invalid' >&2;fail=$((fail+1));fi
 
 # Red-prove pack exclusion, inventory presence, and patient-zero front-door absence independently.
 readme_fixture="$tmp/README.md";agents_fixture="$tmp/AGENTS.md"
@@ -122,15 +122,15 @@ cp "$ROOT/README.md" "$readme_fixture";cp "$ROOT/AGENTS.md" "$agents_fixture"
 for boundary_case in pack-member pack-global-path pack-project-wording pack-skill-tag readme-count readme-row patient-zero-anchor;do
   cp "$PACK" "$fixture";cp "$ROOT/README.md" "$readme_fixture";cp "$ROOT/AGENTS.md" "$agents_fixture"
   case "$boundary_case" in
-    pack-member) printf '\nskill-feedback\n' >>"$fixture" ;;
-    pack-global-path) printf '\nGlobal writer: ~/.agents/skilldata/skill-feedback\n' >>"$fixture" ;;
+    pack-member) printf '\nagent-feedback\n' >>"$fixture" ;;
+    pack-global-path) printf '\nGlobal writer: ~/.agents/skilldata/agent-feedback\n' >>"$fixture" ;;
     pack-project-wording) sed 's/project-owned byproduct/byproduct/' "$fixture" >"$tmp/pack.bad";mv "$tmp/pack.bad" "$fixture" ;;
     pack-skill-tag) sed 's/affected skill tag/affected component tag/' "$fixture" >"$tmp/pack.bad";mv "$tmp/pack.bad" "$fixture" ;;
     readme-count) sed 's/Five skills sit outside the pack/Four skills sit outside the pack/' "$readme_fixture" >"$tmp/readme.bad";mv "$tmp/readme.bad" "$readme_fixture" ;;
-    readme-row) sed '/| `skill-feedback` |/d' "$readme_fixture" >"$tmp/readme.bad";mv "$tmp/readme.bad" "$readme_fixture" ;;
-    patient-zero-anchor) printf '\n<!-- skill:skill-feedback BEGIN built-against:test -->\n' >>"$agents_fixture" ;;
+    readme-row) sed '/| `agent-feedback` |/d' "$readme_fixture" >"$tmp/readme.bad";mv "$tmp/readme.bad" "$readme_fixture" ;;
+    patient-zero-anchor) printf '\n<!-- skill:agent-feedback BEGIN built-against:test -->\n' >>"$agents_fixture" ;;
   esac
-  if skill_feedback_boundary_ok "$fixture" "$readme_fixture" "$agents_fixture";then echo "FAIL: $boundary_case guard stayed green" >&2;fail=$((fail+1));else pass=$((pass+1));fi
+  if agent_feedback_boundary_ok "$fixture" "$readme_fixture" "$agents_fixture";then echo "FAIL: $boundary_case guard stayed green" >&2;fail=$((fail+1));else pass=$((pass+1));fi
 done
 
 # Red-proof missing membership in the same disposable PACK copy.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compute grimoire/skill-content@1 for one safely traversable skill directory."""
+"""Compute an optional skill-subject reference from one safely traversable package."""
 
 from __future__ import annotations
 

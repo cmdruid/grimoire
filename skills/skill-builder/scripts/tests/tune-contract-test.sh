@@ -30,7 +30,8 @@ has "$TUNE" 'Slice 6'
 has "$TUNE" 'refuse a supplied `<input-path>` without reading it or editing the package'
 
 for forbidden in '--installed' '--feedback' '.agents/skilldata' 'apply=' 'action='; do absent "$CUSTODY" "$forbidden"; done
-if grep -R -Fq -- 'skill-feedback' "$SKILL/SKILL.md" "$SKILL/verbs" "$SKILL/scripts/source-custody.sh" 2>/dev/null; then
+collector=agent-feedback
+if grep -R -Fq -- "$collector" "$SKILL/SKILL.md" "$SKILL/verbs" "$SKILL/scripts/source-custody.sh" 2>/dev/null; then
   echo 'FAIL: skill-builder names a feedback collector' >&2; fail=$((fail+1))
 else
   pass=$((pass+1))

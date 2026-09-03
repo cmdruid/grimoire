@@ -31,5 +31,5 @@ for needle in 'Route by the state of the knowledge' 'configured layer has no `fa
 for needle in 'chosen outcomes to `tasks`' 'unresolved operational sightings to `failures`' 'tracker@2 provider schema does not change';do grep -qF -- "$needle" "$B/SKILL.md"&&pass=$((pass+1))||fail=$((fail+1));done
 for needle in 'merge-conflict resolution is the only exception' 'managed README procedure';do grep -qF -- "$needle" "$B/SKILL.md"&&pass=$((pass+1))||fail=$((fail+1));done
 grep -qF '/backlog tracker add failures' "$B/verbs/tracker.md"&&pass=$((pass+1))||fail=$((fail+1))
-if grep -qF 'skill-feedback' "$B/verbs/debrief.md";then fail=$((fail+1));else pass=$((pass+1));fi
+if grep -qF 'agent-feedback' "$B/verbs/debrief.md";then fail=$((fail+1));else pass=$((pass+1));fi
 echo "skill-doc-test: $pass passed, $fail failed"; [ "$fail" -eq 0 ]

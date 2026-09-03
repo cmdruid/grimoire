@@ -62,8 +62,8 @@ Five skills sit outside the pack on
 purpose: `agent-council` (cross-vendor review panel), `skill-builder` (the **toolmaker** —
 scaffold, audit, and calibrate authoring doctrine), `developer-writing`
 (purpose-aware, human-facing developer prose with Google documentation mechanics), and
-`code-humanizer` (keep durable source fit for human ownership), plus `skill-feedback` (private,
-global capture and guided tuning of reusable-skill observations). See *The packs* below.
+`code-humanizer` (keep durable source fit for human ownership), plus `agent-feedback` (private,
+global capture and lifecycle management for reusable agent-system observations). See *The packs* below.
 
 | skill | what it does |
 |---|---|
@@ -85,7 +85,7 @@ global capture and guided tuning of reusable-skill observations). See *The packs
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
 | `foreman` | curate project operations: inventory and run publisher-owned procedures, capture or ingest brownfield know-how, verify and compose operations, and compile immutable goal runbooks |
-| `skill-feedback` | capture concrete reusable-skill observations into a private global TSV and guide later bounded review; standalone, outside every pack |
+| `agent-feedback` | capture concrete observations about reusable skills, agents, harnesses, tools, and workflows into a private global TSV; query and close their lifecycle without remediation; standalone, outside every pack |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
@@ -183,8 +183,8 @@ Skills are living artifacts: strong, concrete feedback from *using* one (a frict
 worth keeping) is the signal that improves it. **Open a GitHub issue tagged with the skill's
 name**, tied to a concrete instance — "would this change the skill?" is the bar. GitHub issues remain
 this library's default feedback channel. For a private cross-project local queue, the optional
-standalone `/skill-feedback` skill can capture observations and guide later curation into source
-changes or issues.
+standalone `/agent-feedback` skill can capture observations for later independent curation into
+source changes or issues.
 
 Before submitting a change:
 

@@ -158,7 +158,7 @@ Spec: → `specs/2026-09-03-agent-feedback-capture-and-independent-skill-tuning.
     - A targeted diff confirms no change to review, calibrate, or the edge block and no collector
       name in `skills/skill-builder/`.
 
-- [ ] **Slice 2: Hard-cut rename with a human capture lifecycle tracer** <requires: 1>
+- [x] **Slice 2: Hard-cut rename with a human capture lifecycle tracer** <requires: 1>
   - Files:
     - Rename `skills/skill-feedback/` to `skills/agent-feedback/` as one package move.
     - Modify `skills/agent-feedback/SKILL.md`, `skills/agent-feedback/verbs/capture.md`,

@@ -62,7 +62,7 @@ grep -q 'hook_after_eventful_ship=empty' "$hooks"||fail "ship hook is not indepe
 grep -q 'proposed class' "$root/.agents/skilldata/delegate/hooks/byproducts.md"||fail "Delegate policy not readable"
 grep -q 'actionable project-owned byproduct' "$root/.agents/skilldata/delegate/hooks/byproducts.md"||fail "Delegate policy does not qualify project feedback"
 grep -q 'affected skill tag' "$root/.agents/skilldata/delegate/hooks/byproducts.md"||fail "Delegate policy loses reusable-skill byproducts"
-if grep -qF 'skill-feedback' "$root/.agents/skilldata/delegate/hooks/byproducts.md";then fail "Delegate policy names a global feedback writer";fi
+if grep -qF 'agent-feedback' "$root/.agents/skilldata/delegate/hooks/byproducts.md";then fail "Delegate policy names a global feedback writer";fi
 [ -z "$(find "$root/.agents/skilldata" -type d -name schemas -print -quit)" ]||fail "project schemas were deployed"
 if grep -qE '^(agent-workspace|agent-records|agent-trackers|records-root):' "$root/AGENTS.md";then fail "default roots were declared";fi
 

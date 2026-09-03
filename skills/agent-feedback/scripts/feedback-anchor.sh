@@ -24,17 +24,17 @@ HERE="$(CDPATH='' cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(CDPATH='' cd -P "$HERE/.." && pwd)"
 TEMPLATE="$SKILL_DIR/templates/agents-route.md"
 HEADING='## Skill routes (self-registered)'
-BEGIN_PREFIX='<!-- skill:skill-feedback BEGIN built-against:'
-END_MARK='<!-- skill:skill-feedback END -->'
+BEGIN_PREFIX='<!-- skill:agent-feedback BEGIN built-against:'
+END_MARK='<!-- skill:agent-feedback END -->'
 
 [ -f "$TEMPLATE" ] && [ ! -L "$TEMPLATE" ] || die 'template-unavailable'
 template_begin="$(head -n 1 "$TEMPLATE")"
 template_end="$(tail -n 1 "$TEMPLATE")"
-[ "$template_begin" = '<!-- skill:skill-feedback BEGIN built-against:__BUILT_AGAINST__ -->' ] ||
+[ "$template_begin" = '<!-- skill:agent-feedback BEGIN built-against:__BUILT_AGAINST__ -->' ] ||
   die 'malformed-template'
 [ "$template_end" = "$END_MARK" ] || die 'malformed-template'
 [ "$(grep -cF '__BUILT_AGAINST__' "$TEMPLATE")" -eq 1 ] || die 'malformed-template'
-[ "$(grep -cF '<!-- skill:skill-feedback BEGIN' "$TEMPLATE")" -eq 1 ] || die 'malformed-template'
+[ "$(grep -cF '<!-- skill:agent-feedback BEGIN' "$TEMPLATE")" -eq 1 ] || die 'malformed-template'
 [ "$(grep -cFx "$END_MARK" "$TEMPLATE")" -eq 1 ] || die 'malformed-template'
 
 command_name="${1:-}"
@@ -113,7 +113,7 @@ if [ -z "$stamp" ]; then
 fi
 [ -n "$stamp" ] || stamp='v0-2026-09-02'
 
-WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/skill-feedback-anchor.XXXXXX")"
+WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/agent-feedback-anchor.XXXXXX")"
 trap 'rm -rf "$WORK_DIR"' EXIT
 BLOCK="$WORK_DIR/block"
 CURRENT="$WORK_DIR/current"
@@ -159,11 +159,11 @@ awk -v heading="$HEADING" -v begin_prefix="$BEGIN_PREFIX" -v end_mark="$END_MARK
     }
     if(fence) next
     if (scan == heading) { headings++; heading_line=NR; next }
-    if (index(scan, "<!-- skill:skill-feedback BEGIN") > 0) {
+    if (index(scan, "<!-- skill:agent-feedback BEGIN") > 0) {
       if (index(scan, begin_prefix) == 1 && scan ~ / -->$/) { begins++; begin_line=NR } else invalid++
       next
     }
-    if (index(scan, "<!-- skill:skill-feedback END") > 0) {
+    if (index(scan, "<!-- skill:agent-feedback END") > 0) {
       if (scan == end_mark) { ends++; end_line=NR } else invalid++
       next
     }
@@ -265,7 +265,7 @@ if [ ! -d "$AGENTS_DIR" ]; then
 fi
 validate_paths
 [ "$(current_identity)" = "$base_arg" ] || die 'base-changed'
-DEST_TMP="$(mktemp "$AGENTS_DIR/.AGENTS.md.skill-feedback.XXXXXX")"
+DEST_TMP="$(mktemp "$AGENTS_DIR/.AGENTS.md.agent-feedback.XXXXXX")"
 chmod 600 "$DEST_TMP"
 cp "$CANDIDATE" "$DEST_TMP"
 chmod 600 "$DEST_TMP"
