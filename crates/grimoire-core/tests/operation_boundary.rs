@@ -568,6 +568,7 @@ fn phase_four_public_values_keep_the_required_trait_floor() {
     fn value<T: Debug + Clone + PartialEq + Eq>() {}
     fn ordered<T: Debug + Clone + PartialEq + Eq + PartialOrd + Ord>() {}
     fn hash<T: Debug + Clone + PartialEq + Eq + Hash>() {}
+    fn serializable<T: Debug + Clone + PartialEq + Eq + Serialize>() {}
     fn wire<T: Debug + Clone + PartialEq + Eq + Serialize + DeserializeOwned>() {}
 
     wire::<Action>();
@@ -577,8 +578,20 @@ fn phase_four_public_values_keep_the_required_trait_floor() {
     wire::<ApplyOutcome>();
     wire::<RecoveryOutcome>();
     wire::<CheckReport>();
+    wire::<grimoire_core::ProjectionMode>();
+    wire::<grimoire_core::VendorState>();
+    wire::<grimoire_core::VendorPrecondition>();
+    wire::<grimoire_core::OwnedLinkTarget>();
     ordered::<RecoveryDisposition>();
+    ordered::<grimoire_core::ProjectionMode>();
+    ordered::<grimoire_core::VendorState>();
+    ordered::<grimoire_core::OwnedLinkTarget>();
     hash::<ByteHash>();
+    hash::<grimoire_core::ProjectionMode>();
+    hash::<grimoire_core::VendorState>();
+    hash::<grimoire_core::OwnedLinkTarget>();
+    hash::<grimoire_core::VendorTrustReceipt>();
+    serializable::<grimoire_core::VendorTrustReceipt>();
     value::<grimoire_core::ProjectIndex>();
     value::<grimoire_core::ReachabilityObservation>();
 }
@@ -607,7 +620,7 @@ fn malformed_blocked_and_wrong_scope_plans_are_inert() {
     let paths = grimoire_core::Paths::project(project, root.join("home")).unwrap();
     let action = Action::CreateManifest {
         scope: Scope::Project,
-        after: b"schema = \"grimoire/manifest@1\"\n".to_vec(),
+        after: b"schema = \"grimoire/manifest@2\"\n".to_vec(),
     };
 
     let blocked = Plan {
@@ -626,7 +639,7 @@ fn malformed_blocked_and_wrong_scope_plans_are_inert() {
     let wrong_scope = Plan {
         actions: vec![Action::CreateManifest {
             scope: Scope::Global,
-            after: b"schema = \"grimoire/manifest@1\"\n".to_vec(),
+            after: b"schema = \"grimoire/manifest@2\"\n".to_vec(),
         }],
         blockers: Vec::new(),
         preconditions: Preconditions::absent(),
@@ -683,7 +696,8 @@ fn operation_wire_values_have_exact_deterministic_bytes() {
             "{{\"manifest\":null,\"lock\":null,\"candidates\":{{}},\"stores\":{{",
             "\"repo\":{{\"source_key\":\"{}\",\"snapshot_key\":\"{}\",",
             "\"inventory\":\"sha256:{}\",\"state\":\"valid\"}}}},",
-            "\"trust\":null,\"projects\":null,\"reachability\":null,\"links\":{{}}}}"
+            "\"trust\":null,\"projects\":null,\"reachability\":null,\"links\":{{}},\"vendors\":{{}}",
+            "}}"
         ),
         "1".repeat(64),
         "2".repeat(64),

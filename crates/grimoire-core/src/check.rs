@@ -1,14 +1,15 @@
 use std::collections::BTreeMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
 
 use crate::{
-    resolve_manifest, CheckFinding, CheckReport, CheckSeverity, ContextReport, DesiredRootSummary,
-    InheritedSkillSummary, InstalledLink, InstalledStatus, LockSource, PackMemberState, PlanFact,
-    RequestRoot, ResolvedSkillSummary, SnapshotKind, SnapshotStore, SourceKey, TrustMode,
-    TrustReceipt, TrustStore, UnavailableMemberSummary, WorldState,
+    resolve_manifest_for_scope, CheckFinding, CheckReport, CheckSeverity, ContextReport,
+    DesiredRootSummary, InheritedSkillSummary, InstalledLink, InstalledStatus, LockSource,
+    PackMemberState, PlanFact, ProjectionMode, RequestRoot, ResolvedSkillSummary, SnapshotKind,
+    SnapshotStore, SourceKey, TrustMode, TrustReceipt, TrustStore, UnavailableMemberSummary,
+    VendorState, VendorTrustReceipt, WorldState,
 };
 
 pub fn check(world: &WorldState) -> CheckReport {
@@ -28,6 +29,7 @@ pub fn check(world: &WorldState) -> CheckReport {
 
     check_resolution(world, &mut findings);
     check_sources(world, &mut findings);
+    check_vendors(world, &mut findings);
     check_links(world, &mut findings);
     check_context(world, &mut findings);
     report(findings)
@@ -38,9 +40,9 @@ pub fn context_report(world: &WorldState) -> ContextReport {
         .manifest
         .skills
         .iter()
-        .map(|(name, source)| DesiredRootSummary {
+        .map(|(name, request)| DesiredRootSummary {
             root: RequestRoot::Skill(name.clone()),
-            source: source.clone(),
+            source: request.source.clone(),
         })
         .chain(
             world
@@ -55,7 +57,7 @@ pub fn context_report(world: &WorldState) -> ContextReport {
         .collect::<Vec<_>>();
     desired_roots.sort();
 
-    let resolution = resolve_manifest(&world.manifest, &world.snapshots);
+    let resolution = resolve_manifest_for_scope(world.scope, &world.manifest, &world.snapshots);
     let mut skills = resolution
         .skills
         .iter()
@@ -147,7 +149,7 @@ fn check_resolution(world: &WorldState, findings: &mut Vec<CheckFinding>) {
         // This is also the same source of truth used by frozen reconciliation.
         return check_locked_resolution(world, findings);
     };
-    let resolution = resolve_manifest(&world.manifest, snapshots);
+    let resolution = resolve_manifest_for_scope(world.scope, &world.manifest, snapshots);
     record_resolution(world, resolution, findings);
 }
 
@@ -157,7 +159,7 @@ fn check_locked_resolution(world: &WorldState, findings: &mut Vec<CheckFinding>)
         .iter()
         .map(|(alias, state)| (alias.clone(), state.snapshot.clone()))
         .collect();
-    let resolution = resolve_manifest(&world.manifest, &snapshots);
+    let resolution = resolve_manifest_for_scope(world.scope, &world.manifest, &snapshots);
     record_resolution(world, resolution, findings);
 }
 
@@ -215,7 +217,13 @@ fn check_sources(world: &WorldState, findings: &mut Vec<CheckFinding>) {
             ));
             continue;
         };
+        let has_linked_projection = world
+            .lock
+            .skills
+            .values()
+            .any(|skill| skill.source == *alias && skill.mode == ProjectionMode::Link);
         match state.store {
+            SnapshotStore::Absent if !has_linked_projection => {}
             SnapshotStore::Absent => findings.push(details_finding(
                 "store-missing",
                 CheckSeverity::Error,
@@ -255,7 +263,7 @@ fn check_sources(world: &WorldState, findings: &mut Vec<CheckFinding>) {
         let required = if matches!(source, LockSource::Live { .. }) {
             mode == TrustMode::All
         } else {
-            mode != TrustMode::Untrusted
+            !has_linked_projection || mode != TrustMode::Untrusted
         };
         if !required {
             findings.push(details_finding(
@@ -271,6 +279,95 @@ fn check_sources(world: &WorldState, findings: &mut Vec<CheckFinding>) {
     }
 }
 
+fn check_vendors(world: &WorldState, findings: &mut Vec<CheckFinding>) {
+    let trust = world
+        .trust_bytes
+        .as_deref()
+        .and_then(|bytes| TrustStore::parse(bytes).ok())
+        .unwrap_or_default();
+
+    for (name, skill) in world
+        .lock
+        .skills
+        .iter()
+        .filter(|(_, skill)| skill.mode == ProjectionMode::Vendor)
+    {
+        let observed = world.vendors.get(name);
+        match observed.map(|vendor| vendor.state) {
+            Some(VendorState::OwnedUnchanged)
+                if observed.and_then(|vendor| vendor.content.as_deref())
+                    == Some(skill.content.as_str()) => {}
+            Some(VendorState::Absent) | None => {
+                findings.push(details_finding(
+                    "vendor-missing",
+                    CheckSeverity::Error,
+                    [("skill", name.to_string())],
+                ));
+                continue;
+            }
+            Some(VendorState::Foreign) => {
+                findings.push(details_finding(
+                    "foreign-vendor-path",
+                    CheckSeverity::Error,
+                    [("skill", name.to_string())],
+                ));
+                continue;
+            }
+            Some(VendorState::OwnedUnchanged | VendorState::Drifted) => {
+                findings.push(details_finding(
+                    "vendor-drift",
+                    CheckSeverity::Error,
+                    [("skill", name.to_string())],
+                ));
+                continue;
+            }
+        }
+
+        let Some(state) = world.locked_states.get(&skill.source) else {
+            continue;
+        };
+        let Some(identity) = state.identity.as_ref() else {
+            continue;
+        };
+        let Some(LockSource::Git {
+            commit,
+            tree,
+            inventory,
+            ..
+        }) = world.lock.sources.get(&skill.source)
+        else {
+            continue;
+        };
+        let source_receipt = TrustReceipt {
+            commit: commit.clone(),
+            tree: tree.clone(),
+            inventory: inventory.clone(),
+        };
+        let vendor_receipt = VendorTrustReceipt {
+            commit: commit.clone(),
+            tree: tree.clone(),
+            inventory: inventory.clone(),
+            skill: name.clone(),
+            path: skill.path.clone(),
+            content: skill.content.clone(),
+        };
+        let trusted = trust
+            .records
+            .get(&SourceKey::derive(identity))
+            .is_some_and(|record| record.authorizes_vendor(&source_receipt, &vendor_receipt));
+        if !trusted {
+            findings.push(details_finding(
+                "vendor-untrusted",
+                CheckSeverity::Error,
+                [
+                    ("source", skill.source.to_string()),
+                    ("skill", name.to_string()),
+                ],
+            ));
+        }
+    }
+}
+
 fn check_links(world: &WorldState, findings: &mut Vec<CheckFinding>) {
     for (skill, locked) in &world.lock.skills {
         if !world.lock.sources.contains_key(&locked.source) {
@@ -279,10 +376,17 @@ fn check_links(world: &WorldState, findings: &mut Vec<CheckFinding>) {
         let Some(state) = world.locked_states.get(&locked.source) else {
             continue;
         };
-        let target = state
-            .identity
-            .as_ref()
-            .map(|_| state.snapshot.root.join(&locked.path));
+        let target = match locked.mode {
+            ProjectionMode::Link => state
+                .identity
+                .as_ref()
+                .map(|_| state.snapshot.root.join(&locked.path)),
+            ProjectionMode::Vendor => Some(
+                PathBuf::from("../../vendor/grimoire")
+                    .join(locked.source.as_str())
+                    .join(skill.as_str()),
+            ),
+        };
 
         let observed = world.links.get(skill).unwrap_or(&InstalledLink::Absent);
         match (observed, target) {
@@ -317,7 +421,8 @@ fn check_links(world: &WorldState, findings: &mut Vec<CheckFinding>) {
 }
 
 fn check_context(world: &WorldState, findings: &mut Vec<CheckFinding>) {
-    let project_skills = resolve_manifest(&world.manifest, &world.snapshots).skills;
+    let project_skills =
+        resolve_manifest_for_scope(world.scope, &world.manifest, &world.snapshots).skills;
     for fact in world
         .inherited_global
         .as_ref()

@@ -14,7 +14,9 @@ pub enum CoreError {
     Manifest(String),
     #[error("invalid lock JSON: {0}")]
     LockJson(#[from] serde_json::Error),
-    #[error("unsupported lock schema `{found}`; delete the old lock and run a non-frozen install")]
+    #[error(
+        "unsupported lock schema `{found}`; change the manifest schema to grimoire/manifest@2, delete the generated v1 lock, and run a non-frozen install"
+    )]
     LockSchemaUnsupported { found: String },
     #[error("invalid lock: {0}")]
     Lock(String),

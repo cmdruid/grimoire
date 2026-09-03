@@ -68,7 +68,7 @@ fn world() -> WorldState {
     WorldState::from_bytes(
         Scope::Project,
         concat!(
-            "schema = \"grimoire/manifest@1\"\n",
+            "schema = \"grimoire/manifest@2\"\n",
             "[sources.grimoire]\n",
             "url = \"github:cmdruid/grimoire\"\n",
         )
@@ -91,7 +91,10 @@ fn one_ui_toggle_reaches_the_exact_core_plan_pane() {
         &world,
         Request::InstallSkill {
             name: "journal".try_into().unwrap(),
-            source: "grimoire".try_into().unwrap(),
+            request: grimoire_core::ManifestSkill {
+                source: "grimoire".try_into().unwrap(),
+                mode: grimoire_core::ProjectionMode::Link,
+            },
         },
         PlanningMode::Normal,
     )

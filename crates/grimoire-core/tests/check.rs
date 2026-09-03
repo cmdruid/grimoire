@@ -52,7 +52,7 @@ fn fixture() -> (tempfile::TempDir, Paths) {
     let inventory = scan(&HeldDirectoryReader::open(&source).unwrap()).unwrap();
     fs::write(
         paths.manifest_path(),
-        b"schema = \"grimoire/manifest@1\"\n[sources.local]\npath = \"../source\"\nlive = true\n[skills]\none = { source = \"local\" }\n",
+        b"schema = \"grimoire/manifest@2\"\n[sources.local]\npath = \"../source\"\nlive = true\n[skills]\none = { source = \"local\" }\n",
     )
     .unwrap();
     let lock = Lockfile {
@@ -67,6 +67,7 @@ fn fixture() -> (tempfile::TempDir, Paths) {
             "one".try_into().unwrap(),
             LockSkill {
                 source: "local".try_into().unwrap(),
+                mode: grimoire_core::ProjectionMode::Link,
                 path: "skills/one".into(),
                 content: inventory.skills[0].content_digest.to_string(),
                 requested_by: BTreeSet::from([RequestRoot::Skill("one".try_into().unwrap())]),

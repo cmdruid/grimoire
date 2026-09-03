@@ -91,7 +91,7 @@ fn absent_scope_initializes_exact_files_without_observation_preconditions() {
         vec![
             Action::CreateManifest {
                 scope: Scope::Project,
-                after: b"schema = \"grimoire/manifest@1\"\n".to_vec(),
+                after: b"schema = \"grimoire/manifest@2\"\n".to_vec(),
             },
             Action::CreateLock {
                 scope: Scope::Project,
@@ -113,7 +113,10 @@ fn request_matrix_carries_typed_manifest_and_lock_changes() {
         ),
         Request::InstallSkill {
             name: "one".try_into().unwrap(),
-            source: "a".try_into().unwrap(),
+            request: grimoire_core::ManifestSkill {
+                source: "a".try_into().unwrap(),
+                mode: grimoire_core::ProjectionMode::Link,
+            },
         },
         PlanningMode::Normal,
     )
@@ -306,7 +309,7 @@ fn serialized_plans_are_deterministic_domain_values() {
     let noop = plan(
         &WorldState::from_bytes(
             Scope::Project,
-            b"schema = \"grimoire/manifest@1\"\n".to_vec(),
+            b"schema = \"grimoire/manifest@2\"\n".to_vec(),
             EMPTY_LOCK.to_vec(),
             [],
             [],

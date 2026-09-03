@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use toml_edit::{Document, Item, TableLike, Value};
 
-use crate::{CoreError, PackName, Result, SkillName, SourceAlias};
+use crate::{CoreError, PackName, ProjectionMode, Result, SkillName, SourceAlias};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SourceLocation {
@@ -66,8 +66,15 @@ impl ManifestSource {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ManifestSkill {
+    pub source: SourceAlias,
+    pub mode: ProjectionMode,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ManifestPack {
     pub source: SourceAlias,
+    pub mode: ProjectionMode,
     pub exclude: BTreeSet<SkillName>,
 }
 
@@ -76,7 +83,7 @@ pub struct Manifest {
     original: Vec<u8>,
     document: Document<String>,
     pub sources: BTreeMap<SourceAlias, ManifestSource>,
-    pub skills: BTreeMap<SkillName, SourceAlias>,
+    pub skills: BTreeMap<SkillName, ManifestSkill>,
     pub packs: BTreeMap<PackName, ManifestPack>,
 }
 
@@ -91,7 +98,7 @@ pub enum ManifestMutation {
     },
     InstallSkill {
         name: SkillName,
-        source: SourceAlias,
+        request: ManifestSkill,
     },
     UninstallSkill {
         name: SkillName,
@@ -122,10 +129,14 @@ impl Manifest {
         let document = Document::parse(text)?;
         let root = document.as_table();
         reject_unknown(root, &["schema", "sources", "skills", "packs"], "top level")?;
-        if root.get("schema").and_then(Item::as_str) != Some("grimoire/manifest@1") {
-            return Err(CoreError::Manifest(
-                "schema must equal grimoire/manifest@1".into(),
-            ));
+        let schema = root.get("schema").and_then(Item::as_str);
+        if schema != Some("grimoire/manifest@2") {
+            let message = if schema == Some("grimoire/manifest@1") {
+                "schema grimoire/manifest@1 is unsupported; change it to grimoire/manifest@2, delete the generated v1 lock, and run a non-frozen install"
+            } else {
+                "schema must equal grimoire/manifest@2"
+            };
+            return Err(CoreError::Manifest(message.into()));
         }
 
         let mut sources = BTreeMap::new();
@@ -178,7 +189,7 @@ impl Manifest {
                 let request = request.as_inline_table().ok_or_else(|| {
                     CoreError::Manifest(format!("skill `{name}` must be an inline table"))
                 })?;
-                reject_unknown_values(request.iter(), &["source"], "skill request")?;
+                reject_unknown_values(request.iter(), &["source", "mode"], "skill request")?;
                 let source = request
                     .get("source")
                     .and_then(Value::as_str)
@@ -191,7 +202,8 @@ impl Manifest {
                         "skill `{name}` references unknown source `{source}`"
                     )));
                 }
-                skills.insert(name, source);
+                let mode = projection_mode(request.get("mode"), "skill request")?;
+                skills.insert(name, ManifestSkill { source, mode });
             }
         }
 
@@ -205,7 +217,11 @@ impl Manifest {
                 let request = request.as_inline_table().ok_or_else(|| {
                     CoreError::Manifest(format!("pack `{name}` must be an inline table"))
                 })?;
-                reject_unknown_values(request.iter(), &["source", "exclude"], "pack request")?;
+                reject_unknown_values(
+                    request.iter(),
+                    &["source", "mode", "exclude"],
+                    "pack request",
+                )?;
                 let source = request
                     .get("source")
                     .and_then(Value::as_str)
@@ -243,7 +259,15 @@ impl Manifest {
                         )))
                     }
                 };
-                packs.insert(name, ManifestPack { source, exclude });
+                let mode = projection_mode(request.get("mode"), "pack request")?;
+                packs.insert(
+                    name,
+                    ManifestPack {
+                        source,
+                        mode,
+                        exclude,
+                    },
+                );
             }
         }
 
@@ -342,7 +366,9 @@ impl Manifest {
                 append_fragment(&mut after, &fragment);
             }
             ManifestMutation::RemoveSource { alias } => {
-                if expected_skills.values().any(|source| source == &alias)
+                if expected_skills
+                    .values()
+                    .any(|request| request.source == alias)
                     || expected_packs
                         .values()
                         .any(|request| request.source == alias)
@@ -358,14 +384,15 @@ impl Manifest {
                 }
                 remove_ranges(&mut after, self.entry_ranges("sources", alias.as_str())?);
             }
-            ManifestMutation::InstallSkill { name, source } => {
-                if !expected_sources.contains_key(&source) {
+            ManifestMutation::InstallSkill { name, request } => {
+                if !expected_sources.contains_key(&request.source) {
                     return Err(CoreError::Manifest(format!(
-                        "skill `{name}` references unknown source `{source}`"
+                        "skill `{name}` references unknown source `{}`",
+                        request.source
                     )));
                 }
                 if expected_skills
-                    .insert(name.clone(), source.clone())
+                    .insert(name.clone(), request.clone())
                     .is_some()
                 {
                     return Err(CoreError::Manifest(format!(
@@ -376,7 +403,7 @@ impl Manifest {
                     &mut after,
                     &self.document,
                     "skills",
-                    &format!("{name} = {{ source = {} }}\n", toml_string(source.as_str())),
+                    &format!("{name} = {}\n", render_skill(&request)),
                 )?;
             }
             ManifestMutation::UninstallSkill { name } => {
@@ -454,8 +481,8 @@ impl Manifest {
     pub(crate) fn replace_desired(&self, desired: &crate::DesiredState) -> Result<ManifestEdit> {
         let mut current = self.clone();
 
-        for (name, source) in self.skills.iter().rev() {
-            if desired.skills.get(name) != Some(source) {
+        for (name, request) in self.skills.iter().rev() {
+            if desired.skills.get(name) != Some(request) {
                 current = current
                     .mutate(ManifestMutation::UninstallSkill { name: name.clone() })?
                     .manifest;
@@ -493,12 +520,12 @@ impl Manifest {
                 Some(_) => {}
             }
         }
-        for (name, source) in &desired.skills {
-            if !current.skills.contains_key(name) {
+        for (name, request) in &desired.skills {
+            if current.skills.get(name) != Some(request) {
                 current = current
                     .mutate(ManifestMutation::InstallSkill {
                         name: name.clone(),
-                        source: source.clone(),
+                        request: request.clone(),
                     })?
                     .manifest;
             }
@@ -630,6 +657,9 @@ fn toml_string(value: &str) -> String {
 
 fn render_pack(request: &ManifestPack) -> String {
     let mut value = format!("{{ source = {}", toml_string(request.source.as_str()));
+    if request.mode == ProjectionMode::Vendor {
+        value.push_str(", mode = \"vendor\"");
+    }
     if !request.exclude.is_empty() {
         value.push_str(", exclude = [");
         for (index, name) in request.exclude.iter().enumerate() {
@@ -642,6 +672,26 @@ fn render_pack(request: &ManifestPack) -> String {
     }
     value.push_str(" }");
     value
+}
+
+fn render_skill(request: &ManifestSkill) -> String {
+    let mut value = format!("{{ source = {}", toml_string(request.source.as_str()));
+    if request.mode == ProjectionMode::Vendor {
+        value.push_str(", mode = \"vendor\"");
+    }
+    value.push_str(" }");
+    value
+}
+
+fn projection_mode(value: Option<&Value>, where_: &str) -> Result<ProjectionMode> {
+    match value.and_then(Value::as_str) {
+        None => Ok(ProjectionMode::Link),
+        Some("link") => Ok(ProjectionMode::Link),
+        Some("vendor") => Ok(ProjectionMode::Vendor),
+        Some(value) => Err(CoreError::Manifest(format!(
+            "{where_} has unknown projection mode `{value}`"
+        ))),
+    }
 }
 
 fn reject_unknown(table: &toml_edit::Table, allowed: &[&str], where_: &str) -> Result<()> {

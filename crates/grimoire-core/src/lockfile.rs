@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use serde::de::{MapAccess, Visitor};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{CoreError, PackName, RequestRoot, Result, SkillName, SourceAlias};
+use crate::{CoreError, PackName, ProjectionMode, RequestRoot, Result, SkillName, SourceAlias};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LockSource {
@@ -24,6 +24,7 @@ pub enum LockSource {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LockPack {
     pub source: SourceAlias,
+    pub mode: ProjectionMode,
     pub required: BTreeSet<SkillName>,
     pub optional: BTreeSet<SkillName>,
     pub enabled: BTreeSet<SkillName>,
@@ -33,6 +34,7 @@ pub struct LockPack {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LockSkill {
     pub source: SourceAlias,
+    pub mode: ProjectionMode,
     pub path: String,
     pub content: String,
     pub requested_by: BTreeSet<RequestRoot>,
@@ -48,7 +50,7 @@ pub struct Lockfile {
 impl Lockfile {
     pub fn parse(bytes: &[u8]) -> Result<Self> {
         let dto: LockDto = serde_json::from_slice(bytes)?;
-        if dto.schema != "grimoire/lock@1" {
+        if dto.schema != "grimoire/lock@2" {
             return Err(CoreError::LockSchemaUnsupported { found: dto.schema });
         }
         dto.try_into()
@@ -128,6 +130,7 @@ struct SourceDto {
 #[serde(deny_unknown_fields)]
 struct PackDto {
     source: String,
+    mode: ProjectionMode,
     required: Vec<String>,
     optional: Vec<String>,
     enabled: Vec<String>,
@@ -138,6 +141,7 @@ struct PackDto {
 #[serde(deny_unknown_fields)]
 struct SkillDto {
     source: String,
+    mode: ProjectionMode,
     path: String,
     content: String,
     requested_by: Vec<String>,
@@ -211,6 +215,7 @@ impl TryFrom<LockDto> for Lockfile {
                     PackName::new(name)?,
                     LockPack {
                         source: SourceAlias::new(pack.source)?,
+                        mode: pack.mode,
                         required: skill_set(pack.required, "required")?,
                         optional: skill_set(pack.optional, "optional")?,
                         enabled: skill_set(pack.enabled, "enabled")?,
@@ -241,6 +246,7 @@ impl TryFrom<LockDto> for Lockfile {
                     SkillName::new(name)?,
                     LockSkill {
                         source: SourceAlias::new(skill.source)?,
+                        mode: skill.mode,
                         path: skill.path,
                         content: skill.content,
                         requested_by,
@@ -299,6 +305,7 @@ impl From<&Lockfile> for LockDto {
                     name.to_string(),
                     PackDto {
                         source: pack.source.to_string(),
+                        mode: pack.mode,
                         required: names(&pack.required),
                         optional: names(&pack.optional),
                         enabled: names(&pack.enabled),
@@ -315,6 +322,7 @@ impl From<&Lockfile> for LockDto {
                     name.to_string(),
                     SkillDto {
                         source: skill.source.to_string(),
+                        mode: skill.mode,
                         path: skill.path.clone(),
                         content: skill.content.clone(),
                         requested_by: {
@@ -331,7 +339,7 @@ impl From<&Lockfile> for LockDto {
             })
             .collect();
         Self {
-            schema: "grimoire/lock@1".into(),
+            schema: "grimoire/lock@2".into(),
             sources: UniqueMap(sources),
             packs: UniqueMap(packs),
             skills: UniqueMap(skills),
@@ -397,6 +405,7 @@ impl Lockfile {
                     )));
                 };
                 if skill.source != pack.source
+                    || skill.mode != pack.mode
                     || !skill
                         .requested_by
                         .contains(&RequestRoot::Pack(name.clone()))
@@ -414,6 +423,16 @@ impl Lockfile {
                     skill.source
                 )));
             }
+            if skill.mode == ProjectionMode::Vendor
+                && matches!(
+                    self.sources.get(&skill.source),
+                    Some(LockSource::Live { .. })
+                )
+            {
+                return Err(CoreError::Lock(format!(
+                    "skill `{name}` cannot use vendor mode with a live source"
+                )));
+            }
             for root in &skill.requested_by {
                 match root {
                     RequestRoot::Skill(requested) if requested != name => {
@@ -429,6 +448,7 @@ impl Lockfile {
                             )));
                         };
                         if pack.source != skill.source
+                            || pack.mode != skill.mode
                             || (!pack.required.contains(name) && !pack.enabled.contains(name))
                             || pack.unavailable.contains(name)
                         {

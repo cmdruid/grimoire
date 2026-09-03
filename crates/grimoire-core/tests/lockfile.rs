@@ -16,8 +16,55 @@ fn canonical_goldens_round_trip_byte_and_value_exactly() {
 }
 
 #[test]
+fn schema_two_requires_projection_modes_and_rejects_v1() {
+    let body = br#"{
+      "schema": "grimoire/lock@2",
+      "sources": {
+        "a": {
+          "declared": "github:org/a",
+          "kind": "git",
+          "commit": "1111111111111111111111111111111111111111",
+          "tree": "2222222222222222222222222222222222222222",
+          "inventory": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        }
+      },
+      "packs": {},
+      "skills": {
+        "one": {
+          "source": "a",
+          "mode": "vendor",
+          "path": "skills/one",
+          "content": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "requested_by": ["skill:one"]
+        }
+      }
+    }"#;
+    let lock = Lockfile::parse(body).unwrap();
+    assert_eq!(
+        format!("{:?}", lock.skills.values().next().unwrap().mode),
+        "Vendor"
+    );
+
+    let v1 = String::from_utf8(body.to_vec())
+        .unwrap()
+        .replace("grimoire/lock@2", "grimoire/lock@1");
+    let error = Lockfile::parse(v1.as_bytes()).unwrap_err();
+    assert!(matches!(error, CoreError::LockSchemaUnsupported { .. }));
+    assert!(error.to_string().contains("change the manifest schema"));
+    assert!(error.to_string().contains("non-frozen install"));
+
+    let body = String::from_utf8(body.to_vec()).unwrap();
+    for invalid in [
+        body.replace("\"mode\": \"vendor\",", ""),
+        body.replace("\"mode\": \"vendor\"", "\"mode\": \"copy\""),
+    ] {
+        assert!(Lockfile::parse(invalid.as_bytes()).is_err());
+    }
+}
+
+#[test]
 fn noncanonical_whitespace_and_object_order_write_canonically() {
-    let input = br#"{"skills":{},"packs":{},"sources":{},"schema":"grimoire/lock@1"}"#;
+    let input = br#"{"skills":{},"packs":{},"sources":{},"schema":"grimoire/lock@2"}"#;
     assert_eq!(Lockfile::parse(input).unwrap().to_bytes().unwrap(), EMPTY);
 }
 
@@ -27,7 +74,7 @@ fn alpha_schema_guard_is_the_only_difference_in_the_red_proof() {
     assert!(matches!(error, CoreError::LockSchemaUnsupported { .. }));
     let v1 = String::from_utf8(ALPHA.to_vec())
         .unwrap()
-        .replace("grimoire/lock@alpha", "grimoire/lock@1");
+        .replace("grimoire/lock@alpha", "grimoire/lock@2");
     assert!(Lockfile::parse(v1.as_bytes()).is_ok());
 }
 
@@ -64,8 +111,13 @@ fn malformed_and_noncanonical_domain_values_are_rejected() {
             "\"unavailable\": [\n        \"core\"\n      ]",
         ),
         valid.replace(
-            "\"source\": \"live-local\",\n      \"path\": \"skills/local\"",
-            "\"source\": \"unknown\",\n      \"path\": \"skills/local\"",
+            "\"source\": \"live-local\",\n      \"mode\": \"link\",\n      \"path\": \"skills/local\"",
+            "\"source\": \"unknown\",\n      \"mode\": \"link\",\n      \"path\": \"skills/local\"",
+        ),
+        valid.replacen("\"mode\": \"link\"", "\"mode\": \"vendor\"", 1),
+        valid.replace(
+            "\"source\": \"live-local\",\n      \"mode\": \"link\",\n      \"path\": \"skills/local\"",
+            "\"source\": \"live-local\",\n      \"mode\": \"vendor\",\n      \"path\": \"skills/local\"",
         ),
         valid.replace(
             "\"kind\": \"git\",",
@@ -80,7 +132,7 @@ fn malformed_and_noncanonical_domain_values_are_rejected() {
 #[test]
 fn duplicate_object_keys_and_array_members_are_rejected() {
     let duplicate_source = br#"{
-      "schema":"grimoire/lock@1",
+      "schema":"grimoire/lock@2",
       "sources":{"a":{"declared":"x","kind":"live"},"a":{"declared":"y","kind":"live"}},
       "packs":{},
       "skills":{"x":{"source":"a","path":"skills/x","content":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","requested_by":["skill:x"]}}

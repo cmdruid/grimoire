@@ -207,6 +207,22 @@ impl SourceInventory {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SkillTreeInventory {
+    pub skill: Option<Skill>,
+    pub findings: Vec<Finding>,
+}
+
+impl SkillTreeInventory {
+    pub fn is_valid(&self) -> bool {
+        self.skill.is_some()
+            && !self
+                .findings
+                .iter()
+                .any(|finding| finding.severity == Severity::Error)
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum InventoryError {
     #[error("tree I/O at {path}: {message}")]

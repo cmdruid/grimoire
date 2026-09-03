@@ -1,7 +1,7 @@
 use grimoire_core::{
-    plan, project_tree, resolve_manifest, source_key_for_alias, Approval, Blocker, DesiredEdit,
-    DesiredState, Plan, PlanningMode, Request, Result, Scope, SourceAlias, SourceKey, TreeItem,
-    TreeItemKey, TreeProjection, TrustBaseline, WorldState,
+    plan, project_tree, source_key_for_alias, Approval, Blocker, DesiredEdit, DesiredState, Plan,
+    PlanningMode, Request, Result, Scope, SourceAlias, SourceKey, TreeItem, TreeItemKey,
+    TreeProjection, TrustBaseline, WorldState,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -488,8 +488,13 @@ impl TuiModel {
 
     pub fn accept_reloaded_scope(&mut self, world: WorldState) -> Result<()> {
         let scope = world.scope;
-        let inherited =
-            (scope == Scope::Global).then(|| resolve_manifest(&world.manifest, &world.snapshots));
+        let inherited = (scope == Scope::Global).then(|| {
+            grimoire_core::resolve_manifest_for_scope(
+                Scope::Global,
+                &world.manifest,
+                &world.snapshots,
+            )
+        });
         let state = ScopeState::new(world)?;
         match scope {
             Scope::Project => self.project = Some(state),

@@ -67,6 +67,13 @@ pub enum Scope {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+pub enum ProjectionMode {
+    Link,
+    Vendor,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SnapshotKind {
     Git,
     Live,
@@ -223,6 +230,21 @@ pub enum InstalledLink {
     Directory,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum VendorState {
+    Absent,
+    OwnedUnchanged,
+    Drifted,
+    Foreign,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct VendorPrecondition {
+    pub state: VendorState,
+    pub content: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum OwnedLinkTarget {
@@ -234,6 +256,10 @@ pub enum OwnedLinkTarget {
     Live {
         identity: crate::CanonicalIdentity,
         skill_path: String,
+    },
+    Vendor {
+        source: SourceAlias,
+        skill: SkillName,
     },
 }
 
@@ -264,6 +290,9 @@ impl OwnedLinkTarget {
                 }
                 #[cfg(not(unix))]
                 unreachable!("Grimoire supports Unix hosts")
+            }
+            Self::Vendor { source, skill } => {
+                return paths.vendor_activation_target(source, skill);
             }
         };
         validate_skill_path(skill_path)?;
@@ -470,6 +499,7 @@ pub enum SourceTrustIntent {
     Untrusted,
     Exact,
     All,
+    Vendor,
 }
 
 /// The complete desired roots staged by an adapter before one atomic replan.
@@ -478,7 +508,7 @@ pub enum SourceTrustIntent {
 /// review and fetch ceremonies and cannot be changed by a tree toggle.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DesiredState {
-    pub skills: BTreeMap<SkillName, SourceAlias>,
+    pub skills: BTreeMap<SkillName, crate::ManifestSkill>,
     pub packs: BTreeMap<PackName, crate::ManifestPack>,
 }
 
@@ -518,14 +548,22 @@ impl DesiredState {
             } => {
                 if enabled {
                     if let Some(current) = self.skills.get(&name) {
-                        if current != &source {
+                        if current.source != source {
                             return Err(CoreError::Request(format!(
-                                "skill `{name}` is already staged from source `{current}`"
+                                "skill `{name}` is already staged from source `{}`",
+                                current.source
                             )));
                         }
                     }
-                    self.skills.insert(name, source);
-                } else if self.skills.get(&name) == Some(&source) {
+                    self.skills.entry(name).or_insert(crate::ManifestSkill {
+                        source,
+                        mode: ProjectionMode::Link,
+                    });
+                } else if self
+                    .skills
+                    .get(&name)
+                    .is_some_and(|request| request.source == source)
+                {
                     self.skills.remove(&name);
                 }
             }
@@ -545,6 +583,7 @@ impl DesiredState {
                     }
                     self.packs.entry(name).or_insert(crate::ManifestPack {
                         source,
+                        mode: ProjectionMode::Link,
                         exclude: BTreeSet::new(),
                     });
                 } else if self
@@ -592,7 +631,7 @@ pub enum Request {
     },
     InstallSkill {
         name: SkillName,
-        source: SourceAlias,
+        request: crate::ManifestSkill,
     },
     UninstallSkill {
         name: SkillName,
@@ -638,6 +677,7 @@ pub struct WorldState {
     pub candidates: BTreeMap<SourceAlias, SourceState>,
     pub trust_bytes: Option<Vec<u8>>,
     pub links: BTreeMap<SkillName, InstalledLink>,
+    pub vendors: BTreeMap<SkillName, VendorPrecondition>,
     pub inherited_global: Option<crate::resolve::Resolution>,
     pub manifest_present: bool,
     pub lock_present: bool,
@@ -681,6 +721,7 @@ impl WorldState {
             candidates: BTreeMap::new(),
             trust_bytes: None,
             links,
+            vendors: BTreeMap::new(),
             inherited_global,
             manifest_present: true,
             lock_present: true,
@@ -698,7 +739,7 @@ impl WorldState {
     ) -> Result<Self> {
         let mut world = Self::from_bytes(
             scope,
-            b"schema = \"grimoire/manifest@1\"\n".to_vec(),
+            b"schema = \"grimoire/manifest@2\"\n".to_vec(),
             crate::Lockfile::default().to_bytes()?,
             sources,
             links,

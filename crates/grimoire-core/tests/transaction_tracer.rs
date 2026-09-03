@@ -91,7 +91,7 @@ fn fixture() -> (TempDir, Paths, OwnedLinkTarget, Plan) {
     let inventory =
         scan(&HeldDirectoryReader::open(&paths.store_path(&source_key, &snapshot_key)).unwrap())
             .unwrap();
-    let manifest = b"schema = \"grimoire/manifest@1\"\n".to_vec();
+    let manifest = b"schema = \"grimoire/manifest@2\"\n".to_vec();
     let lock = Lockfile::default().to_bytes().unwrap();
     let plan = Plan {
         actions: vec![
@@ -127,6 +127,7 @@ fn fixture() -> (TempDir, Paths, OwnedLinkTarget, Plan) {
             projects: None,
             reachability: None,
             links: BTreeMap::from([("one".try_into().unwrap(), LinkPrecondition::Absent)]),
+            vendors: BTreeMap::new(),
         },
         facts: Vec::new(),
         exit_class: grimoire_core::ExitClass::Success,
@@ -166,6 +167,7 @@ fn one_direct_skill_crosses_the_transaction_boundary() {
                 "one".try_into().unwrap(),
                 LinkPrecondition::Symlink(target.resolve(&paths).unwrap()),
             )]),
+            vendors: BTreeMap::new(),
         },
         facts: Vec::new(),
         exit_class: grimoire_core::ExitClass::Success,
@@ -300,6 +302,7 @@ fn repoint_and_remove_capture_the_owned_link_before_mutating_it() {
                     "one".try_into().unwrap(),
                     LinkPrecondition::Symlink(old.resolve(&paths).unwrap()),
                 )]),
+                vendors: BTreeMap::new(),
             },
             facts: Vec::new(),
             exit_class: grimoire_core::ExitClass::Success,
@@ -358,6 +361,7 @@ fn a_late_link_race_rolls_back_earlier_owned_changes() {
                 ),
                 ("two".try_into().unwrap(), LinkPrecondition::Absent),
             ]),
+            vendors: BTreeMap::new(),
         },
         facts: Vec::new(),
         exit_class: grimoire_core::ExitClass::Success,

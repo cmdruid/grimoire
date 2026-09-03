@@ -36,6 +36,7 @@ pub struct TrustSummary {
     pub source_key: super::SourceKey,
     pub identity: super::CanonicalIdentity,
     pub receipts: BTreeSet<TrustReceipt>,
+    pub vendor_receipts: BTreeSet<crate::VendorTrustReceipt>,
     pub all_snapshots: bool,
     pub baseline: Option<crate::TrustBaseline>,
     pub uses: BTreeSet<TrustUse>,
@@ -248,6 +249,7 @@ pub fn trust_catalog(paths: &Paths) -> Result<TrustCatalog> {
             source_key: source_key.clone(),
             identity: record.identity.clone(),
             receipts: record.receipts.clone(),
+            vendor_receipts: record.vendor_receipts.clone(),
             all_snapshots: record.all_snapshots,
             baseline: record.baseline.clone(),
             uses: BTreeSet::new(),
@@ -327,7 +329,7 @@ fn affected_roots(world: &WorldState, alias: &SourceAlias) -> BTreeSet<String> {
         .manifest
         .skills
         .iter()
-        .filter(|(_, source)| *source == alias)
+        .filter(|(_, request)| request.source == *alias)
         .map(|(name, _)| RequestRoot::Skill(name.clone()).lock_value())
         .collect::<BTreeSet<_>>();
     roots.extend(

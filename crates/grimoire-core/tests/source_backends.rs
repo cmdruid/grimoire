@@ -40,7 +40,7 @@ fn live_inspection_publishes_only_review_and_candidate_state() {
     fs::create_dir_all(&home).unwrap();
     fs::write(
         project.join("grimoire.toml"),
-        b"schema = \"grimoire/manifest@1\"\n[sources.local]\npath = \"../source\"\nlive = true\n",
+        b"schema = \"grimoire/manifest@2\"\n[sources.local]\npath = \"../source\"\nlive = true\n",
     )
     .unwrap();
     fs::write(source.join("SKILL.md"), b"---\nname: local\n---\n").unwrap();

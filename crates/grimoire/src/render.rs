@@ -91,14 +91,15 @@ pub fn trust_catalog(catalog: &TrustCatalog, output: &mut dyn Write) -> io::Resu
     for record in &catalog.records {
         writeln!(
             output,
-            "{}\t{}\tall={}\treceipts={}",
+            "{}\t{}\tall={}\treceipts={}\tvendor_receipts={}",
             record.source_key,
             record
                 .identity
                 .canonical_utf8()
                 .unwrap_or("<non-UTF-8 local identity>"),
             record.all_snapshots,
-            record.receipts.len()
+            record.receipts.len(),
+            record.vendor_receipts.len()
         )?;
         for usage in &record.uses {
             writeln!(output, "  use\t{}\t{}", usage.scope, usage.alias)?;

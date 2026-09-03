@@ -86,10 +86,12 @@ pub fn desired_command_input(
             name, pack: false, ..
         } => {
             let name = SkillName::new(name.clone())?;
-            let source =
-                world.manifest.skills.get(&name).cloned().ok_or_else(|| {
-                    CoreError::Manifest(format!("skill `{name}` is not requested"))
-                })?;
+            let source = world
+                .manifest
+                .skills
+                .get(&name)
+                .map(|request| request.source.clone())
+                .ok_or_else(|| CoreError::Manifest(format!("skill `{name}` is not requested")))?;
             (
                 DesiredEdit::SetSkill {
                     name,
@@ -513,6 +515,7 @@ fn execute_source(
             alias,
             all,
             revoke,
+            vendor,
             yes,
             ..
         } => {
@@ -543,7 +546,9 @@ fn execute_source(
                     &world,
                     Request::TrustSource {
                         alias,
-                        mode: if all {
+                        mode: if vendor {
+                            SourceTrustIntent::Vendor
+                        } else if all {
                             SourceTrustIntent::All
                         } else {
                             SourceTrustIntent::Exact

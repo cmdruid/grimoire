@@ -11,7 +11,7 @@ use grimoire_pack::inventory::{
 
 const EMPTY_LOCK: &[u8] = include_bytes!("fixtures/lock/empty.json");
 const MANIFEST: &str = concat!(
-    "schema = \"grimoire/manifest@1\"\n",
+    "schema = \"grimoire/manifest@2\"\n",
     "[sources.a]\nurl = \"github:org/a\"\nref = \"main\"\n",
     "[skills]\none = { source = \"a\" }\n",
 );
@@ -303,7 +303,7 @@ fn a_trusted_absent_snapshot_gets_materialized_before_activation() {
 #[test]
 fn frozen_refuses_live_even_when_identity_wide_trust_is_present() {
     let manifest = concat!(
-        "schema = \"grimoire/manifest@1\"\n",
+        "schema = \"grimoire/manifest@2\"\n",
         "[sources.a]\npath = \"../a\"\nlive = true\n",
         "[skills]\none = { source = \"a\" }\n",
     );

@@ -85,7 +85,7 @@ fn report_keeps_project_roots_and_inherited_globals_independent() {
     let global = world(
         Scope::Global,
         concat!(
-            "schema = \"grimoire/manifest@1\"\n",
+            "schema = \"grimoire/manifest@2\"\n",
             "[sources.global]\nurl = \"github:org/global\"\n",
             "[skills]\nshared = { source = \"global\" }\n",
         ),
@@ -100,7 +100,7 @@ fn report_keeps_project_roots_and_inherited_globals_independent() {
     let project = world(
         Scope::Project,
         concat!(
-            "schema = \"grimoire/manifest@1\"\n",
+            "schema = \"grimoire/manifest@2\"\n",
             "[sources.project]\nurl = \"github:org/project\"\n",
             "[packs]\nbundle = { source = \"project\" }\n",
             "[skills]\nshared = { source = \"project\" }\n",
@@ -143,7 +143,7 @@ fn report_keeps_project_roots_and_inherited_globals_independent() {
 fn attaching_context_rejects_reversed_scope_ownership() {
     let project = world(
         Scope::Project,
-        "schema = \"grimoire/manifest@1\"\n",
+        "schema = \"grimoire/manifest@2\"\n",
         snapshot("project", &[], None),
         &[],
     );

@@ -134,7 +134,7 @@ fn fixture() -> Fixture {
     create_store(&paths, &global);
     fs::write(
         paths.manifest_path(),
-        b"schema = \"grimoire/manifest@1\"\n[sources.repo]\nurl = \"github:org/global\"\n[skills]\none = { source = \"repo\" }\n",
+        b"schema = \"grimoire/manifest@2\"\n[sources.repo]\nurl = \"github:org/global\"\n[skills]\none = { source = \"repo\" }\n",
     )
     .unwrap();
     let lock = Lockfile {
@@ -153,6 +153,7 @@ fn fixture() -> Fixture {
             "one".try_into().unwrap(),
             LockSkill {
                 source: "repo".try_into().unwrap(),
+                mode: grimoire_core::ProjectionMode::Link,
                 path: "skills/one".into(),
                 content: inventory.skills[0].content_digest.to_string(),
                 requested_by: BTreeSet::from([RequestRoot::Skill("one".try_into().unwrap())]),
@@ -227,6 +228,7 @@ fn fixture() -> Fixture {
             projects: None,
             reachability: None,
             links: BTreeMap::from([("journal".try_into().unwrap(), LinkPrecondition::Absent)]),
+            vendors: BTreeMap::new(),
         },
         facts: Vec::new(),
         exit_class: ExitClass::Success,
@@ -370,7 +372,7 @@ fn explicit_project_is_refreshed_and_remains_reachable_when_later_only_indexed()
     create_store(&fixture.paths, &reference);
     fs::write(
         project.join("grimoire.toml"),
-        b"schema = \"grimoire/manifest@1\"\n[sources.repo]\nurl = \"github:org/explicit\"\n[skills]\none = { source = \"repo\" }\n",
+        b"schema = \"grimoire/manifest@2\"\n[sources.repo]\nurl = \"github:org/explicit\"\n[skills]\none = { source = \"repo\" }\n",
     )
     .unwrap();
     let lock = Lockfile {
@@ -389,6 +391,7 @@ fn explicit_project_is_refreshed_and_remains_reachable_when_later_only_indexed()
             "one".try_into().unwrap(),
             LockSkill {
                 source: "repo".try_into().unwrap(),
+                mode: grimoire_core::ProjectionMode::Link,
                 path: "skills/one".into(),
                 content: inventory.skills[0].content_digest.to_string(),
                 requested_by: BTreeSet::from([RequestRoot::Skill("one".try_into().unwrap())]),

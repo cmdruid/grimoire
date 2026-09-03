@@ -68,7 +68,7 @@ fn initialized_project(root: &std::path::Path, name: &std::ffi::OsStr) -> Paths 
     fs::create_dir_all(&home).unwrap();
     fs::write(
         project.join("grimoire.toml"),
-        b"schema = \"grimoire/manifest@1\"\n",
+        b"schema = \"grimoire/manifest@2\"\n",
     )
     .unwrap();
     fs::write(
@@ -195,7 +195,7 @@ fn project_records_derive_pinned_references_from_manifest_and_lock() {
     fs::create_dir_all(&source).unwrap();
     fs::write(
         paths.manifest_path(),
-        b"schema = \"grimoire/manifest@1\"\n[sources.local]\npath = \"../source\"\n[skills]\none = { source = \"local\" }\n",
+        b"schema = \"grimoire/manifest@2\"\n[sources.local]\npath = \"../source\"\n[skills]\none = { source = \"local\" }\n",
     )
     .unwrap();
     let commit = "1".repeat(40);
@@ -217,6 +217,7 @@ fn project_records_derive_pinned_references_from_manifest_and_lock() {
             "one".try_into().unwrap(),
             LockSkill {
                 source: "local".try_into().unwrap(),
+                mode: grimoire_core::ProjectionMode::Link,
                 path: "skills/one".into(),
                 content: format!("sha256:{}", "4".repeat(64)),
                 requested_by: BTreeSet::from([RequestRoot::Skill("one".try_into().unwrap())]),

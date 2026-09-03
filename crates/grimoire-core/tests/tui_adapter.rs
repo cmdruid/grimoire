@@ -12,7 +12,7 @@ use grimoire_core::{
 
 const EMPTY_LOCK: &[u8] = include_bytes!("fixtures/lock/empty.json");
 const MANIFEST: &str = concat!(
-    "schema = \"grimoire/manifest@1\"\n",
+    "schema = \"grimoire/manifest@2\"\n",
     "[sources.grimoire]\n",
     "url = \"github:cmdruid/grimoire\"\n",
 );
@@ -190,7 +190,10 @@ fn one_available_skill_stages_through_the_exact_core_plan() {
         &world,
         Request::InstallSkill {
             name: "journal".try_into().unwrap(),
-            source: "grimoire".try_into().unwrap(),
+            request: grimoire_core::ManifestSkill {
+                source: "grimoire".try_into().unwrap(),
+                mode: grimoire_core::ProjectionMode::Link,
+            },
         },
         PlanningMode::Normal,
     )

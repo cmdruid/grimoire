@@ -15,7 +15,7 @@ fn project_and_global_tabs_stage_independently_and_inherited_items_are_read_only
         "global",
         &["shared"],
         concat!(
-            "schema = \"grimoire/manifest@1\"\n",
+            "schema = \"grimoire/manifest@2\"\n",
             "[sources.global]\nurl = \"github:fixture/global\"\n",
             "[skills]\nshared = { source = \"global\" }\n",
         ),
@@ -25,7 +25,7 @@ fn project_and_global_tabs_stage_independently_and_inherited_items_are_read_only
         "project",
         &["local", "shared"],
         concat!(
-            "schema = \"grimoire/manifest@1\"\n",
+            "schema = \"grimoire/manifest@2\"\n",
             "[sources.project]\nurl = \"github:fixture/project\"\n",
             "[skills]\nshared = { source = \"project\" }\n",
         ),
@@ -139,7 +139,7 @@ fn navigation_stays_bounded_and_scrolls_the_selected_item_into_view() {
         "global",
         &["one", "three", "two"],
         concat!(
-            "schema = \"grimoire/manifest@1\"\n",
+            "schema = \"grimoire/manifest@2\"\n",
             "[sources.global]\nurl = \"github:fixture/global\"\n",
         ),
     );

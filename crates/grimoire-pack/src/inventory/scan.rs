@@ -175,7 +175,7 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
             budget: &mut review_budget,
             findings: &mut findings,
         };
-        skills.push(scan_skill(&mut scan, root, name)?);
+        skills.push(build_skill(&mut scan, root, name)?);
     }
     skills.sort_by(|left, right| (&left.name, &left.path).cmp(&(&right.name, &right.path)));
 
@@ -250,6 +250,95 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
         inventory_digest,
         review_tree_digest,
     })
+}
+
+/// Inventory one directory whose root is expected to be exactly one skill.
+///
+/// This reuses the source scanner's canonical content-digest framing while adding the stricter
+/// entry-mode and root-identity checks required for a committed projection.
+pub fn scan_skill_tree(
+    reader: &dyn TreeReader,
+    expected_name: &str,
+) -> Result<super::SkillTreeInventory, InventoryError> {
+    let inventory = scan(reader)?;
+    let mut findings = inventory.findings;
+    let skill = match inventory.skills.as_slice() {
+        [skill] if skill.path.as_bytes().is_empty() => {
+            if skill.name != expected_name {
+                findings.push(Finding {
+                    code: "skill-name-mismatch".into(),
+                    path: Some(SourcePath::from("SKILL.md")),
+                    severity: Severity::Error,
+                    details: BTreeMap::from([
+                        ("expected".into(), expected_name.into()),
+                        ("observed".into(), skill.name.clone()),
+                    ]),
+                    message: "skill name mismatch".into(),
+                });
+            }
+            Some(skill.clone())
+        }
+        [] => {
+            findings.push(Finding {
+                code: "skill-root-missing".into(),
+                path: Some(SourcePath::from("SKILL.md")),
+                severity: Severity::Error,
+                details: BTreeMap::new(),
+                message: "skill root missing".into(),
+            });
+            None
+        }
+        _ => {
+            findings.push(Finding {
+                code: "skill-root-ambiguous".into(),
+                path: None,
+                severity: Severity::Error,
+                details: BTreeMap::new(),
+                message: "skill root ambiguous".into(),
+            });
+            None
+        }
+    };
+
+    reader.visit_entries(&mut |entry| {
+        let actual = entry.mode & 0o7777;
+        let valid_mode = match entry.kind {
+            TreeEntryKind::Directory => actual == 0o755,
+            TreeEntryKind::File => matches!(actual, 0o644 | 0o755),
+            TreeEntryKind::Symlink => true,
+            TreeEntryKind::Submodule
+            | TreeEntryKind::Device
+            | TreeEntryKind::Fifo
+            | TreeEntryKind::Socket => false,
+        };
+        if !valid_mode {
+            findings.push(Finding {
+                code: "invalid-entry-mode".into(),
+                path: Some(entry.path.clone()),
+                severity: Severity::Error,
+                details: BTreeMap::from([("mode".into(), format!("{actual:04o}"))]),
+                message: "invalid entry mode".into(),
+            });
+        }
+        if entry
+            .path
+            .as_bytes()
+            .split(|byte| *byte == b'/')
+            .any(|component| component == b".git")
+        {
+            findings.push(Finding {
+                code: "unsupported-entry".into(),
+                path: Some(entry.path.clone()),
+                severity: Severity::Error,
+                details: BTreeMap::from([("kind".into(), "git-metadata".into())]),
+                message: "unsupported entry".into(),
+            });
+        }
+        Ok(VisitDecision::Continue)
+    })?;
+    findings.sort_by(finding_order);
+    findings.dedup();
+    Ok(super::SkillTreeInventory { skill, findings })
 }
 
 fn add_pack_availability(skills: &[Skill], packs: &mut [Pack], findings: &mut Vec<Finding>) {
@@ -781,7 +870,7 @@ struct SkillScan<'a> {
     findings: &'a mut Vec<Finding>,
 }
 
-fn scan_skill(
+fn build_skill(
     scan: &mut SkillScan<'_>,
     root: &SourcePath,
     name: &str,

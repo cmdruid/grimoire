@@ -2,14 +2,15 @@
   "actions": [],
   "blockers": [],
   "preconditions": {
-    "manifest": "a436b80ad822560f0995a96cfd6c732a7a21b33c2e9e5ad694b0b5e79f592dc8",
-    "lock": "897fc1efcff3b556be1825396366f737b5723d3b7990b3ba0c2e16e03697f66e",
+    "manifest": "35593f36ad370d1bfed5ca735f75440a476527e926afb1ace6ff3688833f4496",
+    "lock": "a26cb8b16d67fb1945e7d12716c928efe231898021d0b31cb2cb7b0cf59b1bfe",
     "candidates": {},
     "stores": {},
     "trust": null,
     "projects": null,
     "reachability": null,
-    "links": {}
+    "links": {},
+    "vendors": {}
   },
   "facts": [],
   "exit_class": "success"

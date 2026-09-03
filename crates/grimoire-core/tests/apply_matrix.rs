@@ -49,7 +49,7 @@ fn prepared_source_registration_and_removal_cross_only_the_action_interpreter() 
     )
     .unwrap();
     let paths = Paths::project(project, home).unwrap();
-    let manifest_bytes = b"schema = \"grimoire/manifest@1\"\n".to_vec();
+    let manifest_bytes = b"schema = \"grimoire/manifest@2\"\n".to_vec();
     let lock_bytes = Lockfile::default().to_bytes().unwrap();
     fs::write(paths.manifest_path(), &manifest_bytes).unwrap();
     fs::write(paths.lock_path(), &lock_bytes).unwrap();
@@ -224,7 +224,7 @@ fn planned_snapshot_preparation_materializes_and_repairs_before_link_activation(
     .unwrap();
 
     let manifest = concat!(
-        "schema = \"grimoire/manifest@1\"\n",
+        "schema = \"grimoire/manifest@2\"\n",
         "[sources.a]\nurl = \"github:org/a\"\n",
         "[skills]\none = { source = \"a\" }\n"
     )

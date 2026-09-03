@@ -101,7 +101,7 @@ fn production_runner_inspects_only_a_clean_pinned_worktree() {
     git(&source, ["commit", "-m", "fixture"]);
     fs::write(
         project.join("grimoire.toml"),
-        b"schema = \"grimoire/manifest@1\"\n[sources.local]\npath = \"../source\"\n",
+        b"schema = \"grimoire/manifest@2\"\n[sources.local]\npath = \"../source\"\n",
     )
     .unwrap();
     let paths = Paths::project(project, home).unwrap();

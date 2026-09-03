@@ -5,12 +5,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Blocker, LockPack, LockSkill, LockSource, Lockfile, Manifest, PackMemberState, PlanFact,
-    RequestRoot, SkillName, SnapshotKind, SourceAlias, SourceLocation, SourceSnapshot,
+    ProjectionMode, RequestRoot, Scope, SkillName, SnapshotKind, SourceAlias, SourceLocation,
+    SourceSnapshot,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ResolvedSkill {
     pub source: SourceAlias,
+    pub mode: ProjectionMode,
     pub target: PathBuf,
 }
 
@@ -28,10 +30,18 @@ struct Candidate {
     path: String,
     content: String,
     target: PathBuf,
-    roots: BTreeSet<RequestRoot>,
+    roots: BTreeMap<RequestRoot, ProjectionMode>,
 }
 
 pub fn resolve_manifest(
+    manifest: &Manifest,
+    snapshots: &BTreeMap<SourceAlias, SourceSnapshot>,
+) -> Resolution {
+    resolve_manifest_for_scope(Scope::Project, manifest, snapshots)
+}
+
+pub fn resolve_manifest_for_scope(
+    scope: Scope,
     manifest: &Manifest,
     snapshots: &BTreeMap<SourceAlias, SourceSnapshot>,
 ) -> Resolution {
@@ -41,11 +51,22 @@ pub fn resolve_manifest(
     let mut facts = Vec::new();
     let mut contributing_sources = BTreeSet::new();
 
-    for (name, alias) in &manifest.skills {
+    for (name, request) in &manifest.skills {
+        let alias = &request.source;
         let root = RequestRoot::Skill(name.clone());
         let Some(snapshot) = usable_snapshot(alias, snapshots, &mut blockers) else {
             continue;
         };
+        if projection_blocked(
+            scope,
+            request.mode,
+            snapshot.id.kind,
+            alias,
+            &root,
+            &mut blockers,
+        ) {
+            continue;
+        }
         let matches: Vec<_> = snapshot
             .inventory
             .skills
@@ -72,7 +93,15 @@ pub fn resolve_manifest(
                 continue;
             }
         };
-        add_candidate(&mut candidates, name, alias, snapshot, skill, root.clone());
+        add_candidate(
+            &mut candidates,
+            name,
+            alias,
+            snapshot,
+            skill,
+            root.clone(),
+            request.mode,
+        );
         facts.push(PlanFact::ResolvedRoot {
             root,
             source: alias.clone(),
@@ -85,6 +114,17 @@ pub fn resolve_manifest(
         let Some(snapshot) = usable_snapshot(alias, snapshots, &mut blockers) else {
             continue;
         };
+        let pack_root = RequestRoot::Pack(pack_name.clone());
+        if projection_blocked(
+            scope,
+            request.mode,
+            snapshot.id.kind,
+            alias,
+            &pack_root,
+            &mut blockers,
+        ) {
+            continue;
+        }
         let matches: Vec<_> = snapshot
             .inventory
             .packs
@@ -164,6 +204,7 @@ pub fn resolve_manifest(
                         snapshot,
                         skill,
                         RequestRoot::Pack(pack_name.clone()),
+                        request.mode,
                     );
                     facts.push(PlanFact::PackMember {
                         pack: pack_name.clone(),
@@ -199,6 +240,7 @@ pub fn resolve_manifest(
                     snapshot,
                     skill,
                     RequestRoot::Pack(pack_name.clone()),
+                    request.mode,
                 );
                 facts.push(PlanFact::PackMember {
                     pack: pack_name.clone(),
@@ -218,6 +260,7 @@ pub fn resolve_manifest(
             pack_name.clone(),
             LockPack {
                 source: alias.clone(),
+                mode: request.mode,
                 required,
                 optional,
                 enabled,
@@ -254,19 +297,46 @@ pub fn resolve_manifest(
             continue;
         }
         let (_, candidate) = owners.into_iter().next().expect("one owner");
+        let modes = candidate.roots.values().copied().collect::<BTreeSet<_>>();
+        if modes.len() != 1 {
+            push_blocker(
+                &mut blockers,
+                Blocker::new(
+                    "materialization-conflict",
+                    [
+                        ("skill", name.to_string()),
+                        ("roots", {
+                            let mut roots = candidate
+                                .roots
+                                .iter()
+                                .map(|(root, mode)| {
+                                    format!("{}={}", root.lock_value(), projection_name(*mode))
+                                })
+                                .collect::<Vec<_>>();
+                            roots.sort();
+                            roots.join(",")
+                        }),
+                    ],
+                ),
+            );
+            continue;
+        }
+        let mode = *modes.iter().next().expect("one projection mode");
         lock.skills.insert(
             name.clone(),
             LockSkill {
                 source: candidate.source.clone(),
+                mode,
                 path: candidate.path,
                 content: candidate.content,
-                requested_by: candidate.roots,
+                requested_by: candidate.roots.keys().cloned().collect(),
             },
         );
         skills.insert(
             name,
             ResolvedSkill {
                 source: candidate.source,
+                mode,
                 target: candidate.target,
             },
         );
@@ -379,6 +449,7 @@ fn add_candidate(
     snapshot: &SourceSnapshot,
     skill: &grimoire_pack::inventory::Skill,
     root: RequestRoot,
+    mode: ProjectionMode,
 ) {
     let owner = candidates
         .entry(name.clone())
@@ -388,10 +459,56 @@ fn add_candidate(
             source: alias.clone(),
             path: skill.path.to_string(),
             content: skill.content_digest.to_string(),
-            target: snapshot.root.join(skill.path.to_string()),
-            roots: BTreeSet::new(),
+            target: match mode {
+                ProjectionMode::Link => snapshot.root.join(skill.path.to_string()),
+                ProjectionMode::Vendor => PathBuf::from("../../vendor/grimoire")
+                    .join(alias.as_str())
+                    .join(name.as_str()),
+            },
+            roots: BTreeMap::new(),
         });
-    owner.roots.insert(root);
+    owner.roots.insert(root, mode);
+}
+
+fn projection_blocked(
+    scope: Scope,
+    mode: ProjectionMode,
+    kind: SnapshotKind,
+    alias: &SourceAlias,
+    root: &RequestRoot,
+    blockers: &mut Vec<Blocker>,
+) -> bool {
+    if mode != ProjectionMode::Vendor {
+        return false;
+    }
+    if scope == Scope::Global {
+        push_blocker(
+            blockers,
+            Blocker::new(
+                "vendor-global-unsupported",
+                [("root", root.lock_value()), ("source", alias.to_string())],
+            ),
+        );
+        return true;
+    }
+    if kind == SnapshotKind::Live {
+        push_blocker(
+            blockers,
+            Blocker::new(
+                "vendor-live-unsupported",
+                [("root", root.lock_value()), ("source", alias.to_string())],
+            ),
+        );
+        return true;
+    }
+    false
+}
+
+fn projection_name(mode: ProjectionMode) -> &'static str {
+    match mode {
+        ProjectionMode::Link => "link",
+        ProjectionMode::Vendor => "vendor",
+    }
 }
 
 fn lock_source(source: &crate::ManifestSource, snapshot: &SourceSnapshot) -> Option<LockSource> {

@@ -34,7 +34,7 @@ fn phase_four_planner_has_no_adapter_or_ambient_dependency() {
 fn planning_an_identical_immutable_world_never_refreshes_or_replans() {
     let state = WorldState::from_bytes(
         Scope::Project,
-        b"schema = \"grimoire/manifest@1\"\n".to_vec(),
+        b"schema = \"grimoire/manifest@2\"\n".to_vec(),
         include_bytes!("fixtures/lock/empty.json").to_vec(),
         [],
         std::iter::empty::<(&str, InstalledLink)>(),

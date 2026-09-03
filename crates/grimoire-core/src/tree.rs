@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    check, resolve_manifest, source_summaries, Blocker, CheckFinding, DesiredState, InstalledLink,
-    InstalledStatus, PackName, RequestRoot, Result, Scope, SkillName, SourceAlias, TrustMode,
-    WorldState,
+    check, resolve_manifest_for_scope, source_summaries, Blocker, CheckFinding, DesiredState,
+    InstalledLink, InstalledStatus, PackName, RequestRoot, Result, Scope, SkillName, SourceAlias,
+    TrustMode, WorldState,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -91,7 +91,7 @@ pub fn project_tree(world: &WorldState, desired: &DesiredState) -> Result<TreePr
         } else {
             world.manifest.replace_desired(desired)?.manifest
         };
-    let resolution = resolve_manifest(&desired_manifest, &world.snapshots);
+    let resolution = resolve_manifest_for_scope(world.scope, &desired_manifest, &world.snapshots);
     let source_facts = source_summaries(world)?
         .into_iter()
         .map(|summary| (summary.alias.clone(), summary))
@@ -198,14 +198,14 @@ pub fn project_tree(world: &WorldState, desired: &DesiredState) -> Result<TreePr
                 },
                 label: name.to_string(),
                 depth: 1,
-                selected: owner == Some(alias),
-                toggleable: owner.is_none_or(|owner| owner == alias),
+                selected: owner.is_some_and(|owner| &owner.source == alias),
+                toggleable: owner.is_none_or(|owner| &owner.source == alias),
                 kind: TreeItemKind::Skill(SkillAvailability::Available),
                 requested_by: requested_by(&resolution, &name),
                 installed: installed_status(world, &resolution, &name),
                 inert_reason: owner
-                    .filter(|owner| *owner != alias)
-                    .map(|owner| format!("requested from {owner}")),
+                    .filter(|owner| &owner.source != alias)
+                    .map(|owner| format!("requested from {}", owner.source)),
                 shadowed: false,
             });
         }

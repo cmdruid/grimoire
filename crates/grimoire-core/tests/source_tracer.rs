@@ -250,7 +250,7 @@ fn remote_fetch_workflow_is_inert_until_candidate_publication() {
     let home = root.join("home");
     std::fs::create_dir_all(&project).unwrap();
     std::fs::create_dir_all(&home).unwrap();
-    let manifest = b"schema = \"grimoire/manifest@1\"\n[sources.repo]\nurl = \"github:example/fixture\"\nref = \"main\"\n";
+    let manifest = b"schema = \"grimoire/manifest@2\"\n[sources.repo]\nurl = \"github:example/fixture\"\nref = \"main\"\n";
     std::fs::write(project.join("grimoire.toml"), manifest).unwrap();
     let paths = Paths::project(project.clone(), home.clone()).unwrap();
 

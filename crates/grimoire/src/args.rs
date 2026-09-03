@@ -168,10 +168,12 @@ pub enum SourceCommand {
     /// Grant or revoke trust for a source alias.
     Trust {
         alias: String,
-        #[arg(long, conflicts_with = "revoke")]
+        #[arg(long, conflicts_with_all = ["revoke", "vendor"])]
         all: bool,
-        #[arg(long, conflicts_with = "all")]
+        #[arg(long, conflicts_with_all = ["all", "vendor"])]
         revoke: bool,
+        #[arg(long, conflicts_with_all = ["all", "revoke", "global", "yes"])]
+        vendor: bool,
         #[arg(long, requires = "revoke")]
         yes: bool,
         #[command(flatten)]

@@ -78,7 +78,7 @@ fn initialize(scope: Scope) -> Plan {
         actions: vec![
             Action::CreateManifest {
                 scope,
-                after: b"schema = \"grimoire/manifest@1\"\n".to_vec(),
+                after: b"schema = \"grimoire/manifest@2\"\n".to_vec(),
             },
             Action::CreateLock {
                 scope,
@@ -95,6 +95,7 @@ fn initialize(scope: Scope) -> Plan {
             projects: None,
             reachability: None,
             links: BTreeMap::new(),
+            vendors: BTreeMap::new(),
         },
         facts: Vec::new(),
         exit_class: grimoire_core::ExitClass::Success,

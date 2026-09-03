@@ -47,7 +47,7 @@ fn candidate(alias: &str, digit: char, live: bool) -> SourceState {
 
 fn world() -> WorldState {
     let manifest = concat!(
-        "schema = \"grimoire/manifest@1\"\n",
+        "schema = \"grimoire/manifest@2\"\n",
         "[sources.a]\nurl = \"github:org/a\"\n",
         "[sources.b]\nurl = \"github:org/b\"\n",
         "[sources.live]\npath = \"/source/live\"\nlive = true\n",

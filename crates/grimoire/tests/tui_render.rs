@@ -12,7 +12,7 @@ fn small_terminals_render_a_bounded_remedy_instead_of_overflowing() {
         "global",
         &["one", "two", "three"],
         concat!(
-            "schema = \"grimoire/manifest@1\"\n",
+            "schema = \"grimoire/manifest@2\"\n",
             "[sources.global]\nurl = \"github:fixture/global\"\n",
         ),
     );
@@ -33,7 +33,7 @@ fn representative_tree_buffer_is_stable() {
         "global",
         &["journal"],
         concat!(
-            "schema = \"grimoire/manifest@1\"\n",
+            "schema = \"grimoire/manifest@2\"\n",
             "[sources.global]\nurl = \"github:fixture/global\"\n",
         ),
     );

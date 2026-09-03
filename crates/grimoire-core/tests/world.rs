@@ -82,7 +82,7 @@ fn absent_scopes_and_malformed_initialized_state_are_explicit() {
 
     fs::write(
         project.manifest_path(),
-        b"schema = \"grimoire/manifest@1\"\n",
+        b"schema = \"grimoire/manifest@2\"\n",
     )
     .unwrap();
     let error = load_world(&project, &git, &Runtime).unwrap_err();
@@ -120,7 +120,7 @@ fn live_world_observes_exact_link_without_following_it() {
     let source = source.canonicalize().unwrap();
     let inventory = scan_inventory(&source);
     let alias = SourceAlias::new("local").unwrap();
-    let manifest = b"schema = \"grimoire/manifest@1\"\n[sources.local]\npath = \"../source\"\nlive = true\n[skills]\none = { source = \"local\" }\n";
+    let manifest = b"schema = \"grimoire/manifest@2\"\n[sources.local]\npath = \"../source\"\nlive = true\n[skills]\none = { source = \"local\" }\n";
     fs::write(paths.manifest_path(), manifest).unwrap();
     let lock = Lockfile {
         sources: BTreeMap::from([(
@@ -134,6 +134,7 @@ fn live_world_observes_exact_link_without_following_it() {
             "one".try_into().unwrap(),
             LockSkill {
                 source: alias,
+                mode: grimoire_core::ProjectionMode::Link,
                 path: "skills/one".into(),
                 content: inventory.skills[0].content_digest.to_string(),
                 requested_by: BTreeSet::from([RequestRoot::Skill("one".try_into().unwrap())]),
@@ -187,7 +188,7 @@ fn live_world_observes_exact_link_without_following_it() {
 fn candidate_without_its_private_cache_is_an_observation_not_a_fetch() {
     let temporary = tempfile::tempdir().unwrap();
     let paths = project_paths(temporary.path());
-    let manifest_bytes = b"schema = \"grimoire/manifest@1\"\n[sources.repo]\nurl = \"github:org/repo\"\nref = \"main\"\n";
+    let manifest_bytes = b"schema = \"grimoire/manifest@2\"\n[sources.repo]\nurl = \"github:org/repo\"\nref = \"main\"\n";
     fs::write(paths.manifest_path(), manifest_bytes).unwrap();
     fs::write(paths.lock_path(), Lockfile::default().to_bytes().unwrap()).unwrap();
     let alias = SourceAlias::new("repo").unwrap();
@@ -238,7 +239,7 @@ fn frozen_restore_uses_only_the_locked_store_snapshot() {
 
     fs::write(
         paths.manifest_path(),
-        b"schema = \"grimoire/manifest@1\"\n[sources.local]\npath = \"../source\"\n[skills]\none = { source = \"local\" }\n",
+        b"schema = \"grimoire/manifest@2\"\n[sources.local]\npath = \"../source\"\n[skills]\none = { source = \"local\" }\n",
     )
     .unwrap();
     let lock = Lockfile {
@@ -257,6 +258,7 @@ fn frozen_restore_uses_only_the_locked_store_snapshot() {
             "one".try_into().unwrap(),
             LockSkill {
                 source: "local".try_into().unwrap(),
+                mode: grimoire_core::ProjectionMode::Link,
                 path: "skills/one".into(),
                 content: inventory.skills[0].content_digest.to_string(),
                 requested_by: BTreeSet::from([RequestRoot::Skill("one".try_into().unwrap())]),
@@ -336,7 +338,7 @@ fn world_loader_rejects_symlinked_state_files_without_reading_through_them() {
     fs::create_dir_all(&outside).unwrap();
     let manifest = outside.join("manifest");
     let lock = outside.join("lock");
-    fs::write(&manifest, b"schema = \"grimoire/manifest@1\"\n").unwrap();
+    fs::write(&manifest, b"schema = \"grimoire/manifest@2\"\n").unwrap();
     fs::write(&lock, Lockfile::default().to_bytes().unwrap()).unwrap();
     std::os::unix::fs::symlink(&manifest, paths.manifest_path()).unwrap();
     std::os::unix::fs::symlink(&lock, paths.lock_path()).unwrap();
@@ -344,7 +346,7 @@ fn world_loader_rejects_symlinked_state_files_without_reading_through_them() {
     assert!(load_world(&paths, &NoGit::default(), &Runtime).is_err());
     assert_eq!(
         fs::read(&manifest).unwrap(),
-        b"schema = \"grimoire/manifest@1\"\n"
+        b"schema = \"grimoire/manifest@2\"\n"
     );
     assert_eq!(
         fs::read(&lock).unwrap(),

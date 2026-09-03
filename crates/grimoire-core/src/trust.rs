@@ -8,7 +8,7 @@ use serde::de::{MapAccess, Visitor};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::source::{CanonicalIdentity, SourceKey, SourceKind};
-use crate::{CoreError, Result};
+use crate::{CoreError, Result, SkillName};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -25,6 +25,16 @@ pub struct TrustReceipt {
     pub inventory: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
+pub struct VendorTrustReceipt {
+    pub commit: String,
+    pub tree: String,
+    pub inventory: String,
+    pub skill: SkillName,
+    pub path: String,
+    pub content: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct TrustBaseline {
     pub commit: Option<String>,
@@ -37,6 +47,7 @@ pub struct TrustBaseline {
 pub struct TrustRecord {
     pub identity: CanonicalIdentity,
     pub receipts: BTreeSet<TrustReceipt>,
+    pub vendor_receipts: BTreeSet<VendorTrustReceipt>,
     pub all_snapshots: bool,
     pub baseline: Option<TrustBaseline>,
 }
@@ -50,6 +61,16 @@ impl TrustRecord {
         } else {
             TrustMode::Untrusted
         }
+    }
+
+    pub fn authorizes_vendor(
+        &self,
+        source_receipt: &TrustReceipt,
+        vendor_receipt: &VendorTrustReceipt,
+    ) -> bool {
+        self.all_snapshots
+            || self.receipts.contains(source_receipt)
+            || self.vendor_receipts.contains(vendor_receipt)
     }
 }
 
@@ -68,13 +89,14 @@ pub struct TrustMutation {
 impl TrustStore {
     pub fn parse(bytes: &[u8]) -> Result<Self> {
         let dto: TrustDto = serde_json::from_slice(bytes)?;
-        if dto.schema != "grimoire/trust@1" {
+        if !matches!(dto.schema.as_str(), "grimoire/trust@1" | "grimoire/trust@2") {
             return Err(CoreError::Trust("unsupported trust schema".into()));
         }
+        let schema = dto.schema;
         let mut records = BTreeMap::new();
         for (outer_key, dto) in dto.records.0 {
             let source_key = SourceKey::parse(outer_key)?;
-            let record = dto.try_into_record()?;
+            let record = dto.try_into_record(&schema)?;
             if SourceKey::derive(&record.identity) != source_key {
                 return Err(CoreError::Trust("trust source-key mismatch".into()));
             }
@@ -90,7 +112,7 @@ impl TrustStore {
             .map(|(key, record)| (key.to_string(), TrustRecordDto::from(record)))
             .collect();
         let mut bytes = serde_json::to_vec_pretty(&TrustDto {
-            schema: "grimoire/trust@1".into(),
+            schema: "grimoire/trust@2".into(),
             records: UniqueMap(records),
         })?;
         bytes.push(b'\n');
@@ -124,6 +146,7 @@ impl TrustStore {
         let record = next.records.entry(key).or_insert(TrustRecord {
             identity: identity.clone(),
             receipts: BTreeSet::new(),
+            vendor_receipts: BTreeSet::new(),
             all_snapshots: false,
             baseline: None,
         });
@@ -170,6 +193,7 @@ impl TrustStore {
         let record = next.records.entry(key).or_insert(TrustRecord {
             identity: identity.clone(),
             receipts: BTreeSet::new(),
+            vendor_receipts: BTreeSet::new(),
             all_snapshots: false,
             baseline: None,
         });
@@ -189,7 +213,41 @@ impl TrustStore {
             .get_mut(key)
             .ok_or_else(|| CoreError::Trust("unknown source key".into()))?;
         record.receipts.clear();
+        record.vendor_receipts.clear();
         record.all_snapshots = false;
+        mutation(before, next.to_bytes()?)
+    }
+
+    pub fn grant_vendor(
+        &self,
+        identity: CanonicalIdentity,
+        receipts: BTreeSet<VendorTrustReceipt>,
+        before: Option<Vec<u8>>,
+    ) -> Result<TrustMutation> {
+        if identity.kind() != SourceKind::Git {
+            return Err(CoreError::Trust(
+                "vendor trust requires a pinned Git source".into(),
+            ));
+        }
+        if receipts.is_empty() {
+            return Err(CoreError::Trust(
+                "vendor trust requires at least one receipt".into(),
+            ));
+        }
+        for receipt in &receipts {
+            validate_vendor_receipt(receipt)?;
+        }
+        let mut next = self.clone();
+        let key = SourceKey::derive(&identity);
+        let record = next.records.entry(key).or_insert(TrustRecord {
+            identity: identity.clone(),
+            receipts: BTreeSet::new(),
+            vendor_receipts: BTreeSet::new(),
+            all_snapshots: false,
+            baseline: None,
+        });
+        ensure_identity(record, &identity)?;
+        record.vendor_receipts.extend(receipts);
         mutation(before, next.to_bytes()?)
     }
 
@@ -228,6 +286,27 @@ fn validate_receipt(receipt: &TrustReceipt) -> Result<()> {
     crate::source::identity::validate_object_id(&receipt.tree)?;
     crate::source::identity::validate_digest(&receipt.inventory)
         .map_err(|error| CoreError::Trust(error.to_string()))
+}
+
+fn validate_vendor_receipt(receipt: &VendorTrustReceipt) -> Result<()> {
+    crate::source::identity::validate_object_id(&receipt.commit)?;
+    crate::source::identity::validate_object_id(&receipt.tree)?;
+    crate::source::identity::validate_digest(&receipt.inventory)
+        .map_err(|error| CoreError::Trust(error.to_string()))?;
+    crate::source::identity::validate_digest(&receipt.content)
+        .map_err(|error| CoreError::Trust(error.to_string()))?;
+    let path = std::path::Path::new(&receipt.path);
+    if receipt.path.is_empty()
+        || path.is_absolute()
+        || path
+            .components()
+            .any(|component| !matches!(component, std::path::Component::Normal(_)))
+    {
+        return Err(CoreError::Trust(
+            "vendor trust path must be source-relative".into(),
+        ));
+    }
+    Ok(())
 }
 
 fn validate_baseline(kind: SourceKind, baseline: &TrustBaseline) -> Result<()> {
@@ -282,6 +361,8 @@ struct TrustRecordDto {
     #[serde(skip_serializing_if = "Option::is_none")]
     canonical_bytes_base64: Option<String>,
     receipts: Vec<TrustReceiptDto>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    vendor_receipts: Option<Vec<VendorTrustReceiptDto>>,
     all_snapshots: bool,
     baseline: Option<TrustBaselineDto>,
 }
@@ -296,6 +377,17 @@ struct TrustReceiptDto {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+struct VendorTrustReceiptDto {
+    commit: String,
+    tree: String,
+    inventory: String,
+    skill: String,
+    path: String,
+    content: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct TrustBaselineDto {
     commit: Option<String>,
     tree: Option<String>,
@@ -304,7 +396,7 @@ struct TrustBaselineDto {
 }
 
 impl TrustRecordDto {
-    fn try_into_record(self) -> Result<TrustRecord> {
+    fn try_into_record(self, schema: &str) -> Result<TrustRecord> {
         let kind = match self.kind.as_str() {
             "git" => SourceKind::Git,
             "live" => SourceKind::Live,
@@ -336,6 +428,35 @@ impl TrustRecordDto {
         for receipt in &receipts {
             validate_receipt(receipt)?;
         }
+        let vendor_receipts = match (schema, self.vendor_receipts) {
+            ("grimoire/trust@1", None) => Vec::new(),
+            ("grimoire/trust@1", Some(_)) => {
+                return Err(CoreError::Trust(
+                    "trust@1 cannot contain vendor receipts".into(),
+                ))
+            }
+            ("grimoire/trust@2", Some(receipts)) => receipts
+                .into_iter()
+                .map(VendorTrustReceipt::try_from)
+                .collect::<Result<Vec<_>>>()?,
+            ("grimoire/trust@2", None) => {
+                return Err(CoreError::Trust("trust@2 requires vendor_receipts".into()))
+            }
+            _ => unreachable!("schema checked before record conversion"),
+        };
+        if !vendor_receipts.windows(2).all(|pair| pair[0] < pair[1]) {
+            return Err(CoreError::Trust(
+                "vendor trust receipts must be strictly sorted".into(),
+            ));
+        }
+        if kind == SourceKind::Live && !vendor_receipts.is_empty() {
+            return Err(CoreError::Trust(
+                "live trust cannot contain vendor receipts".into(),
+            ));
+        }
+        for receipt in &vendor_receipts {
+            validate_vendor_receipt(receipt)?;
+        }
         let baseline = self.baseline.map(TrustBaseline::from);
         if let Some(baseline) = &baseline {
             validate_baseline(kind, baseline)?;
@@ -343,6 +464,7 @@ impl TrustRecordDto {
         Ok(TrustRecord {
             identity,
             receipts: receipts.into_iter().collect(),
+            vendor_receipts: vendor_receipts.into_iter().collect(),
             all_snapshots: self.all_snapshots,
             baseline,
         })
@@ -360,6 +482,13 @@ impl From<&TrustRecord> for TrustRecordDto {
             canonical,
             canonical_bytes_base64,
             receipts: record.receipts.iter().map(TrustReceiptDto::from).collect(),
+            vendor_receipts: Some(
+                record
+                    .vendor_receipts
+                    .iter()
+                    .map(VendorTrustReceiptDto::from)
+                    .collect(),
+            ),
             all_snapshots: record.all_snapshots,
             baseline: record.baseline.as_ref().map(TrustBaselineDto::from),
         }
@@ -382,6 +511,34 @@ impl From<&TrustReceipt> for TrustReceiptDto {
             commit: receipt.commit.clone(),
             tree: receipt.tree.clone(),
             inventory: receipt.inventory.clone(),
+        }
+    }
+}
+
+impl TryFrom<VendorTrustReceiptDto> for VendorTrustReceipt {
+    type Error = CoreError;
+
+    fn try_from(receipt: VendorTrustReceiptDto) -> Result<Self> {
+        Ok(Self {
+            commit: receipt.commit,
+            tree: receipt.tree,
+            inventory: receipt.inventory,
+            skill: SkillName::new(receipt.skill)?,
+            path: receipt.path,
+            content: receipt.content,
+        })
+    }
+}
+
+impl From<&VendorTrustReceipt> for VendorTrustReceiptDto {
+    fn from(receipt: &VendorTrustReceipt) -> Self {
+        Self {
+            commit: receipt.commit.clone(),
+            tree: receipt.tree.clone(),
+            inventory: receipt.inventory.clone(),
+            skill: receipt.skill.to_string(),
+            path: receipt.path.clone(),
+            content: receipt.content.clone(),
         }
     }
 }

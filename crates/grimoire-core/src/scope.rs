@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use crate::{CoreError, Result};
-use crate::{SnapshotKey, SourceAlias, SourceKey};
+use crate::{SkillName, SnapshotKey, SourceAlias, SourceKey};
 
 pub trait PathProbe {
     fn is_dir(&self, path: &Path) -> bool;
@@ -66,6 +66,33 @@ impl Paths {
         match &self.scope {
             ScopePaths::Project { root } => root.join(".agents/skills"),
             ScopePaths::Global { user_home } => user_home.join(".agents/skills"),
+        }
+    }
+
+    pub fn vendor_path(&self, source: &SourceAlias, skill: &SkillName) -> Result<PathBuf> {
+        match &self.scope {
+            ScopePaths::Project { root } => Ok(root
+                .join("vendor/grimoire")
+                .join(source.as_str())
+                .join(skill.as_str())),
+            ScopePaths::Global { .. } => Err(CoreError::Request(
+                "vendor paths are available only in Project scope".into(),
+            )),
+        }
+    }
+
+    pub fn vendor_activation_target(
+        &self,
+        source: &SourceAlias,
+        skill: &SkillName,
+    ) -> Result<PathBuf> {
+        match self.scope {
+            ScopePaths::Project { .. } => Ok(PathBuf::from("../../vendor/grimoire")
+                .join(source.as_str())
+                .join(skill.as_str())),
+            ScopePaths::Global { .. } => Err(CoreError::Request(
+                "vendor activation targets are available only in Project scope".into(),
+            )),
         }
     }
 

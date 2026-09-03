@@ -201,10 +201,13 @@ pub fn apply(
     prepare_snapshots(paths, plan, &nonce)?;
     let scope_key = paths.scope_key();
     let trust_only = !plan.actions.is_empty()
-        && plan
-            .actions
-            .iter()
-            .all(|action| matches!(action, Action::ReplaceTrust { .. }));
+        && plan.actions.iter().all(|action| {
+            matches!(
+                action,
+                Action::ReplaceTrust { change, .. }
+                    if *change != crate::TrustChange::GrantVendor
+            )
+        });
     let mut locks = LockCoordinator::new();
     for alias in candidate_lock_aliases(plan)? {
         locks.acquire(
@@ -475,6 +478,21 @@ fn validate_preconditions(paths: &Paths, plan: &Plan, include_scope: bool) -> Re
             return Err(CoreError::StalePlan(format!(
                 "installed link `{skill}` changed"
             )));
+        }
+    }
+    if include_scope && !plan.preconditions.vendors.is_empty() {
+        let lock_bytes = read_required_bounded(&paths.lock_path(), STATE_LIMIT)?;
+        let lock = crate::Lockfile::parse(&lock_bytes)?;
+        for (skill, expected) in &plan.preconditions.vendors {
+            let incumbent = lock.skills.get(skill).ok_or_else(|| {
+                CoreError::StalePlan(format!("locked vendor `{skill}` disappeared"))
+            })?;
+            let actual = crate::vendor::observe_vendor(paths, skill, incumbent)?;
+            if &actual != expected {
+                return Err(CoreError::StalePlan(format!(
+                    "vendor tree `{skill}` changed"
+                )));
+            }
         }
     }
     Ok(())
@@ -1107,14 +1125,49 @@ fn validate_journal(paths: &Paths, journal: &Journal) -> Result<()> {
         }
         for raw in [&link.before, &link.after].into_iter().flatten() {
             let path = bytes_path(raw);
-            if !path.is_absolute() {
+            if !path.is_absolute() && !is_vendor_link_target(&path) {
                 return Err(CoreError::Transaction(
-                    "journal link target is not absolute".into(),
+                    "journal link target is neither absolute nor a derived vendor target".into(),
                 ));
             }
         }
     }
     Ok(())
+}
+
+fn is_vendor_link_target(path: &Path) -> bool {
+    let mut components = path.components();
+    let Some(std::path::Component::ParentDir) = components.next() else {
+        return false;
+    };
+    let Some(std::path::Component::ParentDir) = components.next() else {
+        return false;
+    };
+    let Some(std::path::Component::Normal(vendor)) = components.next() else {
+        return false;
+    };
+    if vendor != "vendor" {
+        return false;
+    }
+    let Some(std::path::Component::Normal(grimoire)) = components.next() else {
+        return false;
+    };
+    if grimoire != "grimoire" {
+        return false;
+    }
+    let Some(std::path::Component::Normal(source)) = components.next() else {
+        return false;
+    };
+    let Some(std::path::Component::Normal(skill)) = components.next() else {
+        return false;
+    };
+    components.next().is_none()
+        && source
+            .to_str()
+            .is_some_and(|value| crate::SourceAlias::new(value).is_ok())
+        && skill
+            .to_str()
+            .is_some_and(|value| crate::SkillName::new(value).is_ok())
 }
 
 fn validate_file_hash(path: &Path, expected: Option<&ByteHash>, name: &str) -> Result<()> {

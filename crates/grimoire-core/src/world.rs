@@ -2,7 +2,10 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use grimoire_pack::inventory::{compute_review_tree_digest, scan, Digest, SourceInventory};
+use grimoire_pack::inventory::{
+    compute_inventory_digest, compute_review_tree_digest, scan, Digest, Pack, Skill,
+    SourceInventory, SourcePath,
+};
 
 use crate::locks::{LockCoordinator, LockMode, LockRank};
 use crate::source::{
@@ -68,7 +71,7 @@ pub fn load_world(
     let mut observations = Vec::new();
     let mut locked_states = BTreeMap::new();
     for (alias, source) in &lock.sources {
-        match load_locked_source(paths, &manifest, alias, source) {
+        match load_locked_source(paths, &manifest, &lock, alias, source) {
             Ok(state) => {
                 locked_states.insert(alias.clone(), state);
             }
@@ -144,6 +147,19 @@ pub fn load_world(
             ))
         })
         .collect::<Result<_>>()?;
+    let vendors = if scope == Scope::Project {
+        lock.skills
+            .iter()
+            .map(|(name, skill)| {
+                Ok((
+                    name.clone(),
+                    crate::vendor::observe_vendor(paths, name, skill)?,
+                ))
+            })
+            .collect::<Result<_>>()?
+    } else {
+        BTreeMap::new()
+    };
     collect_journal_observations(paths, &mut observations)?;
 
     let mut world = WorldState {
@@ -158,6 +174,7 @@ pub fn load_world(
         candidates,
         trust_bytes,
         links,
+        vendors,
         inherited_global: None,
         manifest_present: true,
         lock_present: true,
@@ -185,13 +202,18 @@ pub fn attach_inherited_global(mut project: WorldState, global: &WorldState) -> 
             "inherited global context requires project and global worlds".into(),
         ));
     }
-    project.inherited_global = Some(crate::resolve_manifest(&global.manifest, &global.snapshots));
+    project.inherited_global = Some(crate::resolve_manifest_for_scope(
+        crate::Scope::Global,
+        &global.manifest,
+        &global.snapshots,
+    ));
     Ok(project)
 }
 
 fn load_locked_source(
     paths: &Paths,
     manifest: &Manifest,
+    lock: &crate::Lockfile,
     alias: &SourceAlias,
     source: &LockSource,
 ) -> Result<SourceState> {
@@ -211,7 +233,10 @@ fn load_locked_source(
             let source_key = SourceKey::derive(&identity);
             let snapshot_key = SnapshotKey::derive(SourceKind::Git, commit, tree, inventory)?;
             let root = paths.store_path(&source_key, &snapshot_key);
-            let (source_inventory, store) = scan_store(&root, inventory)?;
+            let (mut source_inventory, store) = scan_store(&root, inventory)?;
+            if store == SnapshotStore::Absent {
+                source_inventory = locked_inventory(lock, alias, inventory)?;
+            }
             Ok(SourceState::new(
                 SourceSnapshot::new(
                     alias.clone(),
@@ -257,6 +282,52 @@ fn load_locked_source(
             .source_identity(identity, inventory.review_tree_digest.to_string()))
         }
     }
+}
+
+fn locked_inventory(
+    lock: &crate::Lockfile,
+    alias: &SourceAlias,
+    inventory: &str,
+) -> Result<SourceInventory> {
+    let skills = lock
+        .skills
+        .iter()
+        .filter(|(_, skill)| &skill.source == alias)
+        .map(|(name, skill)| {
+            Ok(Skill {
+                name: name.to_string(),
+                path: SourcePath::from(skill.path.as_str()),
+                content_digest: parse_digest(&skill.content)?,
+                files: Vec::new(),
+                symlinks: Vec::new(),
+                submodules: Vec::new(),
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let empty = compute_inventory_digest(&[], &[], &[]);
+    let packs = lock
+        .packs
+        .iter()
+        .filter(|(_, pack)| &pack.source == alias)
+        .map(|(name, pack)| Pack {
+            name: name.to_string(),
+            path: SourcePath::from(format!("packs/{name}/PACK.md").as_str()),
+            digest: empty,
+            description: "locked projection".into(),
+            required: pack.required.iter().map(ToString::to_string).collect(),
+            optional: pack.optional.iter().map(ToString::to_string).collect(),
+            missing_required: Vec::new(),
+            missing_optional: Vec::new(),
+        })
+        .collect();
+    Ok(SourceInventory {
+        skills,
+        packs,
+        findings: Vec::new(),
+        reviewed_entries: Vec::new(),
+        inventory_digest: parse_digest(inventory)?,
+        review_tree_digest: compute_review_tree_digest(&[]),
+    })
 }
 
 fn placeholder_locked(
