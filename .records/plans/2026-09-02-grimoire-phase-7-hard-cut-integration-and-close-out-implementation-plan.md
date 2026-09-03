@@ -3,7 +3,7 @@ doctype: plans
 status: published
 schema: contractor/plan@1
 tags: [plan]
-stage: approved
+stage: implemented
 ---
 
 # Grimoire Phase 7 hard-cut integration and close-out — Implementation Plan
@@ -195,7 +195,7 @@ This task is read-only and produces no commit.
     or compiled, every retained alpha token is test data or historical non-product context, and no
     required invariant test was deleted with its former implementation.
 
-- [ ] **Slice 5: Close the complete hard-cut integration gate** <requires: 1, 2, 3, 4>
+- [x] **Slice 5: Close the complete hard-cut integration gate** <requires: 1, 2, 3, 4>
   - Files: modify this plan,
     `.records/plans/2026-09-01-grimoire-hard-cut-rewrite-roadmap.md`, and `README.md`; modify only
     production, test, or record files implicated by a final-gate failure.

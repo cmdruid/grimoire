@@ -9,13 +9,14 @@ Agents *invoke* skills; a grimoire is the book they're invoked from.
 
 ## Status
 
-Grimoire is being rebuilt as a symlink package manager for agent skills. The published hard-cut
-contract is `.records/specs/2026-08-31-grimoire-symlink-package-manager.md`; the implementation
-roadmap is `.records/plans/2026-09-01-grimoire-hard-cut-rewrite-roadmap.md`. The source inventory,
-pure-pack format, declarative manifests and locks, same-snapshot resolution, pure planning kernel,
-source custody and trust, transactional core operations, and the complete command-line adapter are
-available. The Project/Global tree TUI now provides staged skill and pack management over the same
-core plans. The final hard-cut integration audit is the remaining roadmap phase.
+Grimoire's hard-cut rebuild as a symlink package manager for agent skills is implemented. The
+published contract is `.records/specs/2026-08-31-grimoire-symlink-package-manager.md`; the
+implementation roadmap is
+`.records/plans/2026-09-01-grimoire-hard-cut-rewrite-roadmap.md`. All seven roadmap phases are
+complete: the source inventory, pure-pack format, declarative manifests and locks, same-snapshot
+resolution, pure planning kernel, source custody and trust, transactional core, command-line adapter,
+and Project/Global tree TUI are covered by the final integration gate. The accumulated Phase 2–7
+implementation remains on `stream/app` pending its explicit landing decision.
 
 ### Use the tree interface
 
@@ -30,6 +31,22 @@ switching tabs doesn't merge Project and Global staging.
 - On a source row, press `f` to fetch, `u` to update from the cached candidate, or `t` to open the
   separate trust-all confirmation. Update never fetches.
 - Press `q` to quit and discard unapplied changes.
+
+### Verify the implementation
+
+Run the complete repository gate from the checkout root:
+
+```sh
+RUSTC_WRAPPER= cargo fmt --all -- --check
+RUSTC_WRAPPER= cargo test
+RUSTC_WRAPPER= cargo clippy --all-targets -- -D warnings
+skills/skill-builder/scripts/skills-lint.sh
+skills/skill-builder/scripts/tests/run.sh
+scripts/tests/run.sh
+```
+
+The root-layout dogfood tests accept `GRIMOIRE_LIVE_ROOT=/absolute/path/to/checkout` when they need
+to exercise a different checkout than the one Cargo is building.
 
 ## The skills
 

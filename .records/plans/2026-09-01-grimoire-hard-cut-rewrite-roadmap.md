@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/roadmap@1
 tags: [roadmap]
 ---
@@ -160,6 +160,13 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──┬──> Phase 5
   are not.
 
 ## Phase 7 — Hard-cut integration and close-out   <requires: 5, 6>
+
+> Completed on `stream/app` with all Phase 2–7 work still accumulated and unshipped. The complete
+> workspace, lint, integration, clippy, adapter, source-security, transaction, controlled-red,
+> offline-reproduction, dependency, and root/worktree dogfood gates passed without waiver. The
+> implementation plan is published at stage `implemented`; landing still requires the user's
+> explicit ship decision.
+
 - **Goal:** Make the new product the only Grimoire contract present in code, fixtures,
   documentation, and dogfood workflows.
 - **Scope:** in: adapter integration, root-repository dogfood, final dependency and boundary audit,

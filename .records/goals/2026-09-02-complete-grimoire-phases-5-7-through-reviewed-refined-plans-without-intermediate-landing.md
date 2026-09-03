@@ -135,7 +135,9 @@ Source: `.spaces/foreman/operations/complete-remaining-app-phases.md`
 - Phase 6: its approved tree TUI plan was explicitly refined from seven slices to four; a complete
   re-review approved the refined plan before implementation.
 - Phase 7: its hard-cut integration and close-out plan received an explicit supported no-op
-  refinement after complete review and approval; implementation is next.
+  refinement after complete review and approval. All five slices and the complete integration gate
+  passed without waiver; its plan and the roadmap are now `stage: implemented`, with Phases 2–7
+  still accumulated on `stream/app` pending the user's final ship decision.
 
 
 ## Resume
