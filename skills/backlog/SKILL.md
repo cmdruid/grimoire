@@ -36,8 +36,10 @@ aliases.
   `provider=` path it returns. On failure, pass through its recovery diagnostic and stop. Runtime
   verbs never reproduce the classifier-to-diagnostic mapping, resume setup, or run bundled provider
   bytes against project data. Provider `wrote=` values are relative to `.trackers`.
-- Never edit table or history TSV bytes directly. Use the API for catalog, paging, row mutation,
-  observation, consumption, and bounded lifecycle-history reads.
+- Never edit table or history TSV bytes directly during ordinary use. Use the API for catalog,
+  paging, row mutation, observation, consumption, and bounded lifecycle-history reads. Git
+  merge-conflict resolution is the only exception. Follow the managed README procedure in the
+  installed `.trackers/README.md` and validate the resolved layer before committing it.
 - Setup, repair, and tracker add/remove run package-local `scripts/backlog-setup.sh <root>`.
   That helper is the only queue-file lifecycle writer and the only package path that refreshes the
   installed API.

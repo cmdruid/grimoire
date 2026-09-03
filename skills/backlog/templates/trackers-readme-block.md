@@ -9,7 +9,8 @@ describe local practice, but it doesn't redefine the provider contract.
 Each `tables/<stem>.tsv` holds the source rows for one queue. Those source rows for one queue can
 change only through `create` and `update`; lifecycle events never rewrite or remove them.
 `history.tsv` is the shared observation and consumption ledger. Direct TSV inspection is allowed,
-but never hand-edit either kind of TSV: adjacent `trackers.sh` is their sole writer. Git owns file
+but during ordinary use never hand-edit either kind of TSV: adjacent `trackers.sh` is their sole
+writer. Git merge-conflict resolution is the sole exception to the no-hand-edit rule. Git owns file
 history, merge, recovery, and rollback.
 
 Run the provider from the project root through its fixed `.trackers/` path:
@@ -47,6 +48,22 @@ item's text, evidence, or both. `observe` and `consume` accept one or more IDs a
 IDs are reported without inventing rows. Mutations print tracker-root-relative `wrote=` paths plus
 item or event facts when applicable. Prefix those paths with `.trackers/`, inspect the Git diff, and
 commit only the reported files in the checkout that owns them.
+
+### Resolve tracker merge conflicts
+
+When Git reports a conflict in a queue table or `history.tsv`, resolve it against the common base:
+
+1. Preserve every unchanged base row. Preserve both independent additions exactly once.
+2. If independent new item rows use the same ID, keep one ID and renumber the other. Use one greater
+   than the highest numeric suffix present across the merged queue and matching item references in
+   `history.tsv`. Rewrite only lifecycle rows added with the renumbered item; don't change earlier
+   history.
+3. If independent history rows use the same `event-N`, preserve both and renumber one to one greater
+   than the highest numeric suffix in the merged history.
+4. If both sides changed the same pre-existing item, reconcile their intended text and evidence into
+   one row. Don't renumber it or create a second identity.
+5. Remove all conflict markers, run `.trackers/trackers.sh catalog`, inspect the Git diff, and commit
+   only the resolved tracker paths.
 
 `.trackers/DEBRIEF.md` is editable routing guidance for completed-work sweeps. The generic provider
 doesn't read it. Queue creation and removal, setup, repair, brownfield migration, and debrief routing
