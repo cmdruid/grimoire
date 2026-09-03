@@ -112,6 +112,23 @@ fn production_runner_inspects_only_a_clean_pinned_worktree() {
     assert_eq!(info.inventory.skills[0].name, "pinned");
     assert!(info.candidate.commit.is_some());
 
+    fs::write(source.join(".git/info/exclude"), "/.agents/\n/vendor/\n").unwrap();
+    for directory in [
+        source.join(".agents/skills/activated"),
+        source.join("vendor/grimoire/local/vendored"),
+    ] {
+        fs::create_dir_all(&directory).unwrap();
+        fs::write(
+            directory.join("SKILL.md"),
+            b"---\nname: duplicate\ndescription: ignored projection\n---\n",
+        )
+        .unwrap();
+    }
+    let self_hosted =
+        inspect_pinned_source(paths.clone(), SourceAlias::new("local").unwrap(), &runner).unwrap();
+    assert_eq!(self_hosted.inventory.skills.len(), 1);
+    assert_eq!(self_hosted.inventory.skills[0].name, "pinned");
+
     fs::write(source.join("dirty"), b"untracked").unwrap();
     assert!(inspect_pinned_source(paths, SourceAlias::new("local").unwrap(), &runner).is_err());
 }

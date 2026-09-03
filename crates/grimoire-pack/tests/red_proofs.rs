@@ -52,12 +52,38 @@ fn a_reader_that_disables_stop_reaches_the_entry_canary() {
     assert!(red.is_err(), "disabled Stop did not cross the entry canary");
 }
 
+#[test]
+fn disabling_projection_boundaries_exposes_duplicate_skill_canaries() {
+    let mut tree = TestTree::default();
+    tree.skill("skills/visible", "visible");
+    tree.symlink(".agents/skills/activated", b"../../skills/visible");
+    tree.skill("vendor/grimoire/repo/vendored", "vendored");
+
+    let inventory = scan(&tree).unwrap();
+    let discovered = inventory
+        .skills
+        .iter()
+        .map(|skill| skill.name.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(discovered, vec!["visible"]);
+
+    let unguarded = vec!["vendored", "visible"];
+    assert!(
+        catch_unwind(|| assert_only_visible(&unguarded)).is_err(),
+        "disabled projection boundaries did not expose duplicate canaries"
+    );
+}
+
 fn assert_rejected(accepted: bool) {
     assert!(!accepted, "forbidden policy input was accepted");
 }
 
 fn assert_bounded(visits: usize) {
     assert!(visits <= 100_001, "reader enumerated {visits} entries");
+}
+
+fn assert_only_visible(names: &[&str]) {
+    assert_eq!(names, ["visible"]);
 }
 
 struct IgnoresStop {

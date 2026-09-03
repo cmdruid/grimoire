@@ -3,7 +3,7 @@ doctype: plans
 status: published
 schema: contractor/plan@1
 tags: [plan]
-stage: approved
+stage: implemented
 ---
 
 # Grimoire install projections and managed vendoring — Implementation Plan
@@ -146,7 +146,7 @@ This task is read-only and produces no commit.
 
 ## Slices
 
-- [ ] **Slice 1: Approve and activate one committed vendor tree offline** <requires: —>
+- [x] **Slice 1: Approve and activate one committed vendor tree offline** <requires: —>
   - Files: create `crates/grimoire-core/src/vendor.rs`,
     `crates/grimoire-core/tests/vendor_tracer.rs`, and
     `crates/grimoire/tests/vendor_offline.rs`; modify
@@ -191,7 +191,7 @@ This task is read-only and produces no commit.
     identity, unsafe entries/links/modes, limit violations, unrelated skills/snapshots, linked mode,
     Global/live scope, and post-revocation activation all fail closed.
 
-- [ ] **Slice 2: Create and convert vendor projections from the immutable store** <requires: 1>
+- [x] **Slice 2: Create and convert vendor projections from the immutable store** <requires: 1>
   - Files: create `crates/grimoire-core/tests/vendor_apply.rs` and
     `crates/grimoire/tests/vendor_plan_render.rs`; modify
     `crates/grimoire-core/src/vendor.rs`, `crates/grimoire-core/src/model.rs`,
@@ -224,7 +224,7 @@ This task is read-only and produces no commit.
     exact plan-render fixture shows both digests and sorted entry changes while a byte canary proves
     source contents never enter output.
 
-- [ ] **Slice 3: Complete protected vendor lifecycle and transaction recovery** <requires: 2>
+- [x] **Slice 3: Complete protected vendor lifecycle and transaction recovery** <requires: 2>
   - Files: create `crates/grimoire-core/tests/vendor_lifecycle.rs`; modify
     `crates/grimoire-core/src/vendor.rs`, `crates/grimoire-core/src/plan.rs`,
     `crates/grimoire-core/src/trust.rs`, `crates/grimoire-core/src/world.rs`,
@@ -253,7 +253,7 @@ This task is read-only and produces no commit.
     before or after state, races cannot redirect mutation, and vendored locks remain conservative
     store references.
 
-- [ ] **Slice 4: Expose projection modes through CLI/TUI staging and reports** <requires: 1, 2, 3>
+- [x] **Slice 4: Expose projection modes through CLI/TUI staging and reports** <requires: 1, 2, 3>
   - Files: modify `crates/grimoire-core/src/model.rs`, `crates/grimoire-core/src/tree.rs`,
     `crates/grimoire-core/src/plan.rs`, `crates/grimoire-core/src/check.rs`,
     `crates/grimoire-core/src/source/info.rs`, `crates/grimoire-core/src/source/query.rs`,
@@ -285,7 +285,7 @@ This task is read-only and produces no commit.
     every published activation/vendor/store state has a distinct deterministic report, and CLI/TUI
     staging produces the same core plan.
 
-- [ ] **Slice 5: Prove reproduction, self-hosting, and the repository gate** <requires: 1, 2, 3, 4>
+- [x] **Slice 5: Prove reproduction, self-hosting, and the repository gate** <requires: 1, 2, 3, 4>
   - Files: modify `crates/grimoire/tests/hard_cut.rs`,
     `crates/grimoire/tests/offline_reproduction.rs`, `crates/grimoire/tests/root_dogfood.rs`,
     `crates/grimoire/tests/boundary.rs`, `crates/grimoire/tests/cli_workflows.rs`, and

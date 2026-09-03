@@ -197,6 +197,18 @@ fn tui_keeps_mutation_source_work_inheritance_and_trust_boundaries_separate() {
     );
     assert!(inherited.contains("tree item is not toggleable"));
     assert!(!inherited.contains("DesiredEdit::"));
+
+    assert!(driver.contains("KeyCode::Char('v') => DriverEvent::ToggleMode"));
+    let mode_toggle = section(
+        &model,
+        "pub fn toggle_mode(&mut self, key: &TreeItemKey)",
+        "pub fn toggle_selected_mode",
+    );
+    assert!(mode_toggle.contains("item.mode_toggleable"));
+    assert!(mode_toggle.contains("DesiredEdit::SetSkillMode"));
+    assert!(mode_toggle.contains("DesiredEdit::SetPackMode"));
+    assert!(mode_toggle.contains("TreeItemKey::PackMember"));
+    assert!(!mode_toggle.contains("Manifest::"));
 }
 
 #[test]
@@ -220,6 +232,11 @@ fn controlled_tui_absence_arms_are_live() {
         (
             "inherited desired edit",
             "TreeItemKey::InheritedSkill => DesiredEdit::SetSkill",
+            "DesiredEdit::",
+        ),
+        (
+            "inherited mode edit",
+            "TreeItemKey::PackMember => DesiredEdit::SetSkillMode",
             "DesiredEdit::",
         ),
         (

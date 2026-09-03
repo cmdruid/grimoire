@@ -74,6 +74,8 @@ fn cached_source_workflow_never_fetches_during_update() {
         &support::run(&project, &home, &["source", "info", "fixture", "--json"]).stdout,
     )
     .unwrap();
+    assert_eq!(first["trust"]["mode"], "all");
+    assert_eq!(first["trust"]["vendor_receipts"], 0);
 
     commit(&source, "second");
     success(&support::run(&project, &home, &["update", "--yes"]));
@@ -85,6 +87,7 @@ fn cached_source_workflow_never_fetches_during_update() {
         still_cached["snapshot"]["commit"],
         first["snapshot"]["commit"]
     );
+    assert_eq!(still_cached["trust"]["vendor_receipts"], 0);
 
     success(&support::run(
         &project,

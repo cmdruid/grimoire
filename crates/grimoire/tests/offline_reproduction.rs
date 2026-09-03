@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -6,7 +7,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 use grimoire_core::source::{GitCommand, GitResult, GitRunner};
-use grimoire_core::{CanonicalIdentity, CoreError, Paths, Result, SourceKey};
+use grimoire_core::{CoreError, Result};
 use skill_grimoire::command::{run_from, Console};
 use skill_grimoire::env::Environment;
 use skill_grimoire::runtime::SystemGitRunner;
@@ -111,15 +112,30 @@ impl Environment for FixedEnvironment {
 struct BufferConsole {
     stdout: Vec<u8>,
     stderr: Vec<u8>,
+    terminal: bool,
+    answers: VecDeque<String>,
+}
+
+impl BufferConsole {
+    fn approving() -> Self {
+        Self {
+            terminal: true,
+            answers: VecDeque::from(["yes\n".into()]),
+            ..Self::default()
+        }
+    }
 }
 
 impl Console for BufferConsole {
     fn is_terminal(&self) -> bool {
-        false
+        self.terminal
     }
 
-    fn read_line(&mut self, _line: &mut String) -> std::io::Result<usize> {
-        Ok(0)
+    fn read_line(&mut self, line: &mut String) -> std::io::Result<usize> {
+        let answer = self.answers.pop_front().unwrap_or_default();
+        let length = answer.len();
+        line.push_str(&answer);
+        Ok(length)
     }
 
     fn write_stdout(&mut self, bytes: &[u8]) -> std::io::Result<()> {
@@ -166,92 +182,98 @@ fn committed_state_reproduces_in_another_home_with_transport_disabled() {
         &project_a,
         &home_a,
         &[
-            "source", "add", "fixture", REMOTE_URL, "--ref", "main", "--trust",
+            "source",
+            "add",
+            "fixture",
+            REMOTE_URL,
+            "--ref",
+            "main",
+            "--trust-all",
         ],
         &git_a,
     ));
     succeed(&run_with_git(
         &project_a,
         &home_a,
-        &["install", "one", "--source", "fixture"],
+        &["install", "one", "--source", "fixture", "--vendor"],
         &git_a,
     ));
+    assert!(git_a.calls() > 0);
+
+    git(&project_a, &["init", "-q", "-b", "main"]);
+    git(
+        &project_a,
+        &["add", "grimoire.toml", "grimoire.lock", "vendor"],
+    );
+    git(
+        &project_a,
+        &[
+            "-c",
+            "user.name=Fixture",
+            "-c",
+            "user.email=fixture@example.invalid",
+            "commit",
+            "-q",
+            "-m",
+            "committed vendor projection",
+        ],
+    );
     let manifest = fs::read(project_a.join("grimoire.toml")).unwrap();
     let lock = fs::read(project_a.join("grimoire.lock")).unwrap();
+    let vendor = fs::read(project_a.join("vendor/grimoire/fixture/one/SKILL.md")).unwrap();
 
     let home_b = root.join("home-b");
     let project_b = root.join("project-b");
     fs::create_dir_all(&home_b).unwrap();
-    fs::create_dir_all(&project_b).unwrap();
-    fs::write(project_b.join("grimoire.toml"), &manifest).unwrap();
-    fs::write(project_b.join("grimoire.lock"), &lock).unwrap();
-    let git_b = FixtureRemoteGit::new(remote);
-    succeed(&run_with_git(
-        &project_b,
-        &home_b,
-        &["source", "fetch", "fixture"],
-        &git_b,
-    ));
-    succeed(&run_with_git(
-        &project_b,
-        &home_b,
-        &["source", "trust", "fixture"],
-        &git_b,
-    ));
-    succeed(&run_with_git(&project_b, &home_b, &["install"], &git_b));
-    assert!(git_b.calls() > 0);
-    assert_eq!(fs::read(project_b.join("grimoire.toml")).unwrap(), manifest);
-    assert_eq!(fs::read(project_b.join("grimoire.lock")).unwrap(), lock);
-
-    let home_b_state = home_b.join(".grimoire");
-    let b_link = project_b.join(".agents/skills/one");
-    assert_link_in_home(&b_link, &home_b_state);
-    fs::remove_file(&b_link).unwrap();
-    remove_if_present(&home_b_state.join("candidates"));
-    remove_if_present(&home_b_state.join("cache"));
-    let trust_before = fs::read(home_b_state.join("trust.json")).unwrap();
-
-    let project_b_frozen = root.join("project-b-frozen");
-    fs::create_dir_all(&project_b_frozen).unwrap();
-    fs::write(project_b_frozen.join("grimoire.toml"), &manifest).unwrap();
-    fs::write(project_b_frozen.join("grimoire.lock"), &lock).unwrap();
+    git(
+        &root,
+        &[
+            "clone",
+            "-q",
+            project_a.to_str().unwrap(),
+            project_b.to_str().unwrap(),
+        ],
+    );
     let offline = FailOnGit::default();
+    succeed(&run_approving(
+        &project_b,
+        &home_b,
+        &["source", "trust", "fixture", "--vendor"],
+        &offline,
+    ));
+    let trust = fs::read(home_b.join(".grimoire/trust.json")).unwrap();
     succeed(&run_with_git(
-        &project_b_frozen,
+        &project_b,
         &home_b,
         &["install", "--frozen"],
         &offline,
     ));
+    succeed(&run_with_git(&project_b, &home_b, &["check"], &offline));
 
     assert_eq!(offline.calls.load(Ordering::SeqCst), 0);
+    assert_eq!(fs::read(project_b.join("grimoire.toml")).unwrap(), manifest);
+    assert_eq!(fs::read(project_b.join("grimoire.lock")).unwrap(), lock);
     assert_eq!(
-        fs::read(project_b_frozen.join("grimoire.toml")).unwrap(),
-        manifest
+        fs::read(project_b.join("vendor/grimoire/fixture/one/SKILL.md")).unwrap(),
+        vendor
     );
     assert_eq!(
-        fs::read(project_b_frozen.join("grimoire.lock")).unwrap(),
-        lock
+        fs::read(home_b.join(".grimoire/trust.json")).unwrap(),
+        trust
     );
     assert_eq!(
-        fs::read(home_b_state.join("trust.json")).unwrap(),
-        trust_before
+        fs::read_link(project_b.join(".agents/skills/one")).unwrap(),
+        PathBuf::from("../../vendor/grimoire/fixture/one")
     );
-    assert!(!home_b_state.join("candidates").exists());
-    assert!(!home_b_state.join("cache").exists());
-    assert_link_in_home(&project_b_frozen.join(".agents/skills/one"), &home_b_state);
-
-    let source_key = SourceKey::derive(&CanonicalIdentity::remote(REMOTE_URL).unwrap());
-    let paths = Paths::project(project_b_frozen, home_b_state.clone()).unwrap();
-    assert!(paths
-        .skills_dir()
-        .join("one")
-        .read_link()
+    assert!(!home_b.join(".grimoire/candidates").exists());
+    assert!(!home_b.join(".grimoire/cache").exists());
+    assert!(!home_b.join(".grimoire/store").exists());
+    assert!(Command::new("git")
+        .current_dir(&project_b)
+        .args(["diff", "--exit-code"])
+        .status()
         .unwrap()
-        .starts_with(
-            home_b_state
-                .join("store/checkouts")
-                .join(source_key.as_str())
-        ));
+        .success());
 }
 
 fn build_remote(root: &Path) -> PathBuf {
@@ -320,6 +342,26 @@ fn run_with_git(
     (code, console.stdout, console.stderr)
 }
 
+fn run_approving(
+    root: &Path,
+    home: &Path,
+    args: &[&str],
+    git: &dyn GitRunner,
+) -> (u8, Vec<u8>, Vec<u8>) {
+    let environment = FixedEnvironment {
+        root: root.to_path_buf(),
+        home: home.to_path_buf(),
+    };
+    let mut console = BufferConsole::approving();
+    let code = run_from(
+        std::iter::once("grimoire").chain(args.iter().copied()),
+        &environment,
+        &mut console,
+        git,
+    );
+    (code, console.stdout, console.stderr)
+}
+
 fn succeed(output: &(u8, Vec<u8>, Vec<u8>)) {
     assert_eq!(
         output.0,
@@ -327,19 +369,5 @@ fn succeed(output: &(u8, Vec<u8>, Vec<u8>)) {
         "stdout:\n{}\nstderr:\n{}",
         String::from_utf8_lossy(&output.1),
         String::from_utf8_lossy(&output.2)
-    );
-}
-
-fn remove_if_present(path: &Path) {
-    if path.exists() {
-        fs::remove_dir_all(path).unwrap();
-    }
-}
-
-fn assert_link_in_home(link: &Path, home: &Path) {
-    let target = fs::read_link(link).unwrap();
-    assert!(
-        target.starts_with(home.join("store/checkouts")),
-        "{target:?}"
     );
 }

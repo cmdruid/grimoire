@@ -9,14 +9,43 @@ Agents *invoke* skills; a grimoire is the book they're invoked from.
 
 ## Status
 
-Grimoire's hard-cut rebuild as a symlink package manager for agent skills is implemented. The
-published contract is `.records/specs/2026-08-31-grimoire-symlink-package-manager.md`; the
-implementation roadmap is
-`.records/plans/2026-09-01-grimoire-hard-cut-rewrite-roadmap.md`. All seven roadmap phases are
-complete: the source inventory, pure-pack format, declarative manifests and locks, same-snapshot
-resolution, pure planning kernel, source custody and trust, transactional core, command-line adapter,
-and Project/Global tree TUI are covered by the final integration gate. The accumulated Phase 2–7
-implementation remains on `stream/app` pending its explicit landing decision.
+Grimoire is a transactional package manager for agent skills. Strict schema-2 manifests and locks
+can project each requested skill from the immutable user-local store or from a managed,
+project-committed vendor tree. Both modes activate through `.agents/skills/` symlinks and share the
+same source review, trust, planning, ownership, and recovery boundaries. The published projection
+contract is
+`.records/specs/2026-09-03-grimoire-install-projections-and-managed-vendoring.md`.
+
+### Install a skill
+
+Initialize a project, approve a source, and choose its projection mode:
+
+```sh
+grimoire init
+grimoire source add grimoire github:cmdruid/grimoire --trust
+grimoire install developer-writing --source grimoire
+grimoire install journal --source grimoire --vendor
+```
+
+An omitted mode creates a new request in linked mode. Repeating `install` without a mode preserves
+an existing request's mode. Pass `--link` or `--vendor` to convert it explicitly. Vendoring is
+available only in Project scope; Grimoire copies verified immutable-store bytes to
+`vendor/grimoire/SOURCE/SKILL` and uses a relative activation symlink so the project remains
+movable.
+
+Commit `grimoire.toml`, `grimoire.lock`, and managed vendor trees. You can ignore
+`.agents/skills/`, which Grimoire regenerates. In a fresh offline clone, approve the exact committed
+vendor bytes and restore activation without a source candidate, cache, or store snapshot:
+
+```sh
+grimoire source trust grimoire --vendor
+grimoire install --frozen
+grimoire check
+```
+
+Vendor-only approval is scoped to the exact source identity, snapshot, skill, path, and content
+digest. It doesn't authorize linked installation, vendor creation or replacement, another skill,
+or another snapshot.
 
 ### Use the tree interface
 
@@ -26,6 +55,8 @@ switching tabs doesn't merge Project and Global staging.
 
 - Press Tab to switch scopes.
 - Press Up/Down or `j`/`k` to move, and press Space to toggle a skill, pack, or optional member.
+- In Project scope, press `v` to switch the selected direct skill or pack root between linked and
+  vendored mode. Pack members display their inherited mode and remain read-only.
 - Press Enter or `a` to apply the displayed plan. Destructive plans default to no.
 - Press `c` or Escape to discard staged changes.
 - On a source row, press `f` to fetch, `u` to update from the cached candidate, or `t` to open the
@@ -38,8 +69,8 @@ Run the complete repository gate from the checkout root:
 
 ```sh
 RUSTC_WRAPPER= cargo fmt --all -- --check
-RUSTC_WRAPPER= cargo test
-RUSTC_WRAPPER= cargo clippy --all-targets -- -D warnings
+RUSTC_WRAPPER= cargo test --all
+RUSTC_WRAPPER= cargo clippy --all --all-targets -- -D warnings
 skills/skill-builder/scripts/skills-lint.sh
 skills/skill-builder/scripts/tests/run.sh
 scripts/tests/run.sh

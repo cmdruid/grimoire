@@ -43,6 +43,18 @@ const PRODUCT_RULES: &[Rule] = &[
         name: "former CLI grammar",
         needle: "--face",
     },
+    Rule {
+        name: "legacy lock schema",
+        needle: "grimoire/lock@1",
+    },
+    Rule {
+        name: "legacy trust writer",
+        needle: "schema: \"grimoire/trust@1\".into()",
+    },
+    Rule {
+        name: "legacy transaction writer",
+        needle: "JOURNAL_SCHEMA: &str = \"grimoire/transaction@1\"",
+    },
 ];
 
 const CORE_RULES: &[Rule] = &[Rule {
@@ -62,7 +74,7 @@ const ADAPTER_RULES: &[Rule] = &[
 ];
 
 #[test]
-fn production_contains_only_the_v1_model() {
+fn production_uses_schema_two_with_only_bounded_legacy_readers() {
     let workspace = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let app = rust_sources(&workspace.join("crates/grimoire/src"));
     let core = rust_sources(&workspace.join("crates/grimoire-core/src"));
@@ -72,6 +84,22 @@ fn production_contains_only_the_v1_model() {
     violations.extend(scan(&core, CORE_RULES));
     violations.extend(scan(&app, ADAPTER_RULES));
     assert!(violations.is_empty(), "{violations:#?}");
+
+    let core = core
+        .iter()
+        .map(|(_, source)| source.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    for current in [
+        "grimoire/manifest@2",
+        "grimoire/lock@2",
+        "grimoire/trust@2",
+        "grimoire/transaction@2",
+    ] {
+        assert!(core.contains(current), "missing current schema `{current}`");
+    }
+    assert!(core.contains("\"grimoire/trust@1\" | \"grimoire/trust@2\""));
+    assert!(core.contains("\"grimoire/transaction@1\" =>"));
 }
 
 #[test]
