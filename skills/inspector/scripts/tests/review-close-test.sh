@@ -272,6 +272,35 @@ implementation_answer() {
   esac
 }
 
+natural_adjustment() {
+  case "$1:$2" in
+    needs-rework:'fix must-fix inline') echo 1-I-R ;;
+    needs-rework:'fix all findings inline') echo 2-I-R ;;
+    needs-rework:'fix recommendations inline and stop') echo 3-I-N ;;
+    approve-with-changes:'fix recommendations inline and stop') echo 2-I-N ;;
+    approve-with-changes:'return as-is') echo 1 ;;
+    *) return 1 ;;
+  esac
+}
+
+action_reply() {
+  local answer="$1" verdict="$2" recommendations="$3" isolation="$4" default="$5"
+  local pending="${6:-}" normalized
+  case "$answer" in
+    yes|proceed|go|'do it'|ok) printf 'confirmed:%s\n' "${pending:-$default}" ;;
+    stop|'not yet'|cancel|dismiss) echo no-write:cleared ;;
+    *)
+      if normalized="$(normalize_code "$answer" "$verdict" "$recommendations" "$isolation")"; then
+        printf 'confirmed:%s\n' "$normalized"
+      elif normalized="$(natural_adjustment "$verdict" "$answer")"; then
+        printf 'reflect:%s\n' "$normalized"
+      else
+        printf 'ask:%s\n' "${pending:-none}"
+      fi
+      ;;
+  esac
+}
+
 needs_surface="$(render_surface needs-rework yes yes)"
 has <(printf '%s\n' "$needs_surface") '1. Fix must-fix findings only (default)' "needs-rework default missing"
 has <(printf '%s\n' "$needs_surface") '2. Fix all findings' "all-findings scope missing"
@@ -284,6 +313,15 @@ has <(printf '%s\n' "$recommended_surface") '1. Return as-is (default)' "return 
 has <(printf '%s\n' "$recommended_surface") 'Execution — if fixing, choose one:' "conditional execution label missing"
 approve_surface="$(render_surface approve no yes)"
 eq "approve offers only direct return" "$(printf '%s\n' 'approve — Implementation ready' '' '1. Return to the calling workflow')" "$approve_surface"
+without_recommendations="$(render_surface needs-rework no yes)"
+has <(printf '%s\n' "$without_recommendations") '1. Fix must-fix findings only (default)' "must-fix default missing"
+has <(printf '%s\n' "$without_recommendations") '4. Make no changes' "no-change gap missing"
+if ! printf '%s\n' "$without_recommendations" | grep -qE '^[23]\.'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+inline_surface="$(render_surface needs-rework yes no)"
+has <(printf '%s\n' "$inline_surface") 'I. Work inline (only route; default)' "inline-only default missing"
+if ! printf '%s\n' "$inline_surface" | grep -qF 'A. Use an isolated'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+if ! printf '%s\n' "$approve_surface" | grep -qF 'Execution —'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+if ! printf '%s\n' "$approve_surface" | grep -qF 'Afterward —'; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 
 for spelling in yes 1 1AR 1-A-R '1 A R' '1,A,R' '1-A R'; do
   if [ "$spelling" = yes ]; then
@@ -302,6 +340,61 @@ eq "implementation rejection writes nothing" no-write \
 eq "unclear implementation answer asks" ask \
   "$(implementation_answer maybe 1-A-R)"
 
+for pair in \
+  '1ar|1-A-R' '  1-A-R  |1-A-R' '2|2-A-R' '2-A|2-A-R' '2-R|2-A-R' \
+  '2 i n|2-I-N' '2,i-r|2-I-R' '4-A-N|4'; do
+  spelling="${pair%%|*}" expected="${pair#*|}"
+  eq "complete grammar normalizes: $spelling" "$expected" \
+    "$(normalize_code "$spelling" needs-rework yes yes)"
+done
+eq "inline-only number acquires displayed defaults" 1-I-R \
+  "$(normalize_code 1 needs-rework no no)"
+eq "approve-with-changes no-change modifiers are inert" 1 \
+  "$(normalize_code 1-A-N approve-with-changes yes yes)"
+for invalid in '' A-R '1--A' '1,,A' '1-,A' '1-A-' '1-X-R' '1-A-I' '1-R-A' \
+  '1-R-N' '1-2-A' '9-A-R'; do
+  rejects normalize_code "$invalid" needs-rework yes yes
+done
+rejects normalize_code 2-A-R needs-rework no yes
+rejects normalize_code 1-A-R needs-rework yes no
+eq "natural adjustment reflects exact pending code" reflect:3-I-N \
+  "$(action_reply 'fix recommendations inline and stop' needs-rework yes yes 1-A-R)"
+eq "acceptance confirms pending adjustment, not old default" confirmed:3-I-N \
+  "$(action_reply yes needs-rework yes yes 1-A-R 3-I-N)"
+eq "direct code replaces and confirms pending adjustment" confirmed:2-I-R \
+  "$(action_reply 2-I-R needs-rework yes yes 1-A-R 3-I-N)"
+eq "invalid input preserves pending selection" ask:3-I-N \
+  "$(action_reply '1--A' needs-rework yes yes 1-A-R 3-I-N)"
+eq "rejection clears pending selection" no-write:cleared \
+  "$(action_reply stop needs-rework yes yes 1-A-R 3-I-N)"
+eq "approve-with-changes yes returns unchanged" confirmed:1 \
+  "$(action_reply yes approve-with-changes yes yes 1)"
+
+grammar_matrix() {
+  printf '%s\n' \
+    "default:$(normalize_code 1 needs-rework yes yes)" \
+    "inline:$(normalize_code 1 needs-rework no no)" \
+    "no-change:$(normalize_code 4-A-N needs-rework yes yes)" \
+    "pending:$(action_reply yes needs-rework yes yes 1-A-R 3-I-N)" \
+    "invalid:$(action_reply '1--A' needs-rework yes yes 1-A-R 3-I-N)"
+}
+grammar_matrix_contract() { [ "$(cat "$1")" = "$(grammar_matrix)" ]; }
+grammar_matrix > "$ROOT/grammar.original"
+cp "$ROOT/grammar.original" "$ROOT/grammar.saved"
+for mutation in \
+  'default:1-A-R|default:1-I-R' \
+  'inline:1-I-R|inline:1-A-R' \
+  'no-change:4|no-change:4-A-N' \
+  'pending:confirmed:3-I-N|pending:confirmed:1-A-R' \
+  'invalid:ask:3-I-N|invalid:confirmed:1-A-R'; do
+  before_row="${mutation%%|*}" after_row="${mutation#*|}"
+  sed "s/^$before_row$/$after_row/" "$ROOT/grammar.original" > "$ROOT/grammar.broken"
+  eq "grammar red-proof plants one wrong transition" 1 \
+    "$(grep -cF "$after_row" "$ROOT/grammar.broken")"
+  rejects grammar_matrix_contract "$ROOT/grammar.broken"
+done
+cmp -s "$ROOT/grammar.original" "$ROOT/grammar.saved" && pass=$((pass + 1)) || fail=$((fail + 1))
+
 review_action_contract() {
   local file="$1" needle
   for needle in 'needs-rework — Next actions' '1. Fix must-fix findings only (default)' \
@@ -309,6 +402,8 @@ review_action_contract() {
     'A. Use an isolated implementation agent (default)' 'I. Work inline' \
     'R. Re-review the complete implementation (default)' 'N. Stop without re-review' \
     'A direct valid code on a complete surface is explicit confirmation' \
+    'repeated punctuation, or trailing punctuation' \
+    'pending normalized selection' 'preserve any existing pending value' \
     'The verdict itself is never confirmation'; do
     grep -qF "$needle" "$file" || return 1
   done
@@ -316,7 +411,8 @@ review_action_contract() {
 review_action_contract "$REVIEW" && pass=$((pass + 1)) || fail=$((fail + 1))
 cp "$REVIEW" "$ROOT/review-action.original"
 for needle in 'needs-rework — Next actions' '1. Return as-is (default)' \
-  'A direct valid code on a complete surface is explicit confirmation'; do
+  'A direct valid code on a complete surface is explicit confirmation' \
+  'repeated punctuation, or trailing punctuation' 'pending normalized selection'; do
   awk -v needle="$needle" 'index($0, needle) == 0 { print }' \
     "$ROOT/review-action.original" > "$ROOT/review-action.broken"
   eq "review contract red-proof removes one clause" 0 \

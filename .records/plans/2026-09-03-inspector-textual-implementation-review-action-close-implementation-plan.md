@@ -169,7 +169,7 @@ Read-only; produce no commit.
     after one explicit text confirmation, with no live pseudo-control contract remaining in the changed
     surfaces.
 
-- [ ] **Slice 2: Complete parser and pending-selection matrix** <requires: 1>
+- [x] **Slice 2: Complete parser and pending-selection matrix** <requires: 1>
   - Files:
     - `.records/plans/2026-09-03-inspector-textual-implementation-review-action-close-implementation-plan.md`
     - `skills/inspector/verbs/review.md`

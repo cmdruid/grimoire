@@ -161,9 +161,9 @@ use the displayed defaults. A direct valid code on a complete surface is explici
 may proceed without a second turn.
 
 Reject the entire response if it contains no scope number, two scope numbers, both route letters,
-both afterward letters, an unavailable code, an unknown token, out-of-order groups, repeated
-punctuation, or trailing punctuation. State the conflict and ask once; write nothing and preserve any
-existing pending value. Route and afterward modifiers are inert for a non-mutating scope, which
+both afterward letters, an unavailable code, an unknown token, out-of-order groups,
+repeated punctuation, or trailing punctuation. State the conflict and ask once; write nothing and
+preserve any existing pending value. Route and afterward modifiers are inert for a non-mutating scope, which
 normalizes to its scope number alone.
 
 With no pending value on a complete surface, clear acceptance such as `yes`, `proceed`, `go`, `do it`,
