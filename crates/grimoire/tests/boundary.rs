@@ -162,3 +162,76 @@ fn controlled_forbidden_import_arm_is_live() {
         ]
     );
 }
+
+#[test]
+fn tui_keeps_mutation_source_work_inheritance_and_trust_boundaries_separate() {
+    let app_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let driver = fs::read_to_string(app_root.join("tui/driver.rs")).unwrap();
+    let model = fs::read_to_string(app_root.join("tui/model.rs")).unwrap();
+
+    let event_loop = section(&driver, "fn system_event_loop(", "#[derive(Default)]");
+    assert!(!event_loop.contains("refresh_source("));
+
+    let update = section(
+        &driver,
+        "Effect::Update { plan, approval, .. } => {",
+        "Effect::TrustAll",
+    );
+    assert!(update.contains("apply("));
+    assert!(!update.contains("refresh_source("));
+
+    let trust = section(
+        &driver,
+        "Effect::TrustAll { plan, .. } => {",
+        "Effect::Quit",
+    );
+    assert!(trust.contains("Approval::NotRequired"));
+    assert!(!trust.contains("Approval::Granted"));
+
+    let inherited = section(
+        &model,
+        "TreeItemKey::Source(_) | TreeItemKey::InheritedSkill { .. } => {",
+        "        };",
+    );
+    assert!(inherited.contains("tree item is not toggleable"));
+    assert!(!inherited.contains("DesiredEdit::"));
+}
+
+#[test]
+fn controlled_tui_absence_arms_are_live() {
+    for (rule, source, needle) in [
+        (
+            "background source work",
+            "fn system_event_loop() { refresh_source(); }",
+            "refresh_source(",
+        ),
+        (
+            "update-time fetch",
+            "Effect::Update => { refresh_source(); }",
+            "refresh_source(",
+        ),
+        (
+            "generic trust approval",
+            "Effect::TrustAll => apply(Approval::Granted)",
+            "Approval::Granted",
+        ),
+        (
+            "inherited desired edit",
+            "TreeItemKey::InheritedSkill => DesiredEdit::SetSkill",
+            "DesiredEdit::",
+        ),
+        (
+            "adapter-owned mutation",
+            "fn mutate() { fs::write(path, bytes); }",
+            "fs::write(",
+        ),
+    ] {
+        assert_eq!(
+            scan([(Path::new("controlled.rs"), source)], &[(rule, needle)]),
+            vec![Violation {
+                path: PathBuf::from("controlled.rs"),
+                rule,
+            }]
+        );
+    }
+}

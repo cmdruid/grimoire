@@ -305,6 +305,7 @@ fn system_event_loop(
     jobs: &Sender<SystemJob>,
     outcomes: &Receiver<SystemOutcome>,
 ) -> Result<()> {
+    let mut redraw = true;
     loop {
         match outcomes.try_recv() {
             Ok(Outcome::Done(Ok(SystemDone::Reloaded { world, error }))) => {
@@ -314,13 +315,18 @@ fn system_event_loop(
                         .map(|error| format!("Error: {error}"))
                         .unwrap_or_else(|| "Completed".into()),
                 );
+                redraw = true;
             }
             Ok(Outcome::Done(Ok(SystemDone::Loaded { .. }))) => {
                 unreachable!("runtime job returned initial load")
             }
-            Ok(Outcome::Done(Err(error))) => model.set_status(format!("Error: {error}")),
+            Ok(Outcome::Done(Err(error))) => {
+                model.set_status(format!("Error: {error}"));
+                redraw = true;
+            }
             Ok(Outcome::Panicked(message)) => {
                 model.set_status(format!("Worker panic: {message}"));
+                redraw = true;
             }
             Err(TryRecvError::Empty) => {}
             Err(TryRecvError::Disconnected) => {
@@ -330,11 +336,14 @@ fn system_event_loop(
             }
         }
 
-        driver.draw(model).map_err(io_error)?;
+        if std::mem::take(&mut redraw) {
+            driver.draw(model).map_err(io_error)?;
+        }
         let event = driver.next_event().map_err(io_error)?;
         if model.is_busy() && !matches!(event, DriverEvent::Quit | DriverEvent::Resize(_, _)) {
             continue;
         }
+        redraw = !matches!(event, DriverEvent::Tick);
         let effect = match transition(model, event) {
             Ok(effect) => effect,
             Err(error) => {
@@ -351,6 +360,7 @@ fn system_event_loop(
         jobs.send(SystemJob::Run(Box::new(effect)))
             .map_err(worker_stopped)?;
         model.set_busy(true);
+        redraw = true;
     }
 }
 

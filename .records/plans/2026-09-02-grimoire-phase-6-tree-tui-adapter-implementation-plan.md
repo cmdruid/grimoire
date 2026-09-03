@@ -3,7 +3,7 @@ doctype: plans
 status: published
 schema: contractor/plan@1
 tags: [plan]
-stage: approved
+stage: implemented
 ---
 
 # Grimoire Phase 6 tree TUI adapter — Implementation Plan
@@ -125,7 +125,7 @@ This task is read-only and produces no commit.
     runtime, trust cannot use ordinary apply approval, source work is explicit, and terminal/worker
     custody closes cleanly.
 
-- [ ] **Slice 7: Prove workflows and close the Phase 6 gate** <requires: 1, 2, 4>
+- [x] **Slice 7: Prove workflows and close the Phase 6 gate** <requires: 1, 2, 4>
   - Files: create `crates/grimoire/tests/tui_parity.rs` and
     `crates/grimoire/tests/tui_workflow.rs`; modify `README.md`, this plan, the focused app boundary
     test, and only production/test files implicated by final gate failures.
@@ -146,6 +146,10 @@ This task is read-only and produces no commit.
     repository integrations, pack dogfood/availability, and both worktree/root layout probes.
     Expected: the Phase 6 roadmap gate is green and the binary exposes the canonical CLI plus the
     staged Project/Global tree TUI without taking over Phase 7's final hard-cut audit.
+
+Attended terminal evidence (2026-09-02): the Project/Global interface passed navigation, staging,
+plan review, cancellation, apply, a live resize signal, visible error recovery, quit, and shell
+restoration in a real PTY session.
 
 ## Done when
 

@@ -14,7 +14,22 @@ contract is `.records/specs/2026-08-31-grimoire-symlink-package-manager.md`; the
 roadmap is `.records/plans/2026-09-01-grimoire-hard-cut-rewrite-roadmap.md`. The source inventory,
 pure-pack format, declarative manifests and locks, same-snapshot resolution, pure planning kernel,
 source custody and trust, transactional core operations, and the complete command-line adapter are
-available. The tree TUI is the next phase; the final hard-cut integration audit follows it.
+available. The Project/Global tree TUI now provides staged skill and pack management over the same
+core plans. The final hard-cut integration audit is the remaining roadmap phase.
+
+### Use the tree interface
+
+Run `grimoire` without a subcommand in an interactive terminal. It opens the nearest Project scope
+when one exists and otherwise opens Global. Tree changes stay in memory until you apply the plan;
+switching tabs doesn't merge Project and Global staging.
+
+- Press Tab to switch scopes.
+- Press Up/Down or `j`/`k` to move, and press Space to toggle a skill, pack, or optional member.
+- Press Enter or `a` to apply the displayed plan. Destructive plans default to no.
+- Press `c` or Escape to discard staged changes.
+- On a source row, press `f` to fetch, `u` to update from the cached candidate, or `t` to open the
+  separate trust-all confirmation. Update never fetches.
+- Press `q` to quit and discard unapplied changes.
 
 ## The skills
 
@@ -117,8 +132,8 @@ Beyond the skills, this repo carries the pack format and its tooling (the umbrel
 
 - **`crates/`** — a Cargo workspace (build from the repo root). `grimoire-pack` owns canonical
   source inventory, `grimoire-core` owns declarative state, resolution, and the pure planner, and
-  `skill-grimoire` retains reusable terminal infrastructure for the later TUI. Crates never
-  read `skills/` at build time — content appears only as test fixtures.
+  `skill-grimoire` provides the command-line and staged tree adapters. Crates never read `skills/`
+  at build time — content appears only as test fixtures.
 - **`.records/specs/`** — published product contracts, including the canonical pack and inventory
   format.
 - **`repos/`** — gitignored reading references (e.g. the qntx `skill` clone); real dependencies
