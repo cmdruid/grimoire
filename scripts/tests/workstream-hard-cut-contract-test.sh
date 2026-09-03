@@ -55,6 +55,16 @@ rg_absent() {
   esac
 }
 
+rg_present() {
+  local rc=0
+  rg "$@" >"$TMP/rg.out" 2>"$TMP/rg.err" || rc=$?
+  case "$rc" in
+    0) return 0 ;;
+    1) return 1 ;;
+    *) cat "$TMP/rg.err" >&2; return "$rc" ;;
+  esac
+}
+
 token_census_clean() { # root token
   local root="$1" token="$2" path
   local files=()
@@ -80,9 +90,9 @@ else
   fail_with 'general Callback machinery remains in Workstream production prose or its census failed'
 fi
 
-retired_current_topology_clean() { # file...
-  rg_absent -ni '\.workstreams|ALLOW_PARKED|inplace_|--in-place|isolation[[:space:]:]+(worktree|in-place)|(^|[^[:alnum:]_-])(park(ed|ing)?|unpark)([^[:alnum:]_-]|$)' "$@"
-}
+retired_topology_pattern='\.workstreams|ALLOW_PARKED|inplace_|--in-place|isolation[[:space:]:]+(worktree|in-place)|(^|[^[:alnum:]_-])(park(ed|ing)?|unpark)([^[:alnum:]_-]|$)'
+retired_current_topology_clean() { rg_absent -ni "$retired_topology_pattern" "$@"; }
+retired_current_topology_present() { rg_present -ni "$retired_topology_pattern" "$@"; }
 
 current_production=()
 for path in "${production[@]}"; do
@@ -181,7 +191,7 @@ fixture="$generated/.streams/generated/WORKSTREAM.md"
 for mutation in '.workstreams' 'ALLOW_PARKED' 'inplace_' '--in-place' 'isolation: worktree' 'park' 'parked' 'parking' 'unpark'; do
   cp "$fixture" "$TMP/generated.before"
   printf '%s\n' "$mutation" >>"$fixture"
-  if [ "$(grep -cF -- "$mutation" "$fixture")" -eq 1 ] && ! retired_current_topology_clean "$fixture"; then
+  if [ "$(grep -cF -- "$mutation" "$fixture")" -eq 1 ] && retired_current_topology_present "$fixture"; then
     pass=$((pass + 1))
   else
     fail_with "generated topology guard stayed green after mutation: $mutation"
@@ -204,9 +214,9 @@ fi
 
 # Backticks are literal documentation text.
 # shellcheck disable=SC2016
-cross_skill_topology_clean() {
-  rg_absent -n 'Coordinates `branch:`|isolation: in-place.*Coordinates' "$@"
-}
+cross_skill_topology_pattern='Coordinates `branch:`|isolation: in-place.*Coordinates'
+cross_skill_topology_clean() { rg_absent -n "$cross_skill_topology_pattern" "$@"; }
+cross_skill_topology_present() { rg_present -n "$cross_skill_topology_pattern" "$@"; }
 if ! cross_skill_topology_clean \
      "$ROOT/skills/debugger/SKILL.md" "$ROOT/skills/delegate/SKILL.md" \
      "$ROOT/skills/journal/SKILL.md" "$ROOT/skills/notepad/SKILL.md"; then
@@ -215,7 +225,9 @@ else
   pass=$((pass + 1))
 fi
 
-custody_topology_clean() { rg_absent -ni 'in-place|inplace_|\.streams/\*/WORKSTREAM' "$@"; }
+custody_topology_pattern='in-place|inplace_|\.streams/\*/WORKSTREAM'
+custody_topology_clean() { rg_absent -ni "$custody_topology_pattern" "$@"; }
+custody_topology_present() { rg_present -ni "$custody_topology_pattern" "$@"; }
 if ! custody_topology_clean "${custody_files[@]}"; then
   fail_with 'retired topology remains in active custody paths or its census failed'
 else
@@ -258,7 +270,7 @@ for skill in debugger delegate journal notepad; do cp "$ROOT/skills/$skill/SKILL
 for mutation in 'Coordinates `branch:`' 'isolation: in-place Coordinates'; do
   cp "$TMP/custody/debugger.md" "$TMP/custody.before"
   printf '%s\n' "$mutation" >>"$TMP/custody/debugger.md"
-  if [ "$(grep -cF "$mutation" "$TMP/custody/debugger.md")" -eq 1 ] && ! cross_skill_topology_clean "$TMP/custody/debugger.md"; then
+  if [ "$(grep -cF "$mutation" "$TMP/custody/debugger.md")" -eq 1 ] && cross_skill_topology_present "$TMP/custody/debugger.md"; then
     pass=$((pass + 1))
   else
     fail_with "cross-skill topology guard stayed green after mutation: $mutation"
@@ -275,7 +287,7 @@ cp "$ROOT/skills/workstream/templates/compaction-anchor.md" "$TMP/custody-topolo
 for mutation in 'in-place' 'inplace_' '.streams/*/WORKSTREAM'; do
   cp "$TMP/custody-topology.md" "$TMP/custody-topology.before"
   printf '%s\n' "$mutation" >>"$TMP/custody-topology.md"
-  if [ "$(grep -cF "$mutation" "$TMP/custody-topology.md")" -eq 1 ] && ! custody_topology_clean "$TMP/custody-topology.md"; then
+  if [ "$(grep -cF "$mutation" "$TMP/custody-topology.md")" -eq 1 ] && custody_topology_present "$TMP/custody-topology.md"; then
     pass=$((pass + 1))
   else
     fail_with "custody topology guard stayed green after mutation: $mutation"
@@ -305,7 +317,7 @@ for token in '.records/streams' '.spa''ces/workstream' 'after-eventful-ship' 'fl
   fixture="$TMP/mutated/skills/workstream/SKILL.md"
   cp "$fixture" "$TMP/fixture.before"
   printf '%s\n' "$token" >>"$fixture"
-  if token_census_clean "$TMP/mutated" "$token"; then fail_with "production census stayed green after mutation: $token"; else pass=$((pass + 1)); fi
+  if rg_present -nF -- "$token" "$fixture"; then pass=$((pass + 1)); else fail_with "production census did not detect mutation: $token"; fi
   cp "$TMP/fixture.before" "$fixture"
   if token_census_clean "$TMP/mutated" "$token"; then pass=$((pass + 1)); else fail_with "production census did not recover: $token"; fi
 done
