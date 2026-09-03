@@ -18,9 +18,9 @@ for needle in 'named diff, range, worktree, or commit' 'behavior matches the gov
   has "$KIND" "$needle" "implementation doctrine missing: $needle"
 done
 has "$REVIEW" 'Implementation target: inspect the full diff' "implementation review walk missing"
-has "$REVIEW" '## Implementation needs-rework action' "implementation action tracer missing"
+has "$REVIEW" '## Implementation textual action close' "implementation action tracer missing"
 for needle in 'HEAD, staged diff, unstaged diff' 'reviewed untracked paths and contents' \
-  'Do not invent a snapshot or copy protocol' 'stop and offer inline execution' \
+  'invent a snapshot or copy protocol' 'Render a fresh inline-only surface' \
   'same-pattern observations' 'full accumulated change'; do
   has "$REVIEW" "$needle" "implementation action doctrine missing: $needle"
 done
@@ -98,16 +98,35 @@ start_isolated() {
   git -C "$destination" worktree add -q "$isolated" -b fixture/isolated-fix "$expected_head"
 }
 integrate_returned() {
-  local destination="$1" captured_head="$2" returned_commit="$3" inspected="$4" verified="$5"
-  [ "$inspected" = yes ] && [ "$verified" = yes ] || return 1
+  local destination="$1" captured_head="$2" returned_commit="$3"
+  git -C "$destination" diff --check "$captured_head..$returned_commit" || return 1
+  git -C "$destination" show "$returned_commit:change.txt" | grep -qF ORIGINAL_CHANGE || return 1
+  git -C "$destination" show "$returned_commit:change.txt" | grep -qF DESIGN_MISMATCH && return 1
   destination_clean_at "$destination" "$captured_head" || return 1
   git -C "$destination" merge --ff-only "$returned_commit" >/dev/null
+}
+normalize_trace_code() {
+  local answer compact
+  answer="$(printf '%s' "$1" | LC_ALL=C sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' \
+    | tr '[:lower:]' '[:upper:]')"
+  compact="$(printf '%s' "$answer" | LC_ALL=C tr -d '[:space:],-')"
+  [ "$compact" = 1AR ] || return 1
+  printf '%s\n' '1-A-R'
+}
+route_from_repository() {
+  local destination="$1" endpoint="$2" isolated="$3"
+  if command -v git >/dev/null 2>&1 && destination_clean_at "$destination" "$endpoint" \
+    && [ ! -e "$isolated" ]; then
+    echo isolated
+  else
+    echo inline
+  fi
 }
 trace_contract() {
   local trace="$1" base="$2" reviewed_after="$3" returned="$4" fresh_verdict="$5" expected
   expected="$(printf '%s\n' \
     'verdict:needs-rework' \
-    'confirmed:must-fix:isolated:full-re-review' \
+    'confirmed:1-A-R' \
     "pre-write:$reviewed_after:clean" \
     "isolated-start:$reviewed_after" \
     "writer-return:$returned:verified" \
@@ -247,8 +266,17 @@ else
 fi
 
 : > "$TRACE"
+raw_reply='1-A-R'
+normalized_selection="$(normalize_trace_code "$raw_reply")"
+eq "raw reply normalizes before remediation" 1-A-R "$normalized_selection"
+selected_route="$(route_from_repository "$DESTINATION" "$reviewed_after" "$ISOLATED")"
+eq "real repository selects isolated route" isolated "$selected_route"
+case "$normalized_selection:$selected_route" in
+  1-A-R:isolated) ;;
+  *) echo "FAIL normalized selection did not select the derived route" >&2; fail=$((fail + 1)) ;;
+esac
 printf '%s\n' 'verdict:needs-rework' \
-  'confirmed:must-fix:isolated:full-re-review' >> "$TRACE"
+  "confirmed:$normalized_selection" >> "$TRACE"
 
 cp "$DESTINATION/change.txt" "$ROOT/change.before"
 printf '%s\n' PRE_WRITE_DRIFT >> "$DESTINATION/change.txt"
@@ -297,16 +325,24 @@ eq "writer leaves destination bytes" "$destination_before" \
   "$(shasum "$DESTINATION/change.txt" | awk '{print $1}')"
 printf '%s\n' "writer-return:$returned_commit:verified" >> "$TRACE"
 
-git -C "$DESTINATION" diff --check "$reviewed_after..$returned_commit"
-inspected=yes
-git -C "$DESTINATION" show "$returned_commit:change.txt" | grep -qF ORIGINAL_CHANGE \
-  && primary_verified=yes || primary_verified=no
-eq "primary verification" yes "$primary_verified"
+if git -C "$DESTINATION" diff --check "$reviewed_after..$returned_commit"; then
+  inspected=yes
+else
+  inspected=no
+fi
+if git -C "$DESTINATION" show "$returned_commit:change.txt" | grep -qF ORIGINAL_CHANGE \
+  && ! git -C "$DESTINATION" show "$returned_commit:change.txt" | grep -qF DESIGN_MISMATCH; then
+  primary_verified=yes
+else
+  primary_verified=no
+fi
+eq "primary inspection derives from returned diff" yes "$inspected"
+eq "primary verification derives from returned content" yes "$primary_verified"
 printf '%s\n' "primary-inspect:$returned_commit" "primary-verify:$returned_commit" >> "$TRACE"
 
 printf '%s\n' PRE_INTEGRATION_DRIFT > "$DESTINATION/drift.tmp"
 eq "pre-integration drift plant count" 1 "$(grep -c '^PRE_INTEGRATION_DRIFT$' "$DESTINATION/drift.tmp")"
-rejects integrate_returned "$DESTINATION" "$reviewed_after" "$returned_commit" "$inspected" "$primary_verified"
+rejects integrate_returned "$DESTINATION" "$reviewed_after" "$returned_commit"
 eq "drift leaves destination head" "$reviewed_after" "$(git_head "$DESTINATION")"
 rm -f "$DESTINATION/drift.tmp"
 if destination_clean_at "$DESTINATION" "$reviewed_after"; then
@@ -317,7 +353,7 @@ else
 fi
 
 printf '%s\n' "pre-integration:$reviewed_after:clean" >> "$TRACE"
-integrate_returned "$DESTINATION" "$reviewed_after" "$returned_commit" "$inspected" "$primary_verified"
+integrate_returned "$DESTINATION" "$reviewed_after" "$returned_commit"
 printf '%s\n' "integrated:$returned_commit" \
   "re-review-base:$base_endpoint" \
   "re-review-after:$returned_commit" \

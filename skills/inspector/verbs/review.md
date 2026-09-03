@@ -105,57 +105,96 @@ mint a record.
    This is the same turn, not an edit authorization. Questions are a stop. A non-empty proposal is
    a stop. No body, `status`, or `stage` changes before proposal confirmation.
 
-## Implementation needs-rework action and every-verdict close
+## Implementation textual action close
 
 After every implementation verdict, retain the original review base, reviewed after endpoint,
-complete findings, and the identity of the reviewed source state. The action close is a separate
-post-verdict stop; presenting it mutates nothing. `approve` offers a direct return to the calling
-workflow without a remediation checklist. The other verdicts use the shared action state below.
+complete findings, destination evidence, and the identity of the reviewed source state. The action
+close is a separate post-verdict stop; presenting it mutates nothing.
+The verdict itself is never confirmation. The action state is conversation-only and holds at most one **pending scope** or one
+**pending normalized selection**; it creates no record, project store, status, or stage.
 
-Before rendering a fix action, resolve one unambiguous writable destination that owns the reviewed
-after endpoint or working-tree state. A named worktree can establish it. A commit or range requires a
-current checkout whose branch and HEAD relationship proves ownership. Never infer it from cwd. If no
-single destination is provable, ask for the destination and stop without presenting fix choices.
+Use plain text only. Never promise a native control, render checkbox syntax, or tell the user to press
+Enter. A number selects exactly one verdict-local fix scope. `A`/`I` select isolated or inline
+execution; `R`/`N` select full re-review or stop without re-review. Omit a scope whose finding class is
+absent and do not renumber the remaining choices.
 
-Determine isolation eligibility before presenting the action. Offer the isolated route only when an
-isolated executor exists, the reviewed after endpoint is committed, the resolved destination is
-clean and checked out at that exact endpoint, and an isolated checkout can be created from it. For a
-resolved dirty destination, missing executor, uncommitted endpoint, or unavailable checkout,
-isolation is ineligible. In that case, omit the isolation row. State that selected fixes will run
-inline and keep the remaining choices. Do not invent a snapshot or copy protocol. Do not guess a
-destination or rewrite detached history.
+For `needs-rework`, render:
 
-Build these semantic rows in order; whole finding classes are selected, not individual findings:
+```text
+needs-rework — Next actions
 
-| Row | Appears when | Default | Effect |
-|---|---|---|---|
-| Also fix recommended changes | recommendations exist | off; first and focused | add every recommendation |
-| Fix all must-fix findings | verdict is `needs-rework` | on | add every must-fix finding |
-| After selected fixes, re-review the complete implementation | a fix row exists | on | queue full review after complete application |
-| For selected fixes, use an isolated implementation agent | a fix row exists and isolation is eligible | on | selected means isolated; unchecked means inline |
+Fix scope — choose one:
+1. Fix must-fix findings only (default)
+2. Fix all findings
+3. Fix recommended changes only
+4. Make no changes
 
-Thus `needs-rework` accepts must-fix, re-review, and eligible isolation defaults on Enter, with the
-optional recommendation row first. `approve-with-changes` accepts the implementation as-is on Enter;
-selecting its recommendation row activates the otherwise inert re-review and route modifiers. Omit
-rows for finding classes that are absent.
+Execution — choose one:
+A. Use an isolated implementation agent (default)
+I. Work inline
 
-Use a native multi-select when one is available, preserving row order, defaults, and initial focus.
-Otherwise use a textual fallback with the same ordered checklist and one confirmation. The fallback
-must say that recommendations are excluded by default and state the actual selected route: isolated
-when offered and selected, otherwise inline. Do not name a harness-specific API or claim the user can
-submit an empty chat message.
+Afterward — choose one:
+R. Re-review the complete implementation (default)
+N. Stop without re-review
 
-A clear acceptance such as `yes`, `proceed`, `do it`, `ok`, or equivalent confirms the displayed
-selection. An adjustment changes the package, is reflected back once, and then requires confirmation.
-`stop`, `not yet`, rejection, cancellation, or dismissal writes nothing and discards queued re-review.
-An unclear answer asks once. The verdict itself is never confirmation.
+Reply with a combination such as `1-A-R`, `2-I-R`, or `4`.
+Reply `yes` to accept the defaults: `1-A-R`.
+```
 
-Enforce row dependencies even when the presentation cannot disable controls. With no selected fix row,
-the route and re-review modifiers are inert and the unchanged target returns to its caller. With a fix
-row, resolve exactly one route: isolated when selected and eligible, inline otherwise. Re-review runs
-only after the complete selected package succeeds. A blocked or partially applied package stops,
-reports its state, and remains unreviewed. When the user deselects re-review, stop after fixes and say
-the resulting change has not passed Inspector review.
+When no recommendations exist, omit scopes `2` and `3`; `1` remains the default. When isolation is
+ineligible, omit `A`, label `I` as the only route, and display `1-I-R` as the default. For
+`approve-with-changes`, render `1. Return as-is (default)` and `2. Fix recommended changes`, followed
+by **Execution — if fixing, choose one** and **Afterward — if fixing, choose one**. Label their
+defaults **default if fixing**. `yes` or `1` returns unchanged; `2` enters the selected remediation.
+For `approve`, report that the implementation is ready and offer only
+`1. Return to the calling workflow`; do not render execution or afterward choices.
+
+### Parse and confirmation
+
+Parse only against the most recently displayed implementation surface. Trim leading and trailing
+ASCII whitespace, fold letters to uppercase, and consume the whole response. A code must start with
+one displayed scope number, followed in group order by at most one available route letter and at most
+one available afterward letter. Tokens may be adjacent or separated independently by one `-`, one
+`,`, or one or more ASCII whitespace characters, with optional ASCII whitespace around punctuation.
+Thus `1AR`, `1-A-R`, `1 A R`, `1,A,R`, and `1-A R` all normalize to `1-A-R`. Omitted modifier groups
+use the displayed defaults. A direct valid code on a complete surface is explicit confirmation and
+may proceed without a second turn.
+
+Reject the entire response if it contains no scope number, two scope numbers, both route letters,
+both afterward letters, an unavailable code, an unknown token, out-of-order groups, repeated
+punctuation, or trailing punctuation. State the conflict and ask once; write nothing and preserve any
+existing pending value. Route and afterward modifiers are inert for a non-mutating scope, which
+normalizes to its scope number alone.
+
+With no pending value on a complete surface, clear acceptance such as `yes`, `proceed`, `go`, `do it`,
+or `ok` confirms the displayed default. An unambiguous natural-language adjustment becomes an exact
+pending normalized selection: reflect that code and meaning once, then require confirmation. Clear
+acceptance confirms that pending code, never an earlier default; a direct valid code replaces and
+confirms it. `stop`, `not yet`, rejection, cancellation, or dismissal writes nothing, clears pending
+state, and discards queued re-review intent. An unclear answer asks once.
+
+### Destination resolution and reduced surface
+
+Before execution or afterward modifiers can authorize fixing, resolve one unambiguous writable destination
+that owns the reviewed after endpoint or working-tree state. A named worktree can
+establish ownership. A commit or range requires a current checkout whose branch and HEAD relationship
+proves it owns the endpoint. Never infer it from cwd, invent a snapshot or copy protocol, or rewrite
+detached history.
+
+If no single destination is provable, still render the applicable Fix scope group and its
+non-mutating exit, but omit execution and afterward groups. Explain that a fixing choice requires a
+destination. Only a displayed scope number is a valid code response on this reduced surface. Clear
+acceptance selects its displayed scope default. `4` for `needs-rework`, or `1`/`yes` for
+`approve-with-changes`, returns unchanged without destination resolution. A fixing scope—including
+`needs-rework` `yes`, which selects scope `1`—stores only a pending scope, asks for the destination,
+and cannot authorize a write.
+
+After ownership resolves, atomically consume the pending scope, derive eligible route and afterward
+defaults, and install the resulting complete code as both the displayed default and pending normalized
+selection. Pending scope `2` becomes `2-A-R` when isolation is eligible or `2-I-R` otherwise. Render
+the complete surface and require a fresh confirmation; the earlier scope response is not permission
+to write. On the reduced surface, an unambiguous natural-language adjustment may select only scope and
+follows these same rules; route or afterward prose is invalid.
 
 ### Destination identity and routes
 
@@ -175,8 +214,21 @@ same-pattern observations outside the package return as observations instead of 
 The primary session inspects the isolated result and runs relevant verification; a writer's
 self-report is not evidence. Immediately before integration, repeat the clean destination HEAD and
 status guard. New commits, staged, unstaged, or untracked changes leave the result unapplied. Integrate
-only a complete inspected and verified package. If isolation becomes unavailable after confirmation,
-stop and offer inline execution; never silently weaken the selected route.
+only a complete inspected and verified package.
+
+If the isolated executor becomes unavailable or isolated-checkout creation fails after confirmation
+but before the isolated writer begins, first prove destination identity remains unchanged and leave
+any checkout or result unapplied. Render a fresh inline-only surface whose pending and displayed
+default preserves the confirmed scope and afterward choice while changing only `A` to `I`; for
+example, `2-A-N` becomes `2-I-N`. Require a new explicit confirmation. Never silently fall back or
+reset the package to the original defaults.
+
+Do not use that fallback for destination drift, writer-started partial or blocked work, incomplete
+return, failed primary inspection, or failed primary verification. Drift requires a fresh
+implementation review. Every other incomplete or unverified package stops unreviewed and remains
+unapplied where applicable. A package containing multiple selected findings is complete only when all
+of them succeed. When `N` is selected, a complete applied result stops with an explicit statement that
+it has not passed Inspector review.
 
 ### Full re-review and loop
 

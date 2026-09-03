@@ -122,7 +122,7 @@ Read-only; produce no commit.
 
 ## Slices
 
-- [ ] **Slice 1: Complete verdict renderer and needs-rework text tracer** <requires: —>
+- [x] **Slice 1: Complete verdict renderer and needs-rework text tracer** <requires: —>
   - Files:
     - `.records/plans/2026-09-03-inspector-textual-implementation-review-action-close-implementation-plan.md`
     - `skills/inspector/verbs/review.md`
