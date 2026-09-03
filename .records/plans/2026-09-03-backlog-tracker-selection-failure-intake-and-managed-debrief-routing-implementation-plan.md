@@ -66,20 +66,20 @@ Spec: `.records/specs/2026-09-03-backlog-tracker-selection-failure-intake-and-pr
 
 ## Task 0 — Re-ground after sync, before editing
 
-- [ ] Record `HEAD`, branch, `git status --short`, `git worktree list`, and the target delta after the
+- [x] Record `HEAD`, branch, `git status --short`, `git worktree list`, and the target delta after the
   Workstream owner syncs to `main`. Re-read the published spec and ADR, root `AGENTS.md`,
   `skills/skill-builder/docs/DOCTRINE.md`, `README.md`, and every Backlog file named below. Any new
   overlap or changed project invariant is a blocker until reconciled. Run Workstream's cheat-sheet
   validator because its current orientation snapshot predates the latest `main` movement.
-- [ ] Run Contractor's ground check on the spec. Re-read the exact option parser, write order,
+- [x] Run Contractor's ground check on the spec. Re-read the exact option parser, write order,
   classifier outputs, prompt ordering, API update behavior, anchor preflight, scoped-commit rules,
   and the assertions in all affected package and repository tests; a resolving path is not proof
   that its current behavior still supports the plan.
-- [ ] Search capability-wide for setup intent/recovery protocols and managed project route helpers.
+- [x] Search capability-wide for setup intent/recovery protocols and managed project route helpers.
   Reuse the current Backlog atomic-write and recovery conventions and the installed
   `skill-feedback` anchor's parsing/digest shapes, but verify that no existing Backlog implementation
   already supplies the required behavior before adding it.
-- [ ] Re-run the baseline gates and record any incumbent warning or failure. At plan time the Backlog
+- [x] Re-run the baseline gates and record any incumbent warning or failure. At plan time the Backlog
   suite, provider/anchor/parity contracts, and skill lint were green; lint reported only three
   existing Foreman edge warnings. A changed baseline must be diagnosed before Slice 1.
 
@@ -106,7 +106,7 @@ pass, and lint reports `fails=0` with only understood pre-existing warnings.
 
 ## Slices
 
-- [ ] **Slice 1: Initialize exactly one recoverable selected tracker set — tracer** <requires: Task 0>
+- [x] **Slice 1: Initialize exactly one recoverable selected tracker set — tracer** <requires: Task 0>
   - Files:
     - Create `skills/backlog/suggestions/failures.md`.
     - Modify `skills/backlog/scripts/backlog-setup.sh`,

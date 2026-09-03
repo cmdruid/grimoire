@@ -17,9 +17,47 @@ ROOT="$(CDPATH='' cd -P "$ROOT"&&pwd)"
 SKILL="$(CDPATH='' cd -P "$(dirname "$0")/.."&&pwd)"
 LAYER="$ROOT/$TR";TABLES="$LAYER/tables";PROVIDER="$LAYER/trackers.sh";SOURCE="$SKILL/scripts/trackers.sh"
 README="$LAYER/README.md";HISTORY="$LAYER/history.tsv";PROMPT="$LAYER/DEBRIEF.md";MARKER="$TABLES/.gitkeep"
+SELECTION="$LAYER/.setup-selection"
 README_STATUS="$SKILL/scripts/tracker-readme-status.sh";README_TEMPLATE="$SKILL/templates/trackers-readme-block.md"
 QUEUE_HEADER=$'id\tcreated\ttext\tevidence'
 HISTORY_HEADER=$'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult'
+PACKAGED='tasks issues failures feedback routines'
+
+normalize_selection(){
+  local input="$1" item stem seen=' ' result='' old_ifs="$IFS"
+  [ -n "$input" ]&&[[ "$input" != ,* ]]&&[[ "$input" != *, ]]&&[[ "$input" != *,,* ]]||return 1
+  IFS=,;read -r -a items <<<"$input";IFS="$old_ifs"
+  for item in "${items[@]}";do
+    case "$item" in tasks|issues|failures|feedback|routines);;*)return 1;;esac
+    case "$seen" in *" $item "*)return 1;;esac
+    seen+="$item "
+  done
+  for stem in $PACKAGED;do case "$seen" in *" $stem "*)result+="${result:+,}$stem";;esac;done
+  [ -n "$result" ]||return 1
+  printf '%s\n' "$result"
+}
+
+selection_status=absent;selection_trackers='';selection_temp=absent
+if [ -e "$LAYER" ];then
+  [ -d "$LAYER" ]&&[ ! -L "$LAYER" ]||die unsafe-trackers-root "$TR"
+  shopt -s nullglob
+  selection_temps=("$LAYER"/.setup-selection.tmp.*)
+  [ "${#selection_temps[@]}" -eq 0 ]||selection_temp=present
+  shopt -u nullglob
+  if [ -L "$SELECTION" ]||{ [ -e "$SELECTION" ]&&[ ! -f "$SELECTION" ];};then selection_status=invalid
+  elif [ -f "$SELECTION" ];then
+    first="$(sed -n '1p' "$SELECTION")";second="$(sed -n '2p' "$SELECTION")"
+    if [ "$(wc -l <"$SELECTION"|tr -d ' ')" -eq 2 ]&&
+      [ "$first" = 'schema=backlog/setup-selection@1' ]&&[[ "$second" == trackers=* ]];then
+      raw_selection="${second#trackers=}"
+      if normalized="$(normalize_selection "$raw_selection")"&&[ "$normalized" = "$raw_selection" ];then
+        selection_status=valid;selection_trackers="$normalized"
+      else selection_status=invalid
+      fi
+    else selection_status=invalid
+    fi
+  fi
+fi
 
 provider_status=absent
 if [ -L "$PROVIDER" ]||{ [ -e "$PROVIDER" ]&&[ ! -f "$PROVIDER" ];};then provider_status=invalid
@@ -43,7 +81,7 @@ elif [ -f "$HISTORY" ];then
   ' "$HISTORY";then history_state=valid;else history_state=malformed;fi
 fi
 
-queue_state=valid;queue_count=0;prefix_queue_state=valid;legacy_root_state=absent;tables_state=absent
+queue_state=valid;queue_count=0;queue_names='';prefix_queue_state=valid;legacy_root_state=absent;tables_state=absent
 if [ -e "$LAYER" ];then
   [ -d "$LAYER" ]&&[ ! -L "$LAYER" ]||die unsafe-trackers-root "$TR"
   shopt -s nullglob
@@ -60,6 +98,7 @@ if [ -e "$LAYER" ];then
     fi
     for file in "$TABLES"/*.tsv;do
       stem="$(basename "$file" .tsv)";queue_count=$((queue_count+1))
+      queue_names+="${queue_names:+ }$stem"
       if [ -L "$file" ]||[ ! -f "$file" ]||! valid_stem "$stem";then queue_state=malformed;prefix_queue_state=invalid;continue;fi
       if ! awk -F '\t' -v header="$QUEUE_HEADER" -v stem="$stem" '
         NR==1{if($0!=header)exit 10;next}
@@ -74,9 +113,9 @@ if [ -e "$LAYER" ];then
 fi
 [ "$legacy_root_state" = absent ]||{ queue_state=malformed;prefix_queue_state=invalid; }
 
-prompt_state=valid
+prompt_state=valid;prompt_names='';prompt_count=0
 prompt_seen=false
-if [ "$MODE" = setup ];then
+if [ "$MODE" = setup ]||[ "$selection_status" != absent ];then
   [ -e "$PROMPT" ]&&prompt_seen=true
   if [ -L "$PROMPT" ]||{ [ -e "$PROMPT" ]&&[ ! -f "$PROMPT" ];};then prompt_state=invalid
   elif [ -f "$PROMPT" ];then
@@ -88,11 +127,29 @@ if [ "$MODE" = setup ];then
     headings="$(sed -n 's/^## //p' "$PROMPT")"
     while IFS= read -r stem;do
       [ -z "$stem" ]&&continue
+      prompt_names+="${prompt_names:+ }$stem";prompt_count=$((prompt_count+1))
       valid_stem "$stem"||prompt_state=invalid
       [ "$(grep -cFx -- "## $stem" "$PROMPT"||true)" -eq 1 ]||prompt_state=invalid
       [ -f "$TABLES/$stem.tsv" ]||prompt_state=invalid
     done <<<"$headings"
   fi
+fi
+
+selection_prefix_matches=true;selection_complete_matches=false
+if [ "$selection_status" = valid ];then
+  for stem in $queue_names $prompt_names;do
+    case ",$selection_trackers," in *",$stem,"*);;*)selection_prefix_matches=false;;esac
+  done
+  selected_count=0;selection_complete_matches=true
+  old_ifs="$IFS";IFS=,;read -r -a selected_items <<<"$selection_trackers";IFS="$old_ifs"
+  for stem in "${selected_items[@]}";do
+    selected_count=$((selected_count+1))
+    [ -f "$TABLES/$stem.tsv" ]||selection_complete_matches=false
+    [ -f "$PROMPT" ]&&[ "$(grep -cFx -- "## $stem" "$PROMPT"||true)" -eq 1 ]||selection_complete_matches=false
+  done
+  [ "$queue_count" -eq "$selected_count" ]||selection_complete_matches=false
+  [ "$prompt_count" -eq "$selected_count" ]||selection_complete_matches=false
+  [ -f "$MARKER" ]&&[ ! -L "$MARKER" ]&&[ ! -s "$MARKER" ]||selection_complete_matches=false
 fi
 
 head_has_history=false
@@ -102,13 +159,30 @@ if git -C "$ROOT" rev-parse --verify HEAD >/dev/null 2>&1;then
 fi
 
 layer_status=ambiguous;recovery_action=human-review
-if [ "$history_state" = valid ]&&[ "$tables_state" = valid ]&&[ "$queue_state" = valid ];then
+if [ "$selection_temp" = present ]||[ "$selection_status" = invalid ];then
+  layer_status=ambiguous;recovery_action=human-review
+elif [ "$history_state" = valid ]&&[ "$selection_status" = valid ];then
+  if [ "$tables_state" = valid ]&&[ "$queue_state" = valid ]&&[ "$prompt_state" = valid ]&&
+    [ "$selection_prefix_matches" = true ]&&[ "$selection_complete_matches" = true ]&&
+    [ "$provider_status" = current ]&&[ "$readme_status" = current ];then
+    layer_status=selection-cleanup;recovery_action=setup
+  else
+    layer_status=ambiguous;recovery_action=human-review
+  fi
+elif [ "$history_state" = valid ]&&[ "$tables_state" = valid ]&&[ "$queue_state" = valid ];then
   layer_status=initialized
   if [ "$MODE" = runtime ]&&[ "$provider_status" != current ];then recovery_action=repair;else recovery_action=none;fi
 elif [ "$history_state" = malformed ]||[ "$queue_state" = malformed ];then
   layer_status=ambiguous;recovery_action=human-review
 elif [ "$head_has_history" = true ];then
   layer_status=ledger-loss;recovery_action=git-restore
+elif [ "$selection_status" = valid ];then
+  if [ "$selection_prefix_matches" = true ];then
+    layer_status=resumable-prefix
+    if [ "$MODE" = setup ];then recovery_action=none;else recovery_action=setup;fi
+  else
+    layer_status=ambiguous;recovery_action=human-review
+  fi
 elif [ "$readme_status" = current ]||[ "$readme_status" = drifted ];then
   layer_status=ledger-loss;recovery_action=human-review
 elif [ "$readme_status" = malformed ]||[ "$prefix_queue_state" != valid ]||[ "$prompt_state" != valid ]||{ [ "$provider_status" != absent ]&&[ "$provider_status" != current ];};then
@@ -128,3 +202,5 @@ echo "layer_status=$layer_status"
 echo "provider_status=$provider_status"
 echo "readme_status=$readme_status"
 echo "recovery_action=$recovery_action"
+echo "selection_status=$selection_status"
+echo "selected_trackers=$selection_trackers"

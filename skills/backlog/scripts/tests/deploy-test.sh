@@ -11,15 +11,18 @@ newroot(){ mkdir -p "$1";git -C "$1" init -q;}
 R="$T/default";newroot "$R";out="$("$SETUP" "$R" --apply)"
 has <(printf '%s\n' "$out") 'wrote=.trackers/trackers.sh'
 for f in README.md trackers.sh history.tsv;do [ -f "$R/.trackers/$f" ]&&pass=$((pass+1))||{ echo "FAIL missing $f" >&2;fail=$((fail+1));};done
-for f in .gitkeep tasks.tsv issues.tsv feedback.tsv routines.tsv;do [ -f "$R/.trackers/tables/$f" ]&&pass=$((pass+1))||{ echo "FAIL missing tables/$f" >&2;fail=$((fail+1));};done
+for f in .gitkeep tasks.tsv issues.tsv failures.tsv feedback.tsv routines.tsv;do [ -f "$R/.trackers/tables/$f" ]&&pass=$((pass+1))||{ echo "FAIL missing tables/$f" >&2;fail=$((fail+1));};done
 [ -x "$R/.trackers/trackers.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
 [ ! -e "$R/.trackers/tracker-api.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
-for s in tasks issues feedback routines;do has "$R/.trackers/DEBRIEF.md" "## $s";done
+for s in tasks issues failures feedback routines;do has "$R/.trackers/DEBRIEF.md" "## $s";done
+[ ! -e "$R/.trackers/.setup-selection" ]&&pass=$((pass+1))||{ echo 'FAIL successful setup retained selection intent' >&2;fail=$((fail+1));}
+if find "$R/.trackers" -maxdepth 1 -name '.setup-selection.tmp.*' -print -quit | grep -q .;then echo 'FAIL successful setup retained selection temporary' >&2;fail=$((fail+1));else pass=$((pass+1));fi
 has "$R/.trackers/DEBRIEF.md" '## feedback'
 has "$R/.trackers/DEBRIEF.md" 'remedy belongs in this repository'
 has "$R/.trackers/DEBRIEF.md" "skill's home feedback channel"
 catalog="$T/catalog";"$SETUP" "$R" --list >"$catalog"
-has "$catalog" $'stem=feedback\ttitle=Project Feedback\tuse-when="Development-experience observations whose remedy belongs in this project."'
+eq_catalog=$'stem=tasks\ttitle=Tasks\tuse-when="Accepted concrete project outcomes."\nstem=issues\ttitle=Issues\tuse-when="Established project problems, risks, and limitations."\nstem=failures\ttitle=Failures\tuse-when="Unresolved test, build, and project-tool behavior."\nstem=feedback\ttitle=Project Feedback\tuse-when="Qualitative development experience whose remedy belongs in this project."\nstem=routines\ttitle=Routines\tuse-when="Repeatable responses to recognizable development triggers."'
+[ "$(cat "$catalog")" = "$eq_catalog" ]&&pass=$((pass+1))||{ echo 'FAIL catalog/order mismatch' >&2;fail=$((fail+1));}
 [ ! -e "$R/AGENTS.md" ]&&pass=$((pass+1))||{ echo 'FAIL setup created AGENTS.md' >&2;fail=$((fail+1));}
 
 # Initialized setup preserves data and an intentionally removed default queue.
@@ -27,6 +30,7 @@ has "$catalog" $'stem=feedback\ttitle=Project Feedback\tuse-when="Development-ex
 feedback_out="$("$R/.trackers/trackers.sh" create --tracker feedback --text 'project-owned friction')"
 feedback_id="$(printf '%s\n' "$feedback_out"|sed -n 's/^created=//p')"
 "$SETUP" "$R" tracker-remove issues >/dev/null
+"$SETUP" "$R" tracker-remove failures >/dev/null
 cp "$R/.trackers/tables/tasks.tsv" "$T/tasks.before";cp "$R/.trackers/tables/feedback.tsv" "$T/feedback.before";cp "$R/.trackers/history.tsv" "$T/history.before"
 printf 'legacy residue\n'>"$R/.trackers/tracker-api.sh";printf '\nproject prompt tail\n'>>"$R/.trackers/DEBRIEF.md"
 cp "$R/.trackers/DEBRIEF.md" "$T/prompt.before"
@@ -38,16 +42,39 @@ cmp "$T/history.before" "$R/.trackers/history.tsv" >/dev/null&&pass=$((pass+1))|
 cmp "$T/prompt.before" "$R/.trackers/DEBRIEF.md" >/dev/null&&pass=$((pass+1))||{ echo 'FAIL initialized prompt wording was migrated' >&2;fail=$((fail+1));}
 grep -qF "$feedback_id" "$R/.trackers/tables/feedback.tsv"&&pass=$((pass+1))||fail=$((fail+1))
 [ ! -e "$R/.trackers/tables/issues.tsv" ]&&pass=$((pass+1))||fail=$((fail+1))
+[ ! -e "$R/.trackers/tables/failures.tsv" ]&&pass=$((pass+1))||{ echo 'FAIL initialized setup silently added failures' >&2;fail=$((fail+1));}
 [ -f "$R/.trackers/tables/.gitkeep" ]&&[ ! -s "$R/.trackers/tables/.gitkeep" ]&&pass=$((pass+1))||fail=$((fail+1))
 has "$R/.trackers/tracker-api.sh" 'legacy residue';has "$R/.trackers/DEBRIEF.md" 'project prompt tail'
 
-# First setup has no selection surface; administration owns later population changes.
+# First setup accepts one normalized packaged selection; administration owns later population changes.
 S="$T/selection";newroot "$S";no "$SETUP" "$S" --apply tasks
 [ ! -e "$S/.trackers" ]&&pass=$((pass+1))||fail=$((fail+1))
-ok "$SETUP" "$S" --apply;ok "$SETUP" "$S" tracker-add decisions
+ok "$SETUP" "$S" --apply --trackers failures
+[ "$(find "$S/.trackers/tables" -name '*.tsv' -exec basename {} .tsv \; | sort)" = failures ]&&pass=$((pass+1))||{ echo 'FAIL failures-only selection population' >&2;fail=$((fail+1));}
+[ "$(sed -n 's/^## //p' "$S/.trackers/DEBRIEF.md")" = failures ]&&pass=$((pass+1))||{ echo 'FAIL failures-only prompt population' >&2;fail=$((fail+1));}
+if "$SETUP" "$S" --apply --trackers tasks >"$T/initialized-selection.out" 2>&1;then echo 'FAIL initialized selection accepted' >&2;fail=$((fail+1));else pass=$((pass+1));fi
+has "$T/initialized-selection.out" 'reason=trackers-only-during-initialization'
+ok "$SETUP" "$S" tracker-add decisions
 has "$S/.trackers/DEBRIEF.md" '## decisions';ok "$SETUP" "$S" tracker-remove decisions
 chmod -x "$S/.trackers/trackers.sh";if "$SETUP" "$S" tracker-add blocked >"$T/admin-recovery.out" 2>&1;then fail=$((fail+1));else pass=$((pass+1));fi
 grep -qF 'reason=repair-required action=/backlog repair' "$T/admin-recovery.out"&&pass=$((pass+1))||fail=$((fail+1));chmod +x "$S/.trackers/trackers.sh"
+
+MSEL="$T/multi-selection";newroot "$MSEL";ok "$SETUP" "$MSEL" --apply --trackers routines,tasks,feedback
+[ "$(sed -n 's/^## //p' "$MSEL/.trackers/DEBRIEF.md")" = $'tasks\nfeedback\nroutines' ]&&pass=$((pass+1))||{ echo 'FAIL selection was not normalized to package order' >&2;fail=$((fail+1));}
+[ "$(find "$MSEL/.trackers/tables" -name '*.tsv' -exec basename {} .tsv \; | sort)" = $'feedback\nroutines\ntasks' ]&&pass=$((pass+1))||{ echo 'FAIL selected table set mismatch' >&2;fail=$((fail+1));}
+
+# Invalid fresh selections refuse before creating the tracker layer.
+for value in '' 'tasks,tasks' 'tasks,unknown' ',tasks' 'tasks,' 'tasks,,issues';do
+  BAD="$T/bad-selection-${fail}-${pass}";newroot "$BAD";no "$SETUP" "$BAD" --apply --trackers "$value"
+  [ ! -e "$BAD/.trackers" ]&&pass=$((pass+1))||{ echo "FAIL invalid selection wrote layer: [$value]" >&2;fail=$((fail+1));}
+done
+
+# Red-prove the exact-population assertion against an unselected packaged table.
+exact_population(){ [ "$(find "$1/.trackers/tables" -name '*.tsv' -exec basename {} .tsv \; | sort)" = failures ];}
+exact_population "$S"&&pass=$((pass+1))||fail=$((fail+1))
+printf 'id\tcreated\ttext\tevidence\n'>"$S/.trackers/tables/tasks.tsv"
+if exact_population "$S";then echo 'FAIL exact population guard missed unselected table' >&2;fail=$((fail+1));else pass=$((pass+1));fi
+rm "$S/.trackers/tables/tasks.tsv";exact_population "$S"&&pass=$((pass+1))||fail=$((fail+1))
 
 # Noncanonical canaries are ignored, and every retired selector refuses before writing.
 O="$T/noncanonical";newroot "$O";mkdir -p "$O/project-trackers";printf 'CUSTOM_CANARY\n'>"$O/project-trackers/README.md"

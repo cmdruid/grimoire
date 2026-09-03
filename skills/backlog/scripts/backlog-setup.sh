@@ -7,10 +7,11 @@ die_action(){ echo "reason=$1 action=$2" >&2;exit 2;}
 valid_stem(){ [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]];}
 
 ROOT="${1:-}";[ -n "$ROOT" ]||die usage;shift
-TR=.trackers;mode="";stem=""
+TR=.trackers;mode="";stem="";selection_arg_set=false;selection_arg=''
 while [ $# -gt 0 ];do case "$1" in
   --list)mode=list;shift;;
-  --apply)mode=setup;shift;[ $# -eq 0 ]||die queue-selection-retired;;
+  --apply)mode=setup;shift;;
+  --trackers)[ $# -ge 2 ]||die invalid-trackers;[ "$selection_arg_set" = false ]||die duplicate-trackers-option;selection_arg_set=true;selection_arg="$2";shift 2;;
   repair)mode=repair;shift;[ $# -eq 0 ]||die usage;;
   tracker-add|tracker-remove)mode="$1";stem="${2:-}";shift 2;[ $# -eq 0 ]||die usage;;
   *)die usage;;esac;done
@@ -23,12 +24,32 @@ SKILL="$(CDPATH='' cd -P "$(dirname "$0")/.."&&pwd)"
 SOURCE="$SKILL/scripts/trackers.sh";CLASSIFIER="$SKILL/scripts/tracker-layer-status.sh"
 README_STATUS="$SKILL/scripts/tracker-readme-status.sh";README_TEMPLATE="$SKILL/templates/trackers-readme-block.md"
 LAYER="$ROOT/$TR";TABLES="$LAYER/tables";PROVIDER="$LAYER/trackers.sh"
-HISTORY="$LAYER/history.tsv";MARKER="$TABLES/.gitkeep";README="$LAYER/README.md";PROMPT="$LAYER/DEBRIEF.md"
+HISTORY="$LAYER/history.tsv";MARKER="$TABLES/.gitkeep";README="$LAYER/README.md";PROMPT="$LAYER/DEBRIEF.md";SELECTION="$LAYER/.setup-selection"
 QUEUE_HEADER=$'id\tcreated\ttext\tevidence';HISTORY_HEADER=$'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult'
+PACKAGED='tasks issues failures feedback routines'
 [ -n "$mode" ]||die usage
 if [ "$mode" = list ];then
-  printf '%s\n' $'stem=feedback\ttitle=Project Feedback\tuse-when="Development-experience observations whose remedy belongs in this project."' $'stem=issues\ttitle=Issues\tuse-when="Project problems, risks, and limitations."' $'stem=routines\ttitle=Routines\tuse-when="Repeatable responses to recognizable development triggers."' $'stem=tasks\ttitle=Tasks\tuse-when="Work someone should build or change."';exit
+  [ "$selection_arg_set" = false ]||die usage
+  printf '%s\n' $'stem=tasks\ttitle=Tasks\tuse-when="Accepted concrete project outcomes."' $'stem=issues\ttitle=Issues\tuse-when="Established project problems, risks, and limitations."' $'stem=failures\ttitle=Failures\tuse-when="Unresolved test, build, and project-tool behavior."' $'stem=feedback\ttitle=Project Feedback\tuse-when="Qualitative development experience whose remedy belongs in this project."' $'stem=routines\ttitle=Routines\tuse-when="Repeatable responses to recognizable development triggers."';exit
 fi
+[ "$selection_arg_set" = false ]||[ "$mode" = setup ]||die usage
+
+normalize_selection(){
+  local input="$1" item packaged seen=' ' result='' old_ifs="$IFS"
+  local -a items=()
+  [ -n "$input" ]&&[[ "$input" != ,* ]]&&[[ "$input" != *, ]]&&[[ "$input" != *,,* ]]||return 1
+  IFS=,;read -r -a items <<<"$input";IFS="$old_ifs"
+  for item in "${items[@]}";do
+    case "$item" in tasks|issues|failures|feedback|routines);;*)return 1;;esac
+    case "$seen" in *" $item "*)return 1;;esac
+    seen+="$item "
+  done
+  for packaged in $PACKAGED;do case "$seen" in *" $packaged "*)result+="${result:+,}$packaged";;esac;done
+  [ -n "$result" ]||return 1
+  printf '%s\n' "$result"
+}
+normalized_arg=''
+if [ "$selection_arg_set" = true ];then normalized_arg="$(normalize_selection "$selection_arg")"||die invalid-trackers "$selection_arg";fi
 case "$mode" in tracker-add|tracker-remove)valid_stem "$stem"||die invalid-stem "$stem";;esac
 
 check_parent(){ local rel="$1" cur="$ROOT" c o="$IFS";IFS=/;read -r -a a <<<"$rel";IFS="$o";for c in "${a[@]}";do cur="$cur/$c";[ ! -L "$cur" ]||die symlink "$cur";[ ! -e "$cur" ]||[ -d "$cur" ]||die incompatible-entry "$cur";done;}
@@ -41,10 +62,27 @@ case "$classifier_mode" in tracker-add|tracker-remove)classifier_mode=runtime;;e
 facts="$("$CLASSIFIER" "$classifier_mode" --root "$ROOT")"
 fact(){ printf '%s\n' "$facts"|sed -n "s/^$1=//p"|head -n1;}
 layer_status="$(fact layer_status)";provider_status="$(fact provider_status)";readme_state="$(fact readme_status)";recovery="$(fact recovery_action)"
+selection_status="$(fact selection_status)";recorded_selection="$(fact selected_trackers)"
 [ -n "$layer_status" ]&&[ -n "$provider_status" ]&&[ -n "$readme_state" ]&&[ -n "$recovery" ]||die classifier
 
+selected=''
+if [ "$mode" = setup ];then
+  case "$layer_status:$selection_status" in
+    initialized:*)[ "$selection_arg_set" = false ]||die trackers-only-during-initialization;;
+    selection-cleanup:valid|resumable-prefix:valid)
+      selected="$recorded_selection"
+      [ "$selection_arg_set" = false ]||[ "$normalized_arg" = "$selected" ]||die conflicting-trackers "$normalized_arg"
+      ;;
+    absent:absent)if [ "$selection_arg_set" = true ];then selected="$normalized_arg";else selected='tasks,issues,failures,feedback,routines';fi;;
+    resumable-prefix:absent)
+      selected='tasks,issues,feedback,routines'
+      [ "$selection_arg_set" = false ]||[ "$normalized_arg" = "$selected" ]||die conflicting-trackers "$normalized_arg"
+      ;;
+  esac
+fi
+
 case "$mode:$layer_status" in
-  setup:absent|setup:resumable-prefix|setup:initialized|tracker-add:initialized|tracker-remove:initialized|repair:initialized);;
+  setup:absent|setup:resumable-prefix|setup:selection-cleanup|setup:initialized|tracker-add:initialized|tracker-remove:initialized|repair:initialized);;
   *:ledger-loss)die_action ledger-recovery-required "$recovery";;
   setup:ambiguous|tracker-add:ambiguous|tracker-remove:ambiguous|repair:ambiguous)die ambiguous-state human-review;;
   repair:*)die_action setup-required '/backlog setup';;
@@ -55,7 +93,7 @@ esac
 case "$mode" in tracker-add|tracker-remove)[ "$provider_status" = current ]||die_action repair-required '/backlog repair';;esac
 
 # Complete preflight before the first durable write.
-check_parent "$TR";check_parent "$TR/tables";check_file "$PROVIDER";check_file "$HISTORY";check_file "$MARKER";check_file "$README"
+check_parent "$TR";check_parent "$TR/tables";check_file "$PROVIDER";check_file "$HISTORY";check_file "$MARKER";check_file "$README";check_file "$SELECTION"
 layer_preexisted=false;[ -d "$LAYER" ]&&layer_preexisted=true
 if [ "$mode" != repair ];then
   check_file "$PROMPT"
@@ -75,6 +113,11 @@ report(){
     writes=$((writes+1))
     [ -z "${BACKLOG_SETUP_TEST_AFTER_WRITE:-}" ]||{ [ -x "$BACKLOG_SETUP_TEST_AFTER_WRITE" ]||die test-hook;"$BACKLOG_SETUP_TEST_AFTER_WRITE" "$ROOT" "$TR" "$path" "$writes";}
   fi
+}
+report_transient(){
+  local path="$1"
+  writes=$((writes+1))
+  [ -z "${BACKLOG_SETUP_TEST_AFTER_WRITE:-}" ]||{ [ -x "$BACKLOG_SETUP_TEST_AFTER_WRITE" ]||die test-hook;"$BACKLOG_SETUP_TEST_AFTER_WRITE" "$ROOT" "$TR" "$path" "$writes";}
 }
 head_differs(){
   local rel="$1"
@@ -116,12 +159,13 @@ if [ "$mode" = setup ];then
   report_exact_reconciled "$MARKER" /dev/null
   report_exact_reconciled "$PROVIDER" "$SOURCE"
   tmp_header="$(mktemp "${TMPDIR:-/tmp}/backlog-queue-header.XXXXXX")";printf '%s\n' "$QUEUE_HEADER">"$tmp_header"
-  for s in tasks issues feedback routines;do report_exact_reconciled "$TABLES/$s.tsv" "$tmp_header";done
+  selection_words="${selected//,/ }"
+  for s in $selection_words;do report_exact_reconciled "$TABLES/$s.tsv" "$tmp_header";done
   tmp_history="$(mktemp "${TMPDIR:-/tmp}/backlog-history-header.XXXXXX")";printf '%s\n' "$HISTORY_HEADER">"$tmp_history";report_exact_reconciled "$HISTORY" "$tmp_history"
   report_readme_reconciled
   tmp_prompt="$(mktemp "${TMPDIR:-/tmp}/backlog-prompt.XXXXXX")";printf '%s\n' '# Backlog debrief routing' '' 'Edit each section to match this project. Debrief reads this file; the generic tracker API does not.'>"$tmp_prompt"
   if [ -f "$PROMPT" ];then
-    for s in tasks issues feedback routines;do
+    for s in $selection_words;do
       if grep -qFx -- "## $s" "$PROMPT";then printf '\n'>>"$tmp_prompt";awk 'BEGIN{p=0}/^## /{p=1}p{print}' "$SKILL/suggestions/$s.md">>"$tmp_prompt";fi
     done
     report_exact_reconciled "$PROMPT" "$tmp_prompt"
@@ -141,8 +185,31 @@ require_layer(){ check_parent "$TR";[ -d "$LAYER" ]&&[ ! -L "$LAYER" ]||die vani
 require_tables(){ require_layer;[ -d "$TABLES" ]&&[ ! -L "$TABLES" ]||die vanished-tables-root "$TR/tables";}
 require_prompt_parent(){ require_layer;}
 if [ "$layer_preexisted" = true ];then require_layer
-elif [ "$mode" = setup ];then ensure_tree "$TR"
+elif [ "$mode" = setup ];then
+  ensure_tree "$TR"
+  [ -z "${BACKLOG_SETUP_TEST_AFTER_LAYER_CREATE:-}" ]||{ [ -x "$BACKLOG_SETUP_TEST_AFTER_LAYER_CREATE" ]||die test-hook;"$BACKLOG_SETUP_TEST_AFTER_LAYER_CREATE" "$ROOT" "$TR";}
 else die vanished-tracker-root "$TR";fi
+
+selection_tmp=''
+cleanup_selection_tmp(){ [ -z "$selection_tmp" ]||rm -f "$selection_tmp";}
+trap cleanup_selection_tmp EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+write_selection(){
+  require_layer;selection_tmp="$LAYER/.setup-selection.tmp.$$";fresh_tmp "$selection_tmp"
+  printf '%s\n%s\n' 'schema=backlog/setup-selection@1' "trackers=$selected">"$selection_tmp"
+  [ "$(wc -l <"$selection_tmp"|tr -d ' ')" -eq 2 ]&&
+    [ "$(sed -n '1p' "$selection_tmp")" = 'schema=backlog/setup-selection@1' ]&&
+    [ "$(sed -n '2p' "$selection_tmp")" = "trackers=$selected" ]||die invalid-selection-temporary
+  [ -z "${BACKLOG_SETUP_TEST_BEFORE_SELECTION_RENAME:-}" ]||{ [ -x "$BACKLOG_SETUP_TEST_BEFORE_SELECTION_RENAME" ]||die test-hook;"$BACKLOG_SETUP_TEST_BEFORE_SELECTION_RENAME" "$ROOT" "$TR" "$selection_tmp";}
+  require_layer;check_file "$SELECTION";[ ! -e "$SELECTION" ]||die concurrent-project-edit "$TR/.setup-selection"
+  mv "$selection_tmp" "$SELECTION";selection_tmp='';report_transient "$TR/.setup-selection"
+}
+if [ "$mode" = setup ]&&[ "$layer_status" != initialized ];then
+  if [ ! -f "$SELECTION" ];then write_selection;fi
+  require_layer;check_file "$SELECTION"
+fi
 if [ "$mode" = setup ];then ensure_tree "$TR/tables";else require_tables;fi
 
 require_destination_parent(){ case "$1" in "$TABLES"/*)require_tables;;*)require_layer;;esac;}
@@ -163,7 +230,7 @@ append_module(){
   if [ -f "$src" ];then awk 'BEGIN{p=0}/^## /{p=1}p{print}' "$src">"$module";else printf '## %s\n\nDescribe which finished-work leftovers belong in `%s`.\n' "$s" "$s">"$module";fi
   tmp="$PROMPT.tmp.$$";fresh_tmp "$tmp"
   awk -v target="$s" -v module="$module" '
-    function rank(v){return v=="tasks"?1:v=="issues"?2:v=="feedback"?3:v=="routines"?4:99}
+    function rank(v){return v=="tasks"?1:v=="issues"?2:v=="failures"?3:v=="feedback"?4:v=="routines"?5:99}
     function emit( line){while((getline line < module)>0)print line;close(module)}
     BEGIN{target_rank=rank(target)}
     /^## /&&!done&&rank(substr($0,4))>target_rank{
@@ -181,18 +248,25 @@ create_queue(){ local s="$1" src="$2" file;file="$TABLES/$s.tsv";if [ ! -f "$fil
 validate_prehistory(){
   local s headings prefix_facts prefix_status
   require_layer;require_prompt_parent;check_file "$PROVIDER";[ -x "$PROVIDER" ]&&cmp -s "$SOURCE" "$PROVIDER"||die malformed-provider
-  for s in tasks issues feedback routines;do
+  for s in $selection_words;do
     check_file "$TABLES/$s.tsv";[ -f "$TABLES/$s.tsv" ]&&[ "$(wc -l <"$TABLES/$s.tsv"|tr -d ' ')" -eq 1 ]&&[ "$(head -n 1 "$TABLES/$s.tsv")" = "$QUEUE_HEADER" ]||die malformed-tracker "$s"
     [ -f "$PROMPT" ]&&[ "$(grep -cFx -- "## $s" "$PROMPT"||true)" -eq 1 ]||die malformed-prompt "$s"
   done
+  actual_tables="$(find "$TABLES" -maxdepth 1 -type f -name '*.tsv' -exec basename {} .tsv \; | sort | tr '\n' ' ' | sed 's/ $//')"
+  expected_tables="$(printf '%s\n' $selection_words | sort | tr '\n' ' ' | sed 's/ $//')"
+  [ "$actual_tables" = "$expected_tables" ]||die selection-population-mismatch
   headings="$(sed -n 's/^## //p' "$PROMPT")"
-  while IFS= read -r s;do case "$s" in tasks|issues|feedback|routines);;*)die malformed-prompt "$s";;esac;done <<<"$headings"
+  [ "$headings" = "$(printf '%s\n' $selection_words)" ]||die selection-prompt-mismatch
+  [ -f "$MARKER" ]&&[ ! -L "$MARKER" ]&&[ ! -s "$MARKER" ]||die malformed-marker
+  readme_facts="$("$README_STATUS" "$README_TEMPLATE" "$README")";[ "$(printf '%s\n' "$readme_facts"|sed -n 's/^readme_status=//p')" = current ]||die malformed-readme
   prefix_facts="$("$CLASSIFIER" setup --root "$ROOT")";prefix_status="$(printf '%s\n' "$prefix_facts"|sed -n 's/^layer_status=//p')"
   [ "$prefix_status" = resumable-prefix ]||die malformed-prefix "$prefix_status"
 }
 
 validate_provider(){
+  local phase="${1:-runtime}"
   require_layer;[ -x "$PROVIDER" ]&&[ ! -L "$PROVIDER" ]&&cmp -s "$SOURCE" "$PROVIDER"||die malformed-provider
+  [ "$phase" = prehistory ]&&return 0
   description="$("$PROVIDER" describe)"||die malformed-provider
   schema_lines="$(printf '%s\n' "$description"|sed -n '/^schema=/p')"
   [ "$schema_lines" = 'schema=tracker@2' ]||die malformed-provider
@@ -221,10 +295,20 @@ elif [ "$mode" = setup ];then
     for file in "$TABLES"/*.tsv;do s="$(basename "$file" .tsv)";src="$SKILL/suggestions/$s.md";[ -f "$src" ]||src="";append_module "$s" "$src";done
     shopt -u nullglob
   else
-    for s in tasks issues feedback routines;do create_queue "$s" "$SKILL/suggestions/$s.md";done
-    if [ ! -f "$HISTORY" ];then validate_prehistory;write_line_atomic "$HISTORY" "$HISTORY_HEADER";fi
+    for s in $selection_words;do create_queue "$s" "$SKILL/suggestions/$s.md";done
   fi
-  validate_provider;reconcile_readme
+  if [ "$layer_status" != initialized ]&&[ ! -f "$HISTORY" ];then validate_provider prehistory;else validate_provider;fi
+  reconcile_readme
+  if [ "$layer_status" != initialized ];then
+    if [ ! -f "$HISTORY" ];then validate_prehistory;write_line_atomic "$HISTORY" "$HISTORY_HEADER";fi
+    validate_provider
+    cleanup_facts="$("$CLASSIFIER" setup --root "$ROOT")"
+    [ "$(printf '%s\n' "$cleanup_facts"|sed -n 's/^layer_status=//p')" = selection-cleanup ]||die selection-cleanup-validation
+    [ -z "${BACKLOG_SETUP_TEST_BEFORE_SELECTION_REMOVE:-}" ]||{ [ -x "$BACKLOG_SETUP_TEST_BEFORE_SELECTION_REMOVE" ]||die test-hook;"$BACKLOG_SETUP_TEST_BEFORE_SELECTION_REMOVE" "$ROOT" "$TR";}
+    cleanup_facts="$("$CLASSIFIER" setup --root "$ROOT")"
+    [ "$(printf '%s\n' "$cleanup_facts"|sed -n 's/^layer_status=//p')" = selection-cleanup ]||die selection-cleanup-validation
+    require_layer;check_file "$SELECTION";rm "$SELECTION";report_transient "$TR/.setup-selection"
+  fi
 elif [ "$mode" = tracker-add ];then
   validate_provider;create_queue "$stem" "$( [ -f "$SKILL/suggestions/$stem.md" ]&&printf '%s' "$SKILL/suggestions/$stem.md"||true )"
 else

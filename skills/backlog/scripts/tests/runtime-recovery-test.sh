@@ -21,6 +21,19 @@ eq git-loss 'reason=ledger-recovery-required action=git-restore' "$(diagnostic "
 H="$T/readme-loss";cp -R "$R" "$H";rm "$H/.trackers/history.tsv";eq readme-loss 'reason=ledger-recovery-required action=human-review' "$(diagnostic "$H")"
 A="$T/absent";newroot "$A";eq absent 'reason=setup-required action=/backlog setup' "$(diagnostic "$A")"
 P="$T/prefix";newroot "$P";mkdir -p "$P/.trackers/tables";touch "$P/.trackers/tables/.gitkeep";printf 'id\tcreated\ttext\tevidence\n'>"$P/.trackers/tables/tasks.tsv";eq prefix 'reason=setup-required action=/backlog setup' "$(diagnostic "$P")"
+I="$T/intent-prefix";newroot "$I";mkdir -p "$I/.trackers";printf '%s\n%s\n' 'schema=backlog/setup-selection@1' 'trackers=failures'>"$I/.trackers/.setup-selection";eq intent-prefix 'reason=setup-required action=/backlog setup' "$(diagnostic "$I")"
+STOP="$T/stop-cleanup.sh";printf '%s\n' '#!/bin/sh' 'exit 86'>"$STOP";chmod +x "$STOP"
+C="$T/selection-cleanup";newroot "$C";BACKLOG_SETUP_TEST_BEFORE_SELECTION_REMOVE="$STOP" "$SETUP" "$C" --apply --trackers failures >/dev/null 2>&1||true
+eq selection-cleanup 'reason=setup-required action=/backlog setup' "$(diagnostic "$C")"
+for damage in malformed-intent reserved-temporary selection-mismatch;do
+  D="$T/$damage";newroot "$D";mkdir -p "$D/.trackers/tables"
+  case "$damage" in
+    malformed-intent)printf 'bad\n'>"$D/.trackers/.setup-selection";;
+    reserved-temporary)printf 'foreign\n'>"$D/.trackers/.setup-selection.tmp.foreign";;
+    selection-mismatch)printf '%s\n%s\n' 'schema=backlog/setup-selection@1' 'trackers=failures'>"$D/.trackers/.setup-selection";printf 'id\tcreated\ttext\tevidence\n'>"$D/.trackers/tables/tasks.tsv";;
+  esac
+  eq "$damage" 'reason=ledger-recovery-required action=human-review' "$(diagnostic "$D")"
+done
 M="$T/ambiguous";newroot "$M";mkdir -p "$M/.trackers";printf 'bad\n'>"$M/.trackers/tasks.tsv";eq ambiguous 'reason=ledger-recovery-required action=human-review' "$(diagnostic "$M")"
 
 # Every provider-using entrypath binds to the executable runtime helper, and each binding is red-proved.

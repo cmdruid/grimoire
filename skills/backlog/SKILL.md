@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: "Manage project-owned living follow-up trackers in a first-class tracker layer. Setup deploys the tracker@2 API, lifecycle history, and default tables; migrate converts one exact tracker@1 installation; anchor installs an explicit project-owned discovery pointer; tracker add|remove|list manages extensible queues; file and debrief capture follow-ups; query pages them; curate updates or consumes them. Use for `/backlog ...`, filing or grooming follow-ups, anchoring the tracker layer, and sweeping completed work before substantive context is lost."
+description: "Manage project-owned living follow-up trackers in a first-class tracker layer. Setup deploys the tracker@2 API, lifecycle history, and selected packaged tables; migrate converts one exact tracker@1 installation; anchor manages an explicit project route; tracker add|remove|list manages extensible queues; file and debrief capture follow-ups; query pages them; curate updates or consumes them. Use for `/backlog ...`, filing or grooming follow-ups, managing the tracker layer route, and sweeping completed work before substantive context is lost."
 ---
 
 # backlog — living follow-up trackers
@@ -13,10 +13,10 @@ layer is public project state: `README.md`, package-managed `trackers.sh`, `hist
 
 | Invocation | Read | Does |
 |---|---|---|
-| `/backlog setup` | `verbs/setup.md` | Initialize or reconcile the tracker layer |
+| `/backlog setup [--trackers <stems>]` | `verbs/setup.md` | Initialize a selected packaged set or reconcile the tracker layer |
 | `/backlog repair` | `verbs/repair.md` | Restore the provider and managed tracker-root guide |
 | `/backlog migrate [<source-root>]` | `verbs/migrate.md` | Convert one exact tracker@1 TSV installation |
-| `/backlog anchor` | `verbs/anchor.md` | Add an explicit project-owned pointer to `.trackers/README.md` |
+| `/backlog anchor [--debrief|--remove]` | `verbs/anchor.md` | Install, refresh, or remove the managed project debrief route |
 | `/backlog tracker add\|remove\|list` | `verbs/tracker.md` | Manage or inspect queue files |
 | `/backlog file <stem> [text]` | `verbs/file.md` | Create one open item |
 | `/backlog query [<stem>\|--history]` | `verbs/query.md` | Catalog or page tracker and lifecycle state |
@@ -43,10 +43,12 @@ aliases.
   installed API.
 - Migrate runs package-local `scripts/migrate-trackers.sh`; it is the only tracker@1 reader. All
   other Backlog commands remain tracker@2-only.
-- Only explicitly invoked `/backlog anchor` may create or append to repository-root `AGENTS.md`, and
-  it writes only the fixed project-owned tracker pointer after preview and confirmation. Setup,
-  repair, migration, provider use, queue administration, and debrief never install, refresh, require,
-  or remove that prose. No Backlog path reads `CLAUDE.md` or restores route/debrief registration.
+- Only the public anchor procedure and package-local `scripts/trackers-anchor.sh` may write
+  repository-root `AGENTS.md`. They own exactly the `skill:backlog` block, bind every mutation to
+  previewed base and candidate digests, and support removal without tracker health. Setup may invoke
+  that same procedure only after explicit route consent; repair, migration, provider use, queue
+  administration, and debrief never require or mutate the front door. No Backlog path reads
+  `CLAUDE.md`.
 - Standalone setup, repair, tracker, file, and curate calls make one pathspec-scoped commit over unique
   reported `wrote=` / `reconciled=` / `removed=` paths through `scripts/scoped-commit.sh`. Inside debrief or an
   announced configuration sweep, remain write-only and return the paths to the caller. No changed
@@ -57,16 +59,28 @@ aliases.
 
 ## Project state and defaults
 
-First setup always initializes `tasks`, `issues`, `feedback`, and `routines`; queue population changes
-only through `tracker add|remove` after initialization. A valid `history.tsv` is the initialization
-boundary. Initialized setup preserves the incumbent queue population and data while reconciling the
+First setup initializes a nonempty selection from the packaged order
+`tasks`, `issues`, `failures`, `feedback`, `routines`; attended setup offers all five selected,
+explicit `--trackers` supplies the exact subset, and unattended setup defaults to all five. A valid
+`history.tsv` is the initialization boundary. Before it, `.setup-selection` is temporary recovery
+evidence that distinguishes omitted queues from incomplete writes; setup removes it only after full
+validation, and runtime directs a valid cleanup state back to setup. Initialized setup preserves the
+incumbent queue population and data—including former four-queue layers—while reconciling the
 provider, managed README block, and missing prompt sections for incumbent queues. Repair touches only
 the provider and managed README block.
 
-The `feedback` queue is project-owned: its default title is `Project Feedback`, and its remedy must
-belong in the repository. Debrief applies that subject boundary before editable prompt text. An
-observation whose remedy belongs in a reusable installed skill is returned to the custodial caller
-as a skill-tagged byproduct for the skill's home feedback channel and never enters `.trackers`.
+The `failures` queue holds unresolved test, build, and project-tool behavior without prematurely
+asserting a diagnosed defect. The `feedback` queue is project-owned: its default title is `Project
+Feedback`, and its remedy must belong in the repository. Debrief applies that subject boundary before
+editable prompt text. An observation whose remedy belongs in a reusable installed skill is returned
+to the custodial caller as a skill-tagged byproduct for the skill's home feedback channel and never
+enters `.trackers`.
+
+Within project-owned leftovers, route by knowledge state: chosen outcomes to `tasks`, established
+negative conditions to `issues`, unresolved operational sightings to `failures`, qualitative
+development experience to `feedback`, and repeatable trigger/response candidates to `routines`.
+Failure-family matching remains agent judgment over the component or command, stable signature, and
+observed behavior; the tracker@2 provider schema does not change.
 
 ## Edges
 
@@ -83,8 +97,9 @@ mint records, define another skill's domain judgment, or store session/workstrea
 
 ## Project templates
 
-None. The tracker README block and front-door pointer are package-only provider resources; setup
-refreshes only the managed README block, and explicit anchor installs project-owned prose.
+None. The tracker README block, `agents-route.md`, and retained exact-migration input
+`agents-pointer.md` are package-only resources. Setup refreshes only the managed tracker README
+block; the anchor path manages project front-door prose.
 
 ## Done when
 
