@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -354,7 +354,7 @@ Spec: → `specs/2026-09-03-agent-feedback-capture-and-independent-skill-tuning.
       filesystem identity.
     - Targeted byte comparisons confirm review, calibrate, and the edge block are unchanged.
 
-- [ ] **Slice 5: Repository hard-cut and independent-boundary acceptance gate** <requires: 1–4, 6>
+- [x] **Slice 5: Repository hard-cut and independent-boundary acceptance gate** <requires: 1–4, 6>
   - Files:
     - Create `scripts/tests/agent-feedback-hard-cut-test.sh`.
     - Modify `scripts/tests/run.sh`.

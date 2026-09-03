@@ -86,7 +86,7 @@ global capture and lifecycle management for reusable agent-system observations).
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
 | `foreman` | curate project operations: inventory and run publisher-owned procedures, capture or ingest brownfield know-how, verify and compose operations, and compile immutable goal runbooks |
 | `agent-feedback` | capture concrete observations about reusable skills, agents, harnesses, tools, and workflows into a private global TSV; query and close their lifecycle without remediation; standalone, outside every pack |
-| `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
+| `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), revise an explicitly selected editable skill from current conversation or one schema-free prose file (`tune`), and calibrate authoring doctrine — bundles the portable doctrine + gate |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
 
 Historical records that still explain the repository and skills library live under `docs/design/`.
