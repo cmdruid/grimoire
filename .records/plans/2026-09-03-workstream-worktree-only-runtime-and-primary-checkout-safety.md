@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -128,7 +128,7 @@ Implemented base: → `plans/2026-09-02-workstream-composed-control-surface-and-
 
 ## Slices
 
-- [ ] **Slice 1: Serialize one receipt-backed local landing — tracer** <requires: Task 0>
+- [x] **Slice 1: Serialize one receipt-backed local landing — tracer** <requires: Task 0>
   - Build-start gate: before editing any implementation file, preserve the reviewed predecessor
     implementation and this plan/spec pair in scoped commits, inspect the then-current
     `main...HEAD` topology, and reconcile current `main` into this ordinary Git worktree from that
@@ -183,7 +183,7 @@ Implemented base: → `plans/2026-09-02-workstream-composed-control-surface-and-
     writes nothing, and retains `land`. Normal exit and signal release the lease. Unsupported
     locking refuses before mutation, and interrupted delivery still reconciles from refs/receipts.
 
-- [ ] **Slice 2: Hard-cut runtime topology and parking** <requires: 1>
+- [x] **Slice 2: Hard-cut runtime topology and parking** <requires: 1>
   - Files: modify `skills/workstream/SKILL.md`,
     `skills/workstream/verbs/create.md`, `skills/workstream/verbs/load.md`,
     `skills/workstream/verbs/save.md`, `skills/workstream/verbs/sync.md`,
@@ -236,7 +236,7 @@ Implemented base: → `plans/2026-09-02-workstream-composed-control-surface-and-
     policies configure successfully; retired flags/verbs are unknown; no primary branch switch or
     parked state remains; hook-context isolation cases stay green.
 
-- [ ] **Slice 3: Make recovery current-worktree-only and remove stale custody adapters** <requires: 2>
+- [x] **Slice 3: Make recovery current-worktree-only and remove stale custody adapters** <requires: 2>
   - Files: modify `skills/workstream/scripts/workstream.sh`,
     `skills/workstream/SKILL.md`, `skills/workstream/verbs/load.md`,
     `skills/workstream/templates/compaction-anchor.md`, `AGENTS.md`,
@@ -284,7 +284,7 @@ Implemented base: → `plans/2026-09-02-workstream-composed-control-surface-and-
     scan; all identity/transaction mismatches refuse. Checkpoint still refuses inside an admitted
     worktree stream and otherwise behaves unchanged, with no dependency on Workstream internals.
 
-- [ ] **Slice 4: Enforce the primary endpoint for local, push, and PR** <requires: 3>
+- [x] **Slice 4: Enforce the primary endpoint for local, push, and PR** <requires: 3>
   - Files: modify `skills/workstream/scripts/workstream.sh`,
     `skills/workstream/scripts/workstream-git.sh`,
     `skills/workstream/SKILL.md`, `skills/workstream/verbs/ship.md`,
@@ -338,7 +338,7 @@ Implemented base: → `plans/2026-09-02-workstream-composed-control-surface-and-
     admission mismatch; clean local/push leave a coherent primary; PR publication tolerates dirt
     but merged postflight waits for clean leased synchronization and finalizes exactly once.
 
-- [ ] **Slice 5: Quarantine the legacy migration machine** <requires: 4>
+- [x] **Slice 5: Quarantine the legacy migration machine** <requires: 4>
   - Files: create `skills/workstream/scripts/workstream-migrate.sh`; modify
     `skills/workstream/scripts/workstream.sh`, `skills/workstream/verbs/migrate.md`,
     `skills/workstream/scripts/tests/migration-test.sh`,
@@ -377,7 +377,7 @@ Implemented base: → `plans/2026-09-02-workstream-composed-control-surface-and-
     mixed inventory lists all unsupported streams and mutates nothing; ordinary runtime contains
     no legacy parser or literal; every source guard has a proven red arm.
 
-- [ ] **Slice 6: Align public guidance and run the composed gate** <requires: 5>
+- [x] **Slice 6: Align public guidance and run the composed gate** <requires: 5>
   - Files: modify `README.md`, `PACK.md`, `skills/workstream/SKILL.md`,
     `skills/workstream/verbs/create.md`, `skills/workstream/verbs/load.md`,
     `skills/workstream/verbs/save.md`, `skills/workstream/verbs/sync.md`,
