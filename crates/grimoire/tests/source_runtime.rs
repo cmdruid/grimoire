@@ -1,4 +1,5 @@
 use std::fs;
+use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 
 use grimoire_core::inventory::scan;
@@ -113,6 +114,55 @@ fn production_runner_inspects_only_a_clean_pinned_worktree() {
 
     fs::write(source.join("dirty"), b"untracked").unwrap();
     assert!(inspect_pinned_source(paths, SourceAlias::new("local").unwrap(), &runner).is_err());
+}
+
+#[test]
+fn production_runner_forwards_only_validated_credentials_into_a_cleared_environment() {
+    let fixture = tempfile::tempdir().unwrap();
+    let root = fixture.path().canonicalize().unwrap();
+    let recorder = root.join("git-recorder");
+    let agent = root.join("agent.sock");
+    let askpass = root.join("askpass");
+    fs::write(
+        &recorder,
+        b"#!/bin/sh\n\
+printf 'home=%s\\n' \"${HOME-unset}\"\n\
+printf 'ssh-agent=%s\\n' \"${SSH_AUTH_SOCK-unset}\"\n\
+printf 'askpass=%s\\n' \"${GIT_ASKPASS-unset}\"\n\
+printf 'global=%s\\n' \"${GIT_CONFIG_GLOBAL-unset}\"\n\
+printf 'system=%s\\n' \"${GIT_CONFIG_NOSYSTEM-unset}\"\n\
+printf 'count=%s\\n' \"${GIT_CONFIG_COUNT-unset}\"\n\
+printf 'ambient-helper=%s\\n' \"${GIT_SSH_COMMAND-unset}\"\n\
+printf 'argv='\n\
+printf '%s|' \"$@\"\n",
+    )
+    .unwrap();
+    let mut permissions = fs::metadata(&recorder).unwrap().permissions();
+    permissions.set_mode(0o700);
+    fs::set_permissions(&recorder, permissions).unwrap();
+
+    let runner = SystemGitRunner::new(recorder)
+        .unwrap()
+        .with_ssh_agent(agent.clone())
+        .unwrap()
+        .with_askpass(askpass.clone())
+        .unwrap();
+    let result = runner
+        .run(GitCommand::LsRemote {
+            repository: "https://example.invalid/repository.git".into(),
+        })
+        .unwrap();
+    let output = String::from_utf8(result.stdout).unwrap();
+
+    assert!(output.contains("home=unset\n"));
+    assert!(output.contains(&format!("ssh-agent={}\n", agent.display())));
+    assert!(output.contains(&format!("askpass={}\n", askpass.display())));
+    assert!(output.contains("global=/dev/null\n"));
+    assert!(output.contains("system=1\n"));
+    assert!(output.contains("count=9\n"));
+    assert!(output.contains("ambient-helper=unset\n"));
+    assert!(output
+        .contains("argv=ls-remote|--symref|--exit-code|https://example.invalid/repository.git|"));
 }
 
 fn git<const N: usize>(directory: &std::path::Path, args: [&str; N]) {

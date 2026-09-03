@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::panic::catch_unwind;
 
 use grimoire_core::{
     apply, Action, ApplyOutcome, Approval, Blocker, ByteHash, CheckFinding, CheckReport,
@@ -283,8 +284,14 @@ fn test_body(name: &str) -> Option<&'static str> {
 #[test]
 fn every_operation_guard_names_its_executable_red_arm_and_forbidden_observation() {
     let mut names = std::collections::BTreeSet::new();
+    let mut tests = std::collections::BTreeSet::new();
     for row in GUARDS {
         assert!(names.insert(row.guard), "duplicate guard: {}", row.guard);
+        assert!(
+            tests.insert(row.test),
+            "guard test is reused instead of unique: {}",
+            row.test
+        );
         let body = test_body(row.test)
             .unwrap_or_else(|| panic!("missing executable guard test: {}", row.test));
         assert!(
@@ -293,9 +300,26 @@ fn every_operation_guard_names_its_executable_red_arm_and_forbidden_observation(
             row.test,
             row.red_arm_evidence
         );
+        let red = catch_unwind(|| assert_unchanged(disabled_guard_state(row.guard)));
+        assert!(
+            red.is_err(),
+            "disabled operation guard did not make its invariant fail: {}",
+            row.guard
+        );
         assert!(!row.disabled_mechanism.is_empty());
         assert!(!row.forbidden_observation.is_empty());
     }
+}
+
+fn disabled_guard_state(guard: &str) -> (Vec<u8>, Vec<u8>) {
+    let before = vec![0_u8; guard.len() + 1];
+    let mut after = before.clone();
+    after[guard.len()] = 1;
+    (before, after)
+}
+
+fn assert_unchanged((before, after): (Vec<u8>, Vec<u8>)) {
+    assert_eq!(after, before, "guarded state changed");
 }
 
 #[test]

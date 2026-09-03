@@ -1,4 +1,5 @@
 use std::fs;
+use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -161,6 +162,7 @@ fn controlled_forbidden_import_arm_is_live() {
             },
         ]
     );
+    assert!(catch_unwind(|| assert_no_violations(&violations)).is_err());
 }
 
 #[test]
@@ -226,12 +228,21 @@ fn controlled_tui_absence_arms_are_live() {
             "fs::write(",
         ),
     ] {
+        let violations = scan([(Path::new("controlled.rs"), source)], &[(rule, needle)]);
         assert_eq!(
-            scan([(Path::new("controlled.rs"), source)], &[(rule, needle)]),
+            violations,
             vec![Violation {
                 path: PathBuf::from("controlled.rs"),
                 rule,
             }]
         );
+        assert!(
+            catch_unwind(|| assert_no_violations(&violations)).is_err(),
+            "controlled arm did not fail the unchanged {rule} assertion"
+        );
     }
+}
+
+fn assert_no_violations(violations: &[Violation]) {
+    assert!(violations.is_empty(), "{violations:#?}");
 }

@@ -135,7 +135,7 @@ This task is read-only and produces no commit.
     and the second home reproduces exact committed state without Git, candidate, cache, source, or
     lock rewriting.
 
-- [ ] **Slice 3: Make the final boundary and negative-guard audit executable** <requires: 1, 2>
+- [x] **Slice 3: Make the final boundary and negative-guard audit executable** <requires: 1, 2>
   - Files: modify `crates/grimoire-core/tests/source_boundary.rs`,
     `crates/grimoire-core/tests/operation_boundary.rs`, `crates/grimoire/tests/boundary.rs`, and
     `crates/grimoire/tests/source_runtime.rs`; create
