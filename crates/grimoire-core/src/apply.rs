@@ -919,10 +919,10 @@ fn restore_before(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
                     &destination,
                 )?;
             }
-            if let Some(before) = &link.before {
+            if let Some(removed) = link.before.as_ref().or(link.after.as_ref()) {
                 parent.cleanup_capture_if_owned(
                     &format!(".{}.{}.link-remove", link.skill, nonce),
-                    &bytes_path(before),
+                    &bytes_path(removed),
                     &destination,
                 )?;
             }
@@ -1644,7 +1644,9 @@ mod link_capture_tests {
     #[test]
     fn interrupted_exchange_and_removal_captures_restore_without_clobbering() {
         let temporary = tempfile::tempdir().unwrap();
-        let parent_path = temporary.path().join("skills");
+        let user = temporary.path().join("user");
+        let paths = Paths::global(user, temporary.path().join("home")).unwrap();
+        let parent_path = paths.skills_dir();
         let parent = DirectoryIdentity::capture_or_create(&parent_path).unwrap();
         let destination = parent_path.join("one");
 
@@ -1682,6 +1684,34 @@ mod link_capture_tests {
             .restore_removed_link("one", Path::new("old"), "recovery", &destination)
             .unwrap();
         assert_eq!(fs::read_link(&destination).unwrap(), Path::new("old"));
+        assert!(!parent_path.join(".one.recovery.link-remove").exists());
+
+        fs::remove_file(&destination).unwrap();
+        std::os::unix::fs::symlink("created", &destination).unwrap();
+        renameat_with(
+            &parent.descriptor,
+            "one",
+            &parent.descriptor,
+            ".one.recovery.link-remove",
+            RenameFlags::NOREPLACE,
+        )
+        .unwrap();
+        let journal = Journal {
+            schema: JOURNAL_SCHEMA.into(),
+            scope_key: "global".into(),
+            nonce: "recovery".into(),
+            plan_digest: "1".repeat(64),
+            committed: false,
+            state: Vec::new(),
+            links: vec![LinkTransition {
+                skill: "one".into(),
+                before: None,
+                after: Some(b"created".to_vec()),
+            }],
+            completed: Vec::new(),
+        };
+        restore_before(&paths, &journal, "recovery").unwrap();
+        assert!(!destination.exists());
         assert!(!parent_path.join(".one.recovery.link-remove").exists());
     }
 }
