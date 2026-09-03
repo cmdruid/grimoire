@@ -57,14 +57,14 @@ at write time while preserving explicit `mark` / `map` / `walk`. None is part of
   confirmed implementation fixes and full re-review without taking ownership; after the caller
   accepts a passing document review, Contractor sequences an approved specification only when a plan
   is useful and can walk that job.
-- Contractor plans and roadmaps are queue sources for Workstream. Workstream owns isolation,
-  landing, and the live stream loop; Contractor never ships.
+- Contractor plans and roadmaps are queue sources for Workstream. Workstream owns one registered
+  worktree, configurable landing, and the live stream loop; Contractor never ships.
 - Journal defines the record contract. Notepad writes notes, Auditor and Debugger write reports,
   and Analyst reads records, reports, the first-class tracker provider, and git history into cited
   briefings.
-- A workstream owns one concise `WORKSTREAM.md` runbook and helper-owned `workstream.tsv` state. The
-  root checkout may instead carry one token-bound `CHECKPOINT.md`; one session never uses both
-  lifecycles.
+- A workstream owns one concise `WORKSTREAM.md` runbook and helper-owned `workstream.tsv` state in
+  its registered worktree. The root checkout may instead carry one token-bound `CHECKPOINT.md`;
+  one session never uses both lifecycles.
 - Foreman compiles verified operation closures into immutable goal records. A root pursuit asks
   Checkpoint to own mutable progress; a stream pursuit reads Workstream's admitted projection. The harness goal
   feature may drive either runbook, but Foreman never writes either runtime surface or expands tool
@@ -88,9 +88,10 @@ at write time while preserving explicit `mark` / `map` / `walk`. None is part of
 - Workstream may submit a bounded queue unit to Delegate, which chooses whether and how to dispatch
   it and resumes Workstream from the returned result. When file-work needs out-of-band transport,
   Delegate may use Mailbox; Mailbox transports the artifact but never chooses the route. Workstream's
-  main session remains the sole writer of its held target. Delegate and Mailbox are optional: if
-  either needed capability is absent, the unit runs inline. Delegate may expose its own optional
-  `delegate/hooks/byproducts.md` policy through explicit setup; the pack never fills it.
+  main session remains the sole writer of its stream worktree and active unit. Delegate and Mailbox
+  are optional: if either needed capability is absent, the unit runs inline. Delegate may expose
+  its own optional `delegate/hooks/byproducts.md` policy through explicit setup; the pack never
+  fills it.
 - Foreman curates the cross-owner operation catalog and writes only its own operations, doctrine,
   route, and goal records; each publisher remains able to follow its own operations directly.
   Scheduler owns only local recurring-run state.

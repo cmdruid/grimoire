@@ -87,7 +87,7 @@ global capture and guided tuning of reusable-skill observations). See *The packs
 | `foreman` | curate project operations: inventory and run publisher-owned procedures, capture or ingest brownfield know-how, verify and compose operations, and compile immutable goal runbooks |
 | `skill-feedback` | capture concrete reusable-skill observations into a private global TSV and guide later bounded review; standalone, outside every pack |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), and calibrate the doctrine for building skills — bundles the portable authoring doctrine + gate |
-| `workstream` | drive a lean, resumable development stream with guarded create → ship → recycle lifecycle |
+| `workstream` | drive one registered worktree through a lean, resumable create → ship → recycle loop with configurable landing and guarded primary synchronization |
 
 Historical records that still explain the repository and skills library live under `docs/design/`.
 The published product contract above is the sole authority for Grimoire package-manager behavior.
@@ -110,8 +110,9 @@ staged engine lives at `.records/records.sh`, beside the introductory
 `history.tsv` lifecycle ledger, and adjacent canonical provider `.trackers/trackers.sh`. Backlog owns that
 layer; consumer skills invoke the installed provider directly.
 Workstream alone may additionally use the fixed **`.streams/`** control home for its optional
-`CONFIG.md`, guide, helper, compact history, and ignored runtime worktrees. It is a narrow lifecycle
-exception, not generic skilldata and not a selectable project root.
+`CONFIG.md`, guide, helper, compact history, and ignored registered runtime worktrees. Each stream
+owns one such worktree; delivery synchronizes the clean primary checkout under a repository lease.
+It is a narrow lifecycle exception, not generic skilldata and not a selectable project root.
 These canonical homes are constants, not front-door configuration. Each durable-home skill owns
 its files. Backlog's first initialization selects a nonempty subset of
 `tasks,issues,failures,feedback,routines` and defaults to all five; initialized projects preserve

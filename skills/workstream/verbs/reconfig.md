@@ -14,6 +14,6 @@ original hook fingerprints; only identities that haven't started use the new bod
 
 The helper uses a pending contract hash to recover either side of an interrupted two-file update.
 On a refusal, don't edit `workstream.tsv`; rerun `reconfig` after resolving the reported config,
-custody, or worktree condition.
+custody, or registered-worktree condition.
 
 Done when the helper reports `applied` or `unchanged` and ordinary `read` admits the stream.

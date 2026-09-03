@@ -10,5 +10,8 @@ transition, and preserve all surrounding prose. A duplicate, nested, malformed, 
 concurrently changed extent refuses. Setup, repair, create, and load never call this verb
 implicitly.
 
+The installed route remains current-worktree-only: a top-level runbook activates `read-current`;
+without one it stays inert and never searches sibling stream worktrees.
+
 Done when a follow-up `status` reports the requested state. Commit the front-door change only when
 the caller's repository policy authorizes it.

@@ -5,8 +5,8 @@ description: "Drive a long-lived development stream through a guarded, resumable
 
 # Workstream
 
-Use one persistent branch and checkout to build and land a queue of coherent units. The project
-remains free-form outside a stream. Inside one, `WORKSTREAM.md` is the concise runbook and
+Use one registered worktree and branch to build and land a queue of coherent units. Inside one,
+`WORKSTREAM.md` is the concise runbook and
 `workstream.tsv` is helper-owned state; never read or edit the TSV directly.
 
 ## Scope and zero floor
@@ -134,9 +134,9 @@ divergent destination tips and reports `partial-delivery`; its old candidate mus
 ## Project surfaces
 
 The only tracked control files are `.streams/.gitignore`, `CONFIG.md`, `README.md`, `history.tsv`,
-and `workstream.sh`. Immediate child directories are ignored runtime worktrees. `CONFIG.md` is
-absent-only project configuration; `reconfig` is the sole adoption path. `history.tsv` has one
-landed row per unit and is overview, never recovery authority.
+and `workstream.sh`. Immediate child directories are ignored registered runtime worktrees.
+`CONFIG.md` is absent-only project configuration; `reconfig` is the sole adoption path.
+`history.tsv` has one landed row per unit and is overview, never recovery authority.
 
 Workstream consumes tracked plans and roadmaps or an inline brief. It creates no Workstream record
 store, execution manifest, debrief archive, project template home, or generic activity log.

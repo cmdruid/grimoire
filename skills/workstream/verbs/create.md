@@ -16,10 +16,11 @@ helper:
 workstream.sh ROOT runtime-init STREAM TARGET BRIEF [--source-kind KIND --cursor PATH] [POLICY OPTIONS]
 ```
 
-The helper validates configuration, secure instance entropy, exclusions, target topology, branch
-absence, and the registered `.streams/STREAM` worktree coordinate before creating anything. Entropy or admission
-failure must leave no ref, worktree, path, or runtime byte. A retry of the same admitted instance
-returns `existing` and preserves its ID.
+The helper validates configuration, secure instance entropy, exclusions, target ancestry, branch
+absence, and the exact `.streams/STREAM` worktree coordinate before creating anything. Every
+successful stream is registered there on `stream/STREAM`. Entropy or admission failure leaves no
+ref, worktree, path, or runtime byte. A retry of the same admitted instance returns `existing` and
+preserves its ID.
 
 Call `read STREAM`. If `next_action=define-unit`, determine one coherent unit from the source or ask
 only when the brief is genuinely ambiguous. Start it with `unit-begin STREAM SLUG SUMMARY`, then

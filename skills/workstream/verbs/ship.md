@@ -18,14 +18,15 @@ authorizes preparation only.
    effects return to the gate under the same shipment and hook identity.
 4. When the helper reports `ready-to-land`, stop if `--prepare`. Confirm that the readiness facts
    still match. For bare `ship`, pass the current invocation's ephemeral authority to
-   `land-advance`. It leases and admits the primary, requires complete cleanliness and no
+   `land-advance`. It leases and admits the primary checkout, requires complete cleanliness and no
    interrupted Git operation, transfers changed gitlink objects there, and fast-forwards it once.
    Push then publishes from the stream worktree while retaining that lease. Never force a ref.
 5. For a documented PR path, publish/create-or-update from the stream worktree and record
    `pr-await`. After merge, `pr-verify` records only the observed remote target and leaves
    `next_action=postflight`; it does not touch the primary. With authority from the same bare
    `ship`, or fresh explicit authority after context loss, invoke `land-advance` again to lease and
-   synchronize the primary. Mechanical contention does not consume same-session authority.
+   synchronize that guarded primary endpoint. Mechanical contention does not consume same-session
+   authority.
 6. At landed postflight, invoke `ship-finalize STREAM`, optionally with one operator note.
    Finalization requires the advanced local-target receipt, clears the completed transaction
    atomically, and doesn't create a tracked commit or hook. Dirty, wrong-branch, interrupted, or

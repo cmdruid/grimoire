@@ -22,8 +22,18 @@ require "$PACK" 'main session remains the sole writer'
 require "$PACK" 'the unit runs inline'
 require "$PACK" 'Workstream needs no setup for ordinary use'
 require "$PACK" "optional \`.streams/CONFIG.md\`"
+require "$PACK" 'Workstream owns one registered'
+require "$PACK" 'sole writer of its stream worktree and active unit'
 require "$PACK" 'excluded from this aggregate sweep'
 require "$ROOT/README.md" 'Workstream alone may additionally use the fixed'
+require "$ROOT/README.md" 'delivery synchronizes the clean primary checkout under a repository lease'
+require "$ROOT/skills/workstream/SKILL.md" "Only a top-level \`WORKSTREAM.md\` activates"
+if grep -qF 'Workstream owns isolation' "$PACK"; then
+  echo 'FAIL: pack retains retired Workstream topology ownership' >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
 require "$ROOT/README.md" 'findings stay in the audit report and promote through the host capture lane'
 require "$ROOT/docs/boundary-audit.md" 'fails=0 warns=4'
 require "$ROOT/docs/boundary-audit.md" "Workstream's \`resource-claim\` is legal repository-local leaf state"

@@ -16,7 +16,8 @@ decision because another session may move the target.
 
 1. Read project instructions and inspect `/workstream status`; do not read foreign stream bodies.
 2. Seed a named stream only on explicit request, leaving that stream for its own session.
-3. Let the owning stream prepare and ship. Verify the target and root cleanliness afterward.
+3. Let the owning registered worktree prepare and ship. Keep the primary checkout clean and on the
+   target branch for leased synchronization, then verify both endpoints afterward.
 4. Make unrelated root edits only when authorized, using path-scoped staging and the host gate.
 
 Never use the root checkout as shared scratch, infer authority from a prepared shipment, or repair a

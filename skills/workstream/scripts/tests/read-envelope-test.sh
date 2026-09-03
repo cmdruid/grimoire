@@ -31,14 +31,17 @@ assert_envelope() {
 }
 
 check_read_budgets() { # skill-root; prints the declared mandatory populations
-  local base="$1" router load ship
+  local base="$1" router load ship runbook
   router="$(wc -c <"$base/SKILL.md" | tr -d ' ')"
-  load=$((router + $(wc -c <"$base/verbs/load.md" | tr -d ' ') + $(wc -c <"$base/templates/workstream-runbook.md" | tr -d ' ')))
-  ship=$((router + $(wc -c <"$base/verbs/ship.md" | tr -d ' ') + $(wc -c <"$base/templates/workstream-runbook.md" | tr -d ' ')))
+  runbook="$(wc -c <"$base/templates/workstream-runbook.md" | tr -d ' ')"
+  load=$((router + $(wc -c <"$base/verbs/load.md" | tr -d ' ') + runbook))
+  ship=$((router + $(wc -c <"$base/verbs/ship.md" | tr -d ' ') + runbook))
   printf 'read-population router SKILL.md %s\n' "$router"
   printf 'read-population load SKILL.md+verbs/load.md+templates/workstream-runbook.md %s\n' "$load"
   printf 'read-population ship SKILL.md+verbs/ship.md+templates/workstream-runbook.md %s\n' "$ship"
-  [ "$router" -le 10000 ] && [ "$load" -le 20000 ] && [ "$ship" -le 20000 ]
+  printf 'read-population runbook templates/workstream-runbook.md %s\n' "$runbook"
+  # Baselines captured before the public-guidance pass; this slice may simplify, never grow them.
+  [ "$router" -le 9179 ] && [ "$load" -le 11566 ] && [ "$ship" -le 13014 ] && [ "$runbook" -le 959 ]
 }
 
 "$HELPER" "$ROOT" runtime-init concise main 'Keep runtime reads concise' >"$OUT"

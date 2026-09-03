@@ -4,6 +4,7 @@ set -eu
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-hard-cut.XXXXXX")"
+TMP="$(cd "$TMP" && pwd -P)"
 trap 'rm -rf "$TMP"' EXIT
 pass=0
 fail=0
@@ -44,6 +45,17 @@ if xargs grep -niE 'callback registry|callback dispatcher|general callback' <"$p
   fail_with 'general Callback machinery remains in Workstream production prose'
 else
   pass=$((pass + 1))
+fi
+
+retired_current_topology_clean() { # newline-delimited file list
+  ! xargs rg -ni '\.workstreams|ALLOW_PARKED|inplace_|--in-place|isolation[[:space:]:]+(worktree|in-place)|(^|[^[:alnum:]_-])(park(ed|ing)?|unpark)([^[:alnum:]_-]|$)' <"$1" >/dev/null 2>&1
+}
+
+grep -vE '/scripts/workstream-migrate\.sh$|/verbs/migrate\.md$' "$production" >"$TMP/current-production.files"
+if retired_current_topology_clean "$TMP/current-production.files"; then
+  pass=$((pass + 1))
+else
+  fail_with 'retired topology remains in the current Workstream surface'
 fi
 
 # The legacy spelling is legal only in the migration procedure, package helper,
@@ -94,6 +106,35 @@ if cmp -s "$TMP/legacy.expected" "$TMP/legacy-copy.restored" && cmp -s "$TMP/leg
 else
   fail_with 'legacy allowlist did not restore byte-exactly after mutation'
 fi
+
+# Generated controls and one generated runtime worktree obey the same hard cut.
+generated="$TMP/generated-project"
+mkdir -p "$generated"; git -C "$generated" init -q
+git -C "$generated" config user.name Fixture; git -C "$generated" config user.email fixture@example.invalid
+printf 'seed\n' >"$generated/file"; git -C "$generated" add file; git -C "$generated" commit -qm seed
+git -C "$generated" branch -M main
+"$ROOT/skills/workstream/scripts/workstream.sh" "$generated" setup >/dev/null
+"$generated/.streams/workstream.sh" "$generated" runtime-init generated main generated >/dev/null
+find "$generated/.streams" -type f -print | LC_ALL=C sort >"$TMP/generated.files"
+if retired_current_topology_clean "$TMP/generated.files"; then pass=$((pass + 1)); else fail_with 'generated control surface contains retired topology'; fi
+
+fixture="$generated/.streams/generated/WORKSTREAM.md"
+printf '%s\n' "$fixture" >"$TMP/generated-mutation.files"
+for mutation in '.workstreams' 'ALLOW_PARKED' 'inplace_' '--in-place' 'isolation: worktree' 'park' 'parked' 'parking' 'unpark'; do
+  cp "$fixture" "$TMP/generated.before"
+  printf '%s\n' "$mutation" >>"$fixture"
+  if [ "$(grep -cF -- "$mutation" "$fixture")" -eq 1 ] && ! retired_current_topology_clean "$TMP/generated-mutation.files"; then
+    pass=$((pass + 1))
+  else
+    fail_with "generated topology guard stayed green after mutation: $mutation"
+  fi
+  cp "$TMP/generated.before" "$fixture"
+  if cmp -s "$TMP/generated.before" "$fixture" && retired_current_topology_clean "$TMP/generated-mutation.files"; then
+    pass=$((pass + 1))
+  else
+    fail_with "generated topology guard did not restore after mutation: $mutation"
+  fi
+done
 
 if grep -qF 'never read or edit the TSV directly' "$ROOT/skills/workstream/SKILL.md" &&
    ! rg -n '(^|[^Nn]ever )(read|edit|write|parse)[^.]*(workstream\.tsv|the TSV)' \

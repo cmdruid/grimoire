@@ -15,4 +15,4 @@ the branch is clean, contains no unlanded commit, and its exact Git custody is u
 reconstructed tracker resumes fresh intake with the same instance ID and history-aware counters.
 
 Done when the helper reports `current` and one `next_action`, or when you have stopped on a stated
-data-loss or topology blocker.
+data-loss or custody blocker.

@@ -12,4 +12,4 @@ configuration snapshot, history, and monotonic counters while clearing the exhau
 The explicit recycle invocation authorizes that known relaunch action. Ask only when the new source
 doesn't identify one unit.
 
-Done when the same worktree is admitted at fresh intake; nothing lands or tears down.
+Done when the same registered worktree is admitted at fresh intake; nothing lands or tears down.
