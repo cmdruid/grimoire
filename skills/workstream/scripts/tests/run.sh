@@ -29,6 +29,14 @@ echo "== gitlink-readiness-test.sh"
 bash "$DIR/gitlink-readiness-test.sh" || rc=1
 echo "== ship-friction-test.sh"
 bash "$DIR/ship-friction-test.sh" || rc=1
+echo "== delivery-contract-test.sh"
+bash "$DIR/delivery-contract-test.sh" || rc=1
+echo "== partial-delivery-test.sh"
+bash "$DIR/partial-delivery-test.sh" || rc=1
+echo "== pr-delivery-test.sh"
+bash "$DIR/pr-delivery-test.sh" || rc=1
+echo "== finalization-test.sh"
+bash "$DIR/finalization-test.sh" || rc=1
 echo "== hooks-test.sh"
 bash "$DIR/hooks-test.sh" || rc=1
 echo "== git-helpers-test.sh"

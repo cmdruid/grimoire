@@ -1117,7 +1117,7 @@ cmd_gate_run() {
 
 cmd_land_advance() {
   [ "$#" -eq 3 ] && [ "$2" = --authority ] && [ "$3" = confirmed ] || die "landing requires --authority confirmed"
-  local stream="$1" shipment candidate expected target raw observed
+  local stream="$1" shipment candidate expected target raw observed delivery state rc
   admit_stream "$stream"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
   [ -n "$shipment" ] || die "no active shipment"
@@ -1133,26 +1133,57 @@ cmd_land_advance() {
   candidate="$(tracker_get shipment "$shipment" branch-tip)"
   expected="$(tracker_get shipment "$shipment" target-tip)"
   target="$(runbook_field "$RUNBOOK" target)"
+  [ "$(runbook_field "$RUNBOOK" landing)" = local ] || die "this operation currently requires local landing"
   [ "$(git -C "$WT" rev-parse HEAD)" = "$candidate" ] || die "candidate changed"
+  delivery="$shipment/local-target"
+  state="$(awk -F '\t' -v i="$delivery" '$1=="delivery"&&$2==i&&$3=="state"{print $4}' "$TRACKER")"
+  if [ -z "$state" ]; then
+    raw="$(mktemp "${TMPDIR:-/tmp}/workstream-delivery-running.XXXXXX")"
+    tail -n +2 "$TRACKER" >"$raw"
+    printf 'delivery\t%s\tcandidate-tip\t%s\ndelivery\t%s\texpected-tip\t%s\ndelivery\t%s\tstate\trunning\n' \
+      "$delivery" "$candidate" "$delivery" "$expected" "$delivery" >>"$raw"
+    rewrite_tracker "$raw"; rm -f "$raw"; state=running
+    if [ -n "${WORKSTREAM_TEST_AFTER_DELIVERY_RUNNING:-}" ]; then
+      "$WORKSTREAM_TEST_AFTER_DELIVERY_RUNNING" "$TRACKER"
+      die "delivery interrupted after recording running"
+    fi
+  fi
+  [ "$state" = running ] || die "delivery receipt requires recovery"
   observed="$(git -C "$ROOT" rev-parse "$target")"
   if [ "$observed" != "$candidate" ]; then
-    [ "$observed" = "$expected" ] || die "target changed before landing"
-    [ "$(git -C "$ROOT" branch --show-current)" = "$target" ] || die "primary checkout is not on the target"
-    [ -z "$(git -C "$ROOT" status --porcelain)" ] || die "primary checkout is dirty"
-    git -C "$ROOT" merge --ff-only -q "$(runbook_field "$RUNBOOK" branch)"
+    if [ "$observed" = "$expected" ]; then
+      [ "$(git -C "$ROOT" branch --show-current)" = "$target" ] || die "primary checkout is not on the target"
+      [ -z "$(git -C "$ROOT" status --porcelain)" ] || die "primary checkout is dirty"
+      rc=0; git -C "$ROOT" merge --ff-only -q "$(runbook_field "$RUNBOOK" branch)" || rc=$?
+      observed="$(git -C "$ROOT" rev-parse "$target")"
+      [ "$rc" -eq 0 ] || state=rejected
+    else
+      state=rejected
+    fi
   fi
-  [ "$(git -C "$ROOT" rev-parse "$target")" = "$candidate" ] || die "target advance is uncertain"
   raw="$(mktemp "${TMPDIR:-/tmp}/workstream-land.XXXXXX")"
-  awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
-  printf 'shipment\t%s\tphase\tpostflight\nshipment\t%s\toutcome\tlanded\nphase\t-\tnext-action\tpostflight\n' "$shipment" "$shipment" >>"$raw"
+  awk -F '\t' -v s="$shipment" -v d="$delivery" 'NR>1 && !(($1=="delivery"&&$2==d)||($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+  if [ "$observed" = "$candidate" ]; then
+    printf 'delivery\t%s\tcandidate-tip\t%s\ndelivery\t%s\texpected-tip\t%s\ndelivery\t%s\tobserved-tip\t%s\ndelivery\t%s\tstate\tadvanced\n' \
+      "$delivery" "$candidate" "$delivery" "$expected" "$delivery" "$observed" "$delivery" >>"$raw"
+    printf 'shipment\t%s\tphase\tpostflight\nshipment\t%s\toutcome\tlanded\nphase\t-\tnext-action\tpostflight\n' "$shipment" "$shipment" >>"$raw"
+    state=advanced
+  else
+    printf 'delivery\t%s\tcandidate-tip\t%s\ndelivery\t%s\texpected-tip\t%s\ndelivery\t%s\tobserved-tip\t%s\ndelivery\t%s\tstate\trejected\n' \
+      "$delivery" "$candidate" "$delivery" "$expected" "$delivery" "$observed" "$delivery" >>"$raw"
+    printf 'friction\t%s/target-reject\tpresent\tyes\nshipment\t%s\tphase\tfriction\nshipment\t%s\toutcome\tblocked\nphase\t-\tnext-action\tprepare-ship\n' "$shipment" "$shipment" "$shipment" >>"$raw"
+    state=rejected
+  fi
   rewrite_tracker "$raw"
   rm -f "$raw"
+  [ "$state" = advanced ] || { printf 'status=rejected\nshipment=%s\nobserved=%s\nnext_action=prepare-ship\n' "$shipment" "$observed"; return 1; }
   printf 'status=landed\nshipment=%s\ncandidate=%s\nnext_action=postflight\n' "$shipment" "$candidate"
 }
 
 cmd_ship_finalize() {
-  [ "$#" -eq 1 ] || die "usage: ship-finalize <stream>"
-  local stream="$1" shipment candidate target raw
+  [ "$#" -eq 1 ] || { [ "$#" -eq 3 ] && [ "$2" = --note ]; } || die "usage: ship-finalize <stream> [--note <note>]"
+  local stream="$1" shipment candidate target raw note=""
+  if [ "$#" -eq 3 ]; then note="$3"; cmd_operator_note "$stream" "$note" >/dev/null; fi
   admit_stream "$stream"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
   if [ -z "$shipment" ]; then
@@ -1171,6 +1202,82 @@ cmd_ship_finalize() {
   rewrite_tracker "$raw"
   rm -f "$raw"
   printf 'status=finalized\nshipment=%s\nnext_action=close\n' "$shipment"
+}
+
+cmd_delivery_classify() {
+  [ "$#" -eq 1 ] || die "usage: delivery-classify <stream>"
+  local stream="$1" shipment uncertain advanced rejected total classifier
+  admit_stream "$stream"
+  shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2;exit}' "$TRACKER")"; [ -n "$shipment" ] || die "no active shipment"
+  uncertain="$(awk -F '\t' -v p="$shipment/" '$1=="delivery"&&index($2,p)==1&&$3=="state"&&$4=="uncertain"{n++}END{print n+0}' "$TRACKER")"
+  advanced="$(awk -F '\t' -v p="$shipment/" '$1=="delivery"&&index($2,p)==1&&$3=="state"&&$4=="advanced"{n++}END{print n+0}' "$TRACKER")"
+  rejected="$(awk -F '\t' -v p="$shipment/" '$1=="delivery"&&index($2,p)==1&&$3=="state"&&$4=="rejected"{n++}END{print n+0}' "$TRACKER")"
+  total="$(awk -F '\t' -v p="$shipment/" '$1=="delivery"&&index($2,p)==1&&$3=="state"{n++}END{print n+0}' "$TRACKER")"
+  if [ "$uncertain" -gt 0 ]; then classifier=uncertain
+  elif [ "$advanced" -gt 0 ] && [ "$advanced" -lt "$total" ]; then classifier=partial-delivery
+  elif [ "$total" -gt 0 ] && [ "$advanced" -eq "$total" ]; then classifier=complete
+  elif [ "$rejected" -gt 0 ]; then classifier=push-friction
+  else classifier=clean
+  fi
+  printf 'schema=workstream-delivery@1\nshipment=%s\nclassifier=%s\nadvanced=%s\ntotal=%s\n' "$shipment" "$classifier" "$advanced" "$total"
+}
+
+cmd_reconcile_partial() {
+  [ "$#" -eq 3 ] && [ "$2" = --authority ] && [ "$3" = confirmed ] || die "usage: reconcile-partial <stream> --authority confirmed"
+  local stream="$1" shipment classifier candidate divergent raw new inputs first second
+  admit_stream "$stream"
+  classifier="$(cmd_delivery_classify "$stream" | sed -n 's/^classifier=//p')"
+  [ "$classifier" = partial-delivery ] || die "delivery is not partial"
+  shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2;exit}' "$TRACKER")"
+  candidate="$(tracker_get delivery "$shipment/local-target" candidate-tip)"
+  divergent="$(tracker_get delivery "$shipment/remote-target" observed-tip)"
+  [ "$(git -C "$WT" rev-parse HEAD)" = "$candidate" ] || die "candidate no longer matches the stream"
+  git -C "$WT" cat-file -e "$divergent^{commit}" 2>/dev/null || die "divergent destination object is unavailable"
+  if git -C "$WT" merge-base --is-ancestor "$candidate" "$divergent" || \
+    git -C "$WT" merge-base --is-ancestor "$divergent" "$candidate"; then
+    die "partial tips do not require reconciliation"
+  fi
+  if ! git -C "$WT" merge --no-ff --no-edit "$divergent" >/dev/null 2>&1; then
+    die "reconciliation conflicted; semantic resolution requires new authority"
+  fi
+  new="$(git -C "$WT" rev-parse HEAD)"; first="$(git -C "$WT" rev-parse HEAD^1)"; second="$(git -C "$WT" rev-parse HEAD^2)"
+  [ "$first" = "$candidate" ] && [ "$second" = "$divergent" ] || die "reconciliation parent order is invalid"
+  inputs="$(sha256_text "$stream|$shipment|$new|$candidate|$divergent|reconciliation")"
+  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-reconcile.XXXXXX")"
+  awk -F '\t' -v s="$shipment" 'NR>1 && $1!="delivery" && !(($1=="gate"&&$2==s)||($1=="shipment"&&$2==s&&($3=="branch-tip"||$3=="inputs-sha256"||$3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+  printf 'shipment\t%s\tbranch-tip\t%s\nshipment\t%s\tinputs-sha256\t%s\nshipment\t%s\tphase\tgate\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tprepare-ship\n' \
+    "$shipment" "$new" "$shipment" "$inputs" "$shipment" "$shipment" >>"$raw"
+  rewrite_tracker "$raw"; rm -f "$raw"
+  printf 'status=reconciled\nshipment=%s\ncandidate=%s\nauthority=invalidated\nnext_action=prepare-ship\n' "$shipment" "$new"
+}
+
+cmd_pr_await() {
+  [ "$#" -eq 5 ] && [ "$2" = --authority ] && [ "$3" = confirmed ] && [ "$4" = --reference ] || die "usage: pr-await <stream> --authority confirmed --reference <value>"
+  local stream="$1" reference="$5" shipment raw
+  validate_text 'PR reference' "$reference"
+  admit_stream "$stream"
+  shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2;exit}' "$TRACKER")"; [ -n "$shipment" ] || die "no active shipment"
+  [ "$(tracker_get shipment "$shipment" phase)" = ready-to-land ] || die "shipment is not ready for PR delivery"
+  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-pr.XXXXXX")"
+  awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+  printf 'shipment\t%s\tphase\tadvance\nshipment\t%s\toutcome\tawaiting-merge\nphase\t-\tnext-action\tawait-merge\n' "$shipment" "$shipment" >>"$raw"
+  rewrite_tracker "$raw"; rm -f "$raw"
+  printf 'status=awaiting-merge\nshipment=%s\nreference=%s\nnext_action=await-merge\n' "$shipment" "$reference"
+}
+
+cmd_pr_verify() {
+  [ "$#" -eq 1 ] || die "usage: pr-verify <stream>"
+  local stream="$1" shipment candidate target raw
+  admit_stream "$stream"
+  shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2;exit}' "$TRACKER")"; [ -n "$shipment" ] || die "no active shipment"
+  [ "$(tracker_get shipment "$shipment" outcome)" = awaiting-merge ] || die "shipment is not awaiting merge"
+  candidate="$(tracker_get shipment "$shipment" branch-tip)"; target="$(runbook_field "$RUNBOOK" target)"
+  git -C "$ROOT" merge-base --is-ancestor "$candidate" "$target" || { printf 'status=awaiting-merge\nnext_action=await-merge\n'; return 1; }
+  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-pr-merged.XXXXXX")"
+  awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+  printf 'shipment\t%s\tphase\tpostflight\nshipment\t%s\toutcome\tlanded\nphase\t-\tnext-action\tpostflight\n' "$shipment" "$shipment" >>"$raw"
+  rewrite_tracker "$raw"; rm -f "$raw"
+  printf 'status=merged\nshipment=%s\nnext_action=postflight\n' "$shipment"
 }
 
 main() {
@@ -1195,6 +1302,10 @@ main() {
     gate-run) [ "$#" -ge 1 ] || die "gate-run requires a stream"; cmd_gate_run "$@" ;;
     land-advance) cmd_land_advance "$@" ;;
     ship-finalize) cmd_ship_finalize "$@" ;;
+    delivery-classify) cmd_delivery_classify "$@" ;;
+    reconcile-partial) cmd_reconcile_partial "$@" ;;
+    pr-await) cmd_pr_await "$@" ;;
+    pr-verify) cmd_pr_verify "$@" ;;
     validate-tracker) [ "$#" -eq 1 ] || die "validate-tracker requires one path"; validate_tracker "$1"; printf 'status=valid\n' ;;
     -h|--help|help) usage ;;
     *) die "unknown operation: $operation" ;;
