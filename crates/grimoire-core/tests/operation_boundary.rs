@@ -100,7 +100,7 @@ const GUARDS: &[GuardRow] = &[
     GuardRow {
         guard: "canonical transaction journal",
         test: "transaction_journal_bytes_are_exact_and_deterministic",
-        red_arm_evidence: "grimoire/transaction@1",
+        red_arm_evidence: "grimoire/transaction@2",
         disabled_mechanism: "change a journal field, order, or trailing newline",
         forbidden_observation: "a non-canonical journal encoding passes its golden",
     },

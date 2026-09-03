@@ -9,7 +9,7 @@ use sha2::{Digest as _, Sha256};
 
 use crate::locks::{LockCoordinator, LockMode, LockRank};
 use crate::transaction::journal::{
-    Journal, LinkTransition, StateName, StateTransition, JOURNAL_SCHEMA,
+    Journal, LinkTransition, StateName, StateTransition, VendorTransition, JOURNAL_SCHEMA,
 };
 use crate::transaction::{
     checkpoint, read_optional_bounded, read_required_bounded, remove_file_if_present, replace,
@@ -111,14 +111,18 @@ pub fn recover(paths: &Paths, runtime: &dyn TransactionRuntime) -> Result<Recove
         .links
         .iter()
         .all(|link| current_link(paths, link).ok() == Some(link.after.clone()));
-    let roll_forward =
-        journal.committed || (!journal.state.is_empty() && state_after && links_after);
+    let vendors_after = journal.vendors.iter().all(|vendor| {
+        current_vendor(paths, vendor).ok() == Some(VendorOccupancy::from(&vendor.after))
+    });
+    let roll_forward = journal.committed
+        || (!journal.state.is_empty() && state_after && links_after && vendors_after);
     let disposition = if roll_forward {
-        if !state_after || !links_after {
+        if !state_after || !links_after || !vendors_after {
             return Err(CoreError::RecoveryRequired(
                 "committed transaction does not match its recorded after state".into(),
             ));
         }
+        cleanup_captured_vendors(paths, &journal)?;
         cleanup_captured_links(paths, &journal)?;
         RecoveryDisposition::RolledForward {
             scope_key: scope_key.clone(),
@@ -199,6 +203,7 @@ pub fn apply(
     let nonce = runtime.transaction_nonce()?;
     validate_nonce(&nonce)?;
     prepare_snapshots(paths, plan, &nonce)?;
+    prepare_vendors(paths, plan, &nonce)?;
     let scope_key = paths.scope_key();
     let trust_only = !plan.actions.is_empty()
         && plan.actions.iter().all(|action| {
@@ -244,8 +249,12 @@ pub fn apply(
             LockMode::Exclusive,
         )?;
     }
-    validate_preconditions(paths, plan, !trust_only)?;
-    validate_store_preconditions(paths, plan)?;
+    if let Err(error) = validate_preconditions(paths, plan, !trust_only)
+        .and_then(|()| validate_store_preconditions(paths, plan))
+    {
+        cleanup_unjournaled_vendor_preparations(paths, plan, &nonce)?;
+        return Err(error);
+    }
     if trust_only {
         let mut changed = false;
         for action in &plan.actions {
@@ -296,6 +305,24 @@ pub fn apply(
     let parent_identity = parent_identity
         .then(|| DirectoryIdentity::capture_or_create(&paths.skills_dir()))
         .transpose()?;
+    let vendor_sources = plan
+        .actions
+        .iter()
+        .filter_map(|action| match action {
+            Action::CreateVendor { source, .. }
+            | Action::ReplaceVendor { source, .. }
+            | Action::RetainVendor { source, .. }
+            | Action::RemoveVendor { source, .. } => Some(source.clone()),
+            _ => None,
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    let vendor_parents = vendor_sources
+        .into_iter()
+        .map(|source| {
+            let path = ensure_vendor_source_dir(paths, &source)?;
+            Ok((source, DirectoryIdentity::capture(&path)?))
+        })
+        .collect::<Result<std::collections::BTreeMap<_, _>>>()?;
     match execute(
         paths,
         plan,
@@ -303,6 +330,7 @@ pub fn apply(
         &journal_path,
         journal,
         parent_identity.as_ref(),
+        &vendor_parents,
     ) {
         Ok(outcome) => Ok(outcome),
         Err(error) => {
@@ -336,6 +364,23 @@ pub fn apply(
     }
 }
 
+fn cleanup_unjournaled_vendor_preparations(paths: &Paths, plan: &Plan, nonce: &str) -> Result<()> {
+    for action in &plan.actions {
+        let Action::PrepareVendor {
+            source,
+            skill,
+            content,
+            ..
+        } = action
+        else {
+            continue;
+        };
+        let prepared = paths.vendor_prepare_path(source, skill, nonce)?;
+        remove_verified_vendor(&prepared, skill, Some(content))?;
+    }
+    Ok(())
+}
+
 fn preflight(paths: &Paths, plan: &Plan) -> Result<()> {
     let expected_scope = match paths.scope {
         ScopePaths::Project { .. } => Scope::Project,
@@ -344,6 +389,11 @@ fn preflight(paths: &Paths, plan: &Plan) -> Result<()> {
     for action in &plan.actions {
         let scope = match action {
             Action::PrepareSnapshot { scope, .. }
+            | Action::PrepareVendor { scope, .. }
+            | Action::CreateVendor { scope, .. }
+            | Action::ReplaceVendor { scope, .. }
+            | Action::RetainVendor { scope, .. }
+            | Action::RemoveVendor { scope, .. }
             | Action::ReplaceCandidate { scope, .. }
             | Action::RemoveCandidate { scope, .. }
             | Action::CreateManifest { scope, .. }
@@ -379,6 +429,115 @@ fn preflight(paths: &Paths, plan: &Plan) -> Result<()> {
             before.resolve(paths)?;
             after.resolve(paths)?;
         }
+        match action {
+            Action::PrepareVendor {
+                source,
+                skill,
+                path,
+                content,
+                skill_path,
+                ..
+            } => {
+                validate_vendor_action_path(paths, source, skill, path)?;
+                validate_content_digest(content)?;
+                validate_relative_skill_path(skill_path)?;
+            }
+            Action::CreateVendor {
+                source,
+                skill,
+                path,
+                after: content,
+                ..
+            }
+            | Action::RetainVendor {
+                source,
+                skill,
+                path,
+                content,
+                ..
+            } => {
+                validate_vendor_action_path(paths, source, skill, path)?;
+                validate_content_digest(content)?;
+            }
+            Action::ReplaceVendor {
+                source,
+                skill,
+                path,
+                before,
+                after,
+                ..
+            } => {
+                validate_vendor_action_path(paths, source, skill, path)?;
+                validate_content_digest(before)?;
+                validate_content_digest(after)?;
+            }
+            Action::RemoveVendor {
+                source,
+                skill,
+                path,
+                before,
+                ..
+            } => {
+                validate_vendor_action_path(paths, source, skill, path)?;
+                validate_content_digest(before)?;
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+fn validate_vendor_action_path(
+    paths: &Paths,
+    source: &crate::SourceAlias,
+    skill: &crate::SkillName,
+    relative: &str,
+) -> Result<()> {
+    let expected = format!("vendor/grimoire/{source}/{skill}");
+    if relative != expected || paths.vendor_path(source, skill)?.is_relative() {
+        return Err(CoreError::Transaction(
+            "vendor action path is not the exact derived project path".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_relative_skill_path(path: &str) -> Result<()> {
+    let path = Path::new(path);
+    if path.as_os_str().is_empty()
+        || path.is_absolute()
+        || path
+            .components()
+            .any(|component| !matches!(component, std::path::Component::Normal(_)))
+    {
+        return Err(CoreError::Transaction(
+            "vendor store skill path is not normalized and relative".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn prepare_vendors(paths: &Paths, plan: &Plan, nonce: &str) -> Result<()> {
+    for action in &plan.actions {
+        let Action::PrepareVendor {
+            source,
+            skill,
+            source_key,
+            snapshot_key,
+            skill_path,
+            content,
+            ..
+        } = action
+        else {
+            continue;
+        };
+        let parent = ensure_vendor_source_dir(paths, source)?;
+        let prepared = paths.vendor_prepare_path(source, skill, nonce)?;
+        let store_skill = paths.store_path(source_key, snapshot_key).join(skill_path);
+        crate::vendor::prepare_from_store(&store_skill, &prepared, skill, content)?;
+        File::open(&parent)
+            .and_then(|directory| directory.sync_all())
+            .map_err(|error| crate::transaction::io_error(&parent, error))?;
     }
     Ok(())
 }
@@ -484,10 +643,19 @@ fn validate_preconditions(paths: &Paths, plan: &Plan, include_scope: bool) -> Re
         let lock_bytes = read_required_bounded(&paths.lock_path(), STATE_LIMIT)?;
         let lock = crate::Lockfile::parse(&lock_bytes)?;
         for (skill, expected) in &plan.preconditions.vendors {
-            let incumbent = lock.skills.get(skill).ok_or_else(|| {
-                CoreError::StalePlan(format!("locked vendor `{skill}` disappeared"))
-            })?;
-            let actual = crate::vendor::observe_vendor(paths, skill, incumbent)?;
+            let incumbent = lock
+                .skills
+                .get(skill)
+                .filter(|entry| entry.mode == crate::ProjectionMode::Vendor);
+            let source = incumbent
+                .map(|entry| &entry.source)
+                .or_else(|| vendor_action_source(plan, skill))
+                .ok_or_else(|| {
+                    CoreError::Transaction(format!(
+                        "vendor precondition for `{skill}` has no derived source"
+                    ))
+                })?;
+            let actual = crate::vendor::observe_vendor_at(paths, source, skill, incumbent)?;
             if &actual != expected {
                 return Err(CoreError::StalePlan(format!(
                     "vendor tree `{skill}` changed"
@@ -496,6 +664,40 @@ fn validate_preconditions(paths: &Paths, plan: &Plan, include_scope: bool) -> Re
         }
     }
     Ok(())
+}
+
+fn vendor_action_source<'a>(
+    plan: &'a Plan,
+    skill: &crate::SkillName,
+) -> Option<&'a crate::SourceAlias> {
+    plan.actions.iter().find_map(|action| match action {
+        Action::PrepareVendor {
+            source,
+            skill: candidate,
+            ..
+        }
+        | Action::CreateVendor {
+            source,
+            skill: candidate,
+            ..
+        }
+        | Action::ReplaceVendor {
+            source,
+            skill: candidate,
+            ..
+        }
+        | Action::RetainVendor {
+            source,
+            skill: candidate,
+            ..
+        }
+        | Action::RemoveVendor {
+            source,
+            skill: candidate,
+            ..
+        } if candidate == skill => Some(source),
+        _ => None,
+    })
 }
 
 fn validate_store_preconditions(paths: &Paths, plan: &Plan) -> Result<()> {
@@ -569,6 +771,57 @@ fn validate_action_shapes(plan: &Plan) -> Result<()> {
             "one plan cannot mutate more than one candidate".into(),
         ));
     }
+    let preparations = plan
+        .actions
+        .iter()
+        .filter_map(|action| match action {
+            Action::PrepareVendor {
+                source,
+                skill,
+                content,
+                ..
+            } => Some(((source.clone(), skill.clone()), content.as_str())),
+            _ => None,
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
+    for action in &plan.actions {
+        match action {
+            Action::CreateVendor {
+                source,
+                skill,
+                after,
+                added,
+                ..
+            }
+            | Action::ReplaceVendor {
+                source,
+                skill,
+                after,
+                added,
+                ..
+            } => {
+                if preparations.get(&(source.clone(), skill.clone())).copied()
+                    != Some(after.as_str())
+                {
+                    return Err(CoreError::Transaction(format!(
+                        "vendor publication for `{skill}` lacks its exact preparation"
+                    )));
+                }
+                validate_sorted_unique(added, "vendor added paths")?;
+            }
+            Action::RemoveVendor { removed, .. } => {
+                validate_sorted_unique(removed, "vendor removed paths")?;
+            }
+            _ => {}
+        }
+        if let Action::ReplaceVendor {
+            removed, changed, ..
+        } = action
+        {
+            validate_sorted_unique(removed, "vendor removed paths")?;
+            validate_sorted_unique(changed, "vendor changed paths")?;
+        }
+    }
     for action in &plan.actions {
         match action {
             Action::CreateManifest { after, .. } | Action::ReplaceManifest { after, .. } => {
@@ -596,8 +849,19 @@ fn validate_action_shapes(plan: &Plan) -> Result<()> {
     Ok(())
 }
 
+fn validate_sorted_unique(values: &[String], name: &str) -> Result<()> {
+    if values.windows(2).all(|pair| pair[0] < pair[1]) {
+        Ok(())
+    } else {
+        Err(CoreError::Transaction(format!(
+            "{name} are not strictly sorted"
+        )))
+    }
+}
+
 fn build_journal(paths: &Paths, plan: &Plan, scope_key: &str, nonce: &str) -> Result<Journal> {
     let mut state = Vec::new();
+    let mut vendors = Vec::new();
     let mut links = Vec::new();
     for action in &plan.actions {
         match action {
@@ -683,10 +947,46 @@ fn build_journal(paths: &Paths, plan: &Plan, scope_key: &str, nonce: &str) -> Re
                 after: None,
             }),
             Action::PrepareSnapshot { .. } => {}
+            Action::PrepareVendor { .. } | Action::RetainVendor { .. } => {}
+            Action::CreateVendor {
+                source,
+                skill,
+                after,
+                ..
+            } => vendors.push(VendorTransition {
+                source: source.to_string(),
+                skill: skill.to_string(),
+                before: None,
+                after: Some(after.clone()),
+            }),
+            Action::ReplaceVendor {
+                source,
+                skill,
+                before,
+                after,
+                ..
+            } => vendors.push(VendorTransition {
+                source: source.to_string(),
+                skill: skill.to_string(),
+                before: Some(before.clone()),
+                after: Some(after.clone()),
+            }),
+            Action::RemoveVendor {
+                source,
+                skill,
+                before,
+                ..
+            } => vendors.push(VendorTransition {
+                source: source.to_string(),
+                skill: skill.to_string(),
+                before: Some(before.clone()),
+                after: None,
+            }),
             Action::PruneSnapshot { .. } => unreachable!("separate prune transaction"),
         }
     }
     state.sort_by_key(|transition| state_order(transition.name));
+    vendors.sort_by(|left, right| (&left.source, &left.skill).cmp(&(&right.source, &right.skill)));
     links.sort_by(|left, right| left.skill.cmp(&right.skill));
     let plan_digest = format!("{:x}", Sha256::digest(plan.to_bytes()?));
     Ok(Journal {
@@ -696,6 +996,7 @@ fn build_journal(paths: &Paths, plan: &Plan, scope_key: &str, nonce: &str) -> Re
         plan_digest,
         committed: false,
         state,
+        vendors,
         links,
         completed: Vec::new(),
     })
@@ -708,8 +1009,46 @@ fn execute(
     journal_path: &Path,
     mut journal: Journal,
     parent_identity: Option<&DirectoryIdentity>,
+    vendor_parents: &std::collections::BTreeMap<crate::SourceAlias, DirectoryIdentity>,
 ) -> Result<ApplyOutcome> {
     let mut changed = false;
+    for action in &plan.actions {
+        match action {
+            Action::RetainVendor {
+                source,
+                skill,
+                content,
+                ..
+            } => {
+                require_vendor(paths, source, skill, Some(content))?;
+            }
+            Action::CreateVendor { source, skill, .. }
+            | Action::ReplaceVendor { source, skill, .. } => {
+                let parent = vendor_parents
+                    .get(source)
+                    .expect("vendor action has parent identity");
+                if let Some(checkpoint) =
+                    publish_vendor(paths, parent, action, &journal.nonce, runtime)?
+                {
+                    return Ok(ApplyOutcome::Interrupted {
+                        checkpoint: checkpoint.into(),
+                    });
+                }
+                if mark(
+                    runtime,
+                    journal_path,
+                    &mut journal,
+                    &format!("vendor:{source}:{skill}"),
+                )? {
+                    return Ok(ApplyOutcome::Interrupted {
+                        checkpoint: "action-marked".into(),
+                    });
+                }
+                changed = true;
+            }
+            _ => {}
+        }
+    }
     for action in &plan.actions {
         match action {
             Action::RetainLink { skill, target, .. } => {
@@ -829,6 +1168,44 @@ fn execute(
             _ => {}
         }
     }
+    for action in &plan.actions {
+        let Action::RemoveVendor {
+            source,
+            skill,
+            before,
+            ..
+        } = action
+        else {
+            continue;
+        };
+        let parent = vendor_parents
+            .get(source)
+            .expect("vendor action has parent identity");
+        if let Some(checkpoint) = capture_vendor(
+            paths,
+            parent,
+            source,
+            skill,
+            before,
+            &journal.nonce,
+            runtime,
+        )? {
+            return Ok(ApplyOutcome::Interrupted {
+                checkpoint: checkpoint.into(),
+            });
+        }
+        if mark(
+            runtime,
+            journal_path,
+            &mut journal,
+            &format!("vendor:{source}:{skill}"),
+        )? {
+            return Ok(ApplyOutcome::Interrupted {
+                checkpoint: "action-marked".into(),
+            });
+        }
+        changed = true;
+    }
     for state in journal.state.clone() {
         let path = state_path(paths, &state)?;
         if checkpoint(runtime, "before-state-mutation")? {
@@ -892,6 +1269,7 @@ fn execute(
             checkpoint: "before-cleanup".into(),
         });
     }
+    cleanup_captured_vendors(paths, &journal)?;
     remove_file_if_present(journal_path)?;
     if let Some(parent) = journal_path.parent() {
         sync_directory(parent)?;
@@ -913,6 +1291,148 @@ fn mark(
         Some(0o600),
     )?;
     checkpoint(runtime, "action-marked")
+}
+
+fn publish_vendor(
+    paths: &Paths,
+    parent: &DirectoryIdentity,
+    action: &Action,
+    nonce: &str,
+    runtime: &dyn TransactionRuntime,
+) -> Result<Option<&'static str>> {
+    let (source, skill, before, after) = match action {
+        Action::CreateVendor {
+            source,
+            skill,
+            after,
+            ..
+        } => (source, skill, None, after.as_str()),
+        Action::ReplaceVendor {
+            source,
+            skill,
+            before,
+            after,
+            ..
+        } => (source, skill, Some(before.as_str()), after.as_str()),
+        _ => unreachable!("publication helper received a non-publication action"),
+    };
+    let parent_path = paths.vendor_source_dir(source)?;
+    let destination = paths.vendor_path(source, skill)?;
+    let prepared = paths.vendor_prepare_path(source, skill, nonce)?;
+    let prepared_name = file_name(&prepared)?;
+    let capture = paths.vendor_capture_path(source, skill, nonce)?;
+    let capture_name = file_name(&capture)?;
+    parent.revalidate(&parent_path)?;
+    if crate::vendor::verify_vendor_tree(&prepared, skill)? != after {
+        return Err(CoreError::StalePlan(format!(
+            "prepared vendor tree `{skill}` changed"
+        )));
+    }
+    require_vendor(paths, source, skill, before)?;
+    if let Some(before) = before {
+        if checkpoint(runtime, "before-vendor-capture")? {
+            return Ok(Some("before-vendor-capture"));
+        }
+        parent.rename_no_replace(skill.as_str(), &capture_name, &destination)?;
+        let captured = crate::vendor::verify_vendor_tree(&capture, skill)?;
+        if captured != before {
+            parent.rename_no_replace(&capture_name, skill.as_str(), &destination)?;
+            return Err(CoreError::StalePlan(format!(
+                "vendor tree `{skill}` changed during capture"
+            )));
+        }
+        if checkpoint(runtime, "after-vendor-capture")? {
+            return Ok(Some("after-vendor-capture"));
+        }
+    }
+    if checkpoint(runtime, "before-vendor-publication")? {
+        return Ok(Some("before-vendor-publication"));
+    }
+    if let Err(error) = parent.rename_no_replace(&prepared_name, skill.as_str(), &destination) {
+        if before.is_some() && !destination.exists() && capture.exists() {
+            let _ = parent.rename_no_replace(&capture_name, skill.as_str(), &destination);
+        }
+        return Err(error);
+    }
+    let observed = crate::vendor::verify_vendor_tree(&destination, skill)?;
+    if observed != after {
+        return Err(CoreError::RecoveryRequired(format!(
+            "published vendor tree `{skill}` does not match its journal digest"
+        )));
+    }
+    if checkpoint(runtime, "after-vendor-publication")? {
+        return Ok(Some("after-vendor-publication"));
+    }
+    Ok(None)
+}
+
+fn capture_vendor(
+    paths: &Paths,
+    parent: &DirectoryIdentity,
+    source: &crate::SourceAlias,
+    skill: &crate::SkillName,
+    before: &str,
+    nonce: &str,
+    runtime: &dyn TransactionRuntime,
+) -> Result<Option<&'static str>> {
+    let parent_path = paths.vendor_source_dir(source)?;
+    let destination = paths.vendor_path(source, skill)?;
+    let capture = paths.vendor_capture_path(source, skill, nonce)?;
+    let capture_name = file_name(&capture)?;
+    parent.revalidate(&parent_path)?;
+    require_vendor(paths, source, skill, Some(before))?;
+    if checkpoint(runtime, "before-vendor-capture")? {
+        return Ok(Some("before-vendor-capture"));
+    }
+    parent.rename_no_replace(skill.as_str(), &capture_name, &destination)?;
+    if crate::vendor::verify_vendor_tree(&capture, skill)? != before {
+        parent.rename_no_replace(&capture_name, skill.as_str(), &destination)?;
+        return Err(CoreError::StalePlan(format!(
+            "vendor tree `{skill}` changed during capture"
+        )));
+    }
+    if checkpoint(runtime, "after-vendor-capture")? {
+        return Ok(Some("after-vendor-capture"));
+    }
+    Ok(None)
+}
+
+fn require_vendor(
+    paths: &Paths,
+    source: &crate::SourceAlias,
+    skill: &crate::SkillName,
+    expected: Option<&str>,
+) -> Result<()> {
+    let path = paths.vendor_path(source, skill)?;
+    match (fs::symlink_metadata(&path), expected) {
+        (Err(error), None) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        (Ok(metadata), Some(expected))
+            if metadata.is_dir() && !metadata.file_type().is_symlink() =>
+        {
+            let observed = crate::vendor::verify_vendor_tree(&path, skill)
+                .map_err(|_| CoreError::StalePlan(format!("vendor tree `{skill}` changed")))?;
+            if observed == expected {
+                Ok(())
+            } else {
+                Err(CoreError::StalePlan(format!(
+                    "vendor tree `{skill}` changed"
+                )))
+            }
+        }
+        (Err(error), _) if error.kind() != std::io::ErrorKind::NotFound => {
+            Err(crate::transaction::io_error(&path, error))
+        }
+        _ => Err(CoreError::StalePlan(format!(
+            "vendor tree `{skill}` changed"
+        ))),
+    }
+}
+
+fn file_name(path: &Path) -> Result<String> {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .map(str::to_owned)
+        .ok_or_else(|| CoreError::Transaction("transaction path has no UTF-8 basename".into()))
 }
 
 fn rollback(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
@@ -984,6 +1504,9 @@ fn restore_before(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
                 )?,
         }
     }
+    for vendor in journal.vendors.iter().rev() {
+        restore_vendor_before(paths, vendor, nonce)?;
+    }
     for state in journal.state.iter().rev() {
         let actual = current_state(paths, state)?;
         if actual == state.before {
@@ -1007,6 +1530,118 @@ fn restore_before(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn restore_vendor_before(paths: &Paths, vendor: &VendorTransition, nonce: &str) -> Result<()> {
+    let source = crate::SourceAlias::new(&vendor.source)?;
+    let skill = crate::SkillName::new(&vendor.skill)?;
+    let parent_path = paths.vendor_source_dir(&source)?;
+    let parent = DirectoryIdentity::capture_or_create(&parent_path)?;
+    let destination = paths.vendor_path(&source, &skill)?;
+    let capture = paths.vendor_capture_path(&source, &skill, nonce)?;
+    let prepared = paths.vendor_prepare_path(&source, &skill, nonce)?;
+    let capture_name = file_name(&capture)?;
+    let prepared_name = file_name(&prepared)?;
+    let current = current_vendor(paths, vendor)?;
+    let before = VendorOccupancy::from(&vendor.before);
+    let after = VendorOccupancy::from(&vendor.after);
+
+    if current == before {
+        remove_verified_vendor(&prepared, &skill, vendor.after.as_deref())?;
+        remove_verified_vendor(&capture, &skill, vendor.before.as_deref())?;
+        return Ok(());
+    }
+    if current != after && current != VendorOccupancy::Absent {
+        return Err(CoreError::RecoveryRequired(format!(
+            "foreign replacement occupies vendor path `{}`",
+            destination.display()
+        )));
+    }
+    match (&vendor.before, &vendor.after) {
+        (None, Some(after)) => {
+            if current == VendorOccupancy::Digest(after.clone()) {
+                parent.rename_no_replace(skill.as_str(), &prepared_name, &destination)?;
+                remove_verified_vendor(&prepared, &skill, Some(after))?;
+            } else {
+                remove_verified_vendor(&prepared, &skill, Some(after))?;
+            }
+        }
+        (Some(before), Some(after)) => {
+            if current == VendorOccupancy::Digest(after.clone()) {
+                parent.rename_no_replace(skill.as_str(), &prepared_name, &destination)?;
+                if crate::vendor::verify_vendor_tree(&prepared, &skill)? != *after {
+                    let _ = parent.rename_no_replace(&prepared_name, skill.as_str(), &destination);
+                    return Err(CoreError::RecoveryRequired(format!(
+                        "published vendor `{skill}` changed during rollback"
+                    )));
+                }
+            }
+            if capture.exists() && !destination.exists() {
+                if crate::vendor::verify_vendor_tree(&capture, &skill)? != *before {
+                    return Err(CoreError::RecoveryRequired(format!(
+                        "captured vendor `{skill}` changed during rollback"
+                    )));
+                }
+                parent.rename_no_replace(&capture_name, skill.as_str(), &destination)?;
+            }
+            remove_verified_vendor(&prepared, &skill, Some(after))?;
+        }
+        (Some(before), None) => {
+            if capture.exists() && !destination.exists() {
+                if crate::vendor::verify_vendor_tree(&capture, &skill)? != *before {
+                    return Err(CoreError::RecoveryRequired(format!(
+                        "captured vendor `{skill}` changed during rollback"
+                    )));
+                }
+                parent.rename_no_replace(&capture_name, skill.as_str(), &destination)?;
+            }
+        }
+        (None, None) => {}
+    }
+    Ok(())
+}
+
+fn cleanup_captured_vendors(paths: &Paths, journal: &Journal) -> Result<()> {
+    for vendor in &journal.vendors {
+        let source = crate::SourceAlias::new(&vendor.source)?;
+        let skill = crate::SkillName::new(&vendor.skill)?;
+        let capture = paths.vendor_capture_path(&source, &skill, &journal.nonce)?;
+        let prepared = paths.vendor_prepare_path(&source, &skill, &journal.nonce)?;
+        remove_verified_vendor(&capture, &skill, vendor.before.as_deref())?;
+        remove_verified_vendor(&prepared, &skill, vendor.after.as_deref())?;
+    }
+    Ok(())
+}
+
+fn remove_verified_vendor(
+    path: &Path,
+    skill: &crate::SkillName,
+    expected: Option<&str>,
+) -> Result<()> {
+    let metadata = match fs::symlink_metadata(path) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(crate::transaction::io_error(path, error)),
+    };
+    if metadata.file_type().is_symlink() || !metadata.is_dir() {
+        return Err(CoreError::RecoveryRequired(format!(
+            "vendor transaction path `{}` is foreign",
+            path.display()
+        )));
+    }
+    let Some(expected) = expected else {
+        return Err(CoreError::RecoveryRequired(format!(
+            "unexpected vendor transaction path `{}`",
+            path.display()
+        )));
+    };
+    if crate::vendor::verify_vendor_tree(path, skill)? != expected {
+        return Err(CoreError::RecoveryRequired(format!(
+            "vendor transaction path `{}` changed",
+            path.display()
+        )));
+    }
+    crate::vendor::remove_tree(path)
 }
 
 fn cleanup_captured_links(paths: &Paths, journal: &Journal) -> Result<()> {
@@ -1039,6 +1674,38 @@ fn current_link(paths: &Paths, link: &LinkTransition) -> Result<Option<Vec<u8>>>
         LinkPrecondition::File | LinkPrecondition::Directory => Err(CoreError::RecoveryRequired(
             format!("foreign entry occupies transaction link `{}`", link.skill),
         )),
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum VendorOccupancy {
+    Absent,
+    Digest(String),
+    Foreign,
+}
+
+impl From<&Option<String>> for VendorOccupancy {
+    fn from(value: &Option<String>) -> Self {
+        value
+            .as_ref()
+            .map_or(Self::Absent, |digest| Self::Digest(digest.clone()))
+    }
+}
+
+fn current_vendor(paths: &Paths, vendor: &VendorTransition) -> Result<VendorOccupancy> {
+    let source = crate::SourceAlias::new(&vendor.source)?;
+    let skill = crate::SkillName::new(&vendor.skill)?;
+    let path = paths.vendor_path(&source, &skill)?;
+    match fs::symlink_metadata(&path) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(VendorOccupancy::Absent),
+        Err(error) => Err(crate::transaction::io_error(&path, error)),
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {
+            Ok(VendorOccupancy::Foreign)
+        }
+        Ok(_) => match crate::vendor::verify_vendor_tree(&path, &skill) {
+            Ok(digest) => Ok(VendorOccupancy::Digest(digest)),
+            Err(_) => Ok(VendorOccupancy::Foreign),
+        },
     }
 }
 
@@ -1116,6 +1783,23 @@ fn validate_journal(paths: &Paths, journal: &Journal) -> Result<()> {
             }
         }
     }
+    if !journal.vendors.is_empty() && !matches!(paths.scope, ScopePaths::Project { .. }) {
+        return Err(CoreError::Transaction(
+            "vendor journal transitions require Project scope".into(),
+        ));
+    }
+    for vendor in &journal.vendors {
+        crate::SourceAlias::new(&vendor.source)?;
+        crate::SkillName::new(&vendor.skill)?;
+        if vendor.before.is_none() && vendor.after.is_none() {
+            return Err(CoreError::Transaction(
+                "journal vendor transition has no state".into(),
+            ));
+        }
+        for digest in [&vendor.before, &vendor.after].into_iter().flatten() {
+            validate_content_digest(digest)?;
+        }
+    }
     for link in &journal.links {
         crate::SkillName::new(&link.skill)?;
         if link.before.is_none() && link.after.is_none() {
@@ -1133,6 +1817,25 @@ fn validate_journal(paths: &Paths, journal: &Journal) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn validate_content_digest(digest: &str) -> Result<()> {
+    let Some(hex) = digest.strip_prefix("sha256:") else {
+        return Err(CoreError::Transaction(
+            "invalid vendor content digest".into(),
+        ));
+    };
+    if hex.len() == 64
+        && hex
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        Ok(())
+    } else {
+        Err(CoreError::Transaction(
+            "invalid vendor content digest".into(),
+        ))
+    }
 }
 
 fn is_vendor_link_target(path: &Path) -> bool {
@@ -1396,6 +2099,41 @@ fn validate_nonce(nonce: &str) -> Result<()> {
     }
 }
 
+fn ensure_vendor_source_dir(paths: &Paths, source: &crate::SourceAlias) -> Result<PathBuf> {
+    let ScopePaths::Project { root } = &paths.scope else {
+        return Err(CoreError::Request(
+            "vendor paths are available only in Project scope".into(),
+        ));
+    };
+    let mut parent = root.clone();
+    for component in ["vendor", "grimoire", source.as_str()] {
+        let path = parent.join(component);
+        match fs::symlink_metadata(&path) {
+            Ok(metadata) if metadata.is_dir() && !metadata.file_type().is_symlink() => {}
+            Ok(_) => {
+                return Err(CoreError::StalePlan(format!(
+                    "vendor parent `{}` is not a regular directory",
+                    path.display()
+                )))
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                fs::create_dir(&path)
+                    .map_err(|error| crate::transaction::io_error(&path, error))?;
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    fs::set_permissions(&path, fs::Permissions::from_mode(0o755))
+                        .map_err(|error| crate::transaction::io_error(&path, error))?;
+                }
+                sync_directory(&parent)?;
+            }
+            Err(error) => return Err(crate::transaction::io_error(&path, error)),
+        }
+        parent = path;
+    }
+    Ok(parent)
+}
+
 struct DirectoryIdentity {
     // All link mutations stay relative to this held directory. Revalidating only
     // the path would reopen the parent-replacement race before the syscall.
@@ -1443,6 +2181,27 @@ impl DirectoryIdentity {
                 "installed-link parent directory changed".into(),
             ))
         }
+    }
+
+    fn rename_no_replace(&self, from: &str, to: &str, destination: &Path) -> Result<()> {
+        renameat_with(
+            &self.descriptor,
+            from,
+            &self.descriptor,
+            to,
+            RenameFlags::NOREPLACE,
+        )
+        .map_err(|error| {
+            if matches!(error, rustix::io::Errno::NOENT | rustix::io::Errno::EXIST) {
+                CoreError::StalePlan(format!(
+                    "vendor ownership changed at {}",
+                    destination.display()
+                ))
+            } else {
+                link_error(destination, error)
+            }
+        })?;
+        self.sync(destination)
     }
 
     fn create_link(&self, name: &str, target: &Path, destination: &Path) -> Result<()> {
@@ -1812,6 +2571,7 @@ mod link_capture_tests {
             plan_digest: "1".repeat(64),
             committed: false,
             state: Vec::new(),
+            vendors: Vec::new(),
             links: vec![LinkTransition {
                 skill: "one".into(),
                 before: None,

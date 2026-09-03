@@ -81,6 +81,37 @@ impl Paths {
         }
     }
 
+    pub fn vendor_source_dir(&self, source: &SourceAlias) -> Result<PathBuf> {
+        match &self.scope {
+            ScopePaths::Project { root } => Ok(root.join("vendor/grimoire").join(source.as_str())),
+            ScopePaths::Global { .. } => Err(CoreError::Request(
+                "vendor paths are available only in Project scope".into(),
+            )),
+        }
+    }
+
+    pub fn vendor_prepare_path(
+        &self,
+        source: &SourceAlias,
+        skill: &SkillName,
+        nonce: &str,
+    ) -> Result<PathBuf> {
+        Ok(self
+            .vendor_source_dir(source)?
+            .join(format!(".{}.{nonce}.vendor-prepare", skill.as_str())))
+    }
+
+    pub fn vendor_capture_path(
+        &self,
+        source: &SourceAlias,
+        skill: &SkillName,
+        nonce: &str,
+    ) -> Result<PathBuf> {
+        Ok(self
+            .vendor_source_dir(source)?
+            .join(format!(".{}.{nonce}.vendor-before", skill.as_str())))
+    }
+
     pub fn vendor_activation_target(
         &self,
         source: &SourceAlias,

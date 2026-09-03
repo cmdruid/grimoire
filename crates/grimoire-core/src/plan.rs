@@ -111,6 +111,50 @@ pub enum Action {
         review_key: String,
         operation: SnapshotPreparation,
     },
+    PrepareVendor {
+        scope: Scope,
+        source: SourceAlias,
+        skill: SkillName,
+        source_key: crate::SourceKey,
+        snapshot_key: crate::SnapshotKey,
+        skill_path: String,
+        path: String,
+        content: String,
+    },
+    CreateVendor {
+        scope: Scope,
+        source: SourceAlias,
+        skill: SkillName,
+        path: String,
+        after: String,
+        added: Vec<String>,
+    },
+    ReplaceVendor {
+        scope: Scope,
+        source: SourceAlias,
+        skill: SkillName,
+        path: String,
+        before: String,
+        after: String,
+        added: Vec<String>,
+        removed: Vec<String>,
+        changed: Vec<String>,
+    },
+    RetainVendor {
+        scope: Scope,
+        source: SourceAlias,
+        skill: SkillName,
+        path: String,
+        content: String,
+    },
+    RemoveVendor {
+        scope: Scope,
+        source: SourceAlias,
+        skill: SkillName,
+        path: String,
+        before: String,
+        removed: Vec<String>,
+    },
     CreateManifest {
         scope: Scope,
         after: Vec<u8>,
@@ -160,7 +204,7 @@ pub enum Action {
 
 impl Action {
     fn is_mutating(&self) -> bool {
-        !matches!(self, Self::RetainLink { .. })
+        !matches!(self, Self::RetainLink { .. } | Self::RetainVendor { .. })
     }
 
     fn is_destructive(&self) -> bool {
@@ -176,6 +220,8 @@ impl Action {
             }
             | Self::RepointLink { .. }
             | Self::RemoveLink { .. }
+            | Self::ReplaceVendor { .. }
+            | Self::RemoveVendor { .. }
             | Self::PruneSnapshot { .. } => true,
             _ => false,
         }
@@ -589,6 +635,11 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
 
     let mut links = BTreeMap::new();
     let mut vendors = BTreeMap::new();
+    let mut vendor_preparations = Vec::new();
+    let mut vendor_publications = Vec::new();
+    let mut vendor_removals = Vec::new();
+    let mut vendor_store_sources = std::collections::BTreeSet::new();
+    let mut publishing_sources = std::collections::BTreeSet::new();
     for (name, resolved) in &resolution.skills {
         let observed = world
             .links
@@ -607,9 +658,70 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                 });
             vendors.insert(name.clone(), vendor.clone());
             let locked = &resolution.lock.skills[name];
+            let incumbent = world.lock.skills.get(name).filter(|skill| {
+                skill.mode == crate::ProjectionMode::Vendor && skill.source == resolved.source
+            });
+            let path = vendor_relative_path(&resolved.source, name);
             match vendor.state {
                 crate::VendorState::OwnedUnchanged
-                    if vendor.content.as_deref() == Some(locked.content.as_str()) => {}
+                    if incumbent.is_some()
+                        && vendor.content.as_deref() == Some(locked.content.as_str()) =>
+                {
+                    vendor_publications.push(Action::RetainVendor {
+                        scope: world.scope,
+                        source: resolved.source.clone(),
+                        skill: name.clone(),
+                        path,
+                        content: locked.content.clone(),
+                    });
+                }
+                crate::VendorState::OwnedUnchanged if incumbent.is_some() => {
+                    if mode == PlanningMode::Frozen {
+                        blockers.push(Blocker::new(
+                            "frozen-mismatch",
+                            [("skill", name.to_string())],
+                        ));
+                        continue;
+                    }
+                    let (source_key, snapshot_key) = vendor_store_coordinates(
+                        world,
+                        &selected_candidates,
+                        &desired_snapshots,
+                        &resolved.source,
+                    )?;
+                    let before = vendor
+                        .content
+                        .clone()
+                        .expect("owned unchanged vendor has a content digest");
+                    let (added, removed, changed) = vendor_entry_changes(
+                        incumbent_snapshot(world, &resolved.source),
+                        desired_snapshots.get(&resolved.source),
+                        name,
+                    );
+                    vendor_preparations.push(Action::PrepareVendor {
+                        scope: world.scope,
+                        source: resolved.source.clone(),
+                        skill: name.clone(),
+                        source_key,
+                        snapshot_key,
+                        skill_path: locked.path.clone(),
+                        path: path.clone(),
+                        content: locked.content.clone(),
+                    });
+                    vendor_publications.push(Action::ReplaceVendor {
+                        scope: world.scope,
+                        source: resolved.source.clone(),
+                        skill: name.clone(),
+                        path,
+                        before,
+                        after: locked.content.clone(),
+                        added,
+                        removed,
+                        changed,
+                    });
+                    vendor_store_sources.insert(resolved.source.clone());
+                    publishing_sources.insert(resolved.source.clone());
+                }
                 crate::VendorState::OwnedUnchanged | crate::VendorState::Drifted => {
                     blockers.push(Blocker::new("vendor-drift", [("skill", name.to_string())]));
                     continue;
@@ -622,11 +734,41 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                     continue;
                 }
                 crate::VendorState::Absent => {
-                    blockers.push(Blocker::new(
-                        "vendor-missing",
-                        [("skill", name.to_string())],
-                    ));
-                    continue;
+                    if mode == PlanningMode::Frozen {
+                        blockers.push(Blocker::new(
+                            "vendor-missing",
+                            [("skill", name.to_string())],
+                        ));
+                        continue;
+                    }
+                    let (source_key, snapshot_key) = vendor_store_coordinates(
+                        world,
+                        &selected_candidates,
+                        &desired_snapshots,
+                        &resolved.source,
+                    )?;
+                    let (added, _, _) =
+                        vendor_entry_changes(None, desired_snapshots.get(&resolved.source), name);
+                    vendor_preparations.push(Action::PrepareVendor {
+                        scope: world.scope,
+                        source: resolved.source.clone(),
+                        skill: name.clone(),
+                        source_key,
+                        snapshot_key,
+                        skill_path: locked.path.clone(),
+                        path: path.clone(),
+                        content: locked.content.clone(),
+                    });
+                    vendor_publications.push(Action::CreateVendor {
+                        scope: world.scope,
+                        source: resolved.source.clone(),
+                        skill: name.clone(),
+                        path,
+                        after: locked.content.clone(),
+                        added,
+                    });
+                    vendor_store_sources.insert(resolved.source.clone());
+                    publishing_sources.insert(resolved.source.clone());
                 }
             }
         }
@@ -672,6 +814,53 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
             }
             InstalledLink::Directory => blockers.push(Blocker::new(
                 "foreign-directory",
+                [("skill", name.to_string())],
+            )),
+        }
+    }
+
+    for (name, incumbent) in &world.lock.skills {
+        if incumbent.mode != crate::ProjectionMode::Vendor
+            || resolution
+                .skills
+                .get(name)
+                .is_some_and(|skill| skill.mode == crate::ProjectionMode::Vendor)
+        {
+            continue;
+        }
+        let vendor = world
+            .vendors
+            .get(name)
+            .cloned()
+            .unwrap_or(crate::VendorPrecondition {
+                state: crate::VendorState::Absent,
+                content: None,
+            });
+        vendors
+            .entry(name.clone())
+            .or_insert_with(|| vendor.clone());
+        match vendor.state {
+            crate::VendorState::Absent => {}
+            crate::VendorState::OwnedUnchanged
+                if vendor.content.as_deref() == Some(incumbent.content.as_str()) =>
+            {
+                let (added, removed, changed) =
+                    vendor_entry_changes(incumbent_snapshot(world, &incumbent.source), None, name);
+                debug_assert!(added.is_empty() && changed.is_empty());
+                vendor_removals.push(Action::RemoveVendor {
+                    scope: world.scope,
+                    source: incumbent.source.clone(),
+                    skill: name.clone(),
+                    path: vendor_relative_path(&incumbent.source, name),
+                    before: incumbent.content.clone(),
+                    removed,
+                });
+            }
+            crate::VendorState::OwnedUnchanged | crate::VendorState::Drifted => {
+                blockers.push(Blocker::new("vendor-drift", [("skill", name.to_string())]))
+            }
+            crate::VendorState::Foreign => blockers.push(Blocker::new(
+                "foreign-vendor-path",
                 [("skill", name.to_string())],
             )),
         }
@@ -727,6 +916,15 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
         .iter()
         .filter_map(|skill| resolution.skills.get(skill))
         .map(|resolved| resolved.source.clone())
+        .collect::<std::collections::BTreeSet<_>>();
+    let publishing_skills = vendor_publications
+        .iter()
+        .filter_map(|action| match action {
+            Action::CreateVendor { skill, .. } | Action::ReplaceVendor { skill, .. } => {
+                Some(skill.clone())
+            }
+            _ => None,
+        })
         .collect::<std::collections::BTreeSet<_>>();
     let trust_store = world
         .trust_bytes
@@ -821,9 +1019,18 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                 .as_ref()
                 .and_then(|store| store.records.get(&key))
                 .is_some_and(|record| record.authorizes_vendor(source_receipt, &vendor_receipt));
+            let authorized = if publishing_skills.contains(skill_name) {
+                effective_trust != TrustMode::Untrusted
+            } else {
+                authorized
+            };
             if !authorized {
                 blockers.push(Blocker::new(
-                    "vendor-untrusted",
+                    if publishing_skills.contains(skill_name) {
+                        "source-untrusted"
+                    } else {
+                        "vendor-untrusted"
+                    },
                     [
                         ("source", alias.to_string()),
                         ("skill", skill_name.to_string()),
@@ -856,9 +1063,10 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                 .expect("validated Git snapshot"),
             &state.snapshot.id.inventory_digest,
         )?;
-        let requires_store = resolution.skills.values().any(|resolved| {
-            resolved.source == *alias && resolved.mode == crate::ProjectionMode::Link
-        });
+        let requires_store = vendor_store_sources.contains(alias)
+            || resolution.skills.values().any(|resolved| {
+                resolved.source == *alias && resolved.mode == crate::ProjectionMode::Link
+            });
         if requires_store {
             store_preconditions.insert(
                 alias.clone(),
@@ -881,7 +1089,9 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                 [("source", alias.to_string())],
             ));
         }
-        if activating_sources.contains(alias) && effective_trust == TrustMode::All {
+        if (activating_sources.contains(alias) || publishing_sources.contains(alias))
+            && effective_trust == TrustMode::All
+        {
             if let (Some(identity), Some(review_tree)) = (&state.identity, &state.review_tree) {
                 baseline_updates.push((
                     crate::SourceKey::derive(identity),
@@ -900,7 +1110,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
         match state.store {
             SnapshotStore::Valid => {}
             SnapshotStore::Absent
-                if activating_sources.contains(alias)
+                if (activating_sources.contains(alias) || publishing_sources.contains(alias))
                     && state.materializable
                     && mode == PlanningMode::Normal
                     && effective_trust != TrustMode::Untrusted =>
@@ -937,7 +1147,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                 });
             }
             SnapshotStore::Corrupt
-                if activating_sources.contains(alias)
+                if (activating_sources.contains(alias) || publishing_sources.contains(alias))
                     && state.materializable
                     && mode == PlanningMode::Normal
                     && effective_trust != TrustMode::Untrusted =>
@@ -1016,7 +1226,10 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
             }
         }
     }
+    materializations.extend(vendor_preparations);
+    materializations.extend(vendor_publications);
     actions.splice(0..0, materializations);
+    actions.extend(vendor_removals);
 
     blockers.sort();
     blockers.dedup();
@@ -1478,6 +1691,134 @@ fn owned_target(
 
 fn incumbent_owned_target(world: &WorldState, name: &SkillName) -> Result<OwnedLinkTarget> {
     owned_target(&world.lock, &world.snapshots, world, name)
+}
+
+fn vendor_relative_path(source: &SourceAlias, skill: &SkillName) -> String {
+    format!("vendor/grimoire/{source}/{skill}")
+}
+
+fn vendor_store_coordinates(
+    world: &WorldState,
+    selected_candidates: &BTreeMap<SourceAlias, crate::SourceState>,
+    desired_snapshots: &BTreeMap<SourceAlias, crate::SourceSnapshot>,
+    alias: &SourceAlias,
+) -> Result<(crate::SourceKey, crate::SnapshotKey)> {
+    let desired = desired_snapshots.get(alias).ok_or_else(|| {
+        CoreError::Request(format!("vendor source `{alias}` has no desired snapshot"))
+    })?;
+    let state = selected_candidates
+        .get(alias)
+        .or_else(|| {
+            world
+                .source_states
+                .get(alias)
+                .filter(|state| state.snapshot.id == desired.id)
+        })
+        .or_else(|| world.locked_states.get(alias))
+        .ok_or_else(|| {
+            CoreError::Request(format!("vendor source `{alias}` has no observed identity"))
+        })?;
+    let identity = state.identity.as_ref().ok_or_else(|| {
+        CoreError::Request(format!("vendor source `{alias}` has no canonical identity"))
+    })?;
+    let commit = desired
+        .id
+        .commit
+        .as_deref()
+        .ok_or_else(|| CoreError::Request("vendor source has no pinned commit".into()))?;
+    let tree = desired
+        .id
+        .tree
+        .as_deref()
+        .ok_or_else(|| CoreError::Request("vendor source has no pinned tree".into()))?;
+    Ok((
+        crate::SourceKey::derive(identity),
+        crate::SnapshotKey::derive(
+            crate::SourceKind::Git,
+            commit,
+            tree,
+            &desired.id.inventory_digest,
+        )?,
+    ))
+}
+
+fn incumbent_snapshot<'a>(
+    world: &'a WorldState,
+    alias: &SourceAlias,
+) -> Option<&'a crate::SourceSnapshot> {
+    world
+        .locked_states
+        .get(alias)
+        .map(|state| &state.snapshot)
+        .or_else(|| world.snapshots.get(alias))
+}
+
+fn vendor_entry_changes(
+    before: Option<&crate::SourceSnapshot>,
+    after: Option<&crate::SourceSnapshot>,
+    name: &SkillName,
+) -> (Vec<String>, Vec<String>, Vec<String>) {
+    let before = before.map_or_else(BTreeMap::new, |snapshot| skill_entries(snapshot, name));
+    let after = after.map_or_else(BTreeMap::new, |snapshot| skill_entries(snapshot, name));
+    let added = after
+        .keys()
+        .filter(|path| !before.contains_key(*path))
+        .cloned()
+        .collect();
+    let removed = before
+        .keys()
+        .filter(|path| !after.contains_key(*path))
+        .cloned()
+        .collect();
+    let changed = before
+        .iter()
+        .filter_map(|(path, value)| {
+            after
+                .get(path)
+                .filter(|after| *after != value)
+                .map(|_| path.clone())
+        })
+        .collect();
+    (added, removed, changed)
+}
+
+fn skill_entries(snapshot: &crate::SourceSnapshot, name: &SkillName) -> BTreeMap<String, String> {
+    let Some(skill) = snapshot
+        .inventory
+        .skills
+        .iter()
+        .find(|skill| skill.name == name.as_str())
+    else {
+        return BTreeMap::new();
+    };
+    let root = skill.path.to_string();
+    let relative = |path: &grimoire_pack::inventory::SourcePath| {
+        let path = path.to_string();
+        path.strip_prefix(&root)
+            .and_then(|suffix| suffix.strip_prefix('/'))
+            .unwrap_or(path.as_str())
+            .to_owned()
+    };
+    let mut entries = BTreeMap::new();
+    for file in &skill.files {
+        entries.insert(
+            relative(&file.path),
+            format!("file:{}:{}", file.mode, file.digest),
+        );
+    }
+    for link in &skill.symlinks {
+        entries.insert(
+            relative(&link.path),
+            format!("symlink:{}:{:?}", link.mode, link.target),
+        );
+    }
+    for submodule in &skill.submodules {
+        entries.insert(
+            relative(&submodule.path),
+            format!("submodule:{}", submodule.commit),
+        );
+    }
+    entries
 }
 
 fn source_advanced(before: &Lockfile, after: &Lockfile) -> bool {
