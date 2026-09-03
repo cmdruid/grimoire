@@ -15,17 +15,28 @@ for f in .gitkeep tasks.tsv issues.tsv feedback.tsv routines.tsv;do [ -f "$R/.tr
 [ -x "$R/.trackers/trackers.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
 [ ! -e "$R/.trackers/tracker-api.sh" ]&&pass=$((pass+1))||fail=$((fail+1))
 for s in tasks issues feedback routines;do has "$R/.trackers/DEBRIEF.md" "## $s";done
+has "$R/.trackers/DEBRIEF.md" '## feedback'
+has "$R/.trackers/DEBRIEF.md" 'remedy belongs in this repository'
+has "$R/.trackers/DEBRIEF.md" "skill's home feedback channel"
+catalog="$T/catalog";"$SETUP" "$R" --list >"$catalog"
+has "$catalog" $'stem=feedback\ttitle=Project Feedback\tuse-when="Development-experience observations whose remedy belongs in this project."'
 [ ! -e "$R/AGENTS.md" ]&&pass=$((pass+1))||{ echo 'FAIL setup created AGENTS.md' >&2;fail=$((fail+1));}
 
 # Initialized setup preserves data and an intentionally removed default queue.
 "$R/.trackers/trackers.sh" create --tracker tasks --text 'keep me' >/dev/null
+feedback_out="$("$R/.trackers/trackers.sh" create --tracker feedback --text 'project-owned friction')"
+feedback_id="$(printf '%s\n' "$feedback_out"|sed -n 's/^created=//p')"
 "$SETUP" "$R" tracker-remove issues >/dev/null
-cp "$R/.trackers/tables/tasks.tsv" "$T/tasks.before";cp "$R/.trackers/history.tsv" "$T/history.before"
+cp "$R/.trackers/tables/tasks.tsv" "$T/tasks.before";cp "$R/.trackers/tables/feedback.tsv" "$T/feedback.before";cp "$R/.trackers/history.tsv" "$T/history.before"
 printf 'legacy residue\n'>"$R/.trackers/tracker-api.sh";printf '\nproject prompt tail\n'>>"$R/.trackers/DEBRIEF.md"
+cp "$R/.trackers/DEBRIEF.md" "$T/prompt.before"
 rm "$R/.trackers/tables/.gitkeep"
 "$SETUP" "$R" --apply >/dev/null
 cmp "$T/tasks.before" "$R/.trackers/tables/tasks.tsv" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
+cmp "$T/feedback.before" "$R/.trackers/tables/feedback.tsv" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
 cmp "$T/history.before" "$R/.trackers/history.tsv" >/dev/null&&pass=$((pass+1))||fail=$((fail+1))
+cmp "$T/prompt.before" "$R/.trackers/DEBRIEF.md" >/dev/null&&pass=$((pass+1))||{ echo 'FAIL initialized prompt wording was migrated' >&2;fail=$((fail+1));}
+grep -qF "$feedback_id" "$R/.trackers/tables/feedback.tsv"&&pass=$((pass+1))||fail=$((fail+1))
 [ ! -e "$R/.trackers/tables/issues.tsv" ]&&pass=$((pass+1))||fail=$((fail+1))
 [ -f "$R/.trackers/tables/.gitkeep" ]&&[ ! -s "$R/.trackers/tables/.gitkeep" ]&&pass=$((pass+1))||fail=$((fail+1))
 has "$R/.trackers/tracker-api.sh" 'legacy residue';has "$R/.trackers/DEBRIEF.md" 'project prompt tail'

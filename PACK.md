@@ -71,7 +71,7 @@ at write time while preserving explicit `mark` / `map` / `walk`. None is part of
   proves the record closure reachable, seeds the stream, primes its existing hand-off through
   Workstream's generic helper, then loads that same stream. Normal Workstream use performs no
   Foreman checks.
-- Backlog's explicit setup defaults to `tasks`, `issues`, `feedback`, and `routines`; it owns the
+- Backlog's explicit setup defaults to `tasks`, `issues`, project-owned `feedback`, and `routines`; it owns the
   first-class `.trackers` layer, its `tracker@2` provider, queue tables, lifecycle history, and
   editable debrief-routing prompt. The pack itself installs no tracker, script, route, or debrief
   policy. Foreman consumes
@@ -133,9 +133,10 @@ When Delegate is selected, the project may place this policy in
 `.spaces/delegate/hooks/byproducts.md`:
 
 ```markdown
-Return each actionable byproduct with a proposed class (`task`, `issue`, or `feedback`), an evidence
-path or other concrete evidence, and why it matters. Do not file it directly; the calling workflow
-owns routing.
+Return each actionable project-owned byproduct with a proposed class (`task`, `issue`, or `feedback`),
+an evidence path or other concrete evidence, and why it matters. If an observation's remedy belongs
+in a reusable installed skill, return it separately with the affected skill tag for the caller's
+home feedback channel. Do not file either directly; the calling workflow owns routing.
 ```
 
 There is no direct Delegate-to-Backlog writer. Contractor plans remain typed Workstream queue sources,

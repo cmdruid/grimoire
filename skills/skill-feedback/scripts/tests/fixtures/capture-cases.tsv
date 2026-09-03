@@ -1,0 +1,9 @@
+case	target	context	expected	kind	privacy
+friction	architect	A real spec run required the same manual correction twice.	capture	friction	remove project names
+gap	checkpoint	Compaction recovery lacked one required state fact.	capture	gap	remove absolute paths
+win	debugger	The root-cause gate prevented a speculative patch.	capture	win	state the invariant to preserve
+new-skill	unknown	Several projects needed the same bounded data export workflow.	capture	new-skill	remove proprietary identifiers
+ordinary-success	architect	The skill completed normally with no change-worthy incident.	skip	-	store nothing
+project-bug	backlog	The consuming application's button was broken.	skip	-	route to project ownership
+secret	architect	The context contains a token and an absolute checkout path.	skip-or-redact	-	never retain the token or path
+ambiguous	-	Several unnamed tools ran and no target is defensible.	skip	-	store nothing

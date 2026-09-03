@@ -24,9 +24,10 @@ run_core_sweep(){
 }
 
 apply_delegate_policy(){
-  printf '%s\n' 'Return each actionable byproduct with a proposed class (`task`, `issue`, or `feedback`), an evidence' \
-    'path or other concrete evidence, and why it matters. Do not file it directly; the calling workflow' \
-    'owns routing.' > "$root/.spaces/delegate/hooks/byproducts.md"
+  printf '%s\n' 'Return each actionable project-owned byproduct with a proposed class (`task`, `issue`, or `feedback`), an evidence' \
+    "path or other concrete evidence, and why it matters. If an observation's remedy belongs in a reusable installed skill," \
+    "return it separately with the affected skill tag for the caller's home feedback channel. Do not file either directly;" \
+    'the calling workflow owns routing.' > "$root/.spaces/delegate/hooks/byproducts.md"
 }
 
 before="$(git -C "$root" rev-parse HEAD)";run_core_sweep;apply_delegate_policy
@@ -56,6 +57,9 @@ hooks="$tmp/hooks.out";"$repo/skills/workstream/scripts/hooks.sh" parse --dir "$
 grep -q 'hook_feature_completion=empty' "$hooks"||fail "feature hook is not independent and empty"
 grep -q 'hook_after_eventful_ship=empty' "$hooks"||fail "ship hook is not independent and empty"
 grep -q 'proposed class' "$root/.spaces/delegate/hooks/byproducts.md"||fail "Delegate policy not readable"
+grep -q 'actionable project-owned byproduct' "$root/.spaces/delegate/hooks/byproducts.md"||fail "Delegate policy does not qualify project feedback"
+grep -q 'affected skill tag' "$root/.spaces/delegate/hooks/byproducts.md"||fail "Delegate policy loses reusable-skill byproducts"
+if grep -qF 'skill-feedback' "$root/.spaces/delegate/hooks/byproducts.md";then fail "Delegate policy names a global feedback writer";fi
 "$repo/skills/workspace/scripts/workspace-check.sh" --root "$root" >"$tmp/workspace.out"
 grep -q 'fails=0' "$tmp/workspace.out"||fail "Workspace check failed"
 [ -z "$(find "$root/.spaces" -type d -name schemas -print -quit)" ]||fail "project schemas were deployed"

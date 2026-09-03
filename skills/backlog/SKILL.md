@@ -63,6 +63,11 @@ boundary. Initialized setup preserves the incumbent queue population and data wh
 provider, managed README block, and missing prompt sections for incumbent queues. Repair touches only
 the provider and managed README block.
 
+The `feedback` queue is project-owned: its default title is `Project Feedback`, and its remedy must
+belong in the repository. Debrief applies that subject boundary before editable prompt text. An
+observation whose remedy belongs in a reusable installed skill is returned to the custodial caller
+as a skill-tagged byproduct for the skill's home feedback channel and never enters `.trackers`.
+
 ## Edges
 
 <!-- edges:backlog -->

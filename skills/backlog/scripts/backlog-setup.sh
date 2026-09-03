@@ -27,7 +27,7 @@ HISTORY="$LAYER/history.tsv";MARKER="$TABLES/.gitkeep";README="$LAYER/README.md"
 QUEUE_HEADER=$'id\tcreated\ttext\tevidence';HISTORY_HEADER=$'id\tcreated\tconsumer\ttracker\titem\taction\tresolution\tresult'
 [ -n "$mode" ]||die usage
 if [ "$mode" = list ];then
-  printf '%s\n' $'stem=feedback\ttitle=Feedback\tuse-when="Developer-experience friction and observations."' $'stem=issues\ttitle=Issues\tuse-when="Project problems, risks, and limitations."' $'stem=routines\ttitle=Routines\tuse-when="Repeatable responses to recognizable development triggers."' $'stem=tasks\ttitle=Tasks\tuse-when="Work someone should build or change."';exit
+  printf '%s\n' $'stem=feedback\ttitle=Project Feedback\tuse-when="Development-experience observations whose remedy belongs in this project."' $'stem=issues\ttitle=Issues\tuse-when="Project problems, risks, and limitations."' $'stem=routines\ttitle=Routines\tuse-when="Repeatable responses to recognizable development triggers."' $'stem=tasks\ttitle=Tasks\tuse-when="Work someone should build or change."';exit
 fi
 case "$mode" in tracker-add|tracker-remove)valid_stem "$stem"||die invalid-stem "$stem";;esac
 
