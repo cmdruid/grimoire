@@ -1,8 +1,9 @@
 ---
 title: Issues
-use-when: "Project problems, risks, and limitations."
+use-when: "Established project problems, risks, and limitations."
 ---
 
 ## issues
 
-File what is wrong or risky, where it bites, and any evidence a future reader needs.
+File an established negative condition, risk, or limitation. State where it bites and include the
+evidence a future reader needs to revisit the conclusion.

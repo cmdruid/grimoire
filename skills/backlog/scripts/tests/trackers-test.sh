@@ -38,6 +38,21 @@ no "${RUN[@]}" page --tracker routines --status open --limit 2 --after routines-
 before="$(wc -l < "$R/.trackers/history.tsv" | tr -d ' ')"; "${RUN[@]}" page --tracker routines --status all --limit 9 >/dev/null
 eq 'page is side-effect free' "$before" "$(wc -l < "$R/.trackers/history.tsv" | tr -d ' ')"
 
+# Debrief can keep one open failure family through the unchanged tracker@2 API.
+printf 'id\tcreated\ttext\tevidence\n' > "$R/.trackers/tables/failures.tsv"
+history_before="$(wc -l <"$R/.trackers/history.tsv"|tr -d ' ')"
+out="$("${RUN[@]}" create --tracker failures --text 'cargo test: timeout after tui_runtime' --evidence ci/run-1.log)"
+failure_id="$(printf '%s\n' "$out"|sed -n 's/^id=//p')";eq 'failure family id' failures-1 "$failure_id"
+failure_created="$(awk -F '\t' '$1=="failures-1"{print $2}' "$R/.trackers/tables/failures.tsv")"
+"${RUN[@]}" update --tracker failures --id "$failure_id" --text 'cargo test: tui_runtime hangs after terminal restore' --evidence ci/run-3.log >/dev/null
+eq 'failure update preserves id and created' "failures-1\t$failure_created\tcargo test: tui_runtime hangs after terminal restore\tci/run-3.log" "$(awk -F '\t' '$1=="failures-1"{print $1"\\t"$2"\\t"$3"\\t"$4}' "$R/.trackers/tables/failures.tsv")"
+"${RUN[@]}" page --tracker failures --status open --limit 9 >"$OUT"
+eq 'matching family remains one row' 1 "$(grep -c '^failures-' "$OUT")"
+"${RUN[@]}" create --tracker failures --text 'shellcheck: SC2034 in setup helper' --evidence local/shellcheck.log >/dev/null
+"${RUN[@]}" page --tracker failures --status open --limit 9 >"$OUT"
+eq 'unrelated signature creates a second row' 2 "$(grep -c '^failures-' "$OUT")"
+eq 'failure create/update leaves history alone' "$history_before" "$(wc -l <"$R/.trackers/history.tsv"|tr -d ' ')"
+
 # Red-proof page scratch allocation: a predictable-name symlink must never be opened.
 PAGE_TMP="$T/page-tmp";mkdir "$PAGE_TMP";PAGE_WRAP="$T/page-wrap.sh"
 printf '%s\n' '#!/bin/sh' 'target="$1"' 'shift' 'ln -s "$target" "$TMPDIR/tracker-page-rows.$$"' 'exec "$@"' > "$PAGE_WRAP";chmod +x "$PAGE_WRAP"

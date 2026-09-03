@@ -13,7 +13,7 @@ state(){ "$STATUS" "$TEMPLATE" "$1"|sed -n 's/^readme_status=//p';}
 M="$T/missing";eq absent absent "$(state "$M")"
 printf 'project prose\n'>"$T/plain";eq absent absent "$(state "$T/plain")"
 cp "$TEMPLATE" "$T/current";eq current current "$(state "$T/current")"
-sed 's/sole writer/only writer/' "$TEMPLATE">"$T/drifted";eq drifted drifted "$(state "$T/drifted")"
+sed 's/sole exception/only exception/' "$TEMPLATE">"$T/drifted";eq drifted drifted "$(state "$T/drifted")"
 for shape in duplicate nested reversed begin-only end-only;do
   case "$shape" in
     duplicate) { cat "$TEMPLATE";cat "$TEMPLATE";} >"$T/$shape";;
@@ -36,6 +36,7 @@ sed 's/## Use the tracker tool/## Drifted tracker tool/' "$R/.trackers/README.md
 eq managed current "$(state "$R/.trackers/README.md")";has "$R/.trackers/README.md" 'before canary';has "$R/.trackers/README.md" 'after canary'
 eq marker-count 1 "$(grep -cFx '<!-- backlog:trackers-tool BEGIN -->' "$R/.trackers/README.md")"
 for needle in 'complete ordinary-use interface' '`history.tsv`' 'Git owns file history' '`trackers.sh` is their sole writer' 'never hand-edit' 'State is derived' 'Consumption is terminal' 'Observation is consumer-scoped and idempotent' '--consumer KEY --unobserved' '`next=`' '`--after`' 'tracker-root-relative `wrote=` paths' '.trackers/DEBRIEF.md' '/backlog repair' "Backlog skill isn't available" "Don't improvise";do has_flat "$R/.trackers/README.md" "$needle";done
+for needle in 'Resolve tracker merge conflicts' 'sole exception to the no-hand-edit rule' 'Preserve both independent additions exactly once' 'highest numeric suffix' 'lifecycle rows added with the renumbered item' 'independent history rows use the same `event-N`' 'changed the same pre-existing item' "Don't renumber it" '.trackers/trackers.sh catalog' 'commit only the resolved tracker paths';do has_flat "$R/.trackers/README.md" "$needle";done
 if grep -qF 'immutable source rows' "$R/.trackers/README.md";then
   echo 'FAIL tracker guide calls updateable rows immutable' >&2;fail=$((fail+1))
 else pass=$((pass+1));fi

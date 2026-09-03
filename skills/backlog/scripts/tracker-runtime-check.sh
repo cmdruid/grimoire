@@ -21,7 +21,7 @@ elif [ "$layer" = initialized ];then
   echo 'reason=repair-required action=/backlog repair' >&2;exit 2
 elif [ "$layer" = ledger-loss ];then
   echo "reason=ledger-recovery-required action=$action" >&2;exit 2
-elif [ "$layer" = absent ]||[ "$layer" = resumable-prefix ];then
+elif [ "$layer" = absent ]||[ "$layer" = resumable-prefix ]||[ "$layer" = selection-cleanup ];then
   echo 'reason=setup-required action=/backlog setup' >&2;exit 2
 else
   echo 'reason=ledger-recovery-required action=human-review' >&2;exit 2

@@ -38,7 +38,8 @@ and owns its own setup procedure.
 All other members are optional and default-installed:
 
 - Work leads: `architect`, `contractor`, and `inspector`; Inspector reviews documents and completed
-  implementations, publishes only accepted passing documents, and owns its project kind setup.
+  implementations, offers a plain-text close for confirmed implementation fixes and full re-review,
+  publishes only accepted passing documents, and owns its project kind setup.
 - Project knowledge and follow-up: `journal`, `backlog`, `notepad`, `analyst`, and `chiropractor`.
 - Development operations: `workstream`, `auditor`, `debugger`, and `foreman`.
 - Utilities: `delegate`, `mailbox`, `checkpoint`, and `scheduler`.
@@ -52,9 +53,10 @@ at write time while preserving explicit `mark` / `map` / `walk`. None is part of
 ## Composition seams
 
 - Architect produces the argued specification. Inspector reviews documents, revises supported
-  findings, and may simplify a spec or plan without taking ownership; after the caller accepts a
-  passing document review, Contractor sequences an approved specification only when a plan is
-  useful and can walk that job.
+  document findings, and may simplify a spec or plan while offering a numbered/lettered close for
+  confirmed implementation fixes and full re-review without taking ownership; after the caller
+  accepts a passing document review, Contractor sequences an approved specification only when a plan
+  is useful and can walk that job.
 - Contractor plans and roadmaps are queue sources for Workstream. Workstream owns isolation,
   landing, and the live stream loop; Contractor never ships.
 - Journal defines the record contract. Notepad writes notes, Auditor and Debugger write reports,
@@ -71,7 +73,10 @@ at write time while preserving explicit `mark` / `map` / `walk`. None is part of
   proves the record closure reachable, seeds the stream, primes its current unit through
   Workstream's generic helper, then loads that same stream. Normal Workstream use performs no
   Foreman checks.
-- Backlog's explicit setup defaults to `tasks`, `issues`, project-owned `feedback`, and `routines`; it owns the
+- Backlog's explicit first setup selects from the packaged `tasks`, `issues`, `failures`,
+  project-owned `feedback`, and `routines` queues and defaults to all five; initialized layers
+  retain their incumbent population and prompt. Unresolved operational sightings route to
+  `failures`, while qualitative project experience routes to `feedback`. Backlog owns the
   first-class `.trackers` layer, its `tracker@2` provider, queue tables, lifecycle history, and
   editable debrief-routing prompt. The pack itself installs no tracker, script, route, or debrief
   policy. Foreman consumes
@@ -130,9 +135,12 @@ response; report any partial safe writes, correct the refusal, and rerun.
 
 ### 3. Apply optional project policy
 
-Backlog setup configures only `.trackers`; it does not author a project front door or Workstream
-hooks. Workstream's two hook points live in its own optional `.streams/CONFIG.md` and remain
-independently owned and unchanged by this profile.
+Backlog's tracker transaction configures only `.trackers`. A first-time attended setup may
+separately offer its managed project debrief route, defaulting off; `--debrief` is explicit consent
+to the same standalone anchor lifecycle. Include `AGENTS.md` among approved destinations before
+accepting that choice. Unattended setup without the flag and initialized reconciliation do not offer
+or author the route. Workstream's two hook points live in its own optional `.streams/CONFIG.md`
+and remain independently owned and unchanged by this profile.
 When Delegate is selected, the project may place this policy in
 `.agents/skilldata/delegate/hooks/byproducts.md`:
 

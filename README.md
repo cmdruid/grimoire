@@ -71,7 +71,7 @@ global capture and guided tuning of reusable-skill observations). See *The packs
 | `analyst` | reports and briefings for the developer: catch-ups, status, subsystem and health snapshots, guides — synthesized from the records layer and git, from a customizable template catalog |
 | `architect` | specification spine: ideation → argued spec; genesis (`new` / `deploy`) mints a founding spec and a new repo; never plans or builds |
 | `auditor` | code-quality audit framework: per-dimension rubric and metrics; findings stay in the audit report and promote through the host capture lane; standalone on any repo |
-| `backlog` | first-class living TSV trackers: setup, bounded tracker@1 migration, extensible queue tables, lifecycle history, paging, filing, explicit debriefing, and curation through `tracker@2`; optional `anchor` points project agents at the standalone `.trackers/README.md` guide |
+| `backlog` | first-class living TSV trackers: selectable first-time queues (five packaged defaults, including unresolved failures), bounded tracker@1 migration, lifecycle history, paging, filing, debriefing, and curation through `tracker@2`; optional `anchor` manages an explicit project debrief route |
 | `checkpoint` | living session save-state: `save` / `resume` / `close` + compaction recovery — the persistence disciplines other skills borrow |
 | `chiropractor` | audit documentation-spine discoverability and authority from `AGENTS.md`; trace task routes into docs, workflows, and helper scripts, then confirmation-gate minimal documentation-only repairs |
 | `code-humanizer` | keep durable application, service, library, shipped CLI, and maintained test source fit for human ownership at write time; `mark` / `map` / `walk` on supported existing code; standalone, outside every pack |
@@ -80,7 +80,7 @@ global capture and guided tuning of reusable-skill observations). See *The packs
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `developer-writing` | write and edit human-facing developer prose with purpose-aware structure, human editorial judgment, and Google documentation mechanics; agent-executed operational artifacts get wording-only help on explicit request; standalone, outside every pack |
 | `journal` | the records format authority: discriminator, contract, adjacent `records.sh`, and history ledger; durable setup, narrow repair, dedicated-root migration, search, close, and substrate curation; optional `anchor` points project agents at the standalone `.records/README.md` guide |
-| `inspector` | material review of documents and completed implementations; revise folds supported document findings, refine simplifies specs and plans, and setup deploys Inspector-owned kind doctrine absent-only |
+| `inspector` | material review of documents and completed implementations, with a plain-text numbered/lettered close for confirmed implementation fixes and full re-review; revise folds supported document findings, refine simplifies specs and plans, and setup deploys Inspector-owned kind doctrine absent-only |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
@@ -113,11 +113,18 @@ Workstream alone may additionally use the fixed **`.streams/`** control home for
 `CONFIG.md`, guide, helper, compact history, and ignored runtime worktrees. It is a narrow lifecycle
 exception, not generic skilldata and not a selectable project root.
 These canonical homes are constants, not front-door configuration. Each durable-home skill owns
-its files. Projects can explicitly invoke `/journal anchor` or `/backlog anchor` to add short,
-project-owned `AGENTS.md` pointers to the corresponding local guide; setup, repair, migration, and
-pack installation never add them automatically. The local READMEs and adjacent providers support
-ordinary record and tracker work without the source skills, while maintenance and judgment still
-belong to those skills. The pack installs skills but writes none of these project surfaces.
+its files. Backlog's first initialization selects a nonempty subset of
+`tasks,issues,failures,feedback,routines` and defaults to all five; initialized projects preserve
+their incumbent queue population and prompt prose. Unresolved test/build/tool sightings belong in
+`failures`, while qualitative project-development experience belongs in `feedback`.
+
+Projects can explicitly invoke `/journal anchor` for Journal's short guide pointer or
+`/backlog anchor` for Backlog's managed project debrief route. Backlog's first attended setup may
+offer that route as a separate, default-off choice; `setup --debrief` opts in explicitly, while
+unattended setup without the flag, repair, migration, and pack installation remain front-door
+neutral. The local READMEs and adjacent providers support ordinary record and tracker work without
+the source skills, while maintenance and judgment still belong to those skills. The pack installs
+skills but writes none of these project surfaces.
 
 User-global installed packages remain under **`~/.agents/skills/`**. A skill with a separately
 justified cross-project data contract may use its own child beneath

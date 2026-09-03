@@ -25,10 +25,18 @@ init_project(){
 }
 
 install_one(){
-  local root="$1" package="$2" owner="$3" script scoped output
+  local root="$1" package="$2" owner="$3" script scoped output base candidate
   script="$package/$owner/scripts/$([ "$owner" = journal ]&&printf records||printf trackers)-anchor.sh"
   scoped="$package/$owner/scripts/scoped-commit.sh";output="$T/$owner-anchor.out"
-  "$script" apply --root "$root" --confirmed>"$output"
+  if [ "$owner" = journal ];then
+    "$script" apply --root "$root" --confirmed>"$output"
+  else
+    "$script" preview --root "$root">"$output"
+    base="$(sed -n 's/^base-sha256=//p' "$output"|head -n1)"
+    candidate="$(sed -n 's/^candidate-sha256=//p' "$output"|head -n1)"
+    "$script" apply --root "$root" --confirmed --base-sha256 "$base" \
+      --candidate-sha256 "$candidate">"$output"
+  fi
   grep -qxF 'wrote=AGENTS.md' "$output"||fail "$owner anchor did not report AGENTS.md"
   "$scoped" "$root" "Add $owner layer pointer" AGENTS.md >/dev/null
   [ "$(git -C "$root" diff-tree --no-commit-id --name-only -r HEAD)" = AGENTS.md ]||
@@ -42,23 +50,29 @@ exercise_order(){
   [ "$authored" = no ]||cp "$root/AGENTS.md" "$T/$label.before"
   install_one "$root" "$package" "$first";install_one "$root" "$package" "$second"
   [ "$(grep -cFx '## Project records' "$root/AGENTS.md")" -eq 1 ]||fail "$label records section count"
-  [ "$(grep -cFx '## Project trackers' "$root/AGENTS.md")" -eq 1 ]||fail "$label tracker section count"
+  [ "$(grep -cFx '## Skill routes (self-registered)' "$root/AGENTS.md")" -eq 1 ]||fail "$label route section count"
   grep -qF "Read \`.records/README.md\`" "$root/AGENTS.md"||fail "$label records pointer missing"
-  grep -qF "Read \`.trackers/README.md\`" "$root/AGENTS.md"||fail "$label tracker pointer missing"
-  ! grep -qE '<!-- (journal|backlog|skill:)|debrief cadence|/backlog (setup|repair)' "$root/AGENTS.md"||
-    fail "$label installed marker, route, or cadence prose"
+  grep -qF 'read `.trackers/README.md`' "$root/AGENTS.md"||fail "$label tracker guide route missing"
+  [ "$(grep -c '<!-- skill:backlog BEGIN built-against:' "$root/AGENTS.md")" -eq 1 ]||fail "$label Backlog route count"
+  ! grep -qE '<!-- (journal|backlog):|/backlog (setup|repair)' "$root/AGENTS.md"||
+    fail "$label installed a foreign marker or setup route"
   if [ "$authored" = yes ];then
     bytes="$(wc -c <"$T/$label.before"|tr -d '[:space:]')"
     head -c "$bytes" "$root/AGENTS.md">"$T/$label.prefix"
     cmp -s "$T/$label.before" "$T/$label.prefix"||fail "$label changed authored prefix"
   fi
-  first_line="$(grep -nFx "## Project $([ "$first" = journal ]&&printf records||printf trackers)" "$root/AGENTS.md"|cut -d: -f1)"
-  second_line="$(grep -nFx "## Project $([ "$second" = journal ]&&printf records||printf trackers)" "$root/AGENTS.md"|cut -d: -f1)"
+  first_line="$(grep -nFx "$([ "$first" = journal ]&&printf '## Project records'||printf '## Skill routes (self-registered)')" "$root/AGENTS.md"|cut -d: -f1)"
+  second_line="$(grep -nFx "$([ "$second" = journal ]&&printf '## Project records'||printf '## Skill routes (self-registered)')" "$root/AGENTS.md"|cut -d: -f1)"
   [ "$first_line" -lt "$second_line" ]||fail "$label anchor order changed"
   for owner in journal backlog;do
     script="$package/$owner/scripts/$([ "$owner" = journal ]&&printf records||printf trackers)-anchor.sh"
-    "$script" apply --root "$root" --confirmed>"$T/$label-$owner-rerun"
-    grep -qxF 'action=noop' "$T/$label-$owner-rerun"||fail "$label $owner rerun is not a no-op"
+    if [ "$owner" = journal ];then
+      "$script" apply --root "$root" --confirmed>"$T/$label-$owner-rerun"
+      grep -qxF 'action=noop' "$T/$label-$owner-rerun"||fail "$label $owner rerun is not a no-op"
+    else
+      "$script" preview --root "$root">"$T/$label-$owner-rerun"
+      grep -qxF 'status=noop' "$T/$label-$owner-rerun"||fail "$label $owner rerun is not a no-op"
+    fi
     ! grep -q '^wrote=' "$T/$label-$owner-rerun"||fail "$label $owner rerun wrote"
   done
   [ -z "$(git -C "$root" status --porcelain)" ]||fail "$label rerun left a diff"
@@ -69,6 +83,22 @@ exercise_order missing-journal-first journal backlog no
 exercise_order missing-backlog-first backlog journal no
 exercise_order authored-journal-first journal backlog yes
 exercise_order authored-backlog-first backlog journal yes
+
+# Backlog removal leaves Journal's pointer intact, and exact legacy output migrates independently.
+independent_package="$T/independent-package";independent="$T/independent";copy_packages "$independent_package"
+init_project "$independent" "$independent_package" yes
+install_one "$independent" "$independent_package" journal;install_one "$independent" "$independent_package" backlog
+"$independent_package/backlog/scripts/trackers-anchor.sh" preview --root "$independent" --remove>"$T/remove-preview"
+base="$(sed -n 's/^base-sha256=//p' "$T/remove-preview"|head -n1)";candidate="$(sed -n 's/^candidate-sha256=//p' "$T/remove-preview"|head -n1)"
+"$independent_package/backlog/scripts/trackers-anchor.sh" apply --root "$independent" --remove --confirmed \
+  --base-sha256 "$base" --candidate-sha256 "$candidate">"$T/remove-apply"
+grep -qF '.records/README.md' "$independent/AGENTS.md"||fail 'Backlog removal damaged Journal pointer'
+! grep -qF '<!-- skill:backlog BEGIN' "$independent/AGENTS.md"||fail 'Backlog removal retained its route'
+
+legacy_package="$T/legacy-package";legacy="$T/legacy";copy_packages "$legacy_package";init_project "$legacy" "$legacy_package" no
+cp "$legacy_package/backlog/templates/agents-pointer.md" "$legacy/AGENTS.md";install_one "$legacy" "$legacy_package" backlog
+! grep -qFx '## Project trackers' "$legacy/AGENTS.md"||fail 'exact legacy Backlog pointer survived migration'
+grep -qF '<!-- skill:backlog BEGIN' "$legacy/AGENTS.md"||fail 'managed Backlog route missing after migration'
 
 # Setup and repair remain front-door neutral without an explicit anchor call.
 neutral_package="$T/neutral-package";neutral="$T/neutral";copy_packages "$neutral_package"
@@ -127,6 +157,8 @@ boundary_guard(){
     --glob '!**/tests/**' --glob '!records-anchor.sh' --glob '!trackers-anchor.sh' >/dev/null||return 1
   ! grep -qF '<!--' "$package/journal/templates/agents-pointer.md"||return 1
   ! grep -qF '<!--' "$package/backlog/templates/agents-pointer.md"||return 1
+  [ "$(grep -cF '<!-- skill:backlog BEGIN built-against:__BUILT_AGAINST__ -->' "$package/backlog/templates/agents-route.md")" -eq 1 ]||return 1
+  [ "$(grep -cF '<!-- skill:backlog END -->' "$package/backlog/templates/agents-route.md")" -eq 1 ]||return 1
 }
 boundary_guard "$guard_package"||fail 'live boundary guard fails'
 mutations=0

@@ -7,7 +7,9 @@ Resolve all roots per `SKILL.md`.
   refuse if absent.
 - `add <stem>`: run package-local `scripts/backlog-setup.sh` with the resolved root arguments and
   `tracker-add <stem>`. It creates exactly `.trackers/tables/<stem>.tsv`, adds the absent prompt
-  section, and refreshes the installed provider. Incumbent stems refuse.
+  section, and refreshes the installed provider. Incumbent stems refuse. In a preserved older
+  installation, `/backlog tracker add failures` explicitly installs the packaged failure-routing
+  section without changing any incumbent prompt bytes.
 - `remove <stem>`: run the same helper with `tracker-remove <stem>`. It deletes the named queue even
   when rows remain, removes only its prompt section, and preserves history. Git is the recovery
   mechanism.

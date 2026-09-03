@@ -63,5 +63,10 @@ revision-after-review: unavailable
 
 ## Revision legal locations
 
-None. Implementation review never amends code, writes status, publishes, offers revise, or enters
-automatic remediation.
+None. Implementation never enters document `revise` or `refine`, writes status or stage, or
+publishes. The review phase never amends code. After a material implementation verdict,
+`verbs/review.md` owns a separate plain-text action close with a numbered scope, `A`/`I` execution,
+and `R`/`N` afterward modifiers. An unresolved destination may retain only pending scope; a complete
+confirmed selection may use an eligible inline or isolated route and optional full same-base
+re-review. That action is neither automatic from the verdict nor a revision legal location. A clean
+`approve` has no action surface and resumes the caller automatically.

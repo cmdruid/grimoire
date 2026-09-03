@@ -1,6 +1,6 @@
 ---
 name: inspector
-description: "Use when the user runs `/inspector`, asks to review a document or completed implementation, wants supported findings revised into a document, wants a spec or plan simplified, or wants Inspector's project doctrine deployed. Review is a material two-axis judgment; revise corrects findings; refine is an optional minimum-sufficiency pass. Both mutation verbs propose before editing. Does not mint records. Bare `/inspector` asks which verb. For a one-line patch, skip it."
+description: "Use when the user runs `/inspector`, asks to review a document or completed implementation, wants confirmed text-coded implementation fixes and re-review, wants supported findings revised into a document, wants a spec or plan simplified, or wants Inspector's project doctrine deployed. Review is a material two-axis judgment; revise and refine are document mutation verbs that propose before editing. Does not mint records. Bare `/inspector` asks which verb. For a one-line patch, skip it."
 ---
 
 # inspector — critique, correct, and simplify
@@ -47,7 +47,7 @@ This package does **not** mint records.
 
 | Invocation | Verb file | Does |
 |---|---|---|
-| `review` | `verbs/review.md` | two-axis critique; resolve the kind's review-continuation policy; conversation verdict |
+| `review` | `verbs/review.md` | two-axis critique; resolve continuation; conversation verdict and applicable action close |
 | `revise` | `verbs/revise.md` | verify findings, propose corrections, fold on confirm; a review-origin chain re-reviews by default |
 | `refine` | `verbs/refine.md` | explicitly simplify a spec or plan; propose, confirm, apply, then mandatory full review |
 | `/inspector setup [<root>]` | `verbs/setup.md` | deploy all bundled kind doctrine absent-only |
@@ -58,7 +58,8 @@ approve document                     →  accept/publish  →  (host sequences /
 material + automatic-proposal        →  revise questions/proposal  →  confirm/apply + queued review  →  …
 material + offered                   →  explicit revise offer  →  stop
 material + unavailable               →  publish-as-is offer or verdict-only  →  stop
-implementation review → verdict only
+implementation material verdict       →  plain-text action close  →  optional fixes + full review
+implementation approve                →  report ready  →  resume caller automatically
 explicit refine of spec/plan         →  simplification proposal  →  confirm/apply + mandatory review
 ```
 
@@ -68,6 +69,13 @@ authorizes an edit. A `revise` entered from any document review carries a queued
 approval applies the proposal and immediately runs the existing `review` procedure. Standalone
 `revise` invokes review only when its confirmation names re-review. `Refine` is never an automatic
 review continuation; every accepted refinement runs review and that review may enter `revise`.
+
+Implementation remains `revision-after-review: unavailable`: it never enters document `revise` or
+`refine`. A material implementation verdict receives the separate post-verdict action close in
+`verbs/review.md`; `approve` reports readiness and resumes the caller automatically. The close's
+numbered scope and `A`/`I` plus `R`/`N` modifiers preserve pending scope and confirmation boundaries.
+Only a complete confirmed selection authorizes eligible inline or isolated remediation; a completely
+applied package may run a full same-base review, and each fresh verdict authorizes no further write.
 
 ## Kind-detect (review, revise, and refine; once)
 
@@ -118,6 +126,9 @@ including when both old and new declarations are present. A malformed, conflicti
 unrecognized declaration is also invalid doctrine: name the file and ask for correction; do not
 guess. `implementation` is reserved and always `unavailable`, even if its effective file says
 otherwise.
+
+For implementation, `unavailable` governs document revision only. It does not suppress the distinct
+confirmed implementation action close owned by `review`.
 
 ## Brief the human (every verb)
 
