@@ -35,6 +35,11 @@ follow-ups remain. It also points to the local tracker guide.
    sweep's custody instead. A no-op makes no commit. Commit failure leaves the front-door change
    separate and never affects tracker-layer state.
 
+When first-time setup delegates a consented route operation here, it does so only after the tracker transaction
+has committed or returned its complete path set. Run this same preview/apply and
+front-door custody procedure without folding `.trackers` paths into the anchor commit. Anchor
+refusal or commit failure is a separate reported outcome and cannot roll back successful setup.
+
 ## Done when
 
 The displayed digest-bound candidate was applied or was a no-op; install, refresh, exact legacy

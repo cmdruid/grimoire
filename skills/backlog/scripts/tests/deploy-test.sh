@@ -102,4 +102,16 @@ M="$T/malformed";newroot "$M";printf '%s\n' '<!-- skill:backlog BEGIN broken -->
 ok "$SETUP" "$M" --apply;ok "$SETUP" "$M" tracker-add decisions;ok "$SETUP" "$M" tracker-remove decisions
 cmp "$T/malformed-agents.before" "$M/AGENTS.md" >/dev/null&&pass=$((pass+1))||{ echo 'FAIL Backlog administration changed AGENTS.md' >&2;fail=$((fail+1));}
 
+# The deterministic setup helper cannot orchestrate or infer front-door consent.
+setup_front_door_neutral(){
+  [ "$(grep -Ec 'trackers-anchor[.]sh|AGENTS[.]md|--debrief' "$1")" -eq 0 ]
+}
+if setup_front_door_neutral "$SETUP";then pass=$((pass+1));else echo 'FAIL setup helper owns front-door behavior' >&2;fail=$((fail+1));fi
+cp "$SETUP" "$T/setup-helper"
+printf '\n%s\n' '"$SKILL/scripts/trackers-anchor.sh" preview --root "$root"' >>"$T/setup-helper"
+[ "$(grep -Ec 'trackers-anchor[.]sh|AGENTS[.]md|--debrief' "$T/setup-helper")" -eq 1 ]||{ echo 'FAIL automatic-anchor mutation target count' >&2;exit 1;}
+if setup_front_door_neutral "$T/setup-helper";then echo 'FAIL injected automatic anchor call passed' >&2;fail=$((fail+1));else pass=$((pass+1));fi
+cp "$SETUP" "$T/setup-helper"
+cmp "$SETUP" "$T/setup-helper" >/dev/null&&pass=$((pass+1))||{ echo 'FAIL setup helper fixture did not restore' >&2;fail=$((fail+1));}
+
 echo "deploy-test: $pass passed, $fail failed";[ "$fail" -eq 0 ]

@@ -274,7 +274,7 @@ pass, and lint reports `fails=0` with only understood pre-existing warnings.
     tracker health; no non-anchor operation or real Grimoire front door changes. Commit the standalone
     anchor lifecycle independently.
 
-- [ ] **Slice 4: Compose first-time setup with explicit route consent** <requires: Slices 1, 3>
+- [x] **Slice 4: Compose first-time setup with explicit route consent** <requires: Slices 1, 3>
   - Files:
     - Modify `skills/backlog/verbs/setup.md`, `skills/backlog/verbs/anchor.md`,
       `skills/backlog/SKILL.md`, `skills/backlog/scripts/tests/deploy-test.sh`,

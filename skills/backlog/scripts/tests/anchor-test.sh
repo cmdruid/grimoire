@@ -86,6 +86,11 @@ unsafe="$TMP/unsafe";new_root "$unsafe";printf outside>"$TMP/outside";ln -s "$TM
 no "$ANCHOR" preview --root relative;has "$ERR" 'reason=root-not-absolute'
 nested="$TMP/nested";new_root "$nested";mkdir "$nested/child";no preview "$nested/child";has "$ERR" 'reason=root-not-git-top-level'
 commit_root="$TMP/commit";new_root "$commit_root";apply_preview "$commit_root";"$SCOPED" "$commit_root" 'Install project debrief route' AGENTS.md >/dev/null;eq 'scoped commit contains only AGENTS' AGENTS.md "$(git -C "$commit_root" diff-tree --no-commit-id --name-only -r HEAD)"
+if git -C "$commit_root" show --pretty='' --name-only HEAD^|grep -q '^.trackers/';then pass=$((pass+1));else echo 'FAIL setup transaction did not precede anchor commit' >&2;fail=$((fail+1));fi
+failure_root="$TMP/setup-anchor-failure";new_root "$failure_root";tracker_head="$(git -C "$failure_root" rev-parse HEAD)";preview "$failure_root">"$OUT";base="$(fact base-sha256)";candidate="$(fact candidate-sha256)";printf '\ncompeting route\n'>"$failure_root/AGENTS.md"
+no "$ANCHOR" apply --root "$failure_root" --confirmed --base-sha256 "$base" --candidate-sha256 "$candidate";has "$ERR" 'reason=base-changed'
+eq 'anchor failure preserves setup commit' "$tracker_head" "$(git -C "$failure_root" rev-parse HEAD)"
+[ -f "$failure_root/.trackers/history.tsv" ]&&pass=$((pass+1))||{ echo 'FAIL anchor failure damaged initialized trackers' >&2;fail=$((fail+1));}
 neutral="$TMP/neutral";new_root "$neutral";printf 'FRONT_DOOR_CANARY\n'>"$neutral/AGENTS.md";cp "$neutral/AGENTS.md" "$TMP/neutral.before";"$SETUP" "$neutral" --apply >/dev/null;"$SETUP" "$neutral" repair >/dev/null;"$SETUP" "$neutral" tracker-add decisions >/dev/null;"$SETUP" "$neutral" tracker-remove decisions >/dev/null;"$neutral/.trackers/trackers.sh" catalog >/dev/null;cmp -s "$TMP/neutral.before" "$neutral/AGENTS.md"&&pass=$((pass+1))||{ echo 'FAIL non-anchor path changed front door' >&2;fail=$((fail+1));}
 
 echo "anchor-test: $pass passed, $fail failed";[ "$fail" -eq 0 ]

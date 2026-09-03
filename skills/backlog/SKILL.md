@@ -13,7 +13,7 @@ layer is public project state: `README.md`, package-managed `trackers.sh`, `hist
 
 | Invocation | Read | Does |
 |---|---|---|
-| `/backlog setup [--trackers <stems>]` | `verbs/setup.md` | Initialize a selected packaged set or reconcile the tracker layer |
+| `/backlog setup [--trackers <stems>] [--debrief]` | `verbs/setup.md` | Initialize a selected packaged set or reconcile the tracker layer |
 | `/backlog repair` | `verbs/repair.md` | Restore the provider and managed tracker-root guide |
 | `/backlog migrate [<source-root>]` | `verbs/migrate.md` | Convert one exact tracker@1 TSV installation |
 | `/backlog anchor [--debrief|--remove]` | `verbs/anchor.md` | Install, refresh, or remove the managed project debrief route |
@@ -68,6 +68,11 @@ validation, and runtime directs a valid cleanup state back to setup. Initialized
 incumbent queue population and data—including former four-queue layers—while reconciling the
 provider, managed README block, and missing prompt sections for incumbent queues. Repair touches only
 the provider and managed README block.
+
+After a completed first initialization, attended setup may offer the managed project debrief route
+and defaults that independent choice off. Unattended setup never installs it without `--debrief`;
+initialized setup never offers it, although an explicit `--debrief` may invoke the same public
+anchor procedure after reconciliation. Tracker and front-door mutations retain separate custody.
 
 The `failures` queue holds unresolved test, build, and project-tool behavior without prematurely
 asserting a diagnosed defect. The `feedback` queue is project-owned: its default title is `Project
