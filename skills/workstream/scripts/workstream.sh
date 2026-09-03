@@ -157,9 +157,6 @@ validate_no_nested_stream_state() { # runtime checkout/state directory
     parent="$(dirname "$candidate")"
     [ "$parent" = "$runtime" ] || die "nested stream artifact found: $candidate"
   done < <(find "$runtime" -mindepth 1 \( -name WORKSTREAM.md -o -name workstream.tsv \) -print)
-  if find "$runtime" -mindepth 1 -type d -name .workstreams -print -quit | grep -q .; then
-    die "nested legacy stream home found in $runtime"
-  fi
   if [ -d "$runtime/.streams" ]; then
     [ ! -L "$runtime/.streams" ] || die "nested control home is symlinked"
     if find "$runtime/.streams" -mindepth 1 -type d -print -quit | grep -q .; then
@@ -223,38 +220,38 @@ admit_root() {
   readme="$ROOT/.streams/README.md"
   if [ -e "$readme" ] || [ -L "$readme" ]; then
     [ -f "$readme" ] && [ ! -L "$readme" ] || {
-      case "$ADMIT_OPERATION" in setup|repair|anchor|migrate) return ;; esac
+      case "$ADMIT_OPERATION" in setup|repair|anchor) return ;; esac
       die "control README is unsafe; run /workstream repair"
     }
     starts="$(grep -cFx '<!-- workstream:control@1 -->' "$readme" || true)"
     ends="$(grep -cFx '<!-- /workstream:control@1 -->' "$readme" || true)"
     if [ "$starts" -ne "$ends" ] || [ "$starts" -gt 1 ] ||
        ! validate_marker_span "$readme" '<!-- workstream:control@1 -->' '<!-- /workstream:control@1 -->'; then
-      case "$ADMIT_OPERATION" in setup|repair|anchor|migrate) return ;; esac
+      case "$ADMIT_OPERATION" in setup|repair|anchor) return ;; esac
       die "control README markers conflict; run /workstream repair"
     fi
     [ "$starts" -eq 0 ] || initialized=yes
   fi
   if [ -e "$installed" ] || [ -L "$installed" ]; then
     if ! { [ -f "$installed" ] && [ ! -L "$installed" ]; }; then
-      case "$ADMIT_OPERATION" in setup|repair|anchor|migrate) return ;; esac
+      case "$ADMIT_OPERATION" in setup|repair|anchor) return ;; esac
       die "installed helper is unsafe; run /workstream repair"
     fi
     if [ "$initialized" = no ]; then
-      case "$ADMIT_OPERATION" in setup|repair|anchor|migrate) return ;; esac
+      case "$ADMIT_OPERATION" in setup|repair|anchor) return ;; esac
       die "installed helper without managed README is partial setup; run /workstream setup"
     fi
     if ! git -C "$ROOT" ls-files --error-unmatch .streams/workstream.sh >/dev/null 2>&1 ||
        ! git -C "$ROOT" diff --quiet -- .streams/workstream.sh ||
        ! git -C "$ROOT" diff --cached --quiet -- .streams/workstream.sh; then
-      case "$ADMIT_OPERATION" in setup|repair|anchor|migrate) ;; *) die "installed helper differs from its tracked control artifact; run /workstream repair" ;; esac
+      case "$ADMIT_OPERATION" in setup|repair|anchor) ;; *) die "installed helper differs from its tracked control artifact; run /workstream repair" ;; esac
     fi
     installed="$(canonical_dir "$(dirname "$installed")")/$(basename "$installed")"
     if [ "$SELF" != "$installed" ]; then
-      case "$ADMIT_OPERATION" in setup|repair|anchor|migrate) ;; *) die "initialized control surface requires $installed; run /workstream repair" ;; esac
+      case "$ADMIT_OPERATION" in setup|repair|anchor) ;; *) die "initialized control surface requires $installed; run /workstream repair" ;; esac
     fi
   elif [ "$initialized" = yes ]; then
-    case "$ADMIT_OPERATION" in setup|repair|anchor|migrate) ;; *) die "initialized control surface is missing its helper; run /workstream repair" ;; esac
+    case "$ADMIT_OPERATION" in setup|repair|anchor) ;; *) die "initialized control surface is missing its helper; run /workstream repair" ;; esac
   fi
 }
 
@@ -2554,202 +2551,13 @@ cmd_reconfig() {
   printf 'status=applied\nold_contract=%s\nnew_contract=%s\n' "$old_hash" "$new_hash"
 }
 
-migration_stage() { # manifest stream stage
-  local manifest="$1" stream="$2" stage="$3" temp
-  temp="$(mktemp "${TMPDIR:-/tmp}/workstream-migration-inventory.XXXXXX")"
-  awk -F '\t' -v OFS='\t' -v s="$stream" -v stage="$stage" 'NR==1{print;next} $1==s{$7=stage;found++} {print} END{if(found!=1)exit 2}' "$manifest" >"$temp" || { rm -f "$temp"; die "migration manifest is inconsistent"; }
-  write_atomic_file "$manifest" "$temp" 600
-  rm -f "$temp"
-}
-
-legacy_handoff_field() { # file key
-  local file="$1" key="$2"
-  awk -v prefix="- $key:" '
-    index($0,prefix)==1 {
-      value=substr($0,length(prefix)+1); sub(/^[[:space:]]+/,"",value); sub(/[[:space:]]+$/,"",value)
-      print value; found++
-    }
-    END { if(found>1) exit 2 }
-  ' "$file"
-}
-
-legacy_feature_hook() { # file output
-  local file="$1" output="$2"
-  awk '
-    $0=="feature-completion:" { inside=1; next }
-    inside && ($0~/^[a-z][a-z-]*:$/ || /^##[[:space:]]/) { inside=0 }
-    inside { print }
-  ' "$file" >"$output"
-  if [ "$(awk 'NF{print;exit}' "$output")" = '(empty)' ]; then : >"$output"; fi
-}
-
-build_migration_manifest() { # old-home manifest
-  local old_home="$1" manifest="$2" temp old stream destination registered kind branch target instance tip handoff handoff_hash checkout boundary commit_count
-  [ -d "$old_home" ] && [ ! -L "$old_home" ] || die "legacy stream home is unsafe"
-  if find "$old_home" -mindepth 1 -maxdepth 1 ! -type d -print -quit | grep -q .; then die "legacy stream home contains an unknown child"; fi
-  temp="$(mktemp "${TMPDIR:-/tmp}/workstream-migration-inventory.XXXXXX")"
-  printf 'stream\told\tnew\tkind\tbranch\ttarget\tstage\tinstance\ttip\thandoff-sha256\tboundary\tcommit-count\n' >"$temp"
-  while IFS= read -r old; do
-    [ -d "$old" ] && [ ! -L "$old" ] || die "legacy child is not a directory"
-    stream="$(basename "$old")"; validate_stream_name "$stream"; destination="$ROOT/.streams/$stream"
-    [ ! -e "$destination" ] && [ ! -L "$destination" ] || die "migration destination collides: $stream"
-    [ ! -d "$old/.streams" ] && [ ! -d "$old/.workstreams" ] || die "legacy worktree contains nested stream state: $stream"
-    handoff="$old/WORKSTREAM.md"; [ -f "$handoff" ] && [ ! -L "$handoff" ] || die "legacy handoff is missing or unsafe: $stream"
-    registered="$(git -C "$ROOT" worktree list --porcelain | awk -v p="$old" '$1=="worktree"&&$2==p{print $2}')"
-    if [ "$registered" = "$old" ]; then
-      kind=worktree; branch="$(git -C "$old" branch --show-current)"; checkout="$old"
-    elif [ -f "$old/WORKSTREAM.md" ] && grep -qE '^- isolation:[[:space:]]*in-place|^isolation[[:space:]]+in-place$' "$old/WORKSTREAM.md"; then
-      rm -f "$temp"
-      die "legacy in-place stream must be finished or closed before migration: $stream"
-    else
-      die "legacy child has ambiguous topology: $stream"
-    fi
-    validate_ref "$branch"
-    target="$(sed -n -E 's/^- integration-target:[[:space:]]*//p; s/^- target:[[:space:]]*//p; s/^target[[:space:]]+//p' "$old/WORKSTREAM.md" 2>/dev/null | head -n 1)"
-    if [ -z "$target" ]; then git -C "$ROOT" show-ref --verify --quiet refs/heads/main || die "legacy target is missing: $stream"; target=main; fi
-    validate_ref "$target"
-    [ -z "$(git -C "$checkout" status --porcelain --untracked-files=no)" ] || die "legacy stream has uncommitted tracked state: $stream"
-    ! git -C "$checkout" rev-parse -q --verify REBASE_HEAD >/dev/null 2>&1 || die "legacy stream has an interrupted rebase: $stream"
-    tip="$(git -C "$checkout" rev-parse "$branch^{commit}")"; boundary="$(git -C "$checkout" rev-parse "$target^{commit}")"
-    git -C "$checkout" merge-base --is-ancestor "$boundary" "$tip" || die "legacy stream has divergent target state: $stream"
-    commit_count="$(git -C "$checkout" rev-list --count "$boundary..$tip")"
-    handoff_hash="$(sha256_file "$handoff")"; instance="$(mint_instance_id)"
-    printf '%s\t%s\t%s\t%s\t%s\t%s\tpending\t%s\t%s\t%s\t%s\t%s\n' "$stream" "$old" "$destination" "$kind" "$branch" "$target" "$instance" "$tip" "$handoff_hash" "$boundary" "$commit_count" >>"$temp"
-  done < <(find "$old_home" -mindepth 1 -maxdepth 1 -type d -print | LC_ALL=C sort)
-  write_atomic_file "$manifest" "$temp" 600
-  rm -f "$temp"
-}
-
-cmd_migrate() {
-  local action="${1:-inventory}" old_home="$ROOT/.workstreams" new_home="$ROOT/.streams" manifest="$ROOT/.streams/.migration.tsv"
-  local stream old destination kind branch target stage instance tip handoff_hash boundary commit_count count=0 purpose runbook_temp tracker_temp runbook_hash next history legacy checkout current_set approved_set old_mode_check old_landing_check old_cadence_check source_kind_check cursor_check subject index
-  local old_mode old_landing old_cadence source_kind cursor queue_state
-  [ "$#" -eq 1 ] || die "usage: migrate <inventory|apply>"
-  case "$action" in inventory|apply) ;; *) die "invalid migration action" ;; esac
-  if [ ! -e "$old_home" ] && [ ! -f "$manifest" ]; then printf 'status=none\nstreams=0\n'; return; fi
-  ensure_exclusions; mkdir -p "$new_home"
-  if [ "$action" = inventory ]; then
-    if [ -f "$manifest" ]; then
-      ! awk -F '\t' 'NR>1&&$7!="pending"{started=1}END{exit started?0:1}' "$manifest" || die "a migration is already in progress"
-      rm -f "$manifest"
-    fi
-    build_migration_manifest "$old_home" "$manifest"
-    while IFS=$'\t' read -r stream old destination kind branch target stage instance tip handoff_hash boundary commit_count; do
-      [ "$stream" != stream ] || continue
-      count=$((count + 1)); printf 'stream=%s\nold=%s\nnew=%s\nkind=%s\n' "$stream" "$old" "$destination" "$kind"
-    done <"$manifest"
-    printf 'status=inventory\nmanifest=%s\nstreams=%s\n' "$manifest" "$count"; return
-  fi
-  [ -f "$manifest" ] && [ ! -L "$manifest" ] || die "migration apply requires a persisted inventory manifest"
-  [ "$(sed -n '1p' "$manifest")" = $'stream\told\tnew\tkind\tbranch\ttarget\tstage\tinstance\ttip\thandoff-sha256\tboundary\tcommit-count' ] || die "migration manifest header is invalid"
-  current_set="$(mktemp "${TMPDIR:-/tmp}/workstream-migration-current.XXXXXX")"; approved_set="$(mktemp "${TMPDIR:-/tmp}/workstream-migration-approved.XXXXXX")"
-  find "$old_home" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | LC_ALL=C sort >"$current_set"
-  awk -F '\t' 'NR>1&&$7=="pending"{print $2}' "$manifest" | LC_ALL=C sort >"$approved_set"
-  cmp -s "$current_set" "$approved_set" || { rm -f "$current_set" "$approved_set"; die "legacy stream set changed after inventory; run inventory again after resolving it"; }
-  rm -f "$current_set" "$approved_set"
-  # Validate every approved source and all parseable policy/state before the first move.
-  while IFS=$'\t' read -r stream old destination kind branch target stage instance tip handoff_hash boundary commit_count; do
-    [ "$stream" != stream ] || continue
-    case "$stage" in pending)
-      [ -d "$old" ] && [ ! -L "$old" ] || die "pending migration source is missing: $stream"
-      [ "$(sha256_file "$old/WORKSTREAM.md")" = "$handoff_hash" ] || die "legacy handoff changed after inventory: $stream"
-      checkout="$old"
-      [ "$(git -C "$checkout" rev-parse "$branch^{commit}")" = "$tip" ] || die "legacy branch moved after inventory: $stream"
-      old_mode_check="$(legacy_handoff_field "$old/WORKSTREAM.md" mode)" || die "legacy mode is ambiguous"
-      old_landing_check="$(legacy_handoff_field "$old/WORKSTREAM.md" landing)" || die "legacy landing is ambiguous"
-      old_cadence_check="$(legacy_handoff_field "$old/WORKSTREAM.md" ship-cadence)" || die "legacy ship cadence is ambiguous"
-      case "$old_mode_check" in ''|delegate|manual) ;; *) die "legacy mode is invalid" ;; esac
-      case "$old_landing_check" in ''|local|push|pr) ;; *) die "legacy landing is invalid" ;; esac
-      case "$old_cadence_check" in ''|milestone|per-track|per-stage) ;; *) die "legacy ship cadence is invalid" ;; esac
-      source_kind_check="$(legacy_handoff_field "$old/WORKSTREAM.md" source-kind)" || die "legacy queue source kind is ambiguous"
-      cursor_check="$(legacy_handoff_field "$old/WORKSTREAM.md" source)" || die "legacy queue source is ambiguous"
-      case "$source_kind_check" in
-        plan|roadmap) [ -n "$cursor_check" ] && [[ "$cursor_check" != \(* ]] || die "legacy queue pointer is missing"; validate_text 'legacy queue pointer' "$cursor_check" ;;
-        brief|template|'') ;;
-        *) die "legacy queue source kind is invalid" ;;
-      esac
-      purpose="$(sed -n -E 's/^purpose[[:space:]]+//p; s/^# (.*) — workstream.*/\1/p; s/^# (.*) hand-?off.*/\1/p' "$old/WORKSTREAM.md" 2>/dev/null | head -n 1)"; [ -n "$purpose" ] || purpose="Migrated workstream $stream"
-      validate_text 'legacy purpose' "$purpose"
-      while IFS= read -r subject; do validate_text 'legacy commit subject' "$subject"; [[ "$subject" != *$'\t'* ]] || die "legacy commit subject contains a tab"; done < <(git -C "$checkout" log --reverse --format='%s' "$boundary..$tip")
-      ;;
-    moved|complete) ;;
-    *) die "migration manifest has an invalid stage: $stage" ;;
-    esac
-  done < <(tail -n +2 "$manifest")
-  while IFS=$'\t' read -r stream old destination kind branch target stage instance tip handoff_hash boundary commit_count; do
-    [ "$stream" != stream ] || continue
-    count=$((count + 1)); validate_stream_name "$stream"; validate_ref "$branch"; validate_ref "$target"
-    if [ "$stage" = pending ]; then
-      [ -d "$old" ] && [ ! -L "$old" ] || die "pending migration source is missing: $stream"
-      if [ "$kind" = worktree ]; then git -C "$ROOT" worktree move "$old" "$destination"; else mv "$old" "$destination"; fi
-      migration_stage "$manifest" "$stream" moved; stage=moved
-      if [ -n "${WORKSTREAM_TEST_AFTER_MIGRATION_MOVE:-}" ]; then "$WORKSTREAM_TEST_AFTER_MIGRATION_MOVE" "$manifest"; die "migration interrupted after move"; fi
-    fi
-    if [ "$stage" = moved ]; then
-      [ -d "$destination" ] && [ ! -L "$destination" ] || die "moved migration destination is missing: $stream"
-      RUNTIME="$destination"; RUNBOOK="$RUNTIME/WORKSTREAM.md"; TRACKER="$RUNTIME/workstream.tsv"
-      if [ -f "$TRACKER" ] && [ ! -L "$TRACKER" ] && grep -qFx '<!-- workstream:identity@1 -->' "$RUNBOOK" 2>/dev/null; then
-        validate_tracker "$TRACKER"
-        [ "$(runbook_contract_hash "$RUNBOOK")" = "$(tracker_get meta - runbook-contract-sha256)" ] || die "interrupted migration artifacts do not bind: $stream"
-        [ "$(runbook_field "$RUNBOOK" instance-id)" = "$instance" ] || die "interrupted migration instance changed: $stream"
-        migration_stage "$manifest" "$stream" complete
-        continue
-      fi
-      legacy="$destination/WORKSTREAM.md"; [ -f "$legacy" ] && [ ! -L "$legacy" ] || die "moved legacy handoff is missing or unsafe: $stream"
-      purpose="$(sed -n -E 's/^purpose[[:space:]]+//p; s/^# (.*) — workstream.*/\1/p; s/^# (.*) hand-?off.*/\1/p' "$legacy" 2>/dev/null | head -n 1)"
-      [ -n "$purpose" ] || purpose="Migrated workstream $stream"
-      compile_config
-      old_mode="$(legacy_handoff_field "$legacy" mode)" || die "legacy mode is ambiguous"
-      old_landing="$(legacy_handoff_field "$legacy" landing)" || die "legacy landing is ambiguous"
-      old_cadence="$(legacy_handoff_field "$legacy" ship-cadence)" || die "legacy ship cadence is ambiguous"
-      case "$old_mode" in '') ;; delegate|manual) MODE="$old_mode"; MODE_SOURCE=explicit ;; *) die "legacy mode is invalid" ;; esac
-      case "$old_landing" in '') ;; local|push|pr) LANDING="$old_landing"; LANDING_SOURCE=explicit ;; *) die "legacy landing is invalid" ;; esac
-      case "$old_cadence" in '') ;; milestone|per-track|per-stage) SHIP_CADENCE="$old_cadence"; SHIP_CADENCE_SOURCE=explicit ;; *) die "legacy ship cadence is invalid" ;; esac
-      WT="$destination"
-      if [ "$MODE_SOURCE" = explicit ] || [ "$LANDING_SOURCE" = explicit ] || [ "$SHIP_CADENCE_SOURCE" = explicit ]; then DEFAULTS_SOURCE=explicit; fi
-      DEFAULTS_FINGERPRINT="$(sha256_text "mode=$MODE|landing=$LANDING|ship-cadence=$SHIP_CADENCE")"
-      legacy_feature_hook "$legacy" "$FEATURE_BODY"
-      if grep -q '[^[:space:]]' "$FEATURE_BODY"; then FEATURE_EXECUTION=inline; FEATURE_CONCURRENCY=serial; FEATURE_SOURCE=legacy; fi
-      FEATURE_FINGERPRINT="$(compiled_hook_fingerprint feature-completion "$FEATURE_EXECUTION" "$FEATURE_CONCURRENCY" "$FEATURE_BODY")"
-      source_kind="$(legacy_handoff_field "$legacy" source-kind)" || die "legacy queue source kind is ambiguous"
-      cursor="$(legacy_handoff_field "$legacy" source)" || die "legacy queue source is ambiguous"
-      case "$source_kind" in plan|roadmap)
-          [ -n "$cursor" ] && [[ "$cursor" != \(* ]] || die "legacy queue pointer is missing"
-          validate_text 'legacy queue pointer' "$cursor"; queue_state=ready
-          ;;
-        brief|template|'') source_kind="${source_kind:-brief}"; cursor=-; queue_state=intake ;;
-        *) die "legacy queue source kind is invalid" ;;
-      esac
-      [ "$commit_count" -eq 0 ] || queue_state=ready
-      RUNTIME="$destination"; RUNBOOK="$RUNTIME/WORKSTREAM.md"; TRACKER="$RUNTIME/workstream.tsv"
-      next=1; history="$ROOT/.streams/history.tsv"
-      if [ -e "$history" ]; then validate_history "$history"; next="$(awk -F '\t' -v s="$stream" 'NR>1&&$1==s&&$2+0>=m{m=$2+1}END{print m+0}' "$history")"; [ "$next" -gt 0 ] || next=1; fi
-      runbook_temp="$(mktemp "$RUNTIME/.WORKSTREAM.md.XXXXXX")"; emit_runbook "$stream" "$instance" "$branch" "$target" "$purpose" "$source_kind" "$cursor" >"$runbook_temp"
-      runbook_hash="$(runbook_contract_hash "$runbook_temp")"; tracker_temp="$(mktemp "$RUNTIME/.workstream.tsv.XXXXXX")"
-      {
-        emit_tracker_base "$instance" "$next" "$((next + (commit_count > 0 ? 1 : 0)))" "$runbook_hash" "$cursor" "$source_kind" "$queue_state" "$([ "$commit_count" -gt 0 ] && printf accumulate || printf define-unit)"
-        if [ "$commit_count" -gt 0 ]; then
-          printf 'unit\t%s\tboundary\t%s\nunit\t%s\tcommit-count\t%s\nunit\t%s\tslug\tmigrated\nunit\t%s\tstate\tcomplete\nunit\t%s\tsummary\t%s\n' "$next" "$boundary" "$next" "$commit_count" "$next" "$next" "$next" "$purpose"
-          index=1
-          while IFS= read -r subject; do printf 'unit-subject\t%s/%s\tsubject\t%s\n' "$next" "$index" "$subject"; index=$((index + 1)); done < <(git -C "$WT" log --reverse --format='%s' "$boundary..$tip")
-        fi
-      } >"$tracker_temp"
-      validate_tracker "$tracker_temp"; chmod 600 "$runbook_temp" "$tracker_temp"
-      mv "$tracker_temp" "$TRACKER"
-      if [ -n "${WORKSTREAM_TEST_AFTER_MIGRATION_TRACKER:-}" ]; then "$WORKSTREAM_TEST_AFTER_MIGRATION_TRACKER" "$manifest"; die "migration interrupted after tracker installation"; fi
-      mv "$runbook_temp" "$RUNBOOK"
-      rm -f "$FEATURE_BODY" "$FRICTION_BODY"; migration_stage "$manifest" "$stream" complete
-    fi
-  done < <(tail -n +2 "$manifest")
-  rmdir "$old_home" 2>/dev/null || true; rm -f "$manifest"; printf 'status=migrated\nstreams=%s\n' "$count"
-}
 
 main() {
   [ "$#" -ge 2 ] || { usage; exit 2; }
   if [ "$2" = land-advance ]; then
     LANDING_LOCK_BACKEND="$(select_landing_lock_backend)"
   fi
-  case "$2" in setup|repair|anchor|migrate) ADMIT_OPERATION="$2" ;; *) ADMIT_OPERATION=ordinary ;; esac
+  case "$2" in setup|repair|anchor) ADMIT_OPERATION="$2" ;; *) ADMIT_OPERATION=ordinary ;; esac
   admit_root "$1"
   shift
   local operation="$1"; shift
@@ -2759,7 +2567,6 @@ main() {
     repair) cmd_repair "$@" ;;
     anchor) cmd_anchor "$@" ;;
     reconfig) cmd_reconfig "$@" ;;
-    migrate) cmd_migrate "$@" ;;
     read) cmd_read "$@" ;;
     read-current) cmd_read_current "$@" ;;
     state) cmd_state "$@" ;;
@@ -2792,4 +2599,6 @@ main() {
   esac
 }
 
-main "$@"
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  main "$@"
+fi

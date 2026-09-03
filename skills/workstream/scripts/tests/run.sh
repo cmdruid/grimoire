@@ -51,6 +51,7 @@ echo "== reconfig-test.sh"
 bash "$DIR/reconfig-test.sh" || rc=1
 echo "== migration-test.sh"
 bash "$DIR/migration-test.sh" || rc=1
+shellcheck "$DIR/../workstream-migrate.sh" "$DIR/migration-test.sh" || rc=1
 echo "== topology-contract-test.sh"
 bash "$DIR/topology-contract-test.sh" || rc=1
 echo "== git-helpers-test.sh"

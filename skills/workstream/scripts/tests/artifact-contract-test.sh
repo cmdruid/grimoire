@@ -15,6 +15,9 @@ expect 'no produced record edge' 'produces: —' "$SKILL/SKILL.md"
 expect 'history is internal' 'internal control ledger' "$SKILL/SKILL.md"
 expect 'zero setup is explicit' 'Setup is optional' "$SKILL/SKILL.md"
 expect 'recycle source is constrained' 'tracked regular file' "$SKILL/verbs/recycle.md"
+expect_eq 'package migration helper exists' 1 "$([ -x "$SKILL/scripts/workstream-migrate.sh" ] && echo 1 || echo 0)"
+expect_absent 'installed runtime does not dispatch migration' 'cmd_migrate' "$SKILL/scripts/workstream.sh"
+expect_absent 'installed runtime does not source migration helper' 'workstream-migrate' "$SKILL/scripts/workstream.sh"
 bytes="$(wc -c <"$SKILL/SKILL.md" | tr -d ' ')"
 if [ "$bytes" -le 10000 ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: SKILL.md is $bytes bytes" >&2; fi
 report 'artifact-contract-test.sh'

@@ -46,22 +46,53 @@ else
   pass=$((pass + 1))
 fi
 
-# The legacy spelling is legal only in the explicit migration implementation,
-# migration procedure, and migration fixture.
+# The legacy spelling is legal only in the migration procedure, package helper,
+# migration fixture, and this source guard.
+legacy_files_for_root() { # root output
+  local root="$1" output="$2"
+  rg -l '\.workstreams' "$root/AGENTS.md" "$root/README.md" "$root/PACK.md" \
+    "$root/skills" "$root/scripts" "$root/crates/grimoire-pack" \
+    --glob '*.md' --glob '*.sh' --glob '*.rs' 2>/dev/null |
+    sed "s#^$root/##" | LC_ALL=C sort -u >"$output" || true
+}
+
 legacy_files="$TMP/legacy.files"
-rg -l '\.workstreams' "$ROOT/AGENTS.md" "$ROOT/README.md" "$ROOT/PACK.md" \
-  "$ROOT/skills" "$ROOT/scripts" "$ROOT/crates/grimoire-pack" \
-  --glob '*.md' --glob '*.sh' --glob '*.rs' | sed "s#^$ROOT/##" | sort -u >"$legacy_files" || true
+legacy_files_for_root "$ROOT" "$legacy_files"
 printf '%s\n' \
   'scripts/tests/workstream-hard-cut-contract-test.sh' \
   'skills/workstream/scripts/tests/migration-test.sh' \
-  'skills/workstream/scripts/workstream.sh' \
+  'skills/workstream/scripts/workstream-migrate.sh' \
   'skills/workstream/verbs/migrate.md' >"$TMP/legacy.expected"
 if cmp -s "$TMP/legacy.expected" "$legacy_files"; then
   pass=$((pass + 1))
 else
   fail_with 'legacy .workstreams spelling escaped the migration boundary'
   diff -u "$TMP/legacy.expected" "$legacy_files" >&2 || true
+fi
+
+# Red-prove the exact allowlist in a disposable source tree, then restore bytes.
+mkdir -p "$TMP/legacy-copy/skills/workstream/scripts/tests" \
+  "$TMP/legacy-copy/skills/workstream/verbs" "$TMP/legacy-copy/scripts/tests" \
+  "$TMP/legacy-copy/crates/grimoire-pack"
+touch "$TMP/legacy-copy/AGENTS.md" "$TMP/legacy-copy/README.md" "$TMP/legacy-copy/PACK.md"
+for path in \
+  scripts/tests/workstream-hard-cut-contract-test.sh \
+  skills/workstream/scripts/tests/migration-test.sh \
+  skills/workstream/scripts/workstream-migrate.sh \
+  skills/workstream/verbs/migrate.md; do
+  cp "$ROOT/$path" "$TMP/legacy-copy/$path"
+done
+legacy_files_for_root "$TMP/legacy-copy" "$TMP/legacy-copy.clean"
+if cmp -s "$TMP/legacy.expected" "$TMP/legacy-copy.clean"; then pass=$((pass + 1)); else fail_with 'disposable legacy allowlist fixture is not initially clean'; fi
+printf '# disallowed .workstreams runtime probe\n' >"$TMP/legacy-copy/skills/workstream/scripts/workstream.sh"
+legacy_files_for_root "$TMP/legacy-copy" "$TMP/legacy-copy.mutated"
+if cmp -s "$TMP/legacy.expected" "$TMP/legacy-copy.mutated"; then fail_with 'legacy allowlist stayed green after runtime mutation'; else pass=$((pass + 1)); fi
+rm "$TMP/legacy-copy/skills/workstream/scripts/workstream.sh"
+legacy_files_for_root "$TMP/legacy-copy" "$TMP/legacy-copy.restored"
+if cmp -s "$TMP/legacy.expected" "$TMP/legacy-copy.restored" && cmp -s "$TMP/legacy-copy.clean" "$TMP/legacy-copy.restored"; then
+  pass=$((pass + 1))
+else
+  fail_with 'legacy allowlist did not restore byte-exactly after mutation'
 fi
 
 if grep -qF 'never read or edit the TSV directly' "$ROOT/skills/workstream/SKILL.md" &&
@@ -72,9 +103,12 @@ else
   fail_with 'raw tracker-reading instruction escaped the helper boundary'
 fi
 
-if rg -n 'Coordinates `branch:`|isolation: in-place.*Coordinates' \
+cross_skill_topology_clean() {
+  ! rg -n 'Coordinates `branch:`|isolation: in-place.*Coordinates' "$@" >/dev/null
+}
+if ! cross_skill_topology_clean \
      "$ROOT/skills/debugger/SKILL.md" "$ROOT/skills/delegate/SKILL.md" \
-     "$ROOT/skills/journal/SKILL.md" "$ROOT/skills/notepad/SKILL.md" >/dev/null; then
+     "$ROOT/skills/journal/SKILL.md" "$ROOT/skills/notepad/SKILL.md"; then
   fail_with 'retired workstream identity grammar remains in cross-skill custody prose'
 else
   pass=$((pass + 1))
@@ -92,7 +126,8 @@ custody_paths=(
   skills/notepad/SKILL.md
   skills/workstream/templates/compaction-anchor.md
 )
-if rg -ni 'in-place|inplace_|\.streams/\*/WORKSTREAM' "${custody_paths[@]/#/$ROOT/}" >/dev/null; then
+custody_topology_clean() { ! rg -ni 'in-place|inplace_|\.streams/\*/WORKSTREAM' "$@" >/dev/null; }
+if ! custody_topology_clean "${custody_paths[@]/#/$ROOT/}"; then
   fail_with 'retired topology remains in active custody paths'
 else
   pass=$((pass + 1))
@@ -131,12 +166,38 @@ mkdir -p "$TMP/custody"
 for skill in debugger delegate journal notepad; do cp "$ROOT/skills/$skill/SKILL.md" "$TMP/custody/$skill.md"; done
 # Backticks are literal documentation text.
 # shellcheck disable=SC2016
-printf '%s\n' 'Coordinates `branch:`' >>"$TMP/custody/debugger.md"
-if rg -n 'Coordinates `branch:`|isolation: in-place.*Coordinates' "$TMP/custody" >/dev/null; then
-  pass=$((pass + 1))
-else
-  fail_with 'cross-skill custody grammar guard has no live red arm'
-fi
+for mutation in 'Coordinates `branch:`' 'isolation: in-place Coordinates'; do
+  cp "$TMP/custody/debugger.md" "$TMP/custody.before"
+  printf '%s\n' "$mutation" >>"$TMP/custody/debugger.md"
+  if [ "$(grep -cF "$mutation" "$TMP/custody/debugger.md")" -eq 1 ] && ! cross_skill_topology_clean "$TMP/custody/debugger.md"; then
+    pass=$((pass + 1))
+  else
+    fail_with "cross-skill topology guard stayed green after mutation: $mutation"
+  fi
+  cp "$TMP/custody.before" "$TMP/custody/debugger.md"
+  if cmp -s "$TMP/custody.before" "$TMP/custody/debugger.md" && cross_skill_topology_clean "$TMP/custody/debugger.md"; then
+    pass=$((pass + 1))
+  else
+    fail_with "cross-skill topology guard did not restore after mutation: $mutation"
+  fi
+done
+
+cp "$ROOT/skills/workstream/templates/compaction-anchor.md" "$TMP/custody-topology.md"
+for mutation in 'in-place' 'inplace_' '.streams/*/WORKSTREAM'; do
+  cp "$TMP/custody-topology.md" "$TMP/custody-topology.before"
+  printf '%s\n' "$mutation" >>"$TMP/custody-topology.md"
+  if [ "$(grep -cF "$mutation" "$TMP/custody-topology.md")" -eq 1 ] && ! custody_topology_clean "$TMP/custody-topology.md"; then
+    pass=$((pass + 1))
+  else
+    fail_with "custody topology guard stayed green after mutation: $mutation"
+  fi
+  cp "$TMP/custody-topology.before" "$TMP/custody-topology.md"
+  if cmp -s "$TMP/custody-topology.before" "$TMP/custody-topology.md" && custody_topology_clean "$TMP/custody-topology.md"; then
+    pass=$((pass + 1))
+  else
+    fail_with "custody topology guard did not restore after mutation: $mutation"
+  fi
+done
 
 # Backticks are literal documentation text.
 # shellcheck disable=SC2016
