@@ -190,7 +190,7 @@ fn committed_vendor_can_be_approved_and_activated_with_every_source_channel_abse
     assert!(activation.preconditions.stores.is_empty());
     assert!(matches!(
         activation.actions.as_slice(),
-        [Action::CreateLink { .. }]
+        [Action::RetainVendor { .. }, Action::CreateLink { .. }]
     ));
     apply(&fixture.paths, &activation, Approval::NotRequired, &runtime).unwrap();
 

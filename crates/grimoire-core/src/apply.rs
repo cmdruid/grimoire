@@ -518,6 +518,14 @@ fn validate_relative_skill_path(path: &str) -> Result<()> {
 }
 
 fn prepare_vendors(paths: &Paths, plan: &Plan, nonce: &str) -> Result<()> {
+    let needs_vendor = plan
+        .actions
+        .iter()
+        .any(|action| matches!(action, Action::PrepareVendor { .. }));
+    let mut locks = LockCoordinator::new();
+    if needs_vendor {
+        locks.acquire(&paths.store_lock_path(), LockRank::Store, LockMode::Shared)?;
+    }
     for action in &plan.actions {
         let Action::PrepareVendor {
             source,
