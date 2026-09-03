@@ -33,4 +33,22 @@ mv "$ROOT/.streams/history.tsv" "$TMP/history-saved"
 if "$HELPER" "$ROOT" repair >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 if [ ! -e "$ROOT/.streams/history.tsv" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 
+ROOT2="$TMP/stream-repair"; git init -q -b main "$ROOT2"; git -C "$ROOT2" config user.name test; git -C "$ROOT2" config user.email test@example.invalid
+printf 'base\n' >"$ROOT2/file"; git -C "$ROOT2" add file; git -C "$ROOT2" commit -qm initial
+"$HELPER" "$ROOT2" runtime-init repairable main repairable >"$OUT"; chmod 644 "$ROOT2/.streams/repairable/WORKSTREAM.md" "$ROOT2/.streams/repairable/workstream.tsv"
+"$HELPER" "$ROOT2" repair repairable >"$OUT"; expect 'targeted repair reports scope' 'operation=repair-stream' "$OUT"
+expect_eq 'targeted repair restores runbook mode' 600 "$(stat -f '%Lp' "$ROOT2/.streams/repairable/WORKSTREAM.md")"
+expect_eq 'targeted repair restores tracker mode' 600 "$(stat -f '%Lp' "$ROOT2/.streams/repairable/workstream.tsv")"
+
+ROOT3="$TMP/helper-only"; git init -q -b main "$ROOT3"; git -C "$ROOT3" config user.name test; git -C "$ROOT3" config user.email test@example.invalid
+printf 'base\n' >"$ROOT3/file"; git -C "$ROOT3" add file; git -C "$ROOT3" commit -qm initial; mkdir -p "$ROOT3/.streams"; cp "$HELPER" "$ROOT3/.streams/workstream.sh"
+if "$HELPER" "$ROOT3" runtime-init partial main partial >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'helper-only state points to setup' 'partial setup; run /workstream setup' "$ERR"
+
+ROOT4="$TMP/readme-only"; git init -q -b main "$ROOT4"; git -C "$ROOT4" config user.name test; git -C "$ROOT4" config user.email test@example.invalid
+printf 'base\n' >"$ROOT4/file"; git -C "$ROOT4" add file; git -C "$ROOT4" commit -qm initial; mkdir -p "$ROOT4/.streams"
+printf '<!-- workstream:control@1 -->\n<!-- /workstream:control@1 -->\n' >"$ROOT4/.streams/README.md"
+if "$HELPER" "$ROOT4" runtime-init partial main partial >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'managed README without helper points to repair' 'missing its helper; run /workstream repair' "$ERR"
+
 report 'workstream control surface'

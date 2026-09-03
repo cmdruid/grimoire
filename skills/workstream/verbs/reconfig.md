@@ -2,7 +2,9 @@
 
 Resolve the stream without entering a foreign session. Inside a stream, the omitted name means the
 current stream; from the root, require the name. Invoke `workstream.sh` with the canonical primary
-root and `reconfig <stream>`.
+root and `reconfig <stream>`, optionally followed by `--mode`, `--landing`, or `--ship-cadence`.
+Repeat `--inherit mode|landing|ship-cadence` to return an explicit value to project or bundled
+defaults. Supplying an explicit value and `--inherit` for the same field refuses.
 
 Reconfig requires clean tracked work, stable Git custody, and no running hook. It validates the
 current project `CONFIG.md`, refuses an isolation change, previews the old and new contract hashes,

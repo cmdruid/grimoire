@@ -24,9 +24,23 @@ expect 'local publication is not required' $'published\tnot-required' "$ROOT/.st
 "$HELPER" "$ROOT" runtime-init missing-link main missing >"$OUT"; "$HELPER" "$ROOT" unit-begin missing-link link link >"$OUT"
 git -C "$ROOT/.streams/missing-link" update-index --add --cacheinfo "160000,$object,missing"
 git -C "$ROOT/.streams/missing-link" commit -qm 'add missing gitlink'
+git -C "$ROOT/.streams/missing-link" update-index --skip-worktree missing
 "$HELPER" "$ROOT" unit-complete missing-link >"$OUT"
 if "$HELPER" "$ROOT" ship-prepare missing-link >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 expect 'missing gitlink blocks' 'phase=gitlinks' "$OUT"
 expect 'missing availability recorded' $'availability\tmissing' "$ROOT/.streams/missing-link/workstream.tsv"
 expect_absent 'blocked gitlink has no gate receipt' $'gate\t' "$ROOT/.streams/missing-link/workstream.tsv"
+
+SUB_REMOTE="$TMP/sub-remote.git"; SUB_SEED="$TMP/sub-seed"; PUSH_REMOTE="$TMP/push-remote.git"; PUSH_ROOT="$TMP/push-project"
+git init -q --bare "$SUB_REMOTE"; git init -q -b main "$SUB_SEED"; git -C "$SUB_SEED" config user.name test; git -C "$SUB_SEED" config user.email test@example.invalid
+printf 'published\n' >"$SUB_SEED/file"; git -C "$SUB_SEED" add file; git -C "$SUB_SEED" commit -qm published; git -C "$SUB_SEED" remote add origin "$SUB_REMOTE"; git -C "$SUB_SEED" push -qu origin main
+git init -q --bare "$PUSH_REMOTE"; git init -q -b main "$PUSH_ROOT"; git -C "$PUSH_ROOT" config user.name test; git -C "$PUSH_ROOT" config user.email test@example.invalid
+printf 'base\n' >"$PUSH_ROOT/file"; git -C "$PUSH_ROOT" add file; git -C "$PUSH_ROOT" commit -qm initial; git -C "$PUSH_ROOT" remote add origin "$PUSH_REMOTE"; git -C "$PUSH_ROOT" push -qu origin main
+"$HELPER" "$PUSH_ROOT" runtime-init published main published --isolation in-place --landing push >"$OUT"
+"$HELPER" "$PUSH_ROOT" unit-begin published link link >"$OUT"
+git -C "$PUSH_ROOT" config advice.addEmbeddedRepo false; git clone -q -b main "$SUB_REMOTE" "$PUSH_ROOT/vendor"
+git -C "$PUSH_ROOT" add vendor; git -C "$PUSH_ROOT" commit -qm 'add published gitlink'
+"$HELPER" "$PUSH_ROOT" unit-complete published >"$OUT"; "$HELPER" "$PUSH_ROOT" ship-prepare published >"$OUT"
+expect 'published remote gitlink reaches gate' 'status=prepared' "$OUT"
+expect 'remote publication is recorded' $'published\tyes' "$PUSH_ROOT/.streams/published/workstream.tsv"
 report 'workstream gitlink readiness'

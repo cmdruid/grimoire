@@ -37,6 +37,8 @@ identity="$(awk -F '\t' '$1=="hook"&&$3=="name"&&$4=="feature-completion"{print 
 "$HELPER" "$ROOT" read hooked >"$OUT"
 expect_absent 'ordinary read hides body' '/backlog debrief' "$OUT"
 expect 'ready receipt is durable' $'state\tready' "$TRACKER"
+if "$HELPER" "$ROOT" unit-begin hooked next 'Next unit' >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+if "$HELPER" "$ROOT" ship-prepare hooked >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 
 "$HELPER" "$ROOT" hook-start hooked "$identity" --isolation unavailable >"$OUT"
 expect 'preferred isolation falls back inline' 'execution=inline' "$OUT"

@@ -45,7 +45,7 @@ Read only the selected verb file, then follow it. No verb requires another verb 
 
 | Invocation | Procedure |
 |---|---|
-| `create <stream> [<source-or-brief>]` | `verbs/create.md` |
+| `create <stream> [<source-or-brief>] [policy options]` | `verbs/create.md` |
 | `load <stream>` | `verbs/load.md` |
 | `save [<operator-note>]` | `verbs/save.md` |
 | `sync` | `verbs/sync.md` |
@@ -57,7 +57,7 @@ Read only the selected verb file, then follow it. No verb requires another verb 
 | `setup [<root>]` | `verbs/setup.md` |
 | `repair [<stream>]` | `verbs/repair.md` |
 | `anchor [status|install|refresh|remove] [<front-door>]` | `verbs/anchor.md` |
-| `reconfig [<stream>]` | `verbs/reconfig.md` |
+| `reconfig [<stream>] [options]` | `verbs/reconfig.md` |
 | `migrate` | `verbs/migrate.md` |
 
 ## Runtime loop

@@ -11,9 +11,11 @@ printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -q
 "$HELPER" "$ROOT" runtime-init batch main batch >"$OUT"; "$HELPER" "$ROOT" unit-begin batch one one >"$OUT"
 printf 'one\n' >>"$ROOT/.streams/batch/file"; git -C "$ROOT/.streams/batch" add file; git -C "$ROOT/.streams/batch" commit -qm one
 "$HELPER" "$ROOT" unit-complete batch >"$OUT"
+printf 'incoming\n' >"$ROOT/incoming"; git -C "$ROOT" add incoming; git -C "$ROOT" commit -qm incoming
 target_before="$(git -C "$ROOT" rev-parse main)"; commits_before="$(git -C "$ROOT/.streams/batch" rev-list --count main..HEAD)"
 "$HELPER" "$ROOT" ship-prepare batch >"$OUT"
 expect 'prepare reaches gate' 'status=prepared' "$OUT"
+if git -C "$ROOT/.streams/batch" merge-base --is-ancestor main HEAD; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 expect_eq 'prepare does not advance target' "$target_before" "$(git -C "$ROOT" rev-parse main)"
 expect_eq 'metadata makes one commit' "$((commits_before + 1))" "$(git -C "$ROOT/.streams/batch" rev-list --count main..HEAD)"
 TRACKER="$ROOT/.streams/batch/workstream.tsv"

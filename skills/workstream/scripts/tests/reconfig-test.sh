@@ -30,9 +30,30 @@ expect 'reconfig applies' 'status=applied' "$OUT"
 expect 'operator note survives' $'operator-note\tPreserve this note.' "$ROOT/.streams/config/WORKSTREAM.md"
 expect 'new hook body compiled' 'Run the new hook body.' "$ROOT/.streams/config/WORKSTREAM.md"
 expect 'old receipt retains fingerprint' $'fingerprint\t'"$old_receipt" "$TRACKER"
+"$HELPER" "$ROOT" reconfig config --mode manual --ship-cadence per-track >"$OUT"
+expect 'explicit mode records provenance' $'mode\tmanual\texplicit' "$ROOT/.streams/config/WORKSTREAM.md"
+expect 'explicit cadence records provenance' $'ship-cadence\tper-track\texplicit' "$ROOT/.streams/config/WORKSTREAM.md"
+"$HELPER" "$ROOT" reconfig config >"$OUT"
+expect 'implicit adoption preserves explicit mode' $'mode\tmanual\texplicit' "$ROOT/.streams/config/WORKSTREAM.md"
+"$HELPER" "$ROOT" reconfig config --inherit mode --inherit ship-cadence >"$OUT"
+expect 'inherit restores project mode' $'mode\tdelegate\tproject' "$ROOT/.streams/config/WORKSTREAM.md"
+expect 'inherit restores project cadence' $'ship-cadence\tper-stage\tproject' "$ROOT/.streams/config/WORKSTREAM.md"
+if "$HELPER" "$ROOT" reconfig config --mode manual --inherit mode >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 
-"$HELPER" "$ROOT" unit-begin config new new >"$OUT"; printf 'new\n' >>"$ROOT/.streams/config/file"; git -C "$ROOT/.streams/config" add file; git -C "$ROOT/.streams/config" commit -qm new; "$HELPER" "$ROOT" unit-complete config >"$OUT"
+"$HELPER" "$ROOT" unit-begin config new new >"$OUT"
+if "$HELPER" "$ROOT" reconfig config >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+printf 'new\n' >>"$ROOT/.streams/config/file"; git -C "$ROOT/.streams/config" add file; git -C "$ROOT/.streams/config" commit -qm new; "$HELPER" "$ROOT" unit-complete config >"$OUT"
 expect 'future unit adopts new hook' 'hook_state=ready' "$OUT"
+if "$HELPER" "$ROOT" reconfig config >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+identity="$(awk -F '\t' '$1=="hook"&&$3=="state"&&$4=="ready"{print $2;exit}' "$TRACKER")"
+"$HELPER" "$ROOT" hook-start config "$identity" --isolation unavailable >"$OUT"
+cat >"$TMP/closure" <<'EOF'
+status: complete
+summary: Hook complete.
+effects: none
+parent-actions: none
+EOF
+"$HELPER" "$ROOT" hook-complete config "$identity" --closure "$TMP/closure" >"$OUT"
 
 sed 's/Run the new hook body./Run the replacement hook body./' "$ROOT/.streams/CONFIG.md" >"$TMP/config-next"; cp "$TMP/config-next" "$ROOT/.streams/CONFIG.md"
 cat >"$TMP/interrupt.sh" <<'EOF'
@@ -50,4 +71,11 @@ expect 'replacement body adopted' 'Run the replacement hook body.' "$ROOT/.strea
 sed 's/isolation: worktree/isolation: in-place/' "$ROOT/.streams/CONFIG.md" >"$TMP/topology"; cp "$TMP/topology" "$ROOT/.streams/CONFIG.md"
 if "$HELPER" "$ROOT" reconfig config >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 expect 'topology refusal preserves worktree coordinate' $'isolation\tworktree' "$ROOT/.streams/config/WORKSTREAM.md"
+
+ROOT2="$TMP/explicit-topology"; git init -q -b main "$ROOT2"; git -C "$ROOT2" config user.name test; git -C "$ROOT2" config user.email test@example.invalid
+printf 'base\n' >"$ROOT2/file"; git -C "$ROOT2" add file; git -C "$ROOT2" commit -qm initial; mkdir -p "$ROOT2/.streams"
+sed -n 'p' "$DIR/../../templates/streams-config.md" >"$ROOT2/.streams/CONFIG.md"
+"$HELPER" "$ROOT2" runtime-init explicit main explicit --isolation in-place >"$OUT"
+"$HELPER" "$ROOT2" reconfig explicit >"$OUT"; expect 'explicit topology survives reconfig' 'status=unchanged' "$OUT"
+expect 'explicit topology provenance survives' $'isolation\tin-place\texplicit' "$ROOT2/.streams/explicit/WORKSTREAM.md"
 report 'workstream reconfig'

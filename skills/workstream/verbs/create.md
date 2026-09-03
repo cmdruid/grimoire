@@ -1,16 +1,19 @@
-# `create <stream> [<source-or-brief>]` — create and enter a stream
+# `create <stream> [<source-or-brief>] [policy options]` — create and enter a stream
 
 Run this only from a session that isn't already driving a stream. Resolve the canonical primary
 root and its current integration-target branch. A plan or roadmap source must be a tracked regular
-file at `HEAD`; otherwise treat the argument as a bounded inline brief. If the user explicitly asks
+file at `HEAD`; pass its kind and root-relative path as `--source-kind plan|roadmap --cursor PATH`.
+Otherwise treat the argument as a bounded inline brief. If the user explicitly asks
 for the package's debug or design intake, read only `templates/debug.md` or
 `templates/design.md` and reduce its durable mission and pointers to the bounded brief. Omission
 means an ad hoc intake whose first unit is not yet defined.
 
-Invoke the effective helper:
+Accept explicit `--mode`, `--isolation`, `--landing`, and `--ship-cadence` choices. Pass only choices
+the user supplied; they override project defaults, which override bundled defaults. Worktree
+isolation permits only local landing. Invoke the effective helper:
 
 ```text
-workstream.sh ROOT runtime-init STREAM TARGET BRIEF
+workstream.sh ROOT runtime-init STREAM TARGET BRIEF [--source-kind KIND --cursor PATH] [POLICY OPTIONS]
 ```
 
 The helper validates configuration, secure instance entropy, exclusions, target topology, branch

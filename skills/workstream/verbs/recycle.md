@@ -4,7 +4,8 @@ Recycle only after shipment finalization, when the branch contains no unlanded c
 work is clean. Resolve any replacement plan or roadmap as a tracked regular file; omission returns
 the existing stream to ad hoc intake. Never delete or reset work to make the guard pass.
 
-Invoke `workstream.sh ROOT recycle STREAM`. It preserves immutable coordinates, instance ID,
+Invoke `workstream.sh ROOT recycle STREAM`. For a replacement plan or roadmap, also pass
+`--source-kind plan|roadmap --cursor ROOT_RELATIVE_PATH`. It preserves immutable coordinates, instance ID,
 configuration snapshot, history, and monotonic counters while clearing the exhausted queue to
 `intake` with `next_action=define-unit`. Define the next coherent unit and invoke `unit-begin`.
 

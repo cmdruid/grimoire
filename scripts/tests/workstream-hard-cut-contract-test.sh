@@ -69,7 +69,6 @@ fi
 # shellcheck disable=SC2016
 if grep -qF 'revalidates `.streams/STREAM` against the Git worktree registry' \
      "$ROOT/skills/workstream/verbs/close.md" &&
-# shellcheck disable=SC2016
    grep -qF 'Do not delete `.streams` control files' "$ROOT/skills/workstream/verbs/close.md"; then
   pass=$((pass + 1))
 else

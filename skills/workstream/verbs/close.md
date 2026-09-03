@@ -2,7 +2,8 @@
 
 Invoke `workstream.sh ROOT close-check STREAM`. If `ahead` is nonzero or tracked work is dirty, ask
 the user to ship or discard it; never infer discard and never perform generic cleanup. A running,
-uncertain, awaiting-merge, or unfinalized shipment blocks teardown.
+uncertain, awaiting-merge, or unfinalized shipment reports `lifecycle_blocked=yes` and blocks
+teardown.
 
 After the branch is fully contained in the recorded target, run the package teardown helper with
 the exact root and stream. It revalidates `.streams/STREAM` against the Git worktree registry,

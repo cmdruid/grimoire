@@ -111,6 +111,7 @@ if "$HELPER" "$ROOT/../project" state guarded >"$OUT" 2>"$ERR"; then fail=$((fai
 
 cp "$HELPER" "$ROOT/.streams/workstream.sh"
 chmod +x "$ROOT/.streams/workstream.sh"
+sed -n 'p' "$DIR/../../templates/streams-readme-block.md" >"$ROOT/.streams/README.md"
 if "$HELPER" "$ROOT" state guarded >"$OUT" 2>"$ERR"; then
   fail=$((fail + 1))
   echo 'FAIL: package helper bypassed installed authority' >&2

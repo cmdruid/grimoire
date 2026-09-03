@@ -6,6 +6,7 @@ SCRIPTS="$(cd "$DIR/.." && pwd)"
 FACTS="$SCRIPTS/workstream-git.sh"
 EXCLUDE="$SCRIPTS/worktree-exclude.sh"
 TEARDOWN="$SCRIPTS/worktree-teardown.sh"
+RUNTIME="$SCRIPTS/workstream.sh"
 # shellcheck disable=SC1091
 . "$DIR/lib.sh"
 
@@ -75,6 +76,8 @@ cat > "$WT/WORKSTREAM.md" <<'EOF'
 ## Queue state
 Parked: true
 EOF
+printf 'worktree\t%s\nisolation\tworktree\ntarget\tmain\nlanding\tlocal\n' "$WT" >>"$WT/WORKSTREAM.md"
+printf 'record\tid\tfield\tvalue\n' >"$WT/workstream.tsv"
 "$FACTS" cheatsheet-check "$WT" > "$OUT"
 expect_eq "cheatsheet checks both refs" "2" "$(fact checked "$OUT")"
 expect_eq "cheatsheet reports one stale ref" "1" "$(fact stale "$OUT")"
@@ -98,9 +101,24 @@ else
 fi
 expect_eq "rejected teardown preserves worktree" "true" "$([ -d "$WT" ] && echo true || echo false)"
 
+if "$TEARDOWN" "$ROOT" demo >/dev/null 2>&1; then
+  echo "FAIL: teardown discarded an uncontained branch without --force" >&2
+  fail=$((fail + 1))
+else
+  pass=$((pass + 1))
+fi
+expect_eq "uncontained teardown preserves worktree" "true" "$([ -d "$WT" ] && echo true || echo false)"
+
 "$TEARDOWN" "$ROOT" demo --force >/dev/null
 expect_eq "teardown removes worktree" "false" "$([ -e "$WT" ] && echo true || echo false)"
 expect_eq "teardown removes branch" "false" \
   "$(git -C "$ROOT" show-ref --verify --quiet refs/heads/stream/demo && echo true || echo false)"
+
+sed 's/isolation: worktree/isolation: in-place/' "$DIR/../../templates/streams-config.md" >"$ROOT/.streams/CONFIG.md"
+"$RUNTIME" "$ROOT" runtime-init inplace main inplace >"$OUT"
+"$TEARDOWN" "$ROOT" inplace >/dev/null
+expect_eq 'in-place teardown restores target branch' main "$(git -C "$ROOT" branch --show-current)"
+expect_eq 'in-place teardown removes runtime' false "$([ -e "$ROOT/.streams/inplace" ] && echo true || echo false)"
+expect_eq 'in-place teardown removes branch' false "$(git -C "$ROOT" show-ref --verify --quiet refs/heads/stream/inplace && echo true || echo false)"
 
 report "git-helpers-test.sh"
