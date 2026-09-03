@@ -161,11 +161,10 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──┬──> Phase 5
 
 ## Phase 7 — Hard-cut integration and close-out   <requires: 5, 6>
 
-> Completed on `stream/app` with all Phase 2–7 work still accumulated and unshipped. The complete
-> workspace, lint, integration, clippy, adapter, source-security, transaction, controlled-red,
-> offline-reproduction, dependency, and root/worktree dogfood gates passed without waiver. The
-> implementation plan is published at stage `implemented`; landing still requires the user's
-> explicit ship decision.
+> Shipped to `main` on 2026-09-03 with all Phase 2–7 work and the post-completion review repairs.
+> The complete workspace, lint, integration, clippy, adapter, source-security, transaction,
+> controlled-red, offline-reproduction, dependency, and root/worktree dogfood gates passed without
+> waiver. The implementation plan remains published at stage `implemented`.
 
 - **Goal:** Make the new product the only Grimoire contract present in code, fixtures,
   documentation, and dogfood workflows.
