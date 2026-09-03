@@ -17,6 +17,8 @@ usage() {
 usage: workstream.sh <canonical-root> <operation> [args...]
 
   runtime-init <stream> <target> [brief]
+  setup
+  repair
   read <stream>
   state <stream>
   diagnose <stream>
@@ -98,6 +100,7 @@ validate_text() {
 
 ROOT=""
 SELF=""
+ADMIT_OPERATION="ordinary"
 
 admit_root() {
   local supplied="$1" canonical top primary installed
@@ -114,9 +117,14 @@ admit_root() {
   SELF="$(canonical_dir "$(dirname "$0")")/$(basename "$0")"
   installed="$ROOT/.streams/workstream.sh"
   if [ -e "$installed" ] || [ -L "$installed" ]; then
-    [ -f "$installed" ] && [ ! -L "$installed" ] || die "installed helper is unsafe; run /workstream repair"
+    if ! { [ -f "$installed" ] && [ ! -L "$installed" ]; }; then
+      case "$ADMIT_OPERATION" in setup|repair|anchor|migrate) return ;; esac
+      die "installed helper is unsafe; run /workstream repair"
+    fi
     installed="$(canonical_dir "$(dirname "$installed")")/$(basename "$installed")"
-    [ "$SELF" = "$installed" ] || die "initialized control surface requires $installed; run /workstream repair"
+    if [ "$SELF" != "$installed" ]; then
+      case "$ADMIT_OPERATION" in setup|repair|anchor|migrate) ;; *) die "initialized control surface requires $installed; run /workstream repair" ;; esac
+    fi
   fi
 }
 
@@ -539,6 +547,9 @@ cmd_runtime_init() {
   validate_ref "$target"
   validate_text brief "$brief" yes
   git -C "$ROOT" rev-parse --verify --quiet "$target^{commit}" >/dev/null || die "target does not resolve"
+  if git -C "$ROOT" ls-tree -r --name-only "$target" | awk 'index($0,".streams/")==1 {rest=substr($0,10); if(index(rest,"/")>0)found=1} END{exit found?0:1}'; then
+    die "target contains a nested stream-shaped tree"
+  fi
   branch="stream/$stream"
   validate_ref "$branch"
   stream_paths "$stream"
@@ -1280,13 +1291,257 @@ cmd_pr_verify() {
   printf 'status=merged\nshipment=%s\nnext_action=postflight\n' "$shipment"
 }
 
+emit_default_config() {
+  cat <<'EOF'
+# Workstream configuration
+
+Text outside the versioned blocks is explanatory. Empty hook bodies disable their events.
+
+<!-- workstream:defaults@1 -->
+mode: delegate
+isolation: worktree
+landing: local
+ship-cadence: milestone
+<!-- /workstream:defaults@1 -->
+
+<!-- workstream:hook:feature-completion@1 -->
+execution: inline
+concurrency: serial
+
+<!-- /workstream:hook:feature-completion@1 -->
+
+<!-- workstream:hook:ship-friction@1 -->
+execution: inline
+concurrency: serial
+
+<!-- /workstream:hook:ship-friction@1 -->
+EOF
+}
+
+emit_control_readme() {
+  cat <<'EOF'
+<!-- workstream:control@1 -->
+# Workstream control surface
+
+`CONFIG.md` defines defaults and lifecycle hooks for streams created after configuration. The
+executable `workstream.sh` exclusively validates and mutates ignored per-stream runtime state.
+`history.tsv` is the concise landed-unit ledger. Immediate child directories are ignored stream
+runtimes; do not copy or nest them.
+<!-- /workstream:control@1 -->
+EOF
+}
+
+write_atomic_file() {
+  local destination="$1" candidate="$2" mode="${3:-600}" before current temp parent
+  parent="$(dirname "$destination")"; [ -d "$parent" ] && [ ! -L "$parent" ] || die "unsafe destination parent"
+  [ ! -L "$destination" ] || die "destination is a symlink: $destination"
+  before="$(file_fingerprint "$destination")"; temp="$(mktemp "$parent/.workstream-control.XXXXXX")"
+  cp "$candidate" "$temp"; chmod "$mode" "$temp"
+  current="$(file_fingerprint "$destination")"; [ "$current" = "$before" ] || { rm -f "$temp"; die "control file changed concurrently"; }
+  [ ! -L "$parent" ] && [ ! -L "$destination" ] || { rm -f "$temp"; die "control destination became unsafe"; }
+  mv -f "$temp" "$destination"
+}
+
+render_control_readme() {
+  local incumbent="$1" output="$2" block="$3" starts ends
+  if [ ! -e "$incumbent" ]; then cp "$block" "$output"; return; fi
+  [ -f "$incumbent" ] && [ ! -L "$incumbent" ] || die "README is unsafe"
+  starts="$(grep -cFx '<!-- workstream:control@1 -->' "$incumbent" || true)"; ends="$(grep -cFx '<!-- /workstream:control@1 -->' "$incumbent" || true)"
+  [ "$starts" -le 1 ] && [ "$ends" -le 1 ] && [ "$starts" -eq "$ends" ] || die "README control markers conflict"
+  if [ "$starts" -eq 0 ]; then
+    cat "$incumbent" >"$output"; [ ! -s "$output" ] || printf '\n' >>"$output"; cat "$block" >>"$output"
+  else
+    awk -v block="$block" '
+      $0=="<!-- workstream:control@1 -->" { while((getline line < block)>0) print line; close(block); inside=1; next }
+      $0=="<!-- /workstream:control@1 -->" { inside=0; next }
+      !inside { print }
+    ' "$incumbent" >"$output"
+  fi
+}
+
+cmd_control_surface() {
+  local mode="$1" home="$ROOT/.streams" initialized=no candidate_config candidate_ignore candidate_readme_block candidate_readme candidate_history changed=0 path
+  local -a changed_paths=()
+  if [ -e "$home" ] || [ -L "$home" ]; then [ -d "$home" ] && [ ! -L "$home" ] || die "control home is unsafe"; else mkdir "$home"; fi
+  if [ -f "$home/README.md" ] && grep -qFx '<!-- workstream:control@1 -->' "$home/README.md"; then initialized=yes; fi
+  if [ "$mode" = repair ] && [ "$initialized" = no ] && [ ! -e "$home/workstream.sh" ]; then die "repair requires recognized initialized control state"; fi
+  if [ "$mode" = repair ] && { [ ! -e "$home/history.tsv" ] || [ -L "$home/history.tsv" ]; }; then die "initialized history is missing or unsafe; recover it from Git"; fi
+  for path in .gitignore CONFIG.md README.md history.tsv workstream.sh; do [ ! -L "$home/$path" ] || die "control target is symlinked: $path"; done
+
+  candidate_config="$(mktemp "${TMPDIR:-/tmp}/workstream-config.XXXXXX")"; emit_default_config >"$candidate_config"
+  candidate_ignore="$(mktemp "${TMPDIR:-/tmp}/workstream-ignore.XXXXXX")"; printf '/*/\n/.migration.tsv\n' >"$candidate_ignore"
+  candidate_readme_block="$(mktemp "${TMPDIR:-/tmp}/workstream-readme-block.XXXXXX")"; emit_control_readme >"$candidate_readme_block"
+  candidate_readme="$(mktemp "${TMPDIR:-/tmp}/workstream-readme.XXXXXX")"; render_control_readme "$home/README.md" "$candidate_readme" "$candidate_readme_block"
+  candidate_history="$(mktemp "${TMPDIR:-/tmp}/workstream-history.XXXXXX")"; printf 'stream\tsequence\trecorded_at\ttarget\tunit\tcommits\tsummary\n' >"$candidate_history"
+
+  if [ -e "$home/CONFIG.md" ]; then validate_config "$home/CONFIG.md"; else write_atomic_file "$home/CONFIG.md" "$candidate_config" 644; changed_paths+=(.streams/CONFIG.md); changed=$((changed + 1)); fi
+  if [ -e "$home/history.tsv" ]; then validate_history "$home/history.tsv"; else write_atomic_file "$home/history.tsv" "$candidate_history" 644; changed_paths+=(.streams/history.tsv); changed=$((changed + 1)); fi
+  if [ ! -f "$home/.gitignore" ] || ! cmp -s "$candidate_ignore" "$home/.gitignore"; then write_atomic_file "$home/.gitignore" "$candidate_ignore" 644; changed_paths+=(.streams/.gitignore); changed=$((changed + 1)); fi
+  if [ ! -f "$home/README.md" ] || ! cmp -s "$candidate_readme" "$home/README.md"; then write_atomic_file "$home/README.md" "$candidate_readme" 644; changed_paths+=(.streams/README.md); changed=$((changed + 1)); fi
+  if [ "$SELF" != "$home/workstream.sh" ] && { [ ! -f "$home/workstream.sh" ] || ! cmp -s "$SELF" "$home/workstream.sh"; }; then write_atomic_file "$home/workstream.sh" "$SELF" 755; changed_paths+=(.streams/workstream.sh); changed=$((changed + 1)); fi
+  if [ "$SELF" = "$home/workstream.sh" ]; then chmod 755 "$home/workstream.sh"; fi
+  ensure_exclusions
+  rm -f "$candidate_config" "$candidate_ignore" "$candidate_readme_block" "$candidate_readme" "$candidate_history"
+  if [ "${#changed_paths[@]}" -gt 0 ]; then git -C "$ROOT" add -- "${changed_paths[@]}"; fi
+  if [ "${#changed_paths[@]}" -gt 0 ] && ! git -C "$ROOT" diff --cached --quiet -- "${changed_paths[@]}"; then
+    git -C "$ROOT" commit -qm "Workstream: $mode control surface" -- "${changed_paths[@]}"
+    printf 'status=committed\noperation=%s\nchanged=%s\n' "$mode" "$changed"
+  else
+    printf 'status=current\noperation=%s\nchanged=0\n' "$mode"
+  fi
+}
+
+cmd_setup() { [ "$#" -eq 0 ] || die "usage: setup"; cmd_control_surface setup; }
+cmd_repair() {
+  if [ "$#" -eq 0 ]; then cmd_control_surface repair; return; fi
+  [ "$#" -eq 1 ] || die "usage: repair [stream]"
+  admit_stream "$1"; ensure_exclusions
+  printf 'status=current\noperation=repair-stream\nstream=%s\nnext_action=%s\n' "$1" "$(tracker_get phase - next-action)"
+}
+
+emit_recovery_anchor() {
+  cat <<'EOF'
+<!-- workstream:recovery-anchor@1 -->
+## Workstream compaction recovery
+
+Only after context compaction, resolve the current Git top level. If its top-level
+`WORKSTREAM.md` has matching root/worktree/branch coordinates, read its bounded brief through the
+effective `.streams/workstream.sh`, reconcile it with Git, and resume its one reported action. For
+an in-place stream, admit only `.streams/<stream>/WORKSTREAM.md` whose recorded branch is currently
+checked out. Handoffs visible from the root otherwise belong to other sessions: do not read them.
+<!-- /workstream:recovery-anchor@1 -->
+EOF
+}
+
+anchor_classify() {
+  local file="$1" block="$2" starts ends extracted
+  if [ ! -e "$file" ]; then printf absent; return; fi
+  [ -f "$file" ] && [ ! -L "$file" ] || { printf error; return; }
+  starts="$(grep -cFx '<!-- workstream:recovery-anchor@1 -->' "$file" || true)"; ends="$(grep -cFx '<!-- /workstream:recovery-anchor@1 -->' "$file" || true)"
+  [ "$starts" -eq 1 ] && [ "$ends" -eq 1 ] || { [ "$starts" -eq 0 ] && [ "$ends" -eq 0 ] && printf absent || printf conflict; return; }
+  extracted="$(mktemp "${TMPDIR:-/tmp}/workstream-anchor-current.XXXXXX")"
+  awk '$0=="<!-- workstream:recovery-anchor@1 -->"{inside=1} inside{print} $0=="<!-- /workstream:recovery-anchor@1 -->"{inside=0}' "$file" >"$extracted"
+  if cmp -s "$extracted" "$block"; then printf current; else printf drifted; fi
+  rm -f "$extracted"
+}
+
+cmd_anchor() {
+  local action="${1:-status}" front="${2:-$ROOT/AGENTS.md}" parent block classification output
+  [ "$#" -le 2 ] || die "usage: anchor [status|install|refresh|remove] [front-door]"
+  case "$action" in status|install|refresh|remove) ;; *) die "invalid anchor action" ;; esac
+  case "$front" in /*) ;; *) front="$ROOT/$front" ;; esac
+  parent="$(dirname "$front")"; [ -d "$parent" ] && [ ! -L "$parent" ] || die "anchor parent is unsafe"
+  parent="$(canonical_dir "$parent")" || die "anchor parent is unsafe"
+  case "$parent/" in "$ROOT/"*) ;; *) die "anchor front door escapes root" ;; esac
+  front="$parent/$(basename "$front")"
+  block="$(mktemp "${TMPDIR:-/tmp}/workstream-anchor.XXXXXX")"; emit_recovery_anchor >"$block"
+  classification="$(anchor_classify "$front" "$block")"
+  if [ "$action" = status ]; then rm -f "$block"; printf 'status=%s\nfront_door=%s\n' "$classification" "$front"; return; fi
+  [ "$classification" != conflict ] && [ "$classification" != error ] || { rm -f "$block"; die "anchor state is $classification"; }
+  case "$action:$classification" in
+    install:absent|refresh:absent|refresh:drifted|refresh:current|install:current) ;;
+    install:drifted) rm -f "$block"; die "drifted anchor requires refresh" ;;
+    remove:absent) rm -f "$block"; printf 'status=absent\n'; return ;;
+    remove:current|remove:drifted) ;;
+    *) rm -f "$block"; die "unsupported anchor transition" ;;
+  esac
+  output="$(mktemp "${TMPDIR:-/tmp}/workstream-anchor-output.XXXXXX")"
+  if [ "$action" = remove ]; then
+    awk '$0=="<!-- workstream:recovery-anchor@1 -->"{inside=1;next} $0=="<!-- /workstream:recovery-anchor@1 -->"{inside=0;next} !inside{print}' "$front" >"$output"
+  elif [ "$classification" = absent ]; then
+    [ -e "$front" ] && cat "$front" >"$output"; [ ! -s "$output" ] || printf '\n' >>"$output"; cat "$block" >>"$output"
+  else
+    awk -v block="$block" '$0=="<!-- workstream:recovery-anchor@1 -->"{while((getline line < block)>0)print line;close(block);inside=1;next} $0=="<!-- /workstream:recovery-anchor@1 -->"{inside=0;next} !inside{print}' "$front" >"$output"
+  fi
+  [ "$(anchor_classify "$front" "$block")" = "$classification" ] || { rm -f "$block" "$output"; die "anchor changed concurrently"; }
+  write_atomic_file "$front" "$output" 644
+  rm -f "$block" "$output"
+  printf 'status=%s\nfront_door=%s\nprevious=%s\n' "$([ "$action" = remove ] && printf removed || printf installed)" "$front" "$classification"
+}
+
+cmd_reconfig() {
+  [ "$#" -eq 1 ] || die "usage: reconfig <stream>"
+  local stream="$1" purpose branch target generated managed candidate old_hash new_hash raw before current temp
+  admit_stream_coordinates "$stream"
+  if awk -F '\t' '$1=="meta"&&$3=="pending-runbook-contract-sha256"{found=1}END{exit found?0:1}' "$TRACKER"; then cmd_contract_recover "$stream" >/dev/null; fi
+  admit_stream "$stream"
+  [ -z "$(git -C "$WT" status --porcelain --untracked-files=no)" ] || die "reconfig requires a clean tracked worktree"
+  ! awk -F '\t' '$1=="hook"&&$3=="state"&&$4=="running"{found=1}END{exit found?0:1}' "$TRACKER" || die "reconfig refuses a running hook"
+  compile_config
+  [ "$ISOLATION" = "$(runbook_field "$RUNBOOK" isolation)" ] || die "reconfig cannot change isolation"
+  [ "$ISOLATION" != worktree ] || [ "$LANDING" = local ] || die "worktree isolation requires local landing"
+  purpose="$(runbook_block_field "$RUNBOOK" brief purpose)"; branch="$(runbook_field "$RUNBOOK" branch)"; target="$(runbook_field "$RUNBOOK" target)"
+  generated="$(mktemp "${TMPDIR:-/tmp}/workstream-reconfig-generated.XXXXXX")"; emit_runbook "$stream" "$(tracker_get meta - instance-id)" "$branch" "$target" "$purpose" >"$generated"
+  rm -f "$FEATURE_BODY" "$FRICTION_BODY"
+  managed="$(mktemp "${TMPDIR:-/tmp}/workstream-reconfig-managed.XXXXXX")"
+  awk '/^<!-- workstream:policy@1 -->$/{inside=1} inside{print} /^<!-- \/workstream:hook:ship-friction@1 -->$/{inside=0;exit}' "$generated" >"$managed"
+  candidate="$(mktemp "${TMPDIR:-/tmp}/workstream-reconfig-candidate.XXXXXX")"
+  awk -v managed="$managed" '
+    /^<!-- workstream:policy@1 -->$/ { while((getline line < managed)>0) print line; close(managed); skip=1; next }
+    /^<!-- \/workstream:hook:ship-friction@1 -->$/ { skip=0; next }
+    !skip { print }
+  ' "$RUNBOOK" >"$candidate"
+  old_hash="$(tracker_get meta - runbook-contract-sha256)"; new_hash="$(runbook_contract_hash "$candidate")"
+  if [ "$old_hash" = "$new_hash" ]; then rm -f "$generated" "$managed" "$candidate"; printf 'status=unchanged\n'; return; fi
+  printf 'status=preview\nold_contract=%s\nnew_contract=%s\n' "$old_hash" "$new_hash"
+  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-reconfig-pending.XXXXXX")"; tail -n +2 "$TRACKER" >"$raw"
+  printf 'meta\t-\tpending-runbook-contract-sha256\t%s\n' "$new_hash" >>"$raw"; rewrite_tracker "$raw"; rm -f "$raw"
+  if [ -n "${WORKSTREAM_TEST_AFTER_RECONFIG_PENDING:-}" ]; then "$WORKSTREAM_TEST_AFTER_RECONFIG_PENDING" "$TRACKER"; die "reconfig interrupted after pending receipt"; fi
+  before="$(file_fingerprint "$RUNBOOK")"; temp="$(mktemp "$WT/.WORKSTREAM.md.XXXXXX")"; cp "$candidate" "$temp"; chmod 600 "$temp"
+  current="$(file_fingerprint "$RUNBOOK")"; [ "$current" = "$before" ] || { rm -f "$temp"; die "runbook changed during reconfig"; }
+  mv -f "$temp" "$RUNBOOK"
+  rm -f "$generated" "$managed" "$candidate"
+  cmd_contract_recover "$stream" >/dev/null
+  printf 'status=applied\nold_contract=%s\nnew_contract=%s\n' "$old_hash" "$new_hash"
+}
+
+cmd_migrate() {
+  local action="${1:-inventory}" old_home="$ROOT/.workstreams" new_home="$ROOT/.streams" old stream destination registered branch target instance runbook_temp tracker_temp runbook_hash next history count=0
+  [ "$#" -eq 1 ] || die "usage: migrate <inventory|apply>"
+  case "$action" in inventory|apply) ;; *) die "invalid migration action" ;; esac
+  if [ ! -e "$old_home" ]; then printf 'status=none\nstreams=0\n'; return; fi
+  [ -d "$old_home" ] && [ ! -L "$old_home" ] || die "legacy stream home is unsafe"
+  if find "$old_home" -mindepth 1 -maxdepth 1 ! -type d -print -quit | grep -q .; then die "legacy stream home contains an unknown child"; fi
+  while IFS= read -r old; do
+    [ -d "$old" ] && [ ! -L "$old" ] || die "legacy child is not a directory"
+    stream="$(basename "$old")"; validate_stream_name "$stream"; destination="$new_home/$stream"
+    registered="$(git -C "$ROOT" worktree list --porcelain | awk -v p="$old" '$1=="worktree"&&$2==p{print $2}')"
+    [ "$registered" = "$old" ] || die "legacy child is not the registered worktree coordinate: $stream"
+    [ ! -e "$destination" ] && [ ! -L "$destination" ] || die "migration destination collides: $stream"
+    [ ! -d "$old/.streams" ] || die "legacy worktree contains nested stream state: $stream"
+    count=$((count + 1)); printf 'stream=%s\nold=%s\nnew=%s\n' "$stream" "$old" "$destination"
+    [ "$action" = apply ] || continue
+    instance="$(mint_instance_id)"; branch="$(git -C "$old" branch --show-current)"; validate_ref "$branch"
+    target="$(git -C "$ROOT" branch --show-current)"; validate_ref "$target"
+    compile_config; [ "$ISOLATION" = worktree ] && [ "$LANDING" = local ] || die "migration supports local linked worktrees only"
+    next=1; history="$ROOT/.streams/history.tsv"
+    if [ -e "$history" ]; then validate_history "$history"; next="$(awk -F '\t' -v s="$stream" 'NR>1&&$1==s&&$2+0>=m{m=$2+1}END{print m+0}' "$history")"; [ "$next" -gt 0 ] || next=1; fi
+    ensure_exclusions; mkdir -p "$new_home"; git -C "$ROOT" worktree move "$old" "$destination"; WT="$destination"; RUNBOOK="$WT/WORKSTREAM.md"; TRACKER="$WT/workstream.tsv"
+    runbook_temp="$(mktemp "$WT/.WORKSTREAM.md.XXXXXX")"; emit_runbook "$stream" "$instance" "$branch" "$target" "Migrated workstream $stream" >"$runbook_temp"
+    runbook_hash="$(runbook_contract_hash "$runbook_temp")"; tracker_temp="$(mktemp "$WT/.workstream.tsv.XXXXXX")"
+    {
+      printf 'record\tid\tfield\tvalue\nmeta\t-\tschema\tworkstream@1\nmeta\t-\tinstance-id\t%s\nmeta\t-\tnext-shipment\t%s\nmeta\t-\tnext-unit\t%s\nmeta\t-\trunbook-contract-sha256\t%s\n' "$instance" "$next" "$next" "$runbook_hash"
+      printf 'queue\t-\tcursor\t-\nqueue\t-\tsource-kind\tbrief\nqueue\t-\tstate\tintake\nphase\t-\tname\tnone\nphase\t-\tnext-action\tdefine-unit\n'
+    } >"$tracker_temp"
+    validate_tracker "$tracker_temp"; chmod 600 "$runbook_temp" "$tracker_temp"; mv "$runbook_temp" "$RUNBOOK"; mv "$tracker_temp" "$TRACKER"
+    rm -f "$FEATURE_BODY" "$FRICTION_BODY"
+  done < <(find "$old_home" -mindepth 1 -maxdepth 1 -type d -print | LC_ALL=C sort)
+  if [ "$action" = apply ]; then rmdir "$old_home" 2>/dev/null || true; printf 'status=migrated\nstreams=%s\n' "$count"; else printf 'status=inventory\nstreams=%s\n' "$count"; fi
+}
+
 main() {
   [ "$#" -ge 2 ] || { usage; exit 2; }
+  case "$2" in setup|repair|anchor|migrate) ADMIT_OPERATION="$2" ;; *) ADMIT_OPERATION=ordinary ;; esac
   admit_root "$1"
   shift
   local operation="$1"; shift
   case "$operation" in
     runtime-init) cmd_runtime_init "$@" ;;
+    setup) cmd_setup "$@" ;;
+    repair) cmd_repair "$@" ;;
+    anchor) cmd_anchor "$@" ;;
+    reconfig) cmd_reconfig "$@" ;;
+    migrate) cmd_migrate "$@" ;;
     read) cmd_read "$@" ;;
     state) cmd_state "$@" ;;
     diagnose) cmd_diagnose "$@" ;;

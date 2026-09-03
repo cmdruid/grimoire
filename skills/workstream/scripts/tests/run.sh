@@ -37,6 +37,16 @@ echo "== pr-delivery-test.sh"
 bash "$DIR/pr-delivery-test.sh" || rc=1
 echo "== finalization-test.sh"
 bash "$DIR/finalization-test.sh" || rc=1
+echo "== control-surface-test.sh"
+bash "$DIR/control-surface-test.sh" || rc=1
+echo "== anchor-test.sh"
+bash "$DIR/anchor-test.sh" || rc=1
+echo "== reconfig-test.sh"
+bash "$DIR/reconfig-test.sh" || rc=1
+echo "== migration-test.sh"
+bash "$DIR/migration-test.sh" || rc=1
+echo "== topology-contract-test.sh"
+bash "$DIR/topology-contract-test.sh" || rc=1
 echo "== hooks-test.sh"
 bash "$DIR/hooks-test.sh" || rc=1
 echo "== git-helpers-test.sh"
