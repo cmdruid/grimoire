@@ -9,7 +9,7 @@ TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-hook.XXXXXX")"; TMP="$(cd "$TMP" &&
 ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"
 trap 'rm -rf "$TMP"' EXIT
 
-git init -q -b main "$ROOT"; git -C "$ROOT" config user.name test; git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial; mkdir -p "$ROOT/.streams"
 cat >"$ROOT/.streams/CONFIG.md" <<'EOF'
 <!-- workstream:defaults@1 -->
@@ -33,9 +33,13 @@ printf 'change\n' >>"$ROOT/.streams/hooked/file"; git -C "$ROOT/.streams/hooked"
 expect 'active hook is ready' 'hook_state=ready' "$OUT"
 expect 'active hook becomes next action' 'next_action=feature-hook' "$OUT"
 TRACKER="$ROOT/.streams/hooked/workstream.tsv"
-identity="$(awk -F '\t' '$1=="hook"&&$3=="name"&&$4=="feature-completion"{print $2}' "$TRACKER")"
+identity="$(awk -F= '$1=="hook_identity" {print $2}' "$OUT")"
+expect 'completion exposes hook identity' 'hook_identity=hooked/' "$OUT"
+expect 'emitted identity names durable receipt' $'hook\t'"$identity"$'\tname\tfeature-completion' "$TRACKER"
 "$HELPER" "$ROOT" read hooked >"$OUT"
 expect_absent 'ordinary read hides body' '/backlog debrief' "$OUT"
+expect 'recovery read exposes hook identity' "hook_identity=$identity" "$OUT"
+expect 'recovery read exposes hook state' 'hook_state=ready' "$OUT"
 expect 'ready receipt is durable' $'state\tready' "$TRACKER"
 if "$HELPER" "$ROOT" unit-begin hooked next 'Next unit' >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 if "$HELPER" "$ROOT" ship-prepare hooked >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi

@@ -40,8 +40,9 @@ usage: workstream.sh <canonical-root> <operation> [args...]
   list
   ship-prepare <stream>
   gate-run <stream> --class <docs|full> --label <label> -- <argv...>
+  gate-none <stream>
   land-advance <stream> --authority confirmed
-  ship-finalize <stream>
+  ship-finalize <stream> [--note <note>]
   validate-tracker <path>
 EOF
 }
@@ -98,8 +99,9 @@ validate_ref() {
 }
 
 validate_text() {
-  local label="$1" value="$2" allow_dash="${3:-no}"
-  [ -n "$value" ] && [ "${#value}" -le 4096 ] || die "$label must be 1..4096 bytes"
+  local label="$1" value="$2" allow_dash="${3:-no}" bytes
+  bytes="$(LC_ALL=C printf '%s' "$value" | wc -c | tr -d ' ')"
+  [ -n "$value" ] && [ "$bytes" -le 4096 ] || die "$label must be 1..4096 bytes"
   [ "$allow_dash" = yes ] || [ "$value" != - ] || die "$label cannot be a sentinel"
   if LC_ALL=C printf '%s' "$value" | LC_ALL=C grep -q '[[:cntrl:]]'; then
     die "$label contains a control character"
@@ -132,11 +134,62 @@ validate_tracked_control_surface() { # checkout
   done < <(git -C "$checkout" ls-files -z -- .streams)
 }
 
+validate_marker_span() { # file opening closing
+  local file="$1" opening="$2" closing="$3"
+  awk -v opening="$opening" -v closing="$closing" '
+    $0==opening {
+      if (inside || opened || closed) bad=1
+      inside=1; opened++
+      next
+    }
+    $0==closing {
+      if (!inside || closed) bad=1
+      inside=0; closed++
+      next
+    }
+    END { exit (bad || inside || opened!=closed || opened>1) ? 2 : 0 }
+  ' "$file"
+}
+
+validate_no_nested_stream_state() { # runtime checkout/state directory
+  local runtime="$1" candidate parent relative mode
+  [ -d "$runtime" ] && [ ! -L "$runtime" ] || die "stream runtime is unsafe"
+  while IFS= read -r candidate; do
+    parent="$(dirname "$candidate")"
+    [ "$parent" = "$runtime" ] || die "nested stream artifact found: $candidate"
+  done < <(find "$runtime" -mindepth 1 \( -name WORKSTREAM.md -o -name workstream.tsv \) -print)
+  if find "$runtime" -mindepth 1 -type d -name .workstreams -print -quit | grep -q .; then
+    die "nested legacy stream home found in $runtime"
+  fi
+  if [ -d "$runtime/.streams" ]; then
+    [ ! -L "$runtime/.streams" ] || die "nested control home is symlinked"
+    if find "$runtime/.streams" -mindepth 1 -type d -print -quit | grep -q .; then
+      die "nested stream runtime found below $runtime/.streams"
+    fi
+  fi
+  if find "$runtime" -mindepth 2 -type d -name .streams -print -quit | grep -q .; then
+    die "nested stream home found in $runtime"
+  fi
+  while IFS= read -r candidate; do
+    parent="$(dirname "$candidate")"
+    case "$parent" in
+      "$WT"/*)
+        relative="${parent#"$WT"/}"
+        mode="$(git -C "$WT" ls-tree HEAD -- "$relative" | awk 'NR==1{print $1}')"
+        [ "$mode" = 160000 ] && [ ! -L "$candidate" ] && { [ -f "$candidate" ] || [ -d "$candidate" ]; } && continue
+        ;;
+    esac
+    die "nested Git marker found outside a tracked gitlink: $candidate"
+  done < <(find "$runtime" -mindepth 2 -name .git -print)
+}
+
 ROOT=""
 SELF=""
 ADMIT_OPERATION="ordinary"
 ALLOW_PARKED="no"
 RUNTIME=""
+TRACKER_FINGERPRINT=""
+RUNBOOK_FINGERPRINT=""
 
 admit_root() {
   local supplied="$1" canonical top primary installed readme initialized=no starts=0 ends=0
@@ -161,7 +214,8 @@ admit_root() {
     }
     starts="$(grep -cFx '<!-- workstream:control@1 -->' "$readme" || true)"
     ends="$(grep -cFx '<!-- /workstream:control@1 -->' "$readme" || true)"
-    if [ "$starts" -ne "$ends" ] || [ "$starts" -gt 1 ]; then
+    if [ "$starts" -ne "$ends" ] || [ "$starts" -gt 1 ] ||
+       ! validate_marker_span "$readme" '<!-- workstream:control@1 -->' '<!-- /workstream:control@1 -->'; then
       case "$ADMIT_OPERATION" in setup|repair|anchor|migrate) return ;; esac
       die "control README markers conflict; run /workstream repair"
     fi
@@ -175,6 +229,11 @@ admit_root() {
     if [ "$initialized" = no ]; then
       case "$ADMIT_OPERATION" in setup|repair|anchor|migrate) return ;; esac
       die "installed helper without managed README is partial setup; run /workstream setup"
+    fi
+    if ! git -C "$ROOT" ls-files --error-unmatch .streams/workstream.sh >/dev/null 2>&1 ||
+       ! git -C "$ROOT" diff --quiet -- .streams/workstream.sh ||
+       ! git -C "$ROOT" diff --cached --quiet -- .streams/workstream.sh; then
+      case "$ADMIT_OPERATION" in setup|repair|anchor|migrate) ;; *) die "installed helper differs from its tracked control artifact; run /workstream repair" ;; esac
     fi
     installed="$(canonical_dir "$(dirname "$installed")")/$(basename "$installed")"
     if [ "$SELF" != "$installed" ]; then
@@ -345,11 +404,12 @@ stream_paths() {
 }
 
 admit_stream_coordinates() {
-  local stream="$1" top branch target recorded_root recorded_wt recorded_stream isolation held
+  local stream="$1" top branch target recorded_root recorded_wt recorded_stream isolation held current
   stream_paths "$stream"
   [ -d "$RUNTIME" ] && [ ! -L "$RUNTIME" ] || die "stream runtime is missing or unsafe: $stream"
   [ -f "$RUNBOOK" ] && [ ! -L "$RUNBOOK" ] || die "runbook is missing or unsafe: $RUNBOOK"
   [ -f "$TRACKER" ] && [ ! -L "$TRACKER" ] || die "tracker is missing or unsafe: $TRACKER"
+  RUNBOOK_FINGERPRINT="$(file_fingerprint "$RUNBOOK")"
   recorded_root="$(runbook_field "$RUNBOOK" root)" || die "invalid runbook root"
   recorded_wt="$(runbook_field "$RUNBOOK" worktree)" || die "invalid runbook worktree"
   recorded_stream="$(runbook_field "$RUNBOOK" stream)" || die "invalid runbook stream"
@@ -369,6 +429,7 @@ admit_stream_coordinates() {
       [ "$top" = "$WT" ] || die "stream worktree coordinate disagrees with Git"
       [ "$(git -C "$WT" branch --show-current)" = "$branch" ] || die "stream branch is not held"
       git -C "$ROOT" worktree list --porcelain | grep -qxF "worktree $WT" || die "stream worktree is not registered"
+      validate_no_nested_stream_state "$RUNTIME"
       ;;
     in-place)
       WT="$ROOT"
@@ -380,12 +441,20 @@ admit_stream_coordinates() {
       if git -C "$ROOT" worktree list --porcelain | awk -v b="refs/heads/$branch" '$1=="branch"&&$2==b{found=1} END{exit found?0:1}'; then
         [ "$held" = "$branch" ] || die "in-place branch is held by another worktree"
       fi
+      validate_no_nested_stream_state "$RUNTIME"
       ;;
     *) die "unsupported isolation: $isolation" ;;
   esac
   validate_tracked_control_surface "$WT"
   git -C "$WT" rev-parse --verify --quiet "$target^{commit}" >/dev/null || die "target does not resolve"
+  TRACKER_FINGERPRINT="$(file_fingerprint "$TRACKER")"
+  [ "$TRACKER_FINGERPRINT" != absent ] || die "tracker disappeared during admission"
   validate_tracker "$TRACKER"
+  current="$(file_fingerprint "$TRACKER")"
+  [ "$current" = "$TRACKER_FINGERPRINT" ] || die "tracker changed during admission"
+  [ "$(file_fingerprint "$RUNBOOK")" = "$RUNBOOK_FINGERPRINT" ] || die "runbook changed during admission"
+  [ "$(tracker_get meta - instance-id)" = "$(runbook_field "$RUNBOOK" instance-id)" ] || die "runbook and tracker instance IDs disagree"
+  awk -F '\t' -v s="$stream" '$1=="hook"{split($2,p,"/"); if(p[1]!=s) exit 2}' "$TRACKER" || die "hook identity belongs to another stream"
 }
 
 admit_stream() {
@@ -394,6 +463,12 @@ admit_stream() {
   pending="$(awk -F '\t' '$1=="meta"&&$2=="-"&&$3=="pending-runbook-contract-sha256"{print $4}' "$TRACKER")"
   [ -z "$pending" ] || die "runbook contract transaction is pending; recover it before ordinary use"
   [ "$(runbook_contract_hash "$RUNBOOK")" = "$(tracker_get meta - runbook-contract-sha256)" ] || die "runbook and tracker are not bound"
+  if [ -n "${WORKSTREAM_TEST_AFTER_TRACKER_SNAPSHOT:-}" ]; then
+    "$WORKSTREAM_TEST_AFTER_TRACKER_SNAPSHOT" "$TRACKER"
+  fi
+  if [ -n "${WORKSTREAM_TEST_AFTER_RUNBOOK_SNAPSHOT:-}" ]; then
+    "$WORKSTREAM_TEST_AFTER_RUNBOOK_SNAPSHOT" "$RUNBOOK"
+  fi
 }
 
 record_rank_awk='function rank(r) {
@@ -419,7 +494,7 @@ validate_tracker() {
   ranked="$(mktemp "${TMPDIR:-/tmp}/workstream-rank.XXXXXX")"
   sorted="$(mktemp "${TMPDIR:-/tmp}/workstream-sort.XXXXXX")"
   tail -n +2 "$file" >"$rows"
-  if ! awk -F '\t' "$record_rank_awk"'
+  if ! LC_ALL=C awk -F '\t' "$record_rank_awk"'
     function allowed(r,f) {
       if (r=="meta") return f=="schema"||f=="instance-id"||f=="runbook-contract-sha256"||f=="pending-runbook-contract-sha256"||f=="next-unit"||f=="next-shipment"
       if (r=="queue") return f=="source-kind"||f=="cursor"||f=="state"
@@ -447,7 +522,7 @@ validate_tracker() {
   fi
   canonical_rows "$rows" "$ranked" "$sorted"
   cmp -s "$rows" "$sorted" || { rm -f "$rows" "$ranked" "$sorted"; die "tracker rows are not canonical"; }
-  if ! awk -F '\t' '
+  if ! LC_ALL=C awk -F '\t' '
     function has(r,i,f) { return ((r SUBSEP i SUBSEP f) in value) }
     function ishex(s,n) { return length(s)==n && s !~ /[^0-9a-f]/ }
     function isobject(s) { return (length(s)==40||length(s)==64) && s !~ /[^0-9a-f]/ }
@@ -471,38 +546,53 @@ validate_tracker() {
 
       need("queue","-","cursor"); need("queue","-","source-kind"); need("queue","-","state"); fields("queue","-",3)
       if(value["queue","-","source-kind"]!~/^(plan|roadmap|brief|template)$/ || value["queue","-","state"]!~/^(intake|ready|exhausted)$/) bad=1
-      if((value["queue","-","state"]=="ready") != (value["queue","-","cursor"]!="-")) bad=1
+      if(value["queue","-","source-kind"]~/^(plan|roadmap)$/ && value["queue","-","state"]!="exhausted" && value["queue","-","cursor"]=="-") bad=1
+      if(value["queue","-","source-kind"]~/^(brief|template)$/ && value["queue","-","cursor"]!="-") bad=1
+      if(value["queue","-","state"]=="exhausted" && value["queue","-","cursor"]!="-") bad=1
       need("phase","-","name"); need("phase","-","next-action"); fields("phase","-",2)
       if(value["phase","-","name"]!~/^(none|plan|build|ship)$/ || value["phase","-","next-action"]!~/^(define-unit|plan|build|feature-hook|accumulate|sync|unpark|prepare-ship|land|await-merge|postflight|recycle|close|blocked)$/) bad=1
 
       for(key in ids) {
         split(key,a,SUBSEP); r=a[1]; i=a[2]
         if(r=="unit") {
+          unit_count++; if(i+0>max_unit) max_unit=i+0
           if(!pos(i)) bad=1
           need(r,i,"boundary"); need(r,i,"commit-count"); need(r,i,"slug"); need(r,i,"state"); need(r,i,"summary"); fields(r,i,5)
           if(!isobject(value[r,i,"boundary"]) || !nonneg(value[r,i,"commit-count"]) || value[r,i,"slug"]=="" || value[r,i,"summary"]=="" || value[r,i,"state"]!~/^(active|complete)$/) bad=1
+          if(value[r,i,"state"]=="active") active_units++
           if(value[r,i,"state"]=="complete" && value[r,i,"commit-count"]+0<1) bad=1
         } else if(r=="unit-subject") {
           split(i,a2,"/"); if(length(a2)!=2 || !pos(a2[1]) || !pos(a2[2]) || !has("unit",a2[1],"state")) bad=1
           need(r,i,"subject"); fields(r,i,1); if(value[r,i,"subject"]=="") bad=1
           subjects[a2[1]]++; subject_index[a2[1],a2[2]]=1
         } else if(r=="hook") {
+          hook_parts=split(i,h,"/")
           need(r,i,"name"); need(r,i,"fingerprint"); need(r,i,"state"); need(r,i,"inputs-sha256")
           if(value[r,i,"name"]!~/^(feature-completion|ship-friction)$/ || !ishex(value[r,i,"fingerprint"],64) || !ishex(value[r,i,"inputs-sha256"],64) || value[r,i,"state"]!~/^(ready|running|complete|not-applicable)$/) bad=1
+          if(hook_parts!=5 || h[1]!~/^[a-z0-9]+(-[a-z0-9]+)*$/ || h[2]!=value["meta","-","instance-id"]) bad=1
+          if(value[r,i,"name"]=="feature-completion") {
+            if(h[3]!="unit" || !pos(h[4]) || h[5]!="feature-completion" || !has("unit",h[4],"state") || value["unit",h[4],"state"]!="complete") bad=1
+          } else {
+            if(h[3]!="shipment" || !pos(h[4]) || h[5]!="ship-friction" || !has("shipment",h[4],"phase")) bad=1
+            ship_hooks[h[4]]++; ship_hook_state[h[4]]=value[r,i,"state"]
+          }
           terminal=(value[r,i,"state"]=="complete"||value[r,i,"state"]=="not-applicable")
           if(terminal) { need(r,i,"evidence-sha256"); if(!ishex(value[r,i,"evidence-sha256"],64)) bad=1; fields(r,i,5) }
           else { if(has(r,i,"evidence-sha256")) bad=1; fields(r,i,4) }
         } else if(r=="shipment") {
+          shipment_count++; shipment_id=i; if(i+0>max_shipment) max_shipment=i+0
           if(!pos(i)) bad=1
           need(r,i,"branch-tip"); need(r,i,"inputs-sha256"); need(r,i,"outcome"); need(r,i,"phase"); need(r,i,"target-tip"); fields(r,i,5)
           if(!isobject(value[r,i,"branch-tip"]) || !ishex(value[r,i,"inputs-sha256"],64) || !isobject(value[r,i,"target-tip"]) || value[r,i,"phase"]!~/^(prepare|sync|metadata|gitlinks|gate|friction|ready-to-land|advance|postflight|complete)$/ || value[r,i,"outcome"]!~/^(active|blocked|uncertain|awaiting-merge|landed)$/) bad=1
         } else if(r=="shipment-unit") {
           split(i,a2,"/"); if(length(a2)!=2 || !pos(a2[1]) || !pos(a2[2]) || !has("shipment",a2[1],"phase") || !pos(value[r,i,"unit"]) || !has("unit",value[r,i,"unit"],"state")) bad=1
           need(r,i,"unit"); fields(r,i,1); shipment_index[a2[1],a2[2]]=1; shipment_units[a2[1]]++
+          if(value["unit",value[r,i,"unit"],"state"]!="complete") bad=1
         } else if(r=="friction") {
           split(i,a2,"/"); if(length(a2)!=2 || !pos(a2[1]) || !has("shipment",a2[1],"phase") || a2[2]!~/^(rebase-conflict|semantic-conflict|target-reject|remote-reject|repeat-sync|gate-recovery|gitlink-repair|agent-intervention)$/ || value[r,i,"present"]!="yes") bad=1
           need(r,i,"present"); fields(r,i,1)
         } else if(r=="gate") {
+          gate_count++
           if(!pos(i) || !has("shipment",i,"phase")) bad=1
           need(r,i,"class"); need(r,i,"label"); need(r,i,"inputs-sha256"); need(r,i,"outcome")
           if(value[r,i,"class"]!~/^(none|docs|full|semantic)$/ || value[r,i,"label"]=="" || !ishex(value[r,i,"inputs-sha256"],64) || value[r,i,"outcome"]!~/^(required|running|passed|failed|stale|uncertain)$/) bad=1
@@ -522,7 +612,6 @@ validate_tracker() {
           if(ended) { need(r,i,"observed-tip"); if(!isobject(value[r,i,"observed-tip"])) bad=1; fields(r,i,4) }
           else if(value[r,i,"state"]=="uncertain") { if(has(r,i,"observed-tip")&&!isobject(value[r,i,"observed-tip"])) bad=1; fields(r,i,has(r,i,"observed-tip")?4:3) }
           else { if(has(r,i,"observed-tip")) bad=1; fields(r,i,3) }
-          if(value[r,i,"state"]=="advanced"&&value[r,i,"observed-tip"]!=value[r,i,"candidate-tip"]) bad=1
         }
       }
       for(u in subjects) {
@@ -531,6 +620,29 @@ validate_tracker() {
       }
       for(key in ids) { split(key,a,SUBSEP); if(a[1]=="unit"&&value["unit",a[2],"state"]=="complete"&&subjects[a[2]]+0!=value["unit",a[2],"commit-count"]+0) bad=1 }
       for(s in shipment_units) for(j=1;j<=shipment_units[s];j++) if(!shipment_index[s,j]) bad=1
+      if(active_units>1 || shipment_count>1 || gate_count>1 || (active_units && shipment_count)) bad=1
+      if(value["meta","-","next-unit"]+0<=max_unit || value["meta","-","next-shipment"]+0<=max_shipment) bad=1
+      if(shipment_count) {
+        if(shipment_units[shipment_id]+0<1 || value["phase","-","name"]!="ship") bad=1
+        sp=value["shipment",shipment_id,"phase"]; so=value["shipment",shipment_id,"outcome"]; na=value["phase","-","next-action"]
+        if(sp=="prepare" && (so!="active" || na!="prepare-ship")) bad=1
+        if(sp=="sync" && !((so=="active"&&na=="prepare-ship")||(so=="blocked"&&na=="blocked"))) bad=1
+        if(sp=="metadata" && (so!="active" || na!="prepare-ship")) bad=1
+        if(sp=="ready-to-land" && (so!="active" || na!="land")) bad=1
+        if(sp=="postflight" && (so!="landed" || na!="postflight")) bad=1
+        if(sp=="advance" && !((so=="active"&&na=="land")||(so=="uncertain"&&na=="blocked")||(so=="awaiting-merge"&&na=="await-merge"))) bad=1
+        if(sp=="gate" && !((so=="active"&&(na=="prepare-ship"||na=="blocked"))||(so=="blocked"&&na=="blocked"))) bad=1
+        if(sp=="gitlinks" && (so!="blocked" || na!="blocked")) bad=1
+        if(sp=="friction" && (so!~/^(active|blocked)$/ || na!="prepare-ship")) bad=1
+        if(sp~/^(ready-to-land|advance|postflight)$/ && (value["gate",shipment_id,"outcome"]!="passed" || ship_hooks[shipment_id]!=1 || ship_hook_state[shipment_id]!~/^(complete|not-applicable)$/)) bad=1
+        if(has("gate",shipment_id,"outcome") && value["gate",shipment_id,"inputs-sha256"]!=value["shipment",shipment_id,"inputs-sha256"]) bad=1
+      } else {
+        pn=value["phase","-","name"]; na=value["phase","-","next-action"]
+        if(pn=="none" && na!~/^(define-unit|build|feature-hook|accumulate|sync|unpark|recycle|close|blocked)$/) bad=1
+        if(pn=="plan" && na!="plan") bad=1
+        if(pn=="build" && na!~/^(build|feature-hook|accumulate)$/) bad=1
+        if(pn=="ship" && na!="prepare-ship") bad=1
+      }
       exit bad ? 2 : 0
     }
   ' "$rows"; then
@@ -545,10 +657,39 @@ tracker_get() {
   awk -F '\t' -v r="$record" -v i="$id" -v f="$field" '$1==r&&$2==i&&$3==f { print $4; n++ } END { if (n!=1) exit 2 }' "$TRACKER"
 }
 
+hook_identity() { # stream instance owner sequence event
+  printf '%s/%s/%s/%s/%s\n' "$1" "$2" "$3" "$4" "$5"
+}
+
+emit_hook_receipt() { # identity event fingerprint inputs state [evidence]
+  local identity="$1" event="$2" fingerprint="$3" inputs="$4" state="$5" evidence="${6:-}"
+  case "$state" in
+    ready|running) [ -z "$evidence" ] || die "nonterminal hook receipt cannot carry evidence" ;;
+    complete|not-applicable) [ -n "$evidence" ] || die "terminal hook receipt requires evidence" ;;
+    *) die "invalid hook receipt state: $state" ;;
+  esac
+  printf 'hook\t%s\tfingerprint\t%s\nhook\t%s\tinputs-sha256\t%s\nhook\t%s\tname\t%s\nhook\t%s\tstate\t%s\n' \
+    "$identity" "$fingerprint" "$identity" "$inputs" "$identity" "$event" "$identity" "$state"
+  [ -z "$evidence" ] || printf 'hook\t%s\tevidence-sha256\t%s\n' "$identity" "$evidence"
+}
+
+emit_tracker_base() { # instance next-shipment next-unit runbook-hash cursor source-kind queue-state next-action
+  local instance="$1" next_shipment="$2" next_unit="$3" runbook_hash="$4" cursor="$5" source_kind="$6" queue_state="$7" next_action="$8"
+  printf 'record\tid\tfield\tvalue\n'
+  printf 'meta\t-\tschema\tworkstream@1\nmeta\t-\tinstance-id\t%s\n' "$instance"
+  printf 'meta\t-\tnext-shipment\t%s\nmeta\t-\tnext-unit\t%s\nmeta\t-\trunbook-contract-sha256\t%s\n' \
+    "$next_shipment" "$next_unit" "$runbook_hash"
+  printf 'queue\t-\tcursor\t%s\nqueue\t-\tsource-kind\t%s\nqueue\t-\tstate\t%s\n' "$cursor" "$source_kind" "$queue_state"
+  printf 'phase\t-\tname\tnone\nphase\t-\tnext-action\t%s\n' "$next_action"
+}
+
 rewrite_tracker() {
-  local raw="$1" before temp rows ranked sorted current
-  before="$(file_fingerprint "$TRACKER")"
-  [ "$before" != absent ] || die "tracker disappeared"
+  local raw="$1" before temp rows ranked sorted current runtime_before runtime_current tracker_parent
+  runtime_before="$(canonical_dir "$RUNTIME")" || die "tracker parent is unsafe"
+  tracker_parent="$(canonical_dir "$(dirname "$TRACKER")")" || die "tracker parent is unsafe"
+  [ "$runtime_before" = "$RUNTIME" ] && [ "$tracker_parent" = "$RUNTIME" ] || die "tracker parent coordinate is unsafe"
+  before="$TRACKER_FINGERPRINT"
+  [ -n "$before" ] && [ "$before" != absent ] || die "tracker mutation has no admitted snapshot"
   temp="$(mktemp "$RUNTIME/.workstream.tsv.XXXXXX")"
   rows="$(mktemp "${TMPDIR:-/tmp}/workstream-newrows.XXXXXX")"
   ranked="$(mktemp "${TMPDIR:-/tmp}/workstream-newrank.XXXXXX")"
@@ -562,9 +703,11 @@ rewrite_tracker() {
   fi
   current="$(file_fingerprint "$TRACKER")"
   [ "$current" = "$before" ] || { rm -f "$temp" "$rows" "$ranked" "$sorted"; die "tracker changed concurrently"; }
-  [ ! -L "$WT" ] && [ ! -L "$TRACKER" ] || { rm -f "$temp" "$rows" "$ranked" "$sorted"; die "tracker destination became unsafe"; }
+  runtime_current="$(canonical_dir "$RUNTIME")" || { rm -f "$temp" "$rows" "$ranked" "$sorted"; die "tracker parent became unsafe"; }
+  [ "$runtime_current" = "$runtime_before" ] && [ ! -L "$RUNTIME" ] && [ ! -L "$WT" ] && [ ! -L "$TRACKER" ] || { rm -f "$temp" "$rows" "$ranked" "$sorted"; die "tracker destination became unsafe"; }
   chmod 600 "$temp"
   mv -f "$temp" "$TRACKER"
+  TRACKER_FINGERPRINT="$(file_fingerprint "$TRACKER")"
   rm -f "$rows" "$ranked" "$sorted"
 }
 
@@ -595,17 +738,27 @@ mint_instance_id() {
 }
 
 ensure_exclusions() {
-  local exclude
+  local exclude parent temp pattern before current parent_before parent_current
   exclude="$(git -C "$ROOT" rev-parse --git-path info/exclude)"
   case "$exclude" in /*) ;; *) exclude="$ROOT/$exclude" ;; esac
   [ -f "$exclude" ] && [ ! -L "$exclude" ] || die "shared Git exclusion is unsafe"
-  for pattern in '/.streams/*/' '/WORKSTREAM.md' '/workstream.tsv'; do
-    grep -qxF "$pattern" "$exclude" || printf '%s\n' "$pattern" >>"$exclude"
+  parent="$(dirname "$exclude")"
+  [ -d "$parent" ] && [ ! -L "$parent" ] || die "shared Git exclusion parent is unsafe"
+  parent_before="$(canonical_dir "$parent")" || die "shared Git exclusion parent is unsafe"
+  before="$(file_fingerprint "$exclude")"
+  temp="$(mktemp "$parent/.workstream-exclude.XXXXXX")"
+  awk '{ print }' "$exclude" >"$temp"
+  for pattern in '/.streams/*/' '/.streams/.migration.tsv' '/WORKSTREAM.md' '/workstream.tsv'; do
+    grep -qxF "$pattern" "$temp" || printf '%s\n' "$pattern" >>"$temp"
   done
+  chmod "$(stat -f '%Lp' "$exclude" 2>/dev/null || printf 644)" "$temp" 2>/dev/null || chmod 644 "$temp"
+  current="$(file_fingerprint "$exclude")"; parent_current="$(canonical_dir "$parent")" || { rm -f "$temp"; die "shared Git exclusion parent became unsafe"; }
+  [ "$current" = "$before" ] && [ "$parent_current" = "$parent_before" ] && [ ! -L "$exclude" ] || { rm -f "$temp"; die "shared Git exclusion changed concurrently"; }
+  mv -f "$temp" "$exclude"
 }
 
 emit_runbook() {
-  local stream="$1" instance="$2" branch="$3" target="$4" brief="$5"
+  local stream="$1" instance="$2" branch="$3" target="$4" brief="$5" source_kind="${6:-brief}" source_pointer="${7:--}"
   printf '# %s — workstream runbook\n\n' "$stream"
   printf '<!-- workstream:identity@1 -->\n'
   printf 'stream\t%s\ninstance-id\t%s\nroot\t%s\nworktree\t%s\n' "$stream" "$instance" "$ROOT" "$WT"
@@ -613,6 +766,7 @@ emit_runbook() {
   printf '<!-- /workstream:identity@1 -->\n\n'
   printf '<!-- workstream:brief@1 -->\n'
   printf 'purpose\t%s\n' "$brief"
+  printf 'queue-source-kind\t%s\nqueue-source\t%s\n' "$source_kind" "$source_pointer"
   printf 'orientation\tVerify pointers against Git before trusting them.\n'
   printf 'operator-note\t-\n'
   printf '<!-- /workstream:brief@1 -->\n\n'
@@ -732,19 +886,10 @@ cmd_runtime_init() {
   # Build and validate both runtime artifacts before changing Git topology.
   runbook_candidate="$(mktemp "${TMPDIR:-/tmp}/workstream-runbook.XXXXXX")"
   tracker_candidate="$(mktemp "${TMPDIR:-/tmp}/workstream-tracker.XXXXXX")"
-  emit_runbook "$stream" "$instance" "$branch" "$target" "$brief" >"$runbook_candidate"
+  emit_runbook "$stream" "$instance" "$branch" "$target" "$brief" "$source_kind" "$cursor" >"$runbook_candidate"
   runbook_hash="$(runbook_contract_hash "$runbook_candidate")"
   rm -f "$FEATURE_BODY" "$FRICTION_BODY"
-  {
-    printf 'record\tid\tfield\tvalue\n'
-    printf 'meta\t-\tschema\tworkstream@1\n'
-    printf 'meta\t-\tinstance-id\t%s\n' "$instance"
-    printf 'meta\t-\tnext-shipment\t%s\n' "$next"
-    printf 'meta\t-\tnext-unit\t%s\n' "$next"
-    printf 'meta\t-\trunbook-contract-sha256\t%s\n' "$runbook_hash"
-    printf 'queue\t-\tcursor\t%s\nqueue\t-\tsource-kind\t%s\nqueue\t-\tstate\t%s\n' "$cursor" "$source_kind" "$queue_state"
-    printf 'phase\t-\tname\tnone\nphase\t-\tnext-action\tdefine-unit\n'
-  } >"$tracker_candidate"
+  emit_tracker_base "$instance" "$next" "$next" "$runbook_hash" "$cursor" "$source_kind" "$queue_state" define-unit >"$tracker_candidate"
   validate_tracker "$tracker_candidate"
 
   ensure_exclusions
@@ -790,19 +935,27 @@ cmd_state() {
 
 cmd_read() {
   [ "$#" -eq 1 ] || die "usage: read <stream>"
-  local stream="$1" purpose orientation note instance phase next queue unit shipment
+  local stream="$1" purpose orientation note source_kind source_pointer instance phase next queue unit unit_slug unit_summary shipment hook_identity hook_state mode isolation landing cadence branch target
   admit_stream "$stream"
   purpose="$(runbook_block_field "$RUNBOOK" brief purpose)" || die "runbook purpose is malformed"
   orientation="$(runbook_block_field "$RUNBOOK" brief orientation)" || die "runbook orientation is malformed"
   note="$(runbook_block_field "$RUNBOOK" brief operator-note)" || die "runbook operator note is malformed"
+  source_kind="$(runbook_block_field "$RUNBOOK" brief queue-source-kind)" || die "runbook queue source is malformed"
+  source_pointer="$(runbook_block_field "$RUNBOOK" brief queue-source)" || die "runbook queue source is malformed"
   instance="$(tracker_get meta - instance-id)"; phase="$(tracker_get phase - name)"
   next="$(tracker_get phase - next-action)"; queue="$(tracker_get queue - state)"
   if [ "$(runbook_field "$RUNBOOK" isolation)" = in-place ] &&
      [ "$(git -C "$ROOT" branch --show-current)" = "$(runbook_field "$RUNBOOK" target)" ]; then next=unpark; fi
   unit="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="active" {print $2}' "$TRACKER")"
+  if [ -n "$unit" ]; then unit_slug="$(tracker_get unit "$unit" slug)"; unit_summary="$(tracker_get unit "$unit" summary)"; else unit_slug=-; unit_summary=-; fi
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
-  printf 'schema=workstream-read@1\nstream=%s\ninstance_id=%s\npurpose=%s\norientation=%s\noperator_note=%s\nstate=phase:%s,queue:%s,unit:%s,shipment:%s\nnext_action=%s\n' \
-    "$stream" "$instance" "$purpose" "$orientation" "$note" "$phase" "$queue" "${unit:--}" "${shipment:--}" "$next"
+  hook_identity="$(awk -F '\t' '$1=="hook"&&$3=="state"&&($4=="ready"||$4=="running") {print $2; exit}' "$TRACKER")"
+  if [ -n "$hook_identity" ]; then hook_state="$(tracker_get hook "$hook_identity" state)"; else hook_identity=-; hook_state=-; fi
+  mode="$(runbook_policy_part "$RUNBOOK" mode 2)"; isolation="$(runbook_field "$RUNBOOK" isolation)"
+  landing="$(runbook_field "$RUNBOOK" landing)"; cadence="$(runbook_policy_part "$RUNBOOK" ship-cadence 2)"
+  branch="$(runbook_field "$RUNBOOK" branch)"; target="$(runbook_field "$RUNBOOK" target)"
+  printf 'schema=workstream-read@1\nstream=%s,instance_id=%s\nworktree=%s\ncoordinates=branch:%s,target:%s,isolation:%s,landing:%s\npolicy=mode:%s,ship-cadence:%s\npurpose=%s\norientation=%s\noperator_note=%s\nqueue=source-kind:%s,source:%s,state:%s\nunit=id:%s,slug:%s,summary:%s\nshipment=%s,hook_identity=%s,hook_state=%s\nnext_action=%s\n' \
+    "$stream" "$instance" "$WT" "$branch" "$target" "$isolation" "$landing" "$mode" "$cadence" "$purpose" "$orientation" "$note" "$source_kind" "$source_pointer" "$queue" "${unit:--}" "$unit_slug" "$unit_summary" "${shipment:--}" "$hook_identity" "$hook_state" "$next"
 }
 
 cmd_diagnose() {
@@ -819,22 +972,26 @@ cmd_diagnose() {
 
 cmd_operator_note() {
   [ "$#" -eq 2 ] || die "usage: operator-note <stream> <note>"
-  local stream="$1" note="$2" before temp current count
+  local stream="$1" note="$2" before temp note_file current count
   admit_stream "$stream"
   validate_text 'operator note' "$note" yes
   if [ "$(runbook_block_field "$RUNBOOK" brief operator-note)" = "$note" ]; then
     printf 'status=unchanged\nnext_action=%s\n' "$(tracker_get phase - next-action)"
     return
   fi
-  before="$(file_fingerprint "$RUNBOOK")"
+  before="$RUNBOOK_FINGERPRINT"
   temp="$(mktemp "$RUNTIME/.WORKSTREAM.md.XXXXXX")"
-  awk -v note="$note" '
+  note_file="$(mktemp "${TMPDIR:-/tmp}/workstream-note.XXXXXX")"
+  printf '%s\n' "$note" >"$note_file"
+  awk -v note_file="$note_file" '
+    BEGIN { if ((getline note < note_file) <= 0 || (getline extra < note_file) > 0) exit 2; close(note_file) }
     /^<!-- workstream:brief@1 -->$/ { inside=1 }
     /^<!-- \/workstream:brief@1 -->$/ { inside=0 }
     inside && index($0,"operator-note\t")==1 { print "operator-note\t" note; changed++; next }
     { print }
     END { if(changed!=1) exit 2 }
-  ' "$RUNBOOK" >"$temp" || { rm -f "$temp"; die "operator note span is malformed"; }
+  ' "$RUNBOOK" >"$temp" || { rm -f "$temp" "$note_file"; die "operator note span is malformed"; }
+  rm -f "$note_file"
   [ "$(runbook_contract_hash "$temp")" = "$(tracker_get meta - runbook-contract-sha256)" ] || { rm -f "$temp"; die "note edit changed managed contract"; }
   if [ -n "${WORKSTREAM_TEST_BEFORE_RUNBOOK_REPLACE:-}" ]; then "$WORKSTREAM_TEST_BEFORE_RUNBOOK_REPLACE" "$RUNBOOK"; fi
   current="$(file_fingerprint "$RUNBOOK")"
@@ -842,6 +999,7 @@ cmd_operator_note() {
   [ ! -L "$WT" ] && [ ! -L "$RUNBOOK" ] || { rm -f "$temp"; die "runbook destination became unsafe"; }
   chmod 600 "$temp"
   mv -f "$temp" "$RUNBOOK"
+  RUNBOOK_FINGERPRINT="$(file_fingerprint "$RUNBOOK")"
   count="$(runbook_block_field "$RUNBOOK" brief operator-note | wc -c | tr -d ' ')"
   printf 'status=saved\nnote_bytes=%s\nnext_action=%s\n' "$((count - 1))" "$(tracker_get phase - next-action)"
 }
@@ -851,7 +1009,21 @@ cmd_phase_set() {
   local stream="$1" phase="$2" next="$3" mode raw
   admit_stream "$stream"
   mode="$(runbook_block_field "$RUNBOOK" policy mode)" || die "runbook mode is malformed"
-  if [ "$mode" = delegate ]; then [ "$phase" = none ] || die "delegate mode requires phase none"; fi
+  local current_phase current_next
+  current_phase="$(tracker_get phase - name)"; current_next="$(tracker_get phase - next-action)"
+  if [ "$mode" = delegate ]; then
+    [ "$phase" = none ] || die "delegate mode requires phase none"
+    case "$next" in define-unit|accumulate|sync|unpark|recycle|close|blocked) ;; *) die "illegal delegate phase transition" ;; esac
+  else
+    case "$current_phase:$current_next:$phase:$next" in
+      none:define-unit:plan:plan|plan:plan:build:build) ;;
+      build:build:ship:prepare-ship|build:feature-hook:ship:prepare-ship|build:accumulate:ship:prepare-ship)
+        ! awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="active"{bad=1} $1=="hook"&&$3=="state"&&($4=="ready"||$4=="running"){bad=1} END{exit bad?0:1}' "$TRACKER" || die "manual ship transition requires completed unit work"
+        awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="complete"{found=1} END{exit found?0:1}' "$TRACKER" || die "manual ship transition requires a completed unit"
+        ;;
+      *) die "illegal manual phase transition" ;;
+    esac
+  fi
   case "$phase" in none|plan|build|ship) ;; *) die "invalid phase" ;; esac
   case "$next" in define-unit|plan|build|feature-hook|accumulate|sync|unpark|prepare-ship|land|await-merge|postflight|recycle|close|blocked) ;; *) die "invalid next action" ;; esac
   raw="$(mktemp "${TMPDIR:-/tmp}/workstream-phase.XXXXXX")"
@@ -963,23 +1135,40 @@ cmd_hook_complete() {
 
 cmd_friction_add() {
   [ "$#" -eq 2 ] || die "usage: friction-add <stream> <reason>"
-  local stream="$1" reason="$2" shipment raw
+  local stream="$1" reason="$2" shipment phase raw
   case "$reason" in rebase-conflict|semantic-conflict|target-reject|remote-reject|repeat-sync|gate-recovery|gitlink-repair|agent-intervention) ;; *) die "invalid friction reason" ;; esac
   admit_stream "$stream"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2;exit}' "$TRACKER")"; [ -n "$shipment" ] || die "no active shipment"
+  phase="$(tracker_get shipment "$shipment" phase)"
+  case "$phase" in prepare|sync|metadata|gitlinks|gate|friction|ready-to-land) ;; *) die "cannot add shipment friction during $phase" ;; esac
   if awk -F '\t' -v id="$shipment/$reason" '$1=="friction"&&$2==id{found=1}END{exit found?0:1}' "$TRACKER"; then
     printf 'status=existing\nreason=%s\n' "$reason"; return
   fi
-  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-friction.XXXXXX")"; tail -n +2 "$TRACKER" >"$raw"
+  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-friction.XXXXXX")"
+  if [ "$phase" = ready-to-land ]; then
+    awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+  else
+    tail -n +2 "$TRACKER" >"$raw"
+  fi
   printf 'friction\t%s/%s\tpresent\tyes\n' "$shipment" "$reason" >>"$raw"
+  if [ "$phase" = ready-to-land ]; then
+    printf 'shipment\t%s\tphase\tfriction\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tprepare-ship\n' "$shipment" "$shipment" >>"$raw"
+  fi
   rewrite_tracker "$raw"; rm -f "$raw"
-  printf 'status=recorded\nreason=%s\n' "$reason"
+  printf 'status=recorded\nreason=%s\nnext_action=%s\n' "$reason" "$(tracker_get phase - next-action)"
 }
 
 cmd_unit_begin() {
   [ "$#" -eq 3 ] || die "usage: unit-begin <stream> <slug> <summary>"
-  local stream="$1" slug="$2" summary="$3" id boundary raw
+  local stream="$1" slug="$2" summary="$3" id boundary raw mode
   admit_stream "$stream"
+  mode="$(runbook_block_field "$RUNBOOK" policy mode)"
+  if [ "$mode" = manual ]; then
+    case "$(tracker_get phase - name):$(tracker_get phase - next-action)" in
+      build:build|build:accumulate) ;;
+      *) die "manual unit work requires the build phase" ;;
+    esac
+  fi
   case "$slug" in ''|*[!a-z0-9-]*) die "invalid unit slug" ;; esac
   validate_text summary "$summary"
   id="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="active" {print $2}' "$TRACKER")"
@@ -993,10 +1182,10 @@ cmd_unit_begin() {
   id="$(tracker_get meta - next-unit)"
   boundary="$(git -C "$WT" rev-parse HEAD)"
   raw="$(mktemp "${TMPDIR:-/tmp}/workstream-unit.XXXXXX")"
-  awk -F '\t' 'NR>1 && !(($1=="meta"&&$2=="-"&&$3=="next-unit")||($1=="queue"&&$2=="-"&&($3=="cursor"||$3=="state"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+  awk -F '\t' 'NR>1 && !(($1=="meta"&&$2=="-"&&$3=="next-unit")||($1=="queue"&&$2=="-"&&$3=="state")||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
   {
     printf 'meta\t-\tnext-unit\t%s\n' "$((id + 1))"
-    printf 'queue\t-\tcursor\t%s\nqueue\t-\tstate\tready\n' "$slug"
+    printf 'queue\t-\tstate\tready\n'
     printf 'phase\t-\tnext-action\tbuild\n'
     printf 'unit\t%s\tslug\t%s\nunit\t%s\tsummary\t%s\nunit\t%s\tstate\tactive\nunit\t%s\tboundary\t%s\nunit\t%s\tcommit-count\t0\n' \
       "$id" "$slug" "$id" "$summary" "$id" "$id" "$boundary" "$id"
@@ -1014,8 +1203,10 @@ cmd_unit_complete() {
   if [ -z "$id" ]; then
     id="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="complete" {last=$2} END{print last}' "$TRACKER")"
     [ -n "$id" ] || die "no active unit"
-    printf 'status=already-complete\nunit=%s\ncommits=%s\nnext_action=%s\n' \
-      "$id" "$(tracker_get unit "$id" commit-count)" "$(tracker_get phase - next-action)"
+    instance="$(tracker_get meta - instance-id)"
+    identity="$(hook_identity "$stream" "$instance" unit "$id" feature-completion)"
+    printf 'status=already-complete\nunit=%s\ncommits=%s\nhook_identity=%s\nhook_state=%s\nnext_action=%s\n' \
+      "$id" "$(tracker_get unit "$id" commit-count)" "$identity" "$(tracker_get hook "$identity" state)" "$(tracker_get phase - next-action)"
     return
   fi
   boundary="$(tracker_get unit "$id" boundary)"
@@ -1033,26 +1224,24 @@ cmd_unit_complete() {
     index=$((index + 1))
   done < <(git -C "$WT" log --reverse --format='%s' "$boundary..HEAD")
   instance="$(tracker_get meta - instance-id)"
-  identity="$stream/$instance/unit/$id/feature-completion"
+  identity="$(hook_identity "$stream" "$instance" unit "$id" feature-completion)"
   fingerprint="$(runbook_block_field "$RUNBOOK" 'hook:feature-completion' fingerprint)" || die "compiled feature hook is malformed"
   inputs="$(sha256_text "$identity|$(git -C "$WT" rev-parse HEAD)")"
   hook_body="$(mktemp "${TMPDIR:-/tmp}/workstream-feature-body.XXXXXX")"
   runbook_hook_body "$RUNBOOK" feature-completion >"$hook_body"
   if grep -q '[^[:space:]]' "$hook_body"; then
     hook_state=ready; next=feature-hook
-    printf 'hook\t%s\tname\tfeature-completion\nhook\t%s\tfingerprint\t%s\nhook\t%s\tstate\tready\nhook\t%s\tinputs-sha256\t%s\n' \
-      "$identity" "$identity" "$fingerprint" "$identity" "$identity" "$inputs" >>"$raw"
+    emit_hook_receipt "$identity" feature-completion "$fingerprint" "$inputs" ready >>"$raw"
   else
     hook_state=not-applicable; next=accumulate
     evidence="$(sha256_text not-applicable)"
-    printf 'hook\t%s\tname\tfeature-completion\nhook\t%s\tfingerprint\t%s\nhook\t%s\tstate\tnot-applicable\nhook\t%s\tinputs-sha256\t%s\nhook\t%s\tevidence-sha256\t%s\n' \
-      "$identity" "$identity" "$fingerprint" "$identity" "$identity" "$inputs" "$identity" "$evidence" >>"$raw"
+    emit_hook_receipt "$identity" feature-completion "$fingerprint" "$inputs" not-applicable "$evidence" >>"$raw"
   fi
   rm -f "$hook_body"
   printf 'phase\t-\tnext-action\t%s\n' "$next" >>"$raw"
   rewrite_tracker "$raw"
   rm -f "$raw"
-  printf 'status=unit-complete\nunit=%s\ncommits=%s\nhook_state=%s\nnext_action=%s\n' "$id" "$count" "$hook_state" "$next"
+  printf 'status=unit-complete\nunit=%s\ncommits=%s\nhook_identity=%s\nhook_state=%s\nnext_action=%s\n' "$id" "$count" "$identity" "$hook_state" "$next"
 }
 
 validate_history() {
@@ -1072,65 +1261,48 @@ validate_history() {
   ' "$file" || die "history rows are invalid"
 }
 
-cmd_ship_prepare() {
-  [ "$#" -eq 1 ] || die "usage: ship-prepare <stream>"
-  local stream="$1" shipment next target branch_tip target_tip raw history history_temp now units unit summary commits inputs gitlinks path object path_id availability missing phase outcome next_action landing remote_tip sync_base published
-  admit_stream "$stream"
-  shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
-  if [ -n "$shipment" ]; then
-    phase="$(tracker_get shipment "$shipment" phase)"
-    if [ "$phase" = friction ]; then
-      if awk -F '\t' -v prefix="$stream/$(tracker_get meta - instance-id)/shipment/$shipment/ship-friction" '$1=="hook"&&$2==prefix&&$3=="state"&&($4=="complete"||$4=="not-applicable"){ok=1}END{exit ok?0:1}' "$TRACKER"; then
-        if [ "$(git -C "$WT" rev-parse HEAD)" != "$(tracker_get shipment "$shipment" branch-tip)" ]; then
-          raw="$(mktemp "${TMPDIR:-/tmp}/workstream-regate.XXXXXX")"
-          awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="gate"&&$2==s)||($1=="shipment"&&$2==s&&($3=="branch-tip"||$3=="inputs-sha256"||$3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
-          branch_tip="$(git -C "$WT" rev-parse HEAD)"; target_tip="$(git -C "$WT" rev-parse "$(runbook_field "$RUNBOOK" target)")"
-          inputs="$(sha256_text "$stream|$shipment|$branch_tip|$target_tip|hook-effects")"
-          printf 'shipment\t%s\tbranch-tip\t%s\nshipment\t%s\tinputs-sha256\t%s\nshipment\t%s\tphase\tgate\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tprepare-ship\n' \
-            "$shipment" "$branch_tip" "$shipment" "$inputs" "$shipment" "$shipment" >>"$raw"
-          rewrite_tracker "$raw"; rm -f "$raw"
-          printf 'status=resumed\nshipment=%s\nphase=gate\nnext_action=prepare-ship\n' "$shipment"
-          return
-        fi
-        raw="$(mktemp "${TMPDIR:-/tmp}/workstream-ready.XXXXXX")"
-        awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
-        printf 'shipment\t%s\tphase\tready-to-land\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tland\n' "$shipment" "$shipment" >>"$raw"
-        rewrite_tracker "$raw"; rm -f "$raw"
-        printf 'status=ready\nshipment=%s\nnext_action=land\n' "$shipment"
-        return
-      fi
-    fi
-    printf 'status=resumed\nshipment=%s\nnext_action=%s\n' "$shipment" "$(tracker_get phase - next-action)"
-    return
+resolve_history_rebase_conflict() {
+  local unmerged base ours theirs combined merged editor_status
+  unmerged="$(git -C "$WT" diff --name-only --diff-filter=U)"
+  [ "$unmerged" = .streams/history.tsv ] || return 1
+  base="$(mktemp "${TMPDIR:-/tmp}/workstream-history-base.XXXXXX")"
+  ours="$(mktemp "${TMPDIR:-/tmp}/workstream-history-ours.XXXXXX")"
+  theirs="$(mktemp "${TMPDIR:-/tmp}/workstream-history-theirs.XXXXXX")"
+  combined="$(mktemp "${TMPDIR:-/tmp}/workstream-history-combined.XXXXXX")"
+  merged="$(mktemp "$WT/.streams/.history-union.XXXXXX")"
+  git -C "$WT" show :1:.streams/history.tsv >"$base" 2>/dev/null || { rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; }
+  git -C "$WT" show :2:.streams/history.tsv >"$ours" 2>/dev/null || { rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; }
+  git -C "$WT" show :3:.streams/history.tsv >"$theirs" 2>/dev/null || { rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; }
+  if ! (validate_history "$base") || ! (validate_history "$ours") || ! (validate_history "$theirs"); then
+    rm -f "$base" "$ours" "$theirs" "$combined" "$merged"
+    return 1
   fi
-  [ -z "$(git -C "$WT" status --porcelain --untracked-files=no)" ] || die "shipment preparation requires clean tracked work"
-  ! awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="active"{found=1} $1=="hook"&&$3=="state"&&($4=="ready"||$4=="running"){found=1} END{exit found?0:1}' "$TRACKER" || die "shipment preparation requires completed unit hooks"
-  units="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="complete" {print $2}' "$TRACKER")"
-  [ -n "$units" ] || die "no completed unit to ship"
-  next="$(tracker_get meta - next-shipment)"
-  target="$(runbook_field "$RUNBOOK" target)"
-  landing="$(runbook_field "$RUNBOOK" landing)"
-  sync_base="$target"; remote_tip=-
-  if [ "$landing" = push ] || [ "$landing" = pr ]; then
-    remote_tip="$(remote_target_tip "$target")" || die "cannot verify origin/$target"
-    git -C "$WT" fetch -q origin "refs/heads/$target" || die "cannot fetch origin/$target"
-    [ "$(git -C "$WT" rev-parse FETCH_HEAD)" = "$remote_tip" ] || die "fetched target differs from observed origin/$target"
-    sync_base="$remote_tip"
-  fi
-  if ! git -C "$WT" merge-base --is-ancestor "$sync_base" HEAD; then
-    if ! git -C "$WT" rebase "$sync_base" >/dev/null 2>&1; then
-      printf 'status=conflict\nphase=sync\nnext_action=blocked\n'
-      return 1
-    fi
-  fi
+  awk -F '\t' 'NR==FNR&&NR>1{base[$1 SUBSEP $2]=$0;next} NR>1{seen[$1 SUBSEP $2]=$0} END{for(k in base)if(!(k in seen)||seen[k]!=base[k])exit 2}' "$base" "$ours" || { rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; }
+  awk -F '\t' 'NR==FNR&&NR>1{base[$1 SUBSEP $2]=$0;next} NR>1{seen[$1 SUBSEP $2]=$0} END{for(k in base)if(!(k in seen)||seen[k]!=base[k])exit 2}' "$base" "$theirs" || { rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; }
+  { tail -n +2 "$ours"; tail -n +2 "$theirs"; } | LC_ALL=C sort -t $'\t' -k1,1 -k2,2n >"$combined"
+  printf 'stream\tsequence\trecorded_at\ttarget\tunit\tcommits\tsummary\n' >"$merged"
+  awk -F '\t' 'BEGIN{OFS="\t"} {key=$1 SUBSEP $2; if(key in row){if(row[key]!=$0)exit 2; next} row[key]=$0; print}' "$combined" >>"$merged" || { rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; }
+  if ! (validate_history "$merged"); then rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; fi
+  mv -f "$merged" "$WT/.streams/history.tsv"
+  git -C "$WT" add -- .streams/history.tsv
+  editor_status=0
+  GIT_EDITOR=true git -C "$WT" rebase --continue >/dev/null 2>&1 || editor_status=$?
+  rm -f "$base" "$ours" "$theirs" "$combined"
+  [ "$editor_status" -eq 0 ]
+}
+
+prepare_history_metadata() { # stream shipment unit-ids target
+  local stream="$1" shipment="$2" units="$3" target="$4" history history_temp history_before history_current now unit summary commits
   history="$WT/.streams/history.tsv"
   mkdir -p "$WT/.streams"
   history_temp="$(mktemp "$WT/.streams/.history.tsv.XXXXXX")"
   if [ -e "$history" ] || [ -L "$history" ]; then
     [ -f "$history" ] && [ ! -L "$history" ] || die "history is unsafe"
     validate_history "$history"
+    history_before="$(file_fingerprint "$history")"
     cp "$history" "$history_temp"
   else
+    history_before=absent
     printf 'stream\tsequence\trecorded_at\ttarget\tunit\tcommits\tsummary\n' >"$history_temp"
   fi
   now="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
@@ -1143,15 +1315,18 @@ cmd_ship_prepare() {
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$stream" "$unit" "$now" "$target" "$(tracker_get unit "$unit" slug)" "$commits" "$summary" >>"$history_temp"
   done
   validate_history "$history_temp"
-  mv "$history_temp" "$history"
+  history_current="$(file_fingerprint "$history")"
+  [ "$history_current" = "$history_before" ] || { rm -f "$history_temp"; die "history changed concurrently"; }
+  write_atomic_file "$history" "$history_temp" 644
+  rm -f "$history_temp"
   git -C "$WT" add -- .streams/history.tsv
   if ! git -C "$WT" diff --cached --quiet -- .streams/history.tsv; then
-    git -C "$WT" commit -qm "workstream: prepare shipment $next" -- .streams/history.tsv
+    git -C "$WT" commit -qm "workstream: prepare shipment $shipment" -- .streams/history.tsv
   fi
-  branch_tip="$(git -C "$WT" rev-parse HEAD)"
-  target_tip="$(git -C "$WT" rev-parse "$target")"
-  gitlinks="$(mktemp "${TMPDIR:-/tmp}/workstream-gitlinks.XXXXXX")"
-  missing=no
+}
+
+prepare_gitlink_rows() { # shipment target-tip landing output
+  local shipment="$1" target_tip="$2" landing="$3" output="$4" path object path_id availability published origin_url missing=no
   while IFS= read -r -d '' path; do
     object="$(git -C "$WT" ls-tree HEAD -- "$path" | awk '$1=="160000"{print $3}')"
     [ -n "$object" ] || continue
@@ -1161,6 +1336,19 @@ cmd_ship_prepare() {
     if [ -d "$WT/$path" ] && git -C "$WT/$path" cat-file -e "$object^{commit}" 2>/dev/null; then availability=ready; fi
     if [ "$landing" = local ]; then
       published=not-required
+      if [ "$availability" = ready ]; then
+        if ! git -C "$ROOT/$path" rev-parse --git-dir >/dev/null 2>&1; then
+          mkdir -p "$(dirname "$ROOT/$path")"
+          origin_url="$(git -C "$WT/$path" remote get-url origin 2>/dev/null || true)"
+          if [ -n "$origin_url" ]; then git -c protocol.file.allow=always clone -q --no-checkout "$origin_url" "$ROOT/$path" 2>/dev/null || true; fi
+        fi
+        if git -C "$ROOT/$path" rev-parse --git-dir >/dev/null 2>&1; then
+          if ! git -C "$ROOT/$path" cat-file -e "$object^{commit}" 2>/dev/null; then
+            git -C "$ROOT/$path" fetch -q "$WT/$path" "$object" 2>/dev/null || true
+          fi
+          if git -C "$ROOT/$path" cat-file -e "$object^{commit}" 2>/dev/null; then availability=transferred; fi
+        fi
+      fi
     else
       published=no
       if [ "$availability" = ready ] && git -C "$WT/$path" fetch -q origin 2>/dev/null && \
@@ -1168,31 +1356,234 @@ cmd_ship_prepare() {
         published=yes
       fi
     fi
-    [ "$availability" = ready ] && [ "$published" != no ] || missing=yes
+    case "$landing:$availability:$published" in local:ready:not-required|local:transferred:not-required|push:ready:yes|pr:ready:yes) ;; *) missing=yes ;; esac
     printf 'gitlink\t%s/%s\tavailability\t%s\ngitlink\t%s/%s\tobject\t%s\ngitlink\t%s/%s\tpath\t%s\ngitlink\t%s/%s\tpublished\t%s\n' \
-      "$next" "$path_id" "$availability" "$next" "$path_id" "$object" "$next" "$path_id" "$path" "$next" "$path_id" "$published" >>"$gitlinks"
+      "$shipment" "$path_id" "$availability" "$shipment" "$path_id" "$object" "$shipment" "$path_id" "$path" "$shipment" "$path_id" "$published" >>"$output"
   done < <(git -C "$WT" diff --name-only -z --diff-filter=AM "$target_tip..HEAD")
-  inputs="$(sha256_text "$stream|$next|$units|$branch_tip|$target_tip|$remote_tip|$target|$(sha256_file "$gitlinks")")"
+  printf '%s\n' "$missing"
+}
+
+cmd_ship_prepare() {
+  [ "$#" -eq 1 ] || die "usage: ship-prepare <stream>"
+  local stream="$1" shipment target branch_tip target_tip recorded_branch recorded_target raw units unit inputs gitlinks missing phase outcome next_action landing sync_base prior_gate hook_state instance identity fingerprint hook_body friction_inputs current_phase existing_ship_state keep_ship_hook
+  admit_stream "$stream"
+  shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
+  [ -z "$(git -C "$WT" status --porcelain --untracked-files=no)" ] || die "shipment preparation requires clean tracked work"
+  target="$(runbook_field "$RUNBOOK" target)"
+  landing="$(runbook_field "$RUNBOOK" landing)"
+  sync_base="$(git -C "$WT" rev-parse "$target")"
+  if [ "$landing" = push ] || [ "$landing" = pr ]; then
+    git -C "$WT" fetch -q origin "refs/heads/$target" || die "cannot fetch origin/$target"
+    sync_base="$(git -C "$WT" rev-parse FETCH_HEAD)"
+  fi
+
+  if [ -z "$shipment" ]; then
+    ! awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="active"{found=1} $1=="hook"&&$3=="state"&&($4=="ready"||$4=="running"){found=1} END{exit found?0:1}' "$TRACKER" || die "shipment preparation requires completed unit hooks"
+    units="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="complete" {print $2}' "$TRACKER")"
+    [ -n "$units" ] || die "no completed unit to ship"
+    shipment="$(tracker_get meta - next-shipment)"
+    branch_tip="$(git -C "$WT" rev-parse HEAD)"
+    inputs="$(sha256_text "$stream|$shipment|$units|$branch_tip|$sync_base|$landing|prepare")"
+    raw="$(mktemp "${TMPDIR:-/tmp}/workstream-shipment-allocate.XXXXXX")"
+    awk -F '\t' 'NR>1 && !(($1=="meta"&&$2=="-"&&$3=="next-shipment")||($1=="phase"&&$2=="-"&&($3=="name"||$3=="next-action")))' "$TRACKER" >"$raw"
+    printf 'meta\t-\tnext-shipment\t%s\nphase\t-\tname\tship\nphase\t-\tnext-action\tprepare-ship\n' "$((shipment + 1))" >>"$raw"
+    printf 'shipment\t%s\tphase\tprepare\nshipment\t%s\toutcome\tactive\nshipment\t%s\tbranch-tip\t%s\nshipment\t%s\ttarget-tip\t%s\nshipment\t%s\tinputs-sha256\t%s\n' \
+      "$shipment" "$shipment" "$shipment" "$branch_tip" "$shipment" "$sync_base" "$shipment" "$inputs" >>"$raw"
+    local idx=1
+    for unit in $units; do printf 'shipment-unit\t%s/%s\tunit\t%s\n' "$shipment" "$idx" "$unit" >>"$raw"; idx=$((idx + 1)); done
+    rewrite_tracker "$raw"; rm -f "$raw"
+  else
+    units="$(awk -F '\t' -v s="$shipment/" '$1=="shipment-unit"&&index($2,s)==1{print $4}' "$TRACKER")"
+  fi
+
+  current_phase="$(tracker_get shipment "$shipment" phase)"
+  recorded_branch="$(tracker_get shipment "$shipment" branch-tip)"
+  recorded_target="$(tracker_get shipment "$shipment" target-tip)"
+  branch_tip="$(git -C "$WT" rev-parse HEAD)"
+  prior_gate="$(awk -F '\t' -v s="$shipment" '$1=="gate"&&$2==s&&$3=="outcome"{print $4}' "$TRACKER")"
+
+  # Any changed candidate or target invalidates downstream evidence but never the
+  # shipment identity or immutable unit batch.
+  if [ "$sync_base" != "$recorded_target" ] || ! git -C "$WT" merge-base --is-ancestor "$sync_base" HEAD; then
+    raw="$(mktemp "${TMPDIR:-/tmp}/workstream-sync-receipt.XXXXXX")"
+    awk -F '\t' -v s="$shipment" 'NR>1 && $1!="delivery" && !(($1=="gate"&&$2==s)||($1=="gitlink"&&index($2,s "/")==1)||($1=="hook"&&index($2,"/shipment/" s "/ship-friction")>0)||($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"||$3=="target-tip"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+    [ "$current_phase" = prepare ] || grep -qF $'friction\t'"$shipment"$'/repeat-sync\tpresent\tyes' "$raw" || printf 'friction\t%s/repeat-sync\tpresent\tyes\n' "$shipment" >>"$raw"
+    printf 'shipment\t%s\tphase\tsync\nshipment\t%s\toutcome\tactive\nshipment\t%s\ttarget-tip\t%s\nphase\t-\tnext-action\tprepare-ship\n' "$shipment" "$shipment" "$shipment" "$sync_base" >>"$raw"
+    rewrite_tracker "$raw"; rm -f "$raw"
+    if ! git -C "$WT" merge-base --is-ancestor "$sync_base" HEAD; then
+      if ! git -C "$WT" rebase "$sync_base" >/dev/null 2>&1 && ! resolve_history_rebase_conflict; then
+        raw="$(mktemp "${TMPDIR:-/tmp}/workstream-sync-conflict.XXXXXX")"
+        tail -n +2 "$TRACKER" >"$raw"
+        grep -qF $'friction\t'"$shipment"$'/rebase-conflict\tpresent\tyes' "$raw" || printf 'friction\t%s/rebase-conflict\tpresent\tyes\n' "$shipment" >>"$raw"
+        awk -F '\t' -v s="$shipment" '!(($1=="shipment"&&$2==s&&$3=="outcome")||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$raw" >"$raw.next"; mv "$raw.next" "$raw"
+        printf 'shipment\t%s\toutcome\tblocked\nphase\t-\tnext-action\tblocked\n' "$shipment" >>"$raw"
+        rewrite_tracker "$raw"; rm -f "$raw"
+        printf 'status=conflict\nshipment=%s\nphase=sync\nnext_action=blocked\n' "$shipment"
+        return 1
+      fi
+    fi
+    branch_tip="$(git -C "$WT" rev-parse HEAD)"
+  fi
+
+  if [ "$branch_tip" != "$recorded_branch" ] || [ "$sync_base" != "$recorded_target" ]; then
+    instance="$(tracker_get meta - instance-id)"; identity="$(hook_identity "$stream" "$instance" shipment "$shipment" ship-friction)"
+    existing_ship_state="$(awk -F '\t' -v i="$identity" '$1=="hook"&&$2==i&&$3=="state"{print $4}' "$TRACKER")"
+    keep_ship_hook=no; case "$existing_ship_state" in complete|running) keep_ship_hook=yes ;; esac
+    raw="$(mktemp "${TMPDIR:-/tmp}/workstream-candidate-refresh.XXXXXX")"
+    awk -F '\t' -v s="$shipment" -v keep="$keep_ship_hook" 'NR>1 && $1!="delivery" && !(($1=="gate"&&$2==s)||($1=="gitlink"&&index($2,s "/")==1)||($1=="hook"&&index($2,"/shipment/" s "/ship-friction")>0&&keep!="yes")||($1=="shipment"&&$2==s&&($3=="branch-tip"||$3=="target-tip"||$3=="inputs-sha256"||$3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+    [ "$prior_gate" != failed ] || grep -qF $'friction\t'"$shipment"$'/gate-recovery\tpresent\tyes' "$raw" || printf 'friction\t%s/gate-recovery\tpresent\tyes\n' "$shipment" >>"$raw"
+    inputs="$(sha256_text "$stream|$shipment|$units|$branch_tip|$sync_base|$landing|candidate")"
+    printf 'shipment\t%s\tbranch-tip\t%s\nshipment\t%s\ttarget-tip\t%s\nshipment\t%s\tinputs-sha256\t%s\nshipment\t%s\tphase\tmetadata\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tprepare-ship\n' \
+      "$shipment" "$branch_tip" "$shipment" "$sync_base" "$shipment" "$inputs" "$shipment" "$shipment" >>"$raw"
+    rewrite_tracker "$raw"; rm -f "$raw"
+  fi
+
+  current_phase="$(tracker_get shipment "$shipment" phase)"
+  if [ "$branch_tip" = "$(tracker_get shipment "$shipment" branch-tip)" ] &&
+     [ "$sync_base" = "$(tracker_get shipment "$shipment" target-tip)" ]; then
+    case "$current_phase" in
+      ready-to-land)
+        printf 'status=ready\nshipment=%s\nbranch_tip=%s\ntarget_tip=%s\nnext_action=land\n' "$shipment" "$branch_tip" "$sync_base"
+        return
+        ;;
+      friction)
+        instance="$(tracker_get meta - instance-id)"; identity="$(hook_identity "$stream" "$instance" shipment "$shipment" ship-friction)"
+        hook_state="$(awk -F '\t' -v i="$identity" '$1=="hook"&&$2==i&&$3=="state"{print $4}' "$TRACKER")"
+        friction_inputs="$(awk -F '\t' -v s="$shipment" '$1=="friction"&&index($2,s "/")==1{print $2}' "$TRACKER" | LC_ALL=C sort | shasum -a 256 | awk '{print $1}')"
+        if [ "$hook_state" = not-applicable ] && [ "$(tracker_get hook "$identity" inputs-sha256)" != "$friction_inputs" ]; then
+          hook_body="$(mktemp "${TMPDIR:-/tmp}/workstream-friction-refresh.XXXXXX")"; runbook_hook_body "$RUNBOOK" ship-friction >"$hook_body"
+          raw="$(mktemp "${TMPDIR:-/tmp}/workstream-friction-refresh-rows.XXXXXX")"
+          awk -F '\t' -v i="$identity" 'NR>1&&!($1=="hook"&&$2==i)' "$TRACKER" >"$raw"
+          fingerprint="$(runbook_block_field "$RUNBOOK" 'hook:ship-friction' fingerprint)"
+          if grep -q '[^[:space:]]' "$hook_body"; then
+            hook_state=ready
+            emit_hook_receipt "$identity" ship-friction "$fingerprint" "$friction_inputs" ready >>"$raw"
+          else
+            hook_state=not-applicable
+            emit_hook_receipt "$identity" ship-friction "$fingerprint" "$friction_inputs" not-applicable "$(sha256_text "$friction_inputs|not-applicable")" >>"$raw"
+          fi
+          rewrite_tracker "$raw"; rm -f "$raw" "$hook_body"
+        fi
+        if [ "$hook_state" = complete ] || [ "$hook_state" = not-applicable ]; then
+          raw="$(mktemp "${TMPDIR:-/tmp}/workstream-ready.XXXXXX")"
+          awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+          printf 'shipment\t%s\tphase\tready-to-land\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tland\n' "$shipment" "$shipment" >>"$raw"
+          rewrite_tracker "$raw"; rm -f "$raw"
+          printf 'status=ready\nshipment=%s\nbranch_tip=%s\ntarget_tip=%s\nnext_action=land\n' "$shipment" "$branch_tip" "$sync_base"
+        else
+          printf 'status=resumed\nshipment=%s\nphase=friction\nhook_state=%s\nnext_action=prepare-ship\n' "$shipment" "${hook_state:-missing}"
+        fi
+        return
+        ;;
+      gate)
+        if [ "$prior_gate" = running ]; then
+          raw="$(mktemp "${TMPDIR:-/tmp}/workstream-gate-uncertain.XXXXXX")"
+          awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="gate"&&$2==s&&($3=="outcome"||$3=="evidence-sha256"))||($1=="shipment"&&$2==s&&$3=="outcome")||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+          printf 'gate\t%s\toutcome\tuncertain\ngate\t%s\tevidence-sha256\t%s\nshipment\t%s\toutcome\tblocked\nphase\t-\tnext-action\tblocked\n' "$shipment" "$shipment" "$(sha256_text interrupted-gate)" "$shipment" >>"$raw"
+          rewrite_tracker "$raw"; rm -f "$raw"; prior_gate=uncertain
+        fi
+        printf 'status=gate-required\nshipment=%s\nphase=gate\ngate_state=%s\nnext_action=%s\n' "$shipment" "${prior_gate:-required}" "$([ "$prior_gate" = uncertain ] && printf blocked || printf prepare-ship)"
+        return
+        ;;
+    esac
+  fi
+
+  if ! git -C "$WT" merge-base --is-ancestor "$sync_base" HEAD; then
+    die "synchronization did not make the recorded target an ancestor"
+  fi
+  prepare_history_metadata "$stream" "$shipment" "$units" "$target"
+  branch_tip="$(git -C "$WT" rev-parse HEAD)"
+  target_tip="$sync_base"
+  gitlinks="$(mktemp "${TMPDIR:-/tmp}/workstream-gitlinks.XXXXXX")"
+  missing="$(prepare_gitlink_rows "$shipment" "$target_tip" "$landing" "$gitlinks")"
+  inputs="$(sha256_text "$stream|$shipment|$units|$branch_tip|$target_tip|$target|$landing|$(sha256_file "$gitlinks")")"
   if [ "$missing" = yes ]; then phase=gitlinks; outcome=blocked; next_action=blocked; else phase=gate; outcome=active; next_action=prepare-ship; fi
   raw="$(mktemp "${TMPDIR:-/tmp}/workstream-shipment.XXXXXX")"
-  awk -F '\t' 'NR>1 && !(($1=="meta"&&$2=="-"&&$3=="next-shipment")||($1=="phase"&&$2=="-"&&($3=="name"||$3=="next-action")))' "$TRACKER" >"$raw"
-  printf 'meta\t-\tnext-shipment\t%s\nphase\t-\tname\tship\nphase\t-\tnext-action\t%s\n' "$((next + 1))" "$next_action" >>"$raw"
-  printf 'shipment\t%s\tphase\t%s\nshipment\t%s\toutcome\t%s\nshipment\t%s\tbranch-tip\t%s\nshipment\t%s\ttarget-tip\t%s\nshipment\t%s\tinputs-sha256\t%s\n' \
-    "$next" "$phase" "$next" "$outcome" "$next" "$branch_tip" "$next" "$target_tip" "$next" "$inputs" >>"$raw"
-  local idx=1
-  for unit in $units; do
-    printf 'shipment-unit\t%s/%s\tunit\t%s\n' "$next" "$idx" "$unit" >>"$raw"
-    idx=$((idx + 1))
-  done
-  cat "$gitlinks" >>"$raw"
+  awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="gate"&&$2==s)||($1=="gitlink"&&index($2,s "/")==1)||($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"||$3=="branch-tip"||$3=="target-tip"||$3=="inputs-sha256"))||($1=="phase"&&$2=="-"&&($3=="name"||$3=="next-action")))' "$TRACKER" >"$raw"
+  {
+    printf 'phase\t-\tname\tship\nphase\t-\tnext-action\t%s\n' "$next_action"
+    printf 'shipment\t%s\tphase\t%s\nshipment\t%s\toutcome\t%s\nshipment\t%s\tbranch-tip\t%s\nshipment\t%s\ttarget-tip\t%s\nshipment\t%s\tinputs-sha256\t%s\n' \
+      "$shipment" "$phase" "$shipment" "$outcome" "$shipment" "$branch_tip" "$shipment" "$target_tip" "$shipment" "$inputs"
+    cat "$gitlinks"
+  } >>"$raw"
   rm -f "$gitlinks"
   rewrite_tracker "$raw"
   rm -f "$raw"
   if [ "$missing" = yes ]; then
-    printf 'status=blocked\nshipment=%s\nphase=gitlinks\nnext_action=blocked\n' "$next"
+    printf 'status=blocked\nshipment=%s\nphase=gitlinks\nnext_action=blocked\n' "$shipment"
     return 1
   fi
-  printf 'status=prepared\nshipment=%s\nbranch_tip=%s\ntarget_tip=%s\nnext_action=prepare-ship\n' "$next" "$branch_tip" "$target_tip"
+  printf 'status=gate-required\nshipment=%s\nphase=gate\nbranch_tip=%s\ntarget_tip=%s\nnext_action=prepare-ship\n' "$shipment" "$branch_tip" "$target_tip"
+}
+
+build_gate_manifests() { # directory branch-tip transaction-base target-ref
+  local private="$1" branch_tip="$2" transaction_base="$3" target="$4" local_target generated_path
+  local_target="$(git -C "$WT" rev-parse "$target")"
+  git -C "$WT" diff --name-only -z "$transaction_base..$branch_tip" | LC_ALL=C sort -zu >"$private/own"
+  if [ "$local_target" = "$transaction_base" ]; then
+    : >"$private/incoming"
+  elif git -C "$WT" merge-base --is-ancestor "$local_target" "$transaction_base"; then
+    git -C "$WT" diff --name-only -z "$local_target..$transaction_base" | LC_ALL=C sort -zu >"$private/incoming"
+  else
+    die "local and transaction targets do not form a safe incoming delta"
+  fi
+  git -C "$WT" diff --name-only -z "$local_target..$branch_tip" | LC_ALL=C sort -zu >"$private/final"
+  : >"$private/generated"
+  generated_path=.streams/history.tsv
+  if tr '\0' '\n' <"$private/own" | grep -qxF "$generated_path"; then
+    validate_history "$WT/$generated_path"
+    printf '%s\0' "$generated_path" >"$private/generated"
+  fi
+  chmod 600 "$private/own" "$private/incoming" "$private/final" "$private/generated"
+}
+
+append_ship_friction_transition() { # stream shipment body-without-current-phase-rows
+  local sf_stream="$1" sf_shipment="$2" sf_raw="$3" sf_instance sf_identity sf_fingerprint sf_inputs sf_body sf_existing sf_filtered
+  sf_instance="$(tracker_get meta - instance-id)"
+  sf_identity="$(hook_identity "$sf_stream" "$sf_instance" shipment "$sf_shipment" ship-friction)"
+  sf_fingerprint="$(runbook_block_field "$RUNBOOK" 'hook:ship-friction' fingerprint)" || die "compiled ship hook is malformed"
+  sf_inputs="$(awk -F '\t' -v s="$sf_shipment" '$1=="friction"&&index($2,s "/")==1{print $2}' "$sf_raw" | LC_ALL=C sort | shasum -a 256 | awk '{print $1}')"
+  sf_body="$(mktemp "${TMPDIR:-/tmp}/workstream-friction-body.XXXXXX")"
+  runbook_hook_body "$RUNBOOK" ship-friction >"$sf_body"
+  sf_existing="$(awk -F '\t' -v i="$sf_identity" '$1=="hook"&&$2==i&&$3=="state"{print $4}' "$sf_raw")"
+  [ "$sf_existing" != running ] || { rm -f "$sf_body"; die "running ship hook cannot be replayed"; }
+  if [ -n "$sf_existing" ] && [ "$sf_existing" != complete ]; then
+    sf_filtered="$(mktemp "${TMPDIR:-/tmp}/workstream-hook-refresh.XXXXXX")"
+    awk -F '\t' -v i="$sf_identity" '!($1=="hook"&&$2==i)' "$sf_raw" >"$sf_filtered"
+    mv "$sf_filtered" "$sf_raw"
+  fi
+  if [ "$sf_existing" = complete ]; then
+    printf 'shipment\t%s\tphase\tready-to-land\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tland\n' "$sf_shipment" "$sf_shipment" >>"$sf_raw"
+  elif awk -F '\t' -v s="$sf_shipment/" '$1=="friction"&&index($2,s)==1{found=1}END{exit found?0:1}' "$sf_raw" && grep -q '[^[:space:]]' "$sf_body"; then
+    emit_hook_receipt "$sf_identity" ship-friction "$sf_fingerprint" "$sf_inputs" ready >>"$sf_raw"
+    printf 'shipment\t%s\tphase\tfriction\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tprepare-ship\n' "$sf_shipment" "$sf_shipment" >>"$sf_raw"
+  else
+    emit_hook_receipt "$sf_identity" ship-friction "$sf_fingerprint" "$sf_inputs" not-applicable "$(sha256_text "$sf_inputs|not-applicable")" >>"$sf_raw"
+    printf 'shipment\t%s\tphase\tready-to-land\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tland\n' "$sf_shipment" "$sf_shipment" >>"$sf_raw"
+  fi
+  rm -f "$sf_body"
+}
+
+cmd_gate_none() {
+  [ "$#" -eq 1 ] || die "usage: gate-none <stream>"
+  local stream="$1" shipment branch_tip target_tip target private raw inputs path next_action
+  admit_stream "$stream"
+  shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2;exit}' "$TRACKER")"; [ -n "$shipment" ] || die "no active shipment"
+  [ "$(tracker_get shipment "$shipment" phase)" = gate ] || die "shipment is not at gate"
+  branch_tip="$(tracker_get shipment "$shipment" branch-tip)"; target_tip="$(tracker_get shipment "$shipment" target-tip)"; target="$(runbook_field "$RUNBOOK" target)"
+  private="$(mktemp -d "${TMPDIR:-/tmp}/workstream-none.XXXXXX")"; chmod 700 "$private"
+  build_gate_manifests "$private" "$branch_tip" "$target_tip" "$target"
+  while IFS= read -r -d '' path; do
+    tr '\0' '\n' <"$private/generated" | grep -qxF "$path" || { rm -rf "$private"; die "none gate is illegal for build-relevant own changes"; }
+  done <"$private/own"
+  inputs="$(tracker_get shipment "$shipment" inputs-sha256)"
+  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-none-gate.XXXXXX")"
+  awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="gate"&&$2==s)||($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+  printf 'gate\t%s\tclass\tnone\ngate\t%s\tlabel\tno-build-relevant-own-changes\ngate\t%s\tinputs-sha256\t%s\ngate\t%s\toutcome\tpassed\n' "$shipment" "$shipment" "$shipment" "$inputs" "$shipment" >>"$raw"
+  append_ship_friction_transition "$stream" "$shipment" "$raw"
+  rewrite_tracker "$raw"; rm -f "$raw"; rm -rf "$private"
+  next_action="$(tracker_get phase - next-action)"
+  printf 'status=passed\nclass=none\nshipment=%s\nnext_action=%s\n' "$shipment" "$next_action"
 }
 
 cmd_gate_run() {
@@ -1208,9 +1599,9 @@ cmd_gate_run() {
   [ "$#" -gt 0 ] || die "gate-run requires argv"
   case "$class:$selector" in docs:no|full:no|semantic:yes) ;; *) die "illegal gate class/selector combination" ;; esac
   validate_text 'gate label' "$label"
-  [ "${#label}" -le 1024 ] || die "gate label exceeds 1024 bytes"
+  [ "$(LC_ALL=C printf '%s' "$label" | wc -c | tr -d ' ')" -le 1024 ] || die "gate label exceeds 1024 bytes"
   admit_stream "$stream"
-  local shipment inputs command_file output evidence command rc raw branch_tip target_tip shipment_phase private receipt receipt_status test_state combined prior_failed instance identity fingerprint hook_body hook_state friction_inputs existing_hook filtered
+  local shipment inputs command_file output evidence command rc raw branch_tip target_tip shipment_phase private private_identity parent_safe receipt receipt_status test_state combined prior_failed target current_target path
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
   [ -n "$shipment" ] || die "no active shipment"
   shipment_phase="$(tracker_get shipment "$shipment" phase)"
@@ -1231,19 +1622,36 @@ cmd_gate_run() {
     return
   fi
   [ "$shipment_phase" = gate ] || { rm -f "$command_file"; die "shipment is not at gate"; }
+  if awk -F '\t' -v s="$shipment" '$1=="gate"&&$2==s&&$3=="outcome"&&($4=="running"||$4=="uncertain"){bad=1}END{exit bad?0:1}' "$TRACKER"; then
+    rm -f "$command_file"; die "gate result is uncertain; change the candidate or reconcile attendedly before retry"
+  fi
   branch_tip="$(git -C "$WT" rev-parse HEAD)"
-  target_tip="$(git -C "$WT" rev-parse "$(runbook_field "$RUNBOOK" target)")"
+  target="$(runbook_field "$RUNBOOK" target)"; target_tip="$(tracker_get shipment "$shipment" target-tip)"
+  if [ "$(runbook_field "$RUNBOOK" landing)" = local ]; then current_target="$(git -C "$WT" rev-parse "$target")"; else current_target="$(remote_target_tip "$target")" || die "cannot verify remote target"; fi
   [ "$branch_tip" = "$(tracker_get shipment "$shipment" branch-tip)" ] || die "branch changed after preparation"
-  [ "$target_tip" = "$(tracker_get shipment "$shipment" target-tip)" ] || die "target changed after preparation"
+  [ "$current_target" = "$target_tip" ] || die "target changed after preparation; resume ship preparation"
   inputs="$(tracker_get shipment "$shipment" inputs-sha256)"
+  private="$(mktemp -d "${TMPDIR:-/tmp}/workstream-selector.XXXXXX")"; chmod 700 "$private"
+  private_identity="$(stat -f '%d:%i' "$private")"
+  build_gate_manifests "$private" "$branch_tip" "$target_tip" "$target"
+  if [ "$class" = docs ]; then
+    while IFS= read -r -d '' path; do
+      if tr '\0' '\n' <"$private/generated" | grep -qxF "$path"; then continue; fi
+      case "$path" in *.md) ;; *) rm -f "$command_file"; rm -rf "$private"; die "documentation gate is illegal for non-Markdown own path: $path" ;; esac
+    done <"$private/own"
+  fi
+  prior_failed="$(awk -F '\t' -v s="$shipment" '$1=="gate"&&$2==s&&$3=="outcome"&&$4=="failed"{print "yes"}' "$TRACKER")"
+  raw="$(mktemp "${TMPDIR:-/tmp}/workstream-gate-running.XXXXXX")"
+  awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="gate"&&$2==s)||($1=="shipment"&&$2==s&&$3=="outcome")||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
+  printf 'gate\t%s\tclass\t%s\ngate\t%s\tlabel\t%s\ngate\t%s\tinputs-sha256\t%s\ngate\t%s\tcommand-sha256\t%s\ngate\t%s\toutcome\trunning\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tblocked\n' \
+    "$shipment" "$class" "$shipment" "$label" "$shipment" "$inputs" "$shipment" "$command" "$shipment" "$shipment" >>"$raw"
+  rewrite_tracker "$raw"; rm -f "$raw"
+  if [ -n "${WORKSTREAM_TEST_AFTER_GATE_RUNNING:-}" ]; then "$WORKSTREAM_TEST_AFTER_GATE_RUNNING" "$TRACKER"; die "gate interrupted after recording running"; fi
   output="$(mktemp "${TMPDIR:-/tmp}/workstream-gate.XXXXXX")"; rc=0
   receipt_status=""
   if [ "$selector" = yes ]; then
-    private="$(mktemp -d "${TMPDIR:-/tmp}/workstream-selector.XXXXXX")"; chmod 700 "$private"
     receipt="$private/receipt.tsv"
-    git -C "$WT" diff --name-only -z "$target_tip..$branch_tip" >"$private/own"; : >"$private/incoming"
-    cp "$private/own" "$private/final"; printf '.streams/history.tsv\0' >"$private/generated"
-    chmod 600 "$private/own" "$private/incoming" "$private/final" "$private/generated"
+    parent_safe=yes
     (
       while IFS='=' read -r name _; do case "$name" in WORKSTREAM_GATE_*) unset "$name" ;; esac; done < <(env)
       WORKSTREAM_GATE_SCHEMA=workstream-gate@1; WORKSTREAM_GATE_ROOT="$ROOT"; WORKSTREAM_GATE_WORKTREE="$WT"
@@ -1256,7 +1664,10 @@ cmd_gate_run() {
       export WORKSTREAM_GATE_FINAL_MANIFEST WORKSTREAM_GATE_GENERATED_MANIFEST WORKSTREAM_GATE_RECEIPT
       cd "$WT" && "$@"
     ) >"$output" 2>&1 || rc=$?
-    if [ -f "$receipt" ] && [ ! -L "$receipt" ] && [ "$(wc -c <"$receipt" | tr -d ' ')" -le 4096 ] && \
+    if [ ! -d "$private" ] || [ -L "$private" ] || [ "$(stat -f '%d:%i' "$private" 2>/dev/null || true)" != "$private_identity" ]; then
+      parent_safe=no; receipt_status=uncertain; rc=1
+    fi
+    if [ "$parent_safe" = yes ] && [ -f "$receipt" ] && [ ! -L "$receipt" ] && [ "$(wc -c <"$receipt" | tr -d ' ')" -le 4096 ] && \
       [ "$(sed -n '1p' "$receipt")" = $'key\tvalue' ] && [ "$(sed -n '2p' "$receipt")" = $'schema\tworkstream-gate@1' ] && \
       [ "$(wc -l <"$receipt" | tr -d ' ')" -eq 4 ]; then
       receipt_status="$(awk -F '\t' 'NR==3&&$1=="outcome"&&($2=="passed"||$2=="failed"){print $2}' "$receipt")"
@@ -1269,11 +1680,14 @@ cmd_gate_run() {
     [ -f "$receipt" ] && [ ! -L "$receipt" ] && cat "$receipt" >>"$combined"
     evidence="$(sha256_file "$combined")"; rm -f "$combined"; rm -rf "$private"
   else
-    (cd "$WT" && "$@") >"$output" 2>&1 || rc=$?
+    (
+      while IFS='=' read -r name _; do case "$name" in WORKSTREAM_GATE_*) unset "$name" ;; esac; done < <(env)
+      cd "$WT" && "$@"
+    ) >"$output" 2>&1 || rc=$?
     evidence="$(sha256_file "$output")"
     receipt_status="$([ "$rc" -eq 0 ] && printf passed || printf failed)"
+    rm -rf "$private"
   fi
-  prior_failed="$(awk -F '\t' -v s="$shipment" '$1=="gate"&&$2==s&&$3=="outcome"&&$4=="failed"{print "yes"}' "$TRACKER")"
   raw="$(mktemp "${TMPDIR:-/tmp}/workstream-gaterows.XXXXXX")"
   awk -F '\t' -v s="$shipment" 'NR>1 && !(($1=="gate"&&$2==s)||($1=="shipment"&&$2==s&&($3=="phase"||$3=="outcome"))||($1=="phase"&&$2=="-"&&$3=="next-action"))' "$TRACKER" >"$raw"
   printf 'gate\t%s\tclass\t%s\ngate\t%s\tlabel\t%s\ngate\t%s\tinputs-sha256\t%s\ngate\t%s\tcommand-sha256\t%s\ngate\t%s\toutcome\t%s\ngate\t%s\tevidence-sha256\t%s\n' \
@@ -1282,37 +1696,14 @@ cmd_gate_run() {
     if [ "$prior_failed" = yes ] && ! grep -qF $'friction\t'"$shipment"$'/gate-recovery\tpresent\tyes' "$raw"; then
       printf 'friction\t%s/gate-recovery\tpresent\tyes\n' "$shipment" >>"$raw"
     fi
-    instance="$(tracker_get meta - instance-id)"; identity="$stream/$instance/shipment/$shipment/ship-friction"
-    fingerprint="$(runbook_block_field "$RUNBOOK" 'hook:ship-friction' fingerprint)" || die "compiled ship hook is malformed"
-    friction_inputs="$(awk -F '\t' -v s="$shipment" '$1=="friction"&&index($2,s "/")==1{print $2}' "$raw" | LC_ALL=C sort | shasum -a 256 | awk '{print $1}')"
-    hook_body="$(mktemp "${TMPDIR:-/tmp}/workstream-friction-body.XXXXXX")"; runbook_hook_body "$RUNBOOK" ship-friction >"$hook_body"
-    existing_hook="$(awk -F '\t' -v i="$identity" '$1=="hook"&&$2==i&&$3=="state"{print $4}' "$raw")"
-    [ "$existing_hook" != running ] || { rm -f "$raw" "$command_file" "$output" "$hook_body"; die "running ship hook cannot be replayed"; }
-    if [ -n "$existing_hook" ] && [ "$existing_hook" != complete ]; then
-      filtered="$(mktemp "${TMPDIR:-/tmp}/workstream-hook-refresh.XXXXXX")"
-      awk -F '\t' -v i="$identity" '!($1=="hook"&&$2==i)' "$raw" >"$filtered"; mv "$filtered" "$raw"
-    fi
-    if [ "$existing_hook" = complete ]; then
-      hook_state=complete
-      printf 'shipment\t%s\tphase\tready-to-land\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tland\n' "$shipment" "$shipment" >>"$raw"
-    elif grep -qF $'friction\t' "$raw" && grep -q '[^[:space:]]' "$hook_body"; then
-      hook_state=ready
-      printf 'hook\t%s\tfingerprint\t%s\nhook\t%s\tinputs-sha256\t%s\nhook\t%s\tname\tship-friction\nhook\t%s\tstate\tready\n' "$identity" "$fingerprint" "$identity" "$friction_inputs" "$identity" "$identity" >>"$raw"
-      printf 'shipment\t%s\tphase\tfriction\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tprepare-ship\n' "$shipment" "$shipment" >>"$raw"
-    else
-      hook_state=not-applicable
-      printf 'hook\t%s\tevidence-sha256\t%s\nhook\t%s\tfingerprint\t%s\nhook\t%s\tinputs-sha256\t%s\nhook\t%s\tname\tship-friction\nhook\t%s\tstate\tnot-applicable\n' \
-        "$identity" "$(sha256_text "$friction_inputs|not-applicable")" "$identity" "$fingerprint" "$identity" "$friction_inputs" "$identity" "$identity" >>"$raw"
-      printf 'shipment\t%s\tphase\tready-to-land\nshipment\t%s\toutcome\tactive\nphase\t-\tnext-action\tland\n' "$shipment" "$shipment" >>"$raw"
-    fi
-    rm -f "$hook_body"
+    append_ship_friction_transition "$stream" "$shipment" "$raw"
   else
     printf 'shipment\t%s\tphase\tgate\nshipment\t%s\toutcome\tblocked\nphase\t-\tnext-action\tblocked\n' "$shipment" "$shipment" >>"$raw"
   fi
   rewrite_tracker "$raw"
   rm -f "$raw" "$command_file"
   printf 'status=%s\nclass=%s\nlabel=%s\nevidence_sha256=%s\noutput_tail:\n' "$receipt_status" "$class" "$label" "$evidence"
-  tail -n 7 "$output" | awk '{ print substr($0,1,1024) }'
+  tail -n 7 "$output" | LC_ALL=C awk '{ print substr($0,1,1024) }'
   rm -f "$output"
   [ "$receipt_status" = passed ]
 }
@@ -1337,11 +1728,14 @@ remote_target_tip() {
 
 cmd_land_advance() {
   [ "$#" -eq 3 ] && [ "$2" = --authority ] && [ "$3" = confirmed ] || die "landing requires --authority confirmed"
-  local stream="$1" shipment candidate expected target observed delivery state rc isolation landing remote_expected raw
+  local stream="$1" shipment shipment_phase candidate expected target observed delivery state rc isolation landing remote_expected local_expected raw
   admit_stream "$stream"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
   [ -n "$shipment" ] || die "no active shipment"
-  if [ "$(tracker_get shipment "$shipment" phase)" = postflight ] && \
+  shipment_phase="$(tracker_get shipment "$shipment" phase)"
+  case "$shipment_phase" in ready-to-land|advance|postflight) ;; *) die "shipment is not ready to land" ;; esac
+  [ "$(tracker_get gate "$shipment" outcome)" = passed ] || die "shipment gate has not passed"
+  if [ "$shipment_phase" = postflight ] && \
     [ "$(tracker_get shipment "$shipment" outcome)" = landed ]; then
     candidate="$(tracker_get shipment "$shipment" branch-tip)"
     target="$(runbook_field "$RUNBOOK" target)"
@@ -1352,7 +1746,6 @@ cmd_land_advance() {
     printf 'status=already-landed\nshipment=%s\ncandidate=%s\nnext_action=postflight\n' "$shipment" "$candidate"
     return
   fi
-  case "$(tracker_get shipment "$shipment" phase)" in ready-to-land|advance) ;; *) die "shipment is not ready to land" ;; esac
   candidate="$(tracker_get shipment "$shipment" branch-tip)"
   expected="$(tracker_get shipment "$shipment" target-tip)"
   target="$(runbook_field "$RUNBOOK" target)"
@@ -1364,10 +1757,11 @@ cmd_land_advance() {
   state="$(awk -F '\t' -v i="$delivery" '$1=="delivery"&&$2==i&&$3=="state"{print $4}' "$TRACKER")"
   if [ "$landing" = push ] && [ -z "$state" ]; then
     remote_expected="$(remote_target_tip "$target")" || die "cannot verify remote target before delivery"
+    local_expected="$(git -C "$ROOT" rev-parse "$target")"
     raw="$(mktemp "${TMPDIR:-/tmp}/workstream-delivery-ready.XXXXXX")"
     awk -F '\t' -v s="$shipment" 'NR>1 && !($1=="delivery"&&index($2,s "/")==1)' "$TRACKER" >"$raw"
     printf 'delivery\t%s/local-target\tcandidate-tip\t%s\ndelivery\t%s/local-target\texpected-tip\t%s\ndelivery\t%s/local-target\tstate\tready\n' \
-      "$shipment" "$candidate" "$shipment" "$expected" "$shipment" >>"$raw"
+      "$shipment" "$candidate" "$shipment" "$local_expected" "$shipment" >>"$raw"
     printf 'delivery\t%s/remote-target\tcandidate-tip\t%s\ndelivery\t%s/remote-target\texpected-tip\t%s\ndelivery\t%s/remote-target\tstate\tready\n' \
       "$shipment" "$candidate" "$shipment" "$remote_expected" "$shipment" >>"$raw"
     rewrite_tracker "$raw"; rm -f "$raw"; state=ready
@@ -1401,7 +1795,7 @@ cmd_land_advance() {
       state=rejected
     fi
   fi
-  if [ "$observed" = "$candidate" ]; then
+  if [ "$observed" = "$candidate" ] || git -C "$ROOT" merge-base --is-ancestor "$candidate" "$observed" 2>/dev/null; then
     state=advanced
     if [ "$landing" = local ]; then
       record_delivery "$shipment" "$delivery" "$candidate" "$expected" "$observed" advanced postflight landed postflight
@@ -1444,7 +1838,8 @@ cmd_land_advance() {
       state=rejected
     fi
   fi
-  if [ "$observed" = "$candidate" ]; then
+  git -C "$ROOT" fetch -q origin "refs/heads/$target" >/dev/null 2>&1 || true
+  if [ "$observed" = "$candidate" ] || git -C "$ROOT" merge-base --is-ancestor "$candidate" "${observed}^{commit}" 2>/dev/null; then
     record_delivery "$shipment" "$delivery" "$candidate" "$remote_expected" "$observed" advanced postflight landed postflight
     printf 'status=landed\nshipment=%s\ncandidate=%s\nnext_action=postflight\n' "$shipment" "$candidate"
   else
@@ -1564,11 +1959,11 @@ cmd_list() {
 cmd_ship_finalize() {
   [ "$#" -eq 1 ] || { [ "$#" -eq 3 ] && [ "$2" = --note ]; } || die "usage: ship-finalize <stream> [--note <note>]"
   local stream="$1" shipment candidate target raw note="" landing remote
-  if [ "$#" -eq 3 ]; then note="$3"; cmd_operator_note "$stream" "$note" >/dev/null; fi
   admit_stream "$stream"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
   if [ -z "$shipment" ]; then
     [ "$(tracker_get queue - state)" = exhausted ] || die "no shipment to finalize"
+    if [ "$#" -eq 3 ]; then note="$3"; cmd_operator_note "$stream" "$note" >/dev/null; fi
     printf 'status=already-finalized\nnext_action=close\n'
     return
   fi
@@ -1586,9 +1981,12 @@ cmd_ship_finalize() {
     git -C "$ROOT" merge-base --is-ancestor "$candidate" "$target" || die "landed candidate is not on target"
     if [ "$landing" = push ]; then
       remote="$(remote_target_tip "$target")" || die "cannot verify pushed target"
-      [ "$remote" = "$candidate" ] || die "remote target no longer matches the landed candidate"
+      git -C "$ROOT" fetch -q origin "refs/heads/$target" || die "cannot fetch pushed target"
+      [ "$(git -C "$ROOT" rev-parse FETCH_HEAD)" = "$remote" ] || die "fetched pushed target differs"
+      git -C "$ROOT" merge-base --is-ancestor "$candidate" FETCH_HEAD || die "remote target no longer contains the landed candidate"
     fi
   fi
+  if [ "$#" -eq 3 ]; then note="$3"; cmd_operator_note "$stream" "$note" >/dev/null; fi
   raw="$(mktemp "${TMPDIR:-/tmp}/workstream-final.XXXXXX")"
   awk -F '\t' 'NR>1 && $1!="unit" && $1!="unit-subject" && $1!="hook" && $1!="shipment" && $1!="shipment-unit" && $1!="friction" && $1!="gate" && $1!="gitlink" && $1!="delivery" && !(($1=="queue"&&$2=="-"&&($3=="cursor"||$3=="state"))||($1=="phase"&&$2=="-"&&($3=="name"||$3=="next-action")))' "$TRACKER" >"$raw"
   printf 'queue\t-\tcursor\t-\nqueue\t-\tstate\texhausted\nphase\t-\tname\tnone\nphase\t-\tnext-action\tclose\n' >>"$raw"
@@ -1617,13 +2015,25 @@ cmd_delivery_classify() {
 
 cmd_reconcile_partial() {
   [ "$#" -eq 3 ] && [ "$2" = --authority ] && [ "$3" = confirmed ] || die "usage: reconcile-partial <stream> --authority confirmed"
-  local stream="$1" shipment classifier candidate divergent raw new inputs first second
+  local stream="$1" shipment classifier candidate divergent raw new inputs first second local_observed remote_observed target remote_actual
   admit_stream "$stream"
+  [ "$(runbook_field "$RUNBOOK" landing)" = push ] || die "partial reconciliation applies only to push delivery"
   classifier="$(cmd_delivery_classify "$stream" | sed -n 's/^classifier=//p')"
   [ "$classifier" = partial-delivery ] || die "delivery is not partial"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2;exit}' "$TRACKER")"
+  case "$(tracker_get shipment "$shipment" phase)" in advance|friction) ;; *) die "partial shipment is not in delivery recovery" ;; esac
   candidate="$(tracker_get delivery "$shipment/local-target" candidate-tip)"
   divergent="$(tracker_get delivery "$shipment/remote-target" observed-tip)"
+  [ "$(tracker_get delivery "$shipment/remote-target" candidate-tip)" = "$candidate" ] || die "destination candidates disagree"
+  local_observed="$(tracker_get delivery "$shipment/local-target" observed-tip)"
+  remote_observed="$(tracker_get delivery "$shipment/remote-target" observed-tip)"
+  target="$(runbook_field "$RUNBOOK" target)"
+  [ "$(git -C "$ROOT" rev-parse "$target")" = "$local_observed" ] || die "local destination moved since its receipt"
+  remote_actual="$(remote_target_tip "$target")" || die "remote destination cannot be verified"
+  [ "$remote_actual" = "$remote_observed" ] || die "remote destination moved since its receipt"
+  git -C "$WT" fetch -q origin "refs/heads/$target" || die "cannot fetch divergent remote destination"
+  [ "$(git -C "$WT" rev-parse FETCH_HEAD)" = "$remote_actual" ] || die "fetched divergent destination differs"
+  if [ "$local_observed" != "$candidate" ]; then divergent="$local_observed"; fi
   [ "$(git -C "$WT" rev-parse HEAD)" = "$candidate" ] || die "candidate no longer matches the stream"
   git -C "$WT" cat-file -e "$divergent^{commit}" 2>/dev/null || die "divergent destination object is unavailable"
   if git -C "$WT" merge-base --is-ancestor "$candidate" "$divergent" || \
@@ -1737,7 +2147,10 @@ render_control_readme() {
   if [ ! -e "$incumbent" ]; then cp "$block" "$output"; return; fi
   [ -f "$incumbent" ] && [ ! -L "$incumbent" ] || die "README is unsafe"
   starts="$(grep -cFx '<!-- workstream:control@1 -->' "$incumbent" || true)"; ends="$(grep -cFx '<!-- /workstream:control@1 -->' "$incumbent" || true)"
-  [ "$starts" -le 1 ] && [ "$ends" -le 1 ] && [ "$starts" -eq "$ends" ] || die "README control markers conflict"
+  if ! { [ "$starts" -le 1 ] && [ "$ends" -le 1 ] && [ "$starts" -eq "$ends" ] &&
+    validate_marker_span "$incumbent" '<!-- workstream:control@1 -->' '<!-- /workstream:control@1 -->'; }; then
+    die "README control markers conflict"
+  fi
   if [ "$starts" -eq 0 ]; then
     cat "$incumbent" >"$output"; [ ! -s "$output" ] || printf '\n' >>"$output"; cat "$block" >>"$output"
   else
@@ -1819,11 +2232,7 @@ reconstruct_idle_tracker() { # stream
     next="$(awk -F '\t' -v s="$stream" 'NR>1&&$1==s&&$2+0>=m{m=$2+1}END{print m+0}' "$history")"; [ "$next" -gt 0 ] || next=1
   fi
   before="$(file_fingerprint "$RUNBOOK")"; candidate="$(mktemp "${TMPDIR:-/tmp}/workstream-repair-tracker.XXXXXX")"
-  {
-    printf 'record\tid\tfield\tvalue\nmeta\t-\tschema\tworkstream@1\nmeta\t-\tinstance-id\t%s\n' "$instance"
-    printf 'meta\t-\tnext-shipment\t%s\nmeta\t-\tnext-unit\t%s\nmeta\t-\trunbook-contract-sha256\t%s\n' "$next" "$next" "$runbook_hash"
-    printf 'queue\t-\tcursor\t-\nqueue\t-\tsource-kind\tbrief\nqueue\t-\tstate\tintake\nphase\t-\tname\tnone\nphase\t-\tnext-action\tdefine-unit\n'
-  } >"$candidate"
+  emit_tracker_base "$instance" "$next" "$next" "$runbook_hash" - brief intake define-unit >"$candidate"
   validate_tracker "$candidate"; current="$(file_fingerprint "$RUNBOOK")"; [ "$current" = "$before" ] || { rm -f "$candidate"; die "runbook changed during tracker reconstruction"; }
   temp="$(mktemp "$RUNTIME/.workstream.tsv.XXXXXX")"; cp "$candidate" "$temp"; rm -f "$candidate"; chmod 600 "$temp"
   [ ! -e "$TRACKER" ] && [ ! -L "$TRACKER" ] || { rm -f "$temp"; die "tracker appeared during reconstruction"; }
@@ -1861,7 +2270,11 @@ anchor_classify() {
   if [ ! -e "$file" ]; then printf absent; return; fi
   [ -f "$file" ] && [ ! -L "$file" ] || { printf error; return; }
   starts="$(grep -cFx '<!-- workstream:recovery-anchor@1 -->' "$file" || true)"; ends="$(grep -cFx '<!-- /workstream:recovery-anchor@1 -->' "$file" || true)"
-  [ "$starts" -eq 1 ] && [ "$ends" -eq 1 ] || { [ "$starts" -eq 0 ] && [ "$ends" -eq 0 ] && printf absent || printf conflict; return; }
+  if ! { [ "$starts" -eq 1 ] && [ "$ends" -eq 1 ] &&
+    validate_marker_span "$file" '<!-- workstream:recovery-anchor@1 -->' '<!-- /workstream:recovery-anchor@1 -->'; }; then
+      [ "$starts" -eq 0 ] && [ "$ends" -eq 0 ] && printf absent || printf conflict
+      return
+  fi
   extracted="$(mktemp "${TMPDIR:-/tmp}/workstream-anchor-current.XXXXXX")"
   awk '$0=="<!-- workstream:recovery-anchor@1 -->"{inside=1} inside{print} $0=="<!-- /workstream:recovery-anchor@1 -->"{inside=0}' "$file" >"$extracted"
   if cmp -s "$extracted" "$block"; then printf current; else printf drifted; fi
@@ -1869,7 +2282,7 @@ anchor_classify() {
 }
 
 cmd_anchor() {
-  local action="${1:-status}" front="${2:-$ROOT/AGENTS.md}" parent block classification output
+  local action="${1:-status}" front="${2:-$ROOT/AGENTS.md}" parent block classification output before current
   [ "$#" -le 2 ] || die "usage: anchor [status|install|refresh|remove] [front-door]"
   case "$action" in status|install|refresh|remove) ;; *) die "invalid anchor action" ;; esac
   case "$front" in /*) ;; *) front="$ROOT/$front" ;; esac
@@ -1878,6 +2291,7 @@ cmd_anchor() {
   case "$parent/" in "$ROOT/"*) ;; *) die "anchor front door escapes root" ;; esac
   front="$parent/$(basename "$front")"
   block="$(mktemp "${TMPDIR:-/tmp}/workstream-anchor.XXXXXX")"; emit_recovery_anchor >"$block"
+  before="$(file_fingerprint "$front")"
   classification="$(anchor_classify "$front" "$block")"
   if [ "$action" = status ]; then rm -f "$block"; printf 'status=%s\nfront_door=%s\n' "$classification" "$front"; return; fi
   [ "$classification" != conflict ] && [ "$classification" != error ] || { rm -f "$block"; die "anchor state is $classification"; }
@@ -1897,6 +2311,7 @@ cmd_anchor() {
     awk -v block="$block" '$0=="<!-- workstream:recovery-anchor@1 -->"{while((getline line < block)>0)print line;close(block);inside=1;next} $0=="<!-- /workstream:recovery-anchor@1 -->"{inside=0;next} !inside{print}' "$front" >"$output"
   fi
   [ "$(anchor_classify "$front" "$block")" = "$classification" ] || { rm -f "$block" "$output"; die "anchor changed concurrently"; }
+  current="$(file_fingerprint "$front")"; [ "$current" = "$before" ] || { rm -f "$block" "$output"; die "anchor front door changed concurrently"; }
   write_atomic_file "$front" "$output" 644
   rm -f "$block" "$output"
   printf 'status=%s\nfront_door=%s\nprevious=%s\n' "$([ "$action" = remove ] && printf removed || printf installed)" "$front" "$classification"
@@ -1905,7 +2320,7 @@ cmd_anchor() {
 cmd_reconfig() {
   [ "$#" -ge 1 ] || die "usage: reconfig <stream> [--mode <mode>] [--landing <landing>] [--ship-cadence <cadence>] [--inherit <field>]..."
   local stream="$1"; shift
-  local purpose branch target generated managed candidate old_hash new_hash raw before current temp
+  local purpose branch target source_kind source_pointer generated managed candidate old_hash new_hash raw before current temp config_before config_current
   local mode_opt="" landing_opt="" cadence_opt="" inherit_mode=no inherit_landing=no inherit_cadence=no field
   local old_mode old_mode_source old_landing old_landing_source old_cadence old_cadence_source old_isolation old_isolation_source
   while [ "$#" -gt 0 ]; do
@@ -1936,6 +2351,7 @@ cmd_reconfig() {
   old_landing="$(runbook_policy_part "$RUNBOOK" landing 2)"; old_landing_source="$(runbook_policy_part "$RUNBOOK" landing 3)"
   old_cadence="$(runbook_policy_part "$RUNBOOK" ship-cadence 2)"; old_cadence_source="$(runbook_policy_part "$RUNBOOK" ship-cadence 3)"
   old_isolation="$(runbook_field "$RUNBOOK" isolation)"; old_isolation_source="$(runbook_policy_part "$RUNBOOK" isolation 3)"
+  config_before="$(file_fingerprint "$ROOT/.streams/CONFIG.md")"
   compile_config
   if [ "$old_isolation_source" = explicit ]; then
     ISOLATION="$old_isolation"; ISOLATION_SOURCE=explicit
@@ -1949,7 +2365,8 @@ cmd_reconfig() {
   [ "$ISOLATION" != worktree ] || [ "$LANDING" = local ] || die "worktree isolation requires local landing"
   DEFAULTS_FINGERPRINT="$(sha256_text "mode=$MODE|isolation=$ISOLATION|landing=$LANDING|ship-cadence=$SHIP_CADENCE")"
   purpose="$(runbook_block_field "$RUNBOOK" brief purpose)"; branch="$(runbook_field "$RUNBOOK" branch)"; target="$(runbook_field "$RUNBOOK" target)"
-  generated="$(mktemp "${TMPDIR:-/tmp}/workstream-reconfig-generated.XXXXXX")"; emit_runbook "$stream" "$(tracker_get meta - instance-id)" "$branch" "$target" "$purpose" >"$generated"
+  source_kind="$(runbook_block_field "$RUNBOOK" brief queue-source-kind)"; source_pointer="$(runbook_block_field "$RUNBOOK" brief queue-source)"
+  generated="$(mktemp "${TMPDIR:-/tmp}/workstream-reconfig-generated.XXXXXX")"; emit_runbook "$stream" "$(tracker_get meta - instance-id)" "$branch" "$target" "$purpose" "$source_kind" "$source_pointer" >"$generated"
   rm -f "$FEATURE_BODY" "$FRICTION_BODY"
   managed="$(mktemp "${TMPDIR:-/tmp}/workstream-reconfig-managed.XXXXXX")"
   awk '/^<!-- workstream:policy@1 -->$/{inside=1} inside{print} /^<!-- \/workstream:hook:ship-friction@1 -->$/{inside=0;exit}' "$generated" >"$managed"
@@ -1961,11 +2378,16 @@ cmd_reconfig() {
   ' "$RUNBOOK" >"$candidate"
   old_hash="$(tracker_get meta - runbook-contract-sha256)"; new_hash="$(runbook_contract_hash "$candidate")"
   if [ "$old_hash" = "$new_hash" ]; then rm -f "$generated" "$managed" "$candidate"; printf 'status=unchanged\n'; return; fi
+  if [ -n "${WORKSTREAM_TEST_BEFORE_RECONFIG_CONFIG_RECHECK:-}" ]; then "$WORKSTREAM_TEST_BEFORE_RECONFIG_CONFIG_RECHECK" "$ROOT/.streams/CONFIG.md"; fi
+  config_current="$(file_fingerprint "$ROOT/.streams/CONFIG.md")"
+  [ "$config_current" = "$config_before" ] || { rm -f "$generated" "$managed" "$candidate"; die "configuration changed during reconfig"; }
+  current="$(file_fingerprint "$RUNBOOK")"
+  [ "$current" = "$RUNBOOK_FINGERPRINT" ] || { rm -f "$generated" "$managed" "$candidate"; die "runbook changed during reconfig"; }
   printf 'status=preview\nold_contract=%s\nnew_contract=%s\n' "$old_hash" "$new_hash"
   raw="$(mktemp "${TMPDIR:-/tmp}/workstream-reconfig-pending.XXXXXX")"; tail -n +2 "$TRACKER" >"$raw"
   printf 'meta\t-\tpending-runbook-contract-sha256\t%s\n' "$new_hash" >>"$raw"; rewrite_tracker "$raw"; rm -f "$raw"
   if [ -n "${WORKSTREAM_TEST_AFTER_RECONFIG_PENDING:-}" ]; then "$WORKSTREAM_TEST_AFTER_RECONFIG_PENDING" "$TRACKER"; die "reconfig interrupted after pending receipt"; fi
-  before="$(file_fingerprint "$RUNBOOK")"; temp="$(mktemp "$RUNTIME/.WORKSTREAM.md.XXXXXX")"; cp "$candidate" "$temp"; chmod 600 "$temp"
+  before="$RUNBOOK_FINGERPRINT"; temp="$(mktemp "$RUNTIME/.WORKSTREAM.md.XXXXXX")"; cp "$candidate" "$temp"; chmod 600 "$temp"
   current="$(file_fingerprint "$RUNBOOK")"; [ "$current" = "$before" ] || { rm -f "$temp"; die "runbook changed during reconfig"; }
   mv -f "$temp" "$RUNBOOK"
   rm -f "$generated" "$managed" "$candidate"
@@ -1975,9 +2397,10 @@ cmd_reconfig() {
 
 migration_stage() { # manifest stream stage
   local manifest="$1" stream="$2" stage="$3" temp
-  temp="$(mktemp "$ROOT/.streams/.migration.tsv.XXXXXX")"
+  temp="$(mktemp "${TMPDIR:-/tmp}/workstream-migration-inventory.XXXXXX")"
   awk -F '\t' -v OFS='\t' -v s="$stream" -v stage="$stage" 'NR==1{print;next} $1==s{$7=stage;found++} {print} END{if(found!=1)exit 2}' "$manifest" >"$temp" || { rm -f "$temp"; die "migration manifest is inconsistent"; }
-  mv -f "$temp" "$manifest"
+  write_atomic_file "$manifest" "$temp" 600
+  rm -f "$temp"
 }
 
 legacy_handoff_field() { # file key
@@ -2002,21 +2425,22 @@ legacy_feature_hook() { # file output
 }
 
 build_migration_manifest() { # old-home manifest
-  local old_home="$1" manifest="$2" temp old stream destination registered kind branch target instance
+  local old_home="$1" manifest="$2" temp old stream destination registered kind branch target instance tip handoff handoff_hash checkout boundary commit_count
   [ -d "$old_home" ] && [ ! -L "$old_home" ] || die "legacy stream home is unsafe"
   if find "$old_home" -mindepth 1 -maxdepth 1 ! -type d -print -quit | grep -q .; then die "legacy stream home contains an unknown child"; fi
-  temp="$(mktemp "$ROOT/.streams/.migration.tsv.XXXXXX")"
-  printf 'stream\told\tnew\tkind\tbranch\ttarget\tstage\tinstance\n' >"$temp"
+  temp="$(mktemp "${TMPDIR:-/tmp}/workstream-migration-inventory.XXXXXX")"
+  printf 'stream\told\tnew\tkind\tbranch\ttarget\tstage\tinstance\ttip\thandoff-sha256\tboundary\tcommit-count\n' >"$temp"
   while IFS= read -r old; do
     [ -d "$old" ] && [ ! -L "$old" ] || die "legacy child is not a directory"
     stream="$(basename "$old")"; validate_stream_name "$stream"; destination="$ROOT/.streams/$stream"
     [ ! -e "$destination" ] && [ ! -L "$destination" ] || die "migration destination collides: $stream"
-    [ ! -d "$old/.streams" ] || die "legacy worktree contains nested stream state: $stream"
+    [ ! -d "$old/.streams" ] && [ ! -d "$old/.workstreams" ] || die "legacy worktree contains nested stream state: $stream"
+    handoff="$old/WORKSTREAM.md"; [ -f "$handoff" ] && [ ! -L "$handoff" ] || die "legacy handoff is missing or unsafe: $stream"
     registered="$(git -C "$ROOT" worktree list --porcelain | awk -v p="$old" '$1=="worktree"&&$2==p{print $2}')"
     if [ "$registered" = "$old" ]; then
-      kind=worktree; branch="$(git -C "$old" branch --show-current)"
+      kind=worktree; branch="$(git -C "$old" branch --show-current)"; checkout="$old"
     elif [ -f "$old/WORKSTREAM.md" ] && grep -qE '^- isolation:[[:space:]]*in-place|^isolation[[:space:]]+in-place$' "$old/WORKSTREAM.md"; then
-      kind=in-place; branch="$(sed -n -E 's/^- branch:[[:space:]]*//p; s/^branch[[:space:]]+//p' "$old/WORKSTREAM.md" | head -n 1)"
+      kind=in-place; branch="$(sed -n -E 's/^- branch:[[:space:]]*//p; s/^branch[[:space:]]+//p' "$old/WORKSTREAM.md" | head -n 1)"; checkout="$ROOT"
       [ -n "$branch" ] || branch="stream/$stream"
     else
       die "legacy child has ambiguous topology: $stream"
@@ -2024,32 +2448,76 @@ build_migration_manifest() { # old-home manifest
     validate_ref "$branch"
     target="$(sed -n -E 's/^- integration-target:[[:space:]]*//p; s/^- target:[[:space:]]*//p; s/^target[[:space:]]+//p' "$old/WORKSTREAM.md" 2>/dev/null | head -n 1)"
     if [ -z "$target" ]; then git -C "$ROOT" show-ref --verify --quiet refs/heads/main || die "legacy target is missing: $stream"; target=main; fi
-    validate_ref "$target"; instance="$(mint_instance_id)"
-    printf '%s\t%s\t%s\t%s\t%s\t%s\tpending\t%s\n' "$stream" "$old" "$destination" "$kind" "$branch" "$target" "$instance" >>"$temp"
+    validate_ref "$target"
+    [ -z "$(git -C "$checkout" status --porcelain --untracked-files=no)" ] || die "legacy stream has uncommitted tracked state: $stream"
+    ! git -C "$checkout" rev-parse -q --verify REBASE_HEAD >/dev/null 2>&1 || die "legacy stream has an interrupted rebase: $stream"
+    tip="$(git -C "$checkout" rev-parse "$branch^{commit}")"; boundary="$(git -C "$checkout" rev-parse "$target^{commit}")"
+    git -C "$checkout" merge-base --is-ancestor "$boundary" "$tip" || die "legacy stream has divergent target state: $stream"
+    commit_count="$(git -C "$checkout" rev-list --count "$boundary..$tip")"
+    handoff_hash="$(sha256_file "$handoff")"; instance="$(mint_instance_id)"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\tpending\t%s\t%s\t%s\t%s\t%s\n' "$stream" "$old" "$destination" "$kind" "$branch" "$target" "$instance" "$tip" "$handoff_hash" "$boundary" "$commit_count" >>"$temp"
   done < <(find "$old_home" -mindepth 1 -maxdepth 1 -type d -print | LC_ALL=C sort)
-  mv -f "$temp" "$manifest"
+  write_atomic_file "$manifest" "$temp" 600
+  rm -f "$temp"
 }
 
 cmd_migrate() {
   local action="${1:-inventory}" old_home="$ROOT/.workstreams" new_home="$ROOT/.streams" manifest="$ROOT/.streams/.migration.tsv"
-  local stream old destination kind branch target stage instance count=0 purpose runbook_temp tracker_temp runbook_hash next history legacy
+  local stream old destination kind branch target stage instance tip handoff_hash boundary commit_count count=0 purpose runbook_temp tracker_temp runbook_hash next history legacy checkout current_set approved_set old_mode_check old_landing_check old_cadence_check source_kind_check cursor_check subject index
   local old_mode old_landing old_cadence source_kind cursor queue_state
   [ "$#" -eq 1 ] || die "usage: migrate <inventory|apply>"
   case "$action" in inventory|apply) ;; *) die "invalid migration action" ;; esac
   if [ ! -e "$old_home" ] && [ ! -f "$manifest" ]; then printf 'status=none\nstreams=0\n'; return; fi
   ensure_exclusions; mkdir -p "$new_home"
   if [ "$action" = inventory ]; then
-    [ ! -f "$manifest" ] || die "a migration is already in progress"
+    if [ -f "$manifest" ]; then
+      ! awk -F '\t' 'NR>1&&$7!="pending"{started=1}END{exit started?0:1}' "$manifest" || die "a migration is already in progress"
+      rm -f "$manifest"
+    fi
     build_migration_manifest "$old_home" "$manifest"
-    while IFS=$'\t' read -r stream old destination kind branch target stage instance; do
+    while IFS=$'\t' read -r stream old destination kind branch target stage instance tip handoff_hash boundary commit_count; do
       [ "$stream" != stream ] || continue
       count=$((count + 1)); printf 'stream=%s\nold=%s\nnew=%s\nkind=%s\n' "$stream" "$old" "$destination" "$kind"
     done <"$manifest"
-    rm -f "$manifest"; printf 'status=inventory\nstreams=%s\n' "$count"; return
+    printf 'status=inventory\nmanifest=%s\nstreams=%s\n' "$manifest" "$count"; return
   fi
-  [ -f "$manifest" ] && [ ! -L "$manifest" ] || build_migration_manifest "$old_home" "$manifest"
-  [ "$(sed -n '1p' "$manifest")" = $'stream\told\tnew\tkind\tbranch\ttarget\tstage\tinstance' ] || die "migration manifest header is invalid"
-  while IFS=$'\t' read -r stream old destination kind branch target stage instance; do
+  [ -f "$manifest" ] && [ ! -L "$manifest" ] || die "migration apply requires a persisted inventory manifest"
+  [ "$(sed -n '1p' "$manifest")" = $'stream\told\tnew\tkind\tbranch\ttarget\tstage\tinstance\ttip\thandoff-sha256\tboundary\tcommit-count' ] || die "migration manifest header is invalid"
+  current_set="$(mktemp "${TMPDIR:-/tmp}/workstream-migration-current.XXXXXX")"; approved_set="$(mktemp "${TMPDIR:-/tmp}/workstream-migration-approved.XXXXXX")"
+  find "$old_home" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | LC_ALL=C sort >"$current_set"
+  awk -F '\t' 'NR>1&&$7=="pending"{print $2}' "$manifest" | LC_ALL=C sort >"$approved_set"
+  cmp -s "$current_set" "$approved_set" || { rm -f "$current_set" "$approved_set"; die "legacy stream set changed after inventory; run inventory again after resolving it"; }
+  rm -f "$current_set" "$approved_set"
+  # Validate every approved source and all parseable policy/state before the first move.
+  while IFS=$'\t' read -r stream old destination kind branch target stage instance tip handoff_hash boundary commit_count; do
+    [ "$stream" != stream ] || continue
+    case "$stage" in pending)
+      [ -d "$old" ] && [ ! -L "$old" ] || die "pending migration source is missing: $stream"
+      [ "$(sha256_file "$old/WORKSTREAM.md")" = "$handoff_hash" ] || die "legacy handoff changed after inventory: $stream"
+      checkout="$old"; [ "$kind" = in-place ] && checkout="$ROOT"
+      [ "$(git -C "$checkout" rev-parse "$branch^{commit}")" = "$tip" ] || die "legacy branch moved after inventory: $stream"
+      old_mode_check="$(legacy_handoff_field "$old/WORKSTREAM.md" mode)" || die "legacy mode is ambiguous"
+      old_landing_check="$(legacy_handoff_field "$old/WORKSTREAM.md" landing)" || die "legacy landing is ambiguous"
+      old_cadence_check="$(legacy_handoff_field "$old/WORKSTREAM.md" ship-cadence)" || die "legacy ship cadence is ambiguous"
+      case "$old_mode_check" in ''|delegate|manual) ;; *) die "legacy mode is invalid" ;; esac
+      case "$old_landing_check" in ''|local|push|pr) ;; *) die "legacy landing is invalid" ;; esac
+      case "$old_cadence_check" in ''|milestone|per-track|per-stage) ;; *) die "legacy ship cadence is invalid" ;; esac
+      source_kind_check="$(legacy_handoff_field "$old/WORKSTREAM.md" source-kind)" || die "legacy queue source kind is ambiguous"
+      cursor_check="$(legacy_handoff_field "$old/WORKSTREAM.md" source)" || die "legacy queue source is ambiguous"
+      case "$source_kind_check" in
+        plan|roadmap) [ -n "$cursor_check" ] && [[ "$cursor_check" != \(* ]] || die "legacy queue pointer is missing"; validate_text 'legacy queue pointer' "$cursor_check" ;;
+        brief|template|'') ;;
+        *) die "legacy queue source kind is invalid" ;;
+      esac
+      purpose="$(sed -n -E 's/^purpose[[:space:]]+//p; s/^# (.*) — workstream.*/\1/p; s/^# (.*) hand-?off.*/\1/p' "$old/WORKSTREAM.md" 2>/dev/null | head -n 1)"; [ -n "$purpose" ] || purpose="Migrated workstream $stream"
+      validate_text 'legacy purpose' "$purpose"
+      while IFS= read -r subject; do validate_text 'legacy commit subject' "$subject"; [[ "$subject" != *$'\t'* ]] || die "legacy commit subject contains a tab"; done < <(git -C "$checkout" log --reverse --format='%s' "$boundary..$tip")
+      ;;
+    moved|complete) ;;
+    *) die "migration manifest has an invalid stage: $stage" ;;
+    esac
+  done < <(tail -n +2 "$manifest")
+  while IFS=$'\t' read -r stream old destination kind branch target stage instance tip handoff_hash boundary commit_count; do
     [ "$stream" != stream ] || continue
     count=$((count + 1)); validate_stream_name "$stream"; validate_ref "$branch"; validate_ref "$target"
     if [ "$stage" = pending ]; then
@@ -2060,6 +2528,14 @@ cmd_migrate() {
     fi
     if [ "$stage" = moved ]; then
       [ -d "$destination" ] && [ ! -L "$destination" ] || die "moved migration destination is missing: $stream"
+      RUNTIME="$destination"; RUNBOOK="$RUNTIME/WORKSTREAM.md"; TRACKER="$RUNTIME/workstream.tsv"
+      if [ -f "$TRACKER" ] && [ ! -L "$TRACKER" ] && grep -qFx '<!-- workstream:identity@1 -->' "$RUNBOOK" 2>/dev/null; then
+        validate_tracker "$TRACKER"
+        [ "$(runbook_contract_hash "$RUNBOOK")" = "$(tracker_get meta - runbook-contract-sha256)" ] || die "interrupted migration artifacts do not bind: $stream"
+        [ "$(runbook_field "$RUNBOOK" instance-id)" = "$instance" ] || die "interrupted migration instance changed: $stream"
+        migration_stage "$manifest" "$stream" complete
+        continue
+      fi
       legacy="$destination/WORKSTREAM.md"; [ -f "$legacy" ] && [ ! -L "$legacy" ] || die "moved legacy handoff is missing or unsafe: $stream"
       purpose="$(sed -n -E 's/^purpose[[:space:]]+//p; s/^# (.*) — workstream.*/\1/p; s/^# (.*) hand-?off.*/\1/p' "$legacy" 2>/dev/null | head -n 1)"
       [ -n "$purpose" ] || purpose="Migrated workstream $stream"
@@ -2086,16 +2562,24 @@ cmd_migrate() {
         brief|template|'') source_kind="${source_kind:-brief}"; cursor=-; queue_state=intake ;;
         *) die "legacy queue source kind is invalid" ;;
       esac
+      [ "$commit_count" -eq 0 ] || queue_state=ready
       RUNTIME="$destination"; RUNBOOK="$RUNTIME/WORKSTREAM.md"; TRACKER="$RUNTIME/workstream.tsv"
       next=1; history="$ROOT/.streams/history.tsv"
       if [ -e "$history" ]; then validate_history "$history"; next="$(awk -F '\t' -v s="$stream" 'NR>1&&$1==s&&$2+0>=m{m=$2+1}END{print m+0}' "$history")"; [ "$next" -gt 0 ] || next=1; fi
-      runbook_temp="$(mktemp "$RUNTIME/.WORKSTREAM.md.XXXXXX")"; emit_runbook "$stream" "$instance" "$branch" "$target" "$purpose" >"$runbook_temp"
+      runbook_temp="$(mktemp "$RUNTIME/.WORKSTREAM.md.XXXXXX")"; emit_runbook "$stream" "$instance" "$branch" "$target" "$purpose" "$source_kind" "$cursor" >"$runbook_temp"
       runbook_hash="$(runbook_contract_hash "$runbook_temp")"; tracker_temp="$(mktemp "$RUNTIME/.workstream.tsv.XXXXXX")"
       {
-        printf 'record\tid\tfield\tvalue\nmeta\t-\tschema\tworkstream@1\nmeta\t-\tinstance-id\t%s\nmeta\t-\tnext-shipment\t%s\nmeta\t-\tnext-unit\t%s\nmeta\t-\trunbook-contract-sha256\t%s\n' "$instance" "$next" "$next" "$runbook_hash"
-        printf 'queue\t-\tcursor\t%s\nqueue\t-\tsource-kind\t%s\nqueue\t-\tstate\t%s\nphase\t-\tname\tnone\nphase\t-\tnext-action\tdefine-unit\n' "$cursor" "$source_kind" "$queue_state"
+        emit_tracker_base "$instance" "$next" "$((next + (commit_count > 0 ? 1 : 0)))" "$runbook_hash" "$cursor" "$source_kind" "$queue_state" "$([ "$commit_count" -gt 0 ] && printf accumulate || printf define-unit)"
+        if [ "$commit_count" -gt 0 ]; then
+          printf 'unit\t%s\tboundary\t%s\nunit\t%s\tcommit-count\t%s\nunit\t%s\tslug\tmigrated\nunit\t%s\tstate\tcomplete\nunit\t%s\tsummary\t%s\n' "$next" "$boundary" "$next" "$commit_count" "$next" "$next" "$next" "$purpose"
+          index=1
+          while IFS= read -r subject; do printf 'unit-subject\t%s/%s\tsubject\t%s\n' "$next" "$index" "$subject"; index=$((index + 1)); done < <(git -C "$WT" log --reverse --format='%s' "$boundary..$tip")
+        fi
       } >"$tracker_temp"
-      validate_tracker "$tracker_temp"; chmod 600 "$runbook_temp" "$tracker_temp"; mv "$runbook_temp" "$RUNBOOK"; mv "$tracker_temp" "$TRACKER"
+      validate_tracker "$tracker_temp"; chmod 600 "$runbook_temp" "$tracker_temp"
+      mv "$tracker_temp" "$TRACKER"
+      if [ -n "${WORKSTREAM_TEST_AFTER_MIGRATION_TRACKER:-}" ]; then "$WORKSTREAM_TEST_AFTER_MIGRATION_TRACKER" "$manifest"; die "migration interrupted after tracker installation"; fi
+      mv "$runbook_temp" "$RUNBOOK"
       rm -f "$FEATURE_BODY" "$FRICTION_BODY"; migration_stage "$manifest" "$stream" complete
     fi
   done < <(tail -n +2 "$manifest")
@@ -2135,6 +2619,7 @@ main() {
     list) cmd_list "$@" ;;
     ship-prepare) cmd_ship_prepare "$@" ;;
     gate-run) [ "$#" -ge 1 ] || die "gate-run requires a stream"; cmd_gate_run "$@" ;;
+    gate-none) cmd_gate_none "$@" ;;
     land-advance) cmd_land_advance "$@" ;;
     ship-finalize) cmd_ship_finalize "$@" ;;
     delivery-classify) cmd_delivery_classify "$@" ;;

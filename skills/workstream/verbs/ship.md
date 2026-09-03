@@ -9,8 +9,9 @@ authorizes preparation only.
    blocks without target mutation.
 2. At `phase=gate`, select the host's documented gate for the final changed paths. Invoke only
    `gate-run --class docs|full --label LABEL -- ARGV...` or
-   `gate-run --class semantic --selector --label LABEL -- ARGV...`. Don't invent a command. Failed
-   or stale evidence must be remediated and rerun.
+   `gate-run --class semantic --selector --label LABEL -- ARGV...`. Use `gate-none` only when the
+   helper proves there is no build-relevant own path. Don't invent a command. Failed or stale
+   evidence must be remediated and rerun.
 3. If preparation reports friction, resolve the `ship-friction` receipt through `hook-start` and
    `hook-complete`. Commit and validate tracked hook effects, then rerun `ship-prepare`; changed
    effects return to the gate under the same shipment and hook identity.

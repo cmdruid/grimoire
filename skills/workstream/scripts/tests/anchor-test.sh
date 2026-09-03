@@ -6,7 +6,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"; # shellcheck disable=SC1091
 HELPER="$(cd "$DIR/.." && pwd)/workstream.sh"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-anchor.XXXXXX")"; TMP="$(cd "$TMP" && pwd -P)"
 ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"; FRONT="$ROOT/AGENTS.md"; trap 'rm -rf "$TMP"' EXIT
-git init -q -b main "$ROOT"; git -C "$ROOT" config user.name test; git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial
 printf '# Project instructions\n\nKeep this prose.\n' >"$FRONT"
 "$HELPER" "$ROOT" anchor status >"$OUT"; expect 'absent anchor classified' 'status=absent' "$OUT"
@@ -19,6 +19,12 @@ expect_eq 'install rerun preserves bytes' "$hash" "$(shasum -a 256 "$FRONT" | aw
 sed 's/Only after context compaction/Only after accidental drift/' "$FRONT" >"$TMP/drift"; cp "$TMP/drift" "$FRONT"
 "$HELPER" "$ROOT" anchor status >"$OUT"; expect 'drift is explicit' 'status=drifted' "$OUT"
 "$HELPER" "$ROOT" anchor refresh >"$OUT"; "$HELPER" "$ROOT" anchor status >"$OUT"; expect 'refresh restores current' 'status=current' "$OUT"
+printf '# Project instructions\n\n<!-- /workstream:recovery-anchor@1 -->\nKeep this prose.\n<!-- workstream:recovery-anchor@1 -->\nTrailing prose.\n' >"$FRONT"
+before_reversed="$(shasum -a 256 "$FRONT" | awk '{print $1}')"
+if "$HELPER" "$ROOT" anchor refresh >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'reversed anchor markers classify classified as conflict' 'anchor state is conflict' "$ERR"
+expect_eq 'reversed markers preserve every byte' "$before_reversed" "$(shasum -a 256 "$FRONT" | awk '{print $1}')"
+printf '# Project instructions\n\nKeep this prose.\n' >"$FRONT"; "$HELPER" "$ROOT" anchor install >"$OUT"
 printf '\n<!-- workstream:recovery-anchor@1 -->\n' >>"$FRONT"
 if "$HELPER" "$ROOT" anchor refresh >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 sed -n '1,/<!-- \/workstream:recovery-anchor@1 -->/p' "$FRONT" >"$TMP/one"; cp "$TMP/one" "$FRONT"

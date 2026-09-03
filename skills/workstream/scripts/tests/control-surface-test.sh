@@ -6,7 +6,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"; # shellcheck disable=SC1091
 HELPER="$(cd "$DIR/.." && pwd)/workstream.sh"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-control.XXXXXX")"; TMP="$(cd "$TMP" && pwd -P)"
 ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"; trap 'rm -rf "$TMP"' EXIT
-git init -q -b main "$ROOT"; git -C "$ROOT" config user.name test; git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial; before="$(git -C "$ROOT" rev-list --count HEAD)"
 "$HELPER" "$ROOT" setup >"$OUT"
 expect 'setup commits control surface' 'status=committed' "$OUT"
@@ -33,7 +33,7 @@ mv "$ROOT/.streams/history.tsv" "$TMP/history-saved"
 if "$HELPER" "$ROOT" repair >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 if [ ! -e "$ROOT/.streams/history.tsv" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 
-ROOT2="$TMP/stream-repair"; git init -q -b main "$ROOT2"; git -C "$ROOT2" config user.name test; git -C "$ROOT2" config user.email test@example.invalid
+ROOT2="$TMP/stream-repair"; init_repo "$ROOT2"
 printf 'base\n' >"$ROOT2/file"; git -C "$ROOT2" add file; git -C "$ROOT2" commit -qm initial
 "$HELPER" "$ROOT2" runtime-init repairable main repairable >"$OUT"; chmod 644 "$ROOT2/.streams/repairable/WORKSTREAM.md" "$ROOT2/.streams/repairable/workstream.tsv"
 "$HELPER" "$ROOT2" repair repairable >"$OUT"; expect 'targeted repair reports scope' 'operation=repair-stream' "$OUT"
@@ -47,15 +47,31 @@ rm "$ROOT2/.streams/repairable/workstream.tsv"
 if "$HELPER" "$ROOT2" repair repairable >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 expect 'unlanded reconstruction refuses' 'refuses unlanded commits' "$ERR"
 
-ROOT3="$TMP/helper-only"; git init -q -b main "$ROOT3"; git -C "$ROOT3" config user.name test; git -C "$ROOT3" config user.email test@example.invalid
+ROOT3="$TMP/helper-only"; init_repo "$ROOT3"
 printf 'base\n' >"$ROOT3/file"; git -C "$ROOT3" add file; git -C "$ROOT3" commit -qm initial; mkdir -p "$ROOT3/.streams"; cp "$HELPER" "$ROOT3/.streams/workstream.sh"
 if "$HELPER" "$ROOT3" runtime-init partial main partial >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 expect 'helper-only state points to setup' 'partial setup; run /workstream setup' "$ERR"
 
-ROOT4="$TMP/readme-only"; git init -q -b main "$ROOT4"; git -C "$ROOT4" config user.name test; git -C "$ROOT4" config user.email test@example.invalid
+ROOT4="$TMP/readme-only"; init_repo "$ROOT4"
 printf 'base\n' >"$ROOT4/file"; git -C "$ROOT4" add file; git -C "$ROOT4" commit -qm initial; mkdir -p "$ROOT4/.streams"
 printf '<!-- workstream:control@1 -->\n<!-- /workstream:control@1 -->\n' >"$ROOT4/.streams/README.md"
 if "$HELPER" "$ROOT4" runtime-init partial main partial >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 expect 'managed README without helper points to repair' 'missing its helper; run /workstream repair' "$ERR"
+
+ROOT5="$TMP/exclusions"; init_repo "$ROOT5"
+printf 'base\n' >"$ROOT5/file"; git -C "$ROOT5" add file; git -C "$ROOT5" commit -qm initial
+exclude="$(git -C "$ROOT5" rev-parse --git-path info/exclude)"; case "$exclude" in /*) ;; *) exclude="$ROOT5/$exclude" ;; esac; printf 'custom-without-newline' >"$exclude"
+"$HELPER" "$ROOT5" runtime-init excluded main excluded >"$OUT"
+expect_eq 'existing exclusion receives a real newline' 'custom-without-newline' "$(sed -n '1p' "$exclude")"
+for pattern in '/.streams/*/' '/.streams/.migration.tsv' '/WORKSTREAM.md' '/workstream.tsv'; do expect_eq "exact exclusion $pattern" 1 "$(grep -cFx "$pattern" "$exclude")"; done
+expect_absent 'ignored runtime stays out of status' '.streams/excluded/' <(git -C "$ROOT5" status --short --untracked-files=all)
+
+ROOT6="$TMP/reversed-readme"; init_repo "$ROOT6"
+printf 'base\n' >"$ROOT6/file"; git -C "$ROOT6" add file; git -C "$ROOT6" commit -qm initial; mkdir -p "$ROOT6/.streams"
+printf '<!-- /workstream:control@1 -->\nPreserve me.\n<!-- workstream:control@1 -->\n' >"$ROOT6/.streams/README.md"
+before_readme="$(shasum -a 256 "$ROOT6/.streams/README.md" | awk '{print $1}')"
+if "$HELPER" "$ROOT6" setup >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'reversed control markers refuse' 'README control markers conflict' "$ERR"
+expect_eq 'reversed control README preserves bytes' "$before_readme" "$(shasum -a 256 "$ROOT6/.streams/README.md" | awk '{print $1}')"
 
 report 'workstream control surface'

@@ -4,7 +4,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"; # shellcheck disable=SC1091
 . "$DIR/lib.sh"
 PRIME="$DIR/../workstream-prime.sh"; HELPER="$DIR/../workstream.sh"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-prime.XXXXXX")"; TMP="$(cd "$TMP" && pwd -P)"; ROOT="$TMP/project"; OUT="$TMP/out"; trap 'rm -rf "$TMP"' EXIT
-git init -q -b main "$ROOT"; git -C "$ROOT" config user.name test; git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial
 "$HELPER" "$ROOT" runtime-init prime main prime >"$OUT"
 "$PRIME" "$ROOT" prime first 'First bounded unit' >"$OUT"

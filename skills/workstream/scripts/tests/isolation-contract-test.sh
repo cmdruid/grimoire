@@ -8,7 +8,7 @@ HELPER="$(cd "$DIR/.." && pwd)/workstream.sh"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-isolation.XXXXXX")"; TMP="$(cd "$TMP" && pwd -P)"
 ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"
 trap 'rm -rf "$TMP"' EXIT
-git init -q -b main "$ROOT"; git -C "$ROOT" config user.name test; git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial; mkdir -p "$ROOT/.streams"
 
 write_config() {

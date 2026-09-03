@@ -9,7 +9,7 @@ TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-unit.XXXXXX")"; TMP="$(cd "$TMP" &&
 ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"
 trap 'rm -rf "$TMP"' EXIT
 
-git init -q -b main "$ROOT"; git -C "$ROOT" config user.name test; git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial
 "$HELPER" "$ROOT" runtime-init units main units >"$OUT"
 "$HELPER" "$ROOT" unit-begin units first 'First unit' >"$OUT"
@@ -37,8 +37,16 @@ ship-cadence: per-stage
 EOF
 "$HELPER" "$ROOT" runtime-init manual main manual >"$OUT"
 "$HELPER" "$ROOT" phase-set manual plan plan >"$OUT"; expect 'manual enters plan' 'next_action=plan' "$OUT"
+if "$HELPER" "$ROOT" phase-set manual ship prepare-ship >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 "$HELPER" "$ROOT" phase-set manual build build >"$OUT"; expect 'manual enters build' 'phase=build' "$OUT"
+"$HELPER" "$ROOT" unit-begin manual built 'Built unit' >"$OUT"
+printf 'manual\n' >>"$ROOT/.streams/manual/file"; git -C "$ROOT/.streams/manual" add file; git -C "$ROOT/.streams/manual" commit -qm manual
+"$HELPER" "$ROOT" unit-complete manual >"$OUT"
+"$HELPER" "$ROOT" unit-begin manual second 'Second built unit' >"$OUT"
+printf 'manual two\n' >>"$ROOT/.streams/manual/file"; git -C "$ROOT/.streams/manual" add file; git -C "$ROOT/.streams/manual" commit -qm 'manual two'
+"$HELPER" "$ROOT" unit-complete manual >"$OUT"
 "$HELPER" "$ROOT" phase-set manual ship prepare-ship >"$OUT"; expect 'manual enters ship' 'phase=ship' "$OUT"
 if "$HELPER" "$ROOT" phase-set manual invalid build >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+if "$HELPER" "$ROOT" phase-set manual plan close >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 
 report 'workstream unit lifecycle'

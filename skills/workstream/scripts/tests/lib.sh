@@ -6,6 +6,16 @@
 pass=0
 fail=0
 
+configure_repo() { # configure_repo <path>
+  git -C "$1" config user.name test
+  git -C "$1" config user.email test@example.invalid
+}
+
+init_repo() { # init_repo <path>
+  git init -q -b main "$1"
+  configure_repo "$1"
+}
+
 expect() { # expect <label> <needle> <haystack-file>
   if grep -qF -- "$2" "$3"; then
     pass=$((pass + 1))

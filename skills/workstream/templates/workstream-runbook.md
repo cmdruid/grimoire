@@ -13,6 +13,8 @@ landing	local
 
 <!-- workstream:brief@1 -->
 purpose	<purpose>
+queue-source-kind	<brief|plan|roadmap|template>
+queue-source	<root-relative pointer or ->
 orientation	Verify pointers against Git before trusting them.
 operator-note	-
 <!-- /workstream:brief@1 -->

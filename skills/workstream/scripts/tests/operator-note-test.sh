@@ -8,7 +8,7 @@ HELPER="$(cd "$DIR/.." && pwd)/workstream.sh"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-note.XXXXXX")"; TMP="$(cd "$TMP" && pwd -P)"
 ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"
 trap 'rm -rf "$TMP"' EXIT
-git init -q -b main "$ROOT"; git -C "$ROOT" config user.name test; git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial
 "$HELPER" "$ROOT" runtime-init notes main notes >"$OUT"
 RUNBOOK="$ROOT/.streams/notes/WORKSTREAM.md"; TRACKER="$ROOT/.streams/notes/workstream.tsv"
@@ -35,5 +35,9 @@ if WORKSTREAM_TEST_BEFORE_RUNBOOK_REPLACE="$TMP/race.sh" "$HELPER" "$ROOT" opera
 expect_absent 'racing save does not install candidate' 'operator-note	A different note' "$RUNBOOK"
 cp "$TMP/runbook-before-race" "$RUNBOOK"
 if "$HELPER" "$ROOT" operator-note notes $'bad\tnote' >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+wide=''; index=0
+while [ "$index" -lt 2049 ]; do wide="${wide}é"; index=$((index + 1)); done
+if "$HELPER" "$ROOT" operator-note notes "$wide" >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'multibyte note uses byte ceiling' '1..4096 bytes' "$ERR"
 
 report 'workstream operator note'

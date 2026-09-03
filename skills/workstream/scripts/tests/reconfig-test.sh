@@ -6,7 +6,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"; # shellcheck disable=SC1091
 HELPER="$(cd "$DIR/.." && pwd)/workstream.sh"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-reconfig.XXXXXX")"; TMP="$(cd "$TMP" && pwd -P)"
 ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"; trap 'rm -rf "$TMP"' EXIT
-git init -q -b main "$ROOT"; git -C "$ROOT" config user.name test; git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial
 "$HELPER" "$ROOT" runtime-init config main config >"$OUT"; "$HELPER" "$ROOT" operator-note config 'Preserve this note.' >"$OUT"
 "$HELPER" "$ROOT" unit-begin config old old >"$OUT"; printf 'old\n' >>"$ROOT/.streams/config/file"; git -C "$ROOT/.streams/config" add file; git -C "$ROOT/.streams/config" commit -qm old; "$HELPER" "$ROOT" unit-complete config >"$OUT"
@@ -68,11 +68,37 @@ expect 'reconfig retry converges' 'status=applied' "$OUT"
 expect_absent 'pending hash clears' 'pending-runbook-contract-sha256' "$TRACKER"
 expect 'replacement body adopted' 'Run the replacement hook body.' "$ROOT/.streams/config/WORKSTREAM.md"
 
+sed 's/ship-cadence: per-stage/ship-cadence: milestone/' "$ROOT/.streams/CONFIG.md" >"$TMP/config-race"; cp "$TMP/config-race" "$ROOT/.streams/CONFIG.md"
+contract_before="$(shasum -a 256 "$ROOT/.streams/config/WORKSTREAM.md" | awk '{print $1}')"
+tracker_before="$(shasum -a 256 "$TRACKER" | awk '{print $1}')"
+cat >"$TMP/config-mutator.sh" <<'EOF'
+#!/usr/bin/env bash
+printf '\n# concurrent config edit\n' >>"$1"
+EOF
+chmod +x "$TMP/config-mutator.sh"
+if WORKSTREAM_TEST_BEFORE_RECONFIG_CONFIG_RECHECK="$TMP/config-mutator.sh" "$HELPER" "$ROOT" reconfig config >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'config race is detected' 'configuration changed during reconfig' "$ERR"
+expect_eq 'config race preserves runbook' "$contract_before" "$(shasum -a 256 "$ROOT/.streams/config/WORKSTREAM.md" | awk '{print $1}')"
+expect_eq 'config race preserves tracker' "$tracker_before" "$(shasum -a 256 "$TRACKER" | awk '{print $1}')"
+
+runbook_before="$(shasum -a 256 "$ROOT/.streams/config/WORKSTREAM.md" | awk '{print $1}')"
+tracker_before="$(shasum -a 256 "$TRACKER" | awk '{print $1}')"
+cat >"$TMP/runbook-mutator.sh" <<'EOF'
+#!/usr/bin/env bash
+printf '\nConcurrent operator appendix.\n' >>"$1"
+EOF
+chmod +x "$TMP/runbook-mutator.sh"
+if WORKSTREAM_TEST_AFTER_RUNBOOK_SNAPSHOT="$TMP/runbook-mutator.sh" "$HELPER" "$ROOT" reconfig config >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'runbook race is detected' 'runbook changed during reconfig' "$ERR"
+expect 'runbook race preserves concurrent prose' 'Concurrent operator appendix.' "$ROOT/.streams/config/WORKSTREAM.md"
+expect_eq 'runbook race writes no tracker transaction' "$tracker_before" "$(shasum -a 256 "$TRACKER" | awk '{print $1}')"
+if [ "$runbook_before" != "$(shasum -a 256 "$ROOT/.streams/config/WORKSTREAM.md" | awk '{print $1}')" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+
 sed 's/isolation: worktree/isolation: in-place/' "$ROOT/.streams/CONFIG.md" >"$TMP/topology"; cp "$TMP/topology" "$ROOT/.streams/CONFIG.md"
 if "$HELPER" "$ROOT" reconfig config >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 expect 'topology refusal preserves worktree coordinate' $'isolation\tworktree' "$ROOT/.streams/config/WORKSTREAM.md"
 
-ROOT2="$TMP/explicit-topology"; git init -q -b main "$ROOT2"; git -C "$ROOT2" config user.name test; git -C "$ROOT2" config user.email test@example.invalid
+ROOT2="$TMP/explicit-topology"; init_repo "$ROOT2"
 printf 'base\n' >"$ROOT2/file"; git -C "$ROOT2" add file; git -C "$ROOT2" commit -qm initial; mkdir -p "$ROOT2/.streams"
 sed -n 'p' "$DIR/../../templates/streams-config.md" >"$ROOT2/.streams/CONFIG.md"
 "$HELPER" "$ROOT2" runtime-init explicit main explicit --isolation in-place >"$OUT"

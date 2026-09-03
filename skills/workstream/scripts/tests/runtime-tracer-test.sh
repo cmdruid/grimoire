@@ -18,9 +18,7 @@ else
   echo "fixture=$TMP"
 fi
 
-git init -q -b main "$ROOT"
-git -C "$ROOT" config user.name 'Workstream Test'
-git -C "$ROOT" config user.email 'workstream@example.invalid'
+init_repo "$ROOT"
 printf '# fixture\n' >"$ROOT/README.md"
 git -C "$ROOT" add README.md
 git -C "$ROOT" commit -qm 'initial'
@@ -50,10 +48,10 @@ expect 'unit completes' 'status=unit-complete' "$OUT"
 expect 'completion retry recovers' 'status=already-complete' "$OUT"
 
 "$HELPER" "$ROOT" ship-prepare demo >"$OUT"
-expect 'shipment prepares' 'status=prepared' "$OUT"
+expect 'shipment prepares' 'status=gate-required' "$OUT"
 expect_eq 'prepare leaves target unchanged' "$initial_tip" "$(git -C "$ROOT" rev-parse main)"
 "$HELPER" "$ROOT" ship-prepare demo >"$OUT"
-expect 'prepare retry reuses shipment' 'status=resumed' "$OUT"
+expect 'prepare retry reuses shipment' 'status=gate-required' "$OUT"
 
 "$HELPER" "$ROOT" gate-run demo --class docs --label tracer -- true >"$OUT"
 expect 'direct gate passes' 'status=passed' "$OUT"

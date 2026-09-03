@@ -7,12 +7,12 @@ HELPER="$(cd "$DIR/.." && pwd)/workstream.sh"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-pr.XXXXXX")"; TMP="$(cd "$TMP" && pwd -P)"
 ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"; trap 'rm -rf "$TMP"' EXIT
 REMOTE="$TMP/remote.git"; git init -q --bare "$REMOTE"
-git init -q -b main "$ROOT"; git -C "$ROOT" config user.name test; git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial; git -C "$ROOT" remote add origin "$REMOTE"; git -C "$ROOT" push -qu origin main
 mkdir -p "$ROOT/.streams"; sed -e 's/isolation: worktree/isolation: in-place/' -e 's/landing: local/landing: pr/' "$DIR/../../templates/streams-config.md" >"$ROOT/.streams/CONFIG.md"
 "$HELPER" "$ROOT" runtime-init pr main pr >"$OUT"; "$HELPER" "$ROOT" unit-begin pr unit unit >"$OUT"
 printf 'unit\n' >>"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm unit
-"$HELPER" "$ROOT" unit-complete pr >"$OUT"; "$HELPER" "$ROOT" ship-prepare pr >"$OUT"; "$HELPER" "$ROOT" gate-run pr --class docs --label gate -- true >"$OUT"
+"$HELPER" "$ROOT" unit-complete pr >"$OUT"; "$HELPER" "$ROOT" ship-prepare pr >"$OUT"; "$HELPER" "$ROOT" gate-run pr --class full --label gate -- true >"$OUT"
 target_before="$(git -C "$ROOT" rev-parse main)"
 git -C "$ROOT" push -qu origin stream/pr
 "$HELPER" "$ROOT" pr-await pr --authority confirmed --reference 'fixture-pr-1' >"$OUT"

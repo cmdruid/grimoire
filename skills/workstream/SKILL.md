@@ -69,6 +69,13 @@ a landing point. Prepare one immutable shipment, select the host's documented ga
 land, resolve pre-land friction, obtain authority, land, and finalize. `recycle` starts a fresh
 intake only after finalization. `close` is teardown, not a reporting ceremony.
 
+In `manual` mode, make each phase boundary explicit with `phase-set`: move
+`none/define-unit` through `phase-set STREAM plan plan`, then `phase-set STREAM build build`, and
+only after completed unit work with no unresolved hook use
+`phase-set STREAM ship prepare-ship`. Stop for the human at each emitted phase action. The helper
+rejects skipped, reversed, or arbitrary phase/action pairs; ordinary lifecycle commands own all
+later ship phases.
+
 `save` changes only the bounded operator note when semantic intent must survive a reset or custody
 transfer. Git and helper state already record mechanical progress; don't save after every action.
 After compaction, follow the project's recovery anchor, admit this stream, call `read`, reconcile
@@ -104,6 +111,7 @@ Select a gate from host instructions. Use only:
 
 - `gate-run --class docs|full --label LABEL -- ARGV...` for an exact direct command.
 - `gate-run --class semantic --selector --label LABEL -- ARGV...` for a documented selector.
+- `gate-none` only when the helper proves the shipment has no build-relevant own path.
 
 Unknown paths default to the full gate. Only the shipment's validated history rows are exempt from
 build relevance. The helper stores digests and a bounded output tail, not commands or transcripts.

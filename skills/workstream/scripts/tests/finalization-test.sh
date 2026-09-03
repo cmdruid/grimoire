@@ -6,14 +6,24 @@ DIR="$(cd "$(dirname "$0")" && pwd)"; # shellcheck disable=SC1091
 HELPER="$(cd "$DIR/.." && pwd)/workstream.sh"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-final.XXXXXX")"; TMP="$(cd "$TMP" && pwd -P)"
 ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"; trap 'rm -rf "$TMP"' EXIT
-git init -q -b main "$ROOT"; git -C "$ROOT" config user.name test; git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 mkdir -p "$ROOT/.records/plans"; printf 'base\n' >"$ROOT/file"; printf '# Next\n' >"$ROOT/.records/plans/next.md"
 git -C "$ROOT" add file .records/plans/next.md; git -C "$ROOT" commit -qm initial
 "$HELPER" "$ROOT" runtime-init final main final >"$OUT"; "$HELPER" "$ROOT" unit-begin final unit unit >"$OUT"
 printf 'unit\n' >>"$ROOT/.streams/final/file"; git -C "$ROOT/.streams/final" add file; git -C "$ROOT/.streams/final" commit -qm unit
-"$HELPER" "$ROOT" unit-complete final >"$OUT"; "$HELPER" "$ROOT" ship-prepare final >"$OUT"; "$HELPER" "$ROOT" gate-run final --class docs --label gate -- true >"$OUT"; "$HELPER" "$ROOT" land-advance final --authority confirmed >"$OUT"
+"$HELPER" "$ROOT" unit-complete final >"$OUT"; "$HELPER" "$ROOT" ship-prepare final >"$OUT"; "$HELPER" "$ROOT" gate-run final --class full --label gate -- true >"$OUT"; "$HELPER" "$ROOT" land-advance final --authority confirmed >"$OUT"
 "$HELPER" "$ROOT" close-check final >"$OUT"; expect 'unfinalized shipment blocks close' 'lifecycle_blocked=yes' "$OUT"
 TRACKER="$ROOT/.streams/final/workstream.tsv"; RUNBOOK="$ROOT/.streams/final/WORKSTREAM.md"; cp "$TRACKER" "$TMP/tracker-before"
+git -C "$ROOT" switch -qc invalid-finalize
+printf 'side\n' >"$ROOT/side"; git -C "$ROOT" add side; git -C "$ROOT" commit -qm side
+side_tip="$(git -C "$ROOT" rev-parse HEAD)"
+git -C "$ROOT" switch -q main
+awk -F '\t' -v tip="$side_tip" 'BEGIN{OFS="\t"} $1=="shipment"&&$3=="branch-tip"{$4=tip} {print}' "$TRACKER" >"$TMP/rejected-finalize.tsv"
+cp "$TMP/rejected-finalize.tsv" "$TRACKER"
+runbook_before="$(shasum -a 256 "$RUNBOOK" | awk '{print $1}')"
+if "$HELPER" "$ROOT" ship-finalize final --note 'must not survive' >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect_eq 'rejected finalization leaves runbook unchanged' "$runbook_before" "$(shasum -a 256 "$RUNBOOK" | awk '{print $1}')"
+cp "$TMP/tracker-before" "$TRACKER"
 tip_before="$(git -C "$ROOT/.streams/final" rev-parse HEAD)"
 cat >"$TMP/race.sh" <<'EOF'
 #!/usr/bin/env bash

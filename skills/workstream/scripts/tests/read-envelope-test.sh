@@ -14,9 +14,7 @@ ROOT="$TMP/project"
 OUT="$TMP/out"
 trap 'rm -rf "$TMP"' EXIT
 
-git init -q -b main "$ROOT"
-git -C "$ROOT" config user.name 'Workstream Test'
-git -C "$ROOT" config user.email 'workstream@example.invalid'
+init_repo "$ROOT"
 printf 'fixture\n' >"$ROOT/file.txt"
 git -C "$ROOT" add file.txt
 git -C "$ROOT" commit -qm initial
@@ -50,6 +48,15 @@ assert_envelope 'state' "$OUT"
 expect 'state identifies schema' 'schema=workstream-state@1' "$OUT"
 expect 'state emits one action' 'next_action=define-unit' "$OUT"
 expect_eq 'state has one next-action row' 1 "$(grep -c '^next_action=' "$OUT")"
+"$HELPER" "$ROOT" read concise >"$OUT"
+assert_envelope 'read' "$OUT"
+expect 'read exposes admitted worktree' "worktree=$ROOT/.streams/concise" "$OUT"
+expect 'read exposes effective coordinates' 'coordinates=branch:stream/concise,target:main,isolation:worktree,landing:local' "$OUT"
+expect 'read exposes effective policy' 'policy=mode:delegate,ship-cadence:milestone' "$OUT"
+expect 'read exposes durable queue source' 'queue=source-kind:brief,source:-,state:intake' "$OUT"
+"$HELPER" "$ROOT" unit-begin concise bounded 'Bounded active summary' >"$OUT"
+"$HELPER" "$ROOT" read concise >"$OUT"
+expect 'read exposes active unit identity' 'unit=id:1,slug:bounded,summary:Bounded active summary' "$OUT"
 
 scaffold_bytes="$(wc -c <"$ROOT/.streams/concise/WORKSTREAM.md" | tr -d ' ')"
 if [ "$scaffold_bytes" -le 4000 ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: generated runbook is $scaffold_bytes bytes" >&2; fi

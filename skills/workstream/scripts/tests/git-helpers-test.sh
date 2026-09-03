@@ -15,10 +15,7 @@ trap 'rm -rf "$TMP"' EXIT
 ROOT="$TMP/repo"
 mkdir "$ROOT"
 ROOT="$(cd "$ROOT" && pwd -P)"
-git -C "$ROOT" init -q
-git -C "$ROOT" branch -m main
-git -C "$ROOT" config user.name test
-git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 printf '.streams/*/\n' > "$ROOT/.gitignore"
 printf '# fixture\n' > "$ROOT/README.md"
 printf 'base\n' > "$ROOT/code.txt"
@@ -86,6 +83,9 @@ mkdir "$ROOT/.streams/inplace"
 printf '%s\n' '# in-place' '- isolation: in-place' > "$ROOT/.streams/inplace/WORKSTREAM.md"
 "$FACTS" inplace-scan "$ROOT" > "$OUT"
 expect_eq "in-place scan finds recorded stream" "inplace" "$(fact inplace_streams "$OUT")"
+printf '%s\n' '# in-place' $'isolation\tin-place' > "$ROOT/.streams/inplace/WORKSTREAM.md"
+"$FACTS" inplace-scan "$ROOT" > "$OUT"
+expect_eq "in-place scan accepts composed identity grammar" "inplace" "$(fact inplace_streams "$OUT")"
 "$FACTS" inplace-state "$ROOT" demo stream/demo main > "$OUT"
 expect_eq "root checkout is not holding stream branch" "false" "$(fact on_stream_branch "$OUT")"
 expect_eq "root checkout is on target" "true" "$(fact on_target "$OUT")"

@@ -6,7 +6,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"; # shellcheck disable=SC1091
 HELPER="$(cd "$DIR/.." && pwd)/workstream.sh"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/workstream-topology.XXXXXX")"; TMP="$(cd "$TMP" && pwd -P)"
 ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"; trap 'rm -rf "$TMP"' EXIT
-git init -q -b main "$ROOT"; git -C "$ROOT" config user.name test; git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 printf 'base\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial
 mkdir -p "$ROOT/.streams/copied"; printf 'nested\n' >"$ROOT/.streams/copied/state"; git -C "$ROOT" add -f .streams/copied/state; git -C "$ROOT" commit -qm 'tracked nested state'
 refs="$(git -C "$ROOT" show-ref)"
@@ -14,13 +14,13 @@ if "$HELPER" "$ROOT" runtime-init refused main refused >"$OUT" 2>"$ERR"; then fa
 expect_eq 'nested target refusal preserves refs' "$refs" "$(git -C "$ROOT" show-ref)"
 if [ ! -e "$ROOT/.streams/refused" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 
-ROOT2="$TMP/symlink-project"; git init -q -b main "$ROOT2"; git -C "$ROOT2" config user.name test; git -C "$ROOT2" config user.email test@example.invalid
+ROOT2="$TMP/symlink-project"; init_repo "$ROOT2"
 printf 'base\n' >"$ROOT2/file"; git -C "$ROOT2" add file; git -C "$ROOT2" commit -qm initial
 mkdir "$TMP/outside"; ln -s "$TMP/outside" "$ROOT2/.streams"
 if "$HELPER" "$ROOT2" runtime-init unsafe main unsafe >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 if [ ! -e "$TMP/outside/unsafe" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 
-ROOT3="$TMP/no-ignore"; git init -q -b main "$ROOT3"; git -C "$ROOT3" config user.name test; git -C "$ROOT3" config user.email test@example.invalid
+ROOT3="$TMP/no-ignore"; init_repo "$ROOT3"
 mkdir -p "$ROOT3/.records/plans"; printf 'base\n' >"$ROOT3/file"; printf '# Plan\n' >"$ROOT3/.records/plans/example.md"
 git -C "$ROOT3" add file .records/plans/example.md; git -C "$ROOT3" commit -qm initial
 "$HELPER" "$ROOT3" runtime-init safe main safe --source-kind plan --cursor .records/plans/example.md --mode manual --ship-cadence per-stage >"$OUT"
@@ -32,10 +32,14 @@ expect 'create records plan queue kind' $'queue\t-\tsource-kind\tplan' "$ROOT3/.
 expect 'create records plan queue cursor' $'queue\t-\tcursor\t.records/plans/example.md' "$ROOT3/.streams/safe/workstream.tsv"
 expect 'create applies explicit mode' $'mode\tmanual\texplicit' "$ROOT3/.streams/safe/WORKSTREAM.md"
 expect 'create applies explicit cadence' $'ship-cadence\tper-stage\texplicit' "$ROOT3/.streams/safe/WORKSTREAM.md"
+mkdir -p "$ROOT3/.streams/safe/ignored/.git"
+if "$HELPER" "$ROOT3" state safe >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'ignored nested Git marker is rejected' 'nested Git marker' "$ERR"
+rmdir "$ROOT3/.streams/safe/ignored/.git" "$ROOT3/.streams/safe/ignored"
 if "$HELPER" "$ROOT3" runtime-init missing main missing --source-kind plan --cursor absent.md >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 expect 'missing queue source refuses explicitly' 'queue source is not a tracked regular file' "$ERR"
 
-ROOT4="$TMP/in-place"; git init -q -b main "$ROOT4"; git -C "$ROOT4" config user.name test; git -C "$ROOT4" config user.email test@example.invalid
+ROOT4="$TMP/in-place"; init_repo "$ROOT4"
 printf 'base\n' >"$ROOT4/file"; git -C "$ROOT4" add file; git -C "$ROOT4" commit -qm initial
 mkdir -p "$ROOT4/.streams"
 sed -n 'p' "$DIR/../../templates/streams-config.md" >"$ROOT4/.streams/CONFIG.md"
@@ -51,11 +55,11 @@ expect_eq 'park restores target branch' main "$(git -C "$ROOT4" branch --show-cu
 if "$HELPER" "$ROOT4" runtime-init second main second --isolation in-place >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 expect 'second in-place stream is rejected explicitly' 'another in-place stream already exists' "$ERR"
 
-ROOT5="$TMP/tracked-copy"; git init -q -b main "$ROOT5"; git -C "$ROOT5" config user.name test; git -C "$ROOT5" config user.email test@example.invalid
+ROOT5="$TMP/tracked-copy"; init_repo "$ROOT5"
 printf 'base\n' >"$ROOT5/file"; git -C "$ROOT5" add file; git -C "$ROOT5" commit -qm initial
 "$HELPER" "$ROOT5" runtime-init copied main copied >"$OUT"
 mkdir -p "$ROOT5/.streams/copied/.streams/nested"; printf 'copied\n' >"$ROOT5/.streams/copied/.streams/nested/state"
 git -C "$ROOT5/.streams/copied" add -f .streams/nested/state; git -C "$ROOT5/.streams/copied" commit -qm 'copy nested runtime state'
 if "$HELPER" "$ROOT5" state copied >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
-expect 'ordinary admission rejects tracked nested state' 'not part of the fixed .streams control surface' "$ERR"
+expect 'ordinary admission rejects tracked nested state' 'nested stream runtime' "$ERR"
 report 'workstream topology contract'

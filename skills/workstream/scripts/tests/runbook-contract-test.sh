@@ -10,9 +10,7 @@ TMP="$(cd "$TMP" && pwd -P)"
 ROOT="$TMP/project"; OUT="$TMP/out"; ERR="$TMP/err"
 trap 'rm -rf "$TMP"' EXIT
 
-git init -q -b main "$ROOT"
-git -C "$ROOT" config user.name test
-git -C "$ROOT" config user.email test@example.invalid
+init_repo "$ROOT"
 printf 'fixture\n' >"$ROOT/file"; git -C "$ROOT" add file; git -C "$ROOT" commit -qm initial
 mkdir -p "$ROOT/.streams"
 
@@ -45,6 +43,11 @@ expect 'opaque hook body preserved' '/backlog debrief' "$RUNBOOK"
 "$HELPER" "$ROOT" read compiled >"$OUT"
 expect 'read emits purpose' 'purpose=Compiled purpose' "$OUT"
 expect_absent 'read hides inactive hook body' '/backlog debrief' "$OUT"
+
+literal_note='literal\nkeep\tbytes'
+"$HELPER" "$ROOT" operator-note compiled "$literal_note" >"$OUT"
+expect 'operator note preserves literal backslashes' $'operator-note\tliteral\\nkeep\\tbytes' "$RUNBOOK"
+expect_eq 'operator note remains one field row' 1 "$(grep -cF $'operator-note\tliteral\\nkeep\\tbytes' "$RUNBOOK")"
 
 printf '\nProject-authored appendix.\n' >>"$RUNBOOK"
 "$HELPER" "$ROOT" state compiled >"$OUT"

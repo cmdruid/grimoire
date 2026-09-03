@@ -277,7 +277,7 @@ cmd_inplace_scan() {
   local root="$1" f name found=""
   for f in "$root"/.streams/*/WORKSTREAM.md; do
     [ -f "$f" ] || continue
-    if grep -qE '^- isolation: *in-place' "$f"; then
+    if grep -qE $'^isolation\tin-place$|^- isolation: *in-place' "$f"; then
       name="$(basename "$(dirname "$f")")"
       found="${found:+$found,}$name"
     fi

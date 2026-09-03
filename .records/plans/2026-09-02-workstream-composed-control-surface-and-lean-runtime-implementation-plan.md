@@ -549,7 +549,15 @@ hard-cut, read-budget, and live-root gates passed. The Cargo workspace passed wi
 macOS invalid-UTF-8 filesystem assertion excluded; the unchanged assertion receives
 `Uncategorized` instead of its expected `PermissionDenied` on this host.
 
-The mechanical isolated-hook invocation and four-line closure seam passed. An attended native
-full-context fork was not launched from this plain-worktree build session, so transcript isolation
-and conversational-context inheritance remain harness acceptance evidence rather than a local
-deterministic test result.
+The mechanical isolated-hook invocation and four-line closure seam passed. The attended Codex
+native collaboration fixture also passed; no other native same-context harness was exposed in this
+session. The parent durably marked the hook running and paused, while the isolated child recovered
+the conversation-only canary, invoked `/backlog debrief` through the installed provider, and made
+exactly one scoped `Backlog: debrief` commit changing only `feedback.tsv`. The returned payload was
+only the canonical four-line closure; no child reasoning or tool transcript entered the parent
+transcript. Provider output bound the row to the completed-unit identity, unit commit, and `first`
+receipt sentinel. The Workstream runbook and tracker stayed byte-identical during child custody,
+the worktree stayed clean, and the parent validated the effects before completing the receipt.
+The helper selected `execution=isolated` with the configured `fallback=stop` policy. This pass also
+added a regression-backed handoff fix so `unit-complete` and recovery `read` expose the durable hook
+identity required by `hook-start` without raw `workstream.tsv` inspection.
