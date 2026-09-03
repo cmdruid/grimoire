@@ -1,6 +1,6 @@
 ---
 name: inspector
-description: "Use when the user runs `/inspector`, asks to review a document or completed implementation, wants supported findings revised into a document, wants a spec or plan simplified, or wants Inspector's project doctrine deployed. Review is a material two-axis judgment; revise corrects findings; refine is an optional minimum-sufficiency pass. Both mutation verbs propose before editing. Does not mint records. Bare `/inspector` asks which verb. For a one-line patch, skip it."
+description: "Use when the user runs `/inspector`, asks to review a document or completed implementation, wants confirmed text-coded implementation fixes and re-review, wants supported findings revised into a document, wants a spec or plan simplified, or wants Inspector's project doctrine deployed. Review is a material two-axis judgment; revise and refine are document mutation verbs that propose before editing. Does not mint records. Bare `/inspector` asks which verb. For a one-line patch, skip it."
 ---
 
 # inspector — critique, correct, and simplify
@@ -58,7 +58,7 @@ approve document                     →  accept/publish  →  (host sequences /
 material + automatic-proposal        →  revise questions/proposal  →  confirm/apply + queued review  →  …
 material + offered                   →  explicit revise offer  →  stop
 material + unavailable               →  publish-as-is offer or verdict-only  →  stop
-implementation review                →  mutation-free verdict  →  actionable close  →  optional fixes + full review
+implementation review                →  mutation-free verdict  →  plain-text action close  →  optional fixes + full review
 explicit refine of spec/plan         →  simplification proposal  →  confirm/apply + mandatory review
 ```
 
@@ -71,8 +71,10 @@ review continuation; every accepted refinement runs review and that review may e
 
 Implementation remains `revision-after-review: unavailable`: it never enters document `revise` or
 `refine`. Every implementation verdict instead receives the separate post-verdict action close in
-`verbs/review.md`. Only confirmation authorizes remediation; a completely applied package may run a
-full same-base review, and each fresh verdict authorizes no further write.
+`verbs/review.md`. Its numbered scope and `A`/`I` plus `R`/`N` modifiers preserve pending scope and
+confirmation boundaries. Only a complete confirmed selection authorizes eligible inline or isolated
+remediation; a completely applied package may run a full same-base review, and each fresh verdict
+authorizes no further write.
 
 ## Kind-detect (review, revise, and refine; once)
 

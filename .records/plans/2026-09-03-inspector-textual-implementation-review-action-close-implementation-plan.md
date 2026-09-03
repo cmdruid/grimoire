@@ -1,7 +1,7 @@
 ---
 doctype: plans
 status: published
-stage: approved
+stage: implemented
 schema: contractor/plan@1
 tags: [plan]
 ---
@@ -254,7 +254,7 @@ Read-only; produce no commit.
     Expected: real Git state drives every destination and isolation decision; only a complete confirmed
     package reaches integration or re-review; every drift and incomplete-result path stops safely.
 
-- [ ] **Slice 4: Public contract alignment and release gate** <requires: 3>
+- [x] **Slice 4: Public contract alignment and release gate** <requires: 3>
   - Files:
     - `.records/plans/2026-09-03-inspector-textual-implementation-review-action-close-implementation-plan.md`
     - `skills/inspector/SKILL.md`

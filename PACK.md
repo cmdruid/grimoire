@@ -38,8 +38,8 @@ and owns its own setup procedure.
 All other members are optional and default-installed:
 
 - Work leads: `architect`, `contractor`, and `inspector`; Inspector reviews documents and completed
-  implementations, offers confirmed implementation fixes and full re-review, publishes only
-  accepted passing documents, and owns its project kind setup.
+  implementations, offers a plain-text close for confirmed implementation fixes and full re-review,
+  publishes only accepted passing documents, and owns its project kind setup.
 - Project knowledge and follow-up: `journal`, `backlog`, `notepad`, `analyst`, and `chiropractor`.
 - Development operations: `workstream`, `auditor`, `debugger`, and `foreman`.
 - Utilities: `delegate`, `mailbox`, `checkpoint`, and `scheduler`.
@@ -53,9 +53,10 @@ at write time while preserving explicit `mark` / `map` / `walk`. None is part of
 ## Composition seams
 
 - Architect produces the argued specification. Inspector reviews documents, revises supported
-  document findings, and may simplify a spec or plan while offering confirmed implementation fixes
-  and full re-review without taking ownership; after the caller accepts a passing document review,
-  Contractor sequences an approved specification only when a plan is useful and can walk that job.
+  document findings, and may simplify a spec or plan while offering a numbered/lettered close for
+  confirmed implementation fixes and full re-review without taking ownership; after the caller
+  accepts a passing document review, Contractor sequences an approved specification only when a plan
+  is useful and can walk that job.
 - Contractor plans and roadmaps are queue sources for Workstream. Workstream owns isolation,
   landing, and the live stream loop; Contractor never ships.
 - Journal defines the record contract. Notepad writes notes, Auditor and Debugger write reports,

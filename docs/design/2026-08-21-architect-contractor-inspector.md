@@ -44,7 +44,8 @@ pack runbook or host procedure, not in their descriptions or setup.
   spec, reviews, or ships to trunk.
 - Inspector owns review, revise, and refine for the supported artifact kinds. Review is mutation-free
   through its verdict. An accepted passing document review writes its existing gate; an implementation
-  verdict offers direct return or separately confirmed fixes and full re-review. Revise corrects
+  verdict offers a plain-text action close for direct return or separately confirmed fixes and full
+  re-review. Revise corrects
   supported document findings, while explicit refine simplifies specs and plans. Both document
   mutation verbs propose before applying and return the artifact to draft.
 - A published spec is the gate into plan/build. Plans, roadmaps, and
@@ -109,8 +110,10 @@ A material document review follows its effective kind's continuation selector. A
 enter revision classification and reach questions or a proposal without another user command;
 offered kinds stop at an explicit choice; unavailable kinds do not revise. Every revision still
 stops before apply, and a confirmed fold leaves the artifact draft. Implementation review remains
-mutation-free through its verdict, then may enter confirmed inline or isolated remediation followed
-by a full same-base re-review. That action never enters document revise or refine. Refinement is an
+mutation-free through its verdict, then uses numbered scope plus `A`/`I` and `R`/`N` modifiers. A
+destination-less selection retains only pending scope; a complete confirmed choice may use eligible
+inline or isolated remediation followed by a full same-base re-review. That action never enters
+document revise or refine. Refinement is an
 explicit spec/plan simplification pass and always re-reviews an accepted change. The active Inspector
 extensions specify adequacy, review-close parsing, continuation, implementation review, setup, and
 the revise/refine split.

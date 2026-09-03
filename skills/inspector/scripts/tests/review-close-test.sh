@@ -32,16 +32,25 @@ has "$REVIEW" 'writer-started partial or blocked work' "partial-package stop mis
 has "$REVIEW" 'has not passed Inspector review' "unreviewed-result disclosure missing"
 has "$REVIEW" 'If you accept, this session will publish' "passing publish offer missing"
 has "$REVIEW" 're-review queued by default' "offered revise does not carry re-review"
-has "$SPINE" 'confirmed inline or isolated remediation' "responsibility spine action close missing"
-has "$README" 'actionable post-verdict fix and re-review close' "README action close missing"
-has "$PACK" 'confirmed implementation fixes and full re-review' "pack action close missing"
+has "$ROUTER" 'confirmed text-coded implementation fixes and re-review' "router action close missing"
+has "$SPINE" 'destination-less selection retains only pending scope' "responsibility spine pending state missing"
+has "$README" 'plain-text numbered/lettered close' "README action close missing"
+has "$PACK" 'numbered/lettered close' "pack action close missing"
+has "$KINDS/implementation.md" 'An unresolved destination may retain only pending scope' "implementation kind pending state missing"
 
 live_surface_clean() {
   ! grep -qFi 'implementation review remains verdict-only' "$1" \
     && ! grep -qFi 'implementation review → verdict only' "$1" \
     && ! grep -qFi 'implementation, any verdict | verdict only' "$1" \
     && ! grep -qFi 'implementation remediation is outside Inspector' "$1" \
-    && ! grep -qFi 'implementation review never amends code, writes status' "$1"
+    && ! grep -qFi 'implementation review never amends code, writes status' "$1" \
+    && ! grep -qFi 'native multi-select' "$1" \
+    && ! grep -qFi 'textual fallback' "$1" \
+    && ! grep -qFi 'checkbox syntax' "$1" \
+    && ! grep -qFi 'first and focused' "$1" \
+    && ! grep -qFi 'unchecked means inline' "$1" \
+    && ! grep -qFi 'defaults on Enter' "$1" \
+    && ! grep -qFi 'as-is on Enter' "$1"
 }
 for live_surface in "$ROUTER" "$REVIEW" "$KINDS/implementation.md" "$SPINE" "$README" "$PACK"; do
   if live_surface_clean "$live_surface"; then
@@ -52,11 +61,15 @@ for live_surface in "$ROUTER" "$REVIEW" "$KINDS/implementation.md" "$SPINE" "$RE
   fi
 done
 cp "$SPINE" "$ROOT/live.original"
-cp "$ROOT/live.original" "$ROOT/live.broken"
-printf '%s\n' 'Implementation review remains verdict-only.' >> "$ROOT/live.broken"
-eq "live-surface red-proof plants one retired claim" 1 \
-  "$(grep -ciF 'Implementation review remains verdict-only.' "$ROOT/live.broken")"
-rejects live_surface_clean "$ROOT/live.broken"
+for retired in 'Implementation review remains verdict-only.' 'native multi-select' \
+  'textual fallback' 'checkbox syntax' 'first and focused' 'unchecked means inline' \
+  'defaults on Enter' 'as-is on Enter'; do
+  cp "$ROOT/live.original" "$ROOT/live.broken"
+  printf '%s\n' "$retired" >> "$ROOT/live.broken"
+  eq "live-surface red-proof plants one retired claim" 1 \
+    "$(grep -ciF "$retired" "$ROOT/live.broken")"
+  rejects live_surface_clean "$ROOT/live.broken"
+done
 cmp -s "$SPINE" "$ROOT/live.original" && pass=$((pass + 1)) || fail=$((fail + 1))
 
 resolve_policy() {

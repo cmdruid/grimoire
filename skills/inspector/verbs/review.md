@@ -110,11 +110,12 @@ mint a record.
 After every implementation verdict, retain the original review base, reviewed after endpoint,
 complete findings, destination evidence, and the identity of the reviewed source state. The action
 close is a separate post-verdict stop; presenting it mutates nothing.
-The verdict itself is never confirmation. The action state is conversation-only and holds at most one **pending scope** or one
-**pending normalized selection**; it creates no record, project store, status, or stage.
+The verdict itself is never confirmation. The action state is conversation-only and holds at most
+one **pending scope** or one **pending normalized selection**; it creates no record, project store,
+status, or stage.
 
-Use plain text only. Never promise a native control, render checkbox syntax, or tell the user to press
-Enter. A number selects exactly one verdict-local fix scope. `A`/`I` select isolated or inline
+Use plain text only; do not style prose as an interactive control or claim an empty response can
+submit it. A number selects exactly one verdict-local fix scope. `A`/`I` select isolated or inline
 execution; `R`/`N` select full re-review or stop without re-review. Omit a scope whose finding class is
 absent and do not renumber the remaining choices.
 

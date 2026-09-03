@@ -65,6 +65,7 @@ revision-after-review: unavailable
 
 None. Implementation never enters document `revise` or `refine`, writes status or stage, or
 publishes. The review phase never amends code. After any implementation verdict, `verbs/review.md`
-owns a separate action close: direct return, or separately confirmed inline or isolated remediation
-and optional full same-base re-review. That action is neither automatic from the verdict nor a
-revision legal location.
+owns a separate plain-text action close: direct return, or a numbered scope with `A`/`I` execution
+and `R`/`N` afterward modifiers. An unresolved destination may retain only pending scope; a complete
+confirmed selection may use an eligible inline or isolated route and optional full same-base
+re-review. That action is neither automatic from the verdict nor a revision legal location.
