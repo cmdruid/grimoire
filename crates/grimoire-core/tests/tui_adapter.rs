@@ -5,9 +5,9 @@ use grimoire_core::inventory::{
 };
 use grimoire_core::{
     plan, project_tree, CanonicalIdentity, DesiredEdit, DesiredState, InstalledLink, PackSelection,
-    PlanningMode, Request, RequestRoot, Scope, SkillAvailability, SnapshotId, SnapshotKind,
-    SnapshotStore, SourceAlias, SourceSnapshot, SourceState, TreeItemKey, TreeItemKind,
-    TrustBaseline, TrustReceipt, TrustStore, WorldState,
+    PlanningMode, ProjectionMode, Request, RequestRoot, Scope, SkillAvailability, SnapshotId,
+    SnapshotKind, SnapshotStore, SourceAlias, SourceSnapshot, SourceState, TreeItemKey,
+    TreeItemKind, TrustBaseline, TrustReceipt, TrustStore, WorldState,
 };
 
 const EMPTY_LOCK: &[u8] = include_bytes!("fixtures/lock/empty.json");
@@ -112,6 +112,18 @@ fn packs_members_shared_roots_and_unavailable_items_are_core_facts() {
             enabled: true,
         })
         .unwrap();
+    desired
+        .apply(DesiredEdit::SetPackMode {
+            name: "toolkit".try_into().unwrap(),
+            mode: ProjectionMode::Vendor,
+        })
+        .unwrap();
+    desired
+        .apply(DesiredEdit::SetSkillMode {
+            name: "notes".try_into().unwrap(),
+            mode: ProjectionMode::Vendor,
+        })
+        .unwrap();
 
     let tree = project_tree(&world, &desired).unwrap();
     let pack = tree
@@ -121,6 +133,8 @@ fn packs_members_shared_roots_and_unavailable_items_are_core_facts() {
         })
         .unwrap();
     assert_eq!(pack.kind, TreeItemKind::Pack(PackSelection::Partial));
+    assert_eq!(pack.mode, Some(ProjectionMode::Vendor));
+    assert!(pack.mode_toggleable);
 
     let required = tree
         .item(&TreeItemKey::PackMember {
@@ -135,6 +149,8 @@ fn packs_members_shared_roots_and_unavailable_items_are_core_facts() {
     );
     assert!(required.selected);
     assert!(!required.toggleable);
+    assert_eq!(required.mode, Some(ProjectionMode::Vendor));
+    assert!(!required.mode_toggleable);
 
     let unavailable = tree
         .item(&TreeItemKey::PackMember {
@@ -164,6 +180,8 @@ fn packs_members_shared_roots_and_unavailable_items_are_core_facts() {
         .into_iter()
         .collect()
     );
+    assert_eq!(notes.mode, Some(ProjectionMode::Vendor));
+    assert!(notes.mode_toggleable);
 }
 
 #[test]

@@ -62,6 +62,7 @@ fn direct_core_cli_and_tui_emit_identical_blocked_additive_and_destructive_plans
         &home,
         &key,
         &["install", "one", "--source", "fixture", "--dry-run"],
+        false,
     );
     assert!(!blocked.blockers.is_empty());
     assert!(!blocked.is_destructive());
@@ -77,6 +78,7 @@ fn direct_core_cli_and_tui_emit_identical_blocked_additive_and_destructive_plans
         &home,
         &key,
         &["install", "one", "--source", "fixture", "--dry-run"],
+        false,
     );
     assert!(additive.blockers.is_empty());
     assert!(!additive.is_destructive());
@@ -86,12 +88,31 @@ fn direct_core_cli_and_tui_emit_identical_blocked_additive_and_destructive_plans
         &home,
         &["install", "one", "--source", "fixture"],
     ));
+    let vendor = assert_parity(
+        load(&paths),
+        &project,
+        &home,
+        &key,
+        &[
+            "install",
+            "one",
+            "--source",
+            "fixture",
+            "--vendor",
+            "--dry-run",
+        ],
+        true,
+    );
+    assert!(vendor.blockers.is_empty());
+    assert!(vendor.is_destructive());
+
     let uninstall = assert_parity(
         load(&paths),
         &project,
         &home,
         &key,
         &["uninstall", "one", "--dry-run"],
+        false,
     );
     assert!(uninstall.blockers.is_empty());
     assert!(uninstall.is_destructive());
@@ -103,6 +124,7 @@ fn assert_parity(
     home: &Path,
     key: &TreeItemKey,
     cli: &[&str],
+    toggle_mode: bool,
 ) -> grimoire_core::Plan {
     let parsed = Cli::try_parse_from(std::iter::once("grimoire").chain(cli.iter().copied()))
         .unwrap()
@@ -112,7 +134,11 @@ fn assert_parity(
 
     let direct = plan(&world, input.request.clone(), input.mode).unwrap();
     let mut tui = TuiModel::new(world).unwrap();
-    tui.toggle(key).unwrap();
+    if toggle_mode {
+        tui.toggle_mode(key).unwrap();
+    } else {
+        tui.toggle(key).unwrap();
+    }
     assert_eq!(tui.staged_request(), input.request);
     assert_eq!(tui.plan(), &direct);
     assert_eq!(tui.plan().is_destructive(), direct.is_destructive());

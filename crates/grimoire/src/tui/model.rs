@@ -1,7 +1,7 @@
 use grimoire_core::{
     plan, project_tree, source_key_for_alias, Approval, Blocker, DesiredEdit, DesiredState, Plan,
-    PlanningMode, Request, Result, Scope, SourceAlias, SourceKey, TreeItem, TreeItemKey,
-    TreeProjection, TrustBaseline, WorldState,
+    PlanningMode, ProjectionMode, Request, Result, Scope, SourceAlias, SourceKey, TreeItem,
+    TreeItemKey, TreeProjection, TrustBaseline, WorldState,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -309,6 +309,50 @@ impl TuiModel {
             .map(|item| item.key.clone())
             .ok_or_else(|| grimoire_core::CoreError::Request("tree is empty".into()))?;
         self.toggle(&key)
+    }
+
+    pub fn toggle_mode(&mut self, key: &TreeItemKey) -> Result<()> {
+        let state = self.active_state_mut();
+        let item = state
+            .tree
+            .item(key)
+            .filter(|item| item.mode_toggleable)
+            .cloned()
+            .ok_or_else(|| {
+                grimoire_core::CoreError::Request(
+                    "projection mode is not mutable for this tree item".into(),
+                )
+            })?;
+        let mode = match item.mode {
+            Some(ProjectionMode::Link) => ProjectionMode::Vendor,
+            Some(ProjectionMode::Vendor) => ProjectionMode::Link,
+            None => {
+                return Err(grimoire_core::CoreError::Request(
+                    "tree item has no staged projection mode".into(),
+                ))
+            }
+        };
+        let edit = match item.key {
+            TreeItemKey::Skill { name, .. } => DesiredEdit::SetSkillMode { name, mode },
+            TreeItemKey::Pack { name, .. } => DesiredEdit::SetPackMode { name, mode },
+            TreeItemKey::Source(_)
+            | TreeItemKey::PackMember { .. }
+            | TreeItemKey::InheritedSkill { .. } => {
+                return Err(grimoire_core::CoreError::Request(
+                    "projection mode is not mutable for this tree item".into(),
+                ))
+            }
+        };
+        state.desired.apply(edit)?;
+        state.refresh()
+    }
+
+    pub fn toggle_selected_mode(&mut self) -> Result<()> {
+        let key = self
+            .selected_item()
+            .map(|item| item.key.clone())
+            .ok_or_else(|| grimoire_core::CoreError::Request("tree is empty".into()))?;
+        self.toggle_mode(&key)
     }
 
     pub fn cancel(&mut self) -> Result<()> {

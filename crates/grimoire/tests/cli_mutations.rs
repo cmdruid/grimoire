@@ -87,6 +87,50 @@ fn install_update_frozen_and_uninstall_share_the_transaction_path() {
     assert!(project.join(".agents/skills/one").is_symlink());
     assert!(project.join(".agents/skills/two").is_symlink());
 
+    let vendored = support::run(
+        &project,
+        &home,
+        &[
+            "install", "bundle", "--pack", "--source", "fixture", "--vendor", "--yes",
+        ],
+    );
+    assert!(vendored.status.success(), "{}", support::stderr(&vendored));
+    assert!(
+        project.join("vendor/grimoire/fixture/one").is_dir(),
+        "stdout={} manifest={}",
+        support::stdout(&vendored),
+        fs::read_to_string(project.join("grimoire.toml")).unwrap()
+    );
+    assert_eq!(
+        fs::read_link(project.join(".agents/skills/one")).unwrap(),
+        std::path::PathBuf::from("../../vendor/grimoire/fixture/one")
+    );
+    assert!(fs::read_to_string(project.join("grimoire.toml"))
+        .unwrap()
+        .contains("mode = \"vendor\""));
+    let listed = support::run(&project, &home, &["list"]);
+    assert!(listed.status.success(), "{}", support::stderr(&listed));
+    assert!(support::stdout(&listed)
+        .contains("skill\tone\tfixture\tmode=vendor\tprojection=vendor/grimoire/fixture/one"));
+
+    let repeated = support::run(
+        &project,
+        &home,
+        &["install", "bundle", "--pack", "--source", "fixture"],
+    );
+    assert!(repeated.status.success(), "{}", support::stderr(&repeated));
+    assert!(project.join("vendor/grimoire/fixture/one").is_dir());
+
+    let relinked = support::run(
+        &project,
+        &home,
+        &[
+            "install", "bundle", "--pack", "--source", "fixture", "--link", "--yes",
+        ],
+    );
+    assert!(relinked.status.success(), "{}", support::stderr(&relinked));
+    assert!(!project.join("vendor/grimoire/fixture/one").exists());
+
     commit(&source, "second");
     assert!(
         support::run(&project, &home, &["source", "fetch", "fixture"])
@@ -129,6 +173,12 @@ fn invalid_install_flag_combinations_are_usage_errors() {
         vec!["install", "one"],
         vec!["install", "--source", "fixture"],
         vec!["install", "one", "--source", "fixture", "--frozen"],
+        vec![
+            "install", "one", "--source", "fixture", "--link", "--vendor",
+        ],
+        vec![
+            "install", "one", "--source", "fixture", "--vendor", "--global",
+        ],
     ] {
         let output = support::run(&project, &home, &args);
         assert_eq!(output.status.code(), Some(2), "{args:?}");

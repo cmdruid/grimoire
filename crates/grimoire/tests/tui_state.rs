@@ -4,7 +4,9 @@ mod fixture;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
-use grimoire_core::{attach_inherited_global, PathProbe, Scope, ScopePaths, TreeItemKey};
+use grimoire_core::{
+    attach_inherited_global, PathProbe, ProjectionMode, Request, Scope, ScopePaths, TreeItemKey,
+};
 use skill_grimoire::env::{resolve_tui_paths, Environment};
 use skill_grimoire::tui::{ActiveScope, TuiModel};
 
@@ -73,6 +75,55 @@ fn missing_project_falls_back_to_global_with_a_typed_remedy() {
         model.project_remedy(),
         Some(skill_grimoire::tui::ScopeRemedy::FindOrInitializeProject)
     );
+}
+
+#[test]
+fn project_roots_toggle_projection_mode_while_global_rows_remain_read_only() {
+    let project = fixture::world(
+        Scope::Project,
+        "project",
+        &["one"],
+        concat!(
+            "schema = \"grimoire/manifest@2\"\n",
+            "[sources.project]\nurl = \"github:fixture/project\"\n",
+            "[skills]\none = { source = \"project\" }\n",
+        ),
+    );
+    let global = fixture::world(
+        Scope::Global,
+        "global",
+        &["one"],
+        concat!(
+            "schema = \"grimoire/manifest@2\"\n",
+            "[sources.global]\nurl = \"github:fixture/global\"\n",
+            "[skills]\none = { source = \"global\" }\n",
+        ),
+    );
+    let mut model = TuiModel::from_scopes(Some(project), global).unwrap();
+    model.select_next();
+    assert_eq!(
+        model.selected_item().unwrap().mode,
+        Some(ProjectionMode::Link)
+    );
+    assert!(model.selected_item().unwrap().mode_toggleable);
+
+    model.toggle_selected_mode().unwrap();
+    assert_eq!(
+        model.selected_item().unwrap().mode,
+        Some(ProjectionMode::Vendor)
+    );
+    let Request::ReplaceDesiredState { desired } = model.staged_request() else {
+        panic!("project mode toggle must stage desired state");
+    };
+    assert_eq!(
+        desired.skills[&"one".try_into().unwrap()].mode,
+        ProjectionMode::Vendor
+    );
+
+    model.switch_scope();
+    model.select_next();
+    assert!(!model.selected_item().unwrap().mode_toggleable);
+    assert!(model.toggle_selected_mode().is_err());
 }
 
 struct TestEnvironment {

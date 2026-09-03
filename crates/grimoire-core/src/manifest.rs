@@ -103,6 +103,10 @@ pub enum ManifestMutation {
     UninstallSkill {
         name: SkillName,
     },
+    ReplaceSkillMode {
+        name: SkillName,
+        mode: ProjectionMode,
+    },
     InstallPack {
         name: PackName,
         request: ManifestPack,
@@ -113,6 +117,10 @@ pub enum ManifestMutation {
     ReplacePackExclusions {
         name: PackName,
         exclude: BTreeSet<SkillName>,
+    },
+    ReplacePackMode {
+        name: PackName,
+        mode: ProjectionMode,
     },
 }
 
@@ -414,6 +422,22 @@ impl Manifest {
                 }
                 remove_ranges(&mut after, self.entry_ranges("skills", name.as_str())?);
             }
+            ManifestMutation::ReplaceSkillMode { name, mode } => {
+                let request = expected_skills.get_mut(&name).ok_or_else(|| {
+                    CoreError::Manifest(format!("skill `{name}` is not requested"))
+                })?;
+                if request.mode == mode {
+                    return Err(CoreError::Manifest(format!(
+                        "skill `{name}` projection mode is unchanged"
+                    )));
+                }
+                request.mode = mode;
+                let item = nested_item(&self.document, "skills", name.as_str())?;
+                let span = item.span().ok_or_else(|| {
+                    CoreError::Manifest(format!("skill `{name}` has no editable source span"))
+                })?;
+                after.splice(span, render_skill(request).bytes());
+            }
             ManifestMutation::InstallPack { name, request } => {
                 if !expected_sources.contains_key(&request.source) {
                     return Err(CoreError::Manifest(format!(
@@ -460,6 +484,22 @@ impl Manifest {
                 })?;
                 after.splice(span, render_pack(request).bytes());
             }
+            ManifestMutation::ReplacePackMode { name, mode } => {
+                let request = expected_packs.get_mut(&name).ok_or_else(|| {
+                    CoreError::Manifest(format!("pack `{name}` is not requested"))
+                })?;
+                if request.mode == mode {
+                    return Err(CoreError::Manifest(format!(
+                        "pack `{name}` projection mode is unchanged"
+                    )));
+                }
+                request.mode = mode;
+                let item = nested_item(&self.document, "packs", name.as_str())?;
+                let span = item.span().ok_or_else(|| {
+                    CoreError::Manifest(format!("pack `{name}` has no editable source span"))
+                })?;
+                after.splice(span, render_pack(request).bytes());
+            }
         }
 
         let manifest = Self::parse(after.clone())?;
@@ -482,7 +522,11 @@ impl Manifest {
         let mut current = self.clone();
 
         for (name, request) in self.skills.iter().rev() {
-            if desired.skills.get(name) != Some(request) {
+            if desired
+                .skills
+                .get(name)
+                .is_none_or(|desired| desired.source != request.source)
+            {
                 current = current
                     .mutate(ManifestMutation::UninstallSkill { name: name.clone() })?
                     .manifest;
@@ -509,25 +553,45 @@ impl Manifest {
                         })?
                         .manifest;
                 }
-                Some(existing) if existing.exclude != request.exclude => {
+                Some(existing) => {
+                    if existing.mode != request.mode {
+                        current = current
+                            .mutate(ManifestMutation::ReplacePackMode {
+                                name: name.clone(),
+                                mode: request.mode,
+                            })?
+                            .manifest;
+                    }
+                    if current.packs[name].exclude != request.exclude {
+                        current = current
+                            .mutate(ManifestMutation::ReplacePackExclusions {
+                                name: name.clone(),
+                                exclude: request.exclude.clone(),
+                            })?
+                            .manifest;
+                    }
+                }
+            }
+        }
+        for (name, request) in &desired.skills {
+            match current.skills.get(name) {
+                None => {
                     current = current
-                        .mutate(ManifestMutation::ReplacePackExclusions {
+                        .mutate(ManifestMutation::InstallSkill {
                             name: name.clone(),
-                            exclude: request.exclude.clone(),
+                            request: request.clone(),
+                        })?
+                        .manifest;
+                }
+                Some(existing) if existing.mode != request.mode => {
+                    current = current
+                        .mutate(ManifestMutation::ReplaceSkillMode {
+                            name: name.clone(),
+                            mode: request.mode,
                         })?
                         .manifest;
                 }
                 Some(_) => {}
-            }
-        }
-        for (name, request) in &desired.skills {
-            if current.skills.get(name) != Some(request) {
-                current = current
-                    .mutate(ManifestMutation::InstallSkill {
-                        name: name.clone(),
-                        request: request.clone(),
-                    })?
-                    .manifest;
             }
         }
 

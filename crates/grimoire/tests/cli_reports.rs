@@ -80,8 +80,8 @@ fn list_check_and_prune_project_core_projections() {
     let listed = support::run(&project, &home, &["list"]);
     assert_eq!(listed.status.code(), Some(1));
     let stdout = support::stdout(&listed);
-    assert!(stdout.contains("desired\tskill:local\tproject"));
-    assert!(stdout.contains("skill\tlocal\tproject"));
+    assert!(stdout.contains("desired\tskill:local\tproject\tmode=link"));
+    assert!(stdout.contains("skill\tlocal\tproject\tmode=link\tprojection=live"));
     assert!(stdout.contains("requested_by=skill:local"));
     assert!(stdout.contains("inherited\tshared\tglobal\tshadowed=true"));
     assert!(stdout.contains("finding\tWarning\tglobal-skill-shadowed"));

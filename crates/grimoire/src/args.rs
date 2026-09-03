@@ -37,9 +37,17 @@ pub enum Command {
         pack: bool,
         #[arg(long, value_name = "ALIAS", requires = "name")]
         source: Option<String>,
+        #[arg(long, requires = "name", conflicts_with = "vendor")]
+        link: bool,
+        #[arg(
+            long,
+            requires = "name",
+            conflicts_with_all = ["link", "global"]
+        )]
+        vendor: bool,
         #[arg(long)]
         dry_run: bool,
-        #[arg(long, conflicts_with_all = ["name", "pack", "source"])]
+        #[arg(long, conflicts_with_all = ["name", "pack", "source", "link", "vendor"])]
         frozen: bool,
         #[arg(long)]
         yes: bool,

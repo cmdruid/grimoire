@@ -161,6 +161,12 @@ fn cli_approves_and_restores_a_committed_vendor_projection_offline() {
     assert!(trust_output.contains("\"kind\": \"vendor_trust\""));
     assert!(trust_output.contains("Apply? [y/N]"));
     let trust = fs::read(paths.trust_path()).unwrap();
+    let mut catalog_console = TestConsole::default();
+    assert_eq!(
+        run(&environment, &git, &mut catalog_console, &["trust", "list"]),
+        0
+    );
+    assert!(String::from_utf8_lossy(&catalog_console.stdout).contains("authority=vendor-only"));
 
     let mut install_console = TestConsole::default();
     assert_eq!(

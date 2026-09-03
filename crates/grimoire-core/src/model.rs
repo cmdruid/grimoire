@@ -395,13 +395,16 @@ pub enum InstalledStatus {
 pub struct DesiredRootSummary {
     pub root: RequestRoot,
     pub source: SourceAlias,
+    pub mode: ProjectionMode,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ResolvedSkillSummary {
     pub name: SkillName,
     pub source: SourceAlias,
+    pub mode: ProjectionMode,
     pub snapshot: Option<String>,
+    pub vendor_path: Option<String>,
     pub inventory: Option<String>,
     pub requested_by: BTreeSet<RequestRoot>,
     pub installed: InstalledStatus,
@@ -529,6 +532,14 @@ pub enum DesiredEdit {
         skill: SkillName,
         enabled: bool,
     },
+    SetSkillMode {
+        name: SkillName,
+        mode: ProjectionMode,
+    },
+    SetPackMode {
+        name: PackName,
+        mode: ProjectionMode,
+    },
 }
 
 impl DesiredState {
@@ -608,6 +619,20 @@ impl DesiredState {
                 } else {
                     request.exclude.insert(skill);
                 }
+            }
+            DesiredEdit::SetSkillMode { name, mode } => {
+                let request = self
+                    .skills
+                    .get_mut(&name)
+                    .ok_or_else(|| CoreError::Request(format!("skill `{name}` is not staged")))?;
+                request.mode = mode;
+            }
+            DesiredEdit::SetPackMode { name, mode } => {
+                let request = self
+                    .packs
+                    .get_mut(&name)
+                    .ok_or_else(|| CoreError::Request(format!("pack `{name}` is not staged")))?;
+                request.mode = mode;
             }
         }
         Ok(())

@@ -1,8 +1,8 @@
 use std::io::{self, Write};
 
 use grimoire_core::{
-    ApplyOutcome, CheckReport, ContextReport, InstalledStatus, Plan, SourceDiff, SourceInfo,
-    SourceSummary, TrustCatalog, WorldObservation,
+    ApplyOutcome, CheckReport, ContextReport, InstalledStatus, Plan, ProjectionMode, SourceDiff,
+    SourceInfo, SourceSummary, TrustCatalog, WorldObservation,
 };
 
 pub fn plan(plan: &Plan, output: &mut dyn Write) -> io::Result<()> {
@@ -29,6 +29,7 @@ pub fn source_info(info: &SourceInfo, output: &mut dyn Write) -> io::Result<()> 
     writeln!(output, "  inventory: {}", info.candidate.inventory)?;
     writeln!(output, "  review: {}", info.export.root.display())?;
     writeln!(output, "  trust: {:?}", info.trust)?;
+    writeln!(output, "  vendor receipts: {}", info.vendor_receipts)?;
     writeln!(output, "  skills: {}", info.inventory.skills.len())?;
     writeln!(output, "  packs: {}", info.inventory.packs.len())?;
     for finding in &info.inventory.findings {
@@ -45,13 +46,14 @@ pub fn source_list(sources: &[SourceSummary], output: &mut dyn Write) -> io::Res
     for source in sources {
         writeln!(
             output,
-            "{}\t{}\tlocked={}\tcandidate={}\tcurrent={}\ttrust={:?}{}",
+            "{}\t{}\tlocked={}\tcandidate={}\tcurrent={}\ttrust={:?}\tvendor_approved={}{}",
             source.alias,
             if source.live { "live" } else { "pinned" },
             source.locked_commit.as_deref().unwrap_or("-"),
             source.candidate_commit.as_deref().unwrap_or("-"),
             source.candidate_current,
             source.trust,
+            source.vendor_approved,
             if source.has_findings {
                 "\tfindings"
             } else {
@@ -91,12 +93,21 @@ pub fn trust_catalog(catalog: &TrustCatalog, output: &mut dyn Write) -> io::Resu
     for record in &catalog.records {
         writeln!(
             output,
-            "{}\t{}\tall={}\treceipts={}\tvendor_receipts={}",
+            "{}\t{}\tauthority={}\tall={}\treceipts={}\tvendor_receipts={}",
             record.source_key,
             record
                 .identity
                 .canonical_utf8()
                 .unwrap_or("<non-UTF-8 local identity>"),
+            if record.all_snapshots {
+                "all-snapshots"
+            } else if !record.receipts.is_empty() {
+                "snapshot"
+            } else if !record.vendor_receipts.is_empty() {
+                "vendor-only"
+            } else {
+                "none"
+            },
             record.all_snapshots,
             record.receipts.len(),
             record.vendor_receipts.len()
@@ -115,9 +126,10 @@ pub fn context_report(report: &ContextReport, output: &mut dyn Write) -> io::Res
     for root in &report.desired_roots {
         writeln!(
             output,
-            "desired\t{}\t{}",
+            "desired\t{}\t{}\tmode={}",
             root.root.lock_value(),
-            root.source
+            root.source,
+            projection_mode(root.mode),
         )?;
     }
     for skill in &report.skills {
@@ -129,10 +141,14 @@ pub fn context_report(report: &ContextReport, output: &mut dyn Write) -> io::Res
             .join(",");
         writeln!(
             output,
-            "skill\t{}\t{}\tsnapshot={}\tinventory={}\tinstalled={}\trequested_by={}",
+            "skill\t{}\t{}\tmode={}\tprojection={}\tinventory={}\tinstalled={}\trequested_by={}",
             skill.name,
             skill.source,
-            skill.snapshot.as_deref().unwrap_or("live"),
+            projection_mode(skill.mode),
+            skill
+                .vendor_path
+                .as_deref()
+                .unwrap_or_else(|| { skill.snapshot.as_deref().unwrap_or("live") }),
             skill.inventory.as_deref().unwrap_or("-"),
             installed_status(skill.installed),
             requested_by
@@ -156,6 +172,13 @@ pub fn context_report(report: &ContextReport, output: &mut dyn Write) -> io::Res
         writeln!(output, "blocker\t{}\t{:?}", blocker.code, blocker.details)?;
     }
     render_findings(&report.findings, output)
+}
+
+fn projection_mode(mode: ProjectionMode) -> &'static str {
+    match mode {
+        ProjectionMode::Link => "link",
+        ProjectionMode::Vendor => "vendor",
+    }
 }
 
 pub fn check_report(report: &CheckReport, output: &mut dyn Write) -> io::Result<()> {

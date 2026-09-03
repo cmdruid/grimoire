@@ -22,6 +22,7 @@ pub struct SourceSummary {
     pub candidate_commit: Option<String>,
     pub candidate_current: bool,
     pub trust: TrustMode,
+    pub vendor_approved: bool,
     pub has_findings: bool,
 }
 
@@ -128,6 +129,7 @@ pub fn source_info(paths: &Paths, world: &WorldState, alias: &SourceAlias) -> Re
         state.snapshot.inventory.clone(),
         export,
         trust,
+        record.map_or(0, |record| record.vendor_receipts.len()),
         record.and_then(|record| record.baseline.clone()),
     ))
 }
@@ -202,6 +204,11 @@ pub fn source_summaries(world: &WorldState) -> Result<Vec<SourceSummary>> {
                 candidate_commit: candidate.and_then(|state| state.snapshot.id.commit.clone()),
                 candidate_current: candidate.is_some_and(|state| state.candidate_current),
                 trust,
+                vendor_approved: identity
+                    .and_then(|identity| {
+                        trust_store.records.get(&super::SourceKey::derive(identity))
+                    })
+                    .is_some_and(|record| !record.vendor_receipts.is_empty()),
                 has_findings: candidate
                     .or_else(|| world.locked_states.get(alias))
                     .is_some_and(|state| !state.snapshot.inventory.findings.is_empty()),

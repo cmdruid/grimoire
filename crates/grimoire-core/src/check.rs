@@ -43,6 +43,7 @@ pub fn context_report(world: &WorldState) -> ContextReport {
         .map(|(name, request)| DesiredRootSummary {
             root: RequestRoot::Skill(name.clone()),
             source: request.source.clone(),
+            mode: request.mode,
         })
         .chain(
             world
@@ -52,6 +53,7 @@ pub fn context_report(world: &WorldState) -> ContextReport {
                 .map(|(name, request)| DesiredRootSummary {
                     root: RequestRoot::Pack(name.clone()),
                     source: request.source.clone(),
+                    mode: request.mode,
                 }),
         )
         .collect::<Vec<_>>();
@@ -89,7 +91,10 @@ pub fn context_report(world: &WorldState) -> ContextReport {
             Some(ResolvedSkillSummary {
                 name: name.clone(),
                 source: locked.source.clone(),
+                mode: locked.mode,
                 snapshot,
+                vendor_path: (locked.mode == ProjectionMode::Vendor)
+                    .then(|| format!("vendor/grimoire/{}/{}", locked.source, name)),
                 inventory,
                 requested_by: locked.requested_by.clone(),
                 installed,

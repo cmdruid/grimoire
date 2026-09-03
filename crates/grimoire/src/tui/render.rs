@@ -1,4 +1,6 @@
-use grimoire_core::{PackSelection, SkillAvailability, TreeItem, TreeItemKind, TrustMode};
+use grimoire_core::{
+    PackSelection, ProjectionMode, SkillAvailability, TreeItem, TreeItemKind, TrustMode,
+};
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use ratatui::Frame;
@@ -96,7 +98,7 @@ fn render_item(item: &TreeItem, focused: bool) -> String {
         TreeItemKind::Skill(_) if item.selected => "[x] ",
         TreeItemKind::Skill(_) => "[ ] ",
     };
-    let facts = match item.kind {
+    let mut facts = match item.kind {
         TreeItemKind::Source {
             live,
             trust,
@@ -126,6 +128,12 @@ fn render_item(item: &TreeItem, focused: bool) -> String {
             .map(|reason| format!(" [{reason}]"))
             .unwrap_or_default(),
     };
+    if let Some(mode) = item.mode {
+        facts.push_str(match mode {
+            ProjectionMode::Link => " [linked]",
+            ProjectionMode::Vendor => " [vendored]",
+        });
+    }
     format!(
         "{}{}{}{}{}",
         if focused { ">" } else { " " },

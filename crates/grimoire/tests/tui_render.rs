@@ -57,3 +57,23 @@ fn representative_tree_buffer_is_stable() {
         )
     );
 }
+
+#[test]
+fn project_request_rows_render_projection_mode_labels() {
+    let project = fixture::world(
+        Scope::Project,
+        "project",
+        &["one"],
+        concat!(
+            "schema = \"grimoire/manifest@2\"\n",
+            "[sources.project]\nurl = \"github:fixture/project\"\n",
+            "[skills]\none = { source = \"project\", mode = \"vendor\" }\n",
+        ),
+    );
+    let model = TuiModel::new(project).unwrap();
+    let backend = TestBackend::new(72, 8);
+    let mut terminal = Terminal::new(backend).unwrap();
+    terminal.draw(|frame| draw(frame, &model)).unwrap();
+
+    assert!(terminal.backend().to_string().contains("one [vendored]"));
+}

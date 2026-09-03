@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
     check, resolve_manifest_for_scope, source_summaries, Blocker, CheckFinding, DesiredState,
-    InstalledLink, InstalledStatus, PackName, RequestRoot, Result, Scope, SkillName, SourceAlias,
-    TrustMode, WorldState,
+    InstalledLink, InstalledStatus, PackName, ProjectionMode, RequestRoot, Result, Scope,
+    SkillName, SourceAlias, TrustMode, WorldState,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -62,6 +62,8 @@ pub struct TreeItem {
     pub depth: u16,
     pub selected: bool,
     pub toggleable: bool,
+    pub mode: Option<ProjectionMode>,
+    pub mode_toggleable: bool,
     pub kind: TreeItemKind,
     pub requested_by: BTreeSet<RequestRoot>,
     pub installed: Option<InstalledStatus>,
@@ -106,6 +108,8 @@ pub fn project_tree(world: &WorldState, desired: &DesiredState) -> Result<TreePr
             depth: 0,
             selected: false,
             toggleable: false,
+            mode: None,
+            mode_toggleable: false,
             kind: TreeItemKind::Source {
                 live: declaration.live,
                 trust: facts.map_or(TrustMode::Untrusted, |facts| facts.trust),
@@ -146,6 +150,8 @@ pub fn project_tree(world: &WorldState, desired: &DesiredState) -> Result<TreePr
                 depth: 1,
                 selected: request.is_some(),
                 toggleable: owner.is_none_or(|owner| owner == alias),
+                mode: request.map(|request| request.mode),
+                mode_toggleable: world.scope == Scope::Project && request.is_some(),
                 kind: TreeItemKind::Pack(state),
                 requested_by: BTreeSet::from([RequestRoot::Pack(name.clone())]),
                 installed: None,
@@ -166,6 +172,7 @@ pub fn project_tree(world: &WorldState, desired: &DesiredState) -> Result<TreePr
                     SkillAvailability::Required,
                     request.is_some(),
                     false,
+                    request.map(|request| request.mode),
                     &available,
                 ));
             }
@@ -181,6 +188,7 @@ pub fn project_tree(world: &WorldState, desired: &DesiredState) -> Result<TreePr
                     SkillAvailability::Optional,
                     enabled,
                     request.is_some(),
+                    request.map(|request| request.mode),
                     &available,
                 ));
             }
@@ -200,6 +208,11 @@ pub fn project_tree(world: &WorldState, desired: &DesiredState) -> Result<TreePr
                 depth: 1,
                 selected: owner.is_some_and(|owner| &owner.source == alias),
                 toggleable: owner.is_none_or(|owner| &owner.source == alias),
+                mode: owner
+                    .filter(|owner| &owner.source == alias)
+                    .map(|owner| owner.mode),
+                mode_toggleable: world.scope == Scope::Project
+                    && owner.is_some_and(|owner| &owner.source == alias),
                 kind: TreeItemKind::Skill(SkillAvailability::Available),
                 requested_by: requested_by(&resolution, &name),
                 installed: installed_status(world, &resolution, &name),
@@ -219,6 +232,8 @@ pub fn project_tree(world: &WorldState, desired: &DesiredState) -> Result<TreePr
                 depth: 0,
                 selected: true,
                 toggleable: false,
+                mode: global.lock.skills.get(name).map(|skill| skill.mode),
+                mode_toggleable: false,
                 kind: TreeItemKind::Skill(SkillAvailability::Inherited),
                 requested_by: global
                     .lock
@@ -274,6 +289,7 @@ fn pack_member(
     intended: SkillAvailability,
     selected: bool,
     optional_toggle: bool,
+    mode: Option<ProjectionMode>,
     available: &BTreeSet<SkillName>,
 ) -> TreeItem {
     let is_available = available.contains(&name);
@@ -292,6 +308,8 @@ fn pack_member(
         depth: 2,
         selected: selected && is_available,
         toggleable: optional_toggle && is_available,
+        mode,
+        mode_toggleable: false,
         kind: TreeItemKind::Skill(availability),
         requested_by: requested_by(resolution, &name),
         installed: installed_status(world, resolution, &name),

@@ -23,6 +23,7 @@ pub enum DriverEvent {
     Next,
     Previous,
     Toggle,
+    ToggleMode,
     SwitchScope,
     Cancel,
     Apply,
@@ -104,6 +105,10 @@ fn transition(model: &mut TuiModel, event: DriverEvent) -> Result<Option<Effect>
         }
         DriverEvent::Toggle => {
             model.toggle_selected()?;
+            None
+        }
+        DriverEvent::ToggleMode => {
+            model.toggle_selected_mode()?;
             None
         }
         DriverEvent::SwitchScope => {
@@ -404,6 +409,7 @@ impl Driver for SystemDriver {
                 KeyCode::Down | KeyCode::Char('j') => DriverEvent::Next,
                 KeyCode::Up | KeyCode::Char('k') => DriverEvent::Previous,
                 KeyCode::Char(' ') => DriverEvent::Toggle,
+                KeyCode::Char('v') => DriverEvent::ToggleMode,
                 KeyCode::Esc => {
                     if self.has_dialog {
                         DriverEvent::Confirm(false)

@@ -18,6 +18,7 @@ pub struct SourceInfo {
     pub inventory: SourceInventory,
     pub export: ReviewExport,
     pub trust: TrustMode,
+    pub vendor_receipts: usize,
     pub baseline: Option<TrustBaseline>,
 }
 
@@ -31,6 +32,7 @@ impl SourceInfo {
         inventory: SourceInventory,
         export: ReviewExport,
         trust: TrustMode,
+        vendor_receipts: usize,
         baseline: Option<TrustBaseline>,
     ) -> Self {
         Self {
@@ -41,6 +43,7 @@ impl SourceInfo {
             inventory,
             export,
             trust,
+            vendor_receipts,
             baseline,
         }
     }
@@ -67,6 +70,7 @@ impl SourceInfo {
             },
             trust: TrustDto {
                 mode: self.trust,
+                vendor_receipts: self.vendor_receipts,
                 baseline: &self.baseline,
             },
             skills: self.inventory.skills.iter().map(skill_dto).collect(),
@@ -158,6 +162,7 @@ struct SnapshotDto<'a> {
 #[derive(Serialize)]
 struct TrustDto<'a> {
     mode: TrustMode,
+    vendor_receipts: usize,
     baseline: &'a Option<TrustBaseline>,
 }
 
