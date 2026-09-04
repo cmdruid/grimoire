@@ -89,12 +89,13 @@ diagnostics), `analyst` (reports and briefings read back out of the records), `f
 (project operations, brownfield curation, and goal runbooks), `chiropractor` (documentation-spine
 discoverability and confirmed route repair); **utilities** —
 `checkpoint`, `mailbox`, `delegate`, and `scheduler`.
-Five skills sit outside the pack on
+Standalone skills sit outside the pack on
 purpose: `agent-council` (cross-vendor review panel), `skill-builder` (the **toolmaker** —
 scaffold, audit, and calibrate authoring doctrine), `developer-writing`
-(purpose-aware, human-facing developer prose with Google documentation mechanics), and
-`code-humanizer` (keep durable source fit for human ownership), plus `agent-feedback` (private,
-global capture and lifecycle management for reusable agent-system observations). See *The packs* below.
+(purpose-aware, human-facing developer prose with Google documentation mechanics),
+`code-humanizer` (keep durable source fit for human ownership), `agent-feedback` (private,
+global capture and lifecycle management for reusable agent-system observations), and
+`gcloud-operator` (IAP/OS Login operator sessions for Google Cloud). See *The packs* below.
 
 | skill | what it does |
 |---|---|
@@ -116,6 +117,7 @@ global capture and lifecycle management for reusable agent-system observations).
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |
 | `foreman` | curate project operations: inventory and run publisher-owned procedures, capture or ingest brownfield know-how, verify and compose operations, and compile immutable goal runbooks |
+| `gcloud-operator` | persistent IAP/OS Login SSH sessions for private Compute Engine VMs, MFA-aware gcloud operations, and optional control-plane impersonation; standalone, outside every pack |
 | `agent-feedback` | capture concrete observations about reusable skills, agents, harnesses, tools, and workflows into a private global TSV; query and close their lifecycle without remediation; standalone, outside every pack |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), revise an explicitly selected editable skill from current conversation or one schema-free prose file (`tune`), and calibrate authoring doctrine — bundles the portable doctrine + gate |
 | `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
@@ -177,7 +179,8 @@ optional skill-name sequences. Source repositories need no repository manifest, 
 acts as a skill. See the published Grimoire product contract above.
 
 - **`clankshop`** (`PACK.md`) — the skills above (minus `agent-council`,
-  `code-humanizer`, `developer-writing`, and `skill-builder`) as a pure bundle. The manifest body is
+  `code-humanizer`, `developer-writing`, `skill-builder`, `agent-feedback`, and `gcloud-operator`)
+  as a pure bundle. The manifest body is
   the seam map; there is no `clankshop` skill or project assembler.
 
 ## Repo layout

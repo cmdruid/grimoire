@@ -46,9 +46,10 @@ All other members are optional and default-installed:
 
 Standalone library skills outside this pack include `skill-builder`, which maintains skills
 libraries; `agent-council` is a standalone cross-vendor panel, `developer-writing` is a standalone
-developer-writing guide, and `code-humanizer` keeps durable product source fit for human ownership
-at write time while preserving explicit `mark` / `map` / `walk`. None is part of the project's
-`clankshop` toolkit.
+developer-writing guide, `code-humanizer` keeps durable product source fit for human ownership
+at write time while preserving explicit `mark` / `map` / `walk`, `agent-feedback` is a private
+global observation queue, and `gcloud-operator` runs IAP/OS Login operator sessions against
+Google Cloud. None is part of the project's `clankshop` toolkit.
 
 ## Composition seams
 
