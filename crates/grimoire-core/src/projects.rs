@@ -190,7 +190,7 @@ pub(crate) fn references(
                 inventory,
                 ..
             } => Some((alias, commit, tree, inventory)),
-            LockSource::Live { .. } => None,
+            LockSource::Link { .. } => None,
         })
         .map(|(alias, commit, tree, inventory)| {
             let identity = crate::world::declaration_identity(paths, manifest, alias)?;

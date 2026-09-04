@@ -85,7 +85,7 @@ impl Fixture {
         write_skill(&vendor, &vendor_file);
         let content = verify_vendor_tree(&vendor, &skill).unwrap();
         let inventory = format!("sha256:{}", "3".repeat(64));
-        let manifest = b"schema = \"grimoire/manifest@2\"\n[sources.repo]\nurl = \"github:org/repo\"\nref = \"main\"\n[skills]\none = { source = \"repo\", mode = \"vendor\" }\n".to_vec();
+        let manifest = b"schema = \"grimoire/manifest@3\"\n[sources.repo]\nurl = \"github:org/repo\"\nref = \"main\"\n[skills]\none = { source = \"repo\" }\n".to_vec();
         let lock = Lockfile {
             sources: BTreeMap::from([(
                 alias.clone(),
@@ -130,6 +130,7 @@ impl Fixture {
 }
 
 #[test]
+#[ignore = "schema 3 drops vendor receipts; unit 3 retargets this to copy activation"]
 fn committed_vendor_can_be_approved_and_activated_with_every_source_channel_absent() {
     let temporary = tempfile::tempdir().unwrap();
     let fixture = Fixture::new(temporary.path());
@@ -250,11 +251,13 @@ fn vendor_receipts_do_not_authorize_other_bytes_skills_or_snapshots() {
         content: format!("sha256:{}", "4".repeat(64)),
     };
     let identity = CanonicalIdentity::remote("github:org/repo").unwrap();
-    let mutation = TrustStore::default()
-        .grant_vendor(identity.clone(), BTreeSet::from([approved.clone()]), None)
-        .unwrap();
-    let store = TrustStore::parse(&mutation.after).unwrap();
-    let record = &store.records[&SourceKey::derive(&identity)];
+    let record = grimoire_core::TrustRecord {
+        identity: identity.clone(),
+        receipts: BTreeSet::new(),
+        vendor_receipts: BTreeSet::from([approved.clone()]),
+        all_snapshots: false,
+        baseline: None,
+    };
 
     for rejected in [
         VendorTrustReceipt {

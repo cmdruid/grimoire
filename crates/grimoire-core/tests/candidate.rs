@@ -53,7 +53,7 @@ fn live_candidate_rejects_git_only_fields() {
         use grimoire_core::SourceKind;
         use std::path::Path;
 
-        let identity = CanonicalIdentity::local(SourceKind::Live, Path::new("/tmp/live")).unwrap();
+        let identity = CanonicalIdentity::local(SourceKind::Link, Path::new("/tmp/live")).unwrap();
         assert!(CandidateRecord::new(
             "a".repeat(64),
             identity,
@@ -75,7 +75,7 @@ fn publication_revalidates_declaration_and_preserves_the_previous_generation_whe
     std::fs::create_dir_all(&project).unwrap();
     std::fs::create_dir_all(&home).unwrap();
     let manifest_bytes = concat!(
-        "schema = \"grimoire/manifest@2\"\n",
+        "schema = \"grimoire/manifest@3\"\n",
         "[sources.repo]\nurl = \"github:org/repo\"\nref = \"main\"\n",
     )
     .as_bytes()
@@ -103,7 +103,7 @@ fn publication_revalidates_declaration_and_preserves_the_previous_generation_whe
     std::fs::write(
         project.join("grimoire.toml"),
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.repo]\nurl = \"github:org/other\"\nref = \"main\"\n",
         ),
     )
@@ -121,7 +121,7 @@ fn one_scope_rejects_two_aliases_for_the_same_identity() {
     std::fs::create_dir_all(&project).unwrap();
     std::fs::create_dir_all(&home).unwrap();
     let bytes = concat!(
-        "schema = \"grimoire/manifest@2\"\n",
+        "schema = \"grimoire/manifest@3\"\n",
         "[sources.one]\nurl = \"github:org/repo\"\n",
         "[sources.two]\nurl = \"https://github.com/org/repo.git\"\n",
     )

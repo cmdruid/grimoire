@@ -22,9 +22,16 @@ fn exit_classes_preserve_usage_findings_policy_transport_and_io() {
     );
 
     assert!(support::run(&project, &home, &["init"]).status.success());
+    let live = support::run(
+        &project,
+        &home,
+        &["source", "add", "local", ".", "--live", "--trust-all"],
+    );
+    assert_eq!(live.status.code(), Some(2));
+    assert!(support::stderr(&live).contains("`--live` is not accepted; use `--link`"));
     fs::write(
         project.join("grimoire.toml"),
-        b"schema = \"grimoire/manifest@2\"\n[sources.repo]\nurl = \"github:org/repo\"\n[skills]\none = { source = \"repo\" }\n",
+        b"schema = \"grimoire/manifest@3\"\n[sources.repo]\nurl = \"github:org/repo\"\n[skills]\none = { source = \"repo\" }\n",
     )
     .unwrap();
     let findings = support::run(&project, &home, &["check"]);
@@ -69,7 +76,7 @@ fn malformed_initialized_state_is_usage_class() {
     fs::write(project.join("grimoire.toml"), b"not toml = [\n").unwrap();
     fs::write(
         project.join("grimoire.lock"),
-        b"{\"schema\":\"grimoire/lock@2\",\"sources\":{},\"packs\":{},\"skills\":{}}\n",
+        b"{\"schema\":\"grimoire/lock@3\",\"sources\":{},\"packs\":{},\"skills\":{}}\n",
     )
     .unwrap();
 

@@ -12,7 +12,7 @@ fn small_terminals_render_a_bounded_remedy_instead_of_overflowing() {
         "global",
         &["one", "two", "three"],
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.global]\nurl = \"github:fixture/global\"\n",
         ),
     );
@@ -33,7 +33,7 @@ fn representative_tree_buffer_is_stable() {
         "global",
         &["journal"],
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.global]\nurl = \"github:fixture/global\"\n",
         ),
     );
@@ -65,9 +65,9 @@ fn project_request_rows_render_projection_mode_labels() {
         "project",
         &["one"],
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.project]\nurl = \"github:fixture/project\"\n",
-            "[skills]\none = { source = \"project\", mode = \"vendor\" }\n",
+            "[skills]\none = { source = \"project\" }\n",
         ),
     );
     let model = TuiModel::new(project).unwrap();
@@ -75,5 +75,5 @@ fn project_request_rows_render_projection_mode_labels() {
     let mut terminal = Terminal::new(backend).unwrap();
     terminal.draw(|frame| draw(frame, &model)).unwrap();
 
-    assert!(terminal.backend().to_string().contains("one [vendored]"));
+    assert!(terminal.backend().to_string().contains("one [linked]"));
 }

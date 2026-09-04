@@ -8,7 +8,7 @@ fn cli_source_constructor_owns_location_classification() {
 
     let local = ManifestSource::from_cli("../skills", None, true).unwrap();
     assert!(matches!(local.location, SourceLocation::Path(_)));
-    assert!(local.live);
+    assert!(local.link);
 
     assert!(ManifestSource::from_cli("https://example.com/repo.git", None, true).is_err());
     assert!(ManifestSource::from_cli("./skills", Some("main".into()), true).is_err());

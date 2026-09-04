@@ -620,7 +620,7 @@ fn malformed_blocked_and_wrong_scope_plans_are_inert() {
     let paths = grimoire_core::Paths::project(project, root.join("home")).unwrap();
     let action = Action::CreateManifest {
         scope: Scope::Project,
-        after: b"schema = \"grimoire/manifest@2\"\n".to_vec(),
+        after: b"schema = \"grimoire/manifest@3\"\n".to_vec(),
     };
 
     let blocked = Plan {
@@ -639,7 +639,7 @@ fn malformed_blocked_and_wrong_scope_plans_are_inert() {
     let wrong_scope = Plan {
         actions: vec![Action::CreateManifest {
             scope: Scope::Global,
-            after: b"schema = \"grimoire/manifest@2\"\n".to_vec(),
+            after: b"schema = \"grimoire/manifest@3\"\n".to_vec(),
         }],
         blockers: Vec::new(),
         preconditions: Preconditions::absent(),

@@ -48,7 +48,7 @@ pub fn source_list(sources: &[SourceSummary], output: &mut dyn Write) -> io::Res
             output,
             "{}\t{}\tlocked={}\tcandidate={}\tcurrent={}\ttrust={:?}\tvendor_approved={}{}",
             source.alias,
-            if source.live { "live" } else { "pinned" },
+            if source.link { "link" } else { "pinned" },
             source.locked_commit.as_deref().unwrap_or("-"),
             source.candidate_commit.as_deref().unwrap_or("-"),
             source.candidate_current,

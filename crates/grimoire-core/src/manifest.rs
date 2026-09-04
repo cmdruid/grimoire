@@ -16,7 +16,7 @@ pub enum SourceLocation {
 pub struct ManifestSource {
     pub location: SourceLocation,
     pub reference: Option<String>,
-    pub live: bool,
+    pub link: bool,
 }
 
 impl ManifestSource {
@@ -29,7 +29,7 @@ impl ManifestSource {
     pub fn from_cli(
         location: impl Into<String>,
         reference: Option<String>,
-        live: bool,
+        link: bool,
     ) -> Result<Self> {
         let location = location.into();
         let remote_shaped = location.starts_with("github:")
@@ -40,18 +40,20 @@ impl ManifestSource {
                 .is_some();
         if remote_shaped {
             crate::CanonicalIdentity::remote(&location)?;
-            if live {
-                return Err(CoreError::Source("remote sources cannot be live".into()));
+            if link {
+                return Err(CoreError::Source(
+                    "remote sources cannot use `--link`".into(),
+                ));
             }
             return Ok(Self {
                 location: SourceLocation::Url(location),
                 reference,
-                live: false,
+                link: false,
             });
         }
-        if live && reference.is_some() {
+        if link && reference.is_some() {
             return Err(CoreError::Source(
-                "live sources cannot declare a Git ref".into(),
+                "`--link` cannot be combined with `--ref`".into(),
             ));
         }
         if location.is_empty() {
@@ -60,7 +62,7 @@ impl ManifestSource {
         Ok(Self {
             location: SourceLocation::Path(location),
             reference,
-            live,
+            link,
         })
     }
 }
@@ -103,10 +105,7 @@ pub enum ManifestMutation {
     UninstallSkill {
         name: SkillName,
     },
-    ReplaceSkillMode {
-        name: SkillName,
-        mode: ProjectionMode,
-    },
+
     InstallPack {
         name: PackName,
         request: ManifestPack,
@@ -117,10 +116,6 @@ pub enum ManifestMutation {
     ReplacePackExclusions {
         name: PackName,
         exclude: BTreeSet<SkillName>,
-    },
-    ReplacePackMode {
-        name: PackName,
-        mode: ProjectionMode,
     },
 }
 
@@ -138,11 +133,13 @@ impl Manifest {
         let root = document.as_table();
         reject_unknown(root, &["schema", "sources", "skills", "packs"], "top level")?;
         let schema = root.get("schema").and_then(Item::as_str);
-        if schema != Some("grimoire/manifest@2") {
-            let message = if schema == Some("grimoire/manifest@1") {
-                "schema grimoire/manifest@1 is unsupported; change it to grimoire/manifest@2, delete the generated v1 lock, and run a non-frozen install"
+        if schema != Some("grimoire/manifest@3") {
+            let message = if schema == Some("grimoire/manifest@1")
+                || schema == Some("grimoire/manifest@2")
+            {
+                "schema grimoire/manifest@2 is unsupported; change it to grimoire/manifest@3, delete the generated lock, and reinstall"
             } else {
-                "schema must equal grimoire/manifest@2"
+                "schema must equal grimoire/manifest@3"
             };
             return Err(CoreError::Manifest(message.into()));
         }
@@ -157,7 +154,7 @@ impl Manifest {
                 let source = source.as_table_like().ok_or_else(|| {
                     CoreError::Manifest(format!("source `{name}` must be a table"))
                 })?;
-                reject_unknown_like(source, &["url", "path", "ref", "live"], "source")?;
+                reject_unknown_like(source, &["url", "path", "ref", "link"], "source")?;
                 let url = source.get("url").and_then(Item::as_str);
                 let path = source.get("path").and_then(Item::as_str);
                 let location = match (url, path) {
@@ -170,10 +167,10 @@ impl Manifest {
                     }
                 };
                 let reference = optional_string(source, "ref")?;
-                let live = optional_bool(source, "live")?.unwrap_or(false);
-                if live && (matches!(location, SourceLocation::Url(_)) || reference.is_some()) {
+                let link = optional_bool(source, "link")?.unwrap_or(false);
+                if link && (matches!(location, SourceLocation::Url(_)) || reference.is_some()) {
                     return Err(CoreError::Manifest(format!(
-                        "source `{name}` may use live only with path and without ref"
+                        "source `{name}` may use link only with path and without ref"
                     )));
                 }
                 sources.insert(
@@ -181,7 +178,7 @@ impl Manifest {
                     ManifestSource {
                         location,
                         reference,
-                        live,
+                        link,
                     },
                 );
             }
@@ -197,7 +194,7 @@ impl Manifest {
                 let request = request.as_inline_table().ok_or_else(|| {
                     CoreError::Manifest(format!("skill `{name}` must be an inline table"))
                 })?;
-                reject_unknown_values(request.iter(), &["source", "mode"], "skill request")?;
+                reject_unknown_values(request.iter(), &["source"], "skill request")?;
                 let source = request
                     .get("source")
                     .and_then(Value::as_str)
@@ -210,7 +207,7 @@ impl Manifest {
                         "skill `{name}` references unknown source `{source}`"
                     )));
                 }
-                let mode = projection_mode(request.get("mode"), "skill request")?;
+                let mode = projection_for_source(&sources, &source);
                 skills.insert(name, ManifestSkill { source, mode });
             }
         }
@@ -225,11 +222,7 @@ impl Manifest {
                 let request = request.as_inline_table().ok_or_else(|| {
                     CoreError::Manifest(format!("pack `{name}` must be an inline table"))
                 })?;
-                reject_unknown_values(
-                    request.iter(),
-                    &["source", "mode", "exclude"],
-                    "pack request",
-                )?;
+                reject_unknown_values(request.iter(), &["source", "exclude"], "pack request")?;
                 let source = request
                     .get("source")
                     .and_then(Value::as_str)
@@ -267,7 +260,7 @@ impl Manifest {
                         )))
                     }
                 };
-                let mode = projection_mode(request.get("mode"), "pack request")?;
+                let mode = projection_for_source(&sources, &source);
                 packs.insert(
                     name,
                     ManifestPack {
@@ -304,7 +297,7 @@ impl Manifest {
             .and_then(Item::as_table_like)
             .ok_or_else(|| CoreError::Manifest(format!("source `{alias}` is not declared")))?;
         let mut fields = vec![Some(alias.as_str().as_bytes())];
-        for name in ["live", "path", "ref", "url"] {
+        for name in ["link", "path", "ref", "url"] {
             let Some((key, value)) = source.get_key_value(name) else {
                 continue;
             };
@@ -368,8 +361,8 @@ impl Manifest {
                 if let Some(reference) = &source.reference {
                     fragment.push_str(&format!("ref = {}\n", toml_string(reference)));
                 }
-                if source.live {
-                    fragment.push_str("live = true\n");
+                if source.link {
+                    fragment.push_str("link = true\n");
                 }
                 append_fragment(&mut after, &fragment);
             }
@@ -399,6 +392,8 @@ impl Manifest {
                         request.source
                     )));
                 }
+                let mut request = request.clone();
+                request.mode = projection_for_source(&expected_sources, &request.source);
                 if expected_skills
                     .insert(name.clone(), request.clone())
                     .is_some()
@@ -422,22 +417,6 @@ impl Manifest {
                 }
                 remove_ranges(&mut after, self.entry_ranges("skills", name.as_str())?);
             }
-            ManifestMutation::ReplaceSkillMode { name, mode } => {
-                let request = expected_skills.get_mut(&name).ok_or_else(|| {
-                    CoreError::Manifest(format!("skill `{name}` is not requested"))
-                })?;
-                if request.mode == mode {
-                    return Err(CoreError::Manifest(format!(
-                        "skill `{name}` projection mode is unchanged"
-                    )));
-                }
-                request.mode = mode;
-                let item = nested_item(&self.document, "skills", name.as_str())?;
-                let span = item.span().ok_or_else(|| {
-                    CoreError::Manifest(format!("skill `{name}` has no editable source span"))
-                })?;
-                after.splice(span, render_skill(request).bytes());
-            }
             ManifestMutation::InstallPack { name, request } => {
                 if !expected_sources.contains_key(&request.source) {
                     return Err(CoreError::Manifest(format!(
@@ -445,6 +424,8 @@ impl Manifest {
                         request.source
                     )));
                 }
+                let mut request = request.clone();
+                request.mode = projection_for_source(&expected_sources, &request.source);
                 if expected_packs
                     .insert(name.clone(), request.clone())
                     .is_some()
@@ -478,22 +459,6 @@ impl Manifest {
                     )));
                 }
                 request.exclude = exclude;
-                let item = nested_item(&self.document, "packs", name.as_str())?;
-                let span = item.span().ok_or_else(|| {
-                    CoreError::Manifest(format!("pack `{name}` has no editable source span"))
-                })?;
-                after.splice(span, render_pack(request).bytes());
-            }
-            ManifestMutation::ReplacePackMode { name, mode } => {
-                let request = expected_packs.get_mut(&name).ok_or_else(|| {
-                    CoreError::Manifest(format!("pack `{name}` is not requested"))
-                })?;
-                if request.mode == mode {
-                    return Err(CoreError::Manifest(format!(
-                        "pack `{name}` projection mode is unchanged"
-                    )));
-                }
-                request.mode = mode;
                 let item = nested_item(&self.document, "packs", name.as_str())?;
                 let span = item.span().ok_or_else(|| {
                     CoreError::Manifest(format!("pack `{name}` has no editable source span"))
@@ -553,15 +518,7 @@ impl Manifest {
                         })?
                         .manifest;
                 }
-                Some(existing) => {
-                    if existing.mode != request.mode {
-                        current = current
-                            .mutate(ManifestMutation::ReplacePackMode {
-                                name: name.clone(),
-                                mode: request.mode,
-                            })?
-                            .manifest;
-                    }
+                Some(_) => {
                     if current.packs[name].exclude != request.exclude {
                         current = current
                             .mutate(ManifestMutation::ReplacePackExclusions {
@@ -574,24 +531,13 @@ impl Manifest {
             }
         }
         for (name, request) in &desired.skills {
-            match current.skills.get(name) {
-                None => {
-                    current = current
-                        .mutate(ManifestMutation::InstallSkill {
-                            name: name.clone(),
-                            request: request.clone(),
-                        })?
-                        .manifest;
-                }
-                Some(existing) if existing.mode != request.mode => {
-                    current = current
-                        .mutate(ManifestMutation::ReplaceSkillMode {
-                            name: name.clone(),
-                            mode: request.mode,
-                        })?
-                        .manifest;
-                }
-                Some(_) => {}
+            if !current.skills.contains_key(name) {
+                current = current
+                    .mutate(ManifestMutation::InstallSkill {
+                        name: name.clone(),
+                        request: request.clone(),
+                    })?
+                    .manifest;
             }
         }
 
@@ -721,9 +667,6 @@ fn toml_string(value: &str) -> String {
 
 fn render_pack(request: &ManifestPack) -> String {
     let mut value = format!("{{ source = {}", toml_string(request.source.as_str()));
-    if request.mode == ProjectionMode::Vendor {
-        value.push_str(", mode = \"vendor\"");
-    }
     if !request.exclude.is_empty() {
         value.push_str(", exclude = [");
         for (index, name) in request.exclude.iter().enumerate() {
@@ -739,23 +682,14 @@ fn render_pack(request: &ManifestPack) -> String {
 }
 
 fn render_skill(request: &ManifestSkill) -> String {
-    let mut value = format!("{{ source = {}", toml_string(request.source.as_str()));
-    if request.mode == ProjectionMode::Vendor {
-        value.push_str(", mode = \"vendor\"");
-    }
-    value.push_str(" }");
-    value
+    format!("{{ source = {} }}", toml_string(request.source.as_str()))
 }
 
-fn projection_mode(value: Option<&Value>, where_: &str) -> Result<ProjectionMode> {
-    match value.and_then(Value::as_str) {
-        None => Ok(ProjectionMode::Link),
-        Some("link") => Ok(ProjectionMode::Link),
-        Some("vendor") => Ok(ProjectionMode::Vendor),
-        Some(value) => Err(CoreError::Manifest(format!(
-            "{where_} has unknown projection mode `{value}`"
-        ))),
-    }
+fn projection_for_source(
+    _sources: &BTreeMap<SourceAlias, ManifestSource>,
+    _alias: &SourceAlias,
+) -> ProjectionMode {
+    ProjectionMode::Link
 }
 
 fn reject_unknown(table: &toml_edit::Table, allowed: &[&str], where_: &str) -> Result<()> {

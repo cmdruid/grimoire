@@ -254,8 +254,8 @@ fn load_locked_source(
             )
             .source_identity(identity, empty_review_digest()))
         }
-        LockSource::Live { .. } => {
-            if identity.kind() != SourceKind::Live {
+        LockSource::Link { .. } => {
+            if identity.kind() != SourceKind::Link {
                 return Err(CoreError::Source(
                     "locked live source identity has the wrong kind".into(),
                 ));
@@ -268,7 +268,7 @@ fn load_locked_source(
                 SourceSnapshot::new(
                     alias.clone(),
                     SnapshotId::new(
-                        SnapshotKind::Live,
+                        SnapshotKind::Link,
                         None,
                         None,
                         inventory.inventory_digest.to_string(),
@@ -363,7 +363,7 @@ fn placeholder_locked(
             )
             .source_identity(identity, empty_review_digest()))
         }
-        LockSource::Live { declared } => Err(CoreError::Source(format!(
+        LockSource::Link { declared } => Err(CoreError::Source(format!(
             "cannot recover invalid live source `{declared}`"
         ))),
     }
@@ -404,8 +404,8 @@ fn load_candidate(
         ));
     }
     let (kind, root, store) = match candidate.identity.kind() {
-        SourceKind::Live => (
-            SnapshotKind::Live,
+        SourceKind::Link => (
+            SnapshotKind::Link,
             identity_path(&candidate.identity)?,
             SnapshotStore::Valid,
         ),
@@ -443,7 +443,7 @@ fn scan_candidate(
     candidate: &CandidateRecord,
     git: &dyn GitRunner,
 ) -> Result<SourceInventory> {
-    if candidate.identity.kind() == SourceKind::Live {
+    if candidate.identity.kind() == SourceKind::Link {
         let root = identity_path(&candidate.identity)?;
         let reader = HeldDirectoryReader::open(&root)?;
         let inventory = scan(&reader).map_err(|error| CoreError::Source(error.to_string()))?;
@@ -529,7 +529,7 @@ pub(crate) fn declaration_identity(
         } => CanonicalIdentity::remote(declared),
         ManifestSource {
             location: crate::SourceLocation::Path(_),
-            live,
+            link,
             ..
         } => {
             let manifest_path = paths.manifest_path();
@@ -543,8 +543,8 @@ pub(crate) fn declaration_identity(
                 .canonicalize()
                 .map_err(|error| io_error(&declared, error))?;
             CanonicalIdentity::local(
-                if *live {
-                    SourceKind::Live
+                if *link {
+                    SourceKind::Link
                 } else {
                     SourceKind::Git
                 },

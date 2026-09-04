@@ -52,13 +52,13 @@ fn fixture() -> (tempfile::TempDir, Paths) {
     let inventory = scan(&HeldDirectoryReader::open(&source).unwrap()).unwrap();
     fs::write(
         paths.manifest_path(),
-        b"schema = \"grimoire/manifest@2\"\n[sources.local]\npath = \"../source\"\nlive = true\n[skills]\none = { source = \"local\" }\n",
+        b"schema = \"grimoire/manifest@3\"\n[sources.local]\npath = \"../source\"\nlink = true\n[skills]\none = { source = \"local\" }\n",
     )
     .unwrap();
     let lock = Lockfile {
         sources: BTreeMap::from([(
             "local".try_into().unwrap(),
-            LockSource::Live {
+            LockSource::Link {
                 declared: "../source".into(),
             },
         )]),
@@ -75,7 +75,7 @@ fn fixture() -> (tempfile::TempDir, Paths) {
         )]),
     };
     fs::write(paths.lock_path(), lock.to_bytes().unwrap()).unwrap();
-    let identity = CanonicalIdentity::local(SourceKind::Live, &source).unwrap();
+    let identity = CanonicalIdentity::local(SourceKind::Link, &source).unwrap();
     let trust = TrustStore::default()
         .grant_all(
             identity,

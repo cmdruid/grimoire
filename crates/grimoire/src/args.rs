@@ -37,17 +37,9 @@ pub enum Command {
         pack: bool,
         #[arg(long, value_name = "ALIAS", requires = "name")]
         source: Option<String>,
-        #[arg(long, requires = "name", conflicts_with = "vendor")]
-        link: bool,
-        #[arg(
-            long,
-            requires = "name",
-            conflicts_with_all = ["link", "global"]
-        )]
-        vendor: bool,
         #[arg(long)]
         dry_run: bool,
-        #[arg(long, conflicts_with_all = ["name", "pack", "source", "link", "vendor"])]
+        #[arg(long, conflicts_with_all = ["name", "pack", "source"])]
         frozen: bool,
         #[arg(long)]
         yes: bool,
@@ -132,6 +124,8 @@ pub enum SourceCommand {
         #[arg(long = "ref", value_name = "REF")]
         reference: Option<String>,
         #[arg(long)]
+        link: bool,
+        #[arg(long, hide = true)]
         live: bool,
         #[arg(long, conflicts_with = "trust_all")]
         trust: bool,
@@ -176,12 +170,10 @@ pub enum SourceCommand {
     /// Grant or revoke trust for a source alias.
     Trust {
         alias: String,
-        #[arg(long, conflicts_with_all = ["revoke", "vendor"])]
+        #[arg(long, conflicts_with = "revoke")]
         all: bool,
-        #[arg(long, conflicts_with_all = ["all", "vendor"])]
+        #[arg(long, conflicts_with = "all")]
         revoke: bool,
-        #[arg(long, conflicts_with_all = ["all", "revoke", "global", "yes"])]
-        vendor: bool,
         #[arg(long, requires = "revoke")]
         yes: bool,
         #[command(flatten)]

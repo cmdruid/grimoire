@@ -70,7 +70,7 @@ pub fn context_report(world: &WorldState) -> ContextReport {
                 Some(LockSource::Git {
                     commit, inventory, ..
                 }) => (Some(commit.clone()), Some(inventory.clone())),
-                Some(LockSource::Live { .. }) => (
+                Some(LockSource::Link { .. }) => (
                     None,
                     world
                         .snapshots
@@ -257,7 +257,7 @@ fn check_sources(world: &WorldState, findings: &mut Vec<CheckFinding>) {
                 tree: state.snapshot.id.tree.clone().unwrap_or_default(),
                 inventory: state.snapshot.id.inventory_digest.clone(),
             }),
-            SnapshotKind::Live => None,
+            SnapshotKind::Link => None,
         };
         let mode = trust
             .records
@@ -265,14 +265,14 @@ fn check_sources(world: &WorldState, findings: &mut Vec<CheckFinding>) {
             .map_or(TrustMode::Untrusted, |record| {
                 record.mode_for(receipt.as_ref())
             });
-        let required = if matches!(source, LockSource::Live { .. }) {
+        let required = if matches!(source, LockSource::Link { .. }) {
             mode == TrustMode::All
         } else {
             !has_linked_projection || mode != TrustMode::Untrusted
         };
         if !required {
             findings.push(details_finding(
-                if matches!(source, LockSource::Live { .. }) {
+                if matches!(source, LockSource::Link { .. }) {
                     "live-source-requires-all-trust"
                 } else {
                     "source-untrusted"

@@ -12,7 +12,7 @@ use grimoire_core::{
 
 const EMPTY_LOCK: &[u8] = include_bytes!("fixtures/lock/empty.json");
 const MANIFEST: &str = concat!(
-    "schema = \"grimoire/manifest@2\"\n",
+    "schema = \"grimoire/manifest@3\"\n",
     "[sources.grimoire]\n",
     "url = \"github:cmdruid/grimoire\"\n",
 );
@@ -112,18 +112,6 @@ fn packs_members_shared_roots_and_unavailable_items_are_core_facts() {
             enabled: true,
         })
         .unwrap();
-    desired
-        .apply(DesiredEdit::SetPackMode {
-            name: "toolkit".try_into().unwrap(),
-            mode: ProjectionMode::Vendor,
-        })
-        .unwrap();
-    desired
-        .apply(DesiredEdit::SetSkillMode {
-            name: "notes".try_into().unwrap(),
-            mode: ProjectionMode::Vendor,
-        })
-        .unwrap();
 
     let tree = project_tree(&world, &desired).unwrap();
     let pack = tree
@@ -133,8 +121,8 @@ fn packs_members_shared_roots_and_unavailable_items_are_core_facts() {
         })
         .unwrap();
     assert_eq!(pack.kind, TreeItemKind::Pack(PackSelection::Partial));
-    assert_eq!(pack.mode, Some(ProjectionMode::Vendor));
-    assert!(pack.mode_toggleable);
+    assert_eq!(pack.mode, Some(ProjectionMode::Link));
+    assert!(!pack.mode_toggleable);
 
     let required = tree
         .item(&TreeItemKey::PackMember {
@@ -149,7 +137,7 @@ fn packs_members_shared_roots_and_unavailable_items_are_core_facts() {
     );
     assert!(required.selected);
     assert!(!required.toggleable);
-    assert_eq!(required.mode, Some(ProjectionMode::Vendor));
+    assert_eq!(required.mode, Some(ProjectionMode::Link));
     assert!(!required.mode_toggleable);
 
     let unavailable = tree
@@ -180,8 +168,8 @@ fn packs_members_shared_roots_and_unavailable_items_are_core_facts() {
         .into_iter()
         .collect()
     );
-    assert_eq!(notes.mode, Some(ProjectionMode::Vendor));
-    assert!(notes.mode_toggleable);
+    assert_eq!(notes.mode, Some(ProjectionMode::Link));
+    assert!(!notes.mode_toggleable);
 }
 
 #[test]

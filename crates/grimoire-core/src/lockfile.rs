@@ -16,7 +16,7 @@ pub enum LockSource {
         tree: String,
         inventory: String,
     },
-    Live {
+    Link {
         declared: String,
     },
 }
@@ -50,7 +50,7 @@ pub struct Lockfile {
 impl Lockfile {
     pub fn parse(bytes: &[u8]) -> Result<Self> {
         let dto: LockDto = serde_json::from_slice(bytes)?;
-        if dto.schema != "grimoire/lock@2" {
+        if dto.schema != "grimoire/lock@3" {
             return Err(CoreError::LockSchemaUnsupported { found: dto.schema });
         }
         dto.try_into()
@@ -130,7 +130,6 @@ struct SourceDto {
 #[serde(deny_unknown_fields)]
 struct PackDto {
     source: String,
-    mode: ProjectionMode,
     required: Vec<String>,
     optional: Vec<String>,
     enabled: Vec<String>,
@@ -141,7 +140,6 @@ struct PackDto {
 #[serde(deny_unknown_fields)]
 struct SkillDto {
     source: String,
-    mode: ProjectionMode,
     path: String,
     content: String,
     requested_by: Vec<String>,
@@ -182,19 +180,19 @@ impl TryFrom<LockDto> for Lockfile {
                             &format!("source `{alias}` inventory"),
                         )?,
                     },
-                    "live"
+                    "link"
                         if source.r#ref.is_none()
                             && source.commit.is_none()
                             && source.tree.is_none()
                             && source.inventory.is_none() =>
                     {
-                        LockSource::Live {
+                        LockSource::Link {
                             declared: source.declared,
                         }
                     }
-                    "live" => {
+                    "link" => {
                         return Err(CoreError::Lock(format!(
-                            "live source `{alias}` contains Git-only fields"
+                            "link source `{alias}` contains Git-only fields"
                         )))
                     }
                     kind => {
@@ -211,11 +209,12 @@ impl TryFrom<LockDto> for Lockfile {
             .0
             .into_iter()
             .map(|(name, pack)| {
+                let source = SourceAlias::new(pack.source)?;
                 Ok((
                     PackName::new(name)?,
                     LockPack {
-                        source: SourceAlias::new(pack.source)?,
-                        mode: pack.mode,
+                        mode: lock_projection(&sources, &source),
+                        source,
                         required: skill_set(pack.required, "required")?,
                         optional: skill_set(pack.optional, "optional")?,
                         enabled: skill_set(pack.enabled, "enabled")?,
@@ -242,11 +241,12 @@ impl TryFrom<LockDto> for Lockfile {
                     .collect::<Result<_>>()?;
                 validate_source_path(&skill.path, &name)?;
                 validate_digest(&skill.content, &name)?;
+                let source = SourceAlias::new(skill.source)?;
                 Ok((
                     SkillName::new(name)?,
                     LockSkill {
-                        source: SourceAlias::new(skill.source)?,
-                        mode: skill.mode,
+                        mode: lock_projection(&sources, &source),
+                        source,
                         path: skill.path,
                         content: skill.content,
                         requested_by,
@@ -285,9 +285,9 @@ impl From<&Lockfile> for LockDto {
                         tree: Some(tree.clone()),
                         inventory: Some(inventory.clone()),
                     },
-                    LockSource::Live { declared } => SourceDto {
+                    LockSource::Link { declared } => SourceDto {
                         declared: declared.clone(),
-                        kind: "live".into(),
+                        kind: "link".into(),
                         r#ref: None,
                         commit: None,
                         tree: None,
@@ -305,7 +305,6 @@ impl From<&Lockfile> for LockDto {
                     name.to_string(),
                     PackDto {
                         source: pack.source.to_string(),
-                        mode: pack.mode,
                         required: names(&pack.required),
                         optional: names(&pack.optional),
                         enabled: names(&pack.enabled),
@@ -322,7 +321,6 @@ impl From<&Lockfile> for LockDto {
                     name.to_string(),
                     SkillDto {
                         source: skill.source.to_string(),
-                        mode: skill.mode,
                         path: skill.path.clone(),
                         content: skill.content.clone(),
                         requested_by: {
@@ -339,12 +337,19 @@ impl From<&Lockfile> for LockDto {
             })
             .collect();
         Self {
-            schema: "grimoire/lock@2".into(),
+            schema: "grimoire/lock@3".into(),
             sources: UniqueMap(sources),
             packs: UniqueMap(packs),
             skills: UniqueMap(skills),
         }
     }
+}
+
+fn lock_projection(
+    _sources: &BTreeMap<SourceAlias, LockSource>,
+    _alias: &SourceAlias,
+) -> ProjectionMode {
+    ProjectionMode::Link
 }
 
 fn skill_set(values: Vec<String>, field: &str) -> Result<BTreeSet<SkillName>> {
@@ -426,7 +431,7 @@ impl Lockfile {
             if skill.mode == ProjectionMode::Vendor
                 && matches!(
                     self.sources.get(&skill.source),
-                    Some(LockSource::Live { .. })
+                    Some(LockSource::Link { .. })
                 )
             {
                 return Err(CoreError::Lock(format!(

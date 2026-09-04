@@ -46,7 +46,7 @@ pub enum SkillAvailability {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TreeItemKind {
     Source {
-        live: bool,
+        link: bool,
         trust: TrustMode,
         candidate_current: bool,
         has_findings: bool,
@@ -111,7 +111,7 @@ pub fn project_tree(world: &WorldState, desired: &DesiredState) -> Result<TreePr
             mode: None,
             mode_toggleable: false,
             kind: TreeItemKind::Source {
-                live: declaration.live,
+                link: declaration.link,
                 trust: facts.map_or(TrustMode::Untrusted, |facts| facts.trust),
                 candidate_current: facts.is_some_and(|facts| facts.candidate_current),
                 has_findings: facts.is_some_and(|facts| facts.has_findings),
@@ -151,7 +151,7 @@ pub fn project_tree(world: &WorldState, desired: &DesiredState) -> Result<TreePr
                 selected: request.is_some(),
                 toggleable: owner.is_none_or(|owner| owner == alias),
                 mode: request.map(|request| request.mode),
-                mode_toggleable: world.scope == Scope::Project && request.is_some(),
+                mode_toggleable: false,
                 kind: TreeItemKind::Pack(state),
                 requested_by: BTreeSet::from([RequestRoot::Pack(name.clone())]),
                 installed: None,
@@ -211,8 +211,7 @@ pub fn project_tree(world: &WorldState, desired: &DesiredState) -> Result<TreePr
                 mode: owner
                     .filter(|owner| &owner.source == alias)
                     .map(|owner| owner.mode),
-                mode_toggleable: world.scope == Scope::Project
-                    && owner.is_some_and(|owner| &owner.source == alias),
+                mode_toggleable: false,
                 kind: TreeItemKind::Skill(SkillAvailability::Available),
                 requested_by: requested_by(&resolution, &name),
                 installed: installed_status(world, &resolution, &name),

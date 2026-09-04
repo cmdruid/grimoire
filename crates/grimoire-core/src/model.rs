@@ -76,7 +76,7 @@ pub enum ProjectionMode {
 #[serde(rename_all = "snake_case")]
 pub enum SnapshotKind {
     Git,
-    Live,
+    Link,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
@@ -107,12 +107,12 @@ impl SnapshotId {
                     ));
                 }
             }
-            SnapshotKind::Live if commit.is_some() || tree.is_some() => {
+            SnapshotKind::Link if commit.is_some() || tree.is_some() => {
                 return Err(CoreError::Snapshot(
                     "live snapshots cannot carry commit or tree IDs".into(),
                 ));
             }
-            SnapshotKind::Live => {}
+            SnapshotKind::Link => {}
         }
         if !inventory_digest.starts_with("sha256:") {
             return Err(CoreError::Snapshot(
@@ -275,7 +275,7 @@ impl OwnedLinkTarget {
                 identity,
                 skill_path,
             } => {
-                if identity.kind() != crate::SourceKind::Live {
+                if identity.kind() != crate::SourceKind::Link {
                     return Err(CoreError::Request(
                         "live link target requires a live source identity".into(),
                     ));
@@ -532,14 +532,6 @@ pub enum DesiredEdit {
         skill: SkillName,
         enabled: bool,
     },
-    SetSkillMode {
-        name: SkillName,
-        mode: ProjectionMode,
-    },
-    SetPackMode {
-        name: PackName,
-        mode: ProjectionMode,
-    },
 }
 
 impl DesiredState {
@@ -548,6 +540,10 @@ impl DesiredState {
             skills: world.manifest.skills.clone(),
             packs: world.manifest.packs.clone(),
         }
+    }
+
+    fn projection(&self, _source: &SourceAlias) -> ProjectionMode {
+        ProjectionMode::Link
     }
 
     pub fn apply(&mut self, edit: DesiredEdit) -> Result<()> {
@@ -566,10 +562,10 @@ impl DesiredState {
                             )));
                         }
                     }
-                    self.skills.entry(name).or_insert(crate::ManifestSkill {
-                        source,
-                        mode: ProjectionMode::Link,
-                    });
+                    let mode = self.projection(&source);
+                    self.skills
+                        .entry(name)
+                        .or_insert(crate::ManifestSkill { source, mode });
                 } else if self
                     .skills
                     .get(&name)
@@ -592,9 +588,10 @@ impl DesiredState {
                             )));
                         }
                     }
+                    let mode = self.projection(&source);
                     self.packs.entry(name).or_insert(crate::ManifestPack {
                         source,
-                        mode: ProjectionMode::Link,
+                        mode,
                         exclude: BTreeSet::new(),
                     });
                 } else if self
@@ -619,20 +616,6 @@ impl DesiredState {
                 } else {
                     request.exclude.insert(skill);
                 }
-            }
-            DesiredEdit::SetSkillMode { name, mode } => {
-                let request = self
-                    .skills
-                    .get_mut(&name)
-                    .ok_or_else(|| CoreError::Request(format!("skill `{name}` is not staged")))?;
-                request.mode = mode;
-            }
-            DesiredEdit::SetPackMode { name, mode } => {
-                let request = self
-                    .packs
-                    .get_mut(&name)
-                    .ok_or_else(|| CoreError::Request(format!("pack `{name}` is not staged")))?;
-                request.mode = mode;
             }
         }
         Ok(())
@@ -764,7 +747,7 @@ impl WorldState {
     ) -> Result<Self> {
         let mut world = Self::from_bytes(
             scope,
-            b"schema = \"grimoire/manifest@2\"\n".to_vec(),
+            b"schema = \"grimoire/manifest@3\"\n".to_vec(),
             crate::Lockfile::default().to_bytes()?,
             sources,
             links,

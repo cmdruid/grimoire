@@ -89,8 +89,10 @@ pub struct TrustMutation {
 impl TrustStore {
     pub fn parse(bytes: &[u8]) -> Result<Self> {
         let dto: TrustDto = serde_json::from_slice(bytes)?;
-        if !matches!(dto.schema.as_str(), "grimoire/trust@1" | "grimoire/trust@2") {
-            return Err(CoreError::Trust("unsupported trust schema".into()));
+        if dto.schema != "grimoire/trust@3" {
+            return Err(CoreError::Trust(
+                "unsupported trust schema; change it to grimoire/trust@3, delete the generated lock, and reinstall".into(),
+            ));
         }
         let schema = dto.schema;
         let mut records = BTreeMap::new();
@@ -112,7 +114,7 @@ impl TrustStore {
             .map(|(key, record)| (key.to_string(), TrustRecordDto::from(record)))
             .collect();
         let mut bytes = serde_json::to_vec_pretty(&TrustDto {
-            schema: "grimoire/trust@2".into(),
+            schema: "grimoire/trust@3".into(),
             records: UniqueMap(records),
         })?;
         bytes.push(b'\n');
@@ -126,7 +128,7 @@ impl TrustStore {
         baseline: TrustBaseline,
         before: Option<Vec<u8>>,
     ) -> Result<TrustMutation> {
-        if identity.kind() == SourceKind::Live {
+        if identity.kind() == SourceKind::Link {
             return Err(CoreError::Trust(
                 "live sources require all-snapshots trust".into(),
             ));
@@ -181,12 +183,12 @@ impl TrustStore {
                     "pinned all-trust requires the reviewed exact receipt".into(),
                 ))
             }
-            (SourceKind::Live, Some(_)) => {
+            (SourceKind::Link, Some(_)) => {
                 return Err(CoreError::Trust(
                     "live all-trust cannot contain an exact receipt".into(),
                 ))
             }
-            (SourceKind::Live, None) => {}
+            (SourceKind::Link, None) => {}
         }
         let mut next = self.clone();
         let key = SourceKey::derive(&identity);
@@ -325,12 +327,12 @@ fn validate_baseline(kind: SourceKind, baseline: &TrustBaseline) -> Result<()> {
                     .ok_or_else(|| CoreError::Trust("Git baseline requires tree".into()))?,
             )?;
         }
-        SourceKind::Live if baseline.commit.is_some() || baseline.tree.is_some() => {
+        SourceKind::Link if baseline.commit.is_some() || baseline.tree.is_some() => {
             return Err(CoreError::Trust(
                 "live baseline cannot contain Git object IDs".into(),
             ));
         }
-        SourceKind::Live => {}
+        SourceKind::Link => {}
     }
     crate::source::identity::validate_digest(&baseline.inventory)
         .map_err(|error| CoreError::Trust(error.to_string()))?;
@@ -361,8 +363,6 @@ struct TrustRecordDto {
     #[serde(skip_serializing_if = "Option::is_none")]
     canonical_bytes_base64: Option<String>,
     receipts: Vec<TrustReceiptDto>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    vendor_receipts: Option<Vec<VendorTrustReceiptDto>>,
     all_snapshots: bool,
     baseline: Option<TrustBaselineDto>,
 }
@@ -396,10 +396,10 @@ struct TrustBaselineDto {
 }
 
 impl TrustRecordDto {
-    fn try_into_record(self, schema: &str) -> Result<TrustRecord> {
+    fn try_into_record(self, _schema: &str) -> Result<TrustRecord> {
         let kind = match self.kind.as_str() {
             "git" => SourceKind::Git,
-            "live" => SourceKind::Live,
+            "link" => SourceKind::Link,
             _ => return Err(CoreError::Trust("invalid trust source kind".into())),
         };
         let canonical = match (self.canonical, self.canonical_bytes_base64) {
@@ -420,42 +420,13 @@ impl TrustRecordDto {
                 "trust receipts must be strictly sorted".into(),
             ));
         }
-        if kind == SourceKind::Live && !receipts.is_empty() {
+        if kind == SourceKind::Link && !receipts.is_empty() {
             return Err(CoreError::Trust(
-                "live trust cannot contain exact receipts".into(),
+                "link trust cannot contain exact receipts".into(),
             ));
         }
         for receipt in &receipts {
             validate_receipt(receipt)?;
-        }
-        let vendor_receipts = match (schema, self.vendor_receipts) {
-            ("grimoire/trust@1", None) => Vec::new(),
-            ("grimoire/trust@1", Some(_)) => {
-                return Err(CoreError::Trust(
-                    "trust@1 cannot contain vendor receipts".into(),
-                ))
-            }
-            ("grimoire/trust@2", Some(receipts)) => receipts
-                .into_iter()
-                .map(VendorTrustReceipt::try_from)
-                .collect::<Result<Vec<_>>>()?,
-            ("grimoire/trust@2", None) => {
-                return Err(CoreError::Trust("trust@2 requires vendor_receipts".into()))
-            }
-            _ => unreachable!("schema checked before record conversion"),
-        };
-        if !vendor_receipts.windows(2).all(|pair| pair[0] < pair[1]) {
-            return Err(CoreError::Trust(
-                "vendor trust receipts must be strictly sorted".into(),
-            ));
-        }
-        if kind == SourceKind::Live && !vendor_receipts.is_empty() {
-            return Err(CoreError::Trust(
-                "live trust cannot contain vendor receipts".into(),
-            ));
-        }
-        for receipt in &vendor_receipts {
-            validate_vendor_receipt(receipt)?;
         }
         let baseline = self.baseline.map(TrustBaseline::from);
         if let Some(baseline) = &baseline {
@@ -464,7 +435,7 @@ impl TrustRecordDto {
         Ok(TrustRecord {
             identity,
             receipts: receipts.into_iter().collect(),
-            vendor_receipts: vendor_receipts.into_iter().collect(),
+            vendor_receipts: BTreeSet::new(),
             all_snapshots: self.all_snapshots,
             baseline,
         })
@@ -482,13 +453,6 @@ impl From<&TrustRecord> for TrustRecordDto {
             canonical,
             canonical_bytes_base64,
             receipts: record.receipts.iter().map(TrustReceiptDto::from).collect(),
-            vendor_receipts: Some(
-                record
-                    .vendor_receipts
-                    .iter()
-                    .map(VendorTrustReceiptDto::from)
-                    .collect(),
-            ),
             all_snapshots: record.all_snapshots,
             baseline: record.baseline.as_ref().map(TrustBaselineDto::from),
         }

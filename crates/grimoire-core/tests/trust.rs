@@ -1,10 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet};
-
 use grimoire_core::{
     plan, Action, CandidateRecord, CanonicalIdentity, PlanningMode, Request, Scope, SnapshotId,
     SnapshotKind, SnapshotStore, SourceAlias, SourceKey, SourceKind, SourceSnapshot, SourceState,
-    SourceTrustIntent, TrustBaseline, TrustChange, TrustMode, TrustReceipt, TrustStore,
-    VendorTrustReceipt, WorldState,
+    SourceTrustIntent, TrustBaseline, TrustChange, TrustMode, TrustReceipt, TrustStore, WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, SourceInventory,
@@ -24,20 +21,6 @@ fn baseline() -> TrustBaseline {
         tree: Some("2".repeat(40)),
         inventory: format!("sha256:{}", "3".repeat(64)),
         review_tree: format!("sha256:{}", "4".repeat(64)),
-    }
-}
-
-fn vendor_receipt(skill: &str) -> VendorTrustReceipt {
-    VendorTrustReceipt {
-        commit: "1".repeat(40),
-        tree: "2".repeat(40),
-        inventory: format!("sha256:{}", "3".repeat(64)),
-        skill: skill.try_into().unwrap(),
-        path: format!("skills/{skill}"),
-        content: format!(
-            "sha256:{}",
-            if skill == "alpha" { "4" } else { "5" }.repeat(64)
-        ),
     }
 }
 
@@ -75,109 +58,26 @@ fn exact_all_and_revoke_preserve_identity_and_baseline() {
 }
 
 #[test]
-fn vendor_receipts_upgrade_v1_deterministically_and_revoke_without_losing_baseline() {
+fn trust_three_rejects_v1_v2_and_vendor_receipt_fields() {
+    assert!(TrustStore::parse(br#"{"schema":"grimoire/trust@1","records":{}}"#).is_err());
+    assert!(TrustStore::parse(br#"{"schema":"grimoire/trust@2","records":{}}"#).is_err());
+
     let identity = CanonicalIdentity::remote("github:cmdruid/grimoire").unwrap();
-    let key = SourceKey::derive(&identity);
-    let exact = receipt('1');
-    let accepted = baseline();
-    let records = BTreeMap::from([(
-        key.to_string(),
-        serde_json::json!({
-            "kind": "git",
-            "canonical": identity.canonical_utf8().unwrap(),
-            "receipts": [{
-                "commit": exact.commit,
-                "tree": exact.tree,
-                "inventory": exact.inventory,
-            }],
-            "all_snapshots": false,
-            "baseline": {
-                "commit": accepted.commit,
-                "tree": accepted.tree,
-                "inventory": accepted.inventory,
-                "review_tree": accepted.review_tree,
-            },
-        }),
-    )]);
-    let v1 = serde_json::to_vec_pretty(&serde_json::json!({
-        "schema": "grimoire/trust@1",
-        "records": records,
-    }))
-    .unwrap();
-    let loaded = TrustStore::parse(&v1).unwrap();
-    assert!(loaded.records[&key].vendor_receipts.is_empty());
-
-    let receipts = BTreeSet::from([vendor_receipt("zeta"), vendor_receipt("alpha")]);
-    let upgraded = loaded
-        .grant_vendor(identity, receipts.clone(), Some(v1))
+    let granted = TrustStore::default()
+        .grant_exact(identity, receipt('1'), baseline(), None)
         .unwrap();
-    let upgraded_store = TrustStore::parse(&upgraded.after).unwrap();
-    let record = &upgraded_store.records[&key];
-    assert_eq!(record.vendor_receipts, receipts);
-    assert_eq!(record.receipts, BTreeSet::from([receipt('1')]));
-    assert_eq!(record.baseline.as_ref(), Some(&baseline()));
-    assert!(String::from_utf8_lossy(&upgraded.after).contains("grimoire/trust@2"));
-
-    let revoked = upgraded_store
-        .revoke(&key, Some(upgraded.after.clone()))
-        .unwrap();
-    let record = &TrustStore::parse(&revoked.after).unwrap().records[&key];
-    assert!(record.receipts.is_empty());
-    assert!(record.vendor_receipts.is_empty());
-    assert_eq!(record.baseline.as_ref(), Some(&baseline()));
-}
-
-#[test]
-fn trust_two_rejects_missing_unsorted_and_unknown_vendor_receipt_fields() {
-    let identity = CanonicalIdentity::remote("github:cmdruid/grimoire").unwrap();
-    let mutation = TrustStore::default()
-        .grant_vendor(
-            identity,
-            BTreeSet::from([vendor_receipt("alpha"), vendor_receipt("zeta")]),
-            None,
-        )
-        .unwrap();
-    let mut value: serde_json::Value = serde_json::from_slice(&mutation.after).unwrap();
-    let record = value["records"]
-        .as_object_mut()
-        .unwrap()
-        .values_mut()
-        .next()
-        .unwrap();
-    let original = record.clone();
-
-    record.as_object_mut().unwrap().remove("vendor_receipts");
-    assert!(TrustStore::parse(&serde_json::to_vec(&value).unwrap()).is_err());
-
-    *value["records"]
-        .as_object_mut()
-        .unwrap()
-        .values_mut()
-        .next()
-        .unwrap() = original.clone();
+    assert!(String::from_utf8_lossy(&granted.after).contains("grimoire/trust@3"));
+    assert!(!String::from_utf8_lossy(&granted.after).contains("vendor_receipts"));
+    let mut value: serde_json::Value = serde_json::from_slice(&granted.after).unwrap();
     value["records"]
         .as_object_mut()
         .unwrap()
         .values_mut()
         .next()
-        .unwrap()["vendor_receipts"]
-        .as_array_mut()
         .unwrap()
-        .reverse();
-    assert!(TrustStore::parse(&serde_json::to_vec(&value).unwrap()).is_err());
-
-    *value["records"]
         .as_object_mut()
         .unwrap()
-        .values_mut()
-        .next()
-        .unwrap() = original;
-    value["records"]
-        .as_object_mut()
-        .unwrap()
-        .values_mut()
-        .next()
-        .unwrap()["vendor_receipts"][0]["unexpected"] = serde_json::Value::Bool(true);
+        .insert("vendor_receipts".into(), serde_json::json!([]));
     assert!(TrustStore::parse(&serde_json::to_vec(&value).unwrap()).is_err());
 }
 
@@ -186,7 +86,7 @@ fn trust_two_rejects_missing_unsorted_and_unknown_vendor_receipt_fields() {
 fn live_trust_requires_all_and_never_writes_an_exact_receipt() {
     use std::path::Path;
 
-    let identity = CanonicalIdentity::local(SourceKind::Live, Path::new("/tmp/live")).unwrap();
+    let identity = CanonicalIdentity::local(SourceKind::Link, Path::new("/tmp/live")).unwrap();
     assert!(TrustStore::default()
         .grant_exact(identity.clone(), receipt('1'), baseline(), None)
         .is_err());

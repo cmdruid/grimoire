@@ -5,7 +5,7 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
 use grimoire_core::{
-    attach_inherited_global, PathProbe, ProjectionMode, Request, Scope, ScopePaths, TreeItemKey,
+    attach_inherited_global, PathProbe, ProjectionMode, Scope, ScopePaths, TreeItemKey,
 };
 use skill_grimoire::env::{resolve_tui_paths, Environment};
 use skill_grimoire::tui::{ActiveScope, TuiModel};
@@ -17,7 +17,7 @@ fn project_and_global_tabs_stage_independently_and_inherited_items_are_read_only
         "global",
         &["shared"],
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.global]\nurl = \"github:fixture/global\"\n",
             "[skills]\nshared = { source = \"global\" }\n",
         ),
@@ -27,7 +27,7 @@ fn project_and_global_tabs_stage_independently_and_inherited_items_are_read_only
         "project",
         &["local", "shared"],
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.project]\nurl = \"github:fixture/project\"\n",
             "[skills]\nshared = { source = \"project\" }\n",
         ),
@@ -78,13 +78,13 @@ fn missing_project_falls_back_to_global_with_a_typed_remedy() {
 }
 
 #[test]
-fn project_roots_toggle_projection_mode_while_global_rows_remain_read_only() {
+fn pinned_roots_are_link_mode_and_not_toggleable() {
     let project = fixture::world(
         Scope::Project,
         "project",
         &["one"],
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.project]\nurl = \"github:fixture/project\"\n",
             "[skills]\none = { source = \"project\" }\n",
         ),
@@ -94,7 +94,7 @@ fn project_roots_toggle_projection_mode_while_global_rows_remain_read_only() {
         "global",
         &["one"],
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.global]\nurl = \"github:fixture/global\"\n",
             "[skills]\none = { source = \"global\" }\n",
         ),
@@ -105,25 +105,15 @@ fn project_roots_toggle_projection_mode_while_global_rows_remain_read_only() {
         model.selected_item().unwrap().mode,
         Some(ProjectionMode::Link)
     );
-    assert!(model.selected_item().unwrap().mode_toggleable);
-
-    model.toggle_selected_mode().unwrap();
-    assert_eq!(
-        model.selected_item().unwrap().mode,
-        Some(ProjectionMode::Vendor)
-    );
-    let Request::ReplaceDesiredState { desired } = model.staged_request() else {
-        panic!("project mode toggle must stage desired state");
-    };
-    assert_eq!(
-        desired.skills[&"one".try_into().unwrap()].mode,
-        ProjectionMode::Vendor
-    );
+    assert!(!model.selected_item().unwrap().mode_toggleable);
 
     model.switch_scope();
     model.select_next();
+    assert_eq!(
+        model.selected_item().unwrap().mode,
+        Some(ProjectionMode::Link)
+    );
     assert!(!model.selected_item().unwrap().mode_toggleable);
-    assert!(model.toggle_selected_mode().is_err());
 }
 
 struct TestEnvironment {
@@ -190,7 +180,7 @@ fn navigation_stays_bounded_and_scrolls_the_selected_item_into_view() {
         "global",
         &["one", "three", "two"],
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.global]\nurl = \"github:fixture/global\"\n",
         ),
     );

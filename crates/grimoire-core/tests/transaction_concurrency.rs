@@ -78,7 +78,7 @@ fn initialize(scope: Scope) -> Plan {
         actions: vec![
             Action::CreateManifest {
                 scope,
-                after: b"schema = \"grimoire/manifest@2\"\n".to_vec(),
+                after: b"schema = \"grimoire/manifest@3\"\n".to_vec(),
             },
             Action::CreateLock {
                 scope,

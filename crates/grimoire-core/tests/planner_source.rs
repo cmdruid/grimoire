@@ -11,7 +11,7 @@ use grimoire_pack::inventory::{
 
 const EMPTY_LOCK: &[u8] = include_bytes!("fixtures/lock/empty.json");
 const MANIFEST: &str = concat!(
-    "schema = \"grimoire/manifest@2\"\n",
+    "schema = \"grimoire/manifest@3\"\n",
     "[sources.a]\nurl = \"github:org/a\"\nref = \"main\"\n",
     "[skills]\none = { source = \"a\" }\n",
 );
@@ -39,7 +39,7 @@ fn snapshot(root: &str, digit: char, kind: SnapshotKind) -> SourceSnapshot {
             Some(digit.to_string().repeat(40)),
             Some(digit.to_ascii_uppercase().to_string().repeat(40)),
         ),
-        SnapshotKind::Live => (None, None),
+        SnapshotKind::Link => (None, None),
     };
     SourceSnapshot::new(
         SourceAlias::new("a").unwrap(),
@@ -57,8 +57,8 @@ fn state(
 ) -> Observed {
     let identity = match snapshot.id.kind {
         SnapshotKind::Git => CanonicalIdentity::remote("github:org/a").unwrap(),
-        SnapshotKind::Live => {
-            CanonicalIdentity::local(grimoire_core::SourceKind::Live, &snapshot.root).unwrap()
+        SnapshotKind::Link => {
+            CanonicalIdentity::local(grimoire_core::SourceKind::Link, &snapshot.root).unwrap()
         }
     };
     let review_tree = snapshot.inventory.review_tree_digest.to_string();
@@ -303,12 +303,12 @@ fn a_trusted_absent_snapshot_gets_materialized_before_activation() {
 #[test]
 fn frozen_refuses_live_even_when_identity_wide_trust_is_present() {
     let manifest = concat!(
-        "schema = \"grimoire/manifest@2\"\n",
-        "[sources.a]\npath = \"../a\"\nlive = true\n",
+        "schema = \"grimoire/manifest@3\"\n",
+        "[sources.a]\npath = \"../a\"\nlink = true\n",
         "[skills]\none = { source = \"a\" }\n",
     );
     let observed = state(
-        snapshot("/held/live", '1', SnapshotKind::Live),
+        snapshot("/held/live", '1', SnapshotKind::Link),
         TrustMode::All,
         SnapshotStore::Absent,
         false,

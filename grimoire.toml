@@ -1,4 +1,4 @@
-schema = "grimoire/manifest@2"
+schema = "grimoire/manifest@3"
 
 
 [packs]
@@ -6,4 +6,4 @@ clankshop = { source = "dojo" }
 
 [sources.dojo]
 path = "../dojo"
-live = true
+link = true

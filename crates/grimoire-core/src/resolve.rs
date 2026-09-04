@@ -491,7 +491,7 @@ fn projection_blocked(
         );
         return true;
     }
-    if kind == SnapshotKind::Live {
+    if kind == SnapshotKind::Link {
         push_blocker(
             blockers,
             Blocker::new(
@@ -521,8 +521,8 @@ fn lock_source(source: &crate::ManifestSource, snapshot: &SourceSnapshot) -> Opt
             tree: snapshot.id.tree.clone()?,
             inventory: snapshot.id.inventory_digest.clone(),
         }),
-        (SourceLocation::Path(declared), SnapshotKind::Live) if source.live => {
-            Some(LockSource::Live {
+        (SourceLocation::Path(declared), SnapshotKind::Link) if source.link => {
+            Some(LockSource::Link {
                 declared: declared.clone(),
             })
         }

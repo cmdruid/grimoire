@@ -12,14 +12,14 @@ use crate::{CoreError, Result};
 #[serde(rename_all = "snake_case")]
 pub enum SourceKind {
     Git,
-    Live,
+    Link,
 }
 
 impl SourceKind {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Git => "git",
-            Self::Live => "live",
+            Self::Link => "link",
         }
     }
 }
@@ -168,7 +168,7 @@ impl CanonicalIdentity {
         }
         let local = canonical.starts_with(b"/");
         match kind {
-            SourceKind::Live if !local => {
+            SourceKind::Link if !local => {
                 return Err(CoreError::Source(
                     "live canonical identity must be an absolute local path".into(),
                 ));
@@ -258,7 +258,7 @@ impl SourceKey {
 
 impl SnapshotKey {
     pub fn derive(kind: SourceKind, commit: &str, tree: &str, inventory: &str) -> Result<Self> {
-        if kind == SourceKind::Live {
+        if kind == SourceKind::Link {
             return Err(CoreError::Source(
                 "live sources do not have snapshot keys".into(),
             ));
@@ -296,12 +296,12 @@ impl ReviewKey {
                     tree.ok_or_else(|| CoreError::Source("Git review requires a tree".into()))?,
                 )?;
             }
-            SourceKind::Live if commit.is_some() || tree.is_some() => {
+            SourceKind::Link if commit.is_some() || tree.is_some() => {
                 return Err(CoreError::Source(
                     "live review cannot contain Git object IDs".into(),
                 ));
             }
-            SourceKind::Live => {}
+            SourceKind::Link => {}
         }
         validate_digest(inventory)?;
         validate_digest(review_tree)?;

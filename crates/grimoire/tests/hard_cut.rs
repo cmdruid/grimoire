@@ -74,7 +74,7 @@ const ADAPTER_RULES: &[Rule] = &[
 ];
 
 #[test]
-fn production_uses_schema_two_with_only_bounded_legacy_readers() {
+fn production_uses_schema_three_with_only_bounded_legacy_readers() {
     let workspace = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let app = rust_sources(&workspace.join("crates/grimoire/src"));
     let core = rust_sources(&workspace.join("crates/grimoire-core/src"));
@@ -91,14 +91,14 @@ fn production_uses_schema_two_with_only_bounded_legacy_readers() {
         .collect::<Vec<_>>()
         .join("\n");
     for current in [
-        "grimoire/manifest@2",
-        "grimoire/lock@2",
-        "grimoire/trust@2",
+        "grimoire/manifest@3",
+        "grimoire/lock@3",
+        "grimoire/trust@3",
         "grimoire/transaction@2",
     ] {
         assert!(core.contains(current), "missing current schema `{current}`");
     }
-    assert!(core.contains("\"grimoire/trust@1\" | \"grimoire/trust@2\""));
+    assert!(!core.contains("grimoire/trust@2"));
     assert!(core.contains("\"grimoire/transaction@1\" =>"));
 }
 

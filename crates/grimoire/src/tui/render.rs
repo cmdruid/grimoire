@@ -100,7 +100,7 @@ fn render_item(item: &TreeItem, focused: bool) -> String {
     };
     let mut facts = match item.kind {
         TreeItemKind::Source {
-            live,
+            link,
             trust,
             candidate_current,
             has_findings,
@@ -112,7 +112,7 @@ fn render_item(item: &TreeItem, focused: bool) -> String {
             };
             format!(
                 " [{}{}{}]",
-                if live { "live," } else { "" },
+                if link { "link," } else { "" },
                 trust,
                 if !candidate_current || has_findings {
                     ",attention"

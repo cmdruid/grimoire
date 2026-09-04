@@ -83,7 +83,7 @@ fn fixture() -> (tempfile::TempDir, Paths, OwnedLinkTarget, Plan) {
             .join("skills/one"),
     )
     .unwrap();
-    let manifest = b"schema = \"grimoire/manifest@2\"\n".to_vec();
+    let manifest = b"schema = \"grimoire/manifest@3\"\n".to_vec();
     let lock = Lockfile::default().to_bytes().unwrap();
     let plan = Plan {
         actions: vec![
@@ -184,9 +184,9 @@ fn source_registration_never_recovers_trust_without_manifest_and_candidate() {
         let project = root.join("project");
         fs::create_dir_all(&project).unwrap();
         let paths = Paths::project(project, root.join("home")).unwrap();
-        let before_manifest = b"schema = \"grimoire/manifest@2\"\n".to_vec();
+        let before_manifest = b"schema = \"grimoire/manifest@3\"\n".to_vec();
         let after_manifest = concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.a]\nurl = \"github:org/a\"\nref = \"main\"\n"
         )
         .as_bytes()
@@ -350,7 +350,7 @@ fn repoint_and_remove_faults_restore_the_exact_owned_link() {
                 paths.skills_dir().join("one"),
             )
             .unwrap();
-            let manifest = b"schema = \"grimoire/manifest@2\"\n".to_vec();
+            let manifest = b"schema = \"grimoire/manifest@3\"\n".to_vec();
             let lock = Lockfile::default().to_bytes().unwrap();
             fs::write(paths.manifest_path(), &manifest).unwrap();
             fs::write(paths.lock_path(), &lock).unwrap();
@@ -431,12 +431,12 @@ fn candidate_removal_faults_recover_exact_before_or_complete_after() {
         let paths = Paths::project(project, root.join("home")).unwrap();
         let alias = SourceAlias::new("a").unwrap();
         let before_manifest = concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.a]\nurl = \"github:org/a\"\n"
         )
         .as_bytes()
         .to_vec();
-        let after_manifest = b"schema = \"grimoire/manifest@2\"\n".to_vec();
+        let after_manifest = b"schema = \"grimoire/manifest@3\"\n".to_vec();
         let lock = Lockfile::default().to_bytes().unwrap();
         fs::write(paths.manifest_path(), &before_manifest).unwrap();
         fs::write(paths.lock_path(), &lock).unwrap();

@@ -7,8 +7,8 @@ use grimoire_core::{
     apply, attach_inherited_global, check, context_report, load_trust_world, load_world,
     observe_reachability, plan, prepare_source_add, refresh_source, source_diff, source_info,
     source_key_for_alias, source_summaries, trust_catalog, Approval, CoreError, DesiredEdit,
-    DesiredState, ManifestSource, PackName, PlanningMode, ProjectionMode, Request, ScopePaths,
-    SkillName, SourceAlias, SourceKey, SourceTrustIntent, WorldState,
+    DesiredState, ManifestSource, PackName, PlanningMode, Request, ScopePaths, SkillName,
+    SourceAlias, SourceKey, SourceTrustIntent, WorldState,
 };
 
 use crate::args::{Cli, Command, SourceCommand, StoreCommand, TrustCommand};
@@ -133,38 +133,6 @@ pub fn desired_command_input(
     };
     let mut desired = DesiredState::from_world(world);
     desired.apply(edit)?;
-    if let Command::Install {
-        name: Some(name),
-        pack,
-        link,
-        vendor,
-        ..
-    } = command
-    {
-        let requested_mode = match (*link, *vendor) {
-            (false, false) => None,
-            (true, false) => Some(ProjectionMode::Link),
-            (false, true) => Some(ProjectionMode::Vendor),
-            (true, true) => {
-                return Err(CoreError::Request(
-                    "`--link` and `--vendor` are mutually exclusive".into(),
-                ))
-            }
-        };
-        if let Some(mode) = requested_mode {
-            desired.apply(if *pack {
-                DesiredEdit::SetPackMode {
-                    name: PackName::new(name.clone())?,
-                    mode,
-                }
-            } else {
-                DesiredEdit::SetSkillMode {
-                    name: SkillName::new(name.clone())?,
-                    mode,
-                }
-            })?;
-        }
-    }
     Ok(PlanningInput {
         request: desired.into_request(),
         mode,
@@ -459,13 +427,24 @@ fn execute_source(
             alias,
             location,
             reference,
+            link,
             live,
             trust,
             trust_all,
             ..
         } => {
+            if live {
+                return Err(CoreError::Request(
+                    "`--live` is not accepted; use `--link`".into(),
+                ));
+            }
+            if link && trust {
+                return Err(CoreError::Request(
+                    "`--trust` is not accepted on a `--link` source; use `--trust-all`".into(),
+                ));
+            }
             let alias = SourceAlias::new(alias)?;
-            let source = ManifestSource::from_cli(location, reference, live)?;
+            let source = ManifestSource::from_cli(location, reference, link)?;
             let prepared = prepare_source_add(paths.clone(), &world, alias, source, git)?;
             let trust = if trust_all {
                 SourceTrustIntent::All
@@ -547,7 +526,6 @@ fn execute_source(
             alias,
             all,
             revoke,
-            vendor,
             yes,
             ..
         } => {
@@ -578,9 +556,7 @@ fn execute_source(
                     &world,
                     Request::TrustSource {
                         alias,
-                        mode: if vendor {
-                            SourceTrustIntent::Vendor
-                        } else if all {
+                        mode: if all {
                             SourceTrustIntent::All
                         } else {
                             SourceTrustIntent::Exact

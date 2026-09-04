@@ -40,12 +40,12 @@ impl CandidateRecord {
                         .ok_or_else(|| CoreError::Source("Git candidate requires tree".into()))?,
                 )?;
             }
-            SourceKind::Live if commit.is_some() || tree.is_some() => {
+            SourceKind::Link if commit.is_some() || tree.is_some() => {
                 return Err(CoreError::Source(
                     "live candidate cannot carry Git object IDs".into(),
                 ));
             }
-            SourceKind::Live => {}
+            SourceKind::Link => {}
         }
         Ok(Self {
             declaration_hash,
@@ -63,7 +63,7 @@ impl CandidateRecord {
 
     pub fn snapshot_key(&self) -> Result<Option<SnapshotKey>> {
         match self.identity.kind() {
-            SourceKind::Live => Ok(None),
+            SourceKind::Link => Ok(None),
             SourceKind::Git => SnapshotKey::derive(
                 SourceKind::Git,
                 self.commit.as_deref().expect("validated Git commit"),
@@ -98,7 +98,7 @@ impl CandidateRecord {
         }
         let kind = match dto.kind.as_str() {
             "git" => SourceKind::Git,
-            "live" => SourceKind::Live,
+            "link" => SourceKind::Link,
             _ => return Err(CoreError::Source("invalid candidate kind".into())),
         };
         let canonical = match (dto.canonical, dto.canonical_bytes_base64) {

@@ -19,11 +19,11 @@ fn initializes_default_explicit_and_global_scopes_through_core() {
     assert!(output.status.success(), "{}", support::stderr(&output));
     assert_eq!(
         fs::read(project.join("grimoire.toml")).unwrap(),
-        b"schema = \"grimoire/manifest@2\"\n"
+        b"schema = \"grimoire/manifest@3\"\n"
     );
     assert!(fs::read(project.join("grimoire.lock"))
         .unwrap()
-        .starts_with(b"{\n  \"schema\": \"grimoire/lock@2\""));
+        .starts_with(b"{\n  \"schema\": \"grimoire/lock@3\""));
     assert!(support::stdout(&output).contains("Applied."));
 
     let output = support::run(

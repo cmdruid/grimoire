@@ -24,7 +24,7 @@ fn additive_destructive_blocked_and_trust_all_use_distinct_ceremonies() {
             "project",
             &["local"],
             concat!(
-                "schema = \"grimoire/manifest@2\"\n",
+                "schema = \"grimoire/manifest@3\"\n",
                 "[sources.project]\nurl = \"github:fixture/project\"\n",
             ),
         ),
@@ -52,7 +52,7 @@ fn additive_destructive_blocked_and_trust_all_use_distinct_ceremonies() {
                 "project",
                 &["local"],
                 concat!(
-                    "schema = \"grimoire/manifest@2\"\n",
+                    "schema = \"grimoire/manifest@3\"\n",
                     "[sources.project]\nurl = \"github:fixture/project\"\n",
                     "[skills]\nlocal = { source = \"project\" }\n",
                 ),
@@ -76,7 +76,7 @@ fn additive_destructive_blocked_and_trust_all_use_distinct_ceremonies() {
         "project",
         &["local"],
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.project]\nurl = \"github:fixture/project\"\n",
         ),
     );
@@ -118,7 +118,7 @@ fn source_actions_are_explicit_and_staged_quit_discards_in_memory_edits() {
             "project",
             &["local"],
             concat!(
-                "schema = \"grimoire/manifest@2\"\n",
+                "schema = \"grimoire/manifest@3\"\n",
                 "[sources.project]\nurl = \"github:fixture/project\"\n",
             ),
         ),
@@ -162,7 +162,7 @@ fn cached_source_update_uses_its_exact_plan_and_destructive_confirmation() {
                 "project",
                 &["local"],
                 concat!(
-                    "schema = \"grimoire/manifest@2\"\n",
+                    "schema = \"grimoire/manifest@3\"\n",
                     "[sources.project]\nurl = \"github:fixture/project\"\n",
                     "[skills]\nlocal = { source = \"project\" }\n",
                 ),
@@ -362,7 +362,7 @@ fn accepted_job_reload_discards_stale_staging_before_the_next_event() {
         "project",
         &["local"],
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.project]\nurl = \"github:fixture/project\"\n",
         ),
     );

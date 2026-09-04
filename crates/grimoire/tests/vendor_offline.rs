@@ -90,6 +90,7 @@ impl Console for TestConsole {
 }
 
 #[test]
+#[ignore = "schema 3 drops source trust --vendor; unit 3 retargets this to copies"]
 fn cli_approves_and_restores_a_committed_vendor_projection_offline() {
     let temporary = tempfile::tempdir().unwrap();
     let root = temporary.path().canonicalize().unwrap();
@@ -114,7 +115,7 @@ fn cli_approves_and_restores_a_committed_vendor_projection_offline() {
     fs::set_permissions(vendor.join("SKILL.md"), fs::Permissions::from_mode(0o644)).unwrap();
     let content = verify_vendor_tree(&vendor, &skill).unwrap();
 
-    let manifest = b"schema = \"grimoire/manifest@2\"\n[sources.repo]\nurl = \"github:org/repo\"\nref = \"main\"\n[skills]\none = { source = \"repo\", mode = \"vendor\" }\n".to_vec();
+    let manifest = b"schema = \"grimoire/manifest@3\"\n[sources.repo]\nurl = \"github:org/repo\"\nref = \"main\"\n[skills]\none = { source = \"repo\" }\n".to_vec();
     let lock = Lockfile {
         sources: BTreeMap::from([(
             alias.clone(),

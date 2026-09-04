@@ -61,6 +61,6 @@ fn source_snapshot_and_review_keys_use_distinct_framed_domains() {
 #[cfg(unix)]
 #[test]
 fn local_identity_retains_raw_absolute_bytes() {
-    let identity = CanonicalIdentity::local(SourceKind::Live, Path::new("/tmp/source")).unwrap();
+    let identity = CanonicalIdentity::local(SourceKind::Link, Path::new("/tmp/source")).unwrap();
     assert_eq!(identity.canonical_bytes(), b"/tmp/source");
 }

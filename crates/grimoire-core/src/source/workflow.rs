@@ -132,9 +132,9 @@ fn inspect_prepared(
                     .resolve_declared_path(alias, manifest_dir)
                     .ok_or_else(|| CoreError::Source("local declaration has no root".into()))?,
             )?;
-            if source.live {
+            if source.link {
                 let reader = HeldDirectoryReader::open(&root)?;
-                let identity = CanonicalIdentity::local(SourceKind::Live, &root)?;
+                let identity = CanonicalIdentity::local(SourceKind::Link, &root)?;
                 let info = prepared_info(
                     paths,
                     alias,
@@ -285,7 +285,7 @@ pub fn inspect_live_source(paths: Paths, alias: SourceAlias) -> Result<SourceInf
             "inspect_live_source requires a local declaration".into(),
         ));
     };
-    if !source.live {
+    if !source.link {
         return Err(CoreError::Source(
             "pinned local Git inspection requires Git custody".into(),
         ));
@@ -301,7 +301,7 @@ pub fn inspect_live_source(paths: Paths, alias: SourceAlias) -> Result<SourceInf
             .ok_or_else(|| CoreError::Source("local declaration has no root".into()))?,
     )?;
     let reader = HeldDirectoryReader::open(&root)?;
-    let identity = CanonicalIdentity::local(SourceKind::Live, &root)?;
+    let identity = CanonicalIdentity::local(SourceKind::Link, &root)?;
     let inventory = scan(&reader).map_err(|error| CoreError::Source(error.to_string()))?;
     reader.revalidate()?;
     let candidate = CandidateRecord::new(
@@ -352,7 +352,7 @@ pub fn inspect_pinned_source(
             "inspect_pinned_source requires a local declaration".into(),
         ));
     };
-    if source.live {
+    if source.link {
         return Err(CoreError::Source(
             "inspect_pinned_source requires pinned mode".into(),
         ));
@@ -630,8 +630,8 @@ fn declaration_identity(
                     message: error.to_string(),
                 })?;
             CanonicalIdentity::local(
-                if source.live {
-                    SourceKind::Live
+                if source.link {
+                    SourceKind::Link
                 } else {
                     SourceKind::Git
                 },

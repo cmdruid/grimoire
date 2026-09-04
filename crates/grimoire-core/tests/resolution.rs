@@ -54,7 +54,7 @@ fn snapshot(
     };
     let (commit, tree) = match kind {
         SnapshotKind::Git => (Some("1".repeat(40)), Some("2".repeat(40))),
-        SnapshotKind::Live => (None, None),
+        SnapshotKind::Link => (None, None),
     };
     SourceSnapshot::new(
         SourceAlias::new(alias).unwrap(),
@@ -78,8 +78,8 @@ fn world(
                 grimoire_core::CanonicalIdentity::remote(&format!("github:org/{}", snapshot.alias))
                     .unwrap()
             }
-            SnapshotKind::Live => grimoire_core::CanonicalIdentity::local(
-                grimoire_core::SourceKind::Live,
+            SnapshotKind::Link => grimoire_core::CanonicalIdentity::local(
+                grimoire_core::SourceKind::Link,
                 &snapshot.root,
             )
             .unwrap(),
@@ -135,7 +135,7 @@ fn planned_lock(plan: &Plan) -> Lockfile {
 #[test]
 fn pack_resolution_covers_required_enabled_excluded_and_unavailable_members() {
     let manifest = concat!(
-        "schema = \"grimoire/manifest@2\"\n",
+        "schema = \"grimoire/manifest@3\"\n",
         "[sources.a]\nurl = \"github:org/a\"\nref = \"main\"\n",
         "[packs]\nbundle = { source = \"a\", exclude = [\"disabled\"] }\n",
     );
@@ -189,7 +189,7 @@ fn pack_resolution_covers_required_enabled_excluded_and_unavailable_members() {
 #[test]
 fn same_owner_roots_merge_and_source_only_declarations_do_not_enter_the_lock() {
     let manifest = concat!(
-        "schema = \"grimoire/manifest@2\"\n",
+        "schema = \"grimoire/manifest@3\"\n",
         "[sources.a]\nurl = \"github:org/a\"\n",
         "[sources.unused]\nurl = \"github:org/unused\"\n",
         "[skills]\nshared = { source = \"a\" }\n",
@@ -229,7 +229,7 @@ fn same_owner_roots_merge_and_source_only_declarations_do_not_enter_the_lock() {
 #[test]
 fn same_snapshot_and_owner_guards_refuse_cross_source_resolution_or_adoption() {
     let missing = concat!(
-        "schema = \"grimoire/manifest@2\"\n",
+        "schema = \"grimoire/manifest@3\"\n",
         "[sources.a]\nurl = \"github:org/a\"\n",
         "[sources.b]\nurl = \"github:org/b\"\n",
         "[packs]\nbundle = { source = \"a\" }\n",
@@ -255,7 +255,7 @@ fn same_snapshot_and_owner_guards_refuse_cross_source_resolution_or_adoption() {
         .any(|value| value.code == "pack-required-missing"));
 
     let collision = concat!(
-        "schema = \"grimoire/manifest@2\"\n",
+        "schema = \"grimoire/manifest@3\"\n",
         "[sources.a]\nurl = \"github:org/a\"\n",
         "[sources.b]\nurl = \"github:org/b\"\n",
         "[skills]\nshared = { source = \"a\" }\n",
@@ -291,7 +291,7 @@ fn same_snapshot_and_owner_guards_refuse_cross_source_resolution_or_adoption() {
 fn project_and_global_resolve_independently_with_read_only_shadowing_facts() {
     let global_manifest = grimoire_core::Manifest::parse(
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.global]\nurl = \"github:org/global\"\n",
             "[skills]\nshared = { source = \"global\" }\n",
         )
@@ -305,7 +305,7 @@ fn project_and_global_resolve_independently_with_read_only_shadowing_facts() {
         &BTreeMap::from([(global_snapshot.alias.clone(), global_snapshot)]),
     );
     let project_manifest = concat!(
-        "schema = \"grimoire/manifest@2\"\n",
+        "schema = \"grimoire/manifest@3\"\n",
         "[sources.project]\nurl = \"github:org/project\"\n",
         "[skills]\nshared = { source = \"project\" }\n",
     );
@@ -335,7 +335,7 @@ fn project_and_global_resolve_independently_with_read_only_shadowing_facts() {
 #[test]
 fn invalid_exclusions_and_live_frozen_worlds_are_stable_blockers() {
     let invalid = concat!(
-        "schema = \"grimoire/manifest@2\"\n",
+        "schema = \"grimoire/manifest@3\"\n",
         "[sources.a]\nurl = \"github:org/a\"\n",
         "[packs]\nbundle = { source = \"a\", exclude = [\"required\"] }\n",
     );
@@ -362,15 +362,15 @@ fn invalid_exclusions_and_live_frozen_worlds_are_stable_blockers() {
         .any(|value| value.code == "pack-exclusion-invalid"));
 
     let live = concat!(
-        "schema = \"grimoire/manifest@2\"\n",
-        "[sources.local]\npath = \"../local\"\nlive = true\n",
+        "schema = \"grimoire/manifest@3\"\n",
+        "[sources.local]\npath = \"../local\"\nlink = true\n",
         "[skills]\none = { source = \"local\" }\n",
     );
     let live_plan = plan(
         &world(
             Scope::Project,
             live,
-            vec![snapshot("local", SnapshotKind::Live, &["one"], &[])],
+            vec![snapshot("local", SnapshotKind::Link, &["one"], &[])],
             &[("one", InstalledLink::Absent)],
             None,
         ),
@@ -385,7 +385,7 @@ fn invalid_exclusions_and_live_frozen_worlds_are_stable_blockers() {
 }
 
 #[test]
-fn projection_modes_resolve_unanimously_and_conflicts_fail_closed() {
+fn projection_mode_follows_the_source_and_is_unanimous() {
     let snapshot = snapshot(
         "a",
         SnapshotKind::Git,
@@ -394,10 +394,10 @@ fn projection_modes_resolve_unanimously_and_conflicts_fail_closed() {
     );
     let agreeing = grimoire_core::Manifest::parse(
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.a]\nurl = \"github:org/a\"\n",
-            "[skills]\nshared = { source = \"a\", mode = \"vendor\" }\n",
-            "[packs]\nbundle = { source = \"a\", mode = \"vendor\" }\n",
+            "[skills]\nshared = { source = \"a\" }\n",
+            "[packs]\nbundle = { source = \"a\" }\n",
         )
         .as_bytes()
         .to_vec(),
@@ -405,7 +405,7 @@ fn projection_modes_resolve_unanimously_and_conflicts_fail_closed() {
     .unwrap();
     let resolved = resolve_manifest(
         &agreeing,
-        &BTreeMap::from([(snapshot.alias.clone(), snapshot.clone())]),
+        &BTreeMap::from([(snapshot.alias.clone(), snapshot)]),
     );
     assert!(resolved.blockers.is_empty());
     assert_eq!(
@@ -413,47 +413,29 @@ fn projection_modes_resolve_unanimously_and_conflicts_fail_closed() {
             "{:?}",
             resolved.lock.skills[&"shared".try_into().unwrap()].mode
         ),
-        "Vendor"
+        "Link"
     );
-
-    let conflicting = grimoire_core::Manifest::parse(
-        concat!(
-            "schema = \"grimoire/manifest@2\"\n",
-            "[sources.a]\nurl = \"github:org/a\"\n",
-            "[skills]\nshared = { source = \"a\", mode = \"link\" }\n",
-            "[packs]\nbundle = { source = \"a\", mode = \"vendor\" }\n",
-        )
-        .as_bytes()
-        .to_vec(),
-    )
-    .unwrap();
-    let resolved = resolve_manifest(
-        &conflicting,
-        &BTreeMap::from([(snapshot.alias.clone(), snapshot)]),
-    );
-    let conflict = resolved
-        .blockers
-        .iter()
-        .find(|blocker| blocker.code == "materialization-conflict")
-        .unwrap();
     assert_eq!(
-        conflict.details["roots"],
-        "pack:bundle=vendor,skill:shared=link"
+        format!(
+            "{:?}",
+            resolved.lock.packs[&"bundle".try_into().unwrap()].mode
+        ),
+        "Link"
     );
 }
 
 #[test]
-fn vendor_mode_rejects_live_and_global_resolution() {
+fn link_activation_is_legal_for_link_sources_and_global_scope() {
     let live_manifest = concat!(
-        "schema = \"grimoire/manifest@2\"\n",
-        "[sources.local]\npath = \"../local\"\nlive = true\n",
-        "[skills]\none = { source = \"local\", mode = \"vendor\" }\n",
+        "schema = \"grimoire/manifest@3\"\n",
+        "[sources.local]\npath = \"../local\"\nlink = true\n",
+        "[skills]\none = { source = \"local\" }\n",
     );
     let live_plan = plan(
         &world(
             Scope::Project,
             live_manifest,
-            vec![snapshot("local", SnapshotKind::Live, &["one"], &[])],
+            vec![snapshot("local", SnapshotKind::Link, &["one"], &[])],
             &[],
             None,
         ),
@@ -464,15 +446,15 @@ fn vendor_mode_rejects_live_and_global_resolution() {
     assert!(live_plan
         .blockers
         .iter()
-        .any(|blocker| blocker.code == "vendor-live-unsupported"));
+        .all(|blocker| blocker.code != "vendor-live-unsupported"));
 
     let global_plan = plan(
         &world(
             Scope::Global,
             concat!(
-                "schema = \"grimoire/manifest@2\"\n",
+                "schema = \"grimoire/manifest@3\"\n",
                 "[sources.a]\nurl = \"github:org/a\"\n",
-                "[skills]\none = { source = \"a\", mode = \"vendor\" }\n",
+                "[skills]\none = { source = \"a\" }\n",
             ),
             vec![snapshot("a", SnapshotKind::Git, &["one"], &[])],
             &[],
@@ -485,5 +467,5 @@ fn vendor_mode_rejects_live_and_global_resolution() {
     assert!(global_plan
         .blockers
         .iter()
-        .any(|blocker| blocker.code == "vendor-global-unsupported"));
+        .all(|blocker| blocker.code != "vendor-global-unsupported"));
 }

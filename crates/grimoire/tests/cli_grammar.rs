@@ -21,21 +21,16 @@ fn canonical_command_productions_parse() {
         vec!["source", "fetch", "repo"],
         vec!["source", "info", "repo", "--json"],
         vec!["source", "diff", "repo"],
+        vec!["source", "add", "local", ".", "--link", "--trust-all"],
         vec!["source", "trust", "repo"],
         vec!["source", "trust", "repo", "--all"],
-        vec!["source", "trust", "repo", "--vendor"],
         vec!["source", "trust", "repo", "--revoke", "--yes"],
         vec!["trust", "list"],
         vec!["trust", "revoke", SOURCE_KEY, "--yes"],
         vec!["install"],
         vec!["install", "--frozen", "--global"],
         vec!["install", "one", "--source", "repo"],
-        vec!["install", "one", "--source", "repo", "--link"],
-        vec!["install", "one", "--source", "repo", "--vendor"],
         vec!["install", "bundle", "--pack", "--source", "repo"],
-        vec![
-            "install", "bundle", "--pack", "--source", "repo", "--vendor",
-        ],
         vec!["uninstall", "one"],
         vec!["remove", "bundle", "--pack", "--yes"],
         vec!["update"],
@@ -56,16 +51,12 @@ fn conflicting_missing_and_forbidden_productions_are_rejected() {
         vec!["source", "add", "repo"],
         vec!["source", "add", "repo", ".", "--trust", "--trust-all"],
         vec!["source", "trust", "repo", "--all", "--revoke"],
-        vec!["source", "trust", "repo", "--vendor", "--all"],
-        vec!["source", "trust", "repo", "--vendor", "--revoke"],
-        vec!["source", "trust", "repo", "--vendor", "--global"],
-        vec!["source", "trust", "repo", "--vendor", "--yes"],
         vec!["source", "trust", "repo", "--yes"],
         vec!["trust", "revoke"],
         vec!["install", "--pack"],
         vec!["install", "one", "--source", "repo", "--frozen"],
-        vec!["install", "one", "--source", "repo", "--link", "--vendor"],
-        vec!["install", "one", "--source", "repo", "--vendor", "--global"],
+        vec!["install", "one", "--source", "repo", "--link"],
+        vec!["install", "one", "--source", "repo", "--vendor"],
         vec!["install", "--vendor"],
         vec!["uninstall"],
         vec!["update", "repo", "extra"],
@@ -77,4 +68,16 @@ fn conflicting_missing_and_forbidden_productions_are_rejected() {
     ] {
         assert!(!parses(&args), "forbidden production accepted: {args:?}");
     }
+}
+
+#[test]
+fn live_flag_still_parses_so_the_command_can_name_link() {
+    assert!(parses(&[
+        "source",
+        "add",
+        "repo",
+        ".",
+        "--live",
+        "--trust-all"
+    ]));
 }

@@ -167,6 +167,7 @@ impl GitRunner for FailOnGit {
 }
 
 #[test]
+#[ignore = "schema 3 drops install --vendor and vendor receipts; unit 3 retargets clone-and-go to copies"]
 fn committed_state_reproduces_in_another_home_with_transport_disabled() {
     let temporary = tempdir().unwrap();
     let root = temporary.path().canonicalize().unwrap();

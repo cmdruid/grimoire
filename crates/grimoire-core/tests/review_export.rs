@@ -21,10 +21,10 @@ mod unix {
         let reader = HeldDirectoryReader::open(&source).unwrap();
         let inventory = scan(&reader).unwrap();
         assert!(!inventory.is_valid());
-        let identity = CanonicalIdentity::local(SourceKind::Live, &source).unwrap();
+        let identity = CanonicalIdentity::local(SourceKind::Link, &source).unwrap();
         let source_key = SourceKey::derive(&identity);
         let review_key = ReviewKey::derive(
-            SourceKind::Live,
+            SourceKind::Link,
             None,
             None,
             &inventory.inventory_digest.to_string(),

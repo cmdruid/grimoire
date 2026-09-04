@@ -91,7 +91,7 @@ fn fixture() -> (TempDir, Paths, OwnedLinkTarget, Plan) {
     let inventory =
         scan(&HeldDirectoryReader::open(&paths.store_path(&source_key, &snapshot_key)).unwrap())
             .unwrap();
-    let manifest = b"schema = \"grimoire/manifest@2\"\n".to_vec();
+    let manifest = b"schema = \"grimoire/manifest@3\"\n".to_vec();
     let lock = Lockfile::default().to_bytes().unwrap();
     let plan = Plan {
         actions: vec![

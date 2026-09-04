@@ -207,7 +207,7 @@ fn locked_commit(paths: &Paths, alias: &str) -> String {
     let lock = grimoire_core::Lockfile::parse(&fs::read(paths.lock_path()).unwrap()).unwrap();
     match lock.sources.get(&alias).unwrap() {
         LockSource::Git { commit, .. } => commit.clone(),
-        LockSource::Live { .. } => panic!("workflow source must be pinned"),
+        LockSource::Link { .. } => panic!("workflow source must be pinned"),
     }
 }
 

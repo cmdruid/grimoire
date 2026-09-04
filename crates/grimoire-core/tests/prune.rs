@@ -134,7 +134,7 @@ fn fixture() -> Fixture {
     create_store(&paths, &global);
     fs::write(
         paths.manifest_path(),
-        b"schema = \"grimoire/manifest@2\"\n[sources.repo]\nurl = \"github:org/global\"\n[skills]\none = { source = \"repo\" }\n",
+        b"schema = \"grimoire/manifest@3\"\n[sources.repo]\nurl = \"github:org/global\"\n[skills]\none = { source = \"repo\" }\n",
     )
     .unwrap();
     let lock = Lockfile {
@@ -372,7 +372,7 @@ fn explicit_project_is_refreshed_and_remains_reachable_when_later_only_indexed()
     create_store(&fixture.paths, &reference);
     fs::write(
         project.join("grimoire.toml"),
-        b"schema = \"grimoire/manifest@2\"\n[sources.repo]\nurl = \"github:org/explicit\"\n[skills]\none = { source = \"repo\" }\n",
+        b"schema = \"grimoire/manifest@3\"\n[sources.repo]\nurl = \"github:org/explicit\"\n[skills]\none = { source = \"repo\" }\n",
     )
     .unwrap();
     let lock = Lockfile {

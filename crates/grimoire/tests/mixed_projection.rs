@@ -7,6 +7,7 @@ use std::process::Command;
 use tempfile::tempdir;
 
 #[test]
+#[ignore = "schema 3 drops install --vendor; unit 3 retargets mixed projection to copies"]
 fn linked_and_vendored_skills_share_one_symlink_only_activation_surface() {
     let temporary = tempdir().unwrap();
     let root = temporary.path().canonicalize().unwrap();

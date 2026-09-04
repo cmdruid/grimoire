@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
 use grimoire_core::{
-    plan, Action, CanonicalIdentity, DesiredEdit, DesiredState, ExitClass, InstalledLink,
-    LockChange, ManifestChange, PlanningMode, Preconditions, ProjectionMode, Request, Scope,
-    SnapshotId, SnapshotKind, SnapshotStore, SourceAlias, SourceSnapshot, SourceState, WorldState,
+    plan, Action, CanonicalIdentity, ExitClass, InstalledLink, LockChange, ManifestChange,
+    PlanningMode, Preconditions, ProjectionMode, Request, Scope, SnapshotId, SnapshotKind,
+    SnapshotStore, SourceAlias, SourceSnapshot, SourceState, WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Skill, SourceInventory, SourcePath,
@@ -91,7 +91,7 @@ fn absent_scope_initializes_exact_files_without_observation_preconditions() {
         vec![
             Action::CreateManifest {
                 scope: Scope::Project,
-                after: b"schema = \"grimoire/manifest@2\"\n".to_vec(),
+                after: b"schema = \"grimoire/manifest@3\"\n".to_vec(),
             },
             Action::CreateLock {
                 scope: Scope::Project,
@@ -138,59 +138,23 @@ fn request_matrix_carries_typed_manifest_and_lock_changes() {
 }
 
 #[test]
-fn desired_state_mode_changes_reach_manifest_lock_and_projection_actions() {
+fn pinned_desired_skills_keep_link_activation_without_a_mode_field() {
     let snapshot = snapshot("/store/a-old", '1');
-    let initial = plan(
-        &world(
-            BASE,
-            EMPTY_LOCK.to_vec(),
-            snapshot.clone(),
-            InstalledLink::Absent,
-        ),
+    let changed = plan(
+        &world(BASE, EMPTY_LOCK.to_vec(), snapshot, InstalledLink::Absent),
         Request::Reconcile,
         PlanningMode::Normal,
     )
     .unwrap();
-    let world = world(
-        BASE,
-        lock_after(&initial),
-        snapshot,
-        InstalledLink::Symlink(PathBuf::from("/store/a-old/skills/one")),
-    );
-    let mut desired = DesiredState::from_world(&world);
-    desired
-        .apply(DesiredEdit::SetSkillMode {
-            name: "one".try_into().unwrap(),
-            mode: ProjectionMode::Vendor,
-        })
-        .unwrap();
-
-    let changed = plan(&world, desired.into_request(), PlanningMode::Normal).unwrap();
-    let manifest = changed
-        .actions
-        .iter()
-        .find_map(|action| match action {
-            Action::ReplaceManifest { after, .. } => {
-                Some(grimoire_core::Manifest::parse(after.clone()).unwrap())
-            }
-            _ => None,
-        })
-        .unwrap();
     let lock = grimoire_core::Lockfile::parse(&lock_after(&changed)).unwrap();
-
-    assert_eq!(
-        manifest.skills[&"one".try_into().unwrap()].mode,
-        ProjectionMode::Vendor
-    );
     assert_eq!(
         lock.skills[&"one".try_into().unwrap()].mode,
-        ProjectionMode::Vendor
+        ProjectionMode::Link
     );
     assert!(changed.actions.iter().any(|action| matches!(
         action,
-        Action::PrepareVendor { skill, .. } if skill.as_str() == "one"
+        Action::CreateLink { skill, .. } if skill.as_str() == "one"
     )));
-    assert!(changed.is_destructive());
 }
 
 #[test]
@@ -365,7 +329,7 @@ fn serialized_plans_are_deterministic_domain_values() {
     let noop = plan(
         &WorldState::from_bytes(
             Scope::Project,
-            b"schema = \"grimoire/manifest@2\"\n".to_vec(),
+            b"schema = \"grimoire/manifest@3\"\n".to_vec(),
             EMPTY_LOCK.to_vec(),
             [],
             [],

@@ -526,7 +526,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                 world.manifest.sources.get(&alias).ok_or_else(|| {
                     CoreError::Request(format!("source `{alias}` is not declared"))
                 })?;
-            if source.live {
+            if source.link {
                 return Err(CoreError::Request(format!(
                     "live source `{alias}` updates immediately and cannot be updated"
                 )));
@@ -553,7 +553,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
         }
         Request::UpdateAll => {
             for (alias, source) in &world.manifest.sources {
-                if source.live {
+                if source.link {
                     continue;
                 }
                 if let Some(candidate) = world
@@ -598,7 +598,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                 .lock
                 .sources
                 .values()
-                .any(|source| matches!(source, LockSource::Live { .. })))
+                .any(|source| matches!(source, LockSource::Link { .. })))
     {
         blockers.push(Blocker::new("frozen-mismatch", []));
     }
@@ -986,7 +986,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                     .expect("validated Git snapshot"),
                 inventory: state.snapshot.id.inventory_digest.clone(),
             }),
-            SnapshotKind::Live => None,
+            SnapshotKind::Link => None,
         };
         let effective_trust = trust_store
             .as_ref()
@@ -1038,7 +1038,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                 ));
             }
         }
-        if state.snapshot.id.kind == SnapshotKind::Live {
+        if state.snapshot.id.kind == SnapshotKind::Link {
             if activating_sources.contains(alias) && effective_trust != TrustMode::All {
                 blockers.push(Blocker::new(
                     "live-source-requires-all-trust",
@@ -1419,7 +1419,7 @@ fn trust_action_from_candidate(
             tree: candidate.tree.clone().expect("validated Git candidate"),
             inventory: candidate.inventory.clone(),
         }),
-        crate::SourceKind::Live => None,
+        crate::SourceKind::Link => None,
     };
     let baseline = crate::TrustBaseline {
         commit: candidate.commit.clone(),
@@ -1471,7 +1471,7 @@ fn plan_vendor_trust(world: &WorldState, alias: &SourceAlias) -> Result<Plan> {
             inventory,
             ..
         }) => (commit, tree, inventory),
-        Some(LockSource::Live { .. }) => {
+        Some(LockSource::Link { .. }) => {
             return Err(CoreError::Trust(
                 "vendor trust requires a pinned Git source".into(),
             ))
@@ -1682,7 +1682,7 @@ fn owned_target(
             )?,
             skill_path: skill.path.clone(),
         }),
-        SnapshotKind::Live => Ok(OwnedLinkTarget::Live {
+        SnapshotKind::Link => Ok(OwnedLinkTarget::Live {
             identity,
             skill_path: skill.path.clone(),
         }),

@@ -17,7 +17,7 @@ pub struct SourceSummary {
     pub alias: SourceAlias,
     pub declared: String,
     pub requested_ref: Option<String>,
-    pub live: bool,
+    pub link: bool,
     pub locked_commit: Option<String>,
     pub candidate_commit: Option<String>,
     pub candidate_current: bool,
@@ -65,7 +65,7 @@ pub fn refresh_source(
         .sources
         .get(&alias)
         .ok_or_else(|| CoreError::Source(format!("source `{alias}` is not declared")))?;
-    match (&source.location, source.live) {
+    match (&source.location, source.link) {
         (SourceLocation::Url(_), false) => fetch_source(paths, alias, runner),
         (SourceLocation::Path(_), true) => inspect_live_source(paths, alias),
         (SourceLocation::Path(_), false) => inspect_pinned_source(paths, alias, runner),
@@ -196,7 +196,7 @@ pub fn source_summaries(world: &WorldState) -> Result<Vec<SourceSummary>> {
                 alias: alias.clone(),
                 declared: source.declared().into(),
                 requested_ref: source.reference.clone(),
-                live: source.live,
+                link: source.link,
                 locked_commit: world
                     .locked_states
                     .get(alias)

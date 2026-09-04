@@ -120,7 +120,7 @@ fn destructive_confirmation_is_tty_owned_and_defaults_to_no() {
             "add",
             "fixture",
             source.to_str().unwrap(),
-            "--live",
+            "--link",
             "--trust-all",
         ],
     )

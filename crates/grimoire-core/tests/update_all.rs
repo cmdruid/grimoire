@@ -18,7 +18,7 @@ fn candidate(alias: &str, digit: char, live: bool) -> SourceState {
         review_tree_digest: compute_review_tree_digest(&[]),
     };
     let kind = if live {
-        SnapshotKind::Live
+        SnapshotKind::Link
     } else {
         SnapshotKind::Git
     };
@@ -35,7 +35,7 @@ fn candidate(alias: &str, digit: char, live: bool) -> SourceState {
         inventory,
     );
     let identity = if live {
-        CanonicalIdentity::local(grimoire_core::SourceKind::Live, &snapshot.root).unwrap()
+        CanonicalIdentity::local(grimoire_core::SourceKind::Link, &snapshot.root).unwrap()
     } else {
         CanonicalIdentity::remote(&format!("github:org/{alias}")).unwrap()
     };
@@ -47,10 +47,10 @@ fn candidate(alias: &str, digit: char, live: bool) -> SourceState {
 
 fn world() -> WorldState {
     let manifest = concat!(
-        "schema = \"grimoire/manifest@2\"\n",
+        "schema = \"grimoire/manifest@3\"\n",
         "[sources.a]\nurl = \"github:org/a\"\n",
         "[sources.b]\nurl = \"github:org/b\"\n",
-        "[sources.live]\npath = \"/source/live\"\nlive = true\n",
+        "[sources.live]\npath = \"/source/live\"\nlink = true\n",
     );
     let mut world = WorldState::from_bytes(
         Scope::Project,

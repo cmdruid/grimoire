@@ -42,7 +42,7 @@ fn list_check_and_prune_project_core_projections() {
             "add",
             "global",
             global_source.to_str().unwrap(),
-            "--live",
+            "--link",
             "--trust-all",
             "--global",
         ],
@@ -62,7 +62,7 @@ fn list_check_and_prune_project_core_projections() {
             "add",
             "project",
             project_source.to_str().unwrap(),
-            "--live",
+            "--link",
             "--trust-all",
         ],
     ));

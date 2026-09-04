@@ -68,7 +68,7 @@ fn world() -> WorldState {
     WorldState::from_bytes(
         Scope::Project,
         concat!(
-            "schema = \"grimoire/manifest@2\"\n",
+            "schema = \"grimoire/manifest@3\"\n",
             "[sources.grimoire]\n",
             "url = \"github:cmdruid/grimoire\"\n",
         )

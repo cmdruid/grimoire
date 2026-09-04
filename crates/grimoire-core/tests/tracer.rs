@@ -11,7 +11,7 @@ use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Pack, Skill, SourceInventory, SourcePath,
 };
 
-const MANIFEST: &str = r#"schema = "grimoire/manifest@2"
+const MANIFEST: &str = r#"schema = "grimoire/manifest@3"
 
 [sources.grimoire]
 url = "github:cmdruid/grimoire"
@@ -22,7 +22,7 @@ journal = { source = "grimoire" }
 "#;
 
 const EMPTY_LOCK: &str = r#"{
-  "schema": "grimoire/lock@2",
+  "schema": "grimoire/lock@3",
   "sources": {},
   "packs": {},
   "skills": {}
@@ -102,7 +102,7 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
     let expected_lock = format!(
         concat!(
             "{{\n",
-            "  \"schema\": \"grimoire/lock@2\",\n",
+            "  \"schema\": \"grimoire/lock@3\",\n",
             "  \"sources\": {{\n",
             "    \"grimoire\": {{\n",
             "      \"declared\": \"github:cmdruid/grimoire\",\n",
@@ -117,7 +117,6 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
             "  \"skills\": {{\n",
             "    \"journal\": {{\n",
             "      \"source\": \"grimoire\",\n",
-            "      \"mode\": \"link\",\n",
             "      \"path\": \"skills/journal\",\n",
             "      \"content\": \"{}\",\n",
             "      \"requested_by\": [\n",
