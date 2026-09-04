@@ -1,16 +1,21 @@
-# `save [<operator-note>]` — preserve semantic intent
+# `save [<operator-note>]` — persist session intent
 
-Use this optional semantic note only before a context reset or custody transfer when Git and helper
-state don't capture a needed fact. Resolve the current registered stream worktree and call:
+Synthesize the current session (do not transcribe the chat). Elide secrets. Include last-updated
+date, TL;DR, completed work and decisions, repo/stream pointers, ordered pending work, and one
+load-executable next action. Write that body to a temp file. The optional argument is that next
+action when the user named one; otherwise use the action you just synthesized.
 
 ```text
-workstream.sh ROOT operator-note STREAM NOTE
+workstream.sh CHECKOUT session-set STREAM --body PATH --note ACTION
 ```
 
-Use `-` to clear the note. Keep it a bounded single line: the next decision, unresolved semantic
-constraint, or reason execution is paused. Don't copy diffs, commit lists, tracker facts, test
-output, hook bodies, or a task diary. The helper atomically changes only the operator-note span;
-the runbook contract hash and tracker remain unchanged. An identical save is a no-op.
+The helper replaces only the session span and sets `operator-note` to ACTION. Do not edit
+`WORKSTREAM.md` directly. `operator-note` on the helper is not this verb.
 
-Done when the helper reports `saved` or `unchanged`. A save doesn't sync, ship, or authorize a ref
-change.
+Enrollment is `session=present` on a later `read`. While enrolled, refresh this same save
+(1) before a deliberate reset, (2) after a completed unit, and (3) on a context-pressure warning.
+Never save a polluted context. `session=empty` means no automatic refresh.
+
+A save does not sync, ship, or authorize a ref change.
+
+Done when the helper reports `status=saved` and `session=present`.

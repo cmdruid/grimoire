@@ -12,7 +12,7 @@ done
 expect 'tracker is helper-owned' 'never read or edit the TSV directly' "$SKILL/SKILL.md"
 expect 'only plan and roadmap consumed' 'consumes: plan, roadmap' "$SKILL/SKILL.md"
 expect 'no produced record edge' 'produces: —' "$SKILL/SKILL.md"
-expect 'history is internal' 'internal control ledger' "$SKILL/SKILL.md"
+expect 'stream loop is not a typed record' 'the stream loop is live state' "$SKILL/SKILL.md"
 expect 'zero setup is explicit' 'Setup is optional' "$SKILL/SKILL.md"
 expect 'recycle source is constrained' 'tracked regular file' "$SKILL/verbs/recycle.md"
 expect_eq 'package migration helper exists' 1 "$([ -x "$SKILL/scripts/workstream-migrate.sh" ] && echo 1 || echo 0)"

@@ -40,3 +40,6 @@ source	bundled
 fingerprint	<sha256>
 
 <!-- /workstream:hook:ship-friction@1 -->
+
+<!-- workstream:session@1 -->
+<!-- /workstream:session@1 -->

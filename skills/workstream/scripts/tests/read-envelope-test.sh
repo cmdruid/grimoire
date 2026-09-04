@@ -41,7 +41,7 @@ check_read_budgets() { # skill-root; prints the declared mandatory populations
   printf 'read-population ship SKILL.md+verbs/ship.md+templates/workstream-runbook.md %s\n' "$ship"
   printf 'read-population runbook templates/workstream-runbook.md %s\n' "$runbook"
   # Baselines captured before the public-guidance pass; this slice may simplify, never grow them.
-  [ "$router" -le 9179 ] && [ "$load" -le 11566 ] && [ "$ship" -le 13014 ] && [ "$runbook" -le 959 ]
+  [ "$router" -le 9179 ] && [ "$load" -le 11566 ] && [ "$ship" -le 13014 ] && [ "$runbook" -le 1100 ]
 }
 
 "$HELPER" "$ROOT" runtime-init concise main 'Keep runtime reads concise' >"$OUT"

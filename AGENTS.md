@@ -53,7 +53,9 @@ top level:
 
 - If that top level has no `WORKSTREAM.md`, this route is inert. Do not scan `.streams` or infer
   custody from a branch.
-- If `WORKSTREAM.md` exists at that top level, STOP before further work. Invoke the canonical
-  primary helper with `read-current <current-top-level>`, reconcile its bounded projection with
-  Git, and resume only its reported action. Do not read the complete runbook or raw tracker.
+- If `WORKSTREAM.md` exists at that top level, STOP before further work. Invoke the helper with
+  `read-current <current-top-level>` (it resolves the primary). Reconcile the bounded projection
+  with Git. If `session=present`, read only the `workstream:session@1` span. Do not reconstruct
+  managed spans or read the raw tracker. Resume the reported local action; if it would land or
+  mutate the primary or target, stop and ask.
 - Handoffs below another checkout belong to other sessions. Never read, load, or recover them.

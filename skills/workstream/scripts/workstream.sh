@@ -2437,9 +2437,11 @@ emit_recovery_anchor() {
 
 Only after context compaction, resolve the current Git top level. With no top-level
 `WORKSTREAM.md`, this route is inert: do not scan `.streams` or infer custody from a branch. With
-one present, stop and invoke the canonical primary helper with `read-current` for that top level.
-Reconcile its bounded projection with Git and resume only its reported action. Do not read the
-complete runbook, raw tracker, or another checkout's handoff.
+one present, stop and invoke the helper with `read-current` for that top level (it resolves the
+primary). Reconcile the bounded projection with Git. If `session=present`, read only the
+`workstream:session@1` span. Do not reconstruct managed spans or read the raw tracker. Resume the
+reported local action; if it would land or mutate the primary or target, stop and ask. Never
+read another checkout's handoff.
 <!-- /workstream:recovery-anchor@1 -->
 EOF
 }

@@ -8,12 +8,11 @@ for the package's debug or design intake, read only `templates/debug.md` or
 `templates/design.md` and reduce its durable mission and pointers to the bounded brief. Omission
 means an ad hoc intake whose first unit is not yet defined.
 
-Accept explicit `--mode`, `--landing`, and `--ship-cadence` choices. Pass only choices the user
-supplied; they override project defaults, which override bundled defaults. Invoke the effective
-helper:
+Accept explicit `--mode` and `--landing` choices. Pass only choices the user supplied; they
+override project defaults, which override bundled defaults. Invoke the effective helper:
 
 ```text
-workstream.sh ROOT runtime-init STREAM TARGET BRIEF [--source-kind KIND --cursor PATH] [POLICY OPTIONS]
+workstream.sh CHECKOUT runtime-init STREAM TARGET BRIEF [--source-kind KIND --cursor PATH] [POLICY OPTIONS]
 ```
 
 The helper validates configuration, secure instance entropy, exclusions, target ancestry, branch

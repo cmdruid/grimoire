@@ -110,7 +110,7 @@ staged engine lives at `.records/records.sh`, beside the introductory
 `history.tsv` lifecycle ledger, and adjacent canonical provider `.trackers/trackers.sh`. Backlog owns that
 layer; consumer skills invoke the installed provider directly.
 Workstream alone may additionally use the fixed **`.streams/`** control home for its optional
-`CONFIG.md`, guide, helper, compact history, and ignored registered runtime worktrees. Each stream
+`CONFIG.md`, guide, helper, and ignored registered runtime worktrees. Each stream
 owns one such worktree; delivery synchronizes the clean primary checkout under a repository lease.
 It is a narrow lifecycle exception, not generic skilldata and not a selectable project root.
 These canonical homes are constants, not front-door configuration. Each durable-home skill owns

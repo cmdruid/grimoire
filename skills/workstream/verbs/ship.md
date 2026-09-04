@@ -3,11 +3,10 @@
 Bare `ship` authorizes reversible preparation and the reported landing. `ship --prepare`
 authorizes preparation only.
 
-1. Invoke `workstream.sh ROOT ship-prepare STREAM`. It allocates or resumes one shipment and
-   immutable unit batch, syncs as needed, commits one row per unit to `.streams/history.tsv` on the
-   stream branch, and proves changed gitlinks from that worktree. It never prepares a
-   primary-checkout submodule. A missing object, conflict, or uncertain receipt blocks without
-   target mutation.
+1. Invoke `workstream.sh CHECKOUT ship-prepare STREAM`. It allocates or resumes one shipment and
+   immutable unit batch, syncs as needed, and proves changed gitlinks from that worktree. It never
+   prepares a primary-checkout submodule. A missing object, conflict, or uncertain receipt blocks
+   without target mutation.
 2. At `phase=gate`, select the host's documented gate for the final changed paths. Invoke only
    `gate-run --class docs|full --label LABEL -- ARGV...` or
    `gate-run --class semantic --selector --label LABEL -- ARGV...`. Use `gate-none` only when the
@@ -18,11 +17,12 @@ authorizes preparation only.
    effects return to the gate under the same shipment and hook identity.
 4. When the helper reports `ready-to-land`, stop if `--prepare`. Confirm that the readiness facts
    still match. For bare `ship`, pass the current invocation's ephemeral authority to
-   `land-advance`. It leases and admits the primary checkout, requires complete cleanliness and no
+   `land-advance STREAM --authority confirmed`. It leases and admits the primary checkout, requires complete cleanliness and no
    interrupted Git operation, transfers changed gitlink objects there, and fast-forwards it once.
    Push then publishes from the stream worktree while retaining that lease. Never force a ref.
 5. For a documented PR path, publish/create-or-update from the stream worktree and record
-   `pr-await`. After merge, `pr-verify` records only the observed remote target and leaves
+   `pr-await STREAM --authority confirmed --reference VALUE`. After merge, `pr-verify STREAM`
+   records only the observed remote target and leaves
    `next_action=postflight`; it does not touch the primary. With authority from the same bare
    `ship`, or fresh explicit authority after context loss, invoke `land-advance` again to lease and
    synchronize that guarded primary endpoint. Mechanical contention does not consume same-session
