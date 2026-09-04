@@ -344,7 +344,10 @@ fn installed_status(
             Some(crate::VendorState::OwnedUnchanged) => InstalledStatus::Current,
             Some(crate::VendorState::Absent) | None => InstalledStatus::Missing,
             Some(crate::VendorState::Drifted) => InstalledStatus::Drift,
-            Some(crate::VendorState::Foreign) => InstalledStatus::ForeignDirectory,
+            Some(crate::VendorState::Foreign) => match world.links.get(name) {
+                Some(InstalledLink::File) => InstalledStatus::ForeignFile,
+                _ => InstalledStatus::ForeignDirectory,
+            },
         }
     } else {
         match world.links.get(name).unwrap_or(&InstalledLink::Absent) {

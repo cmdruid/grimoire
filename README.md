@@ -1,46 +1,39 @@
 # grimoire 🜃 — a package manager for agent skills
 
-Grimoire is a transactional package manager for agent skills. Strict schema-2 manifests and locks
-can project each requested skill from the immutable user-local store or from a managed,
-project-committed vendor tree. Both modes activate through `.agents/skills/` symlinks and share the
-same source review, trust, planning, ownership, and recovery boundaries. The published projection
-contract is
-`.records/specs/2026-09-03-grimoire-install-projections-and-managed-vendoring.md`.
+Grimoire is a transactional package manager for agent skills. Schema-3 manifests and locks install
+each requested skill into the scope's `.agents/skills/` directory. Pinned git sources copy the
+locked skill tree there as a regular directory. `--link` is a local-source hatch that installs a
+symlink to that tree instead. Remotes never symlink. The published activation contract is
+`.records/specs/2026-09-04-grimoire-skill-activation-as-copies-live-local-as-symlink.md`.
 
 The skills catalog lives in a separate library, **dojo** (`~/Repos/dojo`, eventually
 `github:cmdruid/dojo`). This repository is the manager, not the book.
 
 ### Install a skill
 
-Initialize a project, approve a source, and choose its projection mode:
+Initialize a project, add a source, and install from it:
 
 ```sh
 grimoire init
-grimoire source add dojo /Users/cscott/Repos/dojo --live --trust
+grimoire source add dojo github:cmdruid/dojo --trust
 grimoire install journal --source dojo
 grimoire install clankshop --pack --source dojo
 ```
 
-`--live` is the local-source path: install links the working tree. Omit it and Grimoire
-snapshots a clean Git commit instead. When the library is on GitHub, the source line is
-`github:cmdruid/dojo` instead of the filesystem path. There is no `path:` scheme; a local
-source is an ordinary path.
-
-An omitted mode creates a new request in linked mode. Repeating `install` without a mode preserves
-an existing request's mode. Pass `--link` or `--vendor` to convert it explicitly. Vendoring is
-available only in Project scope; Grimoire copies verified immutable-store bytes to
-`vendor/grimoire/SOURCE/SKILL` and uses a relative activation symlink so the project remains
-movable.
-
-Commit `grimoire.toml`, `grimoire.lock`, and managed vendor trees. You can ignore
-`.agents/skills/`, which Grimoire regenerates. In a fresh offline clone, approve the exact committed
-vendor bytes and restore activation without a source candidate, cache, or store snapshot:
+Pinned sources — remotes, and local git paths without `--link` — copy verified store bytes into
+`.agents/skills/<name>/`. A local path with `--link` installs a symlink to that working tree and
+requires `--trust-all`. `--live` is a usage error that names `--link`. There is no `path:` scheme;
+a local source is an ordinary path.
 
 ```sh
-grimoire source trust dojo --vendor
-grimoire install --frozen
-grimoire check
+grimoire source add dojo /Users/cscott/Repos/dojo --link --trust-all
+grimoire install clankshop --pack --source dojo
 ```
+
+Commit `grimoire.toml`, `grimoire.lock`, and the copied skill trees under `.agents/skills/`. A clone
+of those trees is skills-ready: `grimoire check` passes with no store, cache, or candidate.
+`install --frozen` does not recreate a missing copy. Do not commit `--link` symlinks; they are
+machine-local dirt.
 
 ### Use the tree interface
 
@@ -49,8 +42,6 @@ when one exists and otherwise opens Global.
 
 - Press Tab to switch scopes.
 - Press Up/Down or `j`/`k` to move, and press Space to toggle a skill, pack, or optional member.
-- In Project scope, press `v` to switch the selected direct skill or pack root between linked and
-  vendored mode. Pack members display their inherited mode and remain read-only.
 - Press Enter or `a` to apply the displayed plan. Destructive plans default to no.
 - Press `c` or Escape to discard staged changes.
 - On a source row, press `f` to fetch, `u` to update from the cached candidate, or `t` to open the
@@ -59,7 +50,7 @@ when one exists and otherwise opens Global.
 
 ### Verify the implementation
 
-Run the repository gate from the checkout root. Live-root dogfood needs the skills catalog:
+Run the repository gate from the checkout root:
 
 ```sh
 RUSTC_WRAPPER= cargo fmt --all -- --check
@@ -67,9 +58,16 @@ RUSTC_WRAPPER= cargo test --all
 RUSTC_WRAPPER= cargo clippy --all --all-targets -- -D warnings
 ```
 
-The root-layout dogfood tests use `GRIMOIRE_LIVE_ROOT` when set, otherwise sibling `../dojo` when
-that tree contains `PACK.md`. Set `GRIMOIRE_LIVE_ROOT=/absolute/path/to/dojo` to point at another
-catalog.
+`cargo test --all` does not run the live clankshop CLI dogfood. To run it against sibling `../dojo`
+or `GRIMOIRE_LIVE_ROOT`:
+
+```sh
+RUSTC_WRAPPER= cargo test -p skill-grimoire --test root_dogfood -- --ignored
+```
+
+The root-layout inventory tests stay on the default path. They use `GRIMOIRE_LIVE_ROOT` when set,
+otherwise sibling `../dojo` when that tree contains `PACK.md`. Set
+`GRIMOIRE_LIVE_ROOT=/absolute/path/to/dojo` to point at another catalog.
 
 Library lint and skill-contract tests run in the dojo checkout, not here.
 

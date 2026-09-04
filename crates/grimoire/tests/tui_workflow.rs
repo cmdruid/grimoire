@@ -141,7 +141,16 @@ fn project_and_global_tree_workflow_stays_staged_explicit_and_offline() {
     assert_ne!(locked_commit(&project_paths, "fixture"), locked_before);
 
     let installed = project.join(".agents/skills/one");
-    fs::remove_file(&installed).unwrap();
+    if installed
+        .symlink_metadata()
+        .unwrap()
+        .file_type()
+        .is_symlink()
+    {
+        fs::remove_file(&installed).unwrap();
+    } else {
+        fs::remove_dir_all(&installed).unwrap();
+    }
     fs::write(&installed, "foreign\n").unwrap();
     let (project_world, _) = load_scopes(&project_paths, &global_paths);
     model.accept_reloaded_scope(project_world).unwrap();

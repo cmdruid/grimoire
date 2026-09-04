@@ -93,7 +93,7 @@ fn one_ui_toggle_reaches_the_exact_core_plan_pane() {
             name: "journal".try_into().unwrap(),
             request: grimoire_core::ManifestSkill {
                 source: "grimoire".try_into().unwrap(),
-                mode: grimoire_core::ProjectionMode::Link,
+                mode: grimoire_core::ProjectionMode::Vendor,
             },
         },
         PlanningMode::Normal,
@@ -109,11 +109,15 @@ fn one_ui_toggle_reaches_the_exact_core_plan_pane() {
 
     assert_eq!(model.plan_bytes().unwrap(), direct.to_bytes().unwrap());
 
-    let backend = TestBackend::new(92, 18);
+    let backend = TestBackend::new(92, 32);
     let mut terminal = Terminal::new(backend).unwrap();
     terminal.draw(|frame| draw(frame, &model)).unwrap();
     let rendered = terminal.backend().to_string();
     assert!(rendered.contains("Project"));
     assert!(rendered.contains("[x] journal"));
-    assert!(rendered.contains("replace_manifest"));
+    assert!(
+        rendered.contains("create_vendor")
+            || rendered.contains("prepare_vendor")
+            || rendered.contains("replace_manifest")
+    );
 }

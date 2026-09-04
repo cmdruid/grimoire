@@ -14,24 +14,29 @@ RUSTC_WRAPPER= cargo clippy --all --all-targets -- -D warnings
 bash scripts/tests/canonical-provider-parity-test.sh
 ```
 
-Live-root dogfood (`crates/grimoire-pack/tests/live_root_layout.rs`,
-`crates/grimoire/tests/root_dogfood.rs`) reads the catalog from `GRIMOIRE_LIVE_ROOT`, or sibling
-`../dojo` when that directory contains `PACK.md`. It does not treat this repository root as a
-skills source.
+The default `cargo test --all` does not run the live clankshop CLI dogfood. To run it:
+
+```sh
+RUSTC_WRAPPER= cargo test -p skill-grimoire --test root_dogfood -- --ignored
+```
+
+Live-root inventory tests (`crates/grimoire-pack/tests/live_root_layout.rs`) stay on the default
+path. They read the catalog from `GRIMOIRE_LIVE_ROOT`, or sibling `../dojo` when that directory
+contains `PACK.md`. They do not treat this repository root as a skills source.
 
 Library authoring doctrine, the lint gate, and skill-contract tests live in the sibling
 dojo checkout: `~/Repos/dojo/AGENTS.md` and
 `~/Repos/dojo/skills/skill-builder/docs/DOCTRINE.md`.
 
-This repo is a Grimoire client of that catalog. Add the local checkout with `--live` so
-install links the working tree:
+This repo is a Grimoire client of that catalog. A pinned source copies locked skill trees into
+`.agents/skills/`. Add the local checkout with `--link` so install symlinks the working tree:
 
 ```sh
-grimoire source add dojo /Users/cscott/Repos/dojo --live --trust
+grimoire source add dojo /Users/cscott/Repos/dojo --link --trust-all
 grimoire install clankshop --pack --source dojo
 ```
 
-A filesystem path without `--live` is a Git snapshot (clean worktree, pinned commit), not
+A filesystem path without `--link` is a Git snapshot (clean worktree, pinned commit), not
 the tree you are editing.
 
 ## Workstream compaction recovery

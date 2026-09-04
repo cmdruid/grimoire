@@ -78,7 +78,7 @@ fn missing_project_falls_back_to_global_with_a_typed_remedy() {
 }
 
 #[test]
-fn pinned_roots_are_link_mode_and_not_toggleable() {
+fn pinned_roots_are_copy_mode_and_not_toggleable() {
     let project = fixture::world(
         Scope::Project,
         "project",
@@ -103,7 +103,7 @@ fn pinned_roots_are_link_mode_and_not_toggleable() {
     model.select_next();
     assert_eq!(
         model.selected_item().unwrap().mode,
-        Some(ProjectionMode::Link)
+        Some(ProjectionMode::Vendor)
     );
     assert!(!model.selected_item().unwrap().mode_toggleable);
 
@@ -111,7 +111,7 @@ fn pinned_roots_are_link_mode_and_not_toggleable() {
     model.select_next();
     assert_eq!(
         model.selected_item().unwrap().mode,
-        Some(ProjectionMode::Link)
+        Some(ProjectionMode::Vendor)
     );
     assert!(!model.selected_item().unwrap().mode_toggleable);
 }

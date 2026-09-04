@@ -59,7 +59,7 @@ fn representative_tree_buffer_is_stable() {
 }
 
 #[test]
-fn project_request_rows_render_projection_mode_labels() {
+fn project_request_rows_render_copy_labels_for_pinned_sources() {
     let project = fixture::world(
         Scope::Project,
         "project",
@@ -75,5 +75,5 @@ fn project_request_rows_render_projection_mode_labels() {
     let mut terminal = Terminal::new(backend).unwrap();
     terminal.draw(|frame| draw(frame, &model)).unwrap();
 
-    assert!(terminal.backend().to_string().contains("one [linked]"));
+    assert!(terminal.backend().to_string().contains("one [copied]"));
 }

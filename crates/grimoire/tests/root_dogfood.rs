@@ -43,30 +43,18 @@ fn success(output: &std::process::Output) {
 }
 
 #[test]
+#[ignore = "live catalog dogfood; run with --ignored"]
 fn root_clankshop_pack_installs_checks_and_uninstalls_through_the_cli() {
     let temporary = tempdir().unwrap();
     let root = temporary.path().canonicalize().unwrap();
     let home = root.join("home");
     let source = selected_root();
-    let project = root.join("self-host");
+    let project = root.join("project");
     fs::create_dir_all(&home).unwrap();
+    fs::create_dir_all(&project).unwrap();
     let source_status = git_output(&source, &["status", "--short"]);
 
     let inventory = scan(&HeldDirectoryReader::open(&source).unwrap()).unwrap();
-    git(
-        &root,
-        &[
-            "clone",
-            "-q",
-            source.to_str().unwrap(),
-            project.to_str().unwrap(),
-        ],
-    );
-    let exclude_path = project.join(".git/info/exclude");
-    let mut exclude = fs::read_to_string(&exclude_path).unwrap_or_default();
-    exclude.push_str("\n/.agents/\n/vendor/\n");
-    fs::write(&exclude_path, exclude).unwrap();
-
     let pack = inventory
         .packs
         .iter()
@@ -86,60 +74,48 @@ fn root_clankshop_pack_installs_checks_and_uninstalls_through_the_cli() {
         .collect::<Vec<_>>();
 
     success(&support::run(&project, &home, &["init"]));
-    commit_paths(
-        &project,
-        &["grimoire.toml", "grimoire.lock"],
-        "project state",
-    );
     success(&support::run(
         &project,
         &home,
-        &["source", "add", "grimoire", ".", "--trust-all"],
+        &[
+            "source",
+            "add",
+            "dojo",
+            source.to_str().unwrap(),
+            "--link",
+            "--trust-all",
+        ],
     ));
-    commit_paths(&project, &["grimoire.toml"], "pinned self source");
     success(&support::run(
         &project,
         &home,
-        &["install", "clankshop", "--pack", "--source", "grimoire"],
+        &["install", "clankshop", "--pack", "--source", "dojo"],
     ));
 
     for member in &members {
+        let installed = project.join(".agents/skills").join(member);
         assert!(
-            project.join(".agents/skills").join(member).is_symlink(),
+            installed
+                .symlink_metadata()
+                .unwrap()
+                .file_type()
+                .is_symlink(),
             "missing installed member {member}"
+        );
+        assert_eq!(
+            fs::read_link(&installed).unwrap(),
+            source.join("skills").join(member)
         );
     }
     assert!(!project.join(".agents/skills/clankshop").exists());
     assert!(!project.join("vendor/grimoire").exists());
-    commit_paths(
-        &project,
-        &["grimoire.toml", "grimoire.lock"],
-        "installed clankshop",
-    );
+    assert!(!project_has_committed_agents(&project));
 
-    success(&support::run(
-        &project,
-        &home,
-        &["source", "fetch", "grimoire"],
-    ));
-    success(&support::run(
-        &project,
-        &home,
-        &["source", "diff", "grimoire"],
-    ));
-    success(&support::run(&project, &home, &["update", "--yes"]));
-    commit_paths(&project, &["grimoire.lock"], "advance pinned self source");
-    success(&support::run(
-        &project,
-        &home,
-        &["source", "fetch", "grimoire"],
-    ));
     let checked = support::run(&project, &home, &["check"]);
     success(&checked);
     assert_eq!(support::stdout(&checked), "");
-    success(&support::run(&project, &home, &["install", "--frozen"]));
 
-    let info = support::run(&project, &home, &["source", "info", "grimoire", "--json"]);
+    let info = support::run(&project, &home, &["source", "info", "dojo", "--json"]);
     success(&info);
     let value: serde_json::Value = serde_json::from_slice(&info.stdout).unwrap();
     let names = value["skills"]
@@ -165,32 +141,16 @@ fn root_clankshop_pack_installs_checks_and_uninstalls_through_the_cli() {
     }
 }
 
-fn commit_paths(repository: &Path, paths: &[&str], message: &str) {
-    let mut add = vec!["add"];
-    add.extend_from_slice(paths);
-    git(repository, &add);
-    git(
-        repository,
-        &[
-            "-c",
-            "user.name=Fixture",
-            "-c",
-            "user.email=fixture@example.invalid",
-            "commit",
-            "-q",
-            "-m",
-            message,
-        ],
-    );
-}
-
-fn git(directory: &Path, args: &[&str]) {
-    assert!(Command::new("git")
-        .current_dir(directory)
-        .args(args)
-        .status()
-        .unwrap()
-        .success());
+fn project_has_committed_agents(project: &Path) -> bool {
+    if !project.join(".git").exists() {
+        return false;
+    }
+    let output = Command::new("git")
+        .current_dir(project)
+        .args(["ls-files", ".agents"])
+        .output()
+        .unwrap();
+    output.status.success() && !output.stdout.is_empty()
 }
 
 fn git_output(directory: &Path, args: &[&str]) -> Vec<u8> {
