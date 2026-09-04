@@ -1,24 +1,18 @@
 # <Track> — Roadmap
 
-<The decision map for multi-phase work: phases with gates and declared blocking edges. Each
-phase requires its own plan before build; the roadmap never carries task-level detail. Mint
-stays `status: draft`. The caller writes `published` after a passing host's review they
-accept, while it governs the track.>
-
-Spec: <path to the governing spec>
+Source: <request or accepted document>
 
 ## Sequencing
-<The blocking edges, stated: which phases require which, and which are parallel-eligible.
-An ordered list or ASCII diagram — sequencing follows from the edges, not prose order.>
 
-## Cross-cutting foundations
-<Shared infrastructure every phase relies on, and the ADRs that settled it.>
+<Name only the dependencies that affect ordering and the phases that may run in
+parallel.>
 
-## Phase N — <name>   <requires: —, or the phase numbers it blocks on>
-- **Goal:** <one line>
-- **Scope:** in: <...>; out: <...>
-- **Gate:** <the exit criteria that make "done" checkable — each phase lands gate-green and
-  independently valuable>
-- **Risks:** <...>
+## Phase N — <name>   <requires: — or phase numbers>
 
-_When a phase meets its gate, run the host's close-the-books sweep before advancing._
+- Goal: <independently useful outcome>
+- Scope: in: <...>; out: <...>
+- Gate: <observable exit condition>
+- Risks: <material risks only>
+
+<Add phases only when the work has a real multi-phase boundary. Keep task-level
+steps in the phase's implementation plan.>

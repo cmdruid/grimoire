@@ -1,47 +1,45 @@
-# `build` · execute a plan or a runbook
+# `build` · execute an accepted plan or runbook
 
-Walk the job. Delegation is optional: do the slice yourself, or write a
-self-contained brief and use the host's delegation mechanism. Do not restate
-spawn flags. Do not `ship`.
-
-A raw **roadmap** is not an input. Compile a runbook first.
+Walk the accepted job in place. Do not redesign it, enlarge it, or ship it.
 
 ## Procedure
 
-1. **Resolve input:** a **plan** or a **runbook**. A raw **roadmap** → refuse;
-   tell the caller to `runbook` it first (describe the artifact type, do not
-   name a sibling skill). A spec → refuse (that is not a job to walk).
-2. **Walk a plan only when `status:` is `published` and `stage:` is
-   `approved`.** Missing / not `approved` / `implemented` → refuse.
-   Do not read a Review-history verdict. An explicit human waive:
-   the **caller** writes the **same** gate (`status: published` and
-   `stage: approved`) — via `.records/records.sh touch --status published`
-   plus a `stage: approved` front-matter write, or file-mode —
-   notes the waive in conversation, **then** walks. It does not
-   walk a `draft`. For a runbook: also run the conductor
-   completeness check (`verbs/runbook.md` step 4); that check
-   **does not** replace the plan gate. Each referenced **plan**
-   must pass this same plan gate.
-3. **Plan:** walk slices in declared order. Per slice: do it yourself **or**
-   write a self-contained brief and use the host's delegation mechanism. After
-   each slice: the slice's verify command (for you). Do not narrate every
-   slice to the human unless it failed or they asked. Do not `ship`.
-4. **Runbook:** walk the conductor list.
-   - **Plan-sourced:** walk the steps; each step's command/gate is the
-     verify. Do not invent work.
-   - **Roadmap-sourced:** each entry is an existing plan path — nested
-     plan-walk (step 3). Do not run `plan` to fill gaps. Phase gate must
-     pass before the next phase.
-5. **Status** — contractor's own assessment of the **job**, not a git-land:
-   - `DONE` — every in-scope slice/step has a verify result
-   - `DONE_WITH_CONCERNS` — walked, with residual risk the human should see
-   - `NEEDS_CONTEXT` — cannot continue without an answer
-   - `BLOCKED` — an external dependency or failed gate
-6. Done when every step/slice in scope has a verify result or an explicit skip
-   the human accepted. After a `DONE` / `DONE_WITH_CONCERNS` walk, set
-   `stage: implemented` on the walked plan (it stays `published`), then
-   run the host's close-the-books sweep (SKILL.md *Hard seams*).
+1. **Resolve the job.** Accept a plan from the current conversation, a plan
+   file, or a runbook. A roadmap is a map rather than an executable job: use a
+   named phase's existing executable plan, or ask for the missing plan. Do not
+   require a runbook solely because a roadmap exists.
+2. **Confirm authority once.** An explicit user authorization to build the
+   accepted job is sufficient. A combined plan-and-build request already
+   contains that authority. In a formal durable workflow, `status: published`
+   and `stage: approved` may record acceptance, but missing metadata does not
+   override current explicit authorization and must not trigger a ceremonial
+   write.
+3. **Re-ground at the point of use.** Before changing a load-bearing path or
+   interface, confirm the plan still matches the worktree. Replan only the
+   affected unit when drift materially changes it; do not reopen the entire
+   job.
+4. **Walk the minimum units.** Execute an atomic plan directly. For a sliced
+   plan, follow real dependency order. Delegation is optional and justified by
+   separability or throughput, never by the mere existence of multiple steps.
+   For a runbook, follow its conductor and gates without inventing work.
+5. **Verify proportionately.** Run the narrowest evidence that proves each
+   changed behavior, plus broader checks only when coupling or host policy
+   warrants them. A failed check may justify a causal fix inside scope; an
+   unrelated failure is reported, not absorbed.
+6. **Handle discoveries through the scope firewall.** Include only blockers
+   causally necessary for the accepted outcome. Report independent actionable
+   issues as follow-ups and omit speculation.
+7. **Close.** Report what now works, verification performed, and any accepted
+   skip, blocker, or concrete follow-up. For a durable Contractor record, set
+   `stage: implemented` after a successful formal walk if that lifecycle is in
+   use. Run a host closure routine only when the host or formal job requires it.
 
-The host lane still lands the result. This verb stops at the job assessment.
-Tell the human what the software can do now, what is still open, and
-whether anything is on a side branch — not a bare `DONE` code.
+## Job assessment
+
+- `DONE` — the accepted outcome is implemented and verified.
+- `DONE_WITH_CONCERNS` — implemented, with a concrete residual risk.
+- `NEEDS_CONTEXT` — a material decision is missing.
+- `BLOCKED` — an external dependency or required check prevents completion.
+
+Translate the assessment into plain language for the user. Do not emit only the
+code. The host lane still owns landing to trunk.

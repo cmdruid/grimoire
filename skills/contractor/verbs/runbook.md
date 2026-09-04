@@ -1,36 +1,25 @@
-# `runbook` · compile the conductor
+# `runbook` · the durable execution conductor
 
-A runbook is a **conductor** for `build`: a linearized walk. It is not a third
-prose essay and not a substitute plan. From a **plan** it compiles steps +
-gates + paths and strips argument. From a **roadmap** it is an ordered list of
-existing phase-plan paths — never task-level work invented here.
-
-`runbook` does not write plans. `build` does not write plans.
+Use a runbook only for an explicit durable workflow that benefits from one
+linear execution sequence. It compiles accepted plans and gates; it is neither
+a prose essay nor a prerequisite for ordinary builds.
 
 ## Procedure
 
-1. **Resolve input:** a **plan** path or a **roadmap** path. Missing → ask. A
-   spec is refused ("that is not a job conductor input").
-2. **From a plan:** compile ordered steps from the plan's slices —
-   command/gate/path only, no approach essay. Each step names the slice id it
-   came from.
-3. **From a roadmap:** refuse unless **every** unblocked phase already has a
-   **plan path** (a written plan record). If any phase lacks a plan, stop and
-   tell the caller to `plan` that phase first — `runbook` does not write plans;
-   `build` does not write plans. Compile: ordered unblocked phases, each line a
-   **path** to that phase's plan, then "build it." Do not inline task-level
-   work.
-4. **Completeness check** (conductor only). Fail → fix the runbook or
-   send the human back to `plan`/`roadmap`. This check is **not** `review`.
-   - **Plan-sourced:** every step names a slice id and has a command +
-     gate; order respects slice `requires:`; no approach essay.
-   - **Roadmap-sourced:** every unblocked phase has a plan path; order
-     respects phase `requires:`; no raw implementation steps invented.
-5. **Land it** per SKILL.md *Shared discipline*. Compile the conductor body and mint
-   `.records/records.sh new plans --schema contractor/runbook@1
-   --title "Runbook: <plan title>" --tag runbook` when the tool exists; else file-mode with that
-   schema into `.records/plans/`, naming the file `YYYY-MM-DD-<slug>.md`.
+1. **Resolve input.** Accept a plan or roadmap path. A spec alone is not an
+   executable conductor input.
+2. **Compile from a plan.** Reduce the plan to ordered units with the relevant
+   path, action, and verification gate. Preserve only real dependencies.
+3. **Compile from a roadmap.** Include only phases that already have executable
+   plans. If a phase lacks one, leave it out and report the gap; do not invent
+   task-level work or force every future phase to be planned now.
+4. **Check completeness.** Every included unit has enough instruction and a
+   gate to execute; ordering respects declared dependencies; no approach essay
+   remains. This check validates the conductor, not the underlying design.
+5. **Land it** under the `SKILL.md` durable record contract as
+   `contractor/runbook@1` with the `runbook` tag and `status: draft`.
 
-Output: the conductor file (`status: draft`). `build` still requires each
-referenced plan to be `published` with `stage: approved` (or a caller waive
-of that gate).
+## Closing
+
+Report the runbook path, included scope, and any omitted phase lacking an
+executable plan. Stop. Do not automatically build it.

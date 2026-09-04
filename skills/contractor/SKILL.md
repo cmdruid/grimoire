@@ -1,122 +1,126 @@
 ---
 name: contractor
-description: "Use when the user runs `/contractor`, asks to write or execute a roadmap, implementation plan, or runbook, or deploys Contractor's optional templates with `/contractor setup`. One job: sequence work from an approved spec, optionally staff slices, and walk the job. Never writes a spec or ships to trunk. For a one-line patch, skip it."
+description: "Use when the user runs `/contractor`, asks to write or execute a roadmap, implementation plan, or runbook, or deploys Contractor's optional templates with `/contractor setup`. Sequence implementation work within the accepted scope and walk it. Never writes the design or ships to trunk. For a one-line patch, skip it."
 ---
 
 # contractor — the job lead
 
-One job lead: draft the bid from an approved spec, optionally staff slices, walk
-the job. Never writes a spec. Never ships to trunk. Open decision branches belong
-in a grill on the spec, not here.
+Turn accepted scope into the smallest useful implementation sequence, then walk
+that sequence when asked. Never redesign the work, enlarge it, or ship it to
+trunk.
 
-This `SKILL.md` is a **thin router**: the dispatch table, the seams
-every verb shares, and the typed edges. Each verb's procedure lives in
-`verbs/` (see the dispatch table). When a verb is selected, **read its file
-and follow it**.
-
-This skill is **self-contained and uniquely named**: it depends on no other skill
-and collides with none.
-
-**Destination is not stamped.** `roadmap` / `plan` / `runbook` land in fixed
-`.records/plans/` on every host, with
-`tags:` exactly one writer kind among `plan`, `roadmap`, or `runbook`. Resolve active body scaffolds
-at `.agents/skilldata/contractor/templates/` when present; otherwise read the bundled scaffold
-without a project write. Only `/contractor setup` deploys fresh project copies. A recognized legacy
-template requires `/contractor migrate <path>`. Mint with `.records/records.sh new plans --schema contractor/<kind>@1 --template <resolved>` for plans and
-roadmaps (omit `--template` for a compiled runbook); else synthesize the same four-key profile, naming the
-file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the
-tool will not see it. Then
-fill the body from `plan.md`, `roadmap.md`, or the runbook conductor. Never write the flat
-`.records/templates/<doctype>.md`. The former generic `plans.md` shell is retired.
-
-**Status vocabulary.** Mint stays `draft`. The caller writes
-`published` and `stage: approved` after a passing host's review they
-accept. After a successful walk, this skill sets `stage: implemented`
-(the plan stays `published`). Closed is `archived`. Closure through
-`.records/records.sh done` when the tool exists; else file-mode stamp. Optional
-`stage` (non-empty if present); writer `stage` values are in-package.
-
-**Record contract.** Current records require `doctype`, `status`, `schema`, and `tags`; use
-`contractor/plan@1`, `contractor/roadmap@1`, or `contractor/runbook@1`. The filename is
-`YYYY-MM-DD-<slug>.md`, links are `→ <store>/<file>.md`, and ordinary edits stamp no generic date
-or revision metadata.
+This `SKILL.md` is a thin router. Read the selected file in `verbs/` and follow
+it. The skill is self-contained and uniquely named: it depends on no other
+skill and collides with none.
 
 ## Verb dispatch (read the file, then follow it)
 
 | Invocation | Verb file | Does |
 |---|---|---|
-| `roadmap` | `verbs/roadmap.md` | multi-phase map |
-| `plan` | `verbs/plan.md` | tracer-bullet plan |
-| `runbook` | `verbs/runbook.md` | compile conductor |
-| `build` | `verbs/build.md` | execute plan or runbook |
+| `roadmap` | `verbs/roadmap.md` | durable multi-phase map |
+| `plan` | `verbs/plan.md` | proportionate implementation plan |
+| `runbook` | `verbs/runbook.md` | durable execution conductor |
+| `build` | `verbs/build.md` | execute an accepted plan or runbook |
 | `setup [<root>]` | `verbs/setup.md` | deploy active project templates absent-only |
 | `migrate <source-path>` | `verbs/migrate.md` | preview and upgrade owned plans/templates, including in place |
 | (bare) | — | **ask** which verb; do not default |
 
-```
-plan  →  (host review)  →  (caller publishes)  →  build
-```
+## Scope firewall
 
-Each arrow is a stop. No verb invokes the next.
+Establish the boundary from the most direct available authority: a clear user
+request, an accepted draft, a published spec, or a named phase. Capture only:
 
-## Brief the human (every verb)
+- the requested outcome and affected surface;
+- explicit non-goals and constraints;
+- acceptance evidence needed to know the requested work is done.
 
-The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
-`DONE` / `needs-rework`). The conversation does not open with it.
+Do not add adjacent cleanup, refactors, abstractions, documentation, tooling,
+deployment work, or follow-up systems merely because they might be useful. A
+discovery enters the current job only when direct causal evidence shows the
+requested outcome cannot work without it. Otherwise report a concrete,
+independent issue as a follow-up and omit speculative concerns. Expanding the
+accepted outcome requires an explicit user decision.
 
-- **Lead with the situation** a newcomer could use: what the software can do
-  now, or what you need the human to decide. Then the path to the artifact.
-- **One ask per stop.** After `plan`, stop and wait. During `build`, run
-  each slice's verify; brief the human at start, at a blocker, and at
-  the end — not after every slice unless they asked for a running log
-  or a slice failed.
-- **Translate the closing code.** "The plan is at `<path>`. Please read it
-  before I implement." not a bare `DONE`.
+An unresolved choice blocks only when it materially changes implementation,
+safety, or acceptance. Ask that question plainly; do not manufacture a new
+design process.
 
-## Shared discipline (every verb)
+## Operating levels
 
-- **Read the verb file.** Do not reconstruct a procedure from this router.
-- **Scripts from this package.** `scripts/ground-check.sh` is this skill's copy
-  — resolve it from this skill's own base directory, never a host path.
-- **A `status: published` spec is the input** (founding-shaped stays
-  `draft` and is not this input). Missing → ask. `status:` missing /
-  not `published` → refuse unless the caller writes that gate (notes
-  the waive) then sequences. A spec with open decision branches is
-  not settled — send those branches back to a grill on the spec.
-- **Land it** (minting verbs: `roadmap`, `plan`, `runbook`) under
-  `.records/plans/` per the destination rule above. Mint the
-  shell, then overwrite `tags:` and the body. Title missing → ask once.
+**Default — lightweight.** For bounded work, plan in the conversation unless
+the user asks for a file. An atomic plan is preferred. Inspect only the code and
+claims needed to make it executable, verify in proportion to the change, and
+use the user's original request as authorization for everything it explicitly
+includes.
 
-## Hard seams
+**Formal — durable.** Use records, stages, explicit gates, and optional
+independent review only when the user requests a roadmap, runbook, durable
+plan, or formal review, or when the work itself crosses a concrete high-risk
+boundary: an irreversible production data operation, a security/permission or
+custody boundary, or a public compatibility migration. Say which trigger
+applies. Formal handling adds evidence and recovery controls; it does not add
+scope.
 
-- Descriptions and edges name **types**, never sibling skills.
-- **Never ship** to trunk. Landing is someone else's job.
-- Delegation is **optional**. Per slice: do it, or write a brief and use the
-  host's delegation mechanism. Do not restate spawn/return mechanics.
-- Walk a **plan** only when `status:` is `published` **and** `stage:` is
-  `approved`. Missing / not `approved` / `implemented` → refuse. Do not
-  read a Review-history verdict. An explicit human waive: the **caller**
-  writes the **same** gate (`status: published` and `stage: approved`),
-  notes the waive in conversation, **then** walks. It does not walk a
-  `draft`. After a successful walk, set `stage: implemented` (the plan
-  stays `published`). Archive is a later close, not automatic.
-- **Never execute a raw roadmap.** Compile a runbook first, and only when every
-  unblocked phase already has a plan path.
-- A runbook completeness check is **additional**. It does not substitute for
-  plan review.
-- After a walked plan or gated phase, run the host's close-the-books
-  sweep (workshop: the deployed debrief; standalone: the project's own).
-  Do not name a sibling.
+Do not escalate merely because work spans several files, has tests, is
+unfamiliar, or would benefit from extra polish.
+
+## Durable record contract
+
+This section applies only when the formal level is selected. Durable roadmap,
+plan, and runbook artifacts land in `.records/plans/`, with exactly one writer
+tag: `roadmap`, `plan`, or `runbook`.
+
+Resolve project scaffolds at `.agents/skilldata/contractor/templates/` when
+present; otherwise read the bundled scaffold without a project write. Only
+`/contractor setup` deploys fresh project copies. A recognized legacy template
+requires `/contractor migrate <path>`.
+
+The former generic `plans.md` shell is retired.
+
+Create `.records/plans/` if missing, but no provider, history, or sibling store.
+If `.records/records.sh` is executable, mint with `new plans --schema
+contractor/<kind>@1 --template <resolved>` for plans and roadmaps (omit
+`--template` for a compiled runbook). Without the tool, create the same
+four-key record profile directly. Current records require `doctype`, `status`,
+`schema`, and `tags`; schemas are `contractor/plan@1`,
+`contractor/roadmap@1`, and `contractor/runbook@1`. Name files
+`YYYY-MM-DD-<slug>.md`; links use `→ <store>/<file>.md`.
+
+Mint stays `draft`. In a formal workflow, the caller may record acceptance as
+`published` and `stage: approved`; after a successful formal walk, Contractor
+may set `stage: implemented` while status stays `published`. Closed is
+`archived`; metadata records approval; it does not create it. Never require a
+metadata write to honor explicit authorization given in the current
+conversation. Never hand-write `history.tsv`; ordinary edits add no generic
+date or revision metadata.
+
+## Shared discipline
+
+- Read the selected verb file; do not reconstruct it from this router.
+- Load the host's applicable instructions before planning or building.
+- `scripts/ground-check.sh` is this package's optional reference checker. Run
+  it only when a source document contains file or line references whose
+  validity matters. It proves that a reference resolves, not that its prose is
+  correct.
+- Delegation is optional and never a default ceremony. Use it only when a
+  genuinely separable unit benefits from it.
+- Never ship to trunk. Landing is outside this skill.
+- Run project-specific closure routines only when the host requires them or the
+  selected formal workflow names them.
+
+## Approval economy
+
+If the user asks only for a plan, present or write it and stop. If the same
+request asks to plan and build, proceed unless a material unresolved decision
+remains. If the user later says to build an accepted plan, that explicit user
+authorization is sufficient. Do not ask them to repeat approval or edit
+metadata merely to unlock work.
 
 ## Structure, portability
 
-- A self-contained skill directory: `SKILL.md` + `templates/` (`plan.md` and `roadmap.md` are the
-  active body scaffolds; runbooks are compiled)
-  + `verbs/roadmap.md` + `verbs/plan.md` + `verbs/runbook.md` +
-  `verbs/build.md` + `scripts/ground-check.sh`.
-- **Portable:** no workshop dependency (the one probe degrades to
-  standalone), no host paths baked in, travels as one unit wherever the
-  skills are installed.
+- A self-contained skill directory: `SKILL.md`, `templates/plan.md`,
+  `templates/roadmap.md`, the verb files, and `scripts/ground-check.sh`.
+- Portable: no workshop dependency and no host paths baked in.
 
 ## Project templates
 
@@ -126,14 +130,13 @@ The artifact holds the job vocabulary (`status: draft` / `published`, slice ids,
 ## Edges
 
 <!-- edges:contractor -->
-- produces: plan, roadmap, runbook — job artifacts in `.records/plans/`
+- produces: plan, roadmap, runbook — job artifacts when durable output is requested
 - handoff: — (build executes in-place; ship is not this skill)
-- consumes: spec, plan, runbook — an approved specification or a job artifact this skill walks
+- consumes: spec, plan, runbook — accepted scope or a job artifact this skill walks
 <!-- /edges:contractor -->
 
 ## Done when
 
 - **Bare `/contractor`:** ask which verb; do not default.
-- **A named verb ran:** that verb file's closing (plan / roadmap /
-  runbook stop at the draft artifact; `build` stops at the job
-  assessment).
+- **A named verb ran:** satisfy that verb's closing condition without invoking
+  another verb automatically.

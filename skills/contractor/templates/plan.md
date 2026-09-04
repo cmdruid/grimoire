@@ -1,27 +1,20 @@
 # <title> — Implementation Plan
 
-<Tracer-bullet: slice 1 is the thinnest end-to-end path through the riskiest/newest ground;
-later slices widen it. Each slice is independently testable and committable.>
+## Scope
 
-Spec: <path to the governing spec / roadmap phase>
+- Outcome: <requested end state>
+- Affected surface: <paths or components>
+- Non-goals / constraints: <only when material>
 
-## Global Constraints (verify vs HEAD before editing — the plan gate)
-<Cross-cutting rules every slice must honor — fill in, or delete the section if none:
-- **Invariants:** what no slice may break (workshop: `core/INVARIANTS.md`).
-- **Live-API gotchas:** signatures / paths / lints that drift (workshop: `core/GOTCHAS.md`) —
-  the plan is a snapshot; re-read each cited file against the worktree's HEAD before editing.
-- **Coexisting work:** other active worktrees/streams this overlaps; the expected rebase seams.
-- **CI-safety / scope limits:** what must stay green, platform-scoped, or opt-in.>
+## Implementation
 
-## Slices
-- [ ] **Slice 1: <name — the tracer>** <requires: —>
-  - Files: <create / modify — exact paths>
-  - Change: <what to do — complete code, no "similar to slice N">
-  - Verify: <command + expected result>
-- [ ] **Slice 2: <name>** <requires: 1, or — if parallel-eligible>
-  - ...
+- [ ] <necessary change>
+  - Where: <paths or components>
+  - Verify: <evidence that proves the change>
+
+<Add another unit only for a real dependency, useful increment, risky transition,
+or distinct verification boundary.>
 
 ## Done when
-<The end-state condition and how it is verified (gate green, tests pass, ...).>
 
-_On completion (before landing), run the host's close-the-books sweep._
+<Observable acceptance condition.>
