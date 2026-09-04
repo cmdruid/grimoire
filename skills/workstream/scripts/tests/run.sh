@@ -11,6 +11,8 @@ echo "== state-contract-test.sh"
 bash "$DIR/state-contract-test.sh" || rc=1
 echo "== read-envelope-test.sh"
 bash "$DIR/read-envelope-test.sh" || rc=1
+echo "== root-resolution-test.sh"
+bash "$DIR/root-resolution-test.sh" || rc=1
 echo "== runbook-contract-test.sh"
 bash "$DIR/runbook-contract-test.sh" || rc=1
 echo "== unit-lifecycle-test.sh"

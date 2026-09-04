@@ -116,7 +116,8 @@ cp "$TMP/runbook-corrupt.md" "$ROOT/.streams/guarded/WORKSTREAM.md"
 if "$HELPER" "$ROOT" state guarded >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 cp "$TMP/runbook-save.md" "$ROOT/.streams/guarded/WORKSTREAM.md"
 
-if "$HELPER" "$ROOT/.streams/guarded" state guarded >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+"$HELPER" "$ROOT/.streams/guarded" state guarded >"$OUT" 2>"$ERR"
+expect 'linked checkout admits through the primary' 'schema=workstream-state@1' "$OUT"
 if "$HELPER" "$ROOT/../project" state guarded >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
 
 cp "$HELPER" "$ROOT/.streams/workstream.sh"
@@ -124,23 +125,15 @@ chmod +x "$ROOT/.streams/workstream.sh"
 sed -n 'p' "$DIR/../../templates/streams-readme-block.md" >"$ROOT/.streams/README.md"
 git -C "$ROOT" add -f .streams/workstream.sh .streams/README.md
 git -C "$ROOT" commit -qm 'install workstream control helper'
-if "$HELPER" "$ROOT" state guarded >"$OUT" 2>"$ERR"; then
-  fail=$((fail + 1))
-  echo 'FAIL: package helper bypassed installed authority' >&2
-else
-  pass=$((pass + 1))
-fi
+"$HELPER" "$ROOT" state guarded >"$OUT" 2>"$ERR"
+expect 'package helper re-execs installed authority' 'schema=workstream-state@1' "$OUT"
 "$ROOT/.streams/workstream.sh" "$ROOT" state guarded >"$OUT"
 expect 'installed authority works' 'schema=workstream-state@1' "$OUT"
 mkdir -p "$ROOT/.streams/guarded/.streams"
 cp "$HELPER" "$ROOT/.streams/guarded/.streams/workstream.sh"
 chmod +x "$ROOT/.streams/guarded/.streams/workstream.sh"
-if "$ROOT/.streams/guarded/.streams/workstream.sh" "$ROOT" state guarded >"$OUT" 2>"$ERR"; then
-  fail=$((fail + 1))
-  echo 'FAIL: linked-checkout twin acquired authority' >&2
-else
-  pass=$((pass + 1))
-fi
+"$ROOT/.streams/guarded/.streams/workstream.sh" "$ROOT" state guarded >"$OUT" 2>"$ERR"
+expect 'non-installed copy re-execs installed authority' 'schema=workstream-state@1' "$OUT"
 
 mkdir -p "$ROOT/.streams/guarded/.streams/copied"
 cp "$ROOT/.streams/guarded/WORKSTREAM.md" "$ROOT/.streams/guarded/.streams/copied/WORKSTREAM.md"

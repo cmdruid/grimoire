@@ -14,7 +14,7 @@ die() {
 
 usage() {
   cat >&2 <<'EOF'
-usage: workstream.sh <canonical-root> <operation> [args...]
+usage: workstream.sh <checkout> <operation> [args...]
 
   runtime-init <stream> <target> [brief] [--source-kind <brief|plan|roadmap>] [--cursor <value>]
     [--mode <delegate|manual>]
@@ -42,6 +42,10 @@ usage: workstream.sh <canonical-root> <operation> [args...]
   gate-none <stream>
   land-advance <stream> --authority confirmed
   ship-finalize <stream> [--note <note>]
+  delivery-classify <stream>
+  reconcile-partial <stream> --authority confirmed
+  pr-await <stream> --authority confirmed --reference <value>
+  pr-verify <stream>
   validate-tracker <path>
 EOF
 }
@@ -182,6 +186,7 @@ validate_no_nested_stream_state() { # runtime checkout/state directory
 ROOT=""
 SELF=""
 ADMIT_OPERATION="ordinary"
+WORKSTREAM_REEXEC=""
 RUNTIME=""
 TRACKER_FINGERPRINT=""
 RUNBOOK_FINGERPRINT=""
@@ -211,9 +216,9 @@ admit_root() {
   [ "$top" = "$canonical" ] || die "root is not the checkout top level: $supplied"
   primary="$(git -C "$canonical" worktree list --porcelain | sed -n 's/^worktree //p' | sed -n '1p')"
   primary="$(canonical_dir "$primary")" || die "cannot resolve primary worktree"
-  [ "$primary" = "$canonical" ] || die "root is a linked worktree, not the primary checkout"
-
-  ROOT="$canonical"
+  git -C "$canonical" worktree list --porcelain | grep -qxF "worktree $canonical" \
+    || die "checkout is not a registered worktree of this repository"
+  ROOT="$primary"
   validate_tracked_control_surface "$ROOT"
   SELF="$(canonical_dir "$(dirname "$0")")/$(basename "$0")"
   installed="$ROOT/.streams/workstream.sh"
@@ -248,7 +253,10 @@ admit_root() {
     fi
     installed="$(canonical_dir "$(dirname "$installed")")/$(basename "$installed")"
     if [ "$SELF" != "$installed" ]; then
-      case "$ADMIT_OPERATION" in setup|repair|anchor) ;; *) die "initialized control surface requires $installed; run /workstream repair" ;; esac
+      case "$ADMIT_OPERATION" in
+        setup|repair|anchor) ;;
+        *) WORKSTREAM_REEXEC="$installed" ;;
+      esac
     fi
   elif [ "$initialized" = yes ]; then
     case "$ADMIT_OPERATION" in setup|repair|anchor) ;; *) die "initialized control surface is missing its helper; run /workstream repair" ;; esac
@@ -901,7 +909,7 @@ cmd_state() {
 }
 
 emit_read_projection() { # stream; requires admitted globals
-  local stream="$1" purpose orientation note source_kind source_pointer instance phase next queue unit unit_slug unit_summary shipment hook_identity hook_state mode landing cadence branch target
+  local stream="$1" purpose orientation note source_kind source_pointer instance phase next queue unit unit_slug unit_summary shipment hook_identity hook_state mode landing branch target
   purpose="$(runbook_block_field "$RUNBOOK" brief purpose)" || die "runbook purpose is malformed"
   orientation="$(runbook_block_field "$RUNBOOK" brief orientation)" || die "runbook orientation is malformed"
   note="$(runbook_block_field "$RUNBOOK" brief operator-note)" || die "runbook operator note is malformed"
@@ -915,10 +923,9 @@ emit_read_projection() { # stream; requires admitted globals
   hook_identity="$(awk -F '\t' '$1=="hook"&&$3=="state"&&($4=="ready"||$4=="running") {print $2; exit}' "$TRACKER")"
   if [ -n "$hook_identity" ]; then hook_state="$(tracker_get hook "$hook_identity" state)"; else hook_identity=-; hook_state=-; fi
   mode="$(runbook_policy_part "$RUNBOOK" mode 2)"; landing="$(runbook_field "$RUNBOOK" landing)"
-  cadence="$(runbook_policy_part "$RUNBOOK" ship-cadence 2)"
   branch="$(runbook_field "$RUNBOOK" branch)"; target="$(runbook_field "$RUNBOOK" target)"
-  printf 'schema=workstream-read@1\nstream=%s,instance_id=%s\nworktree=%s\ncoordinates=branch:%s,target:%s,landing:%s\npolicy=mode:%s,ship-cadence:%s\npurpose=%s\norientation=%s\noperator_note=%s\nqueue=source-kind:%s,source:%s,state:%s\nunit=id:%s,slug:%s,summary:%s\nshipment=%s,hook_identity=%s,hook_state=%s\nnext_action=%s\n' \
-    "$stream" "$instance" "$WT" "$branch" "$target" "$landing" "$mode" "$cadence" "$purpose" "$orientation" "$note" "$source_kind" "$source_pointer" "$queue" "${unit:--}" "$unit_slug" "$unit_summary" "${shipment:--}" "$hook_identity" "$hook_state" "$next"
+  printf 'schema=workstream-read@1\nstream=%s,instance_id=%s\nroot=%s,worktree=%s\ncoordinates=branch:%s,target:%s,landing:%s\npolicy=mode:%s\npurpose=%s\norientation=%s\noperator_note=%s\nqueue=source-kind:%s,source:%s,state:%s\nunit=id:%s,slug:%s,summary:%s\nshipment=%s,hook_identity=%s,hook_state=%s\nnext_action=%s\n' \
+    "$stream" "$instance" "$ROOT" "$WT" "$branch" "$target" "$landing" "$mode" "$purpose" "$orientation" "$note" "$source_kind" "$source_pointer" "$queue" "${unit:--}" "$unit_slug" "$unit_summary" "${shipment:--}" "$hook_identity" "$hook_state" "$next"
 }
 
 cmd_read() {
@@ -2559,6 +2566,9 @@ main() {
   fi
   case "$2" in setup|repair|anchor) ADMIT_OPERATION="$2" ;; *) ADMIT_OPERATION=ordinary ;; esac
   admit_root "$1"
+  if [ -n "$WORKSTREAM_REEXEC" ]; then
+    exec "$WORKSTREAM_REEXEC" "$@"
+  fi
   shift
   local operation="$1"; shift
   case "$operation" in
