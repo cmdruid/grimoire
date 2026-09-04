@@ -26,6 +26,11 @@ has "$REVISE" 'implementation review never enters revise' "implementation revise
 # shellcheck disable=SC2016 # Markdown code spans are literal.
 has "$REVISE" 'effective continuation is `unavailable`' "unavailable document revise refusal missing"
 has "$REVISE" 'Re-review: queued after apply' "proposal queue disclosure missing"
+has "$REVISE" 'inherited review boundary' "review-origin scope custody missing"
+has "$REVISE" 'cannot enlarge the artifact' "revision may expand accepted scope"
+has "$REVISE" 'introduce another subsystem' "subsystem expansion guard missing"
+has "$REVISE" 'direct causal evidence' "necessary expansion evidence missing"
+has "$REVISE" 'inherits the same boundary' "queued re-review may reopen scope"
 
 classify_package() {
   local row keep=0

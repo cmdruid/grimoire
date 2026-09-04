@@ -51,14 +51,23 @@ locations).
 
 **Review-origin entry.** `review.md` may enter this procedure automatically with resolved inputs.
 When it does, skip only the standalone resolver above: keep the reviewed artifact, effective kind,
-complete findings, origin verdict, and continuation mode, then begin Procedure step 1's context
-load and implementation guard.
+complete verdict-bearing findings, origin verdict, inherited review boundary, and continuation mode,
+then begin Procedure step 1's context load and implementation guard. Follow-ups never enter this
+baton.
 
 **Re-review intent.** Queue it whenever this verb is dispatched from `review.md`, automatically or
 from an offered material-finding branch, including resolver rule 4 after this session's named
 verdict. Leave it unqueued for a standalone invocation. An explicit “without re-review”, “don't
 re-review”, or “apply only” clears it. Carry the intent through question and adjustment stops until
 the proposal is accepted or rejected.
+
+**Scope custody.** A review-origin revision uses the inherited review boundary unchanged. A
+standalone revision establishes the same boundary from the user's request and the artifact under
+SKILL.md *Scope firewall*. A revision cannot enlarge the artifact's goal, affected surface, accepted
+requirements, or non-goals. A finding that would introduce another subsystem needs direct causal
+evidence that the bounded outcome is otherwise unsafe or impossible; park that scope decision for
+the artifact's owner rather than silently folding it. Adjacent improvements are `push-back`
+follow-ups, not optional edits.
 
 ## Findings shapes
 
@@ -81,7 +90,8 @@ omitted, treat as must-fix.
 ## Procedure
 
 1. **Resolve** inputs (above). Locate the artifact. Kind-detect.
-   Load the kind file. Summon context per SKILL.md after the
+   Load the kind file and retain the inherited review boundary, or establish the narrow standalone
+   boundary per SKILL.md. Summon context per SKILL.md after the
    kind is known. Unknown kind → ask or refuse; stop.
    `implementation` → refuse; implementation review never enters revise.
    A document whose effective continuation is `unavailable` → refuse; its owner has disabled
@@ -96,8 +106,8 @@ omitted, treat as must-fix.
    groundedness pass; `scripts/ground-check.sh` is available,
    not sufficient). Outcomes of verify:
    - **already done** — classify `resolved` (no edit).
-   - **wrong / out of scope for this artifact** — classify
-     `push-back`.
+   - **wrong / out of scope for this artifact or its review boundary** — classify `push-back` and,
+     when useful, report it once as a non-blocking follow-up.
    - **park** — the kind file names what must park (a new
      decision branch, a new requirement, an illegal location).
      Do not invent the decision here. Tell the human where it
@@ -113,12 +123,11 @@ omitted, treat as must-fix.
        section/slice, which gate, which owner).
      - A reviewer confidence note the owner cannot independently
        verify against the artifact / `HEAD`.
-   - **otherwise** — classify `keep` (must-fix) or
-     `keep-optional` (nice-to-have that does not change the
-     artifact's goal).
-   A confident `keep` that changes what the artifact claims is
-   **not** an `ask`. It lives in the proposal, marked
-   product-class.
+   - **otherwise** — classify `keep` (must-fix) or `keep-optional` (an in-boundary nice-to-have that
+     does not change the artifact's goal or accepted scope).
+   A confident `keep` may correct what the artifact claims inside its boundary, but cannot enlarge
+   the artifact. A new requirement, subsystem, or affected surface is `park` even when direct causal
+   evidence shows why the upstream scope may need to change.
 4. **Classify the whole batch before editing any.** No
    performative agreement. Grep before generalizing.
    **Thrash brake.** If the **same finding** (same location + same assertion) was already
@@ -173,6 +182,10 @@ omitted, treat as must-fix.
    **Legal for this kind.** Every proposed edit must already be a
    legal in-place amend per the kind file. An illegal edit is
    park/`ask`, never a proposed `keep`.
+
+   **Legal for this boundary.** No proposal may introduce another subsystem, requirement, or
+   affected surface. Necessary scope expansion with direct causal evidence remains parked until the
+   user or artifact owner accepts it upstream; independent improvements remain `push-back`.
 
    `keep-optional` rows state the recommended disposition
    (take, or defer). Bare approval accepts that recommendation.
@@ -250,9 +263,9 @@ omitted, treat as must-fix.
    present, **drop it**. Do not create or append `## Review
    history`.
 
-   Shared amend rules: Must-fix (`keep`) always. Nice-to-have
-   only when it does not change the artifact's goal, unless the
-   human promoted it. Re-ground any fold that cites code; if
+   Shared amend rules: Must-fix (`keep`) always. Nice-to-have only when it remains inside the
+   artifact's accepted goal and review boundary, unless the human first changes that boundary
+   upstream. Re-ground any fold that cites code; if
    you cannot verify it now, mark `(unverified — check at
    walk)` on the edited line. Complete the argued section
    (no "similar to section N", no "add error handling later").
@@ -268,8 +281,8 @@ omitted, treat as must-fix.
    - **Queued or named re-review:** follow this skill's `review`
      procedure (`verbs/review.md`) on the artifact (amended
      if Apply ran; current if there was nothing to fold).
-     Full procedure (two-axis, conversation verdict, resolved continuation).
-     Not a delta mode and not a different file. Same-session
+     The full procedure inherits the same boundary: it is not a delta mode, but it cannot turn a new
+     adjacent observation into scope. Same-session
      authorship is accepted; do not recuse; depth dial stays
      default off. Do not start a walk.
    - **Else:** stop. Always `status: draft`; `stage: approved`

@@ -10,9 +10,28 @@ Unknown kind → ask or refuse; do not invent a rubric. The review phase does no
 continuation may enter `revise`, but its questions and proposal still stop before any edit. Do not
 mint a record.
 
+## Review boundary
+
+Establish the review boundary once, before judging the target, using SKILL.md *Scope firewall*. The
+boundary comes from the requested outcome and the artifact's declared goals, affected surface,
+explicit non-goals, and acceptance evidence. It is context, not another artifact or required form.
+Use the narrowest supported reading; ask only when an ambiguity would materially change the verdict.
+
+A verdict-bearing finding must concern that boundary. A defect that directly prevents the outcome,
+violates an in-scope requirement, or makes the result unsafe or incorrect may be `must-fix`. A
+material improvement may be `recommended` only when it improves the bounded outcome without adding
+independent work. Adjacent cleanup and architectural opportunities are follow-ups outside the verdict
+and revision baton; speculative or unsupported concerns are omitted.
+
+If a finding would introduce a subsystem or surface not named by the request or artifact, require
+direct causal evidence that the bounded outcome cannot be achieved safely or correctly without it.
+Without that chain, it is a follow-up or omitted, never verdict-bearing. Automatic revision and all
+later review rounds inherit the same boundary; discovery in one round cannot widen the next.
+
 ## Procedure
 
-1. **Read the complete target; detect its kind** per SKILL.md *Kind-detect*. Load the effective kind
+1. **Read the complete target; detect its kind and establish its boundary** per SKILL.md *Kind-detect*
+   and *Scope firewall*. Load the effective kind
    file: a readable regular workspace copy when present, otherwise the bundled
    `kinds/<kind>.md` when absent. An incompatible or unreadable workspace entry is an error. For
    `implementation`, read the complete diff and resolve the governing design or plan when named or
@@ -21,9 +40,12 @@ mint a record.
    Shared floor, unless the kind file replaces it: no section contradicts another; the approach is
    justified with alternatives honestly weighed; the mechanism is implementable as written; scope
    is one artifact's worth; every requirement is unambiguous; a **numeric acceptance target** must
-   attribute its population to the mechanism's target class; every **guard/absence-style test**
-   ("asserts X never happens") needs a **red-proof** — disable the guarded mechanism once and show
-   the test fails, or argue concretely why the fixture can exercise the failing arm.
+   attribute its population to the mechanism's target class. A **guard/absence-style test**
+   ("asserts X never happens") needs a **red-proof** only when that negative guarantee is
+   acceptance-critical and the fixture could otherwise pass without exercising the guarded
+   mechanism. Disable the mechanism once and show the test fails, or argue concretely why the
+   fixture exercises the failing arm. Routine negative assertions with direct evidence do not
+   require a mutation ritual.
 3. **Axis 2 — groundedness** (conforms to the codebase and host invariants):
    - Document target: run this package's `scripts/ground-check.sh` `<root> <doc>`, then re-read the
      load-bearing signatures/code the claims rest on. A clean ground-check finds moved files; it
@@ -36,40 +58,46 @@ mint a record.
    Apply every groundedness extra in the effective kind file.
 4. **Adequacy — cover the material surface before choosing a verdict.**
    1. Enumerate internally every required soundness axis and groundedness extra from the effective
-      kind file. Mark each `clear`, `finding`, or `not-applicable`, with evidence. Do not expose a
-      bureaucratic checklist when the target is clear.
-   2. Trace every central claim or changed behavior through its governing mechanism and
+      kind file as it applies inside the review boundary. Mark each `clear`, `finding`, or
+      `not-applicable`, with evidence. Do not expose a bureaucratic checklist when the target is
+      clear.
+   2. Trace every in-boundary central claim or changed behavior through its governing mechanism and
       verification.
    3. Re-scan interactions among findings: fixing one must not leave a contradictory requirement
       or behavior elsewhere.
-   4. Ask the inverse required by the kind. For a spec: which mechanism would not exist from
-      scratch? For an implementation: which passing test could still encode the wrong behavior?
-   5. Repeat the material pass until another pass produces no new supported must-fix finding.
+   4. Ask the inverse required by the kind. For a spec, ask the substrate inverse only when its
+      effective kind enables it for an explicit deep review. For an implementation, ask which
+      passing test could still encode the wrong behavior.
+   5. Repeat the material pass until another pass produces no new supported must-fix finding inside
+      the review boundary.
 
-   Adequacy is exhaustive over material axes, not every sentence or stylistic preference. There is
-   no numeric finding cap.
+   Adequacy is exhaustive over material axes inside the boundary, not every sentence or stylistic
+   preference. There is no numeric finding cap.
 5. **Materiality — admit only actionable evidence.** A reportable finding must be all of:
    - **specific** — names a location or behavior;
    - **grounded** — supported by the target and relevant source, test, doctrine, or reproducible
      scenario;
-   - **consequential** — affects correctness, implementability, followability, safety, ownership,
-     scope, or verification;
+   - **consequential** — affects the bounded outcome's correctness, implementability, followability,
+     safety, ownership, scope, or verification;
    - **actionable** — gives a concrete remedy in the target's ownership or names the exact owner to
      which it must be pushed back;
    - **non-duplicate** — adds a distinct defect rather than restating a symptom.
 
-   Classify a target that cannot safely proceed as `must-fix`; classify a material improvement that
-   does not block as `recommended change`; omit nits, unsupported concerns, taste, and covered
-   symptoms. Qualify uncertain evidence in confidence notes; never present uncertainty as fact. An
-   unresolved question that blocks classification is an `ask`, not a speculative must-fix.
+   Classify a target that cannot safely achieve its bounded outcome as `must-fix`; classify an
+   in-boundary material improvement that does not block as `recommended change`. Report an adjacent
+   independent improvement once as a non-blocking follow-up outside the verdict; do not pass it to
+   `revise`. Omit nits, unsupported concerns, taste, speculative opportunities, and covered symptoms.
+   Qualify uncertain evidence in confidence notes; never present uncertainty as fact. An unresolved
+   question that blocks classification is an `ask`, not a speculative must-fix.
 6. **Map and report the verdict exactly.** Mapping is deterministic:
    - any must-fix finding → `needs-rework`;
    - no must-fix and at least one recommended change → `approve-with-changes`;
    - no material findings → `approve`.
 
    Report in this order: one actionable situation sentence; verdict code; must-fix findings ranked
-   by severity; recommended changes; confidence notes. Omit an empty findings subsection. Each
-   finding is location → defect → consequence → concrete fix.
+   by severity; recommended changes; confidence notes; non-blocking follow-ups, if any. Omit an empty
+   findings subsection. Each verdict-bearing finding is location → defect → consequence → concrete
+   fix. Label follow-ups as outside the verdict and exclude them from continuation.
 
    Verdict words stay **conversation-only**. Do not create or append `## Review history`. Do not
    write `status:` or `stage:` in this verdict turn.
@@ -101,8 +129,9 @@ mint a record.
 
    **Automatic entry.** After reporting the verdict and findings, immediately enter
    `verbs/revise.md` with the reviewed artifact, detected kind, resolved effective policy, complete
-   findings, origin verdict, and re-review queued. Skip only revise's standalone invocation
-   resolver; run its verification, classification, questions, empty-package, and proposal steps.
+   verdict-bearing findings, origin verdict, inherited review boundary, and re-review queued. Never
+   include follow-ups. Skip only revise's standalone invocation resolver; run its verification,
+   classification, questions, empty-package, and proposal steps.
    This is the same turn, not an edit authorization. Questions are a stop. A non-empty proposal is
    a stop. No body, `status`, or `stage` changes before proposal confirmation.
 
@@ -255,8 +284,9 @@ it has not passed Inspector review.
 When re-review is selected, run the complete implementation procedure from the original base through
 the full accumulated change at the remediated destination, never just the fix delta. Reload effective
 kind doctrine and governing design, inspect the whole diff and surrounding code, run applicable gates,
-cover every soundness and groundedness axis, and choose a fresh verdict. Prior findings are evidence,
-not reduced scope; changes outside the fix delta remain visible.
+cover every in-boundary soundness and groundedness axis, and choose a fresh verdict. The original
+review boundary remains authoritative. Prior findings are evidence, and changes outside the fix delta
+remain visible, but adjacent opportunities outside the boundary cannot enter the verdict or fix scope.
 
 A new material verdict gets the same fresh action close. It authorizes no unattended write, and the
 user can stop at every material cycle. A new `approve` reports readiness and resumes the caller
@@ -288,9 +318,9 @@ utterance requested further work.
 ### Offered material-finding branch
 
 1. **Revise** — a clear request to fold, amend, or revise these findings → enter
-   `verbs/revise.md` on the next turn with the complete in-context findings, reviewed artifact,
-   origin verdict, and re-review queued by default. An explicit request to revise without
-   re-review clears that intent.
+   `verbs/revise.md` on the next turn with the complete in-context verdict-bearing findings and
+   reviewed artifact, with re-review queued by default, and carry the original review boundary into
+   revision. An explicit request to revise without re-review clears that intent.
 2. **Accept/publish as-is** — legal only for `approve-with-changes`. A clear acceptance of the
    reviewed artifact without taking the recommendations uses exactly its existing *Passing offer*
    gate. It never applies proposed changes. Founding-shaped remains draft; `needs-rework` cannot

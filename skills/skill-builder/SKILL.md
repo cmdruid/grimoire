@@ -26,7 +26,7 @@ memory.
 | `new` | `verbs/new.md` | Scaffold a new skill's `SKILL.md` (+ `setup` if durable-home tier) against `docs/DOCTRINE.md`'s pattern |
 | `check` (alias `audit`) | `verbs/check.md` | Run `scripts/skills-lint.sh` + the boundary-audit workflow; report findings |
 | `review` | `verbs/review.md` | Judge a skill package's substance against the skill `review-brief`; optionally consume a `review` baton |
-| `tune` | `verbs/tune.md` | Revalidate evidence, confirmation-gate, and verify a bounded revision to an editable skill source |
+| `tune` | `verbs/tune.md` | Revise an explicitly selected editable skill with direct authorization and proportionate verification |
 | `calibrate` | `verbs/calibrate.md` | Fold accreted authoring decisions back into `docs/DOCTRINE.md` (milestone-triggered, human-curated) |
 
 ## What this skill bundles
@@ -45,8 +45,9 @@ memory.
   library it's pointed at. Red-proofs for the records-writer checks live in
   `scripts/tests/lint-records-writer-test.sh`; a nonempty project-template inventory must route
   setup and cover every declared file.
-- **`scripts/source-custody.sh`** — read-only source resolution and proposal-identity facts for
-  `tune`, including a deterministic digest of tracked, dirty, and untracked package content.
+- **`scripts/source-custody.sh`** — read-only source resolution for `tune`; distinguishes editable
+  tracked source from mismatched, untracked, or installed-immutable packages.
+
 ## Disposition (scored against its own doctrine)
 
 - **Self-init / home:** none — an **in-place steward**. It maintains the host library's own `skills/`

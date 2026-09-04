@@ -43,6 +43,25 @@ This package does **not** mint records.
 - **revise** and **refine** leave `status: draft` and drop `stage: approved` if
   present.
 
+## Scope firewall
+
+At the first review, establish one boundary from the user's requested outcome and the artifact's
+declared goals, affected surface, explicit non-goals, and acceptance evidence. Derive it from the
+conversation and artifact; do not require a new scope document or metadata block. When the artifact
+is incomplete, use the narrowest supported reading and ask only when a consequential ambiguity
+prevents judgment.
+
+Only defects that prevent that bounded outcome, violate an in-scope requirement, or make its
+implementation unsafe or incorrect may block. Material improvements may be recommended only inside
+the same boundary. Adjacent cleanup or architectural opportunities are non-blocking follow-ups;
+unsupported or speculative concerns are omitted. A finding that introduces a subsystem or surface
+not named by the request or artifact needs direct causal evidence that the bounded outcome cannot be
+achieved safely or correctly without it. Otherwise it cannot affect the verdict or enter revision.
+
+Automatic revision and every re-review carry this boundary unchanged. A later round may discover a
+new in-boundary defect, but a finding cannot enlarge its own authority. Only a new user instruction
+or an accepted upstream scope change widens the boundary.
+
 ## Verb dispatch (read the file, then follow it)
 
 | Invocation | Verb file | Does |
