@@ -47,7 +47,7 @@ live_files() {
   else
     find "$root" \
       \( -path "$root/.git" -o -path "$root/.records" -o -path "$root/docs/design" \
-         -o -path "$root/.workstreams" -o -path "$root/.worktrees" \) -prune -o \
+         -o -path "$root/.streams" -o -path "$root/.worktrees" \) -prune -o \
       -type f -print0 | while IFS= read -r -d '' path; do
         printf '%s\0' "${path#"$root"/}"
       done
@@ -56,7 +56,7 @@ live_files() {
 
 excluded_path() {
   case "$1" in
-    .git/* | .records/* | docs/design/* | .workstreams/* | .worktrees/*) return 0 ;;
+    .git/* | .records/* | docs/design/* | .streams/* | .worktrees/*) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -210,7 +210,7 @@ if scan_live "$fixture_root" >/dev/null 2>&1; then fail 'duplicate approved anno
 cp "$tmp/negative.before" "$fixture_root/$approved_negative_path"
 if cmp -s "$tmp/negative.before" "$fixture_root/$approved_negative_path" && scan_live "$fixture_root"; then pass; else fail 'negative fixture restore drifted'; fi
 
-for excluded in .git .records docs/design .workstreams .worktrees; do
+for excluded in .git .records docs/design .streams .worktrees; do
   mkdir -p "$fixture_root/$excluded"
   printf '%s\n' "$schema_name" >"$fixture_root/$excluded/excluded.txt"
 done

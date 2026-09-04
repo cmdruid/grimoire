@@ -98,9 +98,9 @@ emitted phase action. Ordinary lifecycle commands own all later ship phases.
 - **Resume / load** — `read`, then if `session=present` read only the session span. Write nothing
   to the span. Explicit load is the claim. Local `next_action` only; if it is `land` or would
   mutate the primary/target, stop and ask.
-- **Recovery** — compaction is not load. Top-level `WORKSTREAM.md` → stop → `read-current` → session
-  span if nonempty. Do not reconstruct managed spans or read the TSV. No top-level runbook: inert;
-  never scan sibling streams.
+- **Recovery** — compaction is not load. Only a top-level `WORKSTREAM.md` activates recovery:
+  stop → `read-current` → session span if nonempty. Do not reconstruct managed spans or read the
+  TSV. No top-level runbook: inert; never scan sibling streams.
 - **Authority** — committed or external systems of record > current files on disk > session span >
   compaction summary.
 

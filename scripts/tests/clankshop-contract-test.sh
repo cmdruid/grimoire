@@ -50,18 +50,18 @@ require "$PACK" 'Chiropractor audits and confirmation-gates documentation-spine 
 require "$PACK" 'It owns no setup and never repairs scripts or workflows'
 require "$PACK" 'project-owned byproduct'
 require "$PACK" 'affected skill tag'
-require "$ROOT/README.md" 'Five skills sit outside the pack'
+require "$ROOT/README.md" 'Standalone skills sit outside the pack'
 require "$ROOT/README.md" '| `agent-feedback` |'
 require "$ROOT/README.md" 'Open a GitHub issue tagged with the skill'
 require "$ROOT/README.md" 'standalone `/agent-feedback` skill'
 
 agent_feedback_boundary_ok(){
   local pack="$1" readme="$2" agents="$3"
-  ! grep -qF 'agent-feedback' "$pack" &&
+  ! grep -Eq '^  - agent-feedback[[:space:]]*$' "$pack" &&
     ! grep -qF '.agents/skilldata/agent-feedback' "$pack" &&
     grep -qF 'project-owned byproduct' "$pack" &&
     grep -qF 'affected skill tag' "$pack" &&
-    grep -qF 'Five skills sit outside the pack' "$readme" &&
+    grep -qF 'Standalone skills sit outside the pack' "$readme" &&
     grep -qF '| `agent-feedback` |' "$readme" &&
     grep -qF 'standalone `/agent-feedback` skill' "$readme" &&
     ! grep -qF '<!-- skill:agent-feedback BEGIN' "$agents"
@@ -136,11 +136,12 @@ cp "$ROOT/README.md" "$readme_fixture";cp "$ROOT/AGENTS.md" "$agents_fixture"
 for boundary_case in pack-member pack-global-path pack-project-wording pack-skill-tag readme-count readme-row patient-zero-anchor;do
   cp "$PACK" "$fixture";cp "$ROOT/README.md" "$readme_fixture";cp "$ROOT/AGENTS.md" "$agents_fixture"
   case "$boundary_case" in
-    pack-member) printf '\nagent-feedback\n' >>"$fixture" ;;
+    pack-member) sed '/^  - workstream$/i\
+  - agent-feedback' "$fixture" >"$tmp/pack.bad"; mv "$tmp/pack.bad" "$fixture" ;;
     pack-global-path) printf '\nGlobal writer: ~/.agents/skilldata/agent-feedback\n' >>"$fixture" ;;
     pack-project-wording) sed 's/project-owned byproduct/byproduct/' "$fixture" >"$tmp/pack.bad";mv "$tmp/pack.bad" "$fixture" ;;
     pack-skill-tag) sed 's/affected skill tag/affected component tag/' "$fixture" >"$tmp/pack.bad";mv "$tmp/pack.bad" "$fixture" ;;
-    readme-count) sed 's/Five skills sit outside the pack/Four skills sit outside the pack/' "$readme_fixture" >"$tmp/readme.bad";mv "$tmp/readme.bad" "$readme_fixture" ;;
+    readme-count) sed 's/Standalone skills sit outside the pack/Four skills sit outside the pack/' "$readme_fixture" >"$tmp/readme.bad";mv "$tmp/readme.bad" "$readme_fixture" ;;
     readme-row) sed '/| `agent-feedback` |/d' "$readme_fixture" >"$tmp/readme.bad";mv "$tmp/readme.bad" "$readme_fixture" ;;
     patient-zero-anchor) printf '\n<!-- skill:agent-feedback BEGIN built-against:test -->\n' >>"$agents_fixture" ;;
   esac
