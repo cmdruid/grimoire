@@ -2865,6 +2865,32 @@ mod link_capture_tests {
     }
 
     #[test]
+    fn symlinked_project_ancestor_is_rejected_even_when_it_resolves_to_the_held_inode() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().canonicalize().unwrap();
+        let container = root.join("container");
+        let project = container.join("project");
+        fs::create_dir_all(&project).unwrap();
+        let paths = Paths::project(project.canonicalize().unwrap(), root.join("home")).unwrap();
+        let source = crate::SourceAlias::new("a").unwrap();
+        let parent = ensure_vendor_source_dir(&paths, &source).unwrap();
+        let parent_path = paths.vendor_source_dir(&source).unwrap();
+        fs::create_dir(parent_path.join("prepared")).unwrap();
+
+        let displaced = root.join("container-displaced");
+        fs::rename(&container, &displaced).unwrap();
+        std::os::unix::fs::symlink("container-displaced", &container).unwrap();
+
+        assert!(matches!(
+            parent.rename_no_replace("prepared", "one", &parent_path.join("one")),
+            Err(CoreError::Source(_))
+        ));
+        let displaced_parent = displaced.join("project/vendor/grimoire/a");
+        assert!(displaced_parent.join("prepared").is_dir());
+        assert!(!displaced_parent.join("one").exists());
+    }
+
+    #[test]
     fn failed_later_vendor_preparation_cleans_earlier_work_and_retry_succeeds() {
         let temporary = tempfile::tempdir().unwrap();
         let root = temporary.path().canonicalize().unwrap();

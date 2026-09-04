@@ -21,7 +21,14 @@ pub struct HeldDirectoryReader {
     root: PathBuf,
     handles: Vec<File>,
     root_identity: FileIdentity,
-    anchor: Option<(File, CString)>,
+    anchors: Vec<PathAnchor>,
+}
+
+#[derive(Debug)]
+struct PathAnchor {
+    parent: File,
+    name: CString,
+    identity: FileIdentity,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -42,6 +49,7 @@ impl HeldDirectoryReader {
             return Err(CoreError::Source("held local root must be absolute".into()));
         }
         let mut handles = vec![File::open("/").map_err(|error| io_error(Path::new("/"), error))?];
+        let mut anchors = Vec::new();
         let mut resolved = PathBuf::from("/");
         for component in root.components() {
             let Component::Normal(name) = component else {
@@ -54,7 +62,7 @@ impl HeldDirectoryReader {
             };
             let name = CString::new(name.as_bytes())
                 .map_err(|_| CoreError::Source("local path contains NUL".into()))?;
-            let fd = openat(
+            let descriptor: File = openat(
                 handles.last().expect("root handle"),
                 &name,
                 directory_flags(),
@@ -65,9 +73,22 @@ impl HeldDirectoryReader {
                     &resolved.join(std::ffi::OsStr::from_bytes(name.to_bytes())),
                     error,
                 )
-            })?;
+            })?
+            .into();
             resolved.push(std::ffi::OsStr::from_bytes(name.to_bytes()));
-            handles.push(fd.into());
+            let metadata = descriptor
+                .metadata()
+                .map_err(|error| io_error(&resolved, error))?;
+            anchors.push(PathAnchor {
+                parent: handles
+                    .last()
+                    .expect("root handle")
+                    .try_clone()
+                    .map_err(|error| io_error(&resolved, error))?,
+                name,
+                identity: identity(&metadata),
+            });
+            handles.push(descriptor);
         }
         let root_handle = handles.last().expect("root handle");
         let metadata = root_handle
@@ -83,7 +104,7 @@ impl HeldDirectoryReader {
             root: resolved,
             handles,
             root_identity,
-            anchor: None,
+            anchors,
         };
         reader.revalidate()?;
         Ok(reader)
@@ -107,10 +128,11 @@ impl HeldDirectoryReader {
             root: root.to_path_buf(),
             handles: vec![descriptor],
             root_identity: identity(&metadata),
-            anchor: Some((
-                parent.try_clone().map_err(|error| io_error(root, error))?,
+            anchors: vec![PathAnchor {
+                parent: parent.try_clone().map_err(|error| io_error(root, error))?,
                 name,
-            )),
+                identity: identity(&metadata),
+            }],
         };
         reader.revalidate()?;
         Ok(reader)
@@ -123,15 +145,7 @@ impl HeldDirectoryReader {
             .expect("root handle")
             .metadata()
             .map_err(|error| io_error(&self.root, error))?;
-        let named_identity = if let Some((parent, name)) = &self.anchor {
-            let named = statat(parent, name, AtFlags::SYMLINK_NOFOLLOW)
-                .map_err(|error| rustix_io_error(&self.root, error))?;
-            stat_identity(&named)
-        } else {
-            let named =
-                fs::symlink_metadata(&self.root).map_err(|error| io_error(&self.root, error))?;
-            identity(&named)
-        };
+        let named_identity = self.revalidate_anchors()?;
         if held.is_dir()
             && identity(&held) == self.root_identity
             && named_identity == self.root_identity
@@ -151,16 +165,7 @@ impl HeldDirectoryReader {
             .expect("root handle")
             .metadata()
             .map_err(|error| io_error(&self.root, error))?;
-        let named = if let Some((parent, name)) = &self.anchor {
-            stat_identity(
-                &statat(parent, name, AtFlags::SYMLINK_NOFOLLOW)
-                    .map_err(|error| rustix_io_error(&self.root, error))?,
-            )
-        } else {
-            identity(
-                &fs::symlink_metadata(&self.root).map_err(|error| io_error(&self.root, error))?,
-            )
-        };
+        let named = self.revalidate_anchors()?;
         if location_identity(identity(&held)) == location_identity(self.root_identity)
             && location_identity(named) == location_identity(self.root_identity)
         {
@@ -168,6 +173,28 @@ impl HeldDirectoryReader {
         } else {
             Err(CoreError::Source("held local root changed".into()))
         }
+    }
+
+    fn revalidate_anchors(&self) -> Result<FileIdentity> {
+        let mut named_root = None;
+        for anchor in &self.anchors {
+            let named = stat_identity(
+                &statat(&anchor.parent, &anchor.name, AtFlags::SYMLINK_NOFOLLOW)
+                    .map_err(|error| rustix_io_error(&self.root, error))?,
+            );
+            if location_identity(named) != location_identity(anchor.identity) {
+                return Err(CoreError::Source("held local root changed".into()));
+            }
+            named_root = Some(named);
+        }
+        named_root.map_or_else(
+            || {
+                fs::symlink_metadata(&self.root)
+                    .map(|metadata| identity(&metadata))
+                    .map_err(|error| io_error(&self.root, error))
+            },
+            Ok,
+        )
     }
 
     pub(crate) fn root_handle(&self) -> Result<File> {
