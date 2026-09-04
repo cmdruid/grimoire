@@ -1,3 +1,4 @@
+mod bounded_skill_tree;
 mod discovery;
 mod finding_contract;
 mod frontmatter;

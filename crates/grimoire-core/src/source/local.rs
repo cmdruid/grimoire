@@ -21,6 +21,7 @@ pub struct HeldDirectoryReader {
     root: PathBuf,
     handles: Vec<File>,
     root_identity: FileIdentity,
+    anchor: Option<(File, CString)>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -82,6 +83,34 @@ impl HeldDirectoryReader {
             root: resolved,
             handles,
             root_identity,
+            anchor: None,
+        };
+        reader.revalidate()?;
+        Ok(reader)
+    }
+
+    pub(crate) fn open_at(parent: &File, name: &str, root: &Path) -> Result<Self> {
+        let name =
+            CString::new(name).map_err(|_| CoreError::Source("local path contains NUL".into()))?;
+        let descriptor: File = openat(parent, &name, directory_flags(), Mode::empty())
+            .map_err(|error| rustix_io_error(root, error))?
+            .into();
+        let metadata = descriptor
+            .metadata()
+            .map_err(|error| io_error(root, error))?;
+        if !metadata.is_dir() {
+            return Err(CoreError::Source(
+                "held local root is not a directory".into(),
+            ));
+        }
+        let reader = Self {
+            root: root.to_path_buf(),
+            handles: vec![descriptor],
+            root_identity: identity(&metadata),
+            anchor: Some((
+                parent.try_clone().map_err(|error| io_error(root, error))?,
+                name,
+            )),
         };
         reader.revalidate()?;
         Ok(reader)
@@ -94,12 +123,46 @@ impl HeldDirectoryReader {
             .expect("root handle")
             .metadata()
             .map_err(|error| io_error(&self.root, error))?;
-        let named =
-            fs::symlink_metadata(&self.root).map_err(|error| io_error(&self.root, error))?;
+        let named_identity = if let Some((parent, name)) = &self.anchor {
+            let named = statat(parent, name, AtFlags::SYMLINK_NOFOLLOW)
+                .map_err(|error| rustix_io_error(&self.root, error))?;
+            stat_identity(&named)
+        } else {
+            let named =
+                fs::symlink_metadata(&self.root).map_err(|error| io_error(&self.root, error))?;
+            identity(&named)
+        };
         if held.is_dir()
-            && named.is_dir()
             && identity(&held) == self.root_identity
-            && identity(&named) == self.root_identity
+            && named_identity == self.root_identity
+        {
+            Ok(())
+        } else {
+            Err(CoreError::Source("held local root changed".into()))
+        }
+    }
+
+    pub(crate) fn revalidate_location(&self) -> Result<()> {
+        // Creating children legitimately changes directory timestamps. Custody
+        // checks care that the held inode is still named at the same anchor.
+        let held = self
+            .handles
+            .last()
+            .expect("root handle")
+            .metadata()
+            .map_err(|error| io_error(&self.root, error))?;
+        let named = if let Some((parent, name)) = &self.anchor {
+            stat_identity(
+                &statat(parent, name, AtFlags::SYMLINK_NOFOLLOW)
+                    .map_err(|error| rustix_io_error(&self.root, error))?,
+            )
+        } else {
+            identity(
+                &fs::symlink_metadata(&self.root).map_err(|error| io_error(&self.root, error))?,
+            )
+        };
+        if location_identity(identity(&held)) == location_identity(self.root_identity)
+            && location_identity(named) == location_identity(self.root_identity)
         {
             Ok(())
         } else {
@@ -447,6 +510,10 @@ fn identity(metadata: &fs::Metadata) -> FileIdentity {
         changed_seconds: metadata.ctime(),
         changed_nanoseconds: metadata.ctime_nsec(),
     }
+}
+
+fn location_identity(identity: FileIdentity) -> (u64, u64, u32) {
+    (identity.device, identity.inode, identity.kind)
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]

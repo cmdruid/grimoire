@@ -1,8 +1,10 @@
+use std::ffi::CString;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
 use rustix::fs::{
-    open, readlinkat, renameat_with, symlinkat, unlinkat, AtFlags, Mode, OFlags, RenameFlags,
+    mkdirat, open, openat, readlinkat, renameat_with, statat, symlinkat, unlinkat, AtFlags, Mode,
+    OFlags, RenameFlags,
 };
 
 use sha2::{Digest as _, Sha256};
@@ -319,8 +321,8 @@ pub fn apply(
     let vendor_parents = vendor_sources
         .into_iter()
         .map(|source| {
-            let path = ensure_vendor_source_dir(paths, &source)?;
-            Ok((source, DirectoryIdentity::capture(&path)?))
+            let parent = ensure_vendor_source_dir(paths, &source)?;
+            Ok((source, parent))
         })
         .collect::<Result<std::collections::BTreeMap<_, _>>>()?;
     match execute(
@@ -346,6 +348,7 @@ pub fn apply(
                 )));
             }
             if matches!(error, CoreError::StalePlan(_)) && journal.completed.is_empty() {
+                cleanup_captured_vendors(paths, &journal)?;
                 remove_file_if_present(&journal_path)?;
                 if let Some(parent) = journal_path.parent() {
                     sync_directory(parent)?;
@@ -375,8 +378,9 @@ fn cleanup_unjournaled_vendor_preparations(paths: &Paths, plan: &Plan, nonce: &s
         else {
             continue;
         };
+        let parent = ensure_vendor_source_dir(paths, source)?;
         let prepared = paths.vendor_prepare_path(source, skill, nonce)?;
-        remove_verified_vendor(&prepared, skill, Some(content))?;
+        remove_verified_vendor(&parent, &prepared, skill, Some(content))?;
     }
     Ok(())
 }
@@ -526,26 +530,47 @@ fn prepare_vendors(paths: &Paths, plan: &Plan, nonce: &str) -> Result<()> {
     if needs_vendor {
         locks.acquire(&paths.store_lock_path(), LockRank::Store, LockMode::Shared)?;
     }
-    for action in &plan.actions {
-        let Action::PrepareVendor {
-            source,
-            skill,
-            source_key,
-            snapshot_key,
-            skill_path,
-            content,
-            ..
-        } = action
-        else {
-            continue;
-        };
-        let parent = ensure_vendor_source_dir(paths, source)?;
-        let prepared = paths.vendor_prepare_path(source, skill, nonce)?;
-        let store_skill = paths.store_path(source_key, snapshot_key).join(skill_path);
-        crate::vendor::prepare_from_store(&store_skill, &prepared, skill, content)?;
-        File::open(&parent)
-            .and_then(|directory| directory.sync_all())
-            .map_err(|error| crate::transaction::io_error(&parent, error))?;
+    let prepared = (|| {
+        for action in &plan.actions {
+            let Action::PrepareVendor {
+                source,
+                skill,
+                source_key,
+                snapshot_key,
+                skill_path,
+                content,
+                ..
+            } = action
+            else {
+                continue;
+            };
+            let parent = ensure_vendor_source_dir(paths, source)?;
+            let prepared = paths.vendor_prepare_path(source, skill, nonce)?;
+            let prepared_name = file_name(&prepared)?;
+            let store_skill = paths.store_path(source_key, snapshot_key).join(skill_path);
+            parent.revalidate(&paths.vendor_source_dir(source)?)?;
+            crate::vendor::prepare_from_store(
+                &store_skill,
+                &parent.descriptor,
+                &prepared_name,
+                &prepared,
+                skill,
+                content,
+            )?;
+            if let Err(error) = parent.revalidate(&paths.vendor_source_dir(source)?) {
+                remove_verified_vendor(&parent, &prepared, skill, Some(content))?;
+                return Err(error);
+            }
+        }
+        Ok(())
+    })();
+    if let Err(error) = prepared {
+        cleanup_unjournaled_vendor_preparations(paths, plan, nonce).map_err(|cleanup| {
+            CoreError::RecoveryRequired(format!(
+                "{error}; vendor preparation cleanup failed: {cleanup}"
+            ))
+        })?;
+        return Err(error);
     }
     Ok(())
 }
@@ -1028,7 +1053,10 @@ fn execute(
                 content,
                 ..
             } => {
-                require_vendor(paths, source, skill, Some(content))?;
+                let parent = vendor_parents
+                    .get(source)
+                    .expect("vendor action has parent identity");
+                require_vendor(paths, parent, source, skill, Some(content))?;
             }
             Action::CreateVendor { source, skill, .. }
             | Action::ReplaceVendor { source, skill, .. } => {
@@ -1331,18 +1359,25 @@ fn publish_vendor(
     let capture = paths.vendor_capture_path(source, skill, nonce)?;
     let capture_name = file_name(&capture)?;
     parent.revalidate(&parent_path)?;
-    if crate::vendor::verify_vendor_tree(&prepared, skill)? != after {
+    if crate::vendor::verify_vendor_tree_at(&parent.descriptor, &prepared_name, &prepared, skill)?
+        != after
+    {
         return Err(CoreError::StalePlan(format!(
             "prepared vendor tree `{skill}` changed"
         )));
     }
-    require_vendor(paths, source, skill, before)?;
+    require_vendor(paths, parent, source, skill, before)?;
     if let Some(before) = before {
         if checkpoint(runtime, "before-vendor-capture")? {
             return Ok(Some("before-vendor-capture"));
         }
         parent.rename_no_replace(skill.as_str(), &capture_name, &destination)?;
-        let captured = crate::vendor::verify_vendor_tree(&capture, skill)?;
+        let captured = crate::vendor::verify_vendor_tree_at(
+            &parent.descriptor,
+            &capture_name,
+            &capture,
+            skill,
+        )?;
         if captured != before {
             parent.rename_no_replace(&capture_name, skill.as_str(), &destination)?;
             return Err(CoreError::StalePlan(format!(
@@ -1357,12 +1392,22 @@ fn publish_vendor(
         return Ok(Some("before-vendor-publication"));
     }
     if let Err(error) = parent.rename_no_replace(&prepared_name, skill.as_str(), &destination) {
-        if before.is_some() && !destination.exists() && capture.exists() {
+        if before.is_some()
+            && parent
+                .entry_identity(skill.as_str(), &destination)?
+                .is_none()
+            && parent.entry_identity(&capture_name, &capture)?.is_some()
+        {
             let _ = parent.rename_no_replace(&capture_name, skill.as_str(), &destination);
         }
         return Err(error);
     }
-    let observed = crate::vendor::verify_vendor_tree(&destination, skill)?;
+    let observed = crate::vendor::verify_vendor_tree_at(
+        &parent.descriptor,
+        skill.as_str(),
+        &destination,
+        skill,
+    )?;
     if observed != after {
         return Err(CoreError::RecoveryRequired(format!(
             "published vendor tree `{skill}` does not match its journal digest"
@@ -1388,12 +1433,14 @@ fn capture_vendor(
     let capture = paths.vendor_capture_path(source, skill, nonce)?;
     let capture_name = file_name(&capture)?;
     parent.revalidate(&parent_path)?;
-    require_vendor(paths, source, skill, Some(before))?;
+    require_vendor(paths, parent, source, skill, Some(before))?;
     if checkpoint(runtime, "before-vendor-capture")? {
         return Ok(Some("before-vendor-capture"));
     }
     parent.rename_no_replace(skill.as_str(), &capture_name, &destination)?;
-    if crate::vendor::verify_vendor_tree(&capture, skill)? != before {
+    if crate::vendor::verify_vendor_tree_at(&parent.descriptor, &capture_name, &capture, skill)?
+        != before
+    {
         parent.rename_no_replace(&capture_name, skill.as_str(), &destination)?;
         return Err(CoreError::StalePlan(format!(
             "vendor tree `{skill}` changed during capture"
@@ -1407,18 +1454,23 @@ fn capture_vendor(
 
 fn require_vendor(
     paths: &Paths,
+    parent: &DirectoryIdentity,
     source: &crate::SourceAlias,
     skill: &crate::SkillName,
     expected: Option<&str>,
 ) -> Result<()> {
     let path = paths.vendor_path(source, skill)?;
-    match (fs::symlink_metadata(&path), expected) {
-        (Err(error), None) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        (Ok(metadata), Some(expected))
-            if metadata.is_dir() && !metadata.file_type().is_symlink() =>
-        {
-            let observed = crate::vendor::verify_vendor_tree(&path, skill)
-                .map_err(|_| CoreError::StalePlan(format!("vendor tree `{skill}` changed")))?;
+    parent.revalidate(&paths.vendor_source_dir(source)?)?;
+    match (parent.entry_identity(skill.as_str(), &path)?, expected) {
+        (None, None) => Ok(()),
+        (Some((_, _, 0o040000)), Some(expected)) => {
+            let observed = crate::vendor::verify_vendor_tree_at(
+                &parent.descriptor,
+                skill.as_str(),
+                &path,
+                skill,
+            )
+            .map_err(|_| CoreError::StalePlan(format!("vendor tree `{skill}` changed")))?;
             if observed == expected {
                 Ok(())
             } else {
@@ -1426,9 +1478,6 @@ fn require_vendor(
                     "vendor tree `{skill}` changed"
                 )))
             }
-        }
-        (Err(error), _) if error.kind() != std::io::ErrorKind::NotFound => {
-            Err(crate::transaction::io_error(&path, error))
         }
         _ => Err(CoreError::StalePlan(format!(
             "vendor tree `{skill}` changed"
@@ -1543,20 +1592,19 @@ fn restore_before(paths: &Paths, journal: &Journal, nonce: &str) -> Result<()> {
 fn restore_vendor_before(paths: &Paths, vendor: &VendorTransition, nonce: &str) -> Result<()> {
     let source = crate::SourceAlias::new(&vendor.source)?;
     let skill = crate::SkillName::new(&vendor.skill)?;
-    let parent_path = paths.vendor_source_dir(&source)?;
-    let parent = DirectoryIdentity::capture_or_create(&parent_path)?;
+    let parent = ensure_vendor_source_dir(paths, &source)?;
     let destination = paths.vendor_path(&source, &skill)?;
     let capture = paths.vendor_capture_path(&source, &skill, nonce)?;
     let prepared = paths.vendor_prepare_path(&source, &skill, nonce)?;
     let capture_name = file_name(&capture)?;
     let prepared_name = file_name(&prepared)?;
-    let current = current_vendor(paths, vendor)?;
+    let current = current_vendor_at(paths, &parent, vendor)?;
     let before = VendorOccupancy::from(&vendor.before);
     let after = VendorOccupancy::from(&vendor.after);
 
     if current == before {
-        remove_verified_vendor(&prepared, &skill, vendor.after.as_deref())?;
-        remove_verified_vendor(&capture, &skill, vendor.before.as_deref())?;
+        remove_verified_vendor(&parent, &prepared, &skill, vendor.after.as_deref())?;
+        remove_verified_vendor(&parent, &capture, &skill, vendor.before.as_deref())?;
         return Ok(());
     }
     if current != after && current != VendorOccupancy::Absent {
@@ -1569,34 +1617,60 @@ fn restore_vendor_before(paths: &Paths, vendor: &VendorTransition, nonce: &str) 
         (None, Some(after)) => {
             if current == VendorOccupancy::Digest(after.clone()) {
                 parent.rename_no_replace(skill.as_str(), &prepared_name, &destination)?;
-                remove_verified_vendor(&prepared, &skill, Some(after))?;
+                remove_verified_vendor(&parent, &prepared, &skill, Some(after))?;
             } else {
-                remove_verified_vendor(&prepared, &skill, Some(after))?;
+                remove_verified_vendor(&parent, &prepared, &skill, Some(after))?;
             }
         }
         (Some(before), Some(after)) => {
             if current == VendorOccupancy::Digest(after.clone()) {
                 parent.rename_no_replace(skill.as_str(), &prepared_name, &destination)?;
-                if crate::vendor::verify_vendor_tree(&prepared, &skill)? != *after {
+                if crate::vendor::verify_vendor_tree_at(
+                    &parent.descriptor,
+                    &prepared_name,
+                    &prepared,
+                    &skill,
+                )? != *after
+                {
                     let _ = parent.rename_no_replace(&prepared_name, skill.as_str(), &destination);
                     return Err(CoreError::RecoveryRequired(format!(
                         "published vendor `{skill}` changed during rollback"
                     )));
                 }
             }
-            if capture.exists() && !destination.exists() {
-                if crate::vendor::verify_vendor_tree(&capture, &skill)? != *before {
+            if parent.entry_identity(&capture_name, &capture)?.is_some()
+                && parent
+                    .entry_identity(skill.as_str(), &destination)?
+                    .is_none()
+            {
+                if crate::vendor::verify_vendor_tree_at(
+                    &parent.descriptor,
+                    &capture_name,
+                    &capture,
+                    &skill,
+                )? != *before
+                {
                     return Err(CoreError::RecoveryRequired(format!(
                         "captured vendor `{skill}` changed during rollback"
                     )));
                 }
                 parent.rename_no_replace(&capture_name, skill.as_str(), &destination)?;
             }
-            remove_verified_vendor(&prepared, &skill, Some(after))?;
+            remove_verified_vendor(&parent, &prepared, &skill, Some(after))?;
         }
         (Some(before), None) => {
-            if capture.exists() && !destination.exists() {
-                if crate::vendor::verify_vendor_tree(&capture, &skill)? != *before {
+            if parent.entry_identity(&capture_name, &capture)?.is_some()
+                && parent
+                    .entry_identity(skill.as_str(), &destination)?
+                    .is_none()
+            {
+                if crate::vendor::verify_vendor_tree_at(
+                    &parent.descriptor,
+                    &capture_name,
+                    &capture,
+                    &skill,
+                )? != *before
+                {
                     return Err(CoreError::RecoveryRequired(format!(
                         "captured vendor `{skill}` changed during rollback"
                     )));
@@ -1613,43 +1687,44 @@ fn cleanup_captured_vendors(paths: &Paths, journal: &Journal) -> Result<()> {
     for vendor in &journal.vendors {
         let source = crate::SourceAlias::new(&vendor.source)?;
         let skill = crate::SkillName::new(&vendor.skill)?;
+        let parent = ensure_vendor_source_dir(paths, &source)?;
         let capture = paths.vendor_capture_path(&source, &skill, &journal.nonce)?;
         let prepared = paths.vendor_prepare_path(&source, &skill, &journal.nonce)?;
-        remove_verified_vendor(&capture, &skill, vendor.before.as_deref())?;
-        remove_verified_vendor(&prepared, &skill, vendor.after.as_deref())?;
+        remove_verified_vendor(&parent, &capture, &skill, vendor.before.as_deref())?;
+        remove_verified_vendor(&parent, &prepared, &skill, vendor.after.as_deref())?;
     }
     Ok(())
 }
 
 fn remove_verified_vendor(
+    parent: &DirectoryIdentity,
     path: &Path,
     skill: &crate::SkillName,
     expected: Option<&str>,
 ) -> Result<()> {
-    let metadata = match fs::symlink_metadata(path) {
-        Ok(metadata) => metadata,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
-        Err(error) => return Err(crate::transaction::io_error(path, error)),
+    let original_name = file_name(path)?;
+    let deletion_name = crate::vendor::deletion_name(&original_name);
+    let deletion_path = path.with_file_name(&deletion_name);
+    let (name, owned_path, kind) = match parent.entry_identity(&original_name, path)? {
+        Some((_, _, kind)) => (original_name, path.to_path_buf(), kind),
+        None => match parent.entry_identity(&deletion_name, &deletion_path)? {
+            Some((_, _, kind)) => (deletion_name, deletion_path, kind),
+            None => return Ok(()),
+        },
     };
-    if metadata.file_type().is_symlink() || !metadata.is_dir() {
+    if kind != 0o040000 {
         return Err(CoreError::RecoveryRequired(format!(
             "vendor transaction path `{}` is foreign",
-            path.display()
+            owned_path.display()
         )));
     }
     let Some(expected) = expected else {
         return Err(CoreError::RecoveryRequired(format!(
             "unexpected vendor transaction path `{}`",
-            path.display()
+            owned_path.display()
         )));
     };
-    if crate::vendor::verify_vendor_tree(path, skill)? != expected {
-        return Err(CoreError::RecoveryRequired(format!(
-            "vendor transaction path `{}` changed",
-            path.display()
-        )));
-    }
-    crate::vendor::remove_tree(path)
+    crate::vendor::remove_verified_tree_at(&parent.descriptor, &name, &owned_path, skill, expected)
 }
 
 fn cleanup_captured_links(paths: &Paths, journal: &Journal) -> Result<()> {
@@ -1702,15 +1777,27 @@ impl From<&Option<String>> for VendorOccupancy {
 
 fn current_vendor(paths: &Paths, vendor: &VendorTransition) -> Result<VendorOccupancy> {
     let source = crate::SourceAlias::new(&vendor.source)?;
+    let parent = ensure_vendor_source_dir(paths, &source)?;
+    current_vendor_at(paths, &parent, vendor)
+}
+
+fn current_vendor_at(
+    paths: &Paths,
+    parent: &DirectoryIdentity,
+    vendor: &VendorTransition,
+) -> Result<VendorOccupancy> {
+    let source = crate::SourceAlias::new(&vendor.source)?;
     let skill = crate::SkillName::new(&vendor.skill)?;
     let path = paths.vendor_path(&source, &skill)?;
-    match fs::symlink_metadata(&path) {
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(VendorOccupancy::Absent),
-        Err(error) => Err(crate::transaction::io_error(&path, error)),
-        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {
-            Ok(VendorOccupancy::Foreign)
-        }
-        Ok(_) => match crate::vendor::verify_vendor_tree(&path, &skill) {
+    match parent.entry_identity(skill.as_str(), &path)? {
+        None => Ok(VendorOccupancy::Absent),
+        Some((_, _, kind)) if kind != 0o040000 => Ok(VendorOccupancy::Foreign),
+        Some(_) => match crate::vendor::verify_vendor_tree_at(
+            &parent.descriptor,
+            skill.as_str(),
+            &path,
+            &skill,
+        ) {
             Ok(digest) => Ok(VendorOccupancy::Digest(digest)),
             Err(_) => Ok(VendorOccupancy::Foreign),
         },
@@ -2107,39 +2194,86 @@ fn validate_nonce(nonce: &str) -> Result<()> {
     }
 }
 
-fn ensure_vendor_source_dir(paths: &Paths, source: &crate::SourceAlias) -> Result<PathBuf> {
+fn ensure_vendor_source_dir(
+    paths: &Paths,
+    source: &crate::SourceAlias,
+) -> Result<DirectoryIdentity> {
     let ScopePaths::Project { root } = &paths.scope else {
         return Err(CoreError::Request(
             "vendor paths are available only in Project scope".into(),
         ));
     };
-    let mut parent = root.clone();
+    let project_root = crate::source::HeldDirectoryReader::open(root)?;
+    let mut parent = project_root.root_handle()?;
+    let mut parent_path = root.clone();
+    let mut anchors = Vec::new();
     for component in ["vendor", "grimoire", source.as_str()] {
-        let path = parent.join(component);
-        match fs::symlink_metadata(&path) {
-            Ok(metadata) if metadata.is_dir() && !metadata.file_type().is_symlink() => {}
-            Ok(_) => {
-                return Err(CoreError::StalePlan(format!(
-                    "vendor parent `{}` is not a regular directory",
-                    path.display()
-                )))
+        let component_path = parent_path.join(component);
+        let name = CString::new(component)
+            .map_err(|_| CoreError::Transaction("vendor parent contains NUL".into()))?;
+        let before = match statat(&parent, &name, AtFlags::SYMLINK_NOFOLLOW) {
+            Ok(stat) => stat,
+            Err(error) if error == rustix::io::Errno::NOENT => {
+                mkdirat(&parent, &name, Mode::from_raw_mode(0o755))
+                    .map_err(|error| link_error(&component_path, error))?;
+                parent
+                    .sync_all()
+                    .map_err(|error| crate::transaction::io_error(&component_path, error))?;
+                statat(&parent, &name, AtFlags::SYMLINK_NOFOLLOW)
+                    .map_err(|error| link_error(&component_path, error))?
             }
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                fs::create_dir(&path)
-                    .map_err(|error| crate::transaction::io_error(&path, error))?;
-                #[cfg(unix)]
-                {
-                    use std::os::unix::fs::PermissionsExt;
-                    fs::set_permissions(&path, fs::Permissions::from_mode(0o755))
-                        .map_err(|error| crate::transaction::io_error(&path, error))?;
-                }
-                sync_directory(&parent)?;
-            }
-            Err(error) => return Err(crate::transaction::io_error(&path, error)),
+            Err(error) => return Err(link_error(&component_path, error)),
+        };
+        if directory_stat_identity(&before).2 != 0o040000 {
+            return Err(CoreError::StalePlan(format!(
+                "vendor parent `{}` is not a regular directory",
+                component_path.display()
+            )));
         }
-        parent = path;
+        let child: File = openat(
+            &parent,
+            &name,
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map_err(|error| link_error(&component_path, error))?
+        .into();
+        if file_directory_identity(&child, &component_path)? != directory_stat_identity(&before) {
+            return Err(CoreError::StalePlan(format!(
+                "vendor parent `{}` changed before open",
+                component_path.display()
+            )));
+        }
+        anchors.push(DirectoryAnchor {
+            parent,
+            name,
+            identity: directory_stat_identity(&before),
+        });
+        parent = child;
+        parent_path = component_path;
     }
-    Ok(parent)
+    project_root.revalidate_location()?;
+    let identity = file_directory_identity(&parent, &paths.vendor_source_dir(source)?)?;
+    Ok(DirectoryIdentity {
+        descriptor: parent,
+        device: identity.0,
+        inode: identity.1,
+        custody: Some(DirectoryCustody {
+            project_root,
+            anchors,
+        }),
+    })
+}
+
+struct DirectoryAnchor {
+    parent: File,
+    name: CString,
+    identity: (u64, u64, u32),
+}
+
+struct DirectoryCustody {
+    project_root: crate::source::HeldDirectoryReader,
+    anchors: Vec<DirectoryAnchor>,
 }
 
 struct DirectoryIdentity {
@@ -2148,6 +2282,7 @@ struct DirectoryIdentity {
     descriptor: File,
     device: u64,
     inode: u64,
+    custody: Option<DirectoryCustody>,
 }
 
 impl DirectoryIdentity {
@@ -2174,6 +2309,7 @@ impl DirectoryIdentity {
                 descriptor,
                 device: metadata.dev(),
                 inode: metadata.ino(),
+                custody: None,
             })
         }
         #[cfg(not(unix))]
@@ -2181,6 +2317,27 @@ impl DirectoryIdentity {
     }
 
     fn revalidate(&self, path: &Path) -> Result<()> {
+        if let Some(custody) = &self.custody {
+            custody.project_root.revalidate_location()?;
+            for anchor in &custody.anchors {
+                let current = statat(&anchor.parent, &anchor.name, AtFlags::SYMLINK_NOFOLLOW)
+                    .map_err(|error| link_error(path, error))?;
+                if directory_stat_identity(&current) != anchor.identity {
+                    return Err(CoreError::StalePlan(format!(
+                        "vendor parent directory changed at {}",
+                        path.display()
+                    )));
+                }
+            }
+            let current = file_directory_identity(&self.descriptor, path)?;
+            if current.0 == self.device && current.1 == self.inode && current.2 == 0o040000 {
+                return Ok(());
+            }
+            return Err(CoreError::StalePlan(format!(
+                "vendor parent directory changed at {}",
+                path.display()
+            )));
+        }
         let current = Self::capture(path)?;
         if current.device == self.device && current.inode == self.inode {
             Ok(())
@@ -2191,7 +2348,23 @@ impl DirectoryIdentity {
         }
     }
 
+    fn entry_identity(&self, name: &str, path: &Path) -> Result<Option<(u64, u64, u32)>> {
+        if self.custody.is_some() {
+            self.revalidate(path.parent().unwrap_or(path))?;
+        }
+        let name = CString::new(name)
+            .map_err(|_| CoreError::Transaction("transaction name contains NUL".into()))?;
+        match statat(&self.descriptor, &name, AtFlags::SYMLINK_NOFOLLOW) {
+            Ok(stat) => Ok(Some(directory_stat_identity(&stat))),
+            Err(error) if error == rustix::io::Errno::NOENT => Ok(None),
+            Err(error) => Err(link_error(path, error)),
+        }
+    }
+
     fn rename_no_replace(&self, from: &str, to: &str, destination: &Path) -> Result<()> {
+        if self.custody.is_some() {
+            self.revalidate(destination)?;
+        }
         renameat_with(
             &self.descriptor,
             from,
@@ -2209,6 +2382,9 @@ impl DirectoryIdentity {
                 link_error(destination, error)
             }
         })?;
+        if self.custody.is_some() {
+            self.revalidate(destination)?;
+        }
         self.sync(destination)
     }
 
@@ -2489,9 +2665,81 @@ fn link_error(path: &Path, error: rustix::io::Errno) -> CoreError {
     }
 }
 
+fn directory_stat_identity(stat: &rustix::fs::Stat) -> (u64, u64, u32) {
+    (
+        stat.st_dev as u64,
+        stat.st_ino,
+        stat.st_mode as u32 & 0o170000,
+    )
+}
+
+fn file_directory_identity(file: &File, path: &Path) -> Result<(u64, u64, u32)> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let metadata = file
+            .metadata()
+            .map_err(|error| crate::transaction::io_error(path, error))?;
+        Ok((metadata.dev(), metadata.ino(), metadata.mode() & 0o170000))
+    }
+    #[cfg(not(unix))]
+    unreachable!("Grimoire supports Unix hosts")
+}
+
 #[cfg(test)]
 mod link_capture_tests {
     use super::*;
+
+    struct TestRuntime;
+
+    impl TransactionRuntime for TestRuntime {
+        fn transaction_nonce(&self) -> Result<String> {
+            Ok("stale-cleanup".into())
+        }
+
+        fn unix_time(&self) -> Result<i64> {
+            Ok(1_700_000_000)
+        }
+
+        fn checkpoint(&self, _name: &'static str) -> Result<crate::FaultDisposition> {
+            Ok(crate::FaultDisposition::Continue)
+        }
+    }
+
+    fn store_skill(
+        paths: &Paths,
+        source_key: &crate::SourceKey,
+        snapshot_key: &crate::SnapshotKey,
+        name: &str,
+    ) -> String {
+        let root = paths.store_path(source_key, snapshot_key).join("skill");
+        fs::create_dir_all(&root).unwrap();
+        fs::write(
+            root.join("SKILL.md"),
+            format!("---\nname: {name}\ndescription: preparation fixture\n---\n"),
+        )
+        .unwrap();
+        crate::vendor::verify_vendor_tree(&root, &crate::SkillName::new(name).unwrap()).unwrap()
+    }
+
+    fn prepare_action(
+        source: &str,
+        skill: &str,
+        source_key: crate::SourceKey,
+        snapshot_key: crate::SnapshotKey,
+        content: String,
+    ) -> Action {
+        Action::PrepareVendor {
+            scope: Scope::Project,
+            source: crate::SourceAlias::new(source).unwrap(),
+            skill: crate::SkillName::new(skill).unwrap(),
+            source_key,
+            snapshot_key,
+            skill_path: "skill".into(),
+            path: format!("vendor/grimoire/{source}/{skill}"),
+            content,
+        }
+    }
 
     #[test]
     fn interrupted_exchange_and_removal_captures_restore_without_clobbering() {
@@ -2590,5 +2838,163 @@ mod link_capture_tests {
         restore_before(&paths, &journal, "recovery").unwrap();
         assert!(!destination.exists());
         assert!(!parent_path.join(".one.recovery.link-remove").exists());
+    }
+
+    #[test]
+    fn vendor_parent_swap_is_rejected_before_descriptor_relative_rename() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().canonicalize().unwrap();
+        let project = root.join("project");
+        fs::create_dir(&project).unwrap();
+        let paths = Paths::project(project.canonicalize().unwrap(), root.join("home")).unwrap();
+        let source = crate::SourceAlias::new("a").unwrap();
+        let parent = ensure_vendor_source_dir(&paths, &source).unwrap();
+        let parent_path = paths.vendor_source_dir(&source).unwrap();
+        fs::create_dir(parent_path.join("prepared")).unwrap();
+
+        let displaced = parent_path.with_extension("displaced");
+        fs::rename(&parent_path, &displaced).unwrap();
+        fs::create_dir(&parent_path).unwrap();
+
+        assert!(matches!(
+            parent.rename_no_replace("prepared", "one", &parent_path.join("one")),
+            Err(CoreError::StalePlan(_)) | Err(CoreError::Source(_))
+        ));
+        assert!(!parent_path.join("one").exists());
+        assert!(displaced.join("prepared").is_dir());
+    }
+
+    #[test]
+    fn failed_later_vendor_preparation_cleans_earlier_work_and_retry_succeeds() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().canonicalize().unwrap();
+        let project = root.join("project");
+        fs::create_dir(&project).unwrap();
+        let paths = Paths::project(project.canonicalize().unwrap(), root.join("home")).unwrap();
+        let one_source = crate::SourceAlias::new("a").unwrap();
+        let two_source = crate::SourceAlias::new("b").unwrap();
+        let one = crate::SkillName::new("one").unwrap();
+        let two = crate::SkillName::new("two").unwrap();
+        let one_source_key = crate::SourceKey::parse("1".repeat(64)).unwrap();
+        let one_snapshot_key = crate::SnapshotKey::parse("2".repeat(64)).unwrap();
+        let two_source_key = crate::SourceKey::parse("3".repeat(64)).unwrap();
+        let two_snapshot_key = crate::SnapshotKey::parse("4".repeat(64)).unwrap();
+        let one_content = store_skill(&paths, &one_source_key, &one_snapshot_key, "one");
+        let missing_two = root.join("two-source");
+        fs::create_dir(&missing_two).unwrap();
+        fs::write(
+            missing_two.join("SKILL.md"),
+            "---\nname: two\ndescription: preparation fixture\n---\n",
+        )
+        .unwrap();
+        let two_content = crate::vendor::verify_vendor_tree(&missing_two, &two).unwrap();
+        let plan = Plan {
+            actions: vec![
+                prepare_action(
+                    "a",
+                    "one",
+                    one_source_key,
+                    one_snapshot_key,
+                    one_content.clone(),
+                ),
+                prepare_action(
+                    "b",
+                    "two",
+                    two_source_key.clone(),
+                    two_snapshot_key.clone(),
+                    two_content.clone(),
+                ),
+            ],
+            blockers: Vec::new(),
+            preconditions: crate::Preconditions::absent(),
+            facts: Vec::new(),
+            exit_class: crate::ExitClass::Success,
+        };
+        let nonce = "preparation-retry";
+        assert!(prepare_vendors(&paths, &plan, nonce).is_err());
+        assert!(!paths
+            .vendor_prepare_path(&one_source, &one, nonce)
+            .unwrap()
+            .exists());
+
+        assert_eq!(
+            store_skill(&paths, &two_source_key, &two_snapshot_key, "two"),
+            two_content
+        );
+        prepare_vendors(&paths, &plan, nonce).unwrap();
+        for (source, skill) in [(&one_source, &one), (&two_source, &two)] {
+            assert!(paths
+                .vendor_prepare_path(source, skill, nonce)
+                .unwrap()
+                .is_dir());
+        }
+        cleanup_unjournaled_vendor_preparations(&paths, &plan, nonce).unwrap();
+        for (source, skill) in [(&one_source, &one), (&two_source, &two)] {
+            assert!(!paths
+                .vendor_prepare_path(source, skill, nonce)
+                .unwrap()
+                .exists());
+        }
+    }
+
+    #[test]
+    fn stale_first_action_cleans_unconsumed_preparations_before_removing_journal() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().canonicalize().unwrap();
+        let project = root.join("project");
+        fs::create_dir(&project).unwrap();
+        let paths = Paths::project(project.canonicalize().unwrap(), root.join("home")).unwrap();
+        let one_source = crate::SourceAlias::new("a").unwrap();
+        let two_source = crate::SourceAlias::new("b").unwrap();
+        let one = crate::SkillName::new("one").unwrap();
+        let two = crate::SkillName::new("two").unwrap();
+        let two_source_key = crate::SourceKey::parse("5".repeat(64)).unwrap();
+        let two_snapshot_key = crate::SnapshotKey::parse("6".repeat(64)).unwrap();
+        let one_path = paths.vendor_path(&one_source, &one).unwrap();
+        fs::create_dir_all(&one_path).unwrap();
+        fs::write(
+            one_path.join("SKILL.md"),
+            "---\nname: one\ndescription: current vendor\n---\n",
+        )
+        .unwrap();
+        let prepared = paths
+            .vendor_prepare_path(&two_source, &two, "stale-cleanup")
+            .unwrap();
+        let two_content = store_skill(&paths, &two_source_key, &two_snapshot_key, "two");
+        let plan = Plan {
+            actions: vec![
+                prepare_action(
+                    "b",
+                    "two",
+                    two_source_key,
+                    two_snapshot_key,
+                    two_content.clone(),
+                ),
+                Action::RetainVendor {
+                    scope: Scope::Project,
+                    source: one_source,
+                    skill: one,
+                    path: "vendor/grimoire/a/one".into(),
+                    content: format!("sha256:{}", "0".repeat(64)),
+                },
+                Action::CreateVendor {
+                    scope: Scope::Project,
+                    source: two_source,
+                    skill: two,
+                    path: "vendor/grimoire/b/two".into(),
+                    after: two_content,
+                    added: vec!["SKILL.md".into()],
+                },
+            ],
+            blockers: Vec::new(),
+            preconditions: crate::Preconditions::absent(),
+            facts: Vec::new(),
+            exit_class: crate::ExitClass::Success,
+        };
+
+        let result = apply(&paths, &plan, Approval::NotRequired, &TestRuntime);
+        assert!(matches!(result, Err(CoreError::StalePlan(_))), "{result:?}");
+        assert!(!prepared.exists());
+        assert!(!paths.transaction_journal_path(&paths.scope_key()).exists());
     }
 }

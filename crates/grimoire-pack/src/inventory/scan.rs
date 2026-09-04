@@ -31,6 +31,7 @@ const IGNORED_DIRECTORIES: &[&[u8]] = &[
 ];
 const FRONTMATTER_BYTE_LIMIT: usize = 65_536;
 const REVIEW_BYTE_LIMIT: u64 = 128 * 1024 * 1024;
+const DISCOVERY_ENTRY_LIMIT: usize = 100_000;
 
 pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> {
     let mut skill_manifests = Vec::new();
@@ -54,7 +55,7 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
         if entry.kind == TreeEntryKind::File && entry.path.file_name() == b"SKILL.md" {
             skill_manifests.push(entry.clone());
         }
-        Ok(if discovery_entries > 100_000 {
+        Ok(if discovery_entries > DISCOVERY_ENTRY_LIMIT {
             VisitDecision::Stop
         } else if entry.kind == TreeEntryKind::Directory
             && IGNORED_DIRECTORIES.contains(&entry.path.file_name())
@@ -97,7 +98,7 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
     }
     skill_roots.sort_by(|left, right| left.0.cmp(&right.0));
 
-    let mut entries = Vec::with_capacity(100_001);
+    let mut entries = Vec::with_capacity(DISCOVERY_ENTRY_LIMIT + 1);
     reader.visit_entries(&mut |entry| {
         let inside_skill = skill_roots
             .iter()
@@ -117,7 +118,7 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
             && !inside_skill
             && IGNORED_DIRECTORIES.contains(&entry.path.file_name());
         entries.push(entry);
-        Ok(if entries.len() > 100_000 {
+        Ok(if entries.len() > DISCOVERY_ENTRY_LIMIT {
             VisitDecision::Stop
         } else if skip {
             VisitDecision::SkipSubtree
@@ -127,14 +128,14 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
     })?;
     entries.sort_by(|left, right| left.path.cmp(&right.path));
 
-    if entries.len() > 100_000 {
+    if entries.len() > DISCOVERY_ENTRY_LIMIT {
         findings.push(limit_finding(
             "discovery-entry-limit",
-            Some(entries[100_000].path.clone()),
-            100_000,
-            100_001,
+            Some(entries[DISCOVERY_ENTRY_LIMIT].path.clone()),
+            DISCOVERY_ENTRY_LIMIT,
+            DISCOVERY_ENTRY_LIMIT + 1,
         ));
-        entries.truncate(100_000);
+        entries.truncate(DISCOVERY_ENTRY_LIMIT);
     }
     if let Some(entry) = entries.iter().find(|entry| directory_depth(entry) > 32) {
         findings.push(limit_finding(
@@ -300,7 +301,9 @@ pub fn scan_skill_tree(
         }
     };
 
+    let mut strict_entries = 0_usize;
     reader.visit_entries(&mut |entry| {
+        strict_entries += 1;
         let actual = entry.mode & 0o7777;
         let valid_mode = match entry.kind {
             TreeEntryKind::Directory => actual == 0o755,
@@ -334,7 +337,11 @@ pub fn scan_skill_tree(
                 message: "unsupported entry".into(),
             });
         }
-        Ok(VisitDecision::Continue)
+        Ok(if strict_entries > DISCOVERY_ENTRY_LIMIT {
+            VisitDecision::Stop
+        } else {
+            VisitDecision::Continue
+        })
     })?;
     findings.sort_by(finding_order);
     findings.dedup();
