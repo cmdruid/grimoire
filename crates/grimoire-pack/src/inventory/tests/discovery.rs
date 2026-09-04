@@ -37,6 +37,51 @@ fn recursive_discovery_obeys_all_outer_boundaries() {
 }
 
 #[test]
+fn agents_install_tree_is_not_discovered_as_source_skills() {
+    let mut tree = MemoryTree::default();
+    tree.skill("skills/visible", "visible");
+    tree.skill(".agents/skills/installed", "installed");
+    let inventory = scan(&tree).unwrap();
+    assert_eq!(
+        inventory
+            .skills
+            .iter()
+            .map(|skill| skill.name.as_str())
+            .collect::<Vec<_>>(),
+        ["visible"]
+    );
+}
+
+#[test]
+fn ordinary_scan_does_not_report_skill_tree_strict_codes() {
+    let mut tree = MemoryTree::default();
+    tree.skill("skills/visible", "visible");
+    tree.entries.push(TreeEntry::directory(".git"));
+    tree.file(".git/HEAD", b"ref: refs/heads/main\n".to_vec());
+    let mut loose = TreeEntry::file("skills/visible/notes.md", 0o100600);
+    loose.size = Some(1);
+    tree.entries.push(loose);
+    tree.files
+        .insert(SourcePath::from("skills/visible/notes.md"), b"x".to_vec());
+    let inventory = scan(&tree).unwrap();
+    assert_eq!(
+        inventory
+            .skills
+            .iter()
+            .map(|skill| skill.name.as_str())
+            .collect::<Vec<_>>(),
+        ["visible"]
+    );
+    assert!(inventory
+        .findings
+        .iter()
+        .all(|finding| finding.code != "invalid-entry-mode"));
+    assert!(inventory.findings.iter().all(|finding| {
+        finding.details.get("kind").map(String::as_str) != Some("git-metadata")
+    }));
+}
+
+#[test]
 fn packs_are_discovered_at_any_outer_directory_but_never_inside_a_skill() {
     let mut tree = MemoryTree::default();
     tree.skill("skills/real", "real");

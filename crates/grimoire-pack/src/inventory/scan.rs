@@ -27,13 +27,24 @@ const IGNORED_DIRECTORIES: &[&[u8]] = &[
     b"build",
     b"dist",
     b"vendor",
+    b".agents",
     b"fixtures",
 ];
 const FRONTMATTER_BYTE_LIMIT: usize = 65_536;
 const REVIEW_BYTE_LIMIT: u64 = 128 * 1024 * 1024;
 const DISCOVERY_ENTRY_LIMIT: usize = 100_000;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ScanKind {
+    Source,
+    SkillTree,
+}
+
 pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> {
+    scan_inner(reader, ScanKind::Source)
+}
+
+fn scan_inner(reader: &dyn TreeReader, kind: ScanKind) -> Result<SourceInventory, InventoryError> {
     let mut skill_manifests = Vec::new();
     let mut nested_checkouts = Vec::new();
     let mut symlink_paths = Vec::new();
@@ -100,6 +111,9 @@ pub fn scan(reader: &dyn TreeReader) -> Result<SourceInventory, InventoryError> 
 
     let mut entries = Vec::with_capacity(DISCOVERY_ENTRY_LIMIT + 1);
     reader.visit_entries(&mut |entry| {
+        if kind == ScanKind::SkillTree {
+            findings.extend(strict_skill_entry_findings(&entry));
+        }
         let inside_skill = skill_roots
             .iter()
             .any(|(root, _)| entry.path == *root || entry.path.is_descendant_of(root));
@@ -261,7 +275,7 @@ pub fn scan_skill_tree(
     reader: &dyn TreeReader,
     expected_name: &str,
 ) -> Result<super::SkillTreeInventory, InventoryError> {
-    let inventory = scan(reader)?;
+    let inventory = scan_inner(reader, ScanKind::SkillTree)?;
     let mut findings = inventory.findings;
     let skill = match inventory.skills.as_slice() {
         [skill] if skill.path.as_bytes().is_empty() => {
@@ -301,51 +315,47 @@ pub fn scan_skill_tree(
         }
     };
 
-    let mut strict_entries = 0_usize;
-    reader.visit_entries(&mut |entry| {
-        strict_entries += 1;
-        let actual = entry.mode & 0o7777;
-        let valid_mode = match entry.kind {
-            TreeEntryKind::Directory => actual == 0o755,
-            TreeEntryKind::File => matches!(actual, 0o644 | 0o755),
-            TreeEntryKind::Symlink => true,
-            TreeEntryKind::Submodule
-            | TreeEntryKind::Device
-            | TreeEntryKind::Fifo
-            | TreeEntryKind::Socket => false,
-        };
-        if !valid_mode {
-            findings.push(Finding {
-                code: "invalid-entry-mode".into(),
-                path: Some(entry.path.clone()),
-                severity: Severity::Error,
-                details: BTreeMap::from([("mode".into(), format!("{actual:04o}"))]),
-                message: "invalid entry mode".into(),
-            });
-        }
-        if entry
-            .path
-            .as_bytes()
-            .split(|byte| *byte == b'/')
-            .any(|component| component == b".git")
-        {
-            findings.push(Finding {
-                code: "unsupported-entry".into(),
-                path: Some(entry.path.clone()),
-                severity: Severity::Error,
-                details: BTreeMap::from([("kind".into(), "git-metadata".into())]),
-                message: "unsupported entry".into(),
-            });
-        }
-        Ok(if strict_entries > DISCOVERY_ENTRY_LIMIT {
-            VisitDecision::Stop
-        } else {
-            VisitDecision::Continue
-        })
-    })?;
     findings.sort_by(finding_order);
     findings.dedup();
     Ok(super::SkillTreeInventory { skill, findings })
+}
+
+fn strict_skill_entry_findings(entry: &TreeEntry) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    let actual = entry.mode & 0o7777;
+    let valid_mode = match entry.kind {
+        TreeEntryKind::Directory => actual == 0o755,
+        TreeEntryKind::File => matches!(actual, 0o644 | 0o755),
+        TreeEntryKind::Symlink => true,
+        TreeEntryKind::Submodule
+        | TreeEntryKind::Device
+        | TreeEntryKind::Fifo
+        | TreeEntryKind::Socket => false,
+    };
+    if !valid_mode {
+        findings.push(Finding {
+            code: "invalid-entry-mode".into(),
+            path: Some(entry.path.clone()),
+            severity: Severity::Error,
+            details: BTreeMap::from([("mode".into(), format!("{actual:04o}"))]),
+            message: "invalid entry mode".into(),
+        });
+    }
+    if entry
+        .path
+        .as_bytes()
+        .split(|byte| *byte == b'/')
+        .any(|component| component == b".git")
+    {
+        findings.push(Finding {
+            code: "unsupported-entry".into(),
+            path: Some(entry.path.clone()),
+            severity: Severity::Error,
+            details: BTreeMap::from([("kind".into(), "git-metadata".into())]),
+            message: "unsupported entry".into(),
+        });
+    }
+    findings
 }
 
 fn add_pack_availability(skills: &[Skill], packs: &mut [Pack], findings: &mut Vec<Finding>) {

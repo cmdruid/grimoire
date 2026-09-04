@@ -4,6 +4,7 @@ use std::io::{Cursor, Read};
 use super::super::{
     scan_skill_tree, InventoryError, SourcePath, TreeEntry, TreeReader, VisitDecision,
 };
+use super::support::MemoryTree;
 
 const MANIFEST: &[u8] = b"---\nname: one\ndescription: bounded fixture\n---\n";
 
@@ -57,5 +58,27 @@ fn strict_skill_validation_stops_every_traversal_at_the_entry_boundary() {
         .findings
         .iter()
         .any(|finding| finding.code == "discovery-entry-limit"));
-    assert_eq!(reader.visits.into_inner(), vec![100_001, 100_001, 100_001]);
+    assert_eq!(reader.visits.into_inner(), vec![100_001, 100_001]);
+}
+
+#[test]
+fn skill_tree_scan_rejects_git_metadata_and_invalid_modes() {
+    let mut tree = MemoryTree::default();
+    tree.file("SKILL.md", b"---\nname: one\n---\n".to_vec());
+    tree.entries.push(TreeEntry::directory(".git"));
+    let mut loose = TreeEntry::file("notes.md", 0o100600);
+    loose.size = Some(1);
+    tree.entries.push(loose);
+    tree.files
+        .insert(SourcePath::from("notes.md"), b"x".to_vec());
+
+    let inventory = scan_skill_tree(&tree, "one").unwrap();
+    assert!(inventory
+        .findings
+        .iter()
+        .any(|finding| finding.code == "invalid-entry-mode"));
+    assert!(inventory.findings.iter().any(|finding| {
+        finding.code == "unsupported-entry"
+            && finding.details.get("kind").map(String::as_str) == Some("git-metadata")
+    }));
 }
