@@ -438,7 +438,7 @@ validate_moved_manifest_row() { # row fields are dynamically scoped from caller
 }
 
 render_migrated_artifacts() { # manifest stream
-  local manifest="$1" stream="$2" legacy purpose old_mode old_landing old_cadence source_kind cursor queue_state next runbook_temp tracker_temp runbook_hash index subject merge_base
+  local manifest="$1" stream="$2" legacy purpose old_mode old_landing old_cadence source_kind cursor queue_state next runbook_temp tracker_temp tracker_rows tracker_ranked tracker_sorted runbook_hash index subject merge_base
   legacy="$destination/WORKSTREAM.md"; [ -f "$legacy" ] && [ ! -L "$legacy" ] || die "moved legacy handoff is missing or unsafe: $stream"
   purpose="$(legacy_purpose "$legacy" "$stream")"; compile_config
   old_mode="$(normalized_legacy_field "$legacy" mode "$stream" mode)" || die "legacy mode is invalid"
@@ -484,6 +484,13 @@ render_migrated_artifacts() { # manifest stream
       while IFS= read -r subject; do printf 'unit-subject\t%s/%s\tsubject\t%s\n' "$next" "$index" "$subject"; index=$((index + 1)); done < <(git -C "$WT" log --reverse --format='%s' "$merge_base..$tip")
     fi
   } >"$tracker_temp"
+  tracker_rows="$(mktemp "${TMPDIR:-/tmp}/workstream-migration-rows.XXXXXX")"
+  tracker_ranked="$(mktemp "${TMPDIR:-/tmp}/workstream-migration-rank.XXXXXX")"
+  tracker_sorted="$(mktemp "${TMPDIR:-/tmp}/workstream-migration-sort.XXXXXX")"
+  tail -n +2 "$tracker_temp" >"$tracker_rows"
+  canonical_rows "$tracker_rows" "$tracker_ranked" "$tracker_sorted"
+  { printf 'record\tid\tfield\tvalue\n'; cat "$tracker_sorted"; } >"$tracker_temp"
+  rm -f "$tracker_rows" "$tracker_ranked" "$tracker_sorted"
   validate_tracker "$tracker_temp"; chmod 600 "$runbook_temp" "$tracker_temp"
   mv "$tracker_temp" "$TRACKER"
   if [ -n "${WORKSTREAM_TEST_AFTER_MIGRATION_TRACKER:-}" ]; then "$WORKSTREAM_TEST_AFTER_MIGRATION_TRACKER" "$manifest"; die "migration interrupted after tracker installation"; fi

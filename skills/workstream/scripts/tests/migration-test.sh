@@ -36,6 +36,11 @@ EOF
 printf 'preserved work\n' >>"$ROOT/.workstreams/legacy-two/file"
 git -C "$ROOT/.workstreams/legacy-two" add file
 git -C "$ROOT/.workstreams/legacy-two" commit -qm 'preserved legacy unit'
+i=2
+while [ "$i" -le 12 ]; do
+  git -C "$ROOT/.workstreams/legacy-two" commit --allow-empty -qm "preserved legacy unit $i"
+  i=$((i + 1))
+done
 "$MIGRATOR" "$ROOT" inventory >"$OUT"
 expect 'migration inventories stream' 'stream=legacy' "$OUT"
 expect 'migration inventories second stream' 'stream=legacy-two' "$OUT"
