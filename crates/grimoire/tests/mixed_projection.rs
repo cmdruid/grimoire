@@ -1,14 +1,13 @@
 mod support;
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 use tempfile::tempdir;
 
 #[test]
-#[ignore = "schema 3 drops install --vendor; unit 3 retargets mixed projection to copies"]
-fn linked_and_vendored_skills_share_one_symlink_only_activation_surface() {
+fn pinned_copies_and_link_activations_share_one_skills_directory() {
     let temporary = tempdir().unwrap();
     let root = temporary.path().canonicalize().unwrap();
     let home = root.join("home");
@@ -16,7 +15,7 @@ fn linked_and_vendored_skills_share_one_symlink_only_activation_surface() {
     let source = root.join("source");
     fs::create_dir_all(&home).unwrap();
     fs::create_dir_all(&project).unwrap();
-    for skill in ["linked", "vendored"] {
+    for skill in ["copied", "linked"] {
         let directory = source.join("skills").join(skill);
         fs::create_dir_all(&directory).unwrap();
         fs::write(
@@ -48,7 +47,7 @@ fn linked_and_vendored_skills_share_one_symlink_only_activation_surface() {
         &[
             "source",
             "add",
-            "fixture",
+            "pinned",
             source.to_str().unwrap(),
             "--trust-all",
         ],
@@ -56,42 +55,43 @@ fn linked_and_vendored_skills_share_one_symlink_only_activation_surface() {
     success(&support::run(
         &project,
         &home,
-        &["install", "linked", "--source", "fixture"],
+        &[
+            "source",
+            "add",
+            "live",
+            source.to_str().unwrap(),
+            "--link",
+            "--trust-all",
+        ],
     ));
     success(&support::run(
         &project,
         &home,
-        &["install", "vendored", "--source", "fixture", "--vendor"],
+        &["install", "copied", "--source", "pinned"],
+    ));
+    success(&support::run(
+        &project,
+        &home,
+        &["install", "linked", "--source", "live"],
     ));
 
     let skills = project.join(".agents/skills");
-    let mut entries = fs::read_dir(&skills)
-        .unwrap()
-        .collect::<Result<Vec<_>, _>>()
-        .unwrap();
-    entries.sort_by_key(fs::DirEntry::file_name);
-    assert_eq!(entries.len(), 2);
-    assert!(entries.iter().all(|entry| entry.path().is_symlink()));
-
-    let linked_target = fs::read_link(skills.join("linked")).unwrap();
+    let copied = skills.join("copied");
+    let linked = skills.join("linked");
+    assert!(copied.is_dir());
+    assert!(!copied.symlink_metadata().unwrap().file_type().is_symlink());
+    assert!(copied.join("SKILL.md").is_file());
+    assert!(linked.symlink_metadata().unwrap().file_type().is_symlink());
+    let linked_target = fs::read_link(&linked).unwrap();
     assert!(linked_target.is_absolute());
-    assert!(linked_target.starts_with(home.join(".grimoire/store/checkouts")));
-    let vendored_target = fs::read_link(skills.join("vendored")).unwrap();
-    assert_eq!(
-        vendored_target,
-        PathBuf::from("../../vendor/grimoire/fixture/vendored")
-    );
-    assert!(project
-        .join("vendor/grimoire/fixture/vendored/SKILL.md")
-        .is_file());
+    assert_eq!(linked_target, source.join("skills/linked"));
+    assert!(!project.join("vendor/grimoire").exists());
 
     let listed = support::run(&project, &home, &["list"]);
     success(&listed);
     let output = support::stdout(&listed);
-    assert!(output.contains("skill\tlinked\tfixture\tmode=link\tprojection="));
-    assert!(output.contains(
-        "skill\tvendored\tfixture\tmode=vendor\tprojection=vendor/grimoire/fixture/vendored"
-    ));
+    assert!(output.contains("skill\tcopied\tpinned\tmode=copy\tprojection=.agents/skills/copied"));
+    assert!(output.contains("skill\tlinked\tlive\tmode=link\t"));
     success(&support::run(&project, &home, &["check"]));
 }
 

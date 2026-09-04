@@ -346,10 +346,13 @@ impl From<&Lockfile> for LockDto {
 }
 
 fn lock_projection(
-    _sources: &BTreeMap<SourceAlias, LockSource>,
-    _alias: &SourceAlias,
+    sources: &BTreeMap<SourceAlias, LockSource>,
+    alias: &SourceAlias,
 ) -> ProjectionMode {
-    ProjectionMode::Link
+    match sources.get(alias) {
+        Some(LockSource::Link { .. }) => ProjectionMode::Link,
+        _ => ProjectionMode::Vendor,
+    }
 }
 
 fn skill_set(values: Vec<String>, field: &str) -> Result<BTreeSet<SkillName>> {

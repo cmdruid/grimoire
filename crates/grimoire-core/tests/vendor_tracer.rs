@@ -9,10 +9,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use grimoire_core::source::{GitCommand, GitResult, GitRunner};
 use grimoire_core::{
-    apply, check, load_world, plan, verify_vendor_tree, Action, Approval, CanonicalIdentity,
-    CoreError, FaultDisposition, LockSkill, LockSource, Lockfile, Paths, PlanningMode,
-    ProjectionMode, Request, RequestRoot, Result, SourceAlias, SourceKey, SourceTrustIntent,
-    TransactionRuntime, TrustChange, TrustMode, TrustReceipt, TrustStore, VendorState,
+    check, load_world, plan, verify_vendor_tree, Action, CanonicalIdentity, CoreError,
+    FaultDisposition, LockSkill, LockSource, Lockfile, Paths, PlanningMode, ProjectionMode,
+    Request, RequestRoot, Result, SourceAlias, TransactionRuntime, TrustReceipt, VendorState,
     VendorTrustReceipt,
 };
 
@@ -60,10 +59,10 @@ struct Fixture {
     paths: Paths,
     alias: SourceAlias,
     skill: grimoire_core::SkillName,
-    identity: CanonicalIdentity,
-    manifest: Vec<u8>,
-    lock: Vec<u8>,
-    vendor_file: Vec<u8>,
+    _identity: CanonicalIdentity,
+    _manifest: Vec<u8>,
+    _lock: Vec<u8>,
+    _vendor_file: Vec<u8>,
 }
 
 impl Fixture {
@@ -117,10 +116,10 @@ impl Fixture {
             paths,
             alias,
             skill,
-            identity,
-            manifest,
-            lock,
-            vendor_file,
+            _identity: identity,
+            _manifest: manifest,
+            _lock: lock,
+            _vendor_file: vendor_file,
         }
     }
 
@@ -130,8 +129,7 @@ impl Fixture {
 }
 
 #[test]
-#[ignore = "schema 3 drops vendor receipts; unit 3 retargets this to copy activation"]
-fn committed_vendor_can_be_approved_and_activated_with_every_source_channel_absent() {
+fn committed_copy_checks_without_store_or_vendor_trust() {
     let temporary = tempfile::tempdir().unwrap();
     let fixture = Fixture::new(temporary.path());
     let git = OfflineGit::default();
@@ -148,91 +146,35 @@ fn committed_vendor_can_be_approved_and_activated_with_every_source_channel_abse
         .values()
         .all(|state| state.store == grimoire_core::SnapshotStore::Absent));
     assert_eq!(git.0.load(Ordering::SeqCst), 0);
+    let copy = fixture.vendor_path();
+    assert!(copy.is_dir());
+    assert!(!copy.symlink_metadata().unwrap().file_type().is_symlink());
+    assert!(!fixture
+        .paths
+        .skills_dir()
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("vendor/grimoire")
+        .exists());
 
-    let approval = plan(
-        &world,
-        Request::TrustSource {
-            alias: fixture.alias.clone(),
-            mode: SourceTrustIntent::Vendor,
-        },
-        PlanningMode::Normal,
-    )
-    .unwrap();
-    assert!(approval.is_destructive());
-    assert!(approval.blockers.is_empty());
-    assert!(approval.preconditions.candidates.is_empty());
-    assert!(approval.preconditions.stores.is_empty());
-    assert!(matches!(
-        approval.actions.as_slice(),
-        [Action::ReplaceTrust {
-            change: TrustChange::GrantVendor,
-            ..
-        }]
-    ));
-    apply(&fixture.paths, &approval, Approval::Granted, &runtime).unwrap();
-
-    let trust_bytes = fs::read(fixture.paths.trust_path()).unwrap();
-    let trust = TrustStore::parse(&trust_bytes).unwrap();
-    let source_key = SourceKey::derive(&fixture.identity);
-    let record = &trust.records[&source_key];
-    let source_receipt = TrustReceipt {
-        commit: "1".repeat(40),
-        tree: "2".repeat(40),
-        inventory: format!("sha256:{}", "3".repeat(64)),
-    };
-    assert_eq!(record.mode_for(Some(&source_receipt)), TrustMode::Untrusted);
-    assert_eq!(record.vendor_receipts.len(), 1);
-    assert!(record.baseline.is_none());
-
-    let world = load_world(&fixture.paths, &git, &runtime).unwrap();
-    let activation = plan(&world, Request::Reconcile, PlanningMode::Frozen).unwrap();
-    assert!(activation.blockers.is_empty(), "{:?}", activation.blockers);
-    assert!(activation.preconditions.candidates.is_empty());
-    assert!(activation.preconditions.stores.is_empty());
-    assert!(matches!(
-        activation.actions.as_slice(),
-        [Action::RetainVendor { .. }, Action::CreateLink { .. }]
-    ));
-    apply(&fixture.paths, &activation, Approval::NotRequired, &runtime).unwrap();
-
-    let link = fixture.paths.skills_dir().join("one");
-    assert_eq!(
-        fs::read_link(&link).unwrap(),
-        PathBuf::from("../../vendor/grimoire/repo/one")
+    let frozen = plan(&world, Request::Reconcile, PlanningMode::Frozen).unwrap();
+    assert!(frozen.blockers.is_empty(), "{:?}", frozen.blockers);
+    assert!(frozen.preconditions.stores.is_empty());
+    assert!(!frozen.actions.iter().any(|action| matches!(
+        action,
+        Action::CreateVendor { .. } | Action::PrepareVendor { .. } | Action::CreateLink { .. }
+    )));
+    let report = check(&world);
+    assert!(
+        !report
+            .findings
+            .iter()
+            .any(|finding| finding.code == "vendor-missing" || finding.code == "vendor-untrusted"),
+        "{:?}",
+        report.findings
     );
-    assert_eq!(
-        fs::read(fixture.paths.manifest_path()).unwrap(),
-        fixture.manifest
-    );
-    assert_eq!(fs::read(fixture.paths.lock_path()).unwrap(), fixture.lock);
-    assert_eq!(
-        fs::read(fixture.vendor_path().join("SKILL.md")).unwrap(),
-        fixture.vendor_file
-    );
-    assert_eq!(fs::read(fixture.paths.trust_path()).unwrap(), trust_bytes);
-    assert!(check(&load_world(&fixture.paths, &git, &runtime).unwrap())
-        .findings
-        .is_empty());
-    assert_eq!(git.0.load(Ordering::SeqCst), 0);
-
-    fs::remove_file(&link).unwrap();
-    let world = load_world(&fixture.paths, &git, &runtime).unwrap();
-    let revoke = plan(
-        &world,
-        Request::RevokeTrust { source: source_key },
-        PlanningMode::Normal,
-    )
-    .unwrap();
-    apply(&fixture.paths, &revoke, Approval::Granted, &runtime).unwrap();
-    let world = load_world(&fixture.paths, &git, &runtime).unwrap();
-    let blocked = plan(&world, Request::Reconcile, PlanningMode::Frozen).unwrap();
-    assert!(blocked
-        .blockers
-        .iter()
-        .any(|blocker| blocker.code == "vendor-untrusted"));
-    assert!(apply(&fixture.paths, &blocked, Approval::NotRequired, &runtime).is_err());
-    assert!(!link.exists());
-    assert_eq!(git.0.load(Ordering::SeqCst), 0);
 }
 
 #[test]

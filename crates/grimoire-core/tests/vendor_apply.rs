@@ -3,7 +3,7 @@ use std::fs;
 use grimoire_core::inventory::scan;
 use grimoire_core::source::HeldDirectoryReader;
 use grimoire_core::{
-    apply, load_world, plan, Action, ApplyOutcome, Approval, CanonicalIdentity, FaultDisposition,
+    apply, plan, Action, ApplyOutcome, Approval, CanonicalIdentity, FaultDisposition,
     InstalledLink, Lockfile, Paths, PlanningMode, ProjectionMode, Request, Result, Scope,
     SnapshotId, SnapshotKey, SnapshotKind, SnapshotStore, SourceAlias, SourceKey, SourceSnapshot,
     SourceState, TransactionRuntime, TrustBaseline, TrustReceipt, TrustStore,
@@ -40,21 +40,8 @@ impl TransactionRuntime for Runtime {
     }
 }
 
-#[derive(Default)]
-struct NoGit;
-
-impl grimoire_core::source::GitRunner for NoGit {
-    fn run(
-        &self,
-        _command: grimoire_core::source::GitCommand,
-    ) -> Result<grimoire_core::source::GitResult> {
-        panic!("vendor apply fixture must not invoke Git")
-    }
-}
-
 #[test]
-#[ignore = "schema 3 drops per-skill mode; unit 3 retargets vendor tests to copies"]
-fn trusted_store_bytes_create_and_convert_a_vendor_projection_atomically() {
+fn trusted_store_bytes_create_a_copy_activation() {
     let temporary = tempfile::tempdir().unwrap();
     let root = temporary.path().canonicalize().unwrap();
     let project = root.join("project");
@@ -92,7 +79,7 @@ fn trusted_store_bytes_create_and_convert_a_vendor_projection_atomically() {
         &inventory.inventory_digest.to_string(),
     )
     .unwrap();
-    let paths = Paths::project(project, home).unwrap();
+    let paths = Paths::project(project.clone(), home).unwrap();
     let store = paths.store_path(&source_key, &snapshot_key);
     copy_store_tree(&source, &store);
 
@@ -176,10 +163,16 @@ fn trusted_store_bytes_create_and_convert_a_vendor_projection_atomically() {
         fs::read(vendor.join("SKILL.md")).unwrap(),
         fs::read(source.join("skills/one/SKILL.md")).unwrap()
     );
-    assert_eq!(
-        fs::read_link(paths.skills_dir().join("one")).unwrap(),
-        std::path::PathBuf::from("../../vendor/grimoire/a/one")
-    );
+    assert!(vendor.is_dir());
+    assert!(!vendor.symlink_metadata().unwrap().file_type().is_symlink());
+    assert!(!paths
+        .skills_dir()
+        .join("one")
+        .symlink_metadata()
+        .unwrap()
+        .file_type()
+        .is_symlink());
+    assert!(!project.join("vendor/grimoire").exists());
     #[cfg(unix)]
     {
         use std::os::unix::fs::MetadataExt;
@@ -190,34 +183,6 @@ fn trusted_store_bytes_create_and_convert_a_vendor_projection_atomically() {
             fs::metadata(vendor.join("SKILL.md")).unwrap().ino()
         );
     }
-
-    let current = load_world(&paths, &NoGit, &Runtime).unwrap();
-    let mut desired = grimoire_core::DesiredState::from_world(&current);
-    desired
-        .skills
-        .get_mut(&"one".try_into().unwrap())
-        .unwrap()
-        .mode = ProjectionMode::Link;
-    let convert = plan(
-        &current,
-        Request::ReplaceDesiredState { desired },
-        PlanningMode::Normal,
-    )
-    .unwrap();
-    assert!(convert.actions.iter().any(|action| matches!(
-        action,
-        Action::RemoveVendor { skill, .. } if skill.as_str() == "one"
-    )));
-    assert!(convert.is_destructive());
-    assert_eq!(
-        apply(&paths, &convert, Approval::Granted, &Runtime).unwrap(),
-        ApplyOutcome::Applied { changed: true }
-    );
-    assert!(!vendor.exists());
-    assert_eq!(
-        fs::read_link(paths.skills_dir().join("one")).unwrap(),
-        store.join("skills/one")
-    );
 }
 
 fn copy_store_tree(source: &std::path::Path, destination: &std::path::Path) {

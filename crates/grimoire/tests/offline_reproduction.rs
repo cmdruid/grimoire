@@ -116,16 +116,6 @@ struct BufferConsole {
     answers: VecDeque<String>,
 }
 
-impl BufferConsole {
-    fn approving() -> Self {
-        Self {
-            terminal: true,
-            answers: VecDeque::from(["yes\n".into()]),
-            ..Self::default()
-        }
-    }
-}
-
 impl Console for BufferConsole {
     fn is_terminal(&self) -> bool {
         self.terminal
@@ -167,8 +157,7 @@ impl GitRunner for FailOnGit {
 }
 
 #[test]
-#[ignore = "schema 3 drops install --vendor and vendor receipts; unit 3 retargets clone-and-go to copies"]
-fn committed_state_reproduces_in_another_home_with_transport_disabled() {
+fn committed_copy_reproduces_in_another_home_with_transport_disabled() {
     let temporary = tempdir().unwrap();
     let root = temporary.path().canonicalize().unwrap();
     let remote = build_remote(&root);
@@ -196,7 +185,7 @@ fn committed_state_reproduces_in_another_home_with_transport_disabled() {
     succeed(&run_with_git(
         &project_a,
         &home_a,
-        &["install", "one", "--source", "fixture", "--vendor"],
+        &["install", "one", "--source", "fixture"],
         &git_a,
     ));
     assert!(git_a.calls() > 0);
@@ -204,7 +193,7 @@ fn committed_state_reproduces_in_another_home_with_transport_disabled() {
     git(&project_a, &["init", "-q", "-b", "main"]);
     git(
         &project_a,
-        &["add", "grimoire.toml", "grimoire.lock", "vendor"],
+        &["add", "grimoire.toml", "grimoire.lock", ".agents"],
     );
     git(
         &project_a,
@@ -216,12 +205,12 @@ fn committed_state_reproduces_in_another_home_with_transport_disabled() {
             "commit",
             "-q",
             "-m",
-            "committed vendor projection",
+            "committed copy activation",
         ],
     );
     let manifest = fs::read(project_a.join("grimoire.toml")).unwrap();
     let lock = fs::read(project_a.join("grimoire.lock")).unwrap();
-    let vendor = fs::read(project_a.join("vendor/grimoire/fixture/one/SKILL.md")).unwrap();
+    let copy = fs::read(project_a.join(".agents/skills/one/SKILL.md")).unwrap();
 
     let home_b = root.join("home-b");
     let project_b = root.join("project-b");
@@ -236,36 +225,22 @@ fn committed_state_reproduces_in_another_home_with_transport_disabled() {
         ],
     );
     let offline = FailOnGit::default();
-    succeed(&run_approving(
-        &project_b,
-        &home_b,
-        &["source", "trust", "fixture", "--vendor"],
-        &offline,
-    ));
-    let trust = fs::read(home_b.join(".grimoire/trust.json")).unwrap();
+    succeed(&run_with_git(&project_b, &home_b, &["check"], &offline));
     succeed(&run_with_git(
         &project_b,
         &home_b,
         &["install", "--frozen"],
         &offline,
     ));
-    succeed(&run_with_git(&project_b, &home_b, &["check"], &offline));
 
     assert_eq!(offline.calls.load(Ordering::SeqCst), 0);
     assert_eq!(fs::read(project_b.join("grimoire.toml")).unwrap(), manifest);
     assert_eq!(fs::read(project_b.join("grimoire.lock")).unwrap(), lock);
-    assert_eq!(
-        fs::read(project_b.join("vendor/grimoire/fixture/one/SKILL.md")).unwrap(),
-        vendor
-    );
-    assert_eq!(
-        fs::read(home_b.join(".grimoire/trust.json")).unwrap(),
-        trust
-    );
-    assert_eq!(
-        fs::read_link(project_b.join(".agents/skills/one")).unwrap(),
-        PathBuf::from("../../vendor/grimoire/fixture/one")
-    );
+    let cloned = project_b.join(".agents/skills/one");
+    assert!(cloned.is_dir());
+    assert!(!cloned.symlink_metadata().unwrap().file_type().is_symlink());
+    assert_eq!(fs::read(cloned.join("SKILL.md")).unwrap(), copy);
+    assert!(!project_b.join("vendor/grimoire").exists());
     assert!(!home_b.join(".grimoire/candidates").exists());
     assert!(!home_b.join(".grimoire/cache").exists());
     assert!(!home_b.join(".grimoire/store").exists());
@@ -334,26 +309,6 @@ fn run_with_git(
         home: home.to_path_buf(),
     };
     let mut console = BufferConsole::default();
-    let code = run_from(
-        std::iter::once("grimoire").chain(args.iter().copied()),
-        &environment,
-        &mut console,
-        git,
-    );
-    (code, console.stdout, console.stderr)
-}
-
-fn run_approving(
-    root: &Path,
-    home: &Path,
-    args: &[&str],
-    git: &dyn GitRunner,
-) -> (u8, Vec<u8>, Vec<u8>) {
-    let environment = FixedEnvironment {
-        root: root.to_path_buf(),
-        home: home.to_path_buf(),
-    };
-    let mut console = BufferConsole::approving();
     let code = run_from(
         std::iter::once("grimoire").chain(args.iter().copied()),
         &environment,

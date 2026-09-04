@@ -69,61 +69,48 @@ impl Paths {
         }
     }
 
-    pub fn vendor_path(&self, source: &SourceAlias, skill: &SkillName) -> Result<PathBuf> {
-        match &self.scope {
-            ScopePaths::Project { root } => Ok(root
-                .join("vendor/grimoire")
-                .join(source.as_str())
-                .join(skill.as_str())),
-            ScopePaths::Global { .. } => Err(CoreError::Request(
-                "vendor paths are available only in Project scope".into(),
-            )),
-        }
+    pub fn vendor_path(&self, _source: &SourceAlias, skill: &SkillName) -> Result<PathBuf> {
+        Ok(self.skills_dir().join(skill.as_str()))
     }
 
-    pub fn vendor_source_dir(&self, source: &SourceAlias) -> Result<PathBuf> {
-        match &self.scope {
-            ScopePaths::Project { root } => Ok(root.join("vendor/grimoire").join(source.as_str())),
-            ScopePaths::Global { .. } => Err(CoreError::Request(
-                "vendor paths are available only in Project scope".into(),
-            )),
-        }
+    pub fn vendor_source_dir(&self, _source: &SourceAlias) -> Result<PathBuf> {
+        Ok(self.skills_dir())
     }
 
     pub fn vendor_prepare_path(
         &self,
-        source: &SourceAlias,
+        _source: &SourceAlias,
         skill: &SkillName,
         nonce: &str,
     ) -> Result<PathBuf> {
         Ok(self
-            .vendor_source_dir(source)?
-            .join(format!(".{}.{nonce}.vendor-prepare", skill.as_str())))
+            .skills_dir()
+            .join(format!(".{}.{nonce}.copy-prepare", skill.as_str())))
     }
 
     pub fn vendor_capture_path(
         &self,
-        source: &SourceAlias,
+        _source: &SourceAlias,
         skill: &SkillName,
         nonce: &str,
     ) -> Result<PathBuf> {
         Ok(self
-            .vendor_source_dir(source)?
-            .join(format!(".{}.{nonce}.vendor-before", skill.as_str())))
+            .skills_dir()
+            .join(format!(".{}.{nonce}.copy-before", skill.as_str())))
     }
 
     pub fn vendor_activation_target(
         &self,
-        source: &SourceAlias,
+        _source: &SourceAlias,
         skill: &SkillName,
     ) -> Result<PathBuf> {
-        match self.scope {
-            ScopePaths::Project { .. } => Ok(PathBuf::from("../../vendor/grimoire")
-                .join(source.as_str())
-                .join(skill.as_str())),
-            ScopePaths::Global { .. } => Err(CoreError::Request(
-                "vendor activation targets are available only in Project scope".into(),
-            )),
+        Ok(self.skills_dir().join(skill.as_str()))
+    }
+
+    pub(crate) fn activation_root(&self) -> &std::path::Path {
+        match &self.scope {
+            ScopePaths::Project { root } => root.as_path(),
+            ScopePaths::Global { user_home } => user_home.as_path(),
         }
     }
 

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use grimoire_core::{
     plan, Action, CanonicalIdentity, InstalledLink, PlanningMode, Request, Scope, SnapshotId,
     SnapshotKind, SnapshotStore, SourceAlias, SourceSnapshot, SourceState, TrustBaseline,
-    TrustChange, TrustMode, TrustReceipt, TrustStore, WorldState,
+    TrustChange, TrustMode, TrustReceipt, TrustStore, VendorPrecondition, VendorState, WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Skill, SourceInventory, SourcePath,
@@ -216,10 +216,7 @@ fn update_requires_and_pins_the_cached_candidate() {
         .contains_key(&SourceAlias::new("a").unwrap()));
     assert!(selected.actions.iter().any(|action| matches!(
         action,
-        Action::CreateLink {
-            target: grimoire_core::OwnedLinkTarget::Stored { skill_path, .. },
-            ..
-        } if skill_path == "skills/one"
+        Action::CreateVendor { skill, path, .. } if skill.as_str() == "one" && path == ".agents/skills/one"
     )));
 }
 
@@ -356,17 +353,25 @@ fn untrusted_owned_content_can_still_be_removed() {
         SnapshotStore::Valid,
         false,
     );
+    let content = untrusted.state.snapshot.inventory.skills[0]
+        .content_digest
+        .to_string();
     let removal_world = WorldState::from_bytes(
         Scope::Project,
         MANIFEST.as_bytes().to_vec(),
         lock,
         [untrusted.state],
-        [(
-            "one",
-            InstalledLink::Symlink(PathBuf::from("/store/a/skills/one")),
-        )],
+        [("one", InstalledLink::Absent)],
         None,
     )
+    .unwrap()
+    .with_vendors([(
+        "one",
+        VendorPrecondition {
+            state: VendorState::OwnedUnchanged,
+            content: Some(content),
+        },
+    )])
     .unwrap();
     let removal = plan(
         &removal_world,
@@ -380,7 +385,7 @@ fn untrusted_owned_content_can_still_be_removed() {
     assert!(removal
         .actions
         .iter()
-        .any(|action| matches!(action, Action::RemoveLink { .. })));
+        .any(|action| matches!(action, Action::RemoveVendor { .. })));
 }
 
 #[test]
@@ -413,28 +418,31 @@ fn frozen_uses_only_the_lock_derived_stored_snapshot() {
         false,
     );
     let frozen_trust = trust_bytes(&newer);
+    let old_content = old_snapshot.inventory.skills[0].content_digest.to_string();
     let frozen_world = WorldState::from_bytes(
         Scope::Project,
         MANIFEST.as_bytes().to_vec(),
         lock,
         [newer.state],
-        [(
-            "one",
-            InstalledLink::Symlink(PathBuf::from("/store/old/skills/one")),
-        )],
+        [("one", InstalledLink::Absent)],
         None,
     )
     .unwrap()
     .with_trust_bytes(frozen_trust)
-    .with_locked_snapshot(old.state);
+    .with_locked_snapshot(old.state)
+    .with_vendors([(
+        "one",
+        VendorPrecondition {
+            state: VendorState::OwnedUnchanged,
+            content: Some(old_content),
+        },
+    )])
+    .unwrap();
     let frozen = plan(&frozen_world, Request::Reconcile, PlanningMode::Frozen).unwrap();
-    assert!(frozen.blockers.is_empty());
+    assert!(frozen.blockers.is_empty(), "{:?}", frozen.blockers);
     assert!(matches!(
         frozen.actions.as_slice(),
-        [Action::RetainLink {
-            target: grimoire_core::OwnedLinkTarget::Stored { skill_path, .. },
-            ..
-        }] if skill_path == "skills/one"
+        [Action::RetainVendor { path, .. }] if path == ".agents/skills/one"
     ));
 }
 

@@ -21,11 +21,11 @@ fn schema_three_drops_mode_and_rejects_v2() {
 
     assert_eq!(
         manifest.skills[&SkillName::new("linked").unwrap()].mode,
-        ProjectionMode::Link
+        ProjectionMode::Vendor
     );
     assert_eq!(
         manifest.packs[&PackName::new("bundle").unwrap()].mode,
-        ProjectionMode::Link
+        ProjectionMode::Vendor
     );
 
     let base = parse("schema = \"grimoire/manifest@3\"\n[sources.a]\nurl = \"x\"\n");

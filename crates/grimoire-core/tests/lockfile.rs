@@ -41,7 +41,7 @@ fn schema_three_derives_mode_from_source_kind_and_rejects_v2() {
     let lock = Lockfile::parse(body).unwrap();
     assert_eq!(
         format!("{:?}", lock.skills.values().next().unwrap().mode),
-        "Link"
+        "Vendor"
     );
 
     let v2 = String::from_utf8(body.to_vec())

@@ -502,7 +502,6 @@ pub enum SourceTrustIntent {
     Untrusted,
     Exact,
     All,
-    Vendor,
 }
 
 /// The complete desired roots staged by an adapter before one atomic replan.
@@ -513,6 +512,7 @@ pub enum SourceTrustIntent {
 pub struct DesiredState {
     pub skills: BTreeMap<SkillName, crate::ManifestSkill>,
     pub packs: BTreeMap<PackName, crate::ManifestPack>,
+    source_link: BTreeMap<SourceAlias, bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -539,11 +539,21 @@ impl DesiredState {
         Self {
             skills: world.manifest.skills.clone(),
             packs: world.manifest.packs.clone(),
+            source_link: world
+                .manifest
+                .sources
+                .iter()
+                .map(|(alias, source)| (alias.clone(), source.link))
+                .collect(),
         }
     }
 
-    fn projection(&self, _source: &SourceAlias) -> ProjectionMode {
-        ProjectionMode::Link
+    fn projection(&self, source: &SourceAlias) -> ProjectionMode {
+        if self.source_link.get(source).copied().unwrap_or(false) {
+            ProjectionMode::Link
+        } else {
+            ProjectionMode::Vendor
+        }
     }
 
     pub fn apply(&mut self, edit: DesiredEdit) -> Result<()> {
@@ -788,5 +798,16 @@ impl WorldState {
     pub fn with_reachability(mut self, observation: ReachabilityObservation) -> Self {
         self.reachability = Some(observation);
         self
+    }
+
+    pub fn with_vendors<'a>(
+        mut self,
+        vendors: impl IntoIterator<Item = (&'a str, crate::VendorPrecondition)>,
+    ) -> Result<Self> {
+        self.vendors = vendors
+            .into_iter()
+            .map(|(name, vendor)| Ok((SkillName::new(name)?, vendor)))
+            .collect::<Result<_>>()?;
+        Ok(self)
     }
 }

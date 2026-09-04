@@ -287,11 +287,12 @@ fn planned_snapshot_preparation_materializes_and_repairs_before_link_activation(
         ApplyOutcome::Applied { changed: true }
     );
     assert!(paths.store_path(&source_key, &snapshot_key).is_dir());
+    let copy = paths.skills_dir().join("one");
+    assert!(copy.is_dir());
+    assert!(!copy.symlink_metadata().unwrap().file_type().is_symlink());
     assert_eq!(
-        fs::read_link(paths.skills_dir().join("one")).unwrap(),
-        paths
-            .store_path(&source_key, &snapshot_key)
-            .join("skills/one")
+        fs::read(copy.join("SKILL.md")).unwrap(),
+        b"---\nname: one\ndescription: materialize fixture\n---\n"
     );
 
     let stored = paths.store_path(&source_key, &snapshot_key);
@@ -302,7 +303,7 @@ fn planned_snapshot_preparation_materializes_and_repairs_before_link_activation(
         fs::set_permissions(&stored_skill, fs::Permissions::from_mode(0o644)).unwrap();
     }
     fs::write(&stored_skill, b"corrupt\n").unwrap();
-    fs::remove_file(paths.skills_dir().join("one")).unwrap();
+    fs::remove_dir_all(paths.skills_dir().join("one")).unwrap();
     let repair_snapshot = SourceSnapshot::new(
         SourceAlias::new("a").unwrap(),
         SnapshotId::new(

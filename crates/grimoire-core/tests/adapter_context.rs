@@ -5,7 +5,8 @@ use grimoire_core::inventory::{
 };
 use grimoire_core::{
     attach_inherited_global, context_report, InstalledLink, InstalledStatus, RequestRoot, Scope,
-    SnapshotId, SnapshotKind, SnapshotStore, SourceAlias, SourceSnapshot, SourceState, WorldState,
+    SnapshotId, SnapshotKind, SnapshotStore, SourceAlias, SourceSnapshot, SourceState,
+    VendorPrecondition, VendorState, WorldState,
 };
 
 const EMPTY_LOCK: &[u8] = include_bytes!("fixtures/lock/empty.json");
@@ -113,7 +114,15 @@ fn report_keeps_project_roots_and_inherited_globals_independent() {
             ),
             ("shared", InstalledLink::Absent),
         ],
-    );
+    )
+    .with_vendors([(
+        "local",
+        VendorPrecondition {
+            state: VendorState::OwnedUnchanged,
+            content: Some(compute_inventory_digest(&[], &[], &[]).to_string()),
+        },
+    )])
+    .unwrap();
 
     let report = context_report(&attach_inherited_global(project, &global).unwrap());
 

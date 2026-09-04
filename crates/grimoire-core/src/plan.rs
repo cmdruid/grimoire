@@ -69,7 +69,6 @@ pub enum LockChange {
 pub enum TrustChange {
     GrantExact,
     GrantAll,
-    GrantVendor,
     Revoke,
     AdvanceBaseline,
 }
@@ -211,7 +210,7 @@ impl Action {
         match self {
             Self::ReplaceManifest { change, .. } => change.is_destructive(),
             Self::ReplaceTrust {
-                change: TrustChange::Revoke | TrustChange::GrantVendor,
+                change: TrustChange::Revoke,
                 ..
             } => true,
             Self::ReplaceLock {
@@ -646,8 +645,11 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
             .get(name)
             .cloned()
             .unwrap_or(InstalledLink::Absent);
-        links.insert(name.clone(), LinkPrecondition::from(&observed));
-        if resolved.mode == crate::ProjectionMode::Vendor {
+        let copy = resolved.mode == crate::ProjectionMode::Vendor;
+        if !copy {
+            links.insert(name.clone(), LinkPrecondition::from(&observed));
+        }
+        if copy {
             let vendor = world
                 .vendors
                 .get(name)
@@ -771,6 +773,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                     publishing_sources.insert(resolved.source.clone());
                 }
             }
+            continue;
         }
         let old_target = incumbent_target(world, name);
         let planned_target = owned_target(&resolution.lock, &desired_snapshots, world, name)?;
@@ -870,6 +873,9 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
         if resolution.skills.contains_key(name) {
             continue;
         }
+        if world.lock.skills[name].mode == crate::ProjectionMode::Vendor {
+            continue;
+        }
         let observed = world
             .links
             .get(name)
@@ -916,15 +922,6 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
         .iter()
         .filter_map(|skill| resolution.skills.get(skill))
         .map(|resolved| resolved.source.clone())
-        .collect::<std::collections::BTreeSet<_>>();
-    let publishing_skills = vendor_publications
-        .iter()
-        .filter_map(|action| match action {
-            Action::CreateVendor { skill, .. } | Action::ReplaceVendor { skill, .. } => {
-                Some(skill.clone())
-            }
-            _ => None,
-        })
         .collect::<std::collections::BTreeSet<_>>();
     let trust_store = world
         .trust_bytes
@@ -994,50 +991,6 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
             .map_or(TrustMode::Untrusted, |record| {
                 record.mode_for(receipt.as_ref())
             });
-        for skill_name in activating_skills.iter().filter(|skill| {
-            resolution.skills.get(*skill).is_some_and(|resolved| {
-                resolved.source == *alias && resolved.mode == crate::ProjectionMode::Vendor
-            })
-        }) {
-            let locked_skill = &resolution.lock.skills[skill_name];
-            let Some(source_receipt) = receipt.as_ref() else {
-                blockers.push(Blocker::new(
-                    "vendor-live-unsupported",
-                    [("skill", skill_name.to_string())],
-                ));
-                continue;
-            };
-            let vendor_receipt = crate::VendorTrustReceipt {
-                commit: source_receipt.commit.clone(),
-                tree: source_receipt.tree.clone(),
-                inventory: source_receipt.inventory.clone(),
-                skill: skill_name.clone(),
-                path: locked_skill.path.clone(),
-                content: locked_skill.content.clone(),
-            };
-            let authorized = trust_store
-                .as_ref()
-                .and_then(|store| store.records.get(&key))
-                .is_some_and(|record| record.authorizes_vendor(source_receipt, &vendor_receipt));
-            let authorized = if publishing_skills.contains(skill_name) {
-                effective_trust != TrustMode::Untrusted
-            } else {
-                authorized
-            };
-            if !authorized {
-                blockers.push(Blocker::new(
-                    if publishing_skills.contains(skill_name) {
-                        "source-untrusted"
-                    } else {
-                        "vendor-untrusted"
-                    },
-                    [
-                        ("source", alias.to_string()),
-                        ("skill", skill_name.to_string()),
-                    ],
-                ));
-            }
-        }
         if state.snapshot.id.kind == SnapshotKind::Link {
             if activating_sources.contains(alias) && effective_trust != TrustMode::All {
                 blockers.push(Blocker::new(
@@ -1083,7 +1036,9 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
                 resolved.source == *alias && resolved.mode == crate::ProjectionMode::Link
             })
         });
-        if activating_link && effective_trust == TrustMode::Untrusted {
+        if (activating_link || publishing_sources.contains(alias))
+            && effective_trust == TrustMode::Untrusted
+        {
             blockers.push(Blocker::new(
                 "source-untrusted",
                 [("source", alias.to_string())],
@@ -1366,9 +1321,6 @@ fn plan_trust_source(
     alias: &SourceAlias,
     intent: SourceTrustIntent,
 ) -> Result<Plan> {
-    if intent == SourceTrustIntent::Vendor {
-        return plan_vendor_trust(world, alias);
-    }
     let candidate = world
         .candidates
         .get(alias)
@@ -1448,114 +1400,12 @@ fn trust_action_from_candidate(
                 "untrusted is not a trust mutation".into(),
             ))
         }
-        SourceTrustIntent::Vendor => unreachable!("vendor trust does not use a candidate"),
     };
     Ok(Action::ReplaceTrust {
         before: mutation.before,
         after: mutation.after,
         create_mode: mutation.create_mode,
         change,
-    })
-}
-
-fn plan_vendor_trust(world: &WorldState, alias: &SourceAlias) -> Result<Plan> {
-    if world.scope != Scope::Project {
-        return Err(CoreError::Request(
-            "vendor trust is available only in Project scope".into(),
-        ));
-    }
-    let (commit, tree, inventory) = match world.lock.sources.get(alias) {
-        Some(LockSource::Git {
-            commit,
-            tree,
-            inventory,
-            ..
-        }) => (commit, tree, inventory),
-        Some(LockSource::Link { .. }) => {
-            return Err(CoreError::Trust(
-                "vendor trust requires a pinned Git source".into(),
-            ))
-        }
-        None => {
-            return Err(CoreError::Request(format!(
-                "source `{alias}` has no locked snapshot"
-            )))
-        }
-    };
-    let identity = world
-        .locked_states
-        .get(alias)
-        .and_then(|state| state.identity.clone())
-        .ok_or_else(|| CoreError::Request(format!("source `{alias}` has no observed identity")))?;
-    let mut receipts = std::collections::BTreeSet::new();
-    let mut vendors = BTreeMap::new();
-    let mut facts = Vec::new();
-    for (name, skill) in
-        world.lock.skills.iter().filter(|(_, skill)| {
-            skill.source == *alias && skill.mode == crate::ProjectionMode::Vendor
-        })
-    {
-        let observed = world
-            .vendors
-            .get(name)
-            .cloned()
-            .unwrap_or(crate::VendorPrecondition {
-                state: crate::VendorState::Absent,
-                content: None,
-            });
-        if observed.state != crate::VendorState::OwnedUnchanged
-            || observed.content.as_deref() != Some(skill.content.as_str())
-        {
-            return Err(CoreError::Trust(format!(
-                "vendor tree for `{name}` does not match its locked content"
-            )));
-        }
-        vendors.insert(name.clone(), observed);
-        receipts.insert(crate::VendorTrustReceipt {
-            commit: commit.clone(),
-            tree: tree.clone(),
-            inventory: inventory.clone(),
-            skill: name.clone(),
-            path: skill.path.clone(),
-            content: skill.content.clone(),
-        });
-        facts.push(PlanFact::VendorTrust {
-            source: alias.clone(),
-            skill: name.clone(),
-            path: skill.path.clone(),
-            content: skill.content.clone(),
-        });
-    }
-    if receipts.is_empty() {
-        return Err(CoreError::Trust(format!(
-            "source `{alias}` has no current vendored skills"
-        )));
-    }
-    let before = world.trust_bytes.clone();
-    let store = before
-        .as_deref()
-        .map(crate::TrustStore::parse)
-        .transpose()?
-        .unwrap_or_default();
-    let mutation = store.grant_vendor(identity, receipts, before.clone())?;
-    Ok(Plan {
-        actions: vec![Action::ReplaceTrust {
-            before: mutation.before,
-            after: mutation.after,
-            create_mode: mutation.create_mode,
-            change: TrustChange::GrantVendor,
-        }],
-        blockers: Vec::new(),
-        preconditions: Preconditions {
-            manifest: Some(ByteHash::of(&world.manifest_bytes)),
-            lock: Some(ByteHash::of(&world.lock_bytes)),
-            trust: before.as_deref().map(ByteHash::of),
-            projects: world.project_index_bytes.as_deref().map(ByteHash::of),
-            vendors,
-            ..Preconditions::absent()
-        },
-        facts,
-        exit_class: ExitClass::Success,
     })
 }
 
@@ -1624,11 +1474,7 @@ fn add_shadowing_facts(
 fn incumbent_target(world: &WorldState, name: &SkillName) -> Option<PathBuf> {
     let skill = world.lock.skills.get(name)?;
     if skill.mode == crate::ProjectionMode::Vendor {
-        return Some(
-            PathBuf::from("../../vendor/grimoire")
-                .join(skill.source.as_str())
-                .join(name.as_str()),
-        );
+        return Some(PathBuf::from(".agents/skills").join(name.as_str()));
     }
     let snapshot = world.snapshots.get(&skill.source)?;
     Some(snapshot.root.join(&skill.path))
@@ -1694,7 +1540,8 @@ fn incumbent_owned_target(world: &WorldState, name: &SkillName) -> Result<OwnedL
 }
 
 fn vendor_relative_path(source: &SourceAlias, skill: &SkillName) -> String {
-    format!("vendor/grimoire/{source}/{skill}")
+    let _ = source;
+    format!(".agents/skills/{skill}")
 }
 
 fn vendor_store_coordinates(

@@ -177,7 +177,7 @@ pub fn context_report(report: &ContextReport, output: &mut dyn Write) -> io::Res
 fn projection_mode(mode: ProjectionMode) -> &'static str {
     match mode {
         ProjectionMode::Link => "link",
-        ProjectionMode::Vendor => "vendor",
+        ProjectionMode::Vendor => "copy",
     }
 }
 

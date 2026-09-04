@@ -9,7 +9,7 @@ use crate::{
     DesiredRootSummary, InheritedSkillSummary, InstalledLink, InstalledStatus, LockSource,
     PackMemberState, PlanFact, ProjectionMode, RequestRoot, ResolvedSkillSummary, SnapshotKind,
     SnapshotStore, SourceKey, TrustMode, TrustReceipt, TrustStore, UnavailableMemberSummary,
-    VendorState, VendorTrustReceipt, WorldState,
+    VendorState, WorldState,
 };
 
 pub fn check(world: &WorldState) -> CheckReport {
@@ -79,22 +79,14 @@ pub fn context_report(world: &WorldState) -> ContextReport {
                 ),
                 None => (None, None),
             };
-            let installed = match world.links.get(name).unwrap_or(&InstalledLink::Absent) {
-                InstalledLink::Absent => InstalledStatus::Missing,
-                InstalledLink::Symlink(target) if target == &resolved.target => {
-                    InstalledStatus::Current
-                }
-                InstalledLink::Symlink(_) => InstalledStatus::Drift,
-                InstalledLink::File => InstalledStatus::ForeignFile,
-                InstalledLink::Directory => InstalledStatus::ForeignDirectory,
-            };
+            let installed = copy_or_link_status(world, name, locked, resolved);
             Some(ResolvedSkillSummary {
                 name: name.clone(),
                 source: locked.source.clone(),
                 mode: locked.mode,
                 snapshot,
                 vendor_path: (locked.mode == ProjectionMode::Vendor)
-                    .then(|| format!("vendor/grimoire/{}/{}", locked.source, name)),
+                    .then(|| format!(".agents/skills/{name}")),
                 inventory,
                 requested_by: locked.requested_by.clone(),
                 installed,
@@ -285,12 +277,6 @@ fn check_sources(world: &WorldState, findings: &mut Vec<CheckFinding>) {
 }
 
 fn check_vendors(world: &WorldState, findings: &mut Vec<CheckFinding>) {
-    let trust = world
-        .trust_bytes
-        .as_deref()
-        .and_then(|bytes| TrustStore::parse(bytes).ok())
-        .unwrap_or_default();
-
     for (name, skill) in world
         .lock
         .skills
@@ -324,57 +310,50 @@ fn check_vendors(world: &WorldState, findings: &mut Vec<CheckFinding>) {
                     CheckSeverity::Error,
                     [("skill", name.to_string())],
                 ));
-                continue;
             }
         }
+    }
+}
 
-        let Some(state) = world.locked_states.get(&skill.source) else {
-            continue;
+fn copy_or_link_status(
+    world: &WorldState,
+    name: &crate::SkillName,
+    locked: &crate::LockSkill,
+    resolved: &crate::ResolvedSkill,
+) -> InstalledStatus {
+    if locked.mode == ProjectionMode::Vendor {
+        return match world.vendors.get(name).map(|vendor| vendor.state) {
+            Some(VendorState::OwnedUnchanged)
+                if world
+                    .vendors
+                    .get(name)
+                    .and_then(|vendor| vendor.content.as_deref())
+                    == Some(locked.content.as_str()) =>
+            {
+                InstalledStatus::Current
+            }
+            Some(VendorState::Absent) | None => InstalledStatus::Missing,
+            Some(VendorState::Drifted | VendorState::OwnedUnchanged) => InstalledStatus::Drift,
+            Some(VendorState::Foreign) => match world.links.get(name) {
+                Some(InstalledLink::File) => InstalledStatus::ForeignFile,
+                _ => InstalledStatus::ForeignDirectory,
+            },
         };
-        let Some(identity) = state.identity.as_ref() else {
-            continue;
-        };
-        let Some(LockSource::Git {
-            commit,
-            tree,
-            inventory,
-            ..
-        }) = world.lock.sources.get(&skill.source)
-        else {
-            continue;
-        };
-        let source_receipt = TrustReceipt {
-            commit: commit.clone(),
-            tree: tree.clone(),
-            inventory: inventory.clone(),
-        };
-        let vendor_receipt = VendorTrustReceipt {
-            commit: commit.clone(),
-            tree: tree.clone(),
-            inventory: inventory.clone(),
-            skill: name.clone(),
-            path: skill.path.clone(),
-            content: skill.content.clone(),
-        };
-        let trusted = trust
-            .records
-            .get(&SourceKey::derive(identity))
-            .is_some_and(|record| record.authorizes_vendor(&source_receipt, &vendor_receipt));
-        if !trusted {
-            findings.push(details_finding(
-                "vendor-untrusted",
-                CheckSeverity::Error,
-                [
-                    ("source", skill.source.to_string()),
-                    ("skill", name.to_string()),
-                ],
-            ));
-        }
+    }
+    match world.links.get(name).unwrap_or(&InstalledLink::Absent) {
+        InstalledLink::Absent => InstalledStatus::Missing,
+        InstalledLink::Symlink(target) if target == &resolved.target => InstalledStatus::Current,
+        InstalledLink::Symlink(_) => InstalledStatus::Drift,
+        InstalledLink::File => InstalledStatus::ForeignFile,
+        InstalledLink::Directory => InstalledStatus::ForeignDirectory,
     }
 }
 
 fn check_links(world: &WorldState, findings: &mut Vec<CheckFinding>) {
     for (skill, locked) in &world.lock.skills {
+        if locked.mode == ProjectionMode::Vendor {
+            continue;
+        }
         if !world.lock.sources.contains_key(&locked.source) {
             continue;
         }
@@ -386,11 +365,7 @@ fn check_links(world: &WorldState, findings: &mut Vec<CheckFinding>) {
                 .identity
                 .as_ref()
                 .map(|_| state.snapshot.root.join(&locked.path)),
-            ProjectionMode::Vendor => Some(
-                PathBuf::from("../../vendor/grimoire")
-                    .join(locked.source.as_str())
-                    .join(skill.as_str()),
-            ),
+            ProjectionMode::Vendor => Some(PathBuf::from(".agents/skills").join(skill.as_str())),
         };
 
         let observed = world.links.get(skill).unwrap_or(&InstalledLink::Absent);

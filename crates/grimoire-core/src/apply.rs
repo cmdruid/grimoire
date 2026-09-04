@@ -208,13 +208,10 @@ pub fn apply(
     prepare_vendors(paths, plan, &nonce)?;
     let scope_key = paths.scope_key();
     let trust_only = !plan.actions.is_empty()
-        && plan.actions.iter().all(|action| {
-            matches!(
-                action,
-                Action::ReplaceTrust { change, .. }
-                    if *change != crate::TrustChange::GrantVendor
-            )
-        });
+        && plan
+            .actions
+            .iter()
+            .all(|action| matches!(action, Action::ReplaceTrust { .. }));
     let mut locks = LockCoordinator::new();
     for alias in candidate_lock_aliases(plan)? {
         locks.acquire(
@@ -497,7 +494,8 @@ fn validate_vendor_action_path(
     skill: &crate::SkillName,
     relative: &str,
 ) -> Result<()> {
-    let expected = format!("vendor/grimoire/{source}/{skill}");
+    let expected = format!(".agents/skills/{skill}");
+    let _ = source;
     if relative != expected || paths.vendor_path(source, skill)?.is_relative() {
         return Err(CoreError::Transaction(
             "vendor action path is not the exact derived project path".into(),
@@ -2198,16 +2196,13 @@ fn ensure_vendor_source_dir(
     paths: &Paths,
     source: &crate::SourceAlias,
 ) -> Result<DirectoryIdentity> {
-    let ScopePaths::Project { root } = &paths.scope else {
-        return Err(CoreError::Request(
-            "vendor paths are available only in Project scope".into(),
-        ));
-    };
-    let project_root = crate::source::HeldDirectoryReader::open(root)?;
+    let _ = source;
+    let root = paths.activation_root().to_path_buf();
+    let project_root = crate::source::HeldDirectoryReader::open(&root)?;
     let mut parent = project_root.root_handle()?;
     let mut parent_path = root.clone();
     let mut anchors = Vec::new();
-    for component in ["vendor", "grimoire", source.as_str()] {
+    for component in [".agents", "skills"] {
         let component_path = parent_path.join(component);
         let name = CString::new(component)
             .map_err(|_| CoreError::Transaction("vendor parent contains NUL".into()))?;
@@ -2736,7 +2731,7 @@ mod link_capture_tests {
             source_key,
             snapshot_key,
             skill_path: "skill".into(),
-            path: format!("vendor/grimoire/{source}/{skill}"),
+            path: format!(".agents/skills/{skill}"),
             content,
         }
     }
@@ -2885,7 +2880,7 @@ mod link_capture_tests {
             parent.rename_no_replace("prepared", "one", &parent_path.join("one")),
             Err(CoreError::Source(_))
         ));
-        let displaced_parent = displaced.join("project/vendor/grimoire/a");
+        let displaced_parent = displaced.join("project/.agents/skills");
         assert!(displaced_parent.join("prepared").is_dir());
         assert!(!displaced_parent.join("one").exists());
     }
@@ -3000,14 +2995,14 @@ mod link_capture_tests {
                     scope: Scope::Project,
                     source: one_source,
                     skill: one,
-                    path: "vendor/grimoire/a/one".into(),
+                    path: ".agents/skills/one".into(),
                     content: format!("sha256:{}", "0".repeat(64)),
                 },
                 Action::CreateVendor {
                     scope: Scope::Project,
                     source: two_source,
                     skill: two,
-                    path: "vendor/grimoire/b/two".into(),
+                    path: ".agents/skills/two".into(),
                     after: two_content,
                     added: vec!["SKILL.md".into()],
                 },

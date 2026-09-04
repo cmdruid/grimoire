@@ -461,9 +461,7 @@ fn add_candidate(
             content: skill.content_digest.to_string(),
             target: match mode {
                 ProjectionMode::Link => snapshot.root.join(skill.path.to_string()),
-                ProjectionMode::Vendor => PathBuf::from("../../vendor/grimoire")
-                    .join(alias.as_str())
-                    .join(name.as_str()),
+                ProjectionMode::Vendor => PathBuf::from(".agents/skills").join(name.as_str()),
             },
             roots: BTreeMap::new(),
         });
@@ -481,16 +479,7 @@ fn projection_blocked(
     if mode != ProjectionMode::Vendor {
         return false;
     }
-    if scope == Scope::Global {
-        push_blocker(
-            blockers,
-            Blocker::new(
-                "vendor-global-unsupported",
-                [("root", root.lock_value()), ("source", alias.to_string())],
-            ),
-        );
-        return true;
-    }
+    let _ = scope;
     if kind == SnapshotKind::Link {
         push_blocker(
             blockers,

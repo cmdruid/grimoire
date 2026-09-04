@@ -84,8 +84,12 @@ fn install_update_frozen_and_uninstall_share_the_transaction_path() {
         "{}",
         support::stderr(&installed)
     );
-    assert!(project.join(".agents/skills/one").is_symlink());
-    assert!(project.join(".agents/skills/two").is_symlink());
+    let one = project.join(".agents/skills/one");
+    let two = project.join(".agents/skills/two");
+    assert!(one.is_dir());
+    assert!(two.is_dir());
+    assert!(!one.symlink_metadata().unwrap().file_type().is_symlink());
+    assert!(!two.symlink_metadata().unwrap().file_type().is_symlink());
     assert!(!fs::read_to_string(project.join("grimoire.toml"))
         .unwrap()
         .contains("mode ="));
@@ -102,10 +106,12 @@ fn install_update_frozen_and_uninstall_share_the_transaction_path() {
     assert!(updated.status.success(), "{}", support::stderr(&updated));
     assert!(support::stdout(&updated).contains("source_advance"));
 
-    fs::remove_file(project.join(".agents/skills/two")).unwrap();
-    let restored = support::run(&project, &home, &["install", "--frozen"]);
-    assert!(restored.status.success(), "{}", support::stderr(&restored));
-    assert!(project.join(".agents/skills/two").is_symlink());
+    fs::remove_dir_all(&two).unwrap();
+    let frozen = support::run(&project, &home, &["install", "--frozen"]);
+    assert_eq!(frozen.status.code(), Some(3));
+    assert!(support::stdout(&frozen).contains("vendor-missing"));
+    assert!(!two.exists());
+    assert!(one.is_dir());
 
     let dry = support::run(
         &project,
@@ -113,7 +119,7 @@ fn install_update_frozen_and_uninstall_share_the_transaction_path() {
         &["uninstall", "bundle", "--pack", "--dry-run"],
     );
     assert!(dry.status.success(), "{}", support::stderr(&dry));
-    assert!(project.join(".agents/skills/one").is_symlink());
+    assert!(one.is_dir());
 
     let removed = support::run(&project, &home, &["remove", "bundle", "--pack", "--yes"]);
     assert!(removed.status.success(), "{}", support::stderr(&removed));

@@ -3,10 +3,12 @@ use std::path::PathBuf;
 use grimoire_core::{
     plan, Action, CanonicalIdentity, ExitClass, InstalledLink, LockChange, ManifestChange,
     PlanningMode, Preconditions, ProjectionMode, Request, Scope, SnapshotId, SnapshotKind,
-    SnapshotStore, SourceAlias, SourceSnapshot, SourceState, WorldState,
+    SnapshotStore, SourceAlias, SourceSnapshot, SourceState, VendorPrecondition, VendorState,
+    WorldState,
 };
 use grimoire_pack::inventory::{
-    compute_inventory_digest, compute_review_tree_digest, Skill, SourceInventory, SourcePath,
+    compute_inventory_digest, compute_review_tree_digest, Digest, Skill, SourceInventory,
+    SourcePath,
 };
 
 const BASE: &str = include_str!("fixtures/planner/base.toml");
@@ -14,7 +16,7 @@ const EMPTY_LOCK: &[u8] = include_bytes!("fixtures/lock/empty.json");
 const NOOP_PLAN: &[u8] = include_bytes!("fixtures/planner/noop-plan.json");
 
 fn snapshot(root: &str, commit_digit: char) -> SourceSnapshot {
-    let content = compute_inventory_digest(&[], &[], &[]);
+    let content = Digest::from_bytes([commit_digit as u8; 32]);
     let skills = vec![Skill {
         name: "one".into(),
         path: SourcePath::from("skills/one"),
@@ -45,11 +47,25 @@ fn snapshot(root: &str, commit_digit: char) -> SourceSnapshot {
     )
 }
 
+fn absent_copy() -> VendorPrecondition {
+    VendorPrecondition {
+        state: VendorState::Absent,
+        content: None,
+    }
+}
+
+fn owned_copy(content: &str) -> VendorPrecondition {
+    VendorPrecondition {
+        state: VendorState::OwnedUnchanged,
+        content: Some(content.to_string()),
+    }
+}
+
 fn world(
     manifest: &str,
     lock: Vec<u8>,
     snapshot: SourceSnapshot,
-    link: InstalledLink,
+    vendor: VendorPrecondition,
 ) -> WorldState {
     let review_tree = snapshot.inventory.review_tree_digest.to_string();
     WorldState::from_bytes(
@@ -62,9 +78,11 @@ fn world(
                 review_tree,
             ),
         ],
-        [("one", link)],
+        [("one", InstalledLink::Absent)],
         None,
     )
+    .unwrap()
+    .with_vendors([("one", vendor)])
     .unwrap()
 }
 
@@ -109,7 +127,7 @@ fn request_matrix_carries_typed_manifest_and_lock_changes() {
             BASE.split("[skills]").next().unwrap(),
             EMPTY_LOCK.to_vec(),
             snapshot("/store/a-old", '1'),
-            InstalledLink::Absent,
+            absent_copy(),
         ),
         Request::InstallSkill {
             name: "one".try_into().unwrap(),
@@ -138,10 +156,10 @@ fn request_matrix_carries_typed_manifest_and_lock_changes() {
 }
 
 #[test]
-fn pinned_desired_skills_keep_link_activation_without_a_mode_field() {
+fn pinned_desired_skills_activate_as_copies_without_a_mode_field() {
     let snapshot = snapshot("/store/a-old", '1');
     let changed = plan(
-        &world(BASE, EMPTY_LOCK.to_vec(), snapshot, InstalledLink::Absent),
+        &world(BASE, EMPTY_LOCK.to_vec(), snapshot, absent_copy()),
         Request::Reconcile,
         PlanningMode::Normal,
     )
@@ -149,79 +167,82 @@ fn pinned_desired_skills_keep_link_activation_without_a_mode_field() {
     let lock = grimoire_core::Lockfile::parse(&lock_after(&changed)).unwrap();
     assert_eq!(
         lock.skills[&"one".try_into().unwrap()].mode,
-        ProjectionMode::Link
+        ProjectionMode::Vendor
     );
     assert!(changed.actions.iter().any(|action| matches!(
         action,
-        Action::CreateLink { skill, .. } if skill.as_str() == "one"
+        Action::CreateVendor { skill, .. } if skill.as_str() == "one"
     )));
+    assert!(!changed
+        .actions
+        .iter()
+        .any(|action| matches!(action, Action::CreateLink { .. })));
 }
 
 #[test]
 fn explicit_source_update_distinguishes_exact_old_drift_and_foreign_occupancy() {
     let old = snapshot("/store/a-old", '1');
+    let old_content = old.inventory.skills[0].content_digest.to_string();
     let baseline = plan(
-        &world(
-            BASE,
-            EMPTY_LOCK.to_vec(),
-            old.clone(),
-            InstalledLink::Absent,
-        ),
+        &world(BASE, EMPTY_LOCK.to_vec(), old.clone(), absent_copy()),
         Request::Reconcile,
         PlanningMode::Normal,
     )
     .unwrap();
     let lock = lock_after(&baseline);
-    let old_target = PathBuf::from("/store/a-old/skills/one");
     let new = snapshot("/store/a-new", '2');
-    let new_target = PathBuf::from("/store/a-new/skills/one");
-    let repoint_world = world(
-        BASE,
-        lock.clone(),
-        old.clone(),
-        InstalledLink::Symlink(old_target.clone()),
-    )
-    .with_candidate(
-        SourceState::new(new.clone(), SnapshotStore::Valid, false)
-            .candidate(b"candidate-new".to_vec()),
-    )
-    .unwrap();
-    let repoint = plan(
-        &repoint_world,
+    let new_content = new.inventory.skills[0].content_digest.to_string();
+    let candidate = |snapshot: &SourceSnapshot| {
+        SourceState::new(snapshot.clone(), SnapshotStore::Valid, false)
+            .source_identity(
+                CanonicalIdentity::remote("github:org/a").unwrap(),
+                snapshot.inventory.review_tree_digest.to_string(),
+            )
+            .candidate(b"candidate-new".to_vec())
+    };
+    let replace_world = world(BASE, lock.clone(), old.clone(), owned_copy(&old_content))
+        .with_candidate(candidate(&new))
+        .unwrap();
+    let replaced = plan(
+        &replace_world,
         Request::UpdateSource {
             alias: "a".try_into().unwrap(),
         },
         PlanningMode::Normal,
     )
     .unwrap();
-    assert!(repoint.actions.iter().any(|action| matches!(
+    assert!(replaced.actions.iter().any(|action| matches!(
         action,
         Action::ReplaceLock {
             change: LockChange::SourceAdvance,
             ..
         }
     )));
-    assert!(repoint.actions.iter().any(|action| matches!(
+    assert!(replaced.actions.iter().any(|action| matches!(
         action,
-        Action::RepointLink {
+        Action::ReplaceVendor {
             scope: Scope::Project,
             skill,
             ..
         } if skill.as_str() == "one"
     )));
-    assert!(repoint.is_destructive());
+    assert!(replaced.is_destructive());
 
-    for observation in [
-        InstalledLink::Symlink(PathBuf::from("/foreign")),
-        InstalledLink::File,
-        InstalledLink::Directory,
+    for (state, expected) in [
+        (VendorState::Foreign, "foreign-vendor-path"),
+        (VendorState::Drifted, "vendor-drift"),
     ] {
-        let blocked_world = world(BASE, lock.clone(), old.clone(), observation)
-            .with_candidate(
-                SourceState::new(new.clone(), SnapshotStore::Valid, false)
-                    .candidate(b"candidate-new".to_vec()),
-            )
-            .unwrap();
+        let blocked_world = world(
+            BASE,
+            lock.clone(),
+            old.clone(),
+            VendorPrecondition {
+                state,
+                content: None,
+            },
+        )
+        .with_candidate(candidate(&new))
+        .unwrap();
         let blocked = plan(
             &blocked_world,
             Request::UpdateSource {
@@ -231,19 +252,18 @@ fn explicit_source_update_distinguishes_exact_old_drift_and_foreign_occupancy() 
         )
         .unwrap();
         assert_eq!(blocked.exit_class, ExitClass::Blocked);
-        assert!(blocked.blockers.iter().any(
-            |blocker| blocker.code.starts_with("link-") || blocker.code.starts_with("foreign-")
-        ));
+        assert!(blocked
+            .blockers
+            .iter()
+            .any(|blocker| blocker.code == expected));
         assert!(!blocked
             .actions
             .iter()
-            .any(|action| matches!(action, Action::RepointLink { .. })));
+            .any(|action| matches!(action, Action::ReplaceVendor { .. })));
     }
 
-    let retained_world = world(BASE, lock, old, InstalledLink::Symlink(new_target))
-        .with_candidate(
-            SourceState::new(new, SnapshotStore::Valid, false).candidate(b"candidate-new".to_vec()),
-        )
+    let retained_world = world(BASE, lock, old, owned_copy(&new_content))
+        .with_candidate(candidate(&new))
         .unwrap();
     let retained = plan(
         &retained_world,
@@ -256,31 +276,22 @@ fn explicit_source_update_distinguishes_exact_old_drift_and_foreign_occupancy() 
     assert!(retained
         .actions
         .iter()
-        .any(|action| matches!(action, Action::RetainLink { .. })));
+        .any(|action| matches!(action, Action::RetainVendor { .. })));
 }
 
 #[test]
 fn uninstall_removes_only_the_lock_owned_exact_link_and_keeps_source_declaration() {
     let old = snapshot("/store/a-old", '1');
+    let old_content = old.inventory.skills[0].content_digest.to_string();
     let baseline = plan(
-        &world(
-            BASE,
-            EMPTY_LOCK.to_vec(),
-            old.clone(),
-            InstalledLink::Absent,
-        ),
+        &world(BASE, EMPTY_LOCK.to_vec(), old.clone(), absent_copy()),
         Request::Reconcile,
         PlanningMode::Normal,
     )
     .unwrap();
     let lock = lock_after(&baseline);
     let removal = plan(
-        &world(
-            BASE,
-            lock,
-            old,
-            InstalledLink::Symlink(PathBuf::from("/store/a-old/skills/one")),
-        ),
+        &world(BASE, lock, old, owned_copy(&old_content)),
         Request::UninstallSkill {
             name: "one".try_into().unwrap(),
         },
@@ -297,7 +308,7 @@ fn uninstall_removes_only_the_lock_owned_exact_link_and_keeps_source_declaration
     assert!(removal
         .actions
         .iter()
-        .any(|action| matches!(action, Action::RemoveLink { .. })));
+        .any(|action| matches!(action, Action::RemoveVendor { .. })));
     let manifest_after = removal
         .actions
         .iter()
@@ -318,7 +329,7 @@ fn serialized_plans_are_deterministic_domain_values() {
         BASE,
         EMPTY_LOCK.to_vec(),
         snapshot("/store/a", '1'),
-        InstalledLink::Absent,
+        absent_copy(),
     );
     let first = plan(&state, Request::Reconcile, PlanningMode::Normal).unwrap();
     let second = plan(&state, Request::Reconcile, PlanningMode::Normal).unwrap();

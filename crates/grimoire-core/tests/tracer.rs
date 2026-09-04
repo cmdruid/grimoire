@@ -2,10 +2,10 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use grimoire_core::{
-    plan, Action, ByteHash, InstalledLink, LinkPrecondition, LockChange, OwnedLinkTarget, PlanFact,
-    PlanningMode, Preconditions, Request, RequestRoot, Scope, SnapshotId, SnapshotKey,
-    SnapshotKind, SnapshotStore, SourceAlias, SourceKey, SourceSnapshot, SourceState,
-    StorePrecondition, TrustBaseline, TrustReceipt, TrustStore, WorldState,
+    plan, Action, ByteHash, InstalledLink, LockChange, PlanFact, PlanningMode, Preconditions,
+    Request, RequestRoot, Scope, SnapshotId, SnapshotKey, SnapshotKind, SnapshotStore, SourceAlias,
+    SourceKey, SourceSnapshot, SourceState, StorePrecondition, TrustBaseline, TrustReceipt,
+    TrustStore, VendorPrecondition, VendorState, WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Pack, Skill, SourceInventory, SourcePath,
@@ -98,7 +98,6 @@ fn trusted(snapshot: SourceSnapshot) -> (SourceState, Vec<u8>) {
 #[test]
 fn one_direct_skill_traces_the_complete_pure_kernel() {
     let (snapshot, content) = fixture();
-    let target = PathBuf::from("/store/grimoire/snapshot/skills/journal");
     let expected_lock = format!(
         concat!(
             "{{\n",
@@ -142,11 +141,6 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
         &snapshot.id.inventory_digest,
     )
     .unwrap();
-    let owned_target = OwnedLinkTarget::Stored {
-        source_key: source_key.clone(),
-        snapshot_key: snapshot_key.clone(),
-        skill_path: "skills/journal".into(),
-    };
     let world = WorldState::from_bytes(
         Scope::Project,
         MANIFEST.as_bytes().to_vec(),
@@ -162,16 +156,29 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
     assert_eq!(
         result.actions,
         vec![
+            Action::PrepareVendor {
+                scope: Scope::Project,
+                source: "grimoire".try_into().unwrap(),
+                skill: "journal".try_into().unwrap(),
+                source_key: source_key.clone(),
+                snapshot_key: snapshot_key.clone(),
+                skill_path: "skills/journal".into(),
+                path: ".agents/skills/journal".into(),
+                content: content.clone(),
+            },
+            Action::CreateVendor {
+                scope: Scope::Project,
+                source: "grimoire".try_into().unwrap(),
+                skill: "journal".try_into().unwrap(),
+                path: ".agents/skills/journal".into(),
+                after: content.clone(),
+                added: Vec::new(),
+            },
             Action::ReplaceLock {
                 scope: Scope::Project,
                 before: EMPTY_LOCK.as_bytes().to_vec(),
                 after: expected_lock.as_bytes().to_vec(),
                 change: LockChange::Resolve,
-            },
-            Action::CreateLink {
-                scope: Scope::Project,
-                skill: "journal".try_into().unwrap(),
-                target: owned_target.clone(),
             },
         ]
     );
@@ -194,8 +201,14 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
             trust: Some(ByteHash::of(&trust)),
             projects: None,
             reachability: None,
-            links: BTreeMap::from([("journal".try_into().unwrap(), LinkPrecondition::Absent,)]),
-            vendors: BTreeMap::new(),
+            links: BTreeMap::new(),
+            vendors: BTreeMap::from([(
+                "journal".try_into().unwrap(),
+                VendorPrecondition {
+                    state: VendorState::Absent,
+                    content: None,
+                },
+            )]),
         }
     );
     assert_eq!(
@@ -219,21 +232,31 @@ fn one_direct_skill_traces_the_complete_pure_kernel() {
         MANIFEST.as_bytes().to_vec(),
         expected_lock.as_bytes().to_vec(),
         [state],
-        [("journal", InstalledLink::Symlink(target.clone()))],
+        [("journal", InstalledLink::Absent)],
         None,
     )
     .unwrap()
-    .with_trust_bytes(Some(trust));
+    .with_trust_bytes(Some(trust))
+    .with_vendors([(
+        "journal",
+        VendorPrecondition {
+            state: VendorState::OwnedUnchanged,
+            content: Some(content.clone()),
+        },
+    )])
+    .unwrap();
     let first = plan(&settled, Request::Reconcile, PlanningMode::Normal).unwrap();
     let second = plan(&settled, Request::Reconcile, PlanningMode::Normal).unwrap();
 
     assert_eq!(first, second);
     assert_eq!(
         first.actions,
-        vec![Action::RetainLink {
+        vec![Action::RetainVendor {
             scope: Scope::Project,
+            source: "grimoire".try_into().unwrap(),
             skill: "journal".try_into().unwrap(),
-            target: owned_target,
+            path: ".agents/skills/journal".into(),
+            content: content.clone(),
         }]
     );
     assert!(!first.has_changes());

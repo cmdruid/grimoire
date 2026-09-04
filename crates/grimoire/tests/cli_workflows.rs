@@ -166,5 +166,7 @@ fn git_source_install_accepts_home_behind_a_symlink_prefix() {
         &home,
         &["install", "one", "--source", "fixture"],
     ));
-    assert!(project.join(".agents/skills/one").is_symlink());
+    let copy = project.join(".agents/skills/one");
+    assert!(copy.is_dir());
+    assert!(!copy.symlink_metadata().unwrap().file_type().is_symlink());
 }

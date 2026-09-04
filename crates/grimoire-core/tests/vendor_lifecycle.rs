@@ -5,11 +5,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use grimoire_core::{
     apply, plan, recover, Action, Approval, ByteHash, CanonicalIdentity, FaultDisposition,
-    InstalledLink, LinkPrecondition, LockSkill, LockSource, Lockfile, OwnedLinkTarget, Paths, Plan,
-    PlanningMode, Preconditions, Request, RequestRoot, Result, Scope, SkillName, SnapshotId,
-    SnapshotKey, SnapshotKind, SnapshotStore, SourceAlias, SourceKey, SourceSnapshot, SourceState,
-    StorePrecondition, TransactionRuntime, TrustBaseline, TrustReceipt, TrustStore,
-    VendorPrecondition, VendorState, WorldState,
+    InstalledLink, LockSkill, LockSource, Lockfile, Paths, Plan, PlanningMode, Preconditions,
+    Request, RequestRoot, Result, Scope, SkillName, SnapshotId, SnapshotKey, SnapshotKind,
+    SnapshotStore, SourceAlias, SourceKey, SourceSnapshot, SourceState, StorePrecondition,
+    TransactionRuntime, TrustBaseline, TrustReceipt, TrustStore, VendorPrecondition, VendorState,
+    WorldState,
 };
 use grimoire_pack::inventory::{
     compute_inventory_digest, compute_review_tree_digest, Digest, Skill, SourceInventory,
@@ -161,7 +161,7 @@ fn lifecycle_world(state: VendorState, update: bool) -> WorldState {
 }
 
 #[test]
-#[ignore = "schema 3 drops per-skill mode; unit 3 retargets vendor tests to copies"]
+
 fn update_replaces_only_unchanged_owned_vendor_and_advances_all_trust_baseline() {
     let planned = plan(
         &lifecycle_world(VendorState::OwnedUnchanged, true),
@@ -181,17 +181,10 @@ fn update_replaces_only_unchanged_owned_vendor_and_advances_all_trust_baseline()
             ..
         }
     )));
-    assert!(planned.actions.iter().any(|action| matches!(
-        action,
-        Action::RetainLink {
-            target: grimoire_core::OwnedLinkTarget::Vendor { .. },
-            ..
-        }
-    )));
 }
 
 #[test]
-#[ignore = "schema 3 drops per-skill mode; unit 3 retargets vendor tests to copies"]
+
 fn uninstall_is_idempotent_for_missing_owned_content_and_blocks_drift_or_foreign_occupancy() {
     let name = SkillName::new("one").unwrap();
     for state in [VendorState::Drifted, VendorState::Foreign] {
@@ -289,7 +282,7 @@ impl TransactionRuntime for ForeignRuntime {
 }
 
 #[test]
-#[ignore = "schema 3 drops per-skill mode; unit 3 retargets vendor tests to copies"]
+
 fn every_vendor_publication_prefix_recovers_the_complete_before_state() {
     for checkpoint in [
         "journal-created",
@@ -330,7 +323,7 @@ fn every_vendor_publication_prefix_recovers_the_complete_before_state() {
 }
 
 #[test]
-#[ignore = "schema 3 drops per-skill mode; unit 3 retargets vendor tests to copies"]
+
 fn every_committed_vendor_prefix_recovers_the_complete_after_state() {
     for checkpoint in [
         "committed",
@@ -368,7 +361,7 @@ fn every_committed_vendor_prefix_recovers_the_complete_after_state() {
 }
 
 #[test]
-#[ignore = "schema 3 drops per-skill mode; unit 3 retargets vendor tests to copies"]
+
 fn recovery_preserves_a_late_foreign_vendor_replacement() {
     let (_temporary, paths, plan, _old_content, _new_content) = recovery_fixture();
     let vendor = paths
@@ -442,12 +435,6 @@ fn recovery_fixture() -> (tempfile::TempDir, Paths, Plan, String, String) {
     )
     .unwrap();
     fs::create_dir_all(paths.skills_dir()).unwrap();
-    #[cfg(unix)]
-    std::os::unix::fs::symlink(
-        "../../vendor/grimoire/a/one",
-        paths.skills_dir().join("one"),
-    )
-    .unwrap();
     let manifest = b"schema = \"grimoire/manifest@3\"\n[sources.a]\nurl = \"github:org/a\"\n[skills]\none = { source = \"a\" }\n".to_vec();
     let lock = Lockfile {
         sources: BTreeMap::from([(
@@ -485,27 +472,19 @@ fn recovery_fixture() -> (tempfile::TempDir, Paths, Plan, String, String) {
                 source_key: source_key.clone(),
                 snapshot_key: snapshot_key.clone(),
                 skill_path: "skills/one".into(),
-                path: "vendor/grimoire/a/one".into(),
+                path: ".agents/skills/one".into(),
                 content: new_content.clone(),
             },
             Action::ReplaceVendor {
                 scope: Scope::Project,
                 source: source.clone(),
                 skill: skill.clone(),
-                path: "vendor/grimoire/a/one".into(),
+                path: ".agents/skills/one".into(),
                 before: old_content.clone(),
                 after: new_content.clone(),
                 added: Vec::new(),
                 removed: Vec::new(),
                 changed: vec!["SKILL.md".into()],
-            },
-            Action::RetainLink {
-                scope: Scope::Project,
-                skill: skill.clone(),
-                target: OwnedLinkTarget::Vendor {
-                    source: source.clone(),
-                    skill: skill.clone(),
-                },
             },
         ],
         blockers: Vec::new(),
@@ -525,10 +504,7 @@ fn recovery_fixture() -> (tempfile::TempDir, Paths, Plan, String, String) {
             trust: None,
             projects: None,
             reachability: None,
-            links: BTreeMap::from([(
-                skill.clone(),
-                LinkPrecondition::Symlink(PathBuf::from("../../vendor/grimoire/a/one")),
-            )]),
+            links: BTreeMap::new(),
             vendors: BTreeMap::from([(
                 skill,
                 VendorPrecondition {

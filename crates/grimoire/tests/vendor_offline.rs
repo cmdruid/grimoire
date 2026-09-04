@@ -57,15 +57,6 @@ struct TestConsole {
     answers: VecDeque<String>,
 }
 
-impl TestConsole {
-    fn approving() -> Self {
-        Self {
-            answers: VecDeque::from(["yes\n".into()]),
-            ..Self::default()
-        }
-    }
-}
-
 impl Console for TestConsole {
     fn is_terminal(&self) -> bool {
         true
@@ -90,8 +81,7 @@ impl Console for TestConsole {
 }
 
 #[test]
-#[ignore = "schema 3 drops source trust --vendor; unit 3 retargets this to copies"]
-fn cli_approves_and_restores_a_committed_vendor_projection_offline() {
+fn cli_checks_a_committed_copy_offline_and_frozen_does_not_recreate_it() {
     let temporary = tempfile::tempdir().unwrap();
     let root = temporary.path().canonicalize().unwrap();
     let project = root.join("project");
@@ -145,30 +135,6 @@ fn cli_approves_and_restores_a_committed_vendor_projection_offline() {
     fs::write(paths.lock_path(), &lock).unwrap();
 
     let git = OfflineGit::default();
-    let mut trust_console = TestConsole::approving();
-    assert_eq!(
-        run(
-            &environment,
-            &git,
-            &mut trust_console,
-            &["source", "trust", "repo", "--vendor"]
-        ),
-        0,
-        "{}",
-        String::from_utf8_lossy(&trust_console.stderr)
-    );
-    let trust_output = String::from_utf8_lossy(&trust_console.stdout);
-    assert!(trust_output.contains("\"change\": \"grant_vendor\""));
-    assert!(trust_output.contains("\"kind\": \"vendor_trust\""));
-    assert!(trust_output.contains("Apply? [y/N]"));
-    let trust = fs::read(paths.trust_path()).unwrap();
-    let mut catalog_console = TestConsole::default();
-    assert_eq!(
-        run(&environment, &git, &mut catalog_console, &["trust", "list"]),
-        0
-    );
-    assert!(String::from_utf8_lossy(&catalog_console.stdout).contains("authority=vendor-only"));
-
     let mut install_console = TestConsole::default();
     assert_eq!(
         run(
@@ -181,10 +147,10 @@ fn cli_approves_and_restores_a_committed_vendor_projection_offline() {
         "{}",
         String::from_utf8_lossy(&install_console.stderr)
     );
-    assert_eq!(
-        fs::read_link(paths.skills_dir().join("one")).unwrap(),
-        PathBuf::from("../../vendor/grimoire/repo/one")
-    );
+    let copy = paths.skills_dir().join("one");
+    assert!(copy.is_dir());
+    assert!(!copy.symlink_metadata().unwrap().file_type().is_symlink());
+    assert!(!copy.join("vendor").exists());
 
     let mut check_console = TestConsole::default();
     assert_eq!(run(&environment, &git, &mut check_console, &["check"]), 0);
@@ -193,25 +159,28 @@ fn cli_approves_and_restores_a_committed_vendor_projection_offline() {
     assert_eq!(fs::read(paths.manifest_path()).unwrap(), manifest);
     assert_eq!(fs::read(paths.lock_path()).unwrap(), lock);
     assert_eq!(fs::read(vendor.join("SKILL.md")).unwrap(), vendor_bytes);
-    assert_eq!(fs::read(paths.trust_path()).unwrap(), trust);
     assert!(!home.join(".grimoire/cache").exists());
     assert!(!home.join(".grimoire/candidates").exists());
     assert!(!home.join(".grimoire/store").exists());
+    assert!(!project.join("vendor/grimoire").exists());
 
-    fs::remove_file(paths.skills_dir().join("one")).unwrap();
     fs::write(vendor.join("SKILL.md"), b"changed\n").unwrap();
-    let mut blocked_console = TestConsole::default();
+    let mut drifted = TestConsole::default();
     assert_eq!(
-        run(
-            &environment,
-            &git,
-            &mut blocked_console,
-            &["install", "--frozen"]
-        ),
+        run(&environment, &git, &mut drifted, &["install", "--frozen"]),
         3
     );
-    assert!(String::from_utf8_lossy(&blocked_console.stdout).contains("vendor-drift"));
-    assert!(!paths.skills_dir().join("one").exists());
+    assert!(String::from_utf8_lossy(&drifted.stdout).contains("vendor-drift"));
+    fs::write(vendor.join("SKILL.md"), vendor_bytes).unwrap();
+
+    fs::remove_dir_all(&copy).unwrap();
+    let mut missing = TestConsole::default();
+    assert_eq!(
+        run(&environment, &git, &mut missing, &["install", "--frozen"]),
+        3
+    );
+    assert!(String::from_utf8_lossy(&missing.stdout).contains("vendor-missing"));
+    assert!(!copy.exists());
     assert_eq!(git.0.load(Ordering::SeqCst), 0);
 }
 

@@ -147,19 +147,16 @@ pub fn load_world(
             ))
         })
         .collect::<Result<_>>()?;
-    let vendors = if scope == Scope::Project {
-        lock.skills
-            .iter()
-            .map(|(name, skill)| {
-                Ok((
-                    name.clone(),
-                    crate::vendor::observe_vendor(paths, name, skill)?,
-                ))
-            })
-            .collect::<Result<_>>()?
-    } else {
-        BTreeMap::new()
-    };
+    let vendors = lock
+        .skills
+        .iter()
+        .map(|(name, skill)| {
+            Ok((
+                name.clone(),
+                crate::vendor::observe_vendor(paths, name, skill)?,
+            ))
+        })
+        .collect::<Result<_>>()?;
     collect_journal_observations(paths, &mut observations)?;
 
     let mut world = WorldState {

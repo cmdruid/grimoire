@@ -339,7 +339,14 @@ fn installed_status(
     name: &SkillName,
 ) -> Option<InstalledStatus> {
     let resolved = resolution.skills.get(name)?;
-    Some(
+    Some(if resolved.mode == ProjectionMode::Vendor {
+        match world.vendors.get(name).map(|vendor| vendor.state) {
+            Some(crate::VendorState::OwnedUnchanged) => InstalledStatus::Current,
+            Some(crate::VendorState::Absent) | None => InstalledStatus::Missing,
+            Some(crate::VendorState::Drifted) => InstalledStatus::Drift,
+            Some(crate::VendorState::Foreign) => InstalledStatus::ForeignDirectory,
+        }
+    } else {
         match world.links.get(name).unwrap_or(&InstalledLink::Absent) {
             InstalledLink::Absent => InstalledStatus::Missing,
             InstalledLink::Symlink(target) if target == &resolved.target => {
@@ -348,6 +355,6 @@ fn installed_status(
             InstalledLink::Symlink(_) => InstalledStatus::Drift,
             InstalledLink::File => InstalledStatus::ForeignFile,
             InstalledLink::Directory => InstalledStatus::ForeignDirectory,
-        },
-    )
+        }
+    })
 }

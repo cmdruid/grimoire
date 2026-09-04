@@ -7,8 +7,8 @@ use grimoire_core::inventory::scan;
 use grimoire_core::source::{GitCommand, GitResult, GitRunner, HeldDirectoryReader};
 use grimoire_core::{
     apply, check, load_world, plan, Approval, CandidateRecord, CanonicalIdentity, FaultDisposition,
-    InstalledLink, LockSkill, LockSource, Lockfile, Manifest, Paths, PlanningMode, Request,
-    RequestRoot, Result, SnapshotKey, SnapshotStore, SourceAlias, SourceKey, SourceKind,
+    InstalledLink, LockSkill, LockSource, Lockfile, Manifest, Paths, PlanningMode, ProjectionMode,
+    Request, RequestRoot, Result, SnapshotKey, SnapshotStore, SourceAlias, SourceKey, SourceKind,
     TransactionRuntime, TrustBaseline, TrustReceipt, TrustStore,
 };
 
@@ -258,7 +258,7 @@ fn frozen_restore_uses_only_the_locked_store_snapshot() {
             "one".try_into().unwrap(),
             LockSkill {
                 source: "local".try_into().unwrap(),
-                mode: grimoire_core::ProjectionMode::Link,
+                mode: ProjectionMode::Vendor,
                 path: "skills/one".into(),
                 content: inventory.skills[0].content_digest.to_string(),
                 requested_by: BTreeSet::from([RequestRoot::Skill("one".try_into().unwrap())]),
@@ -298,7 +298,10 @@ fn frozen_restore_uses_only_the_locked_store_snapshot() {
     assert_eq!(loaded.store, grimoire_core::SnapshotStore::Valid);
     let restore = plan(&world, Request::Reconcile, PlanningMode::Frozen).unwrap();
     assert!(
-        restore.blockers.is_empty(),
+        restore
+            .blockers
+            .iter()
+            .any(|blocker| blocker.code == "vendor-missing"),
         "blockers={:?} observations={:?} locked_skills={:?}",
         restore.blockers,
         world.observations,
@@ -307,12 +310,12 @@ fn frozen_restore_uses_only_the_locked_store_snapshot() {
             .inventory
             .skills
     );
+    assert!(!restore.actions.iter().any(|action| matches!(
+        action,
+        grimoire_core::Action::CreateVendor { .. } | grimoire_core::Action::PrepareVendor { .. }
+    )));
     assert_eq!(git.0.load(Ordering::SeqCst), 0);
-    apply(&paths, &restore, Approval::NotRequired, &Runtime).unwrap();
-    assert_eq!(
-        fs::read_link(paths.skills_dir().join("one")).unwrap(),
-        stored.join("skills/one")
-    );
+    assert!(!paths.skills_dir().join("one").exists());
 
     fs::write(
         stored.join("skills/one/SKILL.md"),

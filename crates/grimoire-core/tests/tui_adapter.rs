@@ -121,7 +121,7 @@ fn packs_members_shared_roots_and_unavailable_items_are_core_facts() {
         })
         .unwrap();
     assert_eq!(pack.kind, TreeItemKind::Pack(PackSelection::Partial));
-    assert_eq!(pack.mode, Some(ProjectionMode::Link));
+    assert_eq!(pack.mode, Some(ProjectionMode::Vendor));
     assert!(!pack.mode_toggleable);
 
     let required = tree
@@ -137,7 +137,7 @@ fn packs_members_shared_roots_and_unavailable_items_are_core_facts() {
     );
     assert!(required.selected);
     assert!(!required.toggleable);
-    assert_eq!(required.mode, Some(ProjectionMode::Link));
+    assert_eq!(required.mode, Some(ProjectionMode::Vendor));
     assert!(!required.mode_toggleable);
 
     let unavailable = tree
@@ -168,7 +168,7 @@ fn packs_members_shared_roots_and_unavailable_items_are_core_facts() {
         .into_iter()
         .collect()
     );
-    assert_eq!(notes.mode, Some(ProjectionMode::Link));
+    assert_eq!(notes.mode, Some(ProjectionMode::Vendor));
     assert!(!notes.mode_toggleable);
 }
 

@@ -131,7 +131,7 @@ fn render_item(item: &TreeItem, focused: bool) -> String {
     if let Some(mode) = item.mode {
         facts.push_str(match mode {
             ProjectionMode::Link => " [linked]",
-            ProjectionMode::Vendor => " [vendored]",
+            ProjectionMode::Vendor => " [copied]",
         });
     }
     format!(

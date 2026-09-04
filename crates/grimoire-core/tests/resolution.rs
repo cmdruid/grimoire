@@ -413,14 +413,14 @@ fn projection_mode_follows_the_source_and_is_unanimous() {
             "{:?}",
             resolved.lock.skills[&"shared".try_into().unwrap()].mode
         ),
-        "Link"
+        "Vendor"
     );
     assert_eq!(
         format!(
             "{:?}",
             resolved.lock.packs[&"bundle".try_into().unwrap()].mode
         ),
-        "Link"
+        "Vendor"
     );
 }
 

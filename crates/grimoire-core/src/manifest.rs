@@ -686,10 +686,14 @@ fn render_skill(request: &ManifestSkill) -> String {
 }
 
 fn projection_for_source(
-    _sources: &BTreeMap<SourceAlias, ManifestSource>,
-    _alias: &SourceAlias,
+    sources: &BTreeMap<SourceAlias, ManifestSource>,
+    alias: &SourceAlias,
 ) -> ProjectionMode {
-    ProjectionMode::Link
+    if sources.get(alias).is_some_and(|source| source.link) {
+        ProjectionMode::Link
+    } else {
+        ProjectionMode::Vendor
+    }
 }
 
 fn reject_unknown(table: &toml_edit::Table, allowed: &[&str], where_: &str) -> Result<()> {

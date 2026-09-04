@@ -220,39 +220,6 @@ impl TrustStore {
         mutation(before, next.to_bytes()?)
     }
 
-    pub fn grant_vendor(
-        &self,
-        identity: CanonicalIdentity,
-        receipts: BTreeSet<VendorTrustReceipt>,
-        before: Option<Vec<u8>>,
-    ) -> Result<TrustMutation> {
-        if identity.kind() != SourceKind::Git {
-            return Err(CoreError::Trust(
-                "vendor trust requires a pinned Git source".into(),
-            ));
-        }
-        if receipts.is_empty() {
-            return Err(CoreError::Trust(
-                "vendor trust requires at least one receipt".into(),
-            ));
-        }
-        for receipt in &receipts {
-            validate_vendor_receipt(receipt)?;
-        }
-        let mut next = self.clone();
-        let key = SourceKey::derive(&identity);
-        let record = next.records.entry(key).or_insert(TrustRecord {
-            identity: identity.clone(),
-            receipts: BTreeSet::new(),
-            vendor_receipts: BTreeSet::new(),
-            all_snapshots: false,
-            baseline: None,
-        });
-        ensure_identity(record, &identity)?;
-        record.vendor_receipts.extend(receipts);
-        mutation(before, next.to_bytes()?)
-    }
-
     pub fn advance_baseline(
         &self,
         key: &SourceKey,
@@ -288,27 +255,6 @@ fn validate_receipt(receipt: &TrustReceipt) -> Result<()> {
     crate::source::identity::validate_object_id(&receipt.tree)?;
     crate::source::identity::validate_digest(&receipt.inventory)
         .map_err(|error| CoreError::Trust(error.to_string()))
-}
-
-fn validate_vendor_receipt(receipt: &VendorTrustReceipt) -> Result<()> {
-    crate::source::identity::validate_object_id(&receipt.commit)?;
-    crate::source::identity::validate_object_id(&receipt.tree)?;
-    crate::source::identity::validate_digest(&receipt.inventory)
-        .map_err(|error| CoreError::Trust(error.to_string()))?;
-    crate::source::identity::validate_digest(&receipt.content)
-        .map_err(|error| CoreError::Trust(error.to_string()))?;
-    let path = std::path::Path::new(&receipt.path);
-    if receipt.path.is_empty()
-        || path.is_absolute()
-        || path
-            .components()
-            .any(|component| !matches!(component, std::path::Component::Normal(_)))
-    {
-        return Err(CoreError::Trust(
-            "vendor trust path must be source-relative".into(),
-        ));
-    }
-    Ok(())
 }
 
 fn validate_baseline(kind: SourceKind, baseline: &TrustBaseline) -> Result<()> {
