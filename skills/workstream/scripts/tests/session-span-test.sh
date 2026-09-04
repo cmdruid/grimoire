@@ -21,7 +21,7 @@ RUNBOOK="$ROOT/.streams/sess/WORKSTREAM.md"
 expect 'create emits session open marker' '<!-- workstream:session@1 -->' "$RUNBOOK"
 expect 'create emits session close marker' '<!-- /workstream:session@1 -->' "$RUNBOOK"
 "$HELPER" "$ROOT" read sess >"$OUT"
-expect 'new stream session is empty' 'session:empty' "$OUT"
+expect 'new stream session is empty' 'session=empty' "$OUT"
 expect 'new stream has no completed units' 'completed:-' "$OUT"
 
 contract_before="$(awk -F '\t' '$1=="meta"&&$3=="runbook-contract-sha256"{print $4}' "$ROOT/.streams/sess/workstream.tsv")"
@@ -38,7 +38,7 @@ expect 'operator-note follows --note' $'operator-note\tdefine the first unit' "$
 contract_after="$(awk -F '\t' '$1=="meta"&&$3=="runbook-contract-sha256"{print $4}' "$ROOT/.streams/sess/workstream.tsv")"
 expect_eq 'session-set does not change contract hash' "$contract_before" "$contract_after"
 "$HELPER" "$ROOT" read sess >"$OUT"
-expect 'read reports session present' 'session:present' "$OUT"
+expect 'read reports session present' 'session=present' "$OUT"
 expect 'read echoes operator note' 'operator_note=define the first unit' "$OUT"
 
 if "$HELPER" "$ROOT" session-set sess --body "$TMP/body.md" --note 'define the first unit' >/dev/null 2>"$ERR"; then
@@ -65,7 +65,7 @@ fi
 expect 'reconfig applies' 'status=applied' "$OUT"
 expect 'reconfig preserves session body' 'Keep the session span.' "$RUNBOOK"
 "$HELPER" "$ROOT" read sess >"$OUT"
-expect 'session remains present after reconfig' 'session:present' "$OUT"
+expect 'session remains present after reconfig' 'session=present' "$OUT"
 
 "$HELPER" "$ROOT" unit-begin sess first 'First unit' >"$OUT"
 printf 'one\n' >>"$ROOT/.streams/sess/file"

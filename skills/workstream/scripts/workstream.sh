@@ -965,7 +965,7 @@ emit_read_projection() { # stream; requires admitted globals
   session="$(session_span_state "$RUNBOOK")"
   [ "$session" != malformed ] || die "runbook session span is malformed"
   completed="$(completed_unit_facts)"
-  printf 'schema=workstream-read@1\nstream=%s,instance_id=%s\nroot=%s,worktree=%s\ncoordinates=branch:%s,target:%s,landing:%s\npolicy=mode:%s\npurpose=%s\norientation=%s\noperator_note=%s\nqueue=source-kind:%s,source:%s,state:%s\nunit=id:%s,slug:%s,summary:%s,completed:%s\nshipment=%s,hook_identity=%s,hook_state:%s,session:%s\nnext_action=%s\n' \
+  printf 'schema=workstream-read@1\nstream=%s,instance_id=%s\nroot=%s,worktree=%s\ncoordinates=branch:%s,target:%s,landing:%s\npolicy=mode:%s\npurpose=%s\norientation=%s\noperator_note=%s\nqueue=source-kind:%s,source:%s,state:%s\nunit=id:%s,slug:%s,summary:%s,completed:%s\nshipment=%s,hook_identity=%s,hook_state=%s,session=%s\nnext_action=%s\n' \
     "$stream" "$instance" "$ROOT" "$WT" "$branch" "$target" "$landing" "$mode" "$purpose" "$orientation" "$note" "$source_kind" "$source_pointer" "$queue" "${unit:--}" "$unit_slug" "$unit_summary" "$completed" "${shipment:--}" "$hook_identity" "$hook_state" "$session" "$next"
 }
 
