@@ -9,18 +9,29 @@ use std::path::PathBuf;
 use support::FsTree;
 
 #[cfg(unix)]
-fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+fn catalog_root() -> PathBuf {
+    if let Some(path) = std::env::var_os("GRIMOIRE_LIVE_ROOT") {
+        return PathBuf::from(path);
+    }
+    let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .and_then(|path| path.parent())
         .expect("grimoire-pack sits two levels below the repository root")
-        .to_path_buf()
+        .to_path_buf();
+    let sibling = repo
+        .parent()
+        .map(|parent| parent.join("dojo"))
+        .expect("repository has a parent directory");
+    if sibling.join("PACK.md").is_file() {
+        return sibling;
+    }
+    panic!("set GRIMOIRE_LIVE_ROOT to the skills catalog (sibling ../dojo with PACK.md not found)");
 }
 
 #[cfg(unix)]
 #[test]
 fn clankshop_is_the_one_valid_root_pack() {
-    let inventory = scan(&FsTree::new(repo_root())).expect("scan the live worktree");
+    let inventory = scan(&FsTree::new(catalog_root())).expect("scan the catalog root");
     let packs: Vec<_> = inventory
         .packs
         .iter()

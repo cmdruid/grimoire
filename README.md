@@ -21,8 +21,10 @@ grimoire install journal --source dojo
 grimoire install clankshop --pack --source dojo
 ```
 
-When the library is on GitHub, the source line is `github:cmdruid/dojo` instead of the filesystem
-path. There is no `path:` scheme; a local source is an ordinary path.
+`--live` is the local-source path: install links the working tree. Omit it and Grimoire
+snapshots a clean Git commit instead. When the library is on GitHub, the source line is
+`github:cmdruid/dojo` instead of the filesystem path. There is no `path:` scheme; a local
+source is an ordinary path.
 
 An omitted mode creates a new request in linked mode. Repeating `install` without a mode preserves
 an existing request's mode. Pass `--link` or `--vendor` to convert it explicitly. Vendoring is

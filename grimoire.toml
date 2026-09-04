@@ -1,0 +1,9 @@
+schema = "grimoire/manifest@2"
+
+
+[packs]
+clankshop = { source = "dojo" }
+
+[sources.dojo]
+path = "../dojo"
+live = true

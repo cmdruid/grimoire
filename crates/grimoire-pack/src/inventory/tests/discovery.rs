@@ -216,8 +216,9 @@ fn controlled_filesystem_reader_preserves_invalid_utf8_and_never_follows_links()
     let invalid = temp
         .path()
         .join(std::ffi::OsString::from_vec(vec![b'x', 0xff]));
-    if let Err(error) = std::fs::write(&invalid, b"bytes") {
-        assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+    if std::fs::write(&invalid, b"bytes").is_err() {
+        // Some hosts refuse an invalid-UTF-8 filename (PermissionDenied, Uncategorized, ...).
+        // The contract is about scan behavior when such a name exists, not about creating it.
         return;
     }
     std::fs::create_dir(temp.path().join("real")).unwrap();

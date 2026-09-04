@@ -11,6 +11,7 @@ From the checkout root:
 RUSTC_WRAPPER= cargo fmt --all -- --check
 RUSTC_WRAPPER= cargo test --all
 RUSTC_WRAPPER= cargo clippy --all --all-targets -- -D warnings
+bash scripts/tests/canonical-provider-parity-test.sh
 ```
 
 Live-root dogfood (`crates/grimoire-pack/tests/live_root_layout.rs`,
@@ -18,8 +19,20 @@ Live-root dogfood (`crates/grimoire-pack/tests/live_root_layout.rs`,
 `../dojo` when that directory contains `PACK.md`. It does not treat this repository root as a
 skills source.
 
-Library authoring doctrine, the lint gate, and skill-contract tests live in dojo
-(`AGENTS.md`, `skills/skill-builder/docs/DOCTRINE.md`).
+Library authoring doctrine, the lint gate, and skill-contract tests live in the sibling
+dojo checkout: `~/Repos/dojo/AGENTS.md` and
+`~/Repos/dojo/skills/skill-builder/docs/DOCTRINE.md`.
+
+This repo is a Grimoire client of that catalog. Add the local checkout with `--live` so
+install links the working tree:
+
+```sh
+grimoire source add dojo /Users/cscott/Repos/dojo --live --trust
+grimoire install clankshop --pack --source dojo
+```
+
+A filesystem path without `--live` is a Git snapshot (clean worktree, pinned commit), not
+the tree you are editing.
 
 ## Workstream compaction recovery
 

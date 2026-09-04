@@ -48,6 +48,9 @@ impl HeldDirectoryReader {
         if !root.is_absolute() {
             return Err(CoreError::Source("held local root must be absolute".into()));
         }
+        // Resolve symlink prefixes (macOS `/tmp` → `/private/tmp`) before the
+        // NOFOLLOW walk. The walk still refuses symlinks inside the tree.
+        let root = fs::canonicalize(root).map_err(|error| io_error(root, error))?;
         let mut handles = vec![File::open("/").map_err(|error| io_error(Path::new("/"), error))?];
         let mut anchors = Vec::new();
         let mut resolved = PathBuf::from("/");

@@ -62,3 +62,29 @@ fn live_inspection_publishes_only_review_and_candidate_state() {
     assert!(!paths.lock_path().exists());
     assert!(!home.join("store/checkouts").exists());
 }
+
+#[cfg(unix)]
+#[test]
+fn held_directory_open_resolves_a_symlink_prefix() {
+    use std::fs;
+    use std::os::unix::fs::symlink;
+
+    use grimoire_core::inventory::scan;
+    use grimoire_core::source::HeldDirectoryReader;
+
+    let temporary = tempfile::tempdir().unwrap();
+    let root = temporary.path().canonicalize().unwrap();
+    let real = root.join("private/tmp/tree");
+    fs::create_dir_all(real.join("skills/one")).unwrap();
+    fs::write(
+        real.join("skills/one/SKILL.md"),
+        b"---\nname: one\ndescription: fixture\n---\n",
+    )
+    .unwrap();
+    symlink(root.join("private/tmp"), root.join("tmp")).unwrap();
+    let via_prefix = root.join("tmp/tree");
+    let held = HeldDirectoryReader::open(&via_prefix).unwrap();
+    let inventory = scan(&held).unwrap();
+    assert_eq!(inventory.skills.len(), 1);
+    assert_eq!(inventory.skills[0].name, "one");
+}

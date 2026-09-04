@@ -1,0 +1,199 @@
+{
+  "schema": "grimoire/lock@2",
+  "sources": {
+    "dojo": {
+      "declared": "../dojo",
+      "kind": "live"
+    }
+  },
+  "packs": {
+    "clankshop": {
+      "source": "dojo",
+      "mode": "link",
+      "required": [
+        "journal"
+      ],
+      "optional": [
+        "analyst",
+        "architect",
+        "auditor",
+        "backlog",
+        "checkpoint",
+        "chiropractor",
+        "contractor",
+        "debugger",
+        "delegate",
+        "foreman",
+        "inspector",
+        "mailbox",
+        "notepad",
+        "scheduler",
+        "workstream"
+      ],
+      "enabled": [
+        "analyst",
+        "architect",
+        "auditor",
+        "backlog",
+        "checkpoint",
+        "chiropractor",
+        "contractor",
+        "debugger",
+        "delegate",
+        "foreman",
+        "inspector",
+        "mailbox",
+        "notepad",
+        "scheduler",
+        "workstream"
+      ],
+      "unavailable": []
+    }
+  },
+  "skills": {
+    "analyst": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/analyst",
+      "content": "sha256:a950ae6192aa5fed0bd8b905859a6c728ce9dd43b9d12b2936a7a528bdccceeb",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "architect": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/architect",
+      "content": "sha256:ebf701eba6eb2313df663b34d133c8f31a55e5403a675dcdfa96259a8fb56b82",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "auditor": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/auditor",
+      "content": "sha256:b48b4c69b9322b1ddc2958b7472ce1d27d77cd77e011953c9b90090799cfc48f",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "backlog": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/backlog",
+      "content": "sha256:eded39f115556a61a14a189009009ca3da87b420b37276c896c571d605da9913",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "checkpoint": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/checkpoint",
+      "content": "sha256:e4ca8a998b6623477b4c21f6d96a2e1ca31571600ae735e506fb098722c8a374",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "chiropractor": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/chiropractor",
+      "content": "sha256:dcfe7d72d0d58281bfed72083947f19d29514fa5f898198bc2569b18dabcb294",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "contractor": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/contractor",
+      "content": "sha256:b96da254a1de0c0f7cf01fe98f3f26fac845aa15bd999604f3ed8816ca225ffe",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "debugger": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/debugger",
+      "content": "sha256:0619b5202a0c5757cf4c3c98fdda1e11fb69e0a1e7a52d45a567b5c28d409fb0",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "delegate": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/delegate",
+      "content": "sha256:063b6b835e0228e4384799bc7137df4ac7e57ec5413d323d5c8d8a498edab833",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "foreman": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/foreman",
+      "content": "sha256:a1f593dc004623471e5ff03a1df4dabbc421efc3a0dc355471fec89580bdf3c1",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "inspector": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/inspector",
+      "content": "sha256:621c739d9245f8aac2ce69162bf15d51f011686041bcc6cd1a0992faaf18b307",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "journal": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/journal",
+      "content": "sha256:6a0b3b75e1f12ca19e43b96641d1d2f34016c95ebf26797249783a69c3509d54",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "mailbox": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/mailbox",
+      "content": "sha256:9bf5eb13ef530a42241993a260a4387f9dba96e76a71355bc18a7e8ea85bc3af",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "notepad": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/notepad",
+      "content": "sha256:bbdb307d09e8d368a6dff14fdde8545409c176de2c634198fadaa53da4f2b920",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "scheduler": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/scheduler",
+      "content": "sha256:44def77591400307ad9c900ea59476e91d174cf019e5d4da229be3c0728ad42e",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    },
+    "workstream": {
+      "source": "dojo",
+      "mode": "link",
+      "path": "skills/workstream",
+      "content": "sha256:b2fd2c9629afd688e9b170843c1ec7eeaffb313079d3354b0e6040b86aa64b92",
+      "requested_by": [
+        "pack:clankshop"
+      ]
+    }
+  }
+}

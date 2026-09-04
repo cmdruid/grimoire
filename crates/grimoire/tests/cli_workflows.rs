@@ -130,3 +130,41 @@ fn cached_source_workflow_never_fetches_during_update() {
     ));
     success(&support::run(&project, &home, &["store", "prune", "--yes"]));
 }
+
+#[cfg(unix)]
+#[test]
+fn git_source_install_accepts_home_behind_a_symlink_prefix() {
+    use std::os::unix::fs::symlink;
+
+    let temporary = tempdir().unwrap();
+    let root = temporary.path().canonicalize().unwrap();
+    fs::create_dir_all(root.join("private/tmp")).unwrap();
+    symlink(root.join("private/tmp"), root.join("tmp")).unwrap();
+    let home = root.join("tmp/home");
+    let project = root.join("project");
+    let source = root.join("source");
+    fs::create_dir_all(&home).unwrap();
+    fs::create_dir_all(&project).unwrap();
+    fs::create_dir_all(source.join("skills/one")).unwrap();
+    git(&source, &["init", "-q"]);
+    commit(&source, "first");
+
+    success(&support::run(&project, &home, &["init"]));
+    success(&support::run(
+        &project,
+        &home,
+        &[
+            "source",
+            "add",
+            "fixture",
+            source.to_str().unwrap(),
+            "--trust-all",
+        ],
+    ));
+    success(&support::run(
+        &project,
+        &home,
+        &["install", "one", "--source", "fixture"],
+    ));
+    assert!(project.join(".agents/skills/one").is_symlink());
+}
