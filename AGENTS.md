@@ -1,61 +1,32 @@
-# AGENTS.md — building the skills in this library
+# AGENTS.md — working on the Grimoire package manager
 
-This repo is a **library of agent skills** (see `README.md` for layout, how harnesses consume
-them, and the authoring mechanics — self-contained packages, generic instruction, `SKILL.md`
-frontmatter rules).
+This repository is the **Grimoire** skill package manager (Rust workspace under `crates/`).
+The installable skills catalog is **dojo** (`~/Repos/dojo`). Do not author skills into this tree.
 
-This file captures the **design philosophy** for the tools, scripts, and skills built here. Apply
-it whenever you add or revise one. It is distilled from practice; the `workstream` skill (its
-`scripts/workstream-git.sh` + *Helper scripts* section) is the worked reference.
+## Gate
 
-Most of these skills are members of the root, pure-bundle **`clankshop` pack** (`PACK.md`):
-**helpers** (`architect` the specification spine,
-`contractor` the job lead, `inspector` critique and fold, `journal` the
-records format authority and the one required member, `backlog` the follow-up lifecycle,
-`notepad` project memory, `analyst` reports and briefings, `workstream` the stream driver,
-`auditor`, `debugger`, `foreman` project operations and goal runbooks, `chiropractor` the
-documentation-spine steward); **utilities** (`checkpoint`, `mailbox`,
-`delegate`, `scheduler`). `agent-council`, `code-humanizer`,
-`developer-writing`, and `skill-builder` stay outside the pack. See `README.md`
-for the full inventory.
+From the checkout root:
 
-The pack is distribution plus a human-readable seam map. It is not a skill and has no project
-lifecycle: installation never writes doctrine, hooks, operations, records, trackers, or a project
-front door. Skills with durable project surfaces expose and own their own explicit setup.
+```sh
+RUSTC_WRAPPER= cargo fmt --all -- --check
+RUSTC_WRAPPER= cargo test --all
+RUSTC_WRAPPER= cargo clippy --all --all-targets -- -D warnings
+```
 
-## Design philosophy
+Live-root dogfood (`crates/grimoire-pack/tests/live_root_layout.rs`,
+`crates/grimoire/tests/root_dogfood.rs`) reads the catalog from `GRIMOIRE_LIVE_ROOT`, or sibling
+`../dojo` when that directory contains `PACK.md`. It does not treat this repository root as a
+skills source.
 
-The generalizable design philosophy for building agent skills — tools, scripts, self-init/edges,
-boundary independence, the lint gate — lives in **`skills/skill-builder/docs/DOCTRINE.md`**, a
-**portable** doc bundled with the `skill-builder` skill so it travels to any skills library, not just
-this one. Apply it whenever you add or revise a skill here; `/skill-builder calibrate` is what keeps it
-current as practice evolves. (`skill-builder` is itself the Phase 7 capstone of
-`docs/design/2026-07-18-skill-self-initialization-roadmap.md` — the toolmaker steward nothing else in
-this library was.)
-
-**Local overrides (this library only):**
-
-- **Feedback channel.** `docs/DOCTRINE.md`'s "skills are living artifacts" bullet says route friction
-  to the skills' home feedback channel. For grimoire that channel is **GitHub issues**, tagged by
-  skill — an installation may override it with its own collection file (see `README.md`).
-- **Patient-zero caveat.** The deployed mechanisms — self-registration, records standup, and
-  skill-owned project files
-  (`docs/DOCTRINE.md` covers the helpers' portable regime) — are **built and tested here**, but
-  grimoire's own `AGENTS.md` is authored library doctrine, not a consuming project's scaffold —
-  **never let door blocks or deployed-layout content accrete in it**. Every deployed
-  mechanism is exercised against throwaway fixtures in its owning skill's test harness.
+Library authoring doctrine, the lint gate, and skill-contract tests live in dojo
+(`AGENTS.md`, `skills/skill-builder/docs/DOCTRINE.md`).
 
 ## Workstream compaction recovery
 
-Applies only when your context has just been compacted or summarized (you see a
-compaction/continuation summary in place of the full conversation), and only to the current Git
+Applies only when your context has just been compacted or summarized, and only to the current Git
 top level:
 
-- If that top level has no `WORKSTREAM.md`, this route is inert. Do not scan `.streams` or infer
-  custody from a branch.
-- If `WORKSTREAM.md` exists at that top level, STOP before further work. Invoke the helper with
-  `read-current <current-top-level>` (it resolves the primary). Reconcile the bounded projection
-  with Git. If `session=present`, read only the `workstream:session@1` span. Do not reconstruct
-  managed spans or read the raw tracker. Resume the reported local action; if it would land or
+- If that top level has no `WORKSTREAM.md`, this route is inert.
+- If `WORKSTREAM.md` exists at that top level, STOP before further work. Invoke Workstream's helper
+  with `read-current <current-top-level>`. Resume the reported local action; if it would land or
   mutate the primary or target, stop and ask.
-- Handoffs below another checkout belong to other sessions. Never read, load, or recover them.

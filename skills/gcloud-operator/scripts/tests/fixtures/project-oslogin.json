@@ -1,8 +1,0 @@
-{
-  "commonInstanceMetadata": {
-    "items": [
-      {"key": "enable-oslogin", "value": "TRUE"},
-      {"key": "enable-oslogin-2fa", "value": "TRUE"}
-    ]
-  }
-}

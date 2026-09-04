@@ -9,17 +9,28 @@ use grimoire_core::source::HeldDirectoryReader;
 use tempfile::tempdir;
 
 fn selected_root() -> PathBuf {
-    std::env::var_os("GRIMOIRE_LIVE_ROOT")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| {
-            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .parent()
-                .and_then(|path| path.parent())
-                .expect("skill-grimoire sits two levels below the repository root")
-                .to_path_buf()
-        })
+    catalog_root()
         .canonicalize()
-        .expect("selected repository root")
+        .expect("selected catalog root")
+}
+
+fn catalog_root() -> PathBuf {
+    if let Some(path) = std::env::var_os("GRIMOIRE_LIVE_ROOT") {
+        return PathBuf::from(path);
+    }
+    let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(|path| path.parent())
+        .expect("skill-grimoire sits two levels below the repository root")
+        .to_path_buf();
+    let sibling = repo
+        .parent()
+        .map(|parent| parent.join("dojo"))
+        .expect("repository has a parent directory");
+    if sibling.join("PACK.md").is_file() {
+        return sibling;
+    }
+    panic!("set GRIMOIRE_LIVE_ROOT to the skills catalog (sibling ../dojo with PACK.md not found)");
 }
 
 fn success(output: &std::process::Output) {
