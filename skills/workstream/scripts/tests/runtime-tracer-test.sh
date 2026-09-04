@@ -78,8 +78,6 @@ expect 'landing retry is idempotent' 'status=already-landed' "$OUT"
 expect 'shipment finalizes' 'status=finalized' "$OUT"
 "$HELPER" "$ROOT" ship-finalize demo >"$OUT"
 expect 'finalize retry is idempotent' 'status=already-finalized' "$OUT"
-expect_eq 'history has one data row' 2 "$(wc -l <"$ROOT/.streams/history.tsv" | tr -d ' ')"
-expect 'history names unit' $'demo\t1\t' "$ROOT/.streams/history.tsv"
 expect_absent 'output hides raw tracker' $'record\tid\tfield\tvalue' "$OUT"
 expect_absent 'output hides hook bodies' 'feature-completion' "$OUT"
 
@@ -93,8 +91,8 @@ else
   fail=$((fail + 1))
   echo 'FAIL: recreated stream reused its instance id' >&2
 fi
-expect_eq 'history seeds next unit' 2 "$(awk -F '\t' '$1=="meta"&&$3=="next-unit"{print $4}' "$ROOT/.streams/demo/workstream.tsv")"
-expect_eq 'history seeds next shipment' 2 "$(awk -F '\t' '$1=="meta"&&$3=="next-shipment"{print $4}' "$ROOT/.streams/demo/workstream.tsv")"
+expect_eq 'recreated stream restarts unit counter' 1 "$(awk -F '\t' '$1=="meta"&&$3=="next-unit"{print $4}' "$ROOT/.streams/demo/workstream.tsv")"
+expect_eq 'recreated stream restarts shipment counter' 1 "$(awk -F '\t' '$1=="meta"&&$3=="next-shipment"{print $4}' "$ROOT/.streams/demo/workstream.tsv")"
 
 refs_before="$(git -C "$ROOT" show-ref)"
 worktrees_before="$(git -C "$ROOT" worktree list --porcelain)"

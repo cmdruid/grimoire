@@ -180,7 +180,7 @@ validate_moved_manifest_row() { # row fields are dynamically scoped from caller
 }
 
 render_migrated_artifacts() { # manifest stream
-  local manifest="$1" stream="$2" legacy purpose old_mode old_landing old_cadence source_kind cursor queue_state next history runbook_temp tracker_temp runbook_hash index subject
+  local manifest="$1" stream="$2" legacy purpose old_mode old_landing old_cadence source_kind cursor queue_state next runbook_temp tracker_temp runbook_hash index subject
   legacy="$destination/WORKSTREAM.md"; [ -f "$legacy" ] && [ ! -L "$legacy" ] || die "moved legacy handoff is missing or unsafe: $stream"
   purpose="$(legacy_purpose "$legacy" "$stream")"; compile_config
   old_mode="$(legacy_handoff_field "$legacy" mode)" || die "legacy mode is ambiguous"
@@ -213,8 +213,7 @@ render_migrated_artifacts() { # manifest stream
   esac
   [ "$commit_count" -eq 0 ] || queue_state=ready
   RUNTIME="$destination"; RUNBOOK="$RUNTIME/WORKSTREAM.md"; TRACKER="$RUNTIME/workstream.tsv"
-  next=1; history="$ROOT/.streams/history.tsv"
-  if [ -e "$history" ]; then validate_history "$history"; next="$(awk -F '\t' -v s="$stream" 'NR>1&&$1==s&&$2+0>=m{m=$2+1}END{print m+0}' "$history")"; [ "$next" -gt 0 ] || next=1; fi
+  next=1
   runbook_temp="$(mktemp "$RUNTIME/.WORKSTREAM.md.XXXXXX")"; emit_runbook "$stream" "$instance" "$branch" "$target" "$purpose" "$source_kind" "$cursor" >"$runbook_temp"
   runbook_hash="$(runbook_contract_hash "$runbook_temp")"; tracker_temp="$(mktemp "$RUNTIME/.workstream.tsv.XXXXXX")"
   {

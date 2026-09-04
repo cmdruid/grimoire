@@ -133,6 +133,7 @@ validate_tracked_control_surface() { # checkout
   while IFS= read -r -d '' path; do
     case "$path" in
       .streams/.gitignore|.streams/CONFIG.md|.streams/README.md|.streams/history.tsv|.streams/workstream.sh) ;;
+      # history.tsv is tolerated when already tracked; Workstream no longer creates or validates it.
       *) die "tracked path is not part of the fixed .streams control surface: $path" ;;
     esac
   done < <(git -C "$checkout" ls-files -z -- .streams)
@@ -832,7 +833,7 @@ emit_runbook() {
 
 cmd_runtime_init() {
   [ "$#" -ge 2 ] || die "usage: runtime-init <stream> <target> [brief] [options]"
-  local stream="$1" target="$2" brief="Ad hoc workstream" branch instance runbook_candidate tracker_candidate runbook_temp tracker_temp runbook_hash next history
+  local stream="$1" target="$2" brief="Ad hoc workstream" branch instance runbook_candidate tracker_candidate runbook_temp tracker_temp runbook_hash next
   local source_kind=brief cursor=- queue_state=intake mode_opt="" landing_opt="" cadence_opt=""
   local source_seen=no cursor_seen=no mode_seen=no landing_seen=no cadence_seen=no
   shift 2
@@ -902,12 +903,6 @@ cmd_runtime_init() {
   # The entropy read is deliberately before every repository mutation.
   instance="$(mint_instance_id)"
   next=1
-  history="$ROOT/.streams/history.tsv"
-  if [ -e "$history" ] || [ -L "$history" ]; then
-    validate_history "$history"
-    next="$(awk -F '\t' -v stream="$stream" 'NR>1&&$1==stream&&$2+0>=maximum {maximum=$2+1} END{print maximum+0}' "$history")"
-    [ "$next" -gt 0 ] || next=1
-  fi
 
   # Build and validate both runtime artifacts before changing Git topology.
   runbook_candidate="$(mktemp "${TMPDIR:-/tmp}/workstream-runbook.XXXXXX")"
@@ -1347,87 +1342,6 @@ cmd_unit_complete() {
   printf 'status=unit-complete\nunit=%s\ncommits=%s\nhook_identity=%s\nhook_state=%s\nnext_action=%s\n' "$id" "$count" "$identity" "$hook_state" "$next"
 }
 
-validate_history() {
-  local file="$1"
-  [ -f "$file" ] && [ ! -L "$file" ] || die "history is not a regular file"
-  [ "$(sed -n '1p' "$file")" = $'stream\tsequence\trecorded_at\ttarget\tunit\tcommits\tsummary' ] || die "history header is invalid"
-  LC_ALL=C awk -F '\t' '
-    NR==1 { next }
-    NF!=7 || $1=="" || $2!~/^[1-9][0-9]*$/ || $3!~/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z$/ ||
-      $4=="" || $5=="" || $6!~/^[1-9][0-9]*$/ || $7=="" { exit 2 }
-    {
-      for (part=1; part<=7; part++) if (length($part)>4096 || $part~/[[:cntrl:]]/) exit 2
-      key=$1 SUBSEP $2
-      if (seen[key]++ || ($1 in last && $2+0<=last[$1])) exit 2
-      last[$1]=$2+0
-    }
-  ' "$file" || die "history rows are invalid"
-}
-
-resolve_history_rebase_conflict() {
-  local unmerged base ours theirs combined merged editor_status
-  unmerged="$(git -C "$WT" diff --name-only --diff-filter=U)"
-  [ "$unmerged" = .streams/history.tsv ] || return 1
-  base="$(mktemp "${TMPDIR:-/tmp}/workstream-history-base.XXXXXX")"
-  ours="$(mktemp "${TMPDIR:-/tmp}/workstream-history-ours.XXXXXX")"
-  theirs="$(mktemp "${TMPDIR:-/tmp}/workstream-history-theirs.XXXXXX")"
-  combined="$(mktemp "${TMPDIR:-/tmp}/workstream-history-combined.XXXXXX")"
-  merged="$(mktemp "$WT/.streams/.history-union.XXXXXX")"
-  git -C "$WT" show :1:.streams/history.tsv >"$base" 2>/dev/null || { rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; }
-  git -C "$WT" show :2:.streams/history.tsv >"$ours" 2>/dev/null || { rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; }
-  git -C "$WT" show :3:.streams/history.tsv >"$theirs" 2>/dev/null || { rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; }
-  if ! (validate_history "$base") || ! (validate_history "$ours") || ! (validate_history "$theirs"); then
-    rm -f "$base" "$ours" "$theirs" "$combined" "$merged"
-    return 1
-  fi
-  awk -F '\t' 'NR==FNR&&NR>1{base[$1 SUBSEP $2]=$0;next} NR>1{seen[$1 SUBSEP $2]=$0} END{for(k in base)if(!(k in seen)||seen[k]!=base[k])exit 2}' "$base" "$ours" || { rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; }
-  awk -F '\t' 'NR==FNR&&NR>1{base[$1 SUBSEP $2]=$0;next} NR>1{seen[$1 SUBSEP $2]=$0} END{for(k in base)if(!(k in seen)||seen[k]!=base[k])exit 2}' "$base" "$theirs" || { rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; }
-  { tail -n +2 "$ours"; tail -n +2 "$theirs"; } | LC_ALL=C sort -t $'\t' -k1,1 -k2,2n >"$combined"
-  printf 'stream\tsequence\trecorded_at\ttarget\tunit\tcommits\tsummary\n' >"$merged"
-  awk -F '\t' 'BEGIN{OFS="\t"} {key=$1 SUBSEP $2; if(key in row){if(row[key]!=$0)exit 2; next} row[key]=$0; print}' "$combined" >>"$merged" || { rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; }
-  if ! (validate_history "$merged"); then rm -f "$base" "$ours" "$theirs" "$combined" "$merged"; return 1; fi
-  mv -f "$merged" "$WT/.streams/history.tsv"
-  git -C "$WT" add -- .streams/history.tsv
-  editor_status=0
-  GIT_EDITOR=true git -C "$WT" rebase --continue >/dev/null 2>&1 || editor_status=$?
-  rm -f "$base" "$ours" "$theirs" "$combined"
-  [ "$editor_status" -eq 0 ]
-}
-
-prepare_history_metadata() { # stream shipment unit-ids target
-  local stream="$1" shipment="$2" units="$3" target="$4" history history_temp history_before history_current now unit summary commits
-  history="$WT/.streams/history.tsv"
-  mkdir -p "$WT/.streams"
-  history_temp="$(mktemp "$WT/.streams/.history.tsv.XXXXXX")"
-  if [ -e "$history" ] || [ -L "$history" ]; then
-    [ -f "$history" ] && [ ! -L "$history" ] || die "history is unsafe"
-    validate_history "$history"
-    history_before="$(file_fingerprint "$history")"
-    cp "$history" "$history_temp"
-  else
-    history_before=absent
-    printf 'stream\tsequence\trecorded_at\ttarget\tunit\tcommits\tsummary\n' >"$history_temp"
-  fi
-  now="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-  for unit in $units; do
-    if awk -F '\t' -v s="$stream" -v u="$unit" 'NR>1&&$1==s&&$2==u{found=1}END{exit found?0:1}' "$history_temp"; then
-      continue
-    fi
-    summary="$(tracker_get unit "$unit" summary)"
-    commits="$(tracker_get unit "$unit" commit-count)"
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$stream" "$unit" "$now" "$target" "$(tracker_get unit "$unit" slug)" "$commits" "$summary" >>"$history_temp"
-  done
-  validate_history "$history_temp"
-  history_current="$(file_fingerprint "$history")"
-  [ "$history_current" = "$history_before" ] || { rm -f "$history_temp"; die "history changed concurrently"; }
-  write_atomic_file "$history" "$history_temp" 644
-  rm -f "$history_temp"
-  git -C "$WT" add -- .streams/history.tsv
-  if ! git -C "$WT" diff --cached --quiet -- .streams/history.tsv; then
-    git -C "$WT" commit -qm "workstream: prepare shipment $shipment" -- .streams/history.tsv
-  fi
-}
-
 prepare_gitlink_rows() { # shipment target-tip landing output
   local shipment="$1" target_tip="$2" landing="$3" output="$4" path object path_id availability published missing=no
   while IFS= read -r -d '' path; do
@@ -1501,7 +1415,7 @@ cmd_ship_prepare() {
     printf 'shipment\t%s\tphase\tsync\nshipment\t%s\toutcome\tactive\nshipment\t%s\ttarget-tip\t%s\nphase\t-\tnext-action\tprepare-ship\n' "$shipment" "$shipment" "$shipment" "$sync_base" >>"$raw"
     rewrite_tracker "$raw"; rm -f "$raw"
     if ! git -C "$WT" merge-base --is-ancestor "$sync_base" HEAD; then
-      if ! git -C "$WT" rebase "$sync_base" >/dev/null 2>&1 && ! resolve_history_rebase_conflict; then
+      if ! git -C "$WT" rebase "$sync_base" >/dev/null 2>&1; then
         raw="$(mktemp "${TMPDIR:-/tmp}/workstream-sync-conflict.XXXXXX")"
         tail -n +2 "$TRACKER" >"$raw"
         grep -qF $'friction\t'"$shipment"$'/rebase-conflict\tpresent\tyes' "$raw" || printf 'friction\t%s/rebase-conflict\tpresent\tyes\n' "$shipment" >>"$raw"
@@ -1581,7 +1495,6 @@ cmd_ship_prepare() {
   if ! git -C "$WT" merge-base --is-ancestor "$sync_base" HEAD; then
     die "synchronization did not make the recorded target an ancestor"
   fi
-  prepare_history_metadata "$stream" "$shipment" "$units" "$target"
   branch_tip="$(git -C "$WT" rev-parse HEAD)"
   target_tip="$sync_base"
   gitlinks="$(mktemp "${TMPDIR:-/tmp}/workstream-gitlinks.XXXXXX")"
@@ -1607,7 +1520,7 @@ cmd_ship_prepare() {
 }
 
 build_gate_manifests() { # directory branch-tip transaction-base target-ref
-  local private="$1" branch_tip="$2" transaction_base="$3" target="$4" local_target generated_path
+  local private="$1" branch_tip="$2" transaction_base="$3" target="$4" local_target
   local_target="$(git -C "$WT" rev-parse "$target")"
   git -C "$WT" diff --name-only -z "$transaction_base..$branch_tip" | LC_ALL=C sort -zu >"$private/own"
   if [ "$local_target" = "$transaction_base" ]; then
@@ -1619,11 +1532,6 @@ build_gate_manifests() { # directory branch-tip transaction-base target-ref
   fi
   git -C "$WT" diff --name-only -z "$local_target..$branch_tip" | LC_ALL=C sort -zu >"$private/final"
   : >"$private/generated"
-  generated_path=.streams/history.tsv
-  if tr '\0' '\n' <"$private/own" | grep -qxF "$generated_path"; then
-    validate_history "$WT/$generated_path"
-    printf '%s\0' "$generated_path" >"$private/generated"
-  fi
   chmod 600 "$private/own" "$private/incoming" "$private/final" "$private/generated"
 }
 
@@ -2414,8 +2322,7 @@ emit_control_readme() {
 
 `CONFIG.md` defines defaults and lifecycle hooks for streams created after configuration. The
 executable `workstream.sh` exclusively validates and mutates ignored per-stream runtime state.
-`history.tsv` is the concise landed-unit ledger. Immediate child directories are ignored stream
-runtimes; do not copy or nest them.
+Immediate child directories are ignored stream runtimes; do not copy or nest them.
 <!-- /workstream:control@1 -->
 EOF
 }
@@ -2452,28 +2359,26 @@ render_control_readme() {
 }
 
 cmd_control_surface() {
-  local mode="$1" home="$ROOT/.streams" initialized=no candidate_config candidate_ignore candidate_readme_block candidate_readme candidate_history changed=0 path
+  local mode="$1" home="$ROOT/.streams" initialized=no candidate_config candidate_ignore candidate_readme_block candidate_readme changed=0 path
   local -a changed_paths=()
   if [ -e "$home" ] || [ -L "$home" ]; then [ -d "$home" ] && [ ! -L "$home" ] || die "control home is unsafe"; else mkdir "$home"; fi
   if [ -f "$home/README.md" ] && grep -qFx '<!-- workstream:control@1 -->' "$home/README.md"; then initialized=yes; fi
   if [ "$mode" = repair ] && [ "$initialized" = no ] && [ ! -e "$home/workstream.sh" ]; then die "repair requires recognized initialized control state"; fi
-  if [ "$mode" = repair ] && { [ ! -e "$home/history.tsv" ] || [ -L "$home/history.tsv" ]; }; then die "initialized history is missing or unsafe; recover it from Git"; fi
-  for path in .gitignore CONFIG.md README.md history.tsv workstream.sh; do [ ! -L "$home/$path" ] || die "control target is symlinked: $path"; done
+  for path in .gitignore CONFIG.md README.md workstream.sh; do [ ! -L "$home/$path" ] || die "control target is symlinked: $path"; done
+  [ ! -L "$home/history.tsv" ] || die "control target is symlinked: history.tsv"
 
   candidate_config="$(mktemp "${TMPDIR:-/tmp}/workstream-config.XXXXXX")"; emit_default_config >"$candidate_config"
   candidate_ignore="$(mktemp "${TMPDIR:-/tmp}/workstream-ignore.XXXXXX")"; printf '/*/\n/.migration.tsv\n' >"$candidate_ignore"
   candidate_readme_block="$(mktemp "${TMPDIR:-/tmp}/workstream-readme-block.XXXXXX")"; emit_control_readme >"$candidate_readme_block"
   candidate_readme="$(mktemp "${TMPDIR:-/tmp}/workstream-readme.XXXXXX")"; render_control_readme "$home/README.md" "$candidate_readme" "$candidate_readme_block"
-  candidate_history="$(mktemp "${TMPDIR:-/tmp}/workstream-history.XXXXXX")"; printf 'stream\tsequence\trecorded_at\ttarget\tunit\tcommits\tsummary\n' >"$candidate_history"
 
   if [ -e "$home/CONFIG.md" ]; then validate_config "$home/CONFIG.md"; else write_atomic_file "$home/CONFIG.md" "$candidate_config" 644; changed_paths+=(.streams/CONFIG.md); changed=$((changed + 1)); fi
-  if [ -e "$home/history.tsv" ]; then validate_history "$home/history.tsv"; else write_atomic_file "$home/history.tsv" "$candidate_history" 644; changed_paths+=(.streams/history.tsv); changed=$((changed + 1)); fi
   if [ ! -f "$home/.gitignore" ] || ! cmp -s "$candidate_ignore" "$home/.gitignore"; then write_atomic_file "$home/.gitignore" "$candidate_ignore" 644; changed_paths+=(.streams/.gitignore); changed=$((changed + 1)); fi
   if [ ! -f "$home/README.md" ] || ! cmp -s "$candidate_readme" "$home/README.md"; then write_atomic_file "$home/README.md" "$candidate_readme" 644; changed_paths+=(.streams/README.md); changed=$((changed + 1)); fi
   if [ "$SELF" != "$home/workstream.sh" ] && { [ ! -f "$home/workstream.sh" ] || ! cmp -s "$SELF" "$home/workstream.sh"; }; then write_atomic_file "$home/workstream.sh" "$SELF" 755; changed_paths+=(.streams/workstream.sh); changed=$((changed + 1)); fi
   if [ "$SELF" = "$home/workstream.sh" ]; then chmod 755 "$home/workstream.sh"; fi
   ensure_exclusions
-  rm -f "$candidate_config" "$candidate_ignore" "$candidate_readme_block" "$candidate_readme" "$candidate_history"
+  rm -f "$candidate_config" "$candidate_ignore" "$candidate_readme_block" "$candidate_readme"
   if [ "${#changed_paths[@]}" -gt 0 ]; then git -C "$ROOT" add -- "${changed_paths[@]}"; fi
   if [ "${#changed_paths[@]}" -gt 0 ] && ! git -C "$ROOT" diff --cached --quiet -- "${changed_paths[@]}"; then
     git -C "$ROOT" commit -qm "Workstream: $mode control surface" -- "${changed_paths[@]}"
@@ -2485,7 +2390,7 @@ cmd_control_surface() {
 
 cmd_setup() { [ "$#" -eq 0 ] || die "usage: setup"; cmd_control_surface setup; }
 reconstruct_idle_tracker() { # stream
-  local stream="$1" recorded_stream recorded_root recorded_worktree branch target top before current instance next history candidate temp runbook_hash
+  local stream="$1" recorded_stream recorded_root recorded_worktree branch target top before current instance next candidate temp runbook_hash
   [ -f "$RUNBOOK" ] && [ ! -L "$RUNBOOK" ] || die "stream repair requires a safe runbook"
   [ ! -e "$TRACKER" ] && [ ! -L "$TRACKER" ] || die "stream tracker is unsafe"
   recorded_stream="$(runbook_field "$RUNBOOK" stream)"; recorded_root="$(runbook_field "$RUNBOOK" root)"
@@ -2504,11 +2409,7 @@ reconstruct_idle_tracker() { # stream
   [ -z "$(git -C "$WT" status --porcelain --untracked-files=no)" ] || die "tracker reconstruction requires clean tracked work"
   git -C "$WT" merge-base --is-ancestor "$branch" "$target" || die "tracker reconstruction refuses unlanded commits"
   instance="$(runbook_field "$RUNBOOK" instance-id)"; runbook_hash="$(runbook_contract_hash "$RUNBOOK")"
-  next=1; history="$ROOT/.streams/history.tsv"
-  if [ -e "$history" ] || [ -L "$history" ]; then
-    validate_history "$history"
-    next="$(awk -F '\t' -v s="$stream" 'NR>1&&$1==s&&$2+0>=m{m=$2+1}END{print m+0}' "$history")"; [ "$next" -gt 0 ] || next=1
-  fi
+  next=1
   before="$(file_fingerprint "$RUNBOOK")"; candidate="$(mktemp "${TMPDIR:-/tmp}/workstream-repair-tracker.XXXXXX")"
   emit_tracker_base "$instance" "$next" "$next" "$runbook_hash" - brief intake define-unit >"$candidate"
   validate_tracker "$candidate"; current="$(file_fingerprint "$RUNBOOK")"; [ "$current" = "$before" ] || { rm -f "$candidate"; die "runbook changed during tracker reconstruction"; }
