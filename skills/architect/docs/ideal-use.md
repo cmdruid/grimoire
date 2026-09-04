@@ -24,9 +24,9 @@ settle a material feasibility question. Completed spike evidence is linked from 
 
 `spec <draft>` carries settled decisions and relied-on spike citations into a new `architect/spec@1`
 record. It does not copy transient experiment code or raw working notes. After the dated spec exists,
-Architect marks the draft `Disposition: promoted` and links the spec. It grills remaining gaps,
-self-reviews, and asks the human to read the result. The spec remains `status: draft` until the
-caller's accepted review publishes it.
+Architect marks the draft `Disposition: promoted` and links the spec. It resolves remaining
+material gaps, self-reviews, and gives the human the result. The spec remains `status: draft`
+until the caller accepts and publishes it; independent review is conditional.
 
 The accepted spec is Architect's sole feature baton. Implementation sequencing is a different job.
 

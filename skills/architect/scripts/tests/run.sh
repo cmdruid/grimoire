@@ -4,7 +4,7 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 rc=0
-for t in ground-check-test.sh artifacts-test.sh procedure-contract-test.sh skill-doc-test.sh migrate-contract-test.sh setup-test.sh; do
+for t in ground-check-test.sh artifacts-test.sh procedure-contract-test.sh skill-doc-test.sh proportionality-test.sh migrate-contract-test.sh setup-test.sh; do
   echo "== $t"
   bash "$DIR/$t" || rc=1
 done

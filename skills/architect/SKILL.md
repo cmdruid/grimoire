@@ -7,7 +7,7 @@ description: "Use when the user runs `/architect`, asks to brainstorm, save a de
 
 `/architect <verb> [args]` runs the specification spine: divergent ideation
 (`brainstorm`), optional saved idea drafts, bounded feasibility evidence
-(`spike`), the interview that resolves every open decision (`grill`), and the
+(`spike`), the interview that resolves material design decisions (`grill`), and the
 argued specification (`spec`). Genesis is two verbs around that
 spine: `new` mints a founding-shaped working file; `grill`/`spec` fill it in
 place; `deploy` materializes a git repository (new directory, or in place
@@ -26,8 +26,8 @@ This skill is **self-contained and uniquely named**: it depends on no other skil
 and collides with none.
 
 **Brief the human.** The conversation leads with the decision or the draft,
-not the machinery. "Here are two approaches; I recommend A because…" /
-"The spec is at `<path>`. Please read it before we sequence work."
+not the machinery. State the recommendation when there is a real choice; for a
+written spec, give its path and any material uncertainty that remains.
 `founding-shaped` and `status: draft` stay in the files.
 
 **Project homes.** Resolve the project root first. Project support and records live only under its
@@ -45,7 +45,8 @@ else synthesize the same four-key front matter in file mode, naming the
 file `YYYY-MM-DD-<slug>.md` — an undated filename is not a record, so the tool
 will not see it. Templates supply bodies only and cannot select schemas. Never write the flat
 `.records/templates/<doctype>.md`. Mint stays `status: draft`.
-The caller writes `published` after a passing host's review they accept.
+The caller may write `published` when they accept it; independent review is
+conditional, not a publication prerequisite.
 Closure through `.records/records.sh done` when the tool exists; else
 file-mode stamp. Founding-shaped `grill` / `spec` stay on the named file
 (no records mint). `new` / `deploy` unchanged.
@@ -64,9 +65,9 @@ feature `spec` and ADRs. It does **not** apply to brainstorm drafts, spikes, `ne
 `deploy`, and it does **not** apply to `grill`/`spec` when the named file is
 founding-shaped (*Founding-shaped* below). Those stay on the cwd working file.
 
-**Status vocabulary.** Specs and ADRs mint as `draft`. The caller writes
-`published` after a passing host's review they accept (one `published` spec
-per subject, as writer prose). This skill does not use `stage`.
+**Status vocabulary.** Specs and ADRs mint as `draft`. The caller may write
+`published` when they accept one (one `published` spec per subject, as writer
+prose). This skill does not use `stage`.
 Founding-shaped working files stay `status: draft`. They are not the living
 feature spec. They carry `schema: architect/founding@1`; do not write `published` on them.
 Completed spike records are the exception: `spike-publish` writes `status: published` because
@@ -87,26 +88,26 @@ not stamped. Optional extra keys remain legal.
 | `brainstorm save [name]` | `verbs/brainstorm.md` | explicitly save the current idea as a living Architect draft |
 | `spike [draft-or-question]` | `verbs/spike.md` | qualify, confirm, and run one bounded disposable feasibility experiment |
 | `new <name>` | `verbs/new.md` | mint `./<name>.md` — founding-shaped, empty of design content |
-| `grill [doc]` | `verbs/grill.md` | interview until every decision branch resolves; founding-shaped → fill the six map H2s **in place** |
-| `spec [doc]` | `verbs/spec.md` | synthesize → grill the gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) |
+| `grill [doc]` | `verbs/grill.md` | resolve material design decisions; founding-shaped → fill the six map H2s **in place** |
+| `spec [doc]` | `verbs/spec.md` | synthesize → resolve material gaps → the argued spec; founding-shaped → fill the map **in place** (no records mint, no reshape) |
 | `deploy <file>` | `verbs/deploy.md` | project a founding spec into a git repo + three founding docs (new dir or in-place) |
 | `setup [<root>]` | `verbs/setup.md` | deploy active project templates absent-only |
 | `migrate <source-path>` | `verbs/migrate.md` | preview and upgrade owned records/templates, including in place |
 
-```
-spec  →  (host's review)  →  (caller publishes)  →  (host sequences)
-```
+## Proportionality
 
-Each arrow is a stop. No verb invokes the next.
+The verbs are available parts, not a mandatory pipeline. Do not run the whole spine
+when the requested outcome needs only one part. A brainstorm may end in conversation;
+a clear request may go directly to `spec`; `grill` and `spike` are used only when a
+material decision or feasibility uncertainty warrants them. Do not create an ADR,
+saved draft, spike, or review step merely because the mechanism exists.
 
-`brainstorm → spec` is the linear spine; an explicit save may persist the idea between them, and
+`brainstorm → spec` is the common spine; an explicit save may persist the idea between them, and
 `spike` supplies feasibility evidence only when material design uncertainty warrants its cost.
 `grill` is a primitive
 callable at any point. Bare `/architect` stays `brainstorm`. Genesis is
-explicit `new`. Weight scales with the work: a **small feature** may stop
-at the accepted spec (the spec doubles as its plan — slices live **in**
-`templates/specs.md`, not a separate job artifact). For a **patch**, architect
-is not used at all.
+explicit `new`. A written spec ends this skill's feature work; implementation
+sequencing is outside its scope. For a patch, Architect is not used at all.
 
 ## Founding-shaped
 
@@ -170,8 +171,8 @@ Records carry their own lifecycle status. `grill` writes no new file.
 
 ## Composition (the orchestrator owns building, landing, capture)
 
-- **Standalone** — the user runs the spine; the host's build lane consumes the
-  accepted spec. The close-the-books sweep is the project's own convention.
+- **Standalone** — the user invokes the useful part; the host's build lane may
+  consume the accepted spec.
 - **Project routing** — a host's routing convention may dispatch design-at-stake
   work here. The orchestrator / host lane consumes the spec.
 

@@ -1,9 +1,8 @@
 # <title> — Spec
 
-<Draft weight (brainstorm): fill Problem/Goal, sketch the Approach, list open questions at the
-foot. Spec weight: every section argued, no open questions left — grill resolves them. The
-accepted spec is published after a passing host's review, by the caller. A small feature's spec may double as its plan
-(add the optional Slices stub below).>
+<Use only the detail the decision needs. Make material choices explicit and label
+non-blocking unknowns; do not invent alternatives or implementation ceremony to
+fill the template. This is a design spec, not an implementation plan.>
 
 ## Problem
 <The root cause / need being addressed — the underlying thing, not a surface knob.>
@@ -12,15 +11,11 @@ accepted spec is published after a passing host's review, by the caller. A small
 <One or two sentences: what "done" looks like.>
 
 ## Approach
-<The chosen approach, plus the one or two alternatives rejected and why.>
+<The chosen approach. Include rejected alternatives only when a real fork informed the choice.>
 
 ## Mechanism
-<Concrete: the steps, key constants/invariants, data flow, formulas. Enough to implement from —
-and falsifiable: a gap between this and the code should be detectable.>
+<The design commitments, key invariants, and data flow needed to detect a gap
+between the design and code. Omit task sequencing.>
 
 ## Verification
 <How we'll know it works: tests, manual checks, visual confirmation.>
-
-## Slices
-<Optional — a small feature's spec may double as its plan. Each slice: id, verify
-command, paths. Omit when the spec is drawings only.>
