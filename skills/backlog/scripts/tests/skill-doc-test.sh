@@ -20,6 +20,7 @@ for f in tracker file query debrief curate;do grep -qF 'scripts/tracker-runtime-
 grep -qF '.trackers/DEBRIEF.md' "$B/verbs/debrief.md"&&pass=$((pass+1))||fail=$((fail+1))
 if grep -qF '.agents/skilldata/backlog/hooks/debrief.md' "$B/verbs/debrief.md";then fail=$((fail+1));else pass=$((pass+1));fi
 for needle in 'successful debrief in this context' 'do not create a durable cursor'; do grep -qF -- "$needle" "$B/verbs/debrief.md" && pass=$((pass+1)) || fail=$((fail+1)); done
+for needle in 'serialized custodial continuation' 'completed-unit identity' 'commit evidence' 'prior successful debrief receipt' 'one scoped commit'; do grep -qF -- "$needle" "$B/verbs/debrief.md" && pass=$((pass+1)) || fail=$((fail+1)); done
 for needle in 'Project Feedback' 'Qualitative development experience whose remedy belongs in this project.';do grep -qF -- "$needle" "$B/suggestions/feedback.md"&&pass=$((pass+1))||fail=$((fail+1));done
 for needle in 'Failures' 'Unresolved test, build, and project-tool behavior.' 'one row per failure family';do grep -qF -- "$needle" "$B/suggestions/failures.md"&&pass=$((pass+1))||fail=$((fail+1));done
 for needle in '`tasks`, `issues`, `failures`, `feedback`, `routines`' 'all five' 'former four-queue layers' '.setup-selection';do grep -qF -- "$needle" "$B/SKILL.md"&&pass=$((pass+1))||fail=$((fail+1));done

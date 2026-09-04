@@ -23,7 +23,7 @@ fn selected_root() -> PathBuf {
 
 #[cfg(unix)]
 #[test]
-fn root_discovery_excludes_nested_workstreams() {
+fn root_discovery_excludes_nested_streams() {
     let inventory = scan(&FsTree::new(selected_root())).expect("scan selected root");
     let names: Vec<_> = inventory
         .skills
@@ -43,7 +43,7 @@ fn root_discovery_excludes_nested_workstreams() {
             !path
                 .as_bytes()
                 .split(|byte| *byte == b'/')
-                .any(|part| matches!(part, b".workstreams" | b".agents" | b"vendor")),
+                .any(|part| matches!(part, b".streams" | b".workstreams" | b".agents" | b"vendor")),
             "managed or nested projection content escaped discovery: {path}"
         );
     }

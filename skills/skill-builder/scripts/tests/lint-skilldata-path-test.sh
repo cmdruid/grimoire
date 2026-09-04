@@ -86,6 +86,19 @@ lint
 expect_absent 'first-class tracker path remains valid' 'owner-local tracker path' "$OUT"
 
 reset_lib
+write_skill 'Write generic state beneath `.streams/cache`.'
+lint
+expect 'foreign fixed-home use fails' ".streams is reserved for Workstream's fixed control home" "$OUT"
+
+reset_lib
+write_skill 'Workstream owns `.streams/CONFIG.md`.'
+mv "$LIB/skills/widget" "$LIB/skills/workstream"
+sed -i.bak 's/name: widget/name: workstream/; s/# widget/# workstream/; s/edges:widget/edges:workstream/g' "$LIB/skills/workstream/SKILL.md"
+rm "$LIB/skills/workstream/SKILL.md.bak"
+lint
+expect_absent 'Workstream may use its fixed home' ".streams is reserved" "$OUT"
+
+reset_lib
 write_skill 'This global-only package writes no project data, but still names `.agents/skilldata/widget/trackers/tasks.tsv`.' \
   '- Scope: user-global, writes no project data.
 - Path: `~/.agents/skilldata/widget/cache/`.
@@ -180,5 +193,25 @@ else
 fi
 cp "$before_copy" "$broken"
 if cmp -s "$before_copy" "$broken"; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+
+# Red-prove the fixed-home owner guard and restore the disposable linter.
+streams_broken="$TMP/skills-lint-streams.sh"
+streams_before="$TMP/skills-lint-streams.before"
+cp "$LINT" "$streams_broken"
+cp "$LINT" "$streams_before"
+streams_fragment='fail "$name: $rel:$line_no: .streams is reserved'
+expect_eq 'streams-owner mutation target is unique' 1 "$(grep -cF "$streams_fragment" "$streams_broken")"
+sed -i.bak '/\.streams is reserved for Workstream/ s/^[[:space:]]*fail .*/      : # guard disabled/' "$streams_broken"
+rm "$streams_broken.bak"
+reset_lib
+write_skill 'Write generic state beneath `.streams/cache`.'
+if bash "$streams_broken" "$LIB" >"$OUT" 2>&1; then
+  pass=$((pass + 1))
+else
+  echo 'FAIL: disabled streams-owner guard did not make its isolated fixture green' >&2
+  fail=$((fail + 1))
+fi
+cp "$streams_before" "$streams_broken"
+if cmp -s "$streams_before" "$streams_broken"; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 
 report lint-skilldata-path-test

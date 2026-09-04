@@ -103,7 +103,7 @@ else pass=$((pass + 1)); fi
 
 if grep -Eq 'named root checkpoint|named checkpoint|\.checkpoints/' \
   "$ROOT/README.md" "$ROOT/PACK.md" "$ROOT/skills/foreman/verbs/goal.md" \
-  "$ROOT/skills/workstream/templates/workstream-handoff.md"; then
+  "$ROOT/skills/workstream/SKILL.md"; then
   echo "FAIL: downstream live prose still advertises named checkpoints" >&2; fail=$((fail + 1))
 else pass=$((pass + 1)); fi
 

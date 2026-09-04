@@ -27,8 +27,6 @@ usage: workstream-git.sh <subcommand> [args...]
                                                           markdown gate truth table
   land-readiness   <root> <worktree> <branch> <target>   ship/land snapshot
   cheatsheet-check <worktree> [<handoff>]                 cheat-sheet pointer drift
-  inplace-scan     <root>                                 in-place streams present?
-  inplace-state    <root> <stream> <branch> <target>     custody facts (in-place)
 
 Each prints `key=value` facts then (where useful) evidence lists. Read-only;
 emits no recommendation -- the agent maps facts to action via SKILL.md.
@@ -68,10 +66,8 @@ cmd_stream_state() {
   local wt="$1" branch="$2" target="$3"
   validate_ref "$branch"; validate_ref "$target"
 
-  local head_branch toplevel porcelain ahead behind drafts last_subj last_age rec_rel rec_re
+  local head_branch toplevel porcelain ahead behind last_subj last_age
   local staged rebase_ip gp
-  rec_rel=.records
-  rec_re="${rec_rel//./\\.}"
   head_branch="$(git -C "$wt" rev-parse --abbrev-ref HEAD)"
   toplevel="$(git -C "$wt" rev-parse --show-toplevel)"
   # Enumerate individual untracked files. The default collapses a wholly-untracked
@@ -91,18 +87,9 @@ cmd_stream_state() {
   last_subj="$(git -C "$wt" log -1 --format='%s')"
   last_age="$(git -C "$wt" log -1 --format='%cr')"
 
-  # Untracked Workstream manifest drafts are expected dirt, not WIP.
-  drafts="$(printf '%s\n' "$porcelain" | sed -n "s#^?? \($rec_re/streams/.*\.md\)\$#\1#p" | grep -v '/archive/' | paste -sd, - || true)"
-  [ -z "$drafts" ] && drafts="none"
-  # Real WIP = any porcelain line that is NOT an untracked top-level streams
-  # draft (the same set `drafts` reports). An untracked file under
-  # streams/archive/ (or deeper) is real WIP, not a draft -- it must surface in
-  # wip_tracked rather than as dirt no fact explains.
   local wip
-  wip="$(printf '%s\n' "$porcelain" | grep -v '^$' | grep -vE "^\?\? $rec_re/streams/[^/]+\.md\$" || true)"
+  wip="$(printf '%s\n' "$porcelain" | grep -v '^$' || true)"
 
-  echo "records=$rec_rel"
-  echo "records-root=$rec_rel"
   echo "branch_matches=$([ "$head_branch" = "$branch" ] && echo true || echo false)"
   echo "toplevel_matches=$([ "$toplevel" = "$wt" ] && echo true || echo false)"
   echo "behind=$behind"            # commits on <target> the branch lacks -> sync due if >0
@@ -119,10 +106,9 @@ cmd_stream_state() {
   fi
   echo "rebase_in_progress=$rebase_ip"  # true => an interrupted rebase holds the tree
   # A tree carrying its own top-level hand-off must not ALSO contain a nested
-  # .workstreams/ -- that is the corruption signature of a save that resolved the
+  # .streams/ -- that is the corruption signature of copied runtime state.
   # hand-off's root-relative address against the worktree (stray stale copy).
-  echo "nested_stray_handoff=$([ -f "$wt/WORKSTREAM.md" ] && [ -e "$wt/.workstreams" ] && echo true || echo false)"
-  echo "drafted_next_plan=$drafts"
+  echo "nested_stray_handoff=$([ -f "$wt/WORKSTREAM.md" ] && find "$wt/.streams" -mindepth 2 -maxdepth 2 -type f -name WORKSTREAM.md -print -quit 2>/dev/null | grep -q . && echo true || echo false)"
   echo "last_commit=$last_subj"
   echo "last_commit_age=$last_age"
 }
@@ -173,31 +159,22 @@ cmd_land_readiness() {
   local root="$1" wt="$2" branch="$3" target="$4"
   validate_ref "$branch"; validate_ref "$target"
 
-  local root_branch root_porcelain behind ahead wt_staged root_dirty_list own_sorted overlap
+  local root_branch root_porcelain behind ahead wt_staged interrupted entry path
   root_branch="$(git -C "$root" rev-parse --abbrev-ref HEAD)"
-  root_porcelain="$(git -C "$root" status --porcelain)"
+  root_porcelain="$(git -C "$root" status --porcelain --untracked-files=all)"
   behind="$(git -C "$wt" rev-list --count "$branch..$target")"
   ahead="$(git -C "$wt" rev-list --count "$target..$branch")"
   wt_staged="$(git -C "$wt" diff --cached --name-only)"
 
-  # Dirty-overlap split: `merge --ff-only` (the root_on_target landing path)
-  # aborts only when a dirty root path OVERLAPS the merge's changed set -- a
-  # sibling's DISJOINT WIP does not block the land (and the by-ref advance never
-  # touches the tree at all). One boolean forced a round-trip on provably safe
-  # lands; the split lets the doctrine key on overlap only.
-  root_dirty_list="$( { git -C "$root" diff --name-only; \
-                        git -C "$root" diff --cached --name-only; \
-                        git -C "$root" ls-files --others --exclude-standard; } | sort -u )"
-  own_sorted="$(git -C "$wt" diff --name-only "$target...$branch" | sort -u)"
-  overlap="$(comm -12 <(printf '%s\n' "$root_dirty_list") <(printf '%s\n' "$own_sorted") | grep -v '^$' || true)"
-
   echo "root_on_target=$([ "$root_branch" = "$target" ] && echo true || echo false)"
   echo "root_dirty=$([ -n "$root_porcelain" ] && echo true || echo false)"
-  echo "root_dirty_overlapping=$([ -n "$overlap" ] && echo true || echo false)"
-  if [ -n "$overlap" ]; then
-    echo "root_dirty_overlap_paths:"
-    printf '%s\n' "$overlap" | sed 's/^/  /'
-  fi
+  interrupted=false
+  for entry in MERGE_HEAD rebase-merge rebase-apply CHERRY_PICK_HEAD REVERT_HEAD sequencer BISECT_START; do
+    path="$(git -C "$root" rev-parse --git-path "$entry")"
+    case "$path" in /*) ;; *) path="$root/$path" ;; esac
+    if [ -e "$path" ] || [ -L "$path" ]; then interrupted=true; fi
+  done
+  echo "root_interrupted=$interrupted"
   # Staged-but-uncommitted entries in the WORKTREE index (the git-mv strand
   # signature) -- resolve before landing; the gate reads the tree, not the index.
   echo "staged_uncommitted=$([ -n "$wt_staged" ] && echo true || echo false)"
@@ -282,54 +259,6 @@ cmd_cheatsheet_check() {
   echo "stale=$stale"
 }
 
-# inplace-scan: which streams (if any) record in-place isolation? The tree is
-# singular, so create --in-place refuses when this is non-empty.
-cmd_inplace_scan() {
-  [ "$#" -eq 1 ] || { echo "usage: workstream-git.sh inplace-scan <root>" >&2; exit 2; }
-  local root="$1" f name found=""
-  for f in "$root"/.workstreams/*/WORKSTREAM.md; do
-    [ -f "$f" ] || continue
-    if grep -qE '^- isolation: *in-place' "$f"; then
-      name="$(basename "$(dirname "$f")")"
-      found="${found:+$found,}$name"
-    fi
-  done
-  echo "inplace_streams=${found:-none}"
-}
-
-# inplace-state: custody facts for an in-place stream. The agent classifies
-# held/parked/foreign from these (verbs/park.md, load.md) -- the script only
-# reports what git and the hand-off say.
-cmd_inplace_state() {
-  [ "$#" -eq 4 ] || { echo "usage: workstream-git.sh inplace-state <root> <stream> <branch> <target>" >&2; exit 2; }
-  local root="$1" stream="$2" branch="$3" target="$4"
-  validate_ref "$branch"; validate_ref "$target"
-  local handoff="$root/.workstreams/$stream/WORKSTREAM.md"
-
-  local head_branch porcelain behind ahead top_subj
-  head_branch="$(git -C "$root" rev-parse --abbrev-ref HEAD)"
-  porcelain="$(git -C "$root" status --porcelain)"
-  behind="$(git -C "$root" rev-list --count "$branch..$target")"
-  ahead="$(git -C "$root" rev-list --count "$target..$branch")"
-  top_subj="$(git -C "$root" log -1 --format='%s' "$branch")"
-
-  echo "head_branch=$head_branch"
-  echo "on_stream_branch=$([ "$head_branch" = "$branch" ] && echo true || echo false)"
-  echo "on_target=$([ "$head_branch" = "$target" ] && echo true || echo false)"
-  if [ -f "$handoff" ]; then
-    echo "handoff_parked=$(grep -qE '^Parked: *true' "$handoff" && echo true || echo false)"
-  else
-    echo "handoff_parked=unknown"
-  fi
-  # printf + bare case, NOT case-inside-$(...): bash 3.2's parser (macOS /bin/bash)
-  # breaks on the unescaped ')' in a case-pattern nested in a quoted $(...).
-  printf "top_wip="
-  case "$top_subj" in wip:*) echo true ;; *) echo false ;; esac
-  echo "dirty=$([ -n "$porcelain" ] && echo true || echo false)"
-  echo "behind=$behind"
-  echo "ahead=$ahead"
-}
-
 main() {
   [ "$#" -ge 1 ] || { usage; exit 2; }
   local sub="$1"; shift
@@ -339,8 +268,6 @@ main() {
     gate-facts)       cmd_gate_facts "$@" ;;
     land-readiness)   cmd_land_readiness "$@" ;;
     cheatsheet-check) cmd_cheatsheet_check "$@" ;;
-    inplace-scan)     cmd_inplace_scan "$@" ;;
-    inplace-state)    cmd_inplace_state "$@" ;;
     *) echo "unknown subcommand: $sub" >&2; usage; exit 2 ;;
   esac
 }

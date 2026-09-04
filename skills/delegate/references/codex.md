@@ -100,11 +100,10 @@ work doesn't sweep in unrelated drift.
 
 - **Codex never commits.** In coding mode it writes to the working tree; you review and commit. State
   this in every coding prompt, regardless of any project memory.
-- **Never use workspace-writing mode with `-C` / cwd on a held tree.** A target is held when `<toplevel>/WORKSTREAM.md` exists, or a
-  `<toplevel>/.workstreams/*/WORKSTREAM.md` records `isolation: in-place` and its Coordinates
-  `branch:` equals `git -C <toplevel> branch --show-current`. If held → stop; the parent uses
-  mailbox or an isolated worktree. When the route *is* isolated worktree, `-C` / cwd **is** that
-  worktree's `<abs-path>`, never the held/target path.
+- **Never use workspace-writing mode with `-C` / cwd on a held tree.** A target is held when its
+  top-level `WORKSTREAM.md` exists. If held → stop; the parent uses mailbox or a separate worktree.
+  When the route is a separate worktree, `-C` / cwd **is** that worktree's `<abs-path>`, never the
+  held/target path.
 - **Always use the mode's sandbox:** `--sandbox read-only` for analysis;
   `--sandbox workspace-write` for coding. Never use
   `--dangerously-bypass-approvals-and-sandbox` or `danger-full-access` unless the human explicitly

@@ -1,41 +1,22 @@
-# `close`  · runs at the seam (tear down — queue exhausted or paused)
+# `close` — tear down a resolved stream
 
-**`close` is a lean teardown — by default it creates no artifacts, makes no root commit, and writes
-no record.** The stream's durable trail already exists: every shipped feature left its ledger entry
-and any Workstream execution debrief at `ship`. Do **not** re-capture at close — no close record and
-no `<target>` advance. (If close itself requires unrelated project policy, run the compiled Feature
-completion hook if nonempty explicitly **before** closing — the user's call, never the default path.) The common case
-(queue exhausted, nothing unshipped) is **three git commands** and no token-heavy bookkeeping.
+Invoke `workstream.sh CHECKOUT close-check STREAM`. If `ahead` is nonzero or tracked work is dirty,
+ask the user to ship or discard it; never infer discard and never perform generic cleanup. A
+running, uncertain, awaiting-merge, or unfinalized shipment reports `lifecycle_blocked=yes` and
+blocks teardown.
 
-`<target>` = the workstream's `integration-target` (Coordinates).
+After the branch is fully contained in the recorded target, run:
 
-1. **Decide what happens to unshipped WIP** — `git -C <worktree> log <target>..<branch> --oneline`
-   (this same check is the merge-safety guard: empty ⇒ the branch is fully merged into `<target>`):
-   - **Empty** (nothing unshipped) → go straight to teardown.
-   - **Non-empty** → surface the unshipped commits and ask **ship or discard** (**default discard** —
-     never auto-land at close). On *ship*: run `ship` (`verbs/ship.md` — its Landing sequence) first
-     so nothing is stranded, then teardown. On *discard*: teardown with `--force`.
-2. **Teardown** (the worktree-local `WORKSTREAM.md` is scratch — discarded here, never merged) —
-   once step 1's decision is settled, run this skill's bundled
-   `scripts/worktree-teardown.sh <root> <stream> [--force]` (resolve `scripts/` from the skill's own
-   base directory, not the host project), which does the three mechanical steps:
-   - `git -C <root> worktree remove <root>/.workstreams/<stream>` — pass `--force` (the script's 3rd
-     arg) if WIP was discarded or the worktree is otherwise dirty (e.g. a drafted-next-plan left
-     uncommitted by the last `ship`); `WORKSTREAM.md` itself is excluded so it never blocks a clean
-     removal.
-   - `git -C <root> branch -D <branch>` — force-delete is safe: the branch is either merged (step 1
-     was empty / you just shipped) or deliberately discarded, so the no-op of confirming `--merged`
-     against the right ref is unneeded.
-   - `git -C <root> worktree prune`.
+```text
+scripts/worktree-teardown.sh ROOT STREAM [--force]
+```
 
-   **In-place teardown** (`isolation: in-place`) — no worktree to remove; once step 1 is settled,
-   clear the tree first — a plain `git switch` CARRIES
-   uncommitted/untracked files (a drafted next plan, WIP) onto `<target>` as foreign dirt (or
-   refuses on tracked changes); on *discard*, `git -C <root> reset --hard` + remove stray
-   untracked files explicitly (never silently — name what you delete); on *ship*, the land itself
-   required a clean tree, but ship's step 3 may have since drafted the next plan uncommitted —
-   bank or remove that deliberately too. Then: `git -C <root> switch <target>` (hand the tree back), then
-   `git -C <root> branch -D <branch>`, then `rm -rf <root>/.workstreams/<stream>/` (hand-off
-   directory — scratch, never merged). `worktree-teardown.sh` is not invoked.
+It revalidates the sole `.streams/STREAM` coordinate against the Git worktree registry, removes
+that worktree, deletes only `stream/STREAM`, and prunes stale worktree administration. Use
+`--force` only after an explicit discard decision. Resolve ROOT from `read`'s `root=` (the
+canonical primary).
 
-   Any ADR stays live in the records root's `adr/` store.
+Do not delete `.streams` control files, project configuration, records, scratch paths, or another
+stream. Close creates no report or root commit.
+
+Done when the exact worktree and branch are absent and the control surface remains intact.

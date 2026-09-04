@@ -1,50 +1,23 @@
 #!/usr/bin/env bash
 set -u
-DIR="$(cd "$(dirname "$0")" && pwd)"
-if [ -n "${WORKSTREAM_SKILL_UNDER_TEST:-}" ]; then
-  case "$WORKSTREAM_SKILL_UNDER_TEST" in
-    /*) SKILL="$WORKSTREAM_SKILL_UNDER_TEST" ;;
-    *) echo "WORKSTREAM_SKILL_UNDER_TEST must be absolute" >&2; exit 2 ;;
-  esac
-else
-  SKILL="$(cd "$DIR/../.." && pwd)"
-fi
+DIR="$(cd "$(dirname "$0")" && pwd)"; # shellcheck disable=SC1091
 . "$DIR/lib.sh"
-
-expect "manifest template declared" '- `manifest.md`' "$SKILL/SKILL.md"
-expect "debrief template declared" '- `debrief.md`' "$SKILL/SKILL.md"
-expect_eq "manifest template exists" 1 "$([ -f "$SKILL/templates/manifest.md" ] && echo 1 || echo 0)"
-expect_eq "debrief template exists" 1 "$([ -f "$SKILL/templates/debrief.md" ] && echo 1 || echo 0)"
-expect_eq "legacy plans shell absent" 0 "$([ -e "$SKILL/templates/plans.md" ] && echo 1 || echo 0)"
-expect_eq "legacy reports shell absent" 0 "$([ -e "$SKILL/templates/reports.md" ] && echo 1 || echo 0)"
-expect "plan schema minted" 'schema workstream/plan@1' "$SKILL/verbs/create.md"
-expect "debrief schema minted" 'schema workstream/debrief@1' "$SKILL/verbs/ship.md"
-expect "records isolated" '.records/streams/' "$SKILL/SKILL.md"
-expect "helper classifies streams drafts" '$rec_re/streams/' "$SKILL/scripts/workstream-git.sh"
-expect "migrate refuses directory plan sweep" 'never sweep it from a directory' "$SKILL/verbs/migrate.md"
-expect "legacy template rename registered" '`plans.md` → `manifest.md`' "$SKILL/verbs/migrate.md"
-expect_eq "generic prime helper exists" 1 "$([ -x "$SKILL/scripts/workstream-prime.sh" ] && echo 1 || echo 0)"
-expect "prime helper documented" 'workstream-prime.sh' "$SKILL/SKILL.md"
-for retired in \
-  "$SKILL/verbs/resource.md" \
-  "$SKILL/scripts/workstream-resource.sh" \
-  "$SKILL/scripts/tests/resource-test.sh"
-do
-  expect_eq "retired resource-locking file absent: $(basename "$retired")" 0 \
-    "$([ -e "$retired" ] && echo 1 || echo 0)"
+SKILL="${WORKSTREAM_SKILL_UNDER_TEST:-$(cd "$DIR/../.." && pwd)}"
+for file in streams-config.md streams-readme-block.md streams-gitignore workstream-runbook.md compaction-anchor.md coordinator.md debug.md design.md; do
+  expect_eq "required template exists: $file" 1 "$([ -f "$SKILL/templates/$file" ] && echo 1 || echo 0)"
 done
-resource_offenders="$(find "$SKILL" -type f ! -path "$SKILL/scripts/tests/*" \
-  -exec grep -Eil 'workstream-resource|refs/workstream-resources|resource-lock|resource locks|resource[- ]claim|resource acquire' {} + 2>/dev/null || true)"
-expect_eq "resource-locking surface is fully removed" "" "$resource_offenders"
-
-expect "workstream lifecycle has explicit manual save seam" 'user manually invoking `save`' "$SKILL/flow.md"
-expect "workstream lifecycle has explicit creation seam" 'every loop entry (`create` / `load` / `recycle`)' "$SKILL/SKILL.md"
-expect "recycle accepts a replacement queue source" '`recycle [<source>]`' "$SKILL/SKILL.md"
-expect "recycle constrains replacement queue sources to tracked docs" 'tracked plan or roadmap' "$SKILL/verbs/recycle.md"
-expect "workstream recovery skips write-back" 'skip write-back' "$SKILL/flow.md"
-if grep -Eq 'checkpoint-token|/checkpoint close|CHECKPOINT — file:' "$SKILL/templates/workstream-handoff.md"; then
-  echo "FAIL: root Checkpoint token or Close semantics leaked into Workstream hand-off" >&2
-  fail=$((fail + 1))
-else pass=$((pass + 1)); fi
-
-report "artifact-contract-test.sh"
+for retired in flow.md templates/workstream-handoff.md templates/manifest.md templates/debrief.md scripts/hooks.sh scripts/workstream-setup.sh; do
+  expect_eq "retired runtime absent: $retired" 0 "$([ -e "$SKILL/$retired" ] && echo 1 || echo 0)"
+done
+expect 'tracker is helper-owned' 'never read or edit the TSV directly' "$SKILL/SKILL.md"
+expect 'only plan and roadmap consumed' 'consumes: plan, roadmap' "$SKILL/SKILL.md"
+expect 'no produced record edge' 'produces: —' "$SKILL/SKILL.md"
+expect 'stream loop is not a typed record' 'the stream loop is live state' "$SKILL/SKILL.md"
+expect 'zero setup is explicit' 'Setup is optional' "$SKILL/SKILL.md"
+expect 'recycle source is constrained' 'tracked regular file' "$SKILL/verbs/recycle.md"
+expect_eq 'package migration helper exists' 1 "$([ -x "$SKILL/scripts/workstream-migrate.sh" ] && echo 1 || echo 0)"
+expect_absent 'installed runtime does not dispatch migration' 'cmd_migrate' "$SKILL/scripts/workstream.sh"
+expect_absent 'installed runtime does not source migration helper' 'workstream-migrate' "$SKILL/scripts/workstream.sh"
+bytes="$(wc -c <"$SKILL/SKILL.md" | tr -d ' ')"
+if [ "$bytes" -le 10000 ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: SKILL.md is $bytes bytes" >&2; fi
+report 'artifact-contract-test.sh'

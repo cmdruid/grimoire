@@ -131,6 +131,10 @@
 #      section in SKILL.md with nonempty Scope, Path, Access, Safety, and
 #      Justification bullets. The declared path and every live global use must
 #      name that package's own owner; Access is read-only or read-write.
+#  23. Workstream control-home ownership (FAIL). `.streams` is a fixed, narrow
+#      exception owned only by Workstream; obvious prose or shell writes by
+#      another skill may not use it as generic configuration or scratch space.
+#      Read-only custody detection remains legal.
 #
 # Every skill follows one independence regime. A colocated PACK.md is a pure
 # distribution bundle and grants no exemption from boundary or edge checks.
@@ -1061,6 +1065,31 @@ for sk in "$skills_dir"/*/; do
       fail "$name: global skilldata use names owner \`$owner\` (only \`$name\` is owned)"
   done <"$uses"
   rm -f "$uses"
+done
+
+# ---- 23. Workstream control-home ownership (FAIL) ---------------------------
+streams_doctrine='Workstream may own the fixed `.streams/` control home'
+for sk in "$skills_dir"/*/; do
+  sk="${sk%/}"
+  name="$(basename "$sk")"
+  [ "$name" = workstream ] && continue
+  while IFS= read -r -d '' f; do
+    case "$f" in
+      */scripts/tests/*|*/skills/skill-builder/scripts/skills-lint.sh) continue ;;
+    esac
+    rel="${f#"$root"/}"
+    while IFS= read -r hit; do
+      [ -n "$hit" ] || continue
+      line_no="${hit%%:*}"
+      body="${hit#*:}"
+      if [ "$f" = "$skills_dir/skill-builder/docs/DOCTRINE.md" ] &&
+         printf '%s\n' "$body" | grep -qF "$streams_doctrine"; then
+        continue
+      fi
+      printf '%s\n' "$body" | grep -Eqi '(write|create|mkdir|own|store|scratch|configur|cache|state beneath)' || continue
+      fail "$name: $rel:$line_no: .streams is reserved for Workstream's fixed control home"
+    done < <(grep -nF '.streams' "$f" || true)
+  done < <(find "$sk" \( -name '*.md' -o -name '*.sh' \) -print0)
 done
 
 # ---- summary -----------------------------------------------------------------

@@ -21,22 +21,6 @@ echo "checkpoint_target=CHECKPOINT.md"
 echo "temporary_target=CHECKPOINT.md.tmp"
 
 echo "worktree_stream=$([ -f "$top/WORKSTREAM.md" ] && [ ! -L "$top/WORKSTREAM.md" ] && echo true || echo false)"
-head_branch="$(git -C "$top" symbolic-ref --short -q HEAD || true)"
-[ -n "$head_branch" ] || head_branch="(detached)"
-echo "head_branch=$head_branch"
-
-inplace="none"
-inplace_match=false
-for f in "$top"/.workstreams/*/WORKSTREAM.md; do
-  [ -f "$f" ] && [ ! -L "$f" ] || continue
-  grep -qE '^- isolation:[[:space:]]*in-place' "$f" || continue
-  name="$(basename "$(dirname "$f")")"
-  if [ "$inplace" = "none" ]; then inplace="$name"; else inplace="$inplace,$name"; fi
-  branch="$(sed -n 's/^- branch:[[:space:]]*//p' "$f" | head -1 | sed 's/[[:space:]]*$//')"
-  [ -n "$branch" ] && [ "$branch" = "$head_branch" ] && inplace_match=true
-done
-echo "inplace_stream=$inplace"
-echo "inplace_branch_match=$inplace_match"
 
 tracked() { git -C "$top" ls-files --error-unmatch -- "$1" >/dev/null 2>&1 && echo true || echo false; }
 ignored() { git -C "$top" check-ignore -q -- "$1" >/dev/null 2>&1 && echo true || echo false; }

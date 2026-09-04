@@ -244,6 +244,11 @@ scripts do not accept home-selection arguments. A skill constructs its owned pat
 project root and the relevant canonical literal. Adjacent first-class providers self-locate and
 require their canonical parent; callers invoke the installed provider rather than bundled bytes.
 
+One narrow exception exists: Workstream may own the fixed `.streams/` control home for its optional
+configuration, guide, adjacent helper, compact history, and ignored runtime worktrees. The exception
+belongs only to Workstream, is not a seventh owner-local skilldata kind, and may not be selected,
+shared, or reused as generic configuration or scratch space by another skill.
+
 The three layers remain semantically distinct even though their locations are fixed. Typed work
 products belong in `.records`; owner-local support belongs in `.agents/skilldata`; public queues and their
 routing surface belong in `.trackers`. A skill materializes only the paths it owns. Skill prose

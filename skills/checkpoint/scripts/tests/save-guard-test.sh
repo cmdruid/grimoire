@@ -1,16 +1,10 @@
 #!/usr/bin/env bash
 # save-guard-test.sh — fixture suite for save-guard.sh. mktemp fixtures only.
 #
-# The in-place fixture is built FROM workstream's own hand-off template
-# (cross-skill coupling made red-able: if workstream renames the WORKSTREAM.md
-# artifact, the `isolation:` key, or the Coordinates `branch:` line, the anchored
-# transforms below stop matching and this suite fails — the guard's probe and the
-# artifact it probes can no longer drift apart silently).
-#
-# GUARD_SH / WS_TEMPLATE override the script / template under test (used to prove
-# the suite red against doctored copies).
+# GUARD_SH overrides the script under test for mutation proofs.
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
 . "$DIR/lib.sh"
 GUARD="${GUARD_SH:-$DIR/../save-guard.sh}"
 
@@ -20,8 +14,6 @@ else
   echo "FAIL: save-guard.sh is not executable although the skill invokes it directly" >&2
   fail=$((fail + 1))
 fi
-TEMPLATE="${WS_TEMPLATE:-$DIR/../../../workstream/templates/workstream-handoff.md}"
-
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
 OUT="$T/out"
@@ -34,7 +26,6 @@ gitc "$T/plain" commit -q --allow-empty -m init
 rc="$(run_guard "$T/plain")"
 expect_eq "plain exit 0" 0 "$rc"
 expect "plain no worktree stream" "worktree_stream=false" "$OUT"
-expect "plain no inplace stream" "inplace_stream=none" "$OUT"
 expect "plain target reported" "checkpoint_target=CHECKPOINT.md" "$OUT"
 expect "plain not tracked" "checkpoint_tracked=false" "$OUT"
 expect "plain not ignored" "checkpoint_ignored=false" "$OUT"
@@ -43,51 +34,29 @@ expect "plain temp not ignored" "temp_ignored=false" "$OUT"
 expect_match "plain exclude_file absolute" '^exclude_file=/' "$OUT"
 
 # ---- case 2: worktree stream — top-level WORKSTREAM.md ----------------------
-git -C "$T/plain" worktree add -q -b stream/wt "$T/plain/.workstreams/wt" main
-echo "# wt hand-off" > "$T/plain/.workstreams/wt/WORKSTREAM.md"
-rc="$(run_guard "$T/plain/.workstreams/wt")"
+git -C "$T/plain" worktree add -q -b stream/wt "$T/plain/.streams/wt" main
+echo "# wt runbook" > "$T/plain/.streams/wt/WORKSTREAM.md"
+rc="$(run_guard "$T/plain/.streams/wt")"
 expect_eq "worktree-stream exit 0" 0 "$rc"
 expect "worktree stream detected" "worktree_stream=true" "$OUT"
 # ...and the linked worktree's exclude resolves into the SHARED common dir:
 expect_match "worktree exclude in common dir" '^exclude_file=.*/plain/\.git/info/exclude$' "$OUT"
 
-# ---- case 3: in-place stream, fixture built FROM workstream's template ------
-[ -f "$TEMPLATE" ] || { echo "FAIL: workstream hand-off template not found at $TEMPLATE" >&2; fail=$((fail+1)); finish "save-guard-test"; exit 1; }
-git init -q -b main "$T/inp"
-gitc "$T/inp" commit -q --allow-empty -m init
-git -C "$T/inp" switch -q -c stream/ts
-mkdir -p "$T/inp/.workstreams/ts"
-sed -E \
-  -e 's#^- branch:([[:space:]]*).*#- branch:\1stream/ts#' \
-  -e 's#^- isolation:([[:space:]]*).*#- isolation:\1in-place#' \
-  "$TEMPLATE" > "$T/inp/.workstreams/ts/WORKSTREAM.md"
-# The anchored transforms must have actually bitten — if workstream renamed
-# either key, these two asserts are the suite's red signal:
-expect "template transform: branch line anchored" "- branch:" "$T/inp/.workstreams/ts/WORKSTREAM.md"
-expect_match "template transform: isolation set" '^- isolation:[[:space:]]+in-place$' "$T/inp/.workstreams/ts/WORKSTREAM.md"
-expect_match "template transform: branch set" '^- branch:[[:space:]]+stream/ts$' "$T/inp/.workstreams/ts/WORKSTREAM.md"
-
-rc="$(run_guard "$T/inp")"
-expect_eq "in-place (held) exit 0" 0 "$rc"
-expect "in-place stream named" "inplace_stream=ts" "$OUT"
-expect "custody held: branch matches" "inplace_branch_match=true" "$OUT"
-expect "held tree is not a worktree stream" "worktree_stream=false" "$OUT"
-
-git -C "$T/inp" switch -q main
-rc="$(run_guard "$T/inp")"
-expect "in-place (released) still named" "inplace_stream=ts" "$OUT"
-expect "custody released: no branch match" "inplace_branch_match=false" "$OUT"
+# ---- case 3: sibling runtime handoffs do not claim the primary checkout -----
+rc="$(run_guard "$T/plain")"
+expect_eq "primary with sibling runtime exits 0" 0 "$rc"
+expect "sibling runtime is ignored for custody" "worktree_stream=false" "$OUT"
 
 # ---- case 4: tracked root checkpoint beats any ignore -----------------------
-echo wip > "$T/inp/CHECKPOINT.md"
-git -C "$T/inp" add -f CHECKPOINT.md
-gitc "$T/inp" commit -qm "track checkpoint" -- CHECKPOINT.md
-rc="$(run_guard "$T/inp")"
+echo wip > "$T/plain/CHECKPOINT.md"
+git -C "$T/plain" add -f CHECKPOINT.md
+gitc "$T/plain" commit -qm "track checkpoint" -- CHECKPOINT.md
+rc="$(run_guard "$T/plain")"
 expect "tracked detected" "checkpoint_tracked=true" "$OUT"
-echo temp > "$T/inp/CHECKPOINT.md.tmp"
-git -C "$T/inp" add -f CHECKPOINT.md.tmp
-gitc "$T/inp" commit -qm "track checkpoint temp" -- CHECKPOINT.md.tmp
-rc="$(run_guard "$T/inp")"
+echo temp > "$T/plain/CHECKPOINT.md.tmp"
+git -C "$T/plain" add -f CHECKPOINT.md.tmp
+gitc "$T/plain" commit -qm "track checkpoint temp" -- CHECKPOINT.md.tmp
+rc="$(run_guard "$T/plain")"
 expect "tracked temp detected" "temp_tracked=true" "$OUT"
 
 # ---- case 5: ignored via info/exclude ---------------------------------------

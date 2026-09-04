@@ -1,1 +1,2 @@
 id	created	text	evidence
+issues-1	2026-09-03T06:30:36Z	The grimoire-pack invalid-UTF-8 filesystem test expects PermissionDenied on filename creation, but this macOS host returns ErrorKind::Uncategorized, leaving cargo test --workspace red despite all other tests passing.	crates/grimoire-pack/src/inventory/tests/discovery.rs:191; reproduced 2026-09-03

@@ -120,14 +120,14 @@ global capture and lifecycle management for reusable agent-system observations),
 | `gcloud-operator` | persistent IAP/OS Login SSH sessions for private Compute Engine VMs, MFA-aware gcloud operations, and optional control-plane impersonation; standalone, outside every pack |
 | `agent-feedback` | capture concrete observations about reusable skills, agents, harnesses, tools, and workflows into a private global TSV; query and close their lifecycle without remediation; standalone, outside every pack |
 | `skill-builder` | the toolmaker: scaffold (`new`), audit/lint (`check`), revise an explicitly selected editable skill from current conversation or one schema-free prose file (`tune`), and calibrate authoring doctrine — bundles the portable doctrine + gate |
-| `workstream` | drive a long-lived dev stream in its own worktree: create → ship → recycle |
+| `workstream` | drive one registered worktree through a lean, resumable create → ship → recycle loop with configurable landing and guarded primary synchronization |
 
 Historical records that still explain the repository and skills library live under `docs/design/`.
 The published product contract above is the sole authority for Grimoire package-manager behavior.
 
 ### Storage convention: packages and skill-owned data
 
-A project has four distinct fixed surfaces. **`.agents/skills/`** contains project-local installed
+A project has four general fixed surfaces. **`.agents/skills/`** contains project-local installed
 skill packages and is never mutable skill data. **`.agents/skilldata/`**
 holds skill-owned working files beneath `<skill>/<kind>/`; owners are open and the kinds are
 `doctrine`, `drafts`, `hooks`, `operations`, `scripts`, and `templates`. Operations are flat
@@ -142,6 +142,10 @@ staged engine lives at `.records/records.sh`, beside the introductory
 **`.trackers`** holds public `tracker@2` queue TSVs under `tables/`, the shared
 `history.tsv` lifecycle ledger, and adjacent canonical provider `.trackers/trackers.sh`. Backlog owns that
 layer; consumer skills invoke the installed provider directly.
+Workstream alone may additionally use the fixed **`.streams/`** control home for its optional
+`CONFIG.md`, guide, helper, and ignored registered runtime worktrees. Each stream
+owns one such worktree; delivery synchronizes the clean primary checkout under a repository lease.
+It is a narrow lifecycle exception, not generic skilldata and not a selectable project root.
 These canonical homes are constants, not front-door configuration. Each durable-home skill owns
 its files. Backlog's first initialization selects a nonempty subset of
 `tasks,issues,failures,feedback,routines` and defaults to all five; initialized projects preserve

@@ -54,6 +54,11 @@ c15='off-home doctrine literal'
 c15b='retired doctrine path'
 c16='retired project-home surface'
 
+expect 'doctrine names narrow Workstream home' 'Workstream may own the fixed `.streams/` control home' \
+  "$(cd "$DIR/../.." && pwd)/docs/DOCTRINE.md"
+expect 'doctrine forbids generic reuse' 'may not be selected' \
+  "$(cd "$DIR/../.." && pwd)/docs/DOCTRINE.md"
+
 write_front_door() { # write_front_door <declaration-line>  (empty = no declaration)
   {
     echo '# fixture front door'

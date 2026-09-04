@@ -1,19 +1,13 @@
-# `setup [<root>]` — deploy active Workstream templates and hook points
+# `setup [<root>]` — install the optional control surface
 
-Run package-local `scripts/workstream-setup.sh <root>` standalone, or add `--write-only` inside an
-announced configuration sweep. It preflights and immediately rechecks the complete owned write set,
-then deploys absent-only:
+Resolve the canonical primary and run the package helper with `setup`. It installs or reconciles
+exactly `.streams/.gitignore`, `CONFIG.md`, `README.md`, and executable `workstream.sh`, then makes
+one exact pathspec-scoped commit for bytes it changed. It preserves project-authored config and
+README prose. A no-op rerun makes no commit. It does not create `history.tsv`. An incumbent
+`.streams/history.tsv` is left in place.
 
-- `templates/manifest.md`
-- `templates/debrief.md`
-- `hooks/feature-completion.md`
-- `hooks/after-eventful-ship.md`
+Setup doesn't edit a project front door, migrate streams, create a runtime worktree, or enable a
+hook. It is optional; ordinary zero-setup creation uses package defaults.
 
-The hook files start at exactly zero bytes, so missing and empty remain behaviorally identical.
-Valid incumbents win; recognized `plans.md` and `reports.md` legacy templates refuse with
-`/workstream migrate <source-path>`. Hand-off, compaction, coordinator, debug, and design templates
-remain package-only. Standalone setup commits exactly its reported writes once; sweep mode is
-write-only and a no-op rerun makes no commit.
-
-Done when the four active assets are present, hooks remain disabled until authored, and no
-package-only, schema, record-shell, or sibling path changed.
+Done when the helper reports `committed` or `current` and exactly those four control files are
+tracked.

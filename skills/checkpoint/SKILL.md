@@ -24,9 +24,8 @@ The only managed target is `<root>/CHECKPOINT.md`. Arguments that supply another
 identifier are rejected. Do not search for, report, read, import, migrate, or delete any other
 save-state file.
 
-A session driving a worktree stream, or holding the root checkout through an in-place stream,
-refuses Checkpoint before reading or writing. `scripts/save-guard.sh <root>` is the package's
-read-only stream and Git preflight.
+A session whose current Git top level carries `WORKSTREAM.md` refuses Checkpoint before reading or
+writing. `scripts/save-guard.sh <root>` is the package's read-only stream and Git preflight.
 
 ## Identity and ownership
 

@@ -23,7 +23,7 @@ const IGNORED_DIRECTORIES: &[&[u8]] = &[
     b".cache",
     b".tmp",
     b".worktrees",
-    b".workstreams",
+    b".streams",
     b"build",
     b"dist",
     b"vendor",

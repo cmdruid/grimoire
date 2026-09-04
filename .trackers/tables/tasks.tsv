@@ -1,1 +1,2 @@
 id	created	text	evidence
+tasks-1	2026-09-03T06:30:36Z	Run the attended native full-context Workstream hook acceptance under each supported harness and record context inheritance, parent pause, transcript suppression, closure-only return, and fallback outcome.	.records/plans/2026-09-02-workstream-composed-control-surface-and-lean-runtime-implementation-plan.md#implementation-outcome
