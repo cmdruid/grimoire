@@ -1,6 +1,6 @@
 ---
 name: inspector
-description: "Use when the user runs `/inspector`, asks to review a document or completed implementation, wants confirmed text-coded implementation fixes and re-review, wants supported findings revised into a document, wants a spec or plan simplified, or wants Inspector's project doctrine deployed. Review is a material two-axis judgment; revise and refine are document mutation verbs that propose before editing. Does not mint records. Bare `/inspector` asks which verb. For a one-line patch, skip it."
+description: "Use when the user runs `/inspector`, asks to review a document or completed implementation, wants supported findings revised into a document, wants a spec or plan simplified, or wants Inspector's project doctrine deployed. Review is a material two-axis judgment; after a material implementation verdict, ask in English to fix in this checkout. Revise and refine are document mutation verbs that propose before editing. Does not mint records. Bare `/inspector` asks which verb. For a one-line patch, skip it."
 ---
 
 # inspector — critique, correct, and simplify
@@ -58,7 +58,7 @@ unsupported or speculative concerns are omitted. A finding that introduces a sub
 not named by the request or artifact needs direct causal evidence that the bounded outcome cannot be
 achieved safely or correctly without it. Otherwise it cannot affect the verdict or enter revision.
 
-Automatic revision and every re-review carry this boundary unchanged. A later round may discover a
+Revision and every re-review carry this boundary unchanged. A later round may discover a
 new in-boundary defect, but a finding cannot enlarge its own authority. Only a new user instruction
 or an accepted upstream scope change widens the boundary.
 
@@ -74,27 +74,26 @@ or an accepted upstream scope change widens the boundary.
 
 ```
 approve document                     →  accept/publish  →  (host sequences / walk)
-material + automatic-proposal        →  revise questions/proposal  →  confirm/apply + queued review  →  …
 material + offered                   →  explicit revise offer  →  stop
 material + unavailable               →  publish-as-is offer or verdict-only  →  stop
-implementation material verdict       →  plain-text action close  →  optional fixes + full review
+implementation material verdict       →  English close  →  fix in this checkout or stop
 implementation approve                →  report ready  →  resume caller automatically
 explicit refine of spec/plan         →  simplification proposal  →  confirm/apply + mandatory review
 ```
 
-The automatic `review` → `revise` handoff is not a stop: report the verdict and findings, then enter
-the revision procedure in the same turn. Questions and the proposal remain stops; review never
-authorizes an edit. A `revise` entered from any document review carries a queued re-review:
+Document review with material findings stops after the verdict (`offered`) unless the effective kind
+file declares `automatic-proposal`. A declared automatic-proposal reports the verdict and findings,
+then enters the revision procedure in the same turn. Questions and the proposal remain stops; review
+never authorizes an edit. A `revise` entered from any document review carries a queued re-review:
 approval applies the proposal and immediately runs the existing `review` procedure. Standalone
 `revise` invokes review only when its confirmation names re-review. `Refine` is never an automatic
 review continuation; every accepted refinement runs review and that review may enter `revise`.
 
 Implementation remains `revision-after-review: unavailable`: it never enters document `revise` or
-`refine`. A material implementation verdict receives the separate post-verdict action close in
-`verbs/review.md`; `approve` reports readiness and resumes the caller automatically. The close's
-numbered scope and `A`/`I` plus `R`/`N` modifiers preserve pending scope and confirmation boundaries.
-Only a complete confirmed selection authorizes eligible inline or isolated remediation; a completely
-applied package may run a full same-base review, and each fresh verdict authorizes no further write.
+`refine`. A material implementation verdict receives the English close in `verbs/review.md`;
+`approve` reports readiness and resumes the caller automatically. The close asks in English to fix
+in this checkout. The verdict is not permission to edit. A named commit or range that is not this
+tree is refused. There is no reply-code grammar and no isolated fixer.
 
 ## Kind-detect (review, revise, and refine; once)
 
@@ -125,6 +124,33 @@ add document-kind files; they do not invent a rubric at runtime.
 
 Host-added policies extend document review and revision only; they cannot replace the
 reserved `implementation` discriminator or create a code-revise or code-refine path.
+Kind-detect never treats `invariants/` or `lenses/` as kinds.
+
+## Named sets
+
+Opt-in project files, not a management API and not an always-on bar. Vocabulary:
+
+| Term | Binding |
+|---|---|
+| invariant | Falsifiable forbidden shape. In force and violated → must-fix. |
+| lens | A way to look. Does not block unless it also names a forbidden shape. |
+| in force | Named on this invocation. Default none. |
+
+Project instances:
+
+```text
+.agents/skilldata/inspector/invariants/<name>.md
+.agents/skilldata/inspector/lenses/<name>.md
+```
+
+`<name>` is the invocation token and the filename stem: `[a-z0-9]+(-[a-z0-9]+)*`, no
+slash, no parent traversal. Several names may be in force. Inspector owns the path
+convention and the read rule. The project owns the bytes. Setup does not plant content
+or create these directories. Missing directories mean this project has no named sets.
+An arbitrary existing file path on the invocation is an escape hatch, not the usual form.
+
+A review that is only reviewing never creates these files. Unnamed look-again does not
+re-attach sets. Unknown name → ask.
 
 ## Review-continuation policy
 
@@ -137,17 +163,18 @@ revision-after-review: automatic-proposal | offered | unavailable
 
 The effective project kind file is a complete replacement, so its declaration wins when
 present. A missing declaration uses the detected-kind default regardless of whether the effective
-file came from the bundle or project skilldata: `spec` and `plan` → `automatic-proposal`; every other
-document kind, including a host-added kind → `offered`; `implementation` → `unavailable`. An
+file came from the bundle or project skilldata: every document kind, including spec, plan,
+and a host-added kind → `offered`; `implementation` → `unavailable`. An
 explicit recognized declaration overrides a document default. An absent declaration remains
 valid and uses the default above. The retired `refinement-after-review:` declaration is invalid,
 including when both old and new declarations are present. A malformed, conflicting, or
 unrecognized declaration is also invalid doctrine: name the file and ask for correction; do not
 guess. `implementation` is reserved and always `unavailable`, even if its effective file says
-otherwise.
+otherwise. A project incumbent that already declares `automatic-proposal` keeps those bytes until
+the host edits them.
 
 For implementation, `unavailable` governs document revision only. It does not suppress the distinct
-confirmed implementation action close owned by `review`.
+English close owned by `review`.
 
 ## Brief the human (every verb)
 

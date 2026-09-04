@@ -11,9 +11,10 @@
    sweep, remain write-only and return the paths to the caller.
 
 Setup may create only `.agents/skilldata/inspector/doctrine/` and absent bundled kind files below
-it. It does not create hooks, scripts, templates, records, a door route, or another owner's
-namespace. Host-added extra kind files remain untouched. Normal `review`, `revise`, and `refine`
-never invoke setup or create this namespace.
+it. It does not create `invariants/` or `lenses/` or plant named-set files. It does not create
+hooks, scripts, templates, records, a door route, or another owner's namespace. Host-added extra
+kind files remain untouched. Normal `review`, `revise`, and `refine` never invoke setup or create
+this namespace.
 
 Done when all bundled kinds are present as project incumbents and every file first copied by this
 run is byte-identical to its bundled source.

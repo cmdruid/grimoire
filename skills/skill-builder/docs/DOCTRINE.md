@@ -231,9 +231,11 @@ installed package bytes, when present, live separately under `.agents/skills/` a
 mutable skill-data destination:
 
 - `.records/` holds dated typed records, Journal's adjacent `records.sh`, and `history.tsv`.
-- `.agents/skilldata/` holds owner-first skill support at `.agents/skilldata/<skill>/<kind>/...`; owner names are open
-  `[a-z0-9-]+`, while kinds are the closed set `doctrine`, `drafts`, `hooks`, `operations`,
-  `scripts`, and `templates`.
+- `.agents/skilldata/` holds owner-first skill support at `.agents/skilldata/<skill>/...`.
+  Owner names are open `[a-z0-9-]+`. The owner defines that folder's internal layout.
+  Shared landing names (`doctrine`, `drafts`, `hooks`, `operations`, `scripts`,
+  `templates`) remain vocabulary for those artifact types; they are not a closed set of
+  children. Trackers never live under skilldata — they use `.trackers/`.
 - `.trackers/` holds public tracker tables under `tables/`, lifecycle events in `history.tsv`,
   Backlog's adjacent `trackers.sh`, and the editable `DEBRIEF.md` routing prompt.
 
@@ -267,8 +269,8 @@ and remain the project owner's responsibility.
 User-owned data that genuinely spans projects lives beneath the fixed global owner root
 `~/.agents/skilldata/<skill>/...`. This scope is opt-in and independent of project durability. The
 owner defines its internal layout, artifact schema, permissions, initialization, retention, and
-sensitive-data behavior; there is no global kind vocabulary, registry, provider, or sibling
-validator. A skill creates or inspects only its own child and never follows installed-package
+sensitive-data behavior, as with project skilldata; there is no extra global kind vocabulary,
+registry, provider, or sibling validator. A skill creates or inspects only its own child and never follows installed-package
 symlinks as data destinations. Installed packages remain under `~/.agents/skills/` and must not
 contain mutable runtime data.
 
@@ -406,7 +408,8 @@ doctrine path is exactly as wrong as a writer that does.
    a host operation under `.agents/skilldata/<skill>/operations/`. The auditor rubric at
    `auditor/doctrine/test/workflows/audit/` remains doctrine (a parked nested tree). Host
    procedures are skilldata-resident files copied by their owner skill — not an eighth
-   landing class.
+   landing class. An owner may add other children under its skilldata folder; those
+   names are not a closed enum.
 
    **The test classifies where a thing LANDS, not where it ships from.** A skill's own
    bundled `templates/`- or seed-style content is package-only until deployed; the same bytes
@@ -420,7 +423,7 @@ doctrine path is exactly as wrong as a writer that does.
 3. **Standup — explicit, narrow, and incumbent wins.** Normal reads never
    create directories. An explicit setup/deploy verb may create its declared
    owner-local skilldata tree when absent, then only
-   `.agents/skilldata/<its-own-name>/<owned-kind>/`. It must not create,
+   `.agents/skilldata/<its-own-name>/...` for children it owns. It must not create,
    inspect as configuration, or interpret another owner namespace. Before each
    creation, recheck every existing parent: a symlink or non-directory parent
    is unsafe. Preflight the complete write set before creating anything; if a later immediate
@@ -442,10 +445,10 @@ doctrine path is exactly as wrong as a writer that does.
    `operations/` is not a seeder of pack or sibling payload. Minting a
    host-authored stub is not seeding.
 
-   **Kind-local creation.** A publisher creates only the kind needed by the
+   **Owner-local creation.** A publisher creates only the children needed by the
    authorized operation. A hooks publisher creates its own `hooks/`; an operation
    publisher creates its own `operations/`; an Inspector setup creates
-   `inspector/doctrine/`. None may populate sibling kinds or another owner.
+   `inspector/doctrine/`. None may populate another owner's namespace.
 
    Doctrine is **copy-bundled-then-customized**, not mint-and-accumulate: a skill seeds
    generic content, then the host edits it in place and keeps editing it for years. So

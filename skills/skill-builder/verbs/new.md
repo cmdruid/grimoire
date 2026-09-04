@@ -107,7 +107,7 @@ verb's job).
 
 5. **Durable-home tier only — scaffold `setup`:**
    - Draft the new skill's own `<new-skill>/verbs/setup.md`: an idempotent home-scaffold
-     beneath `.agents/skilldata/<name>/<owned-kind>/` (create-if-absent for each store the skill
+     beneath `.agents/skilldata/<name>/` (create-if-absent for each child the skill
      owns; never touch existing content or another owner namespace). Durable state does not imply a
      front-door route.
    - Setup may create its declared workspace when absent. Before

@@ -114,10 +114,11 @@
 #      fence-stripped. Prose naming the tool without `--title` and
 #      without a following flag is out of scope. skill-builder is exempt.
 #  18. Invalid project skilldata paths (FAIL). Live skill Markdown and shell
-#      must use `.agents/skilldata/<owner>/<kind>` with a kebab-case owner and
-#      one of the six closed project kinds. Kind-first and owner-local tracker
-#      paths fail. Obvious shell writes to another owner or beneath
-#      `.agents/skills` fail; no whole-tree runtime validator is implied.
+#      must use `.agents/skilldata/<owner>/...` with a kebab-case owner. The
+#      owner defines children. Kind-first paths (a shared landing name used as
+#      the owner) and owner-local tracker paths fail. Obvious shell writes to
+#      another owner or beneath `.agents/skills` fail; no whole-tree runtime
+#      validator is implied.
 #  19. Schema writer prefix (FAIL). A literal value passed to `--schema` by a
 #      skill must use that skill's prefix and the shared schema grammar.
 #  20. Template role conformance (FAIL). Every bundled Markdown template must
@@ -879,20 +880,13 @@ for sk in "$skills_dir"/*/; do
 done
 
 # ---- 18. invalid project skilldata paths (FAIL) -----------------------------
-skilldata_kinds='doctrine|drafts|hooks|operations|scripts|templates'
+# Shared landing names are reserved as *owners* so a landing name in the owner
+# slot still fails as kind-first. They are not a closed set of children.
+reserved_skilldata_owners='doctrine|drafts|hooks|operations|scripts|templates'
 global_skilldata_prefix='(~|\$HOME|\$\{HOME\}|\$home|\$\{home\})/\.agents/skilldata/'
 for sk in "$skills_dir"/*/; do
   sk="${sk%/}"
   name="$(basename "$sk")"
-  global_only=no
-  if awk '
-    /^## Global skilldata/ { section=1; next }
-    section && /^## / { exit }
-    section && /^- Scope:.*writes no project data/ { found=1 }
-    END { exit !found }
-  ' "$sk/SKILL.md" 2>/dev/null; then
-    global_only=yes
-  fi
   while IFS= read -r -d '' f; do
     rel="${f#"$sk"}"
     while IFS= read -r hit; do
@@ -901,24 +895,14 @@ for sk in "$skills_dir"/*/; do
       token="${hit#*:}"
       tail="${token#.agents/skilldata/}"
       owner="${tail%%/*}"
-      kind="${tail#*/}"
-      kind="${kind%%/*}"
       source_line="$(sed -n "${line_no}p" "$f")"
-      if [ "$global_only" = yes ] && [ "$owner" = "$name" ] &&
-         printf '%s\n' "$source_line" | grep -Eq "['\"]store=\.agents/skilldata/$name/"; then
-        continue
-      fi
       case "$owner" in '<'*'>') continue ;; esac
       if ! printf '%s\n' "$owner" | grep -Eq '^[a-z0-9][a-z0-9-]*$'; then
         fail "$name: $rel:$line_no: invalid skilldata owner \`$owner\`"
         continue
       fi
-      if printf '%s\n' "$owner" | grep -Eq "^($skilldata_kinds)$"; then
-        fail "$name: $rel:$line_no: kind-first skilldata path -- use .agents/skilldata/<owner>/<kind>/..."
-        continue
-      fi
-      if ! printf '%s\n' "$kind" | grep -Eq "^($skilldata_kinds)$"; then
-        fail "$name: $rel:$line_no: unknown project skilldata kind \`$kind\`"
+      if printf '%s\n' "$owner" | grep -Eq "^($reserved_skilldata_owners)$"; then
+        fail "$name: $rel:$line_no: kind-first skilldata path -- use .agents/skilldata/<owner>/..."
         continue
       fi
       if [ "$name" != skill-builder ] && [ "$owner" != "$name" ]; then

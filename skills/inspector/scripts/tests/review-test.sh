@@ -9,11 +9,16 @@ PLAN="$SKILL/kinds/plan.md"
 pass=0 fail=0
 
 has() { if grep -qF -- "$2" "$1"; then pass=$((pass + 1)); else echo "FAIL $3" >&2; fail=$((fail + 1)); fi; }
+missing() { if grep -qF -- "$2" "$1"; then echo "FAIL $3" >&2; fail=$((fail + 1)); else pass=$((pass + 1)); fi; }
 eq() { if [ "$2" = "$3" ]; then pass=$((pass + 1)); else echo "FAIL $1 expected=$2 got=$3" >&2; fail=$((fail + 1)); fi; }
 
 has "$REVIEW" 'every required soundness axis and groundedness extra' "adequacy inventory missing"
-has "$REVIEW" 'no new supported must-fix finding' "adequacy stop missing"
+missing "$REVIEW" 'no new supported must-fix finding' "adequacy mining loop still present"
+has "$REVIEW" 'written step cannot succeed as specified' "must-fix definition missing"
+has "$REVIEW" 'Two legal in-boundary remedies → ask' "two-remedies ask missing"
+has "$REVIEW" 'not a second switch' "light/deep dial missing"
 has "$REVIEW" 'no numeric finding cap.' "uncapped review missing"
+missing "$PLAN" 'open decision branches do not belong here' "plan still blocks on open decisions"
 for word in specific grounded consequential actionable non-duplicate; do
   if grep -qi "\*\*$word\*\*" "$REVIEW"; then
     pass=$((pass + 1))
@@ -35,8 +40,8 @@ has "$REVIEW" 'acceptance-critical' "red-proof is not proportional"
 has "$REVIEW" 'ask the substrate inverse only when' "spec greenfield inverse still bypasses the depth gate"
 has "$REVIEW" 'non-blocking follow-ups' "follow-ups are not separated in the report"
 has "$REVIEW" 'carry the original review boundary into' "offered revision loses scope custody"
-has "$SPEC" 'default off' "spec substrate skepticism remains default-on"
-has "$SPEC" 'explicit deep, greenfield, or refactoring review' "spec deep-mode gate missing"
+has "$SPEC" 'stay off on a light review' "spec substrate skepticism remains default-on"
+has "$SPEC" 'An explicit deep review' "spec deep-mode gate missing"
 has "$PLAN" 'An atomic plan is valid' "bounded plans are still forced to slice"
 has "$PLAN" 'Every slice must map' "plan slices do not inherit scope"
 has "$PLAN" 'uncovered in-boundary requirement' "plan revision may add out-of-scope slices"

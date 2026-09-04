@@ -21,17 +21,15 @@ Shared floor in `verbs/review.md`, plus:
   implementation unit has a real verification/gate
 - Every slice must map to a requirement or acceptance check inside the inherited review boundary;
   independent cleanup and architectural improvements are follow-ups, not slices
-- open decision branches do not belong here — they belong on
-  the spec
 
 ## Groundedness extras
 
-Substrate-skeptic is **default off**. Turn it on only for an explicitly requested deep, greenfield,
-or refactoring review. Re-read every load-bearing signature at `HEAD` before trusting a size or path.
+These extras are the review's light/deep dial. They stay off on a light review. An explicit deep
+review re-reads every load-bearing signature at `HEAD` before trusting a size or path.
 
 ## Review continuation
 
-revision-after-review: automatic-proposal
+revision-after-review: offered
 
 ## Revision legal locations
 

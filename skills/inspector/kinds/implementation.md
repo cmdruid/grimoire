@@ -65,8 +65,8 @@ revision-after-review: unavailable
 
 None. Implementation never enters document `revise` or `refine`, writes status or stage, or
 publishes. The review phase never amends code. After a material implementation verdict,
-`verbs/review.md` owns a separate plain-text action close with a numbered scope, `A`/`I` execution,
-and `R`/`N` afterward modifiers. An unresolved destination may retain only pending scope; a complete
-confirmed selection may use an eligible inline or isolated route and optional full same-base
-re-review. That action is neither automatic from the verdict nor a revision legal location. A clean
-`approve` has no action surface and resumes the caller automatically.
+`verbs/review.md` owns an English close, inline, in this checkout. The verdict is not permission
+to edit. A named commit or range that is not this tree cannot be applied here. `needs-rework`
+asks to fix must-fix findings in this tree, then look again or stop. `approve-with-changes`
+stands as-is or applies the recommended changes here. `approve` has no menu and resumes the
+caller. That action is neither automatic from the verdict nor a revision legal location.

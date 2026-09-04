@@ -12,6 +12,10 @@ ROOT="$(mktemp -d)"; trap 'rm -rf "$ROOT"' EXIT
 out="$($DEPLOY --root "$ROOT")"
 eq "fresh seven-kind deploy" 7 "$(find "$ROOT/.agents/skilldata/inspector/doctrine" -type f -name '*.md' | wc -l | tr -d ' ')"
 eq "fresh deployed count" 7 "$(printf '%s\n' "$out" | sed -n 's/^deployed_count=//p')"
+[ ! -e "$ROOT/.agents/skilldata/inspector/invariants" ] && pass=$((pass + 1)) \
+  || { echo "FAIL setup created invariants/" >&2; fail=$((fail + 1)); }
+[ ! -e "$ROOT/.agents/skilldata/inspector/lenses" ] && pass=$((pass + 1)) \
+  || { echo "FAIL setup created lenses/" >&2; fail=$((fail + 1)); }
 for source in "$SKILL"/kinds/*.md; do
   cmp "$source" "$ROOT/.agents/skilldata/inspector/doctrine/$(basename "$source")" >/dev/null \
     && pass=$((pass + 1)) || fail=$((fail + 1))

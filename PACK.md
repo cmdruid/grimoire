@@ -38,7 +38,7 @@ and owns its own setup procedure.
 All other members are optional and default-installed:
 
 - Work leads: `architect`, `contractor`, and `inspector`; Inspector reviews documents and completed
-  implementations, offers a plain-text close for confirmed implementation fixes and full re-review,
+  implementations, asks in English to fix in this checkout after a material implementation verdict,
   publishes only accepted passing documents, and owns its project kind setup.
 - Project knowledge and follow-up: `journal`, `backlog`, `notepad`, `analyst`, and `chiropractor`.
 - Development operations: `workstream`, `auditor`, `debugger`, and `foreman`.
@@ -54,8 +54,7 @@ Google Cloud. None is part of the project's `clankshop` toolkit.
 ## Composition seams
 
 - Architect produces the argued specification. Inspector reviews documents, revises supported
-  document findings, and may simplify a spec or plan while offering a numbered/lettered close for
-  confirmed implementation fixes and full re-review without taking ownership. Contractor turns a
+  document findings, and may simplify a spec or plan while offering an English close for implementation fixes in this checkout without taking ownership. Contractor turns a
   clear request or accepted document into a proportionate implementation sequence when a plan is
   useful and can walk that job; formal records and gates remain conditional.
 - Contractor plans and roadmaps are queue sources for Workstream. Workstream owns isolation,

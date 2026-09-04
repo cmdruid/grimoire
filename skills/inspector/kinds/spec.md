@@ -27,14 +27,12 @@ Shared floor in `verbs/review.md`, plus:
 
 ## Groundedness extras
 
-Substrate-skeptic is **default off**. Turn it on only for an explicit deep, greenfield, or refactoring review.
-In that mode, ask which mechanisms would not exist in a from-scratch
-implementation. Otherwise, deletable legacy substrate outside the declared outcome is a follow-up,
-not a verdict-bearing finding.
+These extras are the review's light/deep dial. They stay off on a light review. An explicit deep review asks which mechanisms would not exist in a from-scratch implementation. Otherwise, deletable
+legacy substrate outside the declared outcome is a follow-up, not a verdict-bearing finding.
 
 ## Review continuation
 
-revision-after-review: automatic-proposal
+revision-after-review: offered
 
 ## Revision legal locations
 

@@ -112,7 +112,7 @@ global capture and lifecycle management for reusable agent-system observations),
 | `delegate` | the delegation front-door: delegate-or-not, mechanism, route confirmation |
 | `developer-writing` | write and edit human-facing developer prose with purpose-aware structure, human editorial judgment, and Google documentation mechanics; agent-executed operational artifacts get wording-only help on explicit request; standalone, outside every pack |
 | `journal` | the records format authority: discriminator, contract, adjacent `records.sh`, and history ledger; durable setup, narrow repair, dedicated-root migration, search, close, and substrate curation; optional `anchor` points project agents at the standalone `.records/README.md` guide |
-| `inspector` | material review of documents and completed implementations, with a plain-text numbered/lettered close for confirmed implementation fixes and full re-review; revise folds supported document findings, refine simplifies specs and plans, and setup deploys Inspector-owned kind doctrine absent-only |
+| `inspector` | material review of documents and completed implementations; after a material implementation verdict, an English close asks to fix in this checkout; revise folds supported document findings, refine simplifies specs and plans, and setup deploys Inspector-owned kind doctrine absent-only |
 | `mailbox` | out-of-band sub-agent handoff: worktree-safe result transport via slots |
 | `notepad` | project memory: write, find, update, supersede, and drop durable facts in `notes/` — path-first, opportunistic `records.sh` |
 | `scheduler` | recurring agent runs via launchd/cron: job specs + logs in a self-gitignoring `.scheduler/`, one short-lived headless tick per fire |

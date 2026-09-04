@@ -33,10 +33,10 @@ write_skill() {
 lint() { bash "$LINT" "$LIB" >"$OUT" 2>&1 || true; }
 
 reset_lib
-write_skill 'Owned paths are `.agents/skilldata/widget/doctrine/policy.md`, `.agents/skilldata/widget/drafts/idea.md`, `.agents/skilldata/widget/hooks/after.md`, `.agents/skilldata/widget/operations/run.md`, `.agents/skilldata/widget/scripts/run.sh`, and `.agents/skilldata/widget/templates/item.md`.'
+write_skill 'Owned paths are `.agents/skilldata/widget/doctrine/policy.md`, `.agents/skilldata/widget/invariants/hard-cut.md`, and `.agents/skilldata/widget/cache/item.md`.'
 lint
 for needle in 'invalid skilldata owner' 'kind-first skilldata path' 'unknown project skilldata kind' 'foreign skilldata owner'; do
-  expect_absent "six owner-first kinds avoid $needle" "$needle" "$OUT"
+  expect_absent "owner-local children avoid $needle" "$needle" "$OUT"
 done
 
 reset_lib
@@ -50,14 +50,9 @@ lint
 expect 'kind-first path fails' 'kind-first skilldata path' "$OUT"
 
 reset_lib
-write_skill 'Read `.agents/skilldata/widget/cache/item.md`.'
-lint
-expect 'unknown kind fails' 'unknown project skilldata kind `cache`' "$OUT"
-
-reset_lib
 write_skill 'Read `.agents/skilldata/widget/trackers/tasks.tsv`.'
 lint
-expect 'owner-local tracker fails grammar' 'unknown project skilldata kind `trackers`' "$OUT"
+expect_absent 'owner-local tracker is not an unknown-kind failure' 'unknown project skilldata kind' "$OUT"
 expect 'owner-local tracker names public alternative' 'owner-local tracker path -- use .trackers' "$OUT"
 
 reset_lib
@@ -91,14 +86,14 @@ lint
 expect_absent 'first-class tracker path remains valid' 'owner-local tracker path' "$OUT"
 
 reset_lib
-write_skill 'This global-only package writes no project data, but incorrectly reads `.agents/skilldata/widget/cache/item.md`.' \
+write_skill 'This global-only package writes no project data, but still names `.agents/skilldata/widget/trackers/tasks.tsv`.' \
   '- Scope: user-global, writes no project data.
 - Path: `~/.agents/skilldata/widget/cache/`.
 - Access: read-only; initialized by the user.
 - Safety: unsafe parents refuse.
 - Justification: the data spans projects.'
 lint
-expect 'global-only declaration does not exempt a project path' 'unknown project skilldata kind `cache`' "$OUT"
+expect 'global-only declaration does not exempt a project tracker path' 'owner-local tracker path -- use .trackers' "$OUT"
 
 reset_lib
 write_skill 'Read global `~/.agents/skilldata/widget/cache/item.md` and project `.agents/skilldata/widget/cache/item.md`.' \
@@ -108,36 +103,7 @@ write_skill 'Read global `~/.agents/skilldata/widget/cache/item.md` and project 
 - Safety: unsafe parents refuse.
 - Justification: the data spans projects.'
 lint
-expect 'scope classification masks only the global occurrence' 'unknown project skilldata kind `cache`' "$OUT"
-
-reset_lib
-write_skill 'This global-only package reports its resolved global store.' \
-  '- Scope: user-global, writes no project data.
-- Path: `~/.agents/skilldata/widget/feedback.tsv`.
-- Access: read-only; initialized by the user.
-- Safety: unsafe parents refuse.
-- Justification: the data spans projects.'
-mkdir -p "$LIB/skills/widget/scripts"
-printf '%s\n' '#!/usr/bin/env bash' "printf '%s\\n' 'store=.agents/skilldata/widget/feedback.tsv'" >"$LIB/skills/widget/scripts/describe.sh"
-lint
-expect_absent 'declared global-only store report is not a project kind' 'unknown project skilldata kind `feedback.tsv`' "$OUT"
-
-protocol_broken="$TMP/skills-lint-global-store.sh"
-cp "$LINT" "$protocol_broken"
-cp "$LINT" "$TMP/skills-lint-global-store.before"
-protocol_target='grep -Eq "['"'"'\"]store=\.agents/skilldata/$name/"'
-expect_eq 'global store exception target is unique' 1 "$(grep -cF "$protocol_target" "$protocol_broken")"
-sed -i.bak '/store=.*skilldata.*name/ s/grep -Eq .*/grep -Eq NEVER_MATCH; then/' "$protocol_broken"
-rm "$protocol_broken.bak"
-expect_eq 'global store exception mutation applied once' 1 "$(grep -cF 'grep -Eq NEVER_MATCH; then' "$protocol_broken")"
-if bash "$protocol_broken" "$LIB" >"$OUT" 2>&1; then
-  echo 'FAIL: disabling the global store exception left its valid fixture green' >&2
-  fail=$((fail + 1))
-else
-  expect 'disabled global store exception exposes project-kind misclassification' 'unknown project skilldata kind `feedback.tsv`' "$OUT"
-fi
-cp "$TMP/skills-lint-global-store.before" "$protocol_broken"
-if cmp -s "$TMP/skills-lint-global-store.before" "$protocol_broken"; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
+expect_absent 'owner-defined project children are legal' 'unknown project skilldata kind' "$OUT"
 
 red_proof_project_guard() { # label, target fragment, fixture kind
   label="$1"
@@ -161,14 +127,6 @@ red_proof_project_guard() { # label, target fragment, fixture kind
   case "$fixture" in
     invalid-owner) write_skill 'Read `.agents/skilldata/Bad_Owner/hooks/after.md`.' ;;
     kind-first) write_skill 'Read `.agents/skilldata/doctrine/widget/policy.md`.' ;;
-    unknown-kind)
-      write_skill 'This global-only package writes no project data, but reads `.agents/skilldata/widget/cache/item.md`.' \
-        '- Scope: user-global, writes no project data.
-- Path: `~/.agents/skilldata/widget/cache/`.
-- Access: read-only; initialized by the user.
-- Safety: unsafe parents refuse.
-- Justification: the data spans projects.'
-      ;;
     foreign-write)
       write_skill 'This fixture has an obvious foreign write.'
       mkdir -p "$LIB/skills/widget/scripts"
@@ -196,7 +154,6 @@ red_proof_project_guard() { # label, target fragment, fixture kind
 
 red_proof_project_guard invalid-owner 'fail "$name: $rel:$line_no: invalid skilldata owner' invalid-owner
 red_proof_project_guard kind-first 'fail "$name: $rel:$line_no: kind-first skilldata path' kind-first
-red_proof_project_guard unknown-kind 'fail "$name: $rel:$line_no: unknown project skilldata kind' unknown-kind
 red_proof_project_guard foreign-write 'fail "$name: $rel:$line_no: obvious write beneath foreign skilldata owner' foreign-write
 red_proof_project_guard installed-write 'fail "$name: $rel:${line%%:*}: mutable write beneath installed package path' installed-write
 red_proof_project_guard tracker 'fail "$name: $rel:$line: owner-local tracker path' tracker
