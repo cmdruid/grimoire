@@ -1,6 +1,6 @@
 ---
 doctype: specs
-status: draft
+status: published
 schema: architect/spec@1
 tags: [spec, inspector]
 ---

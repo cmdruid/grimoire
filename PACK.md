@@ -54,8 +54,7 @@ Google Cloud. None is part of the project's `clankshop` toolkit.
 ## Composition seams
 
 - Architect produces the argued specification. Inspector reviews documents, revises supported
-  document findings, and may simplify a spec or plan while offering an English close for
-  implementation fixes in this checkout without taking ownership. Contractor turns a
+  document findings, and may simplify a spec or plan while offering an English close for implementation fixes in this checkout without taking ownership. Contractor turns a
   clear request or accepted document into a proportionate implementation sequence when a plan is
   useful and can walk that job; formal records and gates remain conditional.
 - Contractor plans and roadmaps are queue sources for Workstream. Workstream owns one registered

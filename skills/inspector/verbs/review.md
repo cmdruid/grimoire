@@ -19,10 +19,12 @@ explicit non-goals, and acceptance evidence. It is context, not another artifact
 Use the narrowest supported reading; ask only when an ambiguity would materially change the verdict.
 
 Light (default): one native pass, ground cited paths, apply in-force invariants, stop. Deep
-(explicit): also inverse questions, safety of the mechanism, and named lenses. Kind-file
-substrate-skeptic / explicit-deep extras are this dial, not a second switch. Do not auto-escalate
-from path names. Inspector may note that a deep look would be proportionate without changing the
-dial.
+(explicit): also inverse questions, safety of the mechanism, and named lenses. On an explicit
+deep review of a high-stakes artifact, a few read-only subagents may run in parallel — each a
+distinct lens, one a skeptic trying to refute the target's central claim — then synthesize.
+Never an editing subagent. Kind-file substrate-skeptic / explicit-deep extras are this dial,
+not a second switch. Do not auto-escalate from path names. Inspector may note that a deep look
+would be proportionate without changing the dial.
 
 Named sets are opt-in (SKILL.md *Named sets*). Resolve
 `.agents/skilldata/inspector/invariants/<name>.md` and
@@ -205,10 +207,6 @@ utterance requested further work.
 3. **Reject** (`stop` / `don't` / `not yet`) → write nothing.
 4. **Unclear** → ask once whether to enter revise (or, for `approve-with-changes`, accept/publish
    as-is); write nothing.
-
-Depth dial (default off): for a high-stakes artifact, dispatch a few **read-only** subagents in
-parallel — each a distinct lens, one a skeptic trying to refute the target's central claim — and
-synthesize. Never an editing subagent.
 
 The review phase does not amend a body or code. Document fold is `revise`; confirmed implementation
 remediation is the English close of `review`, never document `revise` or `refine`. Isolation is not

@@ -17,6 +17,8 @@ missing "$REVIEW" 'no new supported must-fix finding' "adequacy mining loop stil
 has "$REVIEW" 'written step cannot succeed as specified' "must-fix definition missing"
 has "$REVIEW" 'Two legal in-boundary remedies → ask' "two-remedies ask missing"
 has "$REVIEW" 'not a second switch' "light/deep dial missing"
+missing "$REVIEW" 'Depth dial' "second depth dial still present"
+has "$REVIEW" 'Never an editing subagent' "deep subagent rule missing"
 has "$REVIEW" 'no numeric finding cap.' "uncapped review missing"
 missing "$PLAN" 'open decision branches do not belong here' "plan still blocks on open decisions"
 for word in specific grounded consequential actionable non-duplicate; do
