@@ -23,6 +23,8 @@ echo "== isolation-contract-test.sh"
 bash "$DIR/isolation-contract-test.sh" || rc=1
 echo "== operator-note-test.sh"
 bash "$DIR/operator-note-test.sh" || rc=1
+echo "== session-span-test.sh"
+bash "$DIR/session-span-test.sh" || rc=1
 echo "== shipment-prepare-test.sh"
 bash "$DIR/shipment-prepare-test.sh" || rc=1
 echo "== gate-contract-test.sh"

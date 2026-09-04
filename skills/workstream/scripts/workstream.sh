@@ -46,6 +46,7 @@ usage: workstream.sh <checkout> <operation> [args...]
   reconcile-partial <stream> --authority confirmed
   pr-await <stream> --authority confirmed --reference <value>
   pr-verify <stream>
+  session-set <stream> --body <path> --note <note>
   validate-tracker <path>
 EOF
 }
@@ -291,6 +292,47 @@ runbook_policy_part() { # file key column
     inside && $1==key { print $column; found++ }
     END { if(found!=1) exit 2 }
   ' "$file"
+}
+
+session_span_state() { # file
+  awk '
+    $0=="<!-- workstream:session@1 -->" {
+      if (inside || opened) bad=1
+      inside=1; opened++
+      next
+    }
+    $0=="<!-- /workstream:session@1 -->" {
+      if (!inside || closed) bad=1
+      inside=0; closed++
+      next
+    }
+    inside && $0 ~ /[^[:space:]]/ { nonempty=1 }
+    END {
+      if (bad || inside || opened!=closed || opened>1) { print "malformed"; exit }
+      if (opened==0) { print "empty"; exit }
+      print nonempty ? "present" : "empty"
+    }
+  ' "$1"
+}
+
+completed_unit_facts() {
+  local ids id slug summary commits item count=0 extra=0 list=""
+  ids="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="complete"{print $2}' "$TRACKER")"
+  for id in $ids; do
+    [ -n "$id" ] || continue
+    if [ "$count" -ge 8 ]; then extra=$((extra + 1)); continue; fi
+    slug="$(tracker_get unit "$id" slug)"
+    summary="$(tracker_get unit "$id" summary)"
+    commits="$(tracker_get unit "$id" commit-count)"
+    summary="$(printf '%s' "$summary" | tr ',/' '  ')"
+    item="${id}/${slug}/${commits}/${summary}"
+    if [ -z "$list" ]; then list="$item"; else list="$list,$item"; fi
+    count=$((count + 1))
+  done
+  if [ "$extra" -gt 0 ]; then
+    [ -n "$list" ] && list="$list,+$extra" || list="+$extra"
+  fi
+  [ -n "$list" ] && printf '%s' "$list" || printf '%s' -
 }
 
 runbook_hook_body() {
@@ -784,7 +826,8 @@ emit_runbook() {
   printf 'execution\t%s\nconcurrency\t%s\nsource\t%s\nfingerprint\t%s\n\n' \
     "$FRICTION_EXECUTION" "$FRICTION_CONCURRENCY" "$FRICTION_SOURCE" "$FRICTION_FINGERPRINT"
   cat "$FRICTION_BODY"
-  printf '<!-- /workstream:hook:ship-friction@1 -->\n'
+  printf '<!-- /workstream:hook:ship-friction@1 -->\n\n'
+  printf '<!-- workstream:session@1 -->\n<!-- /workstream:session@1 -->\n'
 }
 
 cmd_runtime_init() {
@@ -909,7 +952,7 @@ cmd_state() {
 }
 
 emit_read_projection() { # stream; requires admitted globals
-  local stream="$1" purpose orientation note source_kind source_pointer instance phase next queue unit unit_slug unit_summary shipment hook_identity hook_state mode landing branch target
+  local stream="$1" purpose orientation note source_kind source_pointer instance phase next queue unit unit_slug unit_summary shipment hook_identity hook_state mode landing branch target session completed
   purpose="$(runbook_block_field "$RUNBOOK" brief purpose)" || die "runbook purpose is malformed"
   orientation="$(runbook_block_field "$RUNBOOK" brief orientation)" || die "runbook orientation is malformed"
   note="$(runbook_block_field "$RUNBOOK" brief operator-note)" || die "runbook operator note is malformed"
@@ -924,8 +967,11 @@ emit_read_projection() { # stream; requires admitted globals
   if [ -n "$hook_identity" ]; then hook_state="$(tracker_get hook "$hook_identity" state)"; else hook_identity=-; hook_state=-; fi
   mode="$(runbook_policy_part "$RUNBOOK" mode 2)"; landing="$(runbook_field "$RUNBOOK" landing)"
   branch="$(runbook_field "$RUNBOOK" branch)"; target="$(runbook_field "$RUNBOOK" target)"
-  printf 'schema=workstream-read@1\nstream=%s,instance_id=%s\nroot=%s,worktree=%s\ncoordinates=branch:%s,target:%s,landing:%s\npolicy=mode:%s\npurpose=%s\norientation=%s\noperator_note=%s\nqueue=source-kind:%s,source:%s,state:%s\nunit=id:%s,slug:%s,summary:%s\nshipment=%s,hook_identity=%s,hook_state=%s\nnext_action=%s\n' \
-    "$stream" "$instance" "$ROOT" "$WT" "$branch" "$target" "$landing" "$mode" "$purpose" "$orientation" "$note" "$source_kind" "$source_pointer" "$queue" "${unit:--}" "$unit_slug" "$unit_summary" "${shipment:--}" "$hook_identity" "$hook_state" "$next"
+  session="$(session_span_state "$RUNBOOK")"
+  [ "$session" != malformed ] || die "runbook session span is malformed"
+  completed="$(completed_unit_facts)"
+  printf 'schema=workstream-read@1\nstream=%s,instance_id=%s\nroot=%s,worktree=%s\ncoordinates=branch:%s,target:%s,landing:%s\npolicy=mode:%s\npurpose=%s\norientation=%s\noperator_note=%s\nqueue=source-kind:%s,source:%s,state:%s\nunit=id:%s,slug:%s,summary:%s,completed:%s\nshipment=%s,hook_identity=%s,hook_state:%s,session:%s\nnext_action=%s\n' \
+    "$stream" "$instance" "$ROOT" "$WT" "$branch" "$target" "$landing" "$mode" "$purpose" "$orientation" "$note" "$source_kind" "$source_pointer" "$queue" "${unit:--}" "$unit_slug" "$unit_summary" "$completed" "${shipment:--}" "$hook_identity" "$hook_state" "$session" "$next"
 }
 
 cmd_read() {
@@ -997,6 +1043,68 @@ cmd_operator_note() {
   RUNBOOK_FINGERPRINT="$(file_fingerprint "$RUNBOOK")"
   count="$(runbook_block_field "$RUNBOOK" brief operator-note | wc -c | tr -d ' ')"
   printf 'status=saved\nnote_bytes=%s\nnext_action=%s\n' "$((count - 1))" "$(tracker_get phase - next-action)"
+}
+
+cmd_session_set() {
+  local stream="" body="" note="" before temp current state
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --body)
+        [ "$#" -ge 2 ] && [ -z "$body" ] || die "usage: session-set <stream> --body <path> --note <note>"
+        body="$2"; shift 2
+        ;;
+      --note)
+        [ "$#" -ge 2 ] && [ -z "$note" ] || die "usage: session-set <stream> --body <path> --note <note>"
+        note="$2"; shift 2
+        ;;
+      *)
+        [ -z "$stream" ] || die "usage: session-set <stream> --body <path> --note <note>"
+        stream="$1"; shift
+        ;;
+    esac
+  done
+  [ -n "$stream" ] && [ -n "$body" ] && [ -n "$note" ] || die "usage: session-set <stream> --body <path> --note <note>"
+  admit_stream "$stream"
+  [ -f "$body" ] && [ ! -L "$body" ] || die "session body is not a regular file"
+  grep -qF '<!-- workstream:session@1 -->' "$body" && die "session body contains a session marker"
+  grep -qF '<!-- /workstream:session@1 -->' "$body" && die "session body contains a session marker"
+  awk 'BEGIN{found=0} $0 ~ /[^[:space:]]/{found=1} END{exit found?0:1}' "$body" || die "session body is empty"
+  validate_text 'session note' "$note"
+  [ "$(session_span_state "$RUNBOOK")" != malformed ] || die "runbook session span is malformed"
+  before="$RUNBOOK_FINGERPRINT"
+  temp="$(mktemp "$RUNTIME/.WORKSTREAM.md.XXXXXX")"
+  awk -v body="$body" -v note="$note" '
+    /^<!-- workstream:brief@1 -->$/ { brief=1 }
+    /^<!-- \/workstream:brief@1 -->$/ { brief=0 }
+    brief && index($0,"operator-note\t")==1 { print "operator-note\t" note; next }
+    $0=="<!-- workstream:session@1 -->" {
+      if (session) exit 2
+      print
+      while ((getline line < body) > 0) print line
+      close(body)
+      session=1
+      skip=1
+      next
+    }
+    $0=="<!-- /workstream:session@1 -->" {
+      if (!skip) exit 2
+      skip=0
+      print
+      next
+    }
+    skip { next }
+    { print }
+    END { if (session!=1 || skip) exit 2 }
+  ' "$RUNBOOK" >"$temp" || { rm -f "$temp"; die "session span replace failed"; }
+  [ "$(session_span_state "$temp")" = present ] || { rm -f "$temp"; die "session span is not present after save"; }
+  [ "$(runbook_contract_hash "$temp")" = "$(tracker_get meta - runbook-contract-sha256)" ] || { rm -f "$temp"; die "session edit changed managed contract"; }
+  current="$(file_fingerprint "$RUNBOOK")"
+  [ "$current" = "$before" ] || { rm -f "$temp"; die "runbook changed concurrently"; }
+  [ ! -L "$WT" ] && [ ! -L "$RUNBOOK" ] || { rm -f "$temp"; die "runbook destination became unsafe"; }
+  chmod 600 "$temp"
+  mv -f "$temp" "$RUNBOOK"
+  RUNBOOK_FINGERPRINT="$(file_fingerprint "$RUNBOOK")"
+  printf 'status=saved\nsession=present\nnext_action=%s\n' "$(tracker_get phase - next-action)"
 }
 
 cmd_phase_set() {
@@ -2582,6 +2690,7 @@ main() {
     state) cmd_state "$@" ;;
     diagnose) cmd_diagnose "$@" ;;
     operator-note) cmd_operator_note "$@" ;;
+    session-set) cmd_session_set "$@" ;;
     phase-set) cmd_phase_set "$@" ;;
     contract-recover) cmd_contract_recover "$@" ;;
     unit-begin) cmd_unit_begin "$@" ;;

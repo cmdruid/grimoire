@@ -63,7 +63,7 @@ cp "$OUT" "$TMP/named-read"
 if cmp -s "$TMP/named-read" "$OUT"; then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: named and current reads differ' >&2; fi
 "$HELPER" "$ROOT" unit-begin concise bounded 'Bounded active summary' >"$OUT"
 "$HELPER" "$ROOT" read concise >"$OUT"
-expect 'read exposes active unit identity' 'unit=id:1,slug:bounded,summary:Bounded active summary' "$OUT"
+expect 'read exposes active unit identity' 'unit=id:1,slug:bounded,summary:Bounded active summary,completed:-' "$OUT"
 
 scaffold_bytes="$(wc -c <"$ROOT/.streams/concise/WORKSTREAM.md" | tr -d ' ')"
 if [ "$scaffold_bytes" -le 4000 ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: generated runbook is $scaffold_bytes bytes" >&2; fi
