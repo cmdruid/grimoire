@@ -930,6 +930,21 @@ cmd_runtime_init() {
   printf 'status=created\nstream=%s\ninstance_id=%s\nnext_action=define-unit\n' "$stream" "$instance"
 }
 
+projected_next_action() {
+  local next target
+  next="$(tracker_get phase - next-action)"
+  target="$(runbook_field "$RUNBOOK" target)"
+  case "$next" in
+    define-unit|plan|build|feature-hook|accumulate)
+      if ! git -C "$WT" merge-base --is-ancestor "$target" HEAD; then
+        printf '%s\n' sync
+        return
+      fi
+      ;;
+  esac
+  printf '%s\n' "$next"
+}
+
 cmd_state() {
   [ "$#" -eq 1 ] || die "usage: state <stream>"
   local stream="$1" instance branch target phase next queue unit shipment
@@ -938,7 +953,7 @@ cmd_state() {
   branch="$(runbook_field "$RUNBOOK" branch)"
   target="$(runbook_field "$RUNBOOK" target)"
   phase="$(tracker_get phase - name)"
-  next="$(tracker_get phase - next-action)"
+  next="$(projected_next_action)"
   queue="$(tracker_get queue - state)"
   unit="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="active" {print $2}' "$TRACKER")"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
@@ -954,7 +969,7 @@ emit_read_projection() { # stream; requires admitted globals
   source_kind="$(runbook_block_field "$RUNBOOK" brief queue-source-kind)" || die "runbook queue source is malformed"
   source_pointer="$(runbook_block_field "$RUNBOOK" brief queue-source)" || die "runbook queue source is malformed"
   instance="$(tracker_get meta - instance-id)"; phase="$(tracker_get phase - name)"
-  next="$(tracker_get phase - next-action)"; queue="$(tracker_get queue - state)"
+  next="$(projected_next_action)"; queue="$(tracker_get queue - state)"
   unit="$(awk -F '\t' '$1=="unit"&&$3=="state"&&$4=="active" {print $2}' "$TRACKER")"
   if [ -n "$unit" ]; then unit_slug="$(tracker_get unit "$unit" slug)"; unit_summary="$(tracker_get unit "$unit" summary)"; else unit_slug=-; unit_summary=-; fi
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase" {print $2; exit}' "$TRACKER")"
@@ -1003,7 +1018,7 @@ cmd_diagnose() {
   gates="$(awk -F '\t' '$1=="gate"&&$3=="outcome"{value=$4}END{print value==""?"none":value}' "$TRACKER")"
   shipment="$(awk -F '\t' '$1=="shipment"&&$3=="phase"{print $2 ":" $4; exit}' "$TRACKER")"
   printf 'schema=workstream-diagnose@1\nstream=%s\ntracker=valid\nrunbook=bound\nrunning_hooks=%s\ncompleted_units=%s\ngate=%s\nshipment=%s\nnext_action=%s\n' \
-    "$stream" "$running" "$complete" "$gates" "${shipment:-none}" "$(tracker_get phase - next-action)"
+    "$stream" "$running" "$complete" "$gates" "${shipment:-none}" "$(projected_next_action)"
 }
 
 cmd_operator_note() {
@@ -2149,7 +2164,7 @@ cmd_list() {
   while IFS= read -r directory; do
     [ -f "$directory/WORKSTREAM.md" ] && [ -f "$directory/workstream.tsv" ] || continue
     stream="$(basename "$directory")"; admit_stream "$stream"
-    printf 'stream=%s,branch=%s,phase=%s,next=%s\n' "$stream" "$(runbook_field "$RUNBOOK" branch)" "$(tracker_get phase - name)" "$(tracker_get phase - next-action)"
+    printf 'stream=%s,branch=%s,phase=%s,next=%s\n' "$stream" "$(runbook_field "$RUNBOOK" branch)" "$(tracker_get phase - name)" "$(projected_next_action)"
     count=$((count + 1))
   done < <(find "$ROOT/.streams" -mindepth 1 -maxdepth 1 -type d -print | LC_ALL=C sort)
   printf 'count=%s\n' "$count"

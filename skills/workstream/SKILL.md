@@ -64,7 +64,7 @@ Read only the selected verb file, then follow it. No verb requires another verb 
 
 ## Runtime loop
 
-Use the helper's single `next_action`. Do not reconstruct state from the tracker.
+Use the helper's single `next_action`. `read` reports `sync` when HEAD does not contain the target. Do not reconstruct state from the tracker.
 
 ```text
 next_action      you do

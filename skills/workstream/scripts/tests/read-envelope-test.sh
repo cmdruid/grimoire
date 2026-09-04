@@ -91,4 +91,18 @@ for budget_case in router load ship; do
   fi
 done
 
+BEHIND="$TMP/behind"
+init_repo "$BEHIND"
+printf 'fixture\n' >"$BEHIND/file.txt"
+git -C "$BEHIND" add file.txt
+git -C "$BEHIND" commit -qm initial
+"$HELPER" "$BEHIND" runtime-init stale main 'Stale stream' >"$OUT"
+printf 'moved\n' >"$BEHIND/file.txt"
+git -C "$BEHIND" add file.txt
+git -C "$BEHIND" commit -qm 'advance target'
+"$HELPER" "$BEHIND" read stale >"$OUT"
+expect 'read overlays sync when the target moved' 'next_action=sync' "$OUT"
+"$HELPER" "$BEHIND" state stale >"$OUT"
+expect 'state overlays sync when the target moved' 'next_action=sync' "$OUT"
+
 report 'workstream read envelope'

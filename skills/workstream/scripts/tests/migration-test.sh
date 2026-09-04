@@ -57,7 +57,9 @@ expect 'migration preserves committed active work' $'unit\t1\tstate\tcomplete' "
 expect 'migration preserves legacy commit subject' $'subject\tpreserved legacy unit' "$ROOT/.streams/legacy-two/workstream.tsv"
 expect 'Git registry follows move' "worktree $ROOT/.streams/legacy" <(git -C "$ROOT" worktree list --porcelain)
 "$HELPER" "$ROOT" read legacy >"$OUT"; expect 'migrated stream admits' 'schema=workstream-read@1' "$OUT"
+expect 'aligned migrated stream keeps queue action' 'next_action=define-unit' "$OUT"
 "$HELPER" "$ROOT" read legacy-two >"$OUT"; expect 'second migrated stream admits' 'schema=workstream-read@1' "$OUT"
+expect 'ahead migrated stream keeps queue action' 'next_action=accumulate' "$OUT"
 
 SPACE_ROOT="$TMP/project with space"; init_repo "$SPACE_ROOT"
 printf 'base\n' >"$SPACE_ROOT/file"; git -C "$SPACE_ROOT" add file; git -C "$SPACE_ROOT" commit -qm initial
@@ -118,7 +120,8 @@ git -C "$ROOT3" worktree add -q -b stream/linked "$ROOT3/.workstreams/linked" ma
 printf '# linked legacy handoff\n' >"$ROOT3/.workstreams/linked/WORKSTREAM.md"
 git -C "$ROOT3" show-ref >"$TMP/inplace-refs"; git -C "$ROOT3" worktree list --porcelain >"$TMP/inplace-registry"
 if "$MIGRATOR" "$ROOT3" inventory >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
-expect 'mixed migration lists every in-place stream' 'legacy skill before migration: old,other' "$ERR"
+expect 'mixed migration lists the first in-place stream' 'old: in-place stream must be finished' "$ERR"
+expect 'mixed migration lists the second in-place stream' 'other: in-place stream must be finished' "$ERR"
 if [ -d "$ROOT3/.workstreams/old" ] && [ -d "$ROOT3/.workstreams/other" ] && [ -d "$ROOT3/.workstreams/linked" ] && [ ! -e "$ROOT3/.streams" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); fi
 if cmp -s "$TMP/inplace-refs" <(git -C "$ROOT3" show-ref); then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: mixed refusal changed refs' >&2; fi
 if cmp -s "$TMP/inplace-registry" <(git -C "$ROOT3" worktree list --porcelain); then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: mixed refusal changed worktree registry' >&2; fi
@@ -167,8 +170,9 @@ expect_inventory_refusal() { # root label diagnostic
   if [ ! -e "$root/.streams/.migration.tsv" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: $label inventory created a manifest" >&2; fi
 }
 
-INVALID_DIRT="$TMP/invalid-dirt"; prepare_invalid "$INVALID_DIRT" dirt; printf 'wip\n' >"$INVALID_DIRT/.workstreams/dirt/wip"
-expect_inventory_refusal "$INVALID_DIRT" dirt 'legacy stream has uncommitted work'
+INVALID_DIRT="$TMP/invalid-dirt"; prepare_invalid "$INVALID_DIRT" dirt
+printf 'wip\n' >>"$INVALID_DIRT/.workstreams/dirt/file"
+expect_inventory_refusal "$INVALID_DIRT" dirt 'tracked path blocks migration: file'
 
 INVALID_INTERRUPTED="$TMP/invalid-interrupted"; prepare_invalid "$INVALID_INTERRUPTED" interrupted
 admin_path="$(git -C "$INVALID_INTERRUPTED/.workstreams/interrupted" rev-parse --git-path CHERRY_PICK_HEAD)"; case "$admin_path" in /*) ;; *) admin_path="$INVALID_INTERRUPTED/.workstreams/interrupted/$admin_path" ;; esac
@@ -177,7 +181,9 @@ expect_inventory_refusal "$INVALID_INTERRUPTED" interrupted 'interrupted Git adm
 
 INVALID_DIVERGED="$TMP/invalid-diverged"; prepare_invalid "$INVALID_DIVERGED" diverged
 printf 'target\n' >"$INVALID_DIVERGED/target"; git -C "$INVALID_DIVERGED" add target; git -C "$INVALID_DIVERGED" commit -qm target
-expect_inventory_refusal "$INVALID_DIVERGED" diverged 'divergent target state'
+"$MIGRATOR" "$INVALID_DIVERGED" inventory >"$OUT" 2>"$ERR"
+expect 'behind-only inventory is not a refusal' 'relation=behind' "$OUT"
+expect 'behind-only inventory reports the gap' 'behind=' "$OUT"
 
 INVALID_SYMLINK="$TMP/invalid-symlink"; prepare_invalid "$INVALID_SYMLINK" linked; mkdir "$TMP/outside-legacy"; ln -s "$TMP/outside-legacy" "$INVALID_SYMLINK/.workstreams/alias"
 expect_inventory_refusal "$INVALID_SYMLINK" symlink 'unknown child'
@@ -190,11 +196,15 @@ INVALID_NESTED="$TMP/invalid-nested"; prepare_invalid "$INVALID_NESTED" nested; 
 expect_inventory_refusal "$INVALID_NESTED" nested 'contains nested stream state'
 
 INVALID_COLLISION="$TMP/invalid-collision"; prepare_invalid "$INVALID_COLLISION" collision; mkdir -p "$INVALID_COLLISION/.streams/collision"
-expect_inventory_refusal "$INVALID_COLLISION" collision 'destination collides'
+expect_inventory_refusal "$INVALID_COLLISION" collision 'destination already exists'
 
 INVALID_AMBIGUOUS="$TMP/invalid-ambiguous"; prepare_invalid "$INVALID_AMBIGUOUS" ambiguous
 printf '%s\n' '- target: main' '- integration-target: main' >>"$INVALID_AMBIGUOUS/.workstreams/ambiguous/WORKSTREAM.md"
 expect_inventory_refusal "$INVALID_AMBIGUOUS" ambiguous 'legacy target is ambiguous'
+
+INVALID_TICK="$TMP/invalid-tick"; prepare_invalid "$INVALID_TICK" tick
+printf '%s\n' "- integration-target: \`not a branch!!\`" >>"$INVALID_TICK/.workstreams/tick/WORKSTREAM.md"
+expect_inventory_refusal "$INVALID_TICK" tick 'normalized integration target is invalid'
 
 expect_apply_refusal() { # root stream label diagnostic
   local root="$1" stream="$2" label="$3" diagnostic="$4"
@@ -226,9 +236,118 @@ expect_apply_refusal "$APPLY_TARGET" target target 'legacy target boundary moved
 
 APPLY_DESTINATION="$TMP/apply-destination"; prepare_invalid "$APPLY_DESTINATION" destination; "$MIGRATOR" "$APPLY_DESTINATION" inventory >"$OUT"
 mkdir "$APPLY_DESTINATION/.streams/destination"
-expect_apply_refusal "$APPLY_DESTINATION" destination destination 'migration destination collides'
+expect_apply_refusal "$APPLY_DESTINATION" destination destination 'destination already exists'
 
 APPLY_SET="$TMP/apply-set"; prepare_invalid "$APPLY_SET" set; "$MIGRATOR" "$APPLY_SET" inventory >"$OUT"
 mkdir "$TMP/apply-set-outside"; ln -s "$TMP/apply-set-outside" "$APPLY_SET/.workstreams/alias"
 expect_apply_refusal "$APPLY_SET" set set 'legacy stream set changed after inventory'
+
+assert_preserved_tips() { # root stream label before-stream before-target
+  local root="$1" stream="$2" label="$3" before_stream="$4" before_target="$5" after_stream after_target
+  after_stream="$(git -C "$root/.streams/$stream" rev-parse HEAD)"
+  after_target="$(git -C "$root" rev-parse main)"
+  expect_eq "$label preserves stream tip" "$before_stream" "$after_stream"
+  expect_eq "$label preserves target tip" "$before_target" "$after_target"
+}
+
+BEHIND="$TMP/behind"; prepare_invalid "$BEHIND" stale
+before_stream="$(git -C "$BEHIND/.workstreams/stale" rev-parse HEAD)"
+i=1; while [ "$i" -le 8 ]; do
+  printf 'target-%s\n' "$i" >"$BEHIND/target"
+  git -C "$BEHIND" add target
+  git -C "$BEHIND" commit -qm "target $i"
+  i=$((i + 1))
+done
+before_target="$(git -C "$BEHIND" rev-parse main)"
+"$MIGRATOR" "$BEHIND" inventory >"$OUT" 2>"$ERR"
+expect 'behind inventory classifies behind' 'relation=behind' "$OUT"
+"$MIGRATOR" "$BEHIND" apply >"$OUT"
+expect 'behind apply migrates' 'status=migrated' "$OUT"
+assert_preserved_tips "$BEHIND" stale behind "$before_stream" "$before_target"
+if [ -d "$BEHIND/.streams/stale" ] && [ ! -e "$BEHIND/.workstreams" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: behind stream was not relocated' >&2; fi
+"$HELPER" "$BEHIND" read stale >"$OUT"
+expect 'behind read asks for sync' 'next_action=sync' "$OUT"
+
+DIVERGED="$TMP/diverged"; prepare_invalid "$DIVERGED" split
+printf 'stream-only\n' >"$DIVERGED/.workstreams/split/stream-only"
+git -C "$DIVERGED/.workstreams/split" add stream-only
+git -C "$DIVERGED/.workstreams/split" commit -qm 'stream unique work'
+before_stream="$(git -C "$DIVERGED/.workstreams/split" rev-parse HEAD)"
+printf 'target-only\n' >"$DIVERGED/target-only"
+git -C "$DIVERGED" add target-only
+git -C "$DIVERGED" commit -qm 'target unique work'
+before_target="$(git -C "$DIVERGED" rev-parse main)"
+"$MIGRATOR" "$DIVERGED" inventory >"$OUT"
+expect 'diverged inventory classifies diverged' 'relation=diverged' "$OUT"
+"$MIGRATOR" "$DIVERGED" apply >"$OUT"
+expect 'diverged apply migrates' 'status=migrated' "$OUT"
+assert_preserved_tips "$DIVERGED" split diverged "$before_stream" "$before_target"
+"$HELPER" "$DIVERGED" read split >"$OUT"
+expect 'diverged read asks for sync' 'next_action=sync' "$OUT"
+expect 'diverged unique commits stay a migrated unit' $'unit\t1\tstate\tcomplete' "$DIVERGED/.streams/split/workstream.tsv"
+expect 'diverged preserves the unique subject' $'subject\tstream unique work' "$DIVERGED/.streams/split/workstream.tsv"
+merge_base="$(git -C "$DIVERGED/.streams/split" merge-base HEAD main)"
+expect 'diverged unit boundary is the merge base' $'unit\t1\tboundary\t'"$merge_base" "$DIVERGED/.streams/split/workstream.tsv"
+
+MARKDOWN="$TMP/markdown"; prepare_invalid "$MARKDOWN" wrapped
+printf '%s\n' "- integration-target: \`main\`" >>"$MARKDOWN/.workstreams/wrapped/WORKSTREAM.md"
+"$MIGRATOR" "$MARKDOWN" inventory >"$OUT" 2>"$ERR"
+expect 'markdown-wrapped target inventories' 'target=main' "$OUT"
+"$MIGRATOR" "$MARKDOWN" apply >"$OUT"
+expect 'markdown-wrapped target migrates' 'status=migrated' "$OUT"
+
+DSSTORE="$TMP/dsstore"; prepare_invalid "$DSSTORE" finder
+printf 'finder\n' >"$DSSTORE/.workstreams/.DS_Store"
+"$MIGRATOR" "$DSSTORE" inventory >"$OUT" 2>"$ERR"
+expect 'Finder metadata is a warning' 'ignored Finder metadata' "$ERR"
+expect 'Finder metadata does not block inventory' 'status=inventory' "$OUT"
+"$MIGRATOR" "$DSSTORE" apply >"$OUT"
+expect 'Finder metadata still migrates' 'status=migrated' "$OUT"
+if [ ! -e "$DSSTORE/.workstreams" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: .workstreams remained after ignoring .DS_Store' >&2; fi
+
+UNTRACKED="$TMP/untracked"; prepare_invalid "$UNTRACKED" notes
+printf 'keep me\n' >"$UNTRACKED/.workstreams/notes/scratch.md"
+"$MIGRATOR" "$UNTRACKED" inventory >"$OUT" 2>"$ERR"
+expect 'untracked inventory reports dirt' 'dirt=untracked:1' "$OUT"
+expect 'untracked inventory names the path' 'untracked path will move with the worktree: scratch.md' "$ERR"
+"$MIGRATOR" "$UNTRACKED" apply >"$OUT"
+expect 'untracked apply migrates' 'status=migrated' "$OUT"
+if [ -f "$UNTRACKED/.streams/notes/scratch.md" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: untracked file was not carried' >&2; fi
+
+GITLINK="$TMP/gitlink"; SUB="$TMP/sub"
+prepare_invalid "$GITLINK" vendor
+init_repo "$SUB"
+printf 'sub\n' >"$SUB/sub"; git -C "$SUB" add sub; git -C "$SUB" commit -qm sub
+object="$(git -C "$SUB" rev-parse HEAD)"
+git -C "$GITLINK/.workstreams/vendor" config advice.addEmbeddedRepo false
+git clone -q "$SUB" "$GITLINK/.workstreams/vendor/vendor"
+git -C "$GITLINK/.workstreams/vendor" add vendor
+git -C "$GITLINK/.workstreams/vendor" commit -qm 'add vendor gitlink'
+before_stream="$(git -C "$GITLINK/.workstreams/vendor" rev-parse HEAD)"
+before_link="$(git -C "$GITLINK/.workstreams/vendor" ls-files -s vendor | awk '{print $2}')"
+"$MIGRATOR" "$GITLINK" inventory >"$OUT"
+"$MIGRATOR" "$GITLINK" apply >"$OUT"
+expect 'gitlink apply migrates' 'status=migrated' "$OUT"
+after_link="$(git -C "$GITLINK/.streams/vendor" ls-files -s vendor | awk '{print $2}')"
+expect_eq 'gitlink object is unchanged' "$before_link" "$after_link"
+expect_eq 'gitlink object matches the submodule commit' "$object" "$after_link"
+expect_eq 'gitlink stream tip is unchanged' "$before_stream" "$(git -C "$GITLINK/.streams/vendor" rev-parse HEAD)"
+
+AGGREGATE="$TMP/aggregate"; prepare_invalid "$AGGREGATE" first
+printf 'dirty\n' >>"$AGGREGATE/.workstreams/first/file"
+git -C "$AGGREGATE" worktree add -q -b stream/second "$AGGREGATE/.workstreams/second" main
+printf '# second\n' >"$AGGREGATE/.workstreams/second/WORKSTREAM.md"
+mkdir -p "$AGGREGATE/.streams/second"
+if "$MIGRATOR" "$AGGREGATE" inventory >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'aggregate reports tracked dirt' 'first: tracked path blocks migration: file' "$ERR"
+expect 'aggregate reports destination collision' 'second: destination already exists:' "$ERR"
+if [ ! -e "$AGGREGATE/.streams/.migration.tsv" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo 'FAIL: aggregate inventory wrote a manifest' >&2; fi
+
+UNKNOWN="$TMP/unknown"; prepare_invalid "$UNKNOWN" keep
+printf 'finder\n' >"$UNKNOWN/.workstreams/.DS_Store"
+printf 'nope\n' >"$UNKNOWN/.workstreams/notes.txt"
+if "$MIGRATOR" "$UNKNOWN" inventory >"$OUT" 2>"$ERR"; then fail=$((fail + 1)); else pass=$((pass + 1)); fi
+expect 'unknown child names the path' 'notes.txt: unknown child' "$ERR"
+expect 'Finder metadata is still warned when a sibling blocks' 'ignored Finder metadata' "$ERR"
+
 report 'workstream migration'
