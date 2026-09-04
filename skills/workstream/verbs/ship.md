@@ -24,9 +24,9 @@ authorizes preparation only.
    `pr-await STREAM --authority confirmed --reference VALUE`. After merge, `pr-verify STREAM`
    records only the observed remote target and leaves
    `next_action=postflight`; it does not touch the primary. With authority from the same bare
-   `ship`, or fresh explicit authority after context loss, invoke `land-advance` again to lease and
-   synchronize that guarded primary endpoint. Mechanical contention does not consume same-session
-   authority.
+   `ship`, or fresh explicit authority after context loss, invoke
+   `land-advance STREAM --authority confirmed` again to lease and synchronize that guarded primary
+   endpoint. Mechanical contention does not consume same-session authority.
 6. At landed postflight, invoke `ship-finalize STREAM`, optionally with one operator note.
    Finalization requires the advanced local-target receipt, clears the completed transaction
    atomically, and doesn't create a tracked commit or hook. Dirty, wrong-branch, interrupted, or

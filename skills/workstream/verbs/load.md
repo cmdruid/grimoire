@@ -10,8 +10,9 @@ policy from managed spans. If the span is empty, continue from `read` alone.
 
 If the state and Git agree, proceed with the reported **local** `next_action` (define, build,
 complete, hook, accumulate, sync, `ship-prepare`). Explicit load is not landing authority. If
-`next_action` is `land` (or would mutate the primary checkout or recorded target), stop and ask.
-Bare `/workstream ship` remains the landing authority.
+`next_action` is `land` or `postflight` (or would mutate the primary checkout or recorded target),
+stop and ask. `await-merge` may continue with `pr-verify` only. Bare `/workstream ship` remains
+the landing authority.
 
 Ask only for an ambiguous unit, semantic conflict, or landing decision.
 

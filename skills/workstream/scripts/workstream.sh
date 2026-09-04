@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# workstream.sh <root> <operation> [args...]
+# workstream.sh <checkout> <operation> [args...]
 #
-# Guarded state provider for the composed Workstream runtime. Both the bundled
-# and installed copies require the canonical root explicitly. Agent-facing
-# callers consume compact projections; workstream.tsv is never an input or
-# output surface for an agent.
+# Guarded state provider for the composed Workstream runtime. The first argument
+# is any checkout in the repository; the helper resolves the canonical primary.
+# Agent-facing callers consume compact projections; workstream.tsv is never an
+# input or output surface for an agent.
 set -euo pipefail
 
 die() {
@@ -1041,7 +1041,7 @@ cmd_operator_note() {
 }
 
 cmd_session_set() {
-  local stream="" body="" note="" before temp current state
+  local stream="" body="" note="" before temp current source
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --body)
@@ -1067,6 +1067,12 @@ cmd_session_set() {
   validate_text 'session note' "$note"
   [ "$(session_span_state "$RUNBOOK")" != malformed ] || die "runbook session span is malformed"
   before="$RUNBOOK_FINGERPRINT"
+  source="$RUNBOOK"
+  if ! grep -qxF '<!-- workstream:session@1 -->' "$RUNBOOK"; then
+    source="$(mktemp "$RUNTIME/.WORKSTREAM.md.XXXXXX")"
+    cat "$RUNBOOK" >"$source"
+    printf '\n<!-- workstream:session@1 -->\n<!-- /workstream:session@1 -->\n' >>"$source"
+  fi
   temp="$(mktemp "$RUNTIME/.WORKSTREAM.md.XXXXXX")"
   awk -v body="$body" -v note="$note" '
     /^<!-- workstream:brief@1 -->$/ { brief=1 }
@@ -1090,7 +1096,8 @@ cmd_session_set() {
     skip { next }
     { print }
     END { if (session!=1 || skip) exit 2 }
-  ' "$RUNBOOK" >"$temp" || { rm -f "$temp"; die "session span replace failed"; }
+  ' "$source" >"$temp" || { [ "$source" = "$RUNBOOK" ] || rm -f "$source"; rm -f "$temp"; die "session span replace failed"; }
+  [ "$source" = "$RUNBOOK" ] || rm -f "$source"
   [ "$(session_span_state "$temp")" = present ] || { rm -f "$temp"; die "session span is not present after save"; }
   [ "$(runbook_contract_hash "$temp")" = "$(tracker_get meta - runbook-contract-sha256)" ] || { rm -f "$temp"; die "session edit changed managed contract"; }
   current="$(file_fingerprint "$RUNBOOK")"

@@ -75,7 +75,7 @@ accumulate       next unit, or stop until /workstream ship
 prepare-ship     verbs/ship.md
 land             verbs/ship.md (only after explicit ship; load/compaction stop and ask)
 await-merge      verbs/ship.md
-postflight       verbs/ship.md
+postflight       verbs/ship.md (load/compaction stop and ask; mutates the primary)
 sync             verbs/sync.md
 recycle          verbs/recycle.md
 close            verbs/close.md

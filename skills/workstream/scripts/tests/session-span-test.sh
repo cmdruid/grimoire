@@ -79,4 +79,12 @@ chmod 644 "$RUNBOOK"
 "$HELPER" "$ROOT" repair sess >"$OUT"
 expect 'repair preserves session body' 'Keep the session span.' "$RUNBOOK"
 
+"$HELPER" "$ROOT" runtime-init legacy main legacy >"$OUT"
+LEGACY="$ROOT/.streams/legacy/WORKSTREAM.md"
+awk '$0=="<!-- workstream:session@1 -->"{skip=1; next} $0=="<!-- /workstream:session@1 -->"{skip=0; next} !skip{print}' "$LEGACY" >"$TMP/legacy.md"
+cp "$TMP/legacy.md" "$LEGACY"
+"$HELPER" "$ROOT" session-set legacy --body "$TMP/body.md" --note 'define the first unit' >"$OUT"
+expect 'session-set adopts a pre-cut runbook' 'status=saved' "$OUT"
+expect 'pre-cut runbook gains session body' 'Keep the session span.' "$LEGACY"
+
 report 'workstream session span'
