@@ -175,12 +175,12 @@ every selected skill from that snapshot is `copy_current`.
 ### CLI shape
 
 ```sh
-grimoire source add dojo github:cmdruid/dojo --trust
-grimoire install journal --source dojo          # copy
-grimoire install clankshop --pack --source dojo # copy each member
+grimoire source add grove github:cmdruid/grove --trust
+grimoire install journal --source grove          # copy
+grimoire install clankshop --pack --source grove # copy each member
 
-grimoire source add dojo ~/Repos/dojo --link --trust-all
-grimoire install clankshop --pack --source dojo # symlink each member into that tree
+grimoire source add grove ~/Repos/grove --link --trust-all
+grimoire install clankshop --pack --source grove # symlink each member into that tree
 ```
 
 Uninstall removes an owned copy or an owned link symlink. It does not touch foreign occupants.
@@ -203,6 +203,6 @@ convention; they are still real directories.
   unblocks.
 - Source scan of a tree that contains both `skills/visible` and `.agents/skills/installed`
   reports only `visible`.
-- Existing live-root dogfood can keep `--link` against sibling `../dojo` and must not require
+- Existing live-root dogfood can keep `--link` against sibling `../grove` and must not require
   committing those symlinks.
 

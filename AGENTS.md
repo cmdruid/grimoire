@@ -1,7 +1,7 @@
 # AGENTS.md — working on the Grimoire package manager
 
 This repository is the **Grimoire** skill package manager (Rust workspace under `crates/`).
-The installable skills catalog is **dojo** (`~/Repos/dojo`). Do not author skills into this tree.
+The installable skills catalog is **grove** (`~/Repos/grove`). Do not author skills into this tree.
 
 ## Gate
 
@@ -21,19 +21,19 @@ RUSTC_WRAPPER= cargo test -p skill-grimoire --test root_dogfood -- --ignored
 ```
 
 Live-root inventory tests (`crates/grimoire-pack/tests/live_root_layout.rs`) stay on the default
-path. They read the catalog from `GRIMOIRE_LIVE_ROOT`, or sibling `../dojo` when that directory
+path. They read the catalog from `GRIMOIRE_LIVE_ROOT`, or sibling `../grove` when that directory
 contains `PACK.md`. They do not treat this repository root as a skills source.
 
 Library authoring doctrine, the lint gate, and skill-contract tests live in the sibling
-dojo checkout: `~/Repos/dojo/AGENTS.md` and
-`~/Repos/dojo/skills/skill-builder/docs/DOCTRINE.md`.
+grove checkout: `~/Repos/grove/AGENTS.md` and
+`~/Repos/grove/skills/skill-builder/docs/DOCTRINE.md`.
 
 This repo is a Grimoire client of that catalog. A pinned source copies locked skill trees into
 `.agents/skills/`. Add the local checkout with `--link` so install symlinks the working tree:
 
 ```sh
-grimoire source add dojo /Users/cscott/Repos/dojo --link --trust-all
-grimoire install clankshop --pack --source dojo
+grimoire source add grove /Users/cscott/Repos/grove --link --trust-all
+grimoire install clankshop --pack --source grove
 ```
 
 A filesystem path without `--link` is a Git snapshot (clean worktree, pinned commit), not

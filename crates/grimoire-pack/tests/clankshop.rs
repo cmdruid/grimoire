@@ -20,12 +20,14 @@ fn catalog_root() -> PathBuf {
         .to_path_buf();
     let sibling = repo
         .parent()
-        .map(|parent| parent.join("dojo"))
+        .map(|parent| parent.join("grove"))
         .expect("repository has a parent directory");
     if sibling.join("PACK.md").is_file() {
         return sibling;
     }
-    panic!("set GRIMOIRE_LIVE_ROOT to the skills catalog (sibling ../dojo with PACK.md not found)");
+    panic!(
+        "set GRIMOIRE_LIVE_ROOT to the skills catalog (sibling ../grove with PACK.md not found)"
+    );
 }
 
 #[cfg(unix)]

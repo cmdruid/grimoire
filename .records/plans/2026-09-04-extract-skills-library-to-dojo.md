@@ -8,8 +8,8 @@ tags: [plan]
 
 # Extract skills library to dojo — Implementation Plan
 
-Working name for the library repo is `dojo` (`~/Repos/dojo`, likely `github:cmdruid/dojo`).
-Renaming before the GitHub repo goes public is a follow-up, not this job.
+Working name for the library repo was `dojo` (`~/Repos/dojo`, likely `github:cmdruid/dojo`).
+Renamed to `grove` (`~/Repos/grove`, eventually `github:cmdruid/grove`) on 2026-09-05, before GitHub publish.
 
 Snapshot copy, not `git filter-repo`. Library blame remains in grimoire after `git rm`.
 Dojo has a clean identity.
@@ -72,8 +72,8 @@ grimoire install clankshop --pack --source dojo
   - Pack members linked to `/Users/cscott/Repos/dojo/skills/<name>`. A git snapshot of the same
     path without `--live` is a pinned commit, not the working tree.
 
-- [ ] Optional: publish `cmdruid/dojo`
-  - Not this job. Keep the GitHub repo private until the name is settled.
+- [ ] Optional: publish `cmdruid/grove`
+  - Not this job. Keep the GitHub repo private until publish.
 
 ## Done when
 
@@ -86,6 +86,6 @@ grimoire install clankshop --pack --source dojo
 
 ## Follow-ups (not this job)
 
-- Rename `dojo` before making the GitHub repo public.
-- Publish `github:cmdruid/dojo`.
+- Rename `dojo` → `grove` before making the GitHub repo public. Done 2026-09-05 (`~/Repos/grove`).
+- Publish `github:cmdruid/grove`.
 - Decide whether to add Claude links for skills Claude never had.

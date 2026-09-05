@@ -2,8 +2,8 @@ schema = "grimoire/manifest@3"
 
 
 [packs]
-clankshop = { source = "dojo" }
+clankshop = { source = "grove" }
 
-[sources.dojo]
-path = "../dojo"
+[sources.grove]
+path = "../grove"
 link = true

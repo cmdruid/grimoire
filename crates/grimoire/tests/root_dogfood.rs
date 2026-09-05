@@ -25,12 +25,14 @@ fn catalog_root() -> PathBuf {
         .to_path_buf();
     let sibling = repo
         .parent()
-        .map(|parent| parent.join("dojo"))
+        .map(|parent| parent.join("grove"))
         .expect("repository has a parent directory");
     if sibling.join("PACK.md").is_file() {
         return sibling;
     }
-    panic!("set GRIMOIRE_LIVE_ROOT to the skills catalog (sibling ../dojo with PACK.md not found)");
+    panic!(
+        "set GRIMOIRE_LIVE_ROOT to the skills catalog (sibling ../grove with PACK.md not found)"
+    );
 }
 
 fn success(output: &std::process::Output) {
@@ -80,7 +82,7 @@ fn root_clankshop_pack_installs_checks_and_uninstalls_through_the_cli() {
         &[
             "source",
             "add",
-            "dojo",
+            "grove",
             source.to_str().unwrap(),
             "--link",
             "--trust-all",
@@ -89,7 +91,7 @@ fn root_clankshop_pack_installs_checks_and_uninstalls_through_the_cli() {
     success(&support::run(
         &project,
         &home,
-        &["install", "clankshop", "--pack", "--source", "dojo"],
+        &["install", "clankshop", "--pack", "--source", "grove"],
     ));
 
     for member in &members {
@@ -115,7 +117,7 @@ fn root_clankshop_pack_installs_checks_and_uninstalls_through_the_cli() {
     success(&checked);
     assert_eq!(support::stdout(&checked), "");
 
-    let info = support::run(&project, &home, &["source", "info", "dojo", "--json"]);
+    let info = support::run(&project, &home, &["source", "info", "grove", "--json"]);
     success(&info);
     let value: serde_json::Value = serde_json::from_slice(&info.stdout).unwrap();
     let names = value["skills"]

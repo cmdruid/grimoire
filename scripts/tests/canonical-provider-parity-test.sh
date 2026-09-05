@@ -15,12 +15,12 @@ resolve_pkg() {
     CDPATH='' cd -P "$candidate" && pwd
     return 0
   fi
-  candidate="$REPO/../dojo/skills/$name"
+  candidate="$REPO/../grove/skills/$name"
   if [ -d "$candidate" ]; then
     CDPATH='' cd -P "$candidate" && pwd
     return 0
   fi
-  fail "$name package source missing (install clankshop from dojo, or keep sibling ../dojo)"
+  fail "$name package source missing (install clankshop from grove, or keep sibling ../grove)"
 }
 
 JOURNAL="$(resolve_pkg journal)"

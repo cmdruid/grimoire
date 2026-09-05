@@ -6,8 +6,8 @@ locked skill tree there as a regular directory. `--link` is a local-source hatch
 symlink to that tree instead. Remotes never symlink. The published activation contract is
 `.records/specs/2026-09-04-grimoire-skill-activation-as-copies-live-local-as-symlink.md`.
 
-The skills catalog lives in a separate library, **dojo** (`~/Repos/dojo`, eventually
-`github:cmdruid/dojo`). This repository is the manager, not the book.
+The skills catalog lives in a separate library, **grove** (`~/Repos/grove`, eventually
+`github:cmdruid/grove`). This repository is the manager, not the book.
 
 ### Install a skill
 
@@ -15,9 +15,9 @@ Initialize a project, add a source, and install from it:
 
 ```sh
 grimoire init
-grimoire source add dojo github:cmdruid/dojo --trust
-grimoire install journal --source dojo
-grimoire install clankshop --pack --source dojo
+grimoire source add grove github:cmdruid/grove --trust
+grimoire install journal --source grove
+grimoire install clankshop --pack --source grove
 ```
 
 Pinned sources — remotes, and local git paths without `--link` — copy verified store bytes into
@@ -26,8 +26,8 @@ requires `--trust-all`. `--live` is a usage error that names `--link`. There is 
 a local source is an ordinary path.
 
 ```sh
-grimoire source add dojo /Users/cscott/Repos/dojo --link --trust-all
-grimoire install clankshop --pack --source dojo
+grimoire source add grove /Users/cscott/Repos/grove --link --trust-all
+grimoire install clankshop --pack --source grove
 ```
 
 Commit `grimoire.toml`, `grimoire.lock`, and the copied skill trees under `.agents/skills/`. A clone
@@ -58,7 +58,7 @@ RUSTC_WRAPPER= cargo test --all
 RUSTC_WRAPPER= cargo clippy --all --all-targets -- -D warnings
 ```
 
-`cargo test --all` does not run the live clankshop CLI dogfood. To run it against sibling `../dojo`
+`cargo test --all` does not run the live clankshop CLI dogfood. To run it against sibling `../grove`
 or `GRIMOIRE_LIVE_ROOT`:
 
 ```sh
@@ -66,10 +66,10 @@ RUSTC_WRAPPER= cargo test -p skill-grimoire --test root_dogfood -- --ignored
 ```
 
 The root-layout inventory tests stay on the default path. They use `GRIMOIRE_LIVE_ROOT` when set,
-otherwise sibling `../dojo` when that tree contains `PACK.md`. Set
-`GRIMOIRE_LIVE_ROOT=/absolute/path/to/dojo` to point at another catalog.
+otherwise sibling `../grove` when that tree contains `PACK.md`. Set
+`GRIMOIRE_LIVE_ROOT=/absolute/path/to/grove` to point at another catalog.
 
-Library lint and skill-contract tests run in the dojo checkout, not here.
+Library lint and skill-contract tests run in the grove checkout, not here.
 
 ### Install the CLI
 
