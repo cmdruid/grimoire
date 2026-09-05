@@ -49,9 +49,6 @@ pub use tree::{
     project_tree, PackSelection, SkillAvailability, TreeItem, TreeItemKey, TreeItemKind,
     TreeProjection,
 };
-pub use trust::{
-    TrustBaseline, TrustMode, TrustMutation, TrustReceipt, TrustRecord, TrustStore,
-    VendorTrustReceipt,
-};
+pub use trust::{TrustBaseline, TrustMode, TrustMutation, TrustReceipt, TrustRecord, TrustStore};
 pub use vendor::verify_vendor_tree;
 pub use world::{attach_inherited_global, load_world};

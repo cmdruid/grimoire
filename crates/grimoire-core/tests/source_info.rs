@@ -97,12 +97,11 @@ fn json_matches_the_additive_source_info_contract() {
         inventory,
         export,
         TrustMode::Snapshot,
-        2,
         None,
     );
     let value: serde_json::Value = serde_json::from_slice(&info.to_bytes().unwrap()).unwrap();
     assert_eq!(value["schema"], "grimoire/source-info@1");
-    assert_eq!(value["trust"]["vendor_receipts"], 2);
+    assert!(value["trust"].get("vendor_receipts").is_none());
     assert_eq!(value["alias"], "repo");
     assert_eq!(
         value["source"]["canonical"],

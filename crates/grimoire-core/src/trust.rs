@@ -8,7 +8,7 @@ use serde::de::{MapAccess, Visitor};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::source::{CanonicalIdentity, SourceKey, SourceKind};
-use crate::{CoreError, Result, SkillName};
+use crate::{CoreError, Result};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -25,16 +25,6 @@ pub struct TrustReceipt {
     pub inventory: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
-pub struct VendorTrustReceipt {
-    pub commit: String,
-    pub tree: String,
-    pub inventory: String,
-    pub skill: SkillName,
-    pub path: String,
-    pub content: String,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct TrustBaseline {
     pub commit: Option<String>,
@@ -47,7 +37,6 @@ pub struct TrustBaseline {
 pub struct TrustRecord {
     pub identity: CanonicalIdentity,
     pub receipts: BTreeSet<TrustReceipt>,
-    pub vendor_receipts: BTreeSet<VendorTrustReceipt>,
     pub all_snapshots: bool,
     pub baseline: Option<TrustBaseline>,
 }
@@ -61,16 +50,6 @@ impl TrustRecord {
         } else {
             TrustMode::Untrusted
         }
-    }
-
-    pub fn authorizes_vendor(
-        &self,
-        source_receipt: &TrustReceipt,
-        vendor_receipt: &VendorTrustReceipt,
-    ) -> bool {
-        self.all_snapshots
-            || self.receipts.contains(source_receipt)
-            || self.vendor_receipts.contains(vendor_receipt)
     }
 }
 
@@ -148,7 +127,6 @@ impl TrustStore {
         let record = next.records.entry(key).or_insert(TrustRecord {
             identity: identity.clone(),
             receipts: BTreeSet::new(),
-            vendor_receipts: BTreeSet::new(),
             all_snapshots: false,
             baseline: None,
         });
@@ -195,7 +173,6 @@ impl TrustStore {
         let record = next.records.entry(key).or_insert(TrustRecord {
             identity: identity.clone(),
             receipts: BTreeSet::new(),
-            vendor_receipts: BTreeSet::new(),
             all_snapshots: false,
             baseline: None,
         });
@@ -215,7 +192,6 @@ impl TrustStore {
             .get_mut(key)
             .ok_or_else(|| CoreError::Trust("unknown source key".into()))?;
         record.receipts.clear();
-        record.vendor_receipts.clear();
         record.all_snapshots = false;
         mutation(before, next.to_bytes()?)
     }
@@ -323,17 +299,6 @@ struct TrustReceiptDto {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct VendorTrustReceiptDto {
-    commit: String,
-    tree: String,
-    inventory: String,
-    skill: String,
-    path: String,
-    content: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 struct TrustBaselineDto {
     commit: Option<String>,
     tree: Option<String>,
@@ -381,7 +346,6 @@ impl TrustRecordDto {
         Ok(TrustRecord {
             identity,
             receipts: receipts.into_iter().collect(),
-            vendor_receipts: BTreeSet::new(),
             all_snapshots: self.all_snapshots,
             baseline,
         })
@@ -421,34 +385,6 @@ impl From<&TrustReceipt> for TrustReceiptDto {
             commit: receipt.commit.clone(),
             tree: receipt.tree.clone(),
             inventory: receipt.inventory.clone(),
-        }
-    }
-}
-
-impl TryFrom<VendorTrustReceiptDto> for VendorTrustReceipt {
-    type Error = CoreError;
-
-    fn try_from(receipt: VendorTrustReceiptDto) -> Result<Self> {
-        Ok(Self {
-            commit: receipt.commit,
-            tree: receipt.tree,
-            inventory: receipt.inventory,
-            skill: SkillName::new(receipt.skill)?,
-            path: receipt.path,
-            content: receipt.content,
-        })
-    }
-}
-
-impl From<&VendorTrustReceipt> for VendorTrustReceiptDto {
-    fn from(receipt: &VendorTrustReceipt) -> Self {
-        Self {
-            commit: receipt.commit.clone(),
-            tree: receipt.tree.clone(),
-            inventory: receipt.inventory.clone(),
-            skill: receipt.skill.to_string(),
-            path: receipt.path.clone(),
-            content: receipt.content.clone(),
         }
     }
 }

@@ -11,8 +11,7 @@ use grimoire_core::source::{GitCommand, GitResult, GitRunner};
 use grimoire_core::{
     check, load_world, plan, verify_vendor_tree, Action, CanonicalIdentity, CoreError,
     FaultDisposition, LockSkill, LockSource, Lockfile, Paths, PlanningMode, ProjectionMode,
-    Request, RequestRoot, Result, SourceAlias, TransactionRuntime, TrustReceipt, VendorState,
-    VendorTrustReceipt,
+    Request, RequestRoot, Result, SourceAlias, TransactionRuntime, VendorState,
 };
 
 #[derive(Default)]
@@ -175,49 +174,6 @@ fn committed_copy_checks_without_store_or_vendor_trust() {
         "{:?}",
         report.findings
     );
-}
-
-#[test]
-fn vendor_receipts_do_not_authorize_other_bytes_skills_or_snapshots() {
-    let source = TrustReceipt {
-        commit: "1".repeat(40),
-        tree: "2".repeat(40),
-        inventory: format!("sha256:{}", "3".repeat(64)),
-    };
-    let approved = VendorTrustReceipt {
-        commit: source.commit.clone(),
-        tree: source.tree.clone(),
-        inventory: source.inventory.clone(),
-        skill: "one".try_into().unwrap(),
-        path: "skills/one".into(),
-        content: format!("sha256:{}", "4".repeat(64)),
-    };
-    let identity = CanonicalIdentity::remote("github:org/repo").unwrap();
-    let record = grimoire_core::TrustRecord {
-        identity: identity.clone(),
-        receipts: BTreeSet::new(),
-        vendor_receipts: BTreeSet::from([approved.clone()]),
-        all_snapshots: false,
-        baseline: None,
-    };
-
-    for rejected in [
-        VendorTrustReceipt {
-            content: format!("sha256:{}", "5".repeat(64)),
-            ..approved.clone()
-        },
-        VendorTrustReceipt {
-            skill: "two".try_into().unwrap(),
-            path: "skills/two".into(),
-            ..approved.clone()
-        },
-        VendorTrustReceipt {
-            commit: "6".repeat(40),
-            ..approved.clone()
-        },
-    ] {
-        assert!(!record.authorizes_vendor(&source, &rejected));
-    }
 }
 
 #[test]

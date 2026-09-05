@@ -75,7 +75,7 @@ fn cached_source_workflow_never_fetches_during_update() {
     )
     .unwrap();
     assert_eq!(first["trust"]["mode"], "all");
-    assert_eq!(first["trust"]["vendor_receipts"], 0);
+    assert!(first["trust"].get("vendor_receipts").is_none());
 
     commit(&source, "second");
     success(&support::run(&project, &home, &["update", "--yes"]));
@@ -87,7 +87,7 @@ fn cached_source_workflow_never_fetches_during_update() {
         still_cached["snapshot"]["commit"],
         first["snapshot"]["commit"]
     );
-    assert_eq!(still_cached["trust"]["vendor_receipts"], 0);
+    assert!(still_cached["trust"].get("vendor_receipts").is_none());
 
     success(&support::run(
         &project,

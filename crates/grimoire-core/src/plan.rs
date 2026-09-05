@@ -590,15 +590,7 @@ pub fn plan(world: &WorldState, request: Request, mode: PlanningMode) -> Result<
     let mut actions = Vec::new();
     let mut blockers = resolution.blockers;
     blockers.append(&mut request_blockers);
-    if mode == PlanningMode::Frozen
-        && (manifest_edit.is_some()
-            || world.lock != resolution.lock
-            || resolution
-                .lock
-                .sources
-                .values()
-                .any(|source| matches!(source, LockSource::Link { .. })))
-    {
+    if mode == PlanningMode::Frozen && (manifest_edit.is_some() || world.lock != resolution.lock) {
         blockers.push(Blocker::new("frozen-mismatch", []));
     }
 

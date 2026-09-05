@@ -326,6 +326,66 @@ fn frozen_refuses_live_even_when_identity_wide_trust_is_present() {
 }
 
 #[test]
+fn frozen_recreates_a_missing_link_when_lock_is_unchanged() {
+    let manifest = concat!(
+        "schema = \"grimoire/manifest@3\"\n",
+        "[sources.a]\npath = \"../a\"\nlink = true\n",
+        "[skills]\none = { source = \"a\" }\n",
+    );
+    let observed = state(
+        snapshot("/held/live", '1', SnapshotKind::Link),
+        TrustMode::All,
+        SnapshotStore::Absent,
+        false,
+    );
+    let live_trust = trust_bytes(&observed);
+    let baseline = plan(
+        &WorldState::from_bytes(
+            Scope::Project,
+            manifest.as_bytes().to_vec(),
+            EMPTY_LOCK.to_vec(),
+            [observed.state.clone()],
+            [("one", InstalledLink::Absent)],
+            None,
+        )
+        .unwrap()
+        .with_trust_bytes(live_trust.clone()),
+        Request::Reconcile,
+        PlanningMode::Normal,
+    )
+    .unwrap();
+    let lock = baseline
+        .actions
+        .iter()
+        .find_map(|action| match action {
+            Action::ReplaceLock { after, .. } => Some(after.clone()),
+            _ => None,
+        })
+        .unwrap();
+    let missing = WorldState::from_bytes(
+        Scope::Project,
+        manifest.as_bytes().to_vec(),
+        lock,
+        [observed.state.clone()],
+        [("one", InstalledLink::Absent)],
+        None,
+    )
+    .unwrap()
+    .with_trust_bytes(live_trust)
+    .with_locked_snapshot(observed.state);
+    let frozen = plan(&missing, Request::Reconcile, PlanningMode::Frozen).unwrap();
+    assert!(frozen.blockers.is_empty(), "{:?}", frozen.blockers);
+    assert!(frozen.actions.iter().any(|action| matches!(
+        action,
+        Action::CreateLink { skill, .. } if skill.as_str() == "one"
+    )));
+    assert!(!frozen.actions.iter().any(|action| matches!(
+        action,
+        Action::CreateVendor { .. } | Action::PrepareVendor { .. }
+    )));
+}
+
+#[test]
 fn untrusted_owned_content_can_still_be_removed() {
     let current = state(
         snapshot("/store/a", '1', SnapshotKind::Git),

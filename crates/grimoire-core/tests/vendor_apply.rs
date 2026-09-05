@@ -42,13 +42,32 @@ impl TransactionRuntime for Runtime {
 
 #[test]
 fn trusted_store_bytes_create_a_copy_activation() {
+    copy_activation(Scope::Project);
+}
+
+#[test]
+fn trusted_store_bytes_create_a_global_copy_activation() {
+    copy_activation(Scope::Global);
+}
+
+fn copy_activation(scope: Scope) {
     let temporary = tempfile::tempdir().unwrap();
     let root = temporary.path().canonicalize().unwrap();
-    let project = root.join("project");
     let home = root.join("home");
     let source = root.join("source");
     fs::create_dir_all(source.join("skills/one/bin")).unwrap();
-    fs::create_dir_all(&project).unwrap();
+    let (paths, activation_root) = match scope {
+        Scope::Project => {
+            let project = root.join("project");
+            fs::create_dir_all(&project).unwrap();
+            (Paths::project(project.clone(), home).unwrap(), project)
+        }
+        Scope::Global => {
+            let user = root.join("user");
+            fs::create_dir_all(&user).unwrap();
+            (Paths::global(user.clone(), home).unwrap(), user)
+        }
+    };
     fs::write(
         source.join("skills/one/SKILL.md"),
         b"---\nname: one\ndescription: vendor apply fixture\n---\n",
@@ -79,7 +98,6 @@ fn trusted_store_bytes_create_a_copy_activation() {
         &inventory.inventory_digest.to_string(),
     )
     .unwrap();
-    let paths = Paths::project(project.clone(), home).unwrap();
     let store = paths.store_path(&source_key, &snapshot_key);
     copy_store_tree(&source, &store);
 
@@ -126,7 +144,7 @@ fn trusted_store_bytes_create_a_copy_activation() {
         inventory,
     );
     let mut world = grimoire_core::WorldState::from_bytes(
-        Scope::Project,
+        scope,
         manifest,
         lock,
         [SourceState::new(snapshot, SnapshotStore::Valid, false)
@@ -172,7 +190,7 @@ fn trusted_store_bytes_create_a_copy_activation() {
         .unwrap()
         .file_type()
         .is_symlink());
-    assert!(!project.join("vendor/grimoire").exists());
+    assert!(!activation_root.join("vendor/grimoire").exists());
     #[cfg(unix)]
     {
         use std::os::unix::fs::MetadataExt;

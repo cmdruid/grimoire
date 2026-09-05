@@ -203,7 +203,6 @@ fn prepared_info(
         inventory,
         export,
         TrustMode::Untrusted,
-        0,
         None,
     ))
 }
@@ -266,7 +265,6 @@ pub fn fetch_source(
         inventory,
         export,
         TrustMode::Untrusted,
-        0,
         None,
     ))
 }
@@ -329,7 +327,6 @@ pub fn inspect_live_source(paths: Paths, alias: SourceAlias) -> Result<SourceInf
         inventory,
         export,
         TrustMode::Untrusted,
-        0,
         None,
     ))
 }
@@ -394,7 +391,6 @@ pub fn inspect_pinned_source(
         inventory,
         export,
         TrustMode::Untrusted,
-        0,
         None,
     ))
 }

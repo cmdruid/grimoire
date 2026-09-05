@@ -590,8 +590,7 @@ fn phase_four_public_values_keep_the_required_trait_floor() {
     hash::<grimoire_core::ProjectionMode>();
     hash::<grimoire_core::VendorState>();
     hash::<grimoire_core::OwnedLinkTarget>();
-    hash::<grimoire_core::VendorTrustReceipt>();
-    serializable::<grimoire_core::VendorTrustReceipt>();
+    serializable::<grimoire_core::TrustReceipt>();
     value::<grimoire_core::ProjectIndex>();
     value::<grimoire_core::ReachabilityObservation>();
 }

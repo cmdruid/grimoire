@@ -22,7 +22,6 @@ pub struct SourceSummary {
     pub candidate_commit: Option<String>,
     pub candidate_current: bool,
     pub trust: TrustMode,
-    pub vendor_approved: bool,
     pub has_findings: bool,
 }
 
@@ -37,7 +36,6 @@ pub struct TrustSummary {
     pub source_key: super::SourceKey,
     pub identity: super::CanonicalIdentity,
     pub receipts: BTreeSet<TrustReceipt>,
-    pub vendor_receipts: BTreeSet<crate::VendorTrustReceipt>,
     pub all_snapshots: bool,
     pub baseline: Option<crate::TrustBaseline>,
     pub uses: BTreeSet<TrustUse>,
@@ -129,7 +127,6 @@ pub fn source_info(paths: &Paths, world: &WorldState, alias: &SourceAlias) -> Re
         state.snapshot.inventory.clone(),
         export,
         trust,
-        record.map_or(0, |record| record.vendor_receipts.len()),
         record.and_then(|record| record.baseline.clone()),
     ))
 }
@@ -204,11 +201,6 @@ pub fn source_summaries(world: &WorldState) -> Result<Vec<SourceSummary>> {
                 candidate_commit: candidate.and_then(|state| state.snapshot.id.commit.clone()),
                 candidate_current: candidate.is_some_and(|state| state.candidate_current),
                 trust,
-                vendor_approved: identity
-                    .and_then(|identity| {
-                        trust_store.records.get(&super::SourceKey::derive(identity))
-                    })
-                    .is_some_and(|record| !record.vendor_receipts.is_empty()),
                 has_findings: candidate
                     .or_else(|| world.locked_states.get(alias))
                     .is_some_and(|state| !state.snapshot.inventory.findings.is_empty()),
@@ -256,7 +248,6 @@ pub fn trust_catalog(paths: &Paths) -> Result<TrustCatalog> {
             source_key: source_key.clone(),
             identity: record.identity.clone(),
             receipts: record.receipts.clone(),
-            vendor_receipts: record.vendor_receipts.clone(),
             all_snapshots: record.all_snapshots,
             baseline: record.baseline.clone(),
             uses: BTreeSet::new(),

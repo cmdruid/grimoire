@@ -95,7 +95,6 @@ fn world(
             TrustRecord {
                 identity: identity.clone(),
                 receipts: receipt.into_iter().collect(),
-                vendor_receipts: BTreeSet::new(),
                 all_snapshots: true,
                 baseline: Some(TrustBaseline {
                     commit: snapshot.id.commit.clone(),
@@ -468,4 +467,8 @@ fn link_activation_is_legal_for_link_sources_and_global_scope() {
         .blockers
         .iter()
         .all(|blocker| blocker.code != "vendor-global-unsupported"));
+    assert!(global_plan.actions.iter().any(|action| matches!(
+        action,
+        Action::CreateVendor { path, .. } if path == ".agents/skills/one"
+    )));
 }

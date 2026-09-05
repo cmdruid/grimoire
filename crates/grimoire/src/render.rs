@@ -29,7 +29,6 @@ pub fn source_info(info: &SourceInfo, output: &mut dyn Write) -> io::Result<()> 
     writeln!(output, "  inventory: {}", info.candidate.inventory)?;
     writeln!(output, "  review: {}", info.export.root.display())?;
     writeln!(output, "  trust: {:?}", info.trust)?;
-    writeln!(output, "  vendor receipts: {}", info.vendor_receipts)?;
     writeln!(output, "  skills: {}", info.inventory.skills.len())?;
     writeln!(output, "  packs: {}", info.inventory.packs.len())?;
     for finding in &info.inventory.findings {
@@ -46,14 +45,13 @@ pub fn source_list(sources: &[SourceSummary], output: &mut dyn Write) -> io::Res
     for source in sources {
         writeln!(
             output,
-            "{}\t{}\tlocked={}\tcandidate={}\tcurrent={}\ttrust={:?}\tvendor_approved={}{}",
+            "{}\t{}\tlocked={}\tcandidate={}\tcurrent={}\ttrust={:?}{}",
             source.alias,
             if source.link { "link" } else { "pinned" },
             source.locked_commit.as_deref().unwrap_or("-"),
             source.candidate_commit.as_deref().unwrap_or("-"),
             source.candidate_current,
             source.trust,
-            source.vendor_approved,
             if source.has_findings {
                 "\tfindings"
             } else {
@@ -93,7 +91,7 @@ pub fn trust_catalog(catalog: &TrustCatalog, output: &mut dyn Write) -> io::Resu
     for record in &catalog.records {
         writeln!(
             output,
-            "{}\t{}\tauthority={}\tall={}\treceipts={}\tvendor_receipts={}",
+            "{}\t{}\tauthority={}\tall={}\treceipts={}",
             record.source_key,
             record
                 .identity
@@ -103,14 +101,11 @@ pub fn trust_catalog(catalog: &TrustCatalog, output: &mut dyn Write) -> io::Resu
                 "all-snapshots"
             } else if !record.receipts.is_empty() {
                 "snapshot"
-            } else if !record.vendor_receipts.is_empty() {
-                "vendor-only"
             } else {
                 "none"
             },
             record.all_snapshots,
-            record.receipts.len(),
-            record.vendor_receipts.len()
+            record.receipts.len()
         )?;
         for usage in &record.uses {
             writeln!(output, "  use\t{}\t{}", usage.scope, usage.alias)?;
