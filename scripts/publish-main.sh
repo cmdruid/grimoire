@@ -49,8 +49,6 @@ ALLOWLIST=(
   Cargo.lock
   README.md
   LICENSE
-  grimoire.toml
-  grimoire.lock
 )
 
 write_main_gitignore() {
@@ -66,6 +64,8 @@ TODO.md
 .spaces/
 .workstreams/
 AGENTS.md
+grimoire.toml
+grimoire.lock
 EOF
 }
 
