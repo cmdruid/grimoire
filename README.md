@@ -3,8 +3,7 @@
 Grimoire is a transactional package manager for agent skills. Schema-3 manifests and locks install
 each requested skill into the scope's `.agents/skills/` directory. Pinned git sources copy the
 locked skill tree there as a regular directory. `--link` is a local-source hatch that installs a
-symlink to that tree instead. Remotes never symlink. The published activation contract is
-`.records/specs/2026-09-04-grimoire-skill-activation-as-copies-live-local-as-symlink.md`.
+symlink to that tree instead. Remotes never symlink.
 
 The skills catalog lives in a separate library, **grove** (`~/Repos/grove`, eventually
 `github:cmdruid/grove`). This repository is the manager, not the book.
@@ -85,7 +84,6 @@ cargo install --path crates/grimoire
   owns declarative state, resolution, and the pure planner, and `skill-grimoire` provides the
   command-line and staged tree adapters. Crates never read a skills catalog at build time — live
   content appears only as test fixtures via `GRIMOIRE_LIVE_ROOT`.
-- **`.records/specs/`** — published product contracts.
 
 ## License
 
