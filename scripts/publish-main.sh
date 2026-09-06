@@ -65,6 +65,7 @@ TODO.md
 .streams/
 .spaces/
 .workstreams/
+docs/
 AGENTS.md
 DEVELOPMENT.md
 grimoire.toml
