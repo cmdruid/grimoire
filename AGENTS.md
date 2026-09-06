@@ -22,7 +22,7 @@ RUSTC_WRAPPER= cargo test -p skill-grimoire --test root_dogfood -- --ignored
 
 Live-root inventory tests (`crates/grimoire-pack/tests/live_root_layout.rs`) stay on the default
 path. They read the catalog from `GRIMOIRE_LIVE_ROOT`, or sibling `../grove` when that directory
-contains `PACK.md`. They do not treat this repository root as a skills source.
+contains `packs/clankshop/PACK.md`. They do not treat this repository root as a skills source.
 
 Library authoring doctrine, the lint gate, and skill-contract tests live in the sibling
 grove checkout: `~/Repos/grove/AGENTS.md` and

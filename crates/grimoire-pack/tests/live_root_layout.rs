@@ -29,11 +29,16 @@ fn catalog_root() -> PathBuf {
         .parent()
         .map(|parent| parent.join("grove"))
         .expect("repository has a parent directory");
-    if sibling.join("PACK.md").is_file() {
+    if sibling
+        .join("packs")
+        .join("clankshop")
+        .join("PACK.md")
+        .is_file()
+    {
         return sibling;
     }
     panic!(
-        "set GRIMOIRE_LIVE_ROOT to the skills catalog (sibling ../grove with PACK.md not found)"
+        "set GRIMOIRE_LIVE_ROOT to the skills catalog (sibling ../grove with packs/clankshop/PACK.md not found)"
     );
 }
 

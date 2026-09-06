@@ -66,7 +66,7 @@ RUSTC_WRAPPER= cargo test -p skill-grimoire --test root_dogfood -- --ignored
 ```
 
 The root-layout inventory tests stay on the default path. They use `GRIMOIRE_LIVE_ROOT` when set,
-otherwise sibling `../grove` when that tree contains `PACK.md`. Set
+otherwise sibling `../grove` when that tree contains `packs/clankshop/PACK.md`. Set
 `GRIMOIRE_LIVE_ROOT=/absolute/path/to/grove` to point at another catalog.
 
 Library lint and skill-contract tests run in the grove checkout, not here.
