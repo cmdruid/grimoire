@@ -3,6 +3,9 @@
 This repository is the **Grimoire** skill package manager (Rust workspace under `crates/`).
 The installable skills catalog is **grove** (`~/Repos/grove`). Do not author skills into this tree.
 
+This checkout is `dev`. `main` is a production snapshot. Do not merge `dev` into `main`. The human
+map of that split is `DEVELOPMENT.md`.
+
 ## Gate
 
 From the checkout root:

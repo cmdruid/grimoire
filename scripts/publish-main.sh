@@ -64,6 +64,7 @@ TODO.md
 .spaces/
 .workstreams/
 AGENTS.md
+DEVELOPMENT.md
 grimoire.toml
 grimoire.lock
 EOF
