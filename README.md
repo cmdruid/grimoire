@@ -6,7 +6,7 @@ locked skill tree there as a regular directory. `--link` is a local-source hatch
 symlink to that tree instead. Remotes never symlink.
 
 The skills catalog lives in a separate library, **grove** (`github:cmdruid/grove`). This
-repository is the manager, not the book.
+repository is the manager, not the book. Active development is on the `dev` branch.
 
 ### Install a skill
 
