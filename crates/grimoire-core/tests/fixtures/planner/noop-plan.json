@@ -1,0 +1,17 @@
+{
+  "actions": [],
+  "blockers": [],
+  "preconditions": {
+    "manifest": "f56c08cc7d70ed6363cabcb9cf2be9086cb328f8ee774077af90da58807c72fc",
+    "lock": "32fe026205780aebec20aa9b4ac66159da4c3a37612f0764037cb3f1b9dce1ae",
+    "candidates": {},
+    "stores": {},
+    "trust": null,
+    "projects": null,
+    "reachability": null,
+    "links": {},
+    "vendors": {}
+  },
+  "facts": [],
+  "exit_class": "success"
+}

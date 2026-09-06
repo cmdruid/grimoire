@@ -1,0 +1,21 @@
+[package]
+name = "skill-grimoire"
+version = "0.1.0"
+edition = "2021"
+description = "Command-line and tree-interface adapters for Grimoire"
+license = "MIT OR Apache-2.0"
+autobins = false
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+grimoire-core = { path = "../grimoire-core" }
+libc = "0.2"
+ratatui = "0.30.2"
+
+[[bin]]
+name = "grimoire"
+path = "src/main.rs"
+
+[dev-dependencies]
+serde_json = "1"
+tempfile = "3.27.0"

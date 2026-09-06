@@ -1,0 +1,11 @@
+TODO.md
+/target
+/repos/
+.DS_Store
+.agents/
+.records/
+.trackers/
+.streams/
+.spaces/
+.workstreams/
+AGENTS.md

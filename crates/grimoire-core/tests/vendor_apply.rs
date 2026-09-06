@@ -1,0 +1,247 @@
+use std::fs;
+
+use grimoire_core::inventory::scan;
+use grimoire_core::source::HeldDirectoryReader;
+use grimoire_core::{
+    apply, plan, Action, ApplyOutcome, Approval, CanonicalIdentity, FaultDisposition,
+    InstalledLink, Lockfile, Paths, PlanningMode, ProjectionMode, Request, Result, Scope,
+    SnapshotId, SnapshotKey, SnapshotKind, SnapshotStore, SourceAlias, SourceKey, SourceSnapshot,
+    SourceState, TransactionRuntime, TrustBaseline, TrustReceipt, TrustStore,
+};
+
+fn force_vendor_mode(world: &mut grimoire_core::WorldState) {
+    for skill in world.manifest.skills.values_mut() {
+        skill.mode = ProjectionMode::Vendor;
+    }
+    for pack in world.manifest.packs.values_mut() {
+        pack.mode = ProjectionMode::Vendor;
+    }
+    for skill in world.lock.skills.values_mut() {
+        skill.mode = ProjectionMode::Vendor;
+    }
+    for pack in world.lock.packs.values_mut() {
+        pack.mode = ProjectionMode::Vendor;
+    }
+}
+
+struct Runtime;
+
+impl TransactionRuntime for Runtime {
+    fn transaction_nonce(&self) -> Result<String> {
+        Ok("vendor-apply".into())
+    }
+
+    fn unix_time(&self) -> Result<i64> {
+        Ok(1_700_000_000)
+    }
+
+    fn checkpoint(&self, _name: &'static str) -> Result<FaultDisposition> {
+        Ok(FaultDisposition::Continue)
+    }
+}
+
+#[test]
+fn trusted_store_bytes_create_a_copy_activation() {
+    copy_activation(Scope::Project);
+}
+
+#[test]
+fn trusted_store_bytes_create_a_global_copy_activation() {
+    copy_activation(Scope::Global);
+}
+
+fn copy_activation(scope: Scope) {
+    let temporary = tempfile::tempdir().unwrap();
+    let root = temporary.path().canonicalize().unwrap();
+    let home = root.join("home");
+    let source = root.join("source");
+    fs::create_dir_all(source.join("skills/one/bin")).unwrap();
+    let (paths, activation_root) = match scope {
+        Scope::Project => {
+            let project = root.join("project");
+            fs::create_dir_all(&project).unwrap();
+            (Paths::project(project.clone(), home).unwrap(), project)
+        }
+        Scope::Global => {
+            let user = root.join("user");
+            fs::create_dir_all(&user).unwrap();
+            (Paths::global(user.clone(), home).unwrap(), user)
+        }
+    };
+    fs::write(
+        source.join("skills/one/SKILL.md"),
+        b"---\nname: one\ndescription: vendor apply fixture\n---\n",
+    )
+    .unwrap();
+    fs::write(source.join("skills/one/bin/run"), b"#!/bin/sh\n").unwrap();
+    executable(&source.join("skills/one/bin/run"));
+    #[cfg(unix)]
+    std::os::unix::fs::symlink("../SKILL.md", source.join("skills/one/bin/current")).unwrap();
+
+    let inventory = scan(&HeldDirectoryReader::open(&source).unwrap()).unwrap();
+    let content = inventory
+        .skills
+        .iter()
+        .find(|skill| skill.name == "one")
+        .unwrap()
+        .content_digest
+        .to_string();
+    let review_tree = inventory.review_tree_digest.to_string();
+    let identity = CanonicalIdentity::remote("github:org/a").unwrap();
+    let source_key = SourceKey::derive(&identity);
+    let commit = "1".repeat(40);
+    let tree = "2".repeat(40);
+    let snapshot_key = SnapshotKey::derive(
+        grimoire_core::SourceKind::Git,
+        &commit,
+        &tree,
+        &inventory.inventory_digest.to_string(),
+    )
+    .unwrap();
+    let store = paths.store_path(&source_key, &snapshot_key);
+    copy_store_tree(&source, &store);
+
+    let manifest = concat!(
+        "schema = \"grimoire/manifest@3\"\n",
+        "[sources.a]\nurl = \"github:org/a\"\n",
+        "[skills]\none = { source = \"a\" }\n"
+    )
+    .as_bytes()
+    .to_vec();
+    let lock = Lockfile::default().to_bytes().unwrap();
+    fs::write(paths.manifest_path(), &manifest).unwrap();
+    fs::write(paths.lock_path(), &lock).unwrap();
+    let trust = TrustStore::default()
+        .grant_exact(
+            identity.clone(),
+            TrustReceipt {
+                commit: commit.clone(),
+                tree: tree.clone(),
+                inventory: inventory.inventory_digest.to_string(),
+            },
+            TrustBaseline {
+                commit: Some(commit.clone()),
+                tree: Some(tree.clone()),
+                inventory: inventory.inventory_digest.to_string(),
+                review_tree: inventory.review_tree_digest.to_string(),
+            },
+            None,
+        )
+        .unwrap()
+        .after;
+    fs::create_dir_all(paths.trust_path().parent().unwrap()).unwrap();
+    fs::write(paths.trust_path(), &trust).unwrap();
+    let snapshot = SourceSnapshot::new(
+        SourceAlias::new("a").unwrap(),
+        SnapshotId::new(
+            SnapshotKind::Git,
+            Some(commit),
+            Some(tree),
+            inventory.inventory_digest.to_string(),
+        )
+        .unwrap(),
+        store.clone(),
+        inventory,
+    );
+    let mut world = grimoire_core::WorldState::from_bytes(
+        scope,
+        manifest,
+        lock,
+        [SourceState::new(snapshot, SnapshotStore::Valid, false)
+            .source_identity(identity, review_tree)],
+        [("one", InstalledLink::Absent)],
+        None,
+    )
+    .unwrap()
+    .with_trust_bytes(Some(trust));
+    force_vendor_mode(&mut world);
+
+    let create = plan(&world, Request::Reconcile, PlanningMode::Normal).unwrap();
+    assert!(create.actions.iter().any(|action| matches!(
+        action,
+        Action::PrepareVendor { skill, .. } if skill.as_str() == "one"
+    )));
+    assert!(create.actions.iter().any(|action| matches!(
+        action,
+        Action::CreateVendor { skill, .. } if skill.as_str() == "one"
+    )));
+    assert_eq!(
+        apply(&paths, &create, Approval::NotRequired, &Runtime).unwrap(),
+        ApplyOutcome::Applied { changed: true }
+    );
+
+    let vendor = paths
+        .vendor_path(&"a".try_into().unwrap(), &"one".try_into().unwrap())
+        .unwrap();
+    assert_eq!(
+        grimoire_core::verify_vendor_tree(&vendor, &"one".try_into().unwrap()).unwrap(),
+        content
+    );
+    assert_eq!(
+        fs::read(vendor.join("SKILL.md")).unwrap(),
+        fs::read(source.join("skills/one/SKILL.md")).unwrap()
+    );
+    assert!(vendor.is_dir());
+    assert!(!vendor.symlink_metadata().unwrap().file_type().is_symlink());
+    assert!(!paths
+        .skills_dir()
+        .join("one")
+        .symlink_metadata()
+        .unwrap()
+        .file_type()
+        .is_symlink());
+    assert!(!activation_root.join("vendor/grimoire").exists());
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        assert_ne!(
+            fs::metadata(store.join("skills/one/SKILL.md"))
+                .unwrap()
+                .ino(),
+            fs::metadata(vendor.join("SKILL.md")).unwrap().ino()
+        );
+    }
+}
+
+fn copy_store_tree(source: &std::path::Path, destination: &std::path::Path) {
+    fs::create_dir_all(destination.join("skills/one/bin")).unwrap();
+    fs::copy(
+        source.join("skills/one/SKILL.md"),
+        destination.join("skills/one/SKILL.md"),
+    )
+    .unwrap();
+    fs::copy(
+        source.join("skills/one/bin/run"),
+        destination.join("skills/one/bin/run"),
+    )
+    .unwrap();
+    #[cfg(unix)]
+    std::os::unix::fs::symlink("../SKILL.md", destination.join("skills/one/bin/current")).unwrap();
+    readonly_tree(destination);
+}
+
+#[cfg(unix)]
+fn executable(path: &std::path::Path) {
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
+}
+
+#[cfg(unix)]
+fn readonly_tree(path: &std::path::Path) {
+    use std::os::unix::fs::PermissionsExt;
+    for child in fs::read_dir(path).unwrap() {
+        let child = child.unwrap().path();
+        let metadata = fs::symlink_metadata(&child).unwrap();
+        if metadata.is_dir() {
+            readonly_tree(&child);
+        } else if metadata.is_file() {
+            let mode = if metadata.permissions().mode() & 0o111 == 0 {
+                0o444
+            } else {
+                0o555
+            };
+            fs::set_permissions(&child, fs::Permissions::from_mode(mode)).unwrap();
+        }
+    }
+    fs::set_permissions(path, fs::Permissions::from_mode(0o555)).unwrap();
+}

@@ -1,0 +1,63 @@
+{
+  "schema": "grimoire/lock@3",
+  "sources": {
+    "live-local": {
+      "declared": "/srv/live-skills",
+      "kind": "link"
+    },
+    "remote": {
+      "declared": "github:org/repo",
+      "kind": "git",
+      "ref": "main",
+      "commit": "1111111111111111111111111111111111111111",
+      "tree": "2222222222222222222222222222222222222222",
+      "inventory": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  },
+  "packs": {
+    "bundle": {
+      "source": "remote",
+      "required": [
+        "core"
+      ],
+      "optional": [
+        "extra",
+        "missing"
+      ],
+      "enabled": [
+        "extra",
+        "missing"
+      ],
+      "unavailable": [
+        "missing"
+      ]
+    }
+  },
+  "skills": {
+    "core": {
+      "source": "remote",
+      "path": "skills/core",
+      "content": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requested_by": [
+        "pack:bundle",
+        "skill:core"
+      ]
+    },
+    "extra": {
+      "source": "remote",
+      "path": "skills/extra",
+      "content": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "requested_by": [
+        "pack:bundle"
+      ]
+    },
+    "local": {
+      "source": "live-local",
+      "path": "skills/local",
+      "content": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "requested_by": [
+        "skill:local"
+      ]
+    }
+  }
+}

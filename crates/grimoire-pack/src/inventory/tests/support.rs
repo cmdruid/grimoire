@@ -1,0 +1,179 @@
+use std::collections::BTreeMap;
+use std::io::{Cursor, Read};
+
+use super::super::{InventoryError, SourcePath, TreeEntry, TreeReader, VisitDecision};
+
+#[derive(Default)]
+pub(crate) struct MemoryTree {
+    pub entries: Vec<TreeEntry>,
+    pub files: BTreeMap<SourcePath, Vec<u8>>,
+}
+
+impl MemoryTree {
+    pub fn file(&mut self, path: impl Into<SourcePath>, bytes: impl Into<Vec<u8>>) {
+        let path = path.into();
+        let bytes = bytes.into();
+        let mut entry = TreeEntry::file(path.clone(), 0o100644);
+        entry.size = Some(bytes.len() as u64);
+        self.entries.push(entry);
+        self.files.insert(path, bytes);
+    }
+
+    pub fn skill(&mut self, root: &str, name: &str) {
+        self.entries.push(TreeEntry::directory(root));
+        self.file(
+            format!("{root}/SKILL.md").as_str(),
+            format!("---\nname: {name}\n---\n").into_bytes(),
+        );
+    }
+
+    pub fn pack(&mut self, path: &str, name: &str, member: &str) {
+        self.file(
+            path,
+            format!(
+                "---\nschema: grimoire/pack@1\nname: {name}\ndescription: Pack\nrequired:\n  - {member}\noptional: []\n---\n"
+            )
+            .into_bytes(),
+        );
+    }
+}
+
+impl TreeReader for MemoryTree {
+    fn visit_entries(
+        &self,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<VisitDecision, InventoryError>,
+    ) -> Result<(), InventoryError> {
+        let mut skipped = Vec::new();
+        for entry in &self.entries {
+            let mut entry = entry.clone();
+            if skipped
+                .iter()
+                .any(|path: &SourcePath| entry.path.is_descendant_of(path))
+            {
+                continue;
+            }
+            if entry.kind == super::super::TreeEntryKind::File && entry.size.is_none() {
+                entry.size = self.files.get(&entry.path).map(|bytes| bytes.len() as u64);
+            }
+            let path = entry.path.clone();
+            match visitor(entry)? {
+                VisitDecision::Continue => {}
+                VisitDecision::SkipSubtree => skipped.push(path),
+                VisitDecision::Stop => break,
+            }
+        }
+        Ok(())
+    }
+
+    fn open<'a>(&'a self, path: &SourcePath) -> Result<Box<dyn Read + 'a>, InventoryError> {
+        self.files
+            .get(path)
+            .map(|bytes| Box::new(Cursor::new(bytes.as_slice())) as Box<dyn Read>)
+            .ok_or_else(|| InventoryError::Tree {
+                path: path.clone(),
+                message: "not a file".into(),
+            })
+    }
+}
+
+#[cfg(unix)]
+pub(crate) struct FixtureTree {
+    root: std::path::PathBuf,
+}
+
+#[cfg(unix)]
+impl FixtureTree {
+    pub fn new(root: impl Into<std::path::PathBuf>) -> Self {
+        Self { root: root.into() }
+    }
+
+    fn walk(
+        &self,
+        directory: &std::path::Path,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<VisitDecision, InventoryError>,
+    ) -> Result<bool, InventoryError> {
+        use std::os::unix::ffi::OsStrExt;
+        use std::os::unix::fs::MetadataExt;
+
+        let read = std::fs::read_dir(directory).map_err(|error| InventoryError::Tree {
+            path: SourcePath::from(""),
+            message: error.to_string(),
+        })?;
+        for child in read {
+            let child = child.map_err(|error| InventoryError::Tree {
+                path: SourcePath::from(""),
+                message: error.to_string(),
+            })?;
+            let path = child.path();
+            let metadata =
+                std::fs::symlink_metadata(&path).map_err(|error| InventoryError::Tree {
+                    path: SourcePath::from(""),
+                    message: error.to_string(),
+                })?;
+            let relative = path.strip_prefix(&self.root).unwrap();
+            let raw = SourcePath::new(relative.as_os_str().as_bytes().to_vec());
+            let file_type = metadata.file_type();
+            let entry = if file_type.is_dir() {
+                TreeEntry::directory(raw)
+            } else if file_type.is_file() {
+                let mut entry = TreeEntry::file(raw, metadata.mode());
+                entry.size = Some(metadata.len());
+                entry
+            } else if file_type.is_symlink() {
+                let target = std::fs::read_link(&path).map_err(|error| InventoryError::Tree {
+                    path: raw.clone(),
+                    message: error.to_string(),
+                })?;
+                TreeEntry::symlink(raw, target.as_os_str().as_bytes().to_vec())
+            } else {
+                continue;
+            };
+            let decision = visitor(entry)?;
+            if decision == VisitDecision::Stop {
+                return Ok(false);
+            }
+            if file_type.is_dir()
+                && decision == VisitDecision::Continue
+                && !self.walk(&path, visitor)?
+            {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+}
+
+#[cfg(unix)]
+impl TreeReader for FixtureTree {
+    fn visit_entries(
+        &self,
+        visitor: &mut dyn FnMut(TreeEntry) -> Result<VisitDecision, InventoryError>,
+    ) -> Result<(), InventoryError> {
+        self.walk(&self.root, visitor)?;
+        Ok(())
+    }
+
+    fn open<'a>(&'a self, path: &SourcePath) -> Result<Box<dyn Read + 'a>, InventoryError> {
+        use std::os::unix::ffi::{OsStrExt, OsStringExt};
+
+        let path = self
+            .root
+            .join(std::ffi::OsString::from_vec(path.as_bytes().to_vec()));
+        let metadata = std::fs::symlink_metadata(&path).map_err(|error| InventoryError::Tree {
+            path: SourcePath::new(path.as_os_str().as_bytes().to_vec()),
+            message: error.to_string(),
+        })?;
+        if !metadata.file_type().is_file() {
+            return Err(InventoryError::Tree {
+                path: SourcePath::new(path.as_os_str().as_bytes().to_vec()),
+                message: "entry changed kind".into(),
+            });
+        }
+        std::fs::File::open(&path)
+            .map(|file| Box::new(file) as Box<dyn Read>)
+            .map_err(|error| InventoryError::Tree {
+                path: SourcePath::new(path.as_os_str().as_bytes().to_vec()),
+                message: error.to_string(),
+            })
+    }
+}

@@ -1,0 +1,9 @@
+schema = "grimoire/manifest@3"
+
+
+[packs]
+clankshop = { source = "grove" }
+
+[sources.grove]
+path = "../grove"
+link = true
