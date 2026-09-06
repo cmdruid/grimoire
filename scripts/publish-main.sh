@@ -49,6 +49,8 @@ ALLOWLIST=(
   Cargo.lock
   README.md
   LICENSE
+  CONTRIBUTING.md
+  SECURITY.md
 )
 
 write_main_gitignore() {
