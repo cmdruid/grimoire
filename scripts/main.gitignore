@@ -1,0 +1,15 @@
+TODO.md
+/target
+/repos/
+.DS_Store
+.agents/
+.records/
+.trackers/
+.streams/
+.spaces/
+.workstreams/
+docs/
+AGENTS.md
+DEVELOPMENT.md
+grimoire.toml
+grimoire.lock

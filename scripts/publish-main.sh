@@ -2,21 +2,26 @@
 # Publish an allowlisted product snapshot onto `main` from a source ref (default: `dev`).
 # Uses git plumbing only: it never checks out `main` in the caller's worktree.
 #
-# Workshop paths stay on `dev`. `main` is a sequence of production trees, not a merge of `dev`.
+# Include list: scripts/main.allowlist
+# Published .gitignore: scripts/main.gitignore
+# Both are read from the source commit, not the working tree.
 set -euo pipefail
 
 usage() {
   cat >&2 <<'EOF'
 Usage: scripts/publish-main.sh [--source REF] [--message TEXT]
 
-Write a new `main` commit whose tree is the allowlisted product paths from REF.
-The caller's worktree is not switched. Run this from `dev`.
+Write a new `main` commit whose tree is the paths listed in
+scripts/main.allowlist on REF. The caller's worktree is not switched.
+Run this from `dev`.
 EOF
   exit 2
 }
 
 SOURCE=dev
 MESSAGE=""
+ALLOWLIST_PATH=scripts/main.allowlist
+GITIGNORE_PATH=scripts/main.gitignore
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -43,35 +48,6 @@ ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 
 DEST=main
-ALLOWLIST=(
-  crates
-  Cargo.toml
-  Cargo.lock
-  README.md
-  LICENSE
-  CONTRIBUTING.md
-  SECURITY.md
-)
-
-write_main_gitignore() {
-  cat >"$1" <<'EOF'
-TODO.md
-/target
-/repos/
-.DS_Store
-.agents/
-.records/
-.trackers/
-.streams/
-.spaces/
-.workstreams/
-docs/
-AGENTS.md
-DEVELOPMENT.md
-grimoire.toml
-grimoire.lock
-EOF
-}
 
 if [[ "$(git branch --show-current)" == "$DEST" ]]; then
   echo "publish-main: refuse to run with '$DEST' checked out; switch to $SOURCE and retry." >&2
@@ -80,6 +56,38 @@ fi
 
 source_commit=$(git rev-parse --verify "${SOURCE}^{commit}")
 short=$(git rev-parse --short "$source_commit")
+
+for spec in "$ALLOWLIST_PATH" "$GITIGNORE_PATH"; do
+  if ! git cat-file -e "${source_commit}:${spec}" 2>/dev/null; then
+    echo "publish-main: '${spec}' is not in ${SOURCE} (${short})." >&2
+    exit 1
+  fi
+done
+
+ALLOWLIST=()
+allowlist_tmp=$(mktemp)
+gitignore_tmp=$(mktemp)
+index=$(mktemp)
+tree_work=$(mktemp -d)
+trap 'rm -f "$allowlist_tmp" "$gitignore_tmp" "$index"; rm -rf "$tree_work"' EXIT
+
+git show "${source_commit}:${ALLOWLIST_PATH}" >"$allowlist_tmp"
+git show "${source_commit}:${GITIGNORE_PATH}" >"$gitignore_tmp"
+
+while IFS= read -r line || [[ -n "$line" ]]; do
+  line=${line%$'\r'}
+  line="${line#"${line%%[![:space:]]*}"}"
+  line="${line%"${line##*[![:space:]]}"}"
+  case "$line" in
+    ''|\#*) continue ;;
+  esac
+  ALLOWLIST+=("$line")
+done <"$allowlist_tmp"
+
+if [[ ${#ALLOWLIST[@]} -eq 0 ]]; then
+  echo "publish-main: '${ALLOWLIST_PATH}' in ${SOURCE} (${short}) lists no paths." >&2
+  exit 1
+fi
 
 missing=0
 for path in "${ALLOWLIST[@]}"; do
@@ -92,16 +100,13 @@ if [[ "$missing" -ne 0 ]]; then
   exit 1
 fi
 
-index=$(mktemp)
-tree_work=$(mktemp -d)
-trap 'rm -f "$index"; rm -rf "$tree_work"' EXIT
 export GIT_INDEX_FILE=$index
 export GIT_WORK_TREE=$tree_work
 
 git read-tree --empty
 git restore --source="$source_commit" --staged --worktree -- "${ALLOWLIST[@]}"
 
-write_main_gitignore "${tree_work}/.gitignore"
+cp "$gitignore_tmp" "${tree_work}/.gitignore"
 git add -- .gitignore
 
 tree=$(git write-tree)

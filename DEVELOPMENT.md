@@ -61,7 +61,7 @@ bash scripts/publish-main.sh
 # optional: bash scripts/publish-main.sh --message "Release v0.1.0"
 ```
 
-The snapshot allowlist is `crates/`, `Cargo.toml`, `Cargo.lock`, `README.md`, `LICENSE`,
-`CONTRIBUTING.md`, and `SECURITY.md`. Everything else on `dev` stays here.
+The include list is `scripts/main.allowlist`. `scripts/main.gitignore` is written onto `main` as
+`.gitignore`. Everything else on `dev` stays here.
 
 Then push `dev` and fast-forward `main`. `main` only needs `--force` when its history is rewritten.
