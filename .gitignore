@@ -9,3 +9,5 @@ TODO.md
 .spaces/
 .workstreams/
 AGENTS.md
+grimoire.toml
+grimoire.lock

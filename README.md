@@ -5,8 +5,8 @@ each requested skill into the scope's `.agents/skills/` directory. Pinned git so
 locked skill tree there as a regular directory. `--link` is a local-source hatch that installs a
 symlink to that tree instead. Remotes never symlink.
 
-The skills catalog lives in a separate library, **grove** (`~/Repos/grove`, eventually
-`github:cmdruid/grove`). This repository is the manager, not the book.
+The skills catalog lives in a separate library, **grove** (`github:cmdruid/grove`). This
+repository is the manager, not the book.
 
 ### Install a skill
 
@@ -23,11 +23,6 @@ Pinned sources — remotes, and local git paths without `--link` — copy verifi
 `.agents/skills/<name>/`. A local path with `--link` installs a symlink to that working tree and
 requires `--trust-all`. `--live` is a usage error that names `--link`. There is no `path:` scheme;
 a local source is an ordinary path.
-
-```sh
-grimoire source add grove /Users/cscott/Repos/grove --link --trust-all
-grimoire install clankshop --pack --source grove
-```
 
 Commit `grimoire.toml`, `grimoire.lock`, and the copied skill trees under `.agents/skills/`. A clone
 of those trees is skills-ready: `grimoire check` passes with no store, cache, or candidate.
